@@ -1,0 +1,77 @@
+
+options {
+   STATIC = false;
+}
+
+PARSER_BEGIN(ReadpPlacement)
+
+package placement;
+
+import java.io.*;
+import java.util.Iterator;
+
+public class ReadpPlacement {
+  
+  Placement placement;
+
+
+  public Plaatsing read() throws ParseException, FileNotFoundException  {
+    placement = new Placement();
+    placementfile();
+    return placement;
+  }
+
+}
+
+PARSER_END(ReadpPlacement)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| < "#" (~["\n"])* "\n" >
+}
+
+TOKEN :
+{ < NF: "Netlist file:" >
+| < AF: "Architecture file:">
+| < AS: "Array size:" >
+| < X: "x">
+| < LB: "logic blocks">
+| < NUMBER: (["0"-"9"])+ >
+| < Id: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","0"-"9","_",":","[","]"] )* >
+| < Idn: "["  (["0"-"9"])+ "]">
+| < Filename: (["a"-"z","A"-"Z","0"-"9","-","_",".","/"])+>
+}
+
+
+void placementfile() :
+{Token fname;
+ Token width,hight;
+}
+{ <NF> fname=<Filename>
+  {  placement.netlist_file = fname.image;
+  }	
+  <AF> fname=<Filename>
+  {  placement.architecture_file = fname.image;
+  }
+  <AS> width=<NUMBER> <X> hight=<NUMBER> <LB>
+  {  placement.width=Integer.valueOf(width.image);
+     placement.hight=Integer.valueOf(hight.image);
+  }
+  (Element())* 
+  <EOF>	
+}
+
+void Element():
+{ Token id;
+  Token x,y,n;
+
+}
+{ (id=<Id>|id=<Idn>) x=<NUMBER> y=<NUMBER> n=<NUMBER> 
+  { placement.plaatsingsmap.put(id.image,new PlaatsingUnit(id.image,Integer.valueOf(x.image),Integer.valueOf(y.image),Integer.valueOf(n.image)));
+  }
+}
+

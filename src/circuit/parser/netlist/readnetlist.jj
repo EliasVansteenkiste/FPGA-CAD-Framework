@@ -1,0 +1,186 @@
+
+options {
+   STATIC = false;
+}
+
+PARSER_BEGIN(Readnetlist)
+
+package circuit.parser.netlist;
+
+import java.io.*;
+import java.util.Vector;
+
+import circuit.*;
+
+public class Readnetlist {
+  
+  Circuit circuit;
+  Vector<String> global;
+  
+  private Net getAndOrMakeNet (String name) {
+	Net net;
+	if (circuit.nets.containsKey(name)) {
+	        net = circuit.nets.get(name);
+	} else {
+	        net = new Net("Net_"+name);
+	        circuit.nets.put(name,net);
+	}
+	return net;
+  }
+
+  public Circuit read(boolean excludeGlobals) throws ParseException, FileNotFoundException  {
+    circuit = new Circuit();
+    global = new Vector<String>();
+    Netlist();
+    if(excludeGlobals)    {
+	    for(String str:global)	    {
+	      Net gloNet = circuit.nets.get(str);
+	      System.out.println("global:"+str+", fanout:"+gloNet.sinks.size());
+	      circuit.nets.remove(str);
+	      circuit.globalNets.put(str,gloNet);
+	    }
+	}		 
+    return circuit;
+
+  }
+
+}
+
+PARSER_END(Readnetlist)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| < "#" (~["\n"])* "\n" >
+}
+
+TOKEN :
+{ < IN: ".input" >
+| < OUT: ".output" >
+| < CLB: ".clb" >
+| < CON: ".con">
+| < GLO: ".global">
+| < PINLIST: "pinlist:" >
+| < SOURCELIST: "sourcelist:" >
+| < SINKLIST: "sinklist:" >
+| < NET: "net:" >
+| < SCHEME: "scheme:" >
+| < SUBBLOCK: "subblock:" >
+| < OPEN: "open" >
+| < Id: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","0"-"9","_",":","[","]"] )* >
+| < Idn: "["  (["0"-"9"])+ "]">
+| < NUMBER: (["0"-"9"])+ >
+}
+
+
+void Netlist() :
+{}
+{ (Block())*<EOF>
+}
+
+void Block():
+{}
+{ (Input()|Output()|Clb()|Global())
+}
+
+void Global() :
+{  Token name;
+}
+{	<GLO> (name=<Id> {
+		global.add(name.image);
+	} )*
+}
+
+void Input() :
+{ Token name;
+  Token out;
+  Input in;
+  Net	net;
+}
+{ <IN> 
+  (name=<Id>|name=<Idn>) 
+  <PINLIST> 
+  (out=<Id>|out=<OPEN>|out=<Idn>)
+  { //System.out.println("Input gevonden!");
+    in = new Input(name.image);
+    
+    //Adding the input block.
+    if(!circuit.inputs.containsKey(in.name))
+    	circuit.inputs.put(in.name,in);
+
+    //Setting the pinMap
+    if(out.image!="open") {
+    	net = getAndOrMakeNet(out.image);
+    	net.addSource(in.output);
+    }
+  }	
+}
+
+void Output() :
+{ Token name;
+  Token in;
+  Output out;
+  Net net;
+}
+{ <OUT> 
+  (name=<Id>|name=<Idn>) 
+  <PINLIST> 
+  (in=<Id>|in=<OPEN>|in=<Idn>)
+  { //System.out.println("Output gevonden!");
+    out = new Output(name.image);
+
+    //Adding the output block.
+    if(!circuit.outputs.containsKey(out.name))
+    	circuit.outputs.put(out.name,out);
+
+    //Setting the pinMap
+    if(in.image!="open") {
+   		net = getAndOrMakeNet(in.image);
+   		net.addSink(out.input);
+    }
+  }  
+}
+
+void Clb() :
+{ Token name;
+  Token conId;
+  Clb clb;
+  Net net;
+  int i;
+}
+{ <CLB> 
+  (name=<Id>|name=<Idn>) 
+  { clb = new Clb(name.image,1,4);
+    //Adding the CLB.
+    if(!circuit.clbs.containsKey(clb.name))
+      circuit.clbs.put(clb.name,clb);
+  }
+  
+  <PINLIST> {i = 0;}
+  ((conId=<Id>|conId=<Idn>|conId=<OPEN>)
+  {	if (i<4) {
+  		if(conId.image!="open") {
+	   		net = getAndOrMakeNet(conId.image);
+	   		net.addSink(clb.input[i]);
+    	}
+  	} else if (i==4) {
+  		if(conId.image!="open") {
+  			net = getAndOrMakeNet(conId.image);
+			//
+	   		net.addSource(clb.output[0]);
+    	}
+  	} else if (i==5) {
+  		if(conId.image!="open") {
+	   		net = getAndOrMakeNet(conId.image);
+	   		net.addSink(clb.clock);
+    	}
+  	}
+  	i++;	
+  })*
+  (<SUBBLOCK> (<Id>|<Idn>|<OPEN>)((<NUMBER>|<OPEN>|<Id>))+ )+
+  { //System.out.println("Clb gevonden!");
+  }
+}

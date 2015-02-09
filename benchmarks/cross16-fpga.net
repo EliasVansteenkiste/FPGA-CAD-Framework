@@ -1,0 +1,1120 @@
+.input i[10]
+pinlist: i[10] 
+
+.input s00[1]
+pinlist: s00[1] 
+
+.input i[9]
+pinlist: i[9] 
+
+.input s00[0]
+pinlist: s00[0] 
+
+.input i[8]
+pinlist: i[8] 
+
+.input i[11]
+pinlist: i[11] 
+
+.input s00[3]
+pinlist: s00[3] 
+
+.input i[5]
+pinlist: i[5] 
+
+.input i[6]
+pinlist: i[6] 
+
+.input i[4]
+pinlist: i[4] 
+
+.input i[7]
+pinlist: i[7] 
+
+.input s00[2]
+pinlist: s00[2] 
+
+.input i[2]
+pinlist: i[2] 
+
+.input i[1]
+pinlist: i[1] 
+
+.input i[0]
+pinlist: i[0] 
+
+.input i[3]
+pinlist: i[3] 
+
+.input i[13]
+pinlist: i[13] 
+
+.input i[14]
+pinlist: i[14] 
+
+.input i[12]
+pinlist: i[12] 
+
+.input i[15]
+pinlist: i[15] 
+
+.input s01[1]
+pinlist: s01[1] 
+
+.input s01[0]
+pinlist: s01[0] 
+
+.input s01[3]
+pinlist: s01[3] 
+
+.input s01[2]
+pinlist: s01[2] 
+
+.input s02[1]
+pinlist: s02[1] 
+
+.input s02[0]
+pinlist: s02[0] 
+
+.input s02[3]
+pinlist: s02[3] 
+
+.input s02[2]
+pinlist: s02[2] 
+
+.input s03[1]
+pinlist: s03[1] 
+
+.input s03[0]
+pinlist: s03[0] 
+
+.input s03[3]
+pinlist: s03[3] 
+
+.input s03[2]
+pinlist: s03[2] 
+
+.input s04[1]
+pinlist: s04[1] 
+
+.input s04[0]
+pinlist: s04[0] 
+
+.input s04[3]
+pinlist: s04[3] 
+
+.input s04[2]
+pinlist: s04[2] 
+
+.input s05[1]
+pinlist: s05[1] 
+
+.input s05[0]
+pinlist: s05[0] 
+
+.input s05[3]
+pinlist: s05[3] 
+
+.input s05[2]
+pinlist: s05[2] 
+
+.input s06[1]
+pinlist: s06[1] 
+
+.input s06[0]
+pinlist: s06[0] 
+
+.input s06[3]
+pinlist: s06[3] 
+
+.input s06[2]
+pinlist: s06[2] 
+
+.input s07[1]
+pinlist: s07[1] 
+
+.input s07[0]
+pinlist: s07[0] 
+
+.input s07[3]
+pinlist: s07[3] 
+
+.input s07[2]
+pinlist: s07[2] 
+
+.input s08[1]
+pinlist: s08[1] 
+
+.input s08[0]
+pinlist: s08[0] 
+
+.input s08[3]
+pinlist: s08[3] 
+
+.input s08[2]
+pinlist: s08[2] 
+
+.input s09[1]
+pinlist: s09[1] 
+
+.input s09[0]
+pinlist: s09[0] 
+
+.input s09[3]
+pinlist: s09[3] 
+
+.input s09[2]
+pinlist: s09[2] 
+
+.input s10[1]
+pinlist: s10[1] 
+
+.input s10[0]
+pinlist: s10[0] 
+
+.input s10[3]
+pinlist: s10[3] 
+
+.input s10[2]
+pinlist: s10[2] 
+
+.input s11[1]
+pinlist: s11[1] 
+
+.input s11[0]
+pinlist: s11[0] 
+
+.input s11[3]
+pinlist: s11[3] 
+
+.input s11[2]
+pinlist: s11[2] 
+
+.input s12[1]
+pinlist: s12[1] 
+
+.input s12[0]
+pinlist: s12[0] 
+
+.input s12[3]
+pinlist: s12[3] 
+
+.input s12[2]
+pinlist: s12[2] 
+
+.input s13[1]
+pinlist: s13[1] 
+
+.input s13[0]
+pinlist: s13[0] 
+
+.input s13[3]
+pinlist: s13[3] 
+
+.input s13[2]
+pinlist: s13[2] 
+
+.input s14[1]
+pinlist: s14[1] 
+
+.input s14[0]
+pinlist: s14[0] 
+
+.input s14[3]
+pinlist: s14[3] 
+
+.input s14[2]
+pinlist: s14[2] 
+
+.input s15[1]
+pinlist: s15[1] 
+
+.input s15[0]
+pinlist: s15[0] 
+
+.input s15[3]
+pinlist: s15[3] 
+
+.input s15[2]
+pinlist: s15[2] 
+
+.output out_o[0]
+pinlist: o[0] 
+
+.output out_o[1]
+pinlist: o[1] 
+
+.output out_o[2]
+pinlist: o[2] 
+
+.output out_o[3]
+pinlist: o[3] 
+
+.output out_o[4]
+pinlist: o[4] 
+
+.output out_o[5]
+pinlist: o[5] 
+
+.output out_o[6]
+pinlist: o[6] 
+
+.output out_o[7]
+pinlist: o[7] 
+
+.output out_o[8]
+pinlist: o[8] 
+
+.output out_o[9]
+pinlist: o[9] 
+
+.output out_o[10]
+pinlist: o[10] 
+
+.output out_o[11]
+pinlist: o[11] 
+
+.output out_o[12]
+pinlist: o[12] 
+
+.output out_o[13]
+pinlist: o[13] 
+
+.output out_o[14]
+pinlist: o[14] 
+
+.output out_o[15]
+pinlist: o[15] 
+
+.clb o[4]
+pinlist: s04[3] n150 n157 n160 o[4] open 
+subblock: o[4] 0 1 2 3 4 open 
+
+.clb o[3]
+pinlist: s03[3] n137 n144 n147 o[3] open 
+subblock: o[3] 0 1 2 3 4 open 
+
+.clb o[7]
+pinlist: s07[3] n189 n196 n199 o[7] open 
+subblock: o[7] 0 1 2 3 4 open 
+
+.clb o[9]
+pinlist: s09[3] n215 n222 n225 o[9] open 
+subblock: o[9] 0 1 2 3 4 open 
+
+.clb o[11]
+pinlist: s11[3] n241 n248 n251 o[11] open 
+subblock: o[11] 0 1 2 3 4 open 
+
+.clb o[10]
+pinlist: s10[3] n228 n235 n238 o[10] open 
+subblock: o[10] 0 1 2 3 4 open 
+
+.clb o[1]
+pinlist: s01[3] n111 n118 n121 o[1] open 
+subblock: o[1] 0 1 2 3 4 open 
+
+.clb o[2]
+pinlist: s02[3] n124 n131 n134 o[2] open 
+subblock: o[2] 0 1 2 3 4 open 
+
+.clb o[0]
+pinlist: s00[3] n98 n105 n108 o[0] open 
+subblock: o[0] 0 1 2 3 4 open 
+
+.clb o[13]
+pinlist: s13[3] n267 n274 n277 o[13] open 
+subblock: o[13] 0 1 2 3 4 open 
+
+.clb o[12]
+pinlist: s12[3] n254 n261 n264 o[12] open 
+subblock: o[12] 0 1 2 3 4 open 
+
+.clb o[8]
+pinlist: s08[3] n202 n209 n212 o[8] open 
+subblock: o[8] 0 1 2 3 4 open 
+
+.clb o[15]
+pinlist: s15[3] n293 n300 n303 o[15] open 
+subblock: o[15] 0 1 2 3 4 open 
+
+.clb o[14]
+pinlist: s14[3] n280 n287 n290 o[14] open 
+subblock: o[14] 0 1 2 3 4 open 
+
+.clb o[6]
+pinlist: s06[3] n176 n183 n186 o[6] open 
+subblock: o[6] 0 1 2 3 4 open 
+
+.clb o[5]
+pinlist: s05[3] n163 n170 n173 o[5] open 
+subblock: o[5] 0 1 2 3 4 open 
+
+.clb n202
+pinlist: s08[3] s08[2] n203 n207 n202 open 
+subblock: n202 0 1 2 3 4 open 
+
+.clb n98
+pinlist: s00[3] s00[2] n99 n103 n98 open 
+subblock: n98 0 1 2 3 4 open 
+
+.clb n176
+pinlist: s06[3] s06[2] n177 n181 n176 open 
+subblock: n176 0 1 2 3 4 open 
+
+.clb n124
+pinlist: s02[3] s02[2] n125 n129 n124 open 
+subblock: n124 0 1 2 3 4 open 
+
+.clb n111
+pinlist: s01[3] s01[2] n112 n116 n111 open 
+subblock: n111 0 1 2 3 4 open 
+
+.clb n293
+pinlist: s15[3] s15[2] n294 n298 n293 open 
+subblock: n293 0 1 2 3 4 open 
+
+.clb n150
+pinlist: s04[3] s04[2] n151 n155 n150 open 
+subblock: n150 0 1 2 3 4 open 
+
+.clb n254
+pinlist: s12[3] s12[2] n255 n259 n254 open 
+subblock: n254 0 1 2 3 4 open 
+
+.clb n137
+pinlist: s03[3] s03[2] n138 n142 n137 open 
+subblock: n137 0 1 2 3 4 open 
+
+.clb n215
+pinlist: s09[3] s09[2] n216 n220 n215 open 
+subblock: n215 0 1 2 3 4 open 
+
+.clb n228
+pinlist: s10[3] s10[2] n229 n233 n228 open 
+subblock: n228 0 1 2 3 4 open 
+
+.clb n241
+pinlist: s11[3] s11[2] n242 n246 n241 open 
+subblock: n241 0 1 2 3 4 open 
+
+.clb n280
+pinlist: s14[3] s14[2] n281 n285 n280 open 
+subblock: n280 0 1 2 3 4 open 
+
+.clb n163
+pinlist: s05[3] s05[2] n164 n168 n163 open 
+subblock: n163 0 1 2 3 4 open 
+
+.clb n267
+pinlist: s13[3] s13[2] n268 n272 n267 open 
+subblock: n267 0 1 2 3 4 open 
+
+.clb n189
+pinlist: s07[3] s07[2] n190 n194 n189 open 
+subblock: n189 0 1 2 3 4 open 
+
+.clb n164
+pinlist: s05[3] n165 n166 n167 n164 open 
+subblock: n164 0 1 2 3 4 open 
+
+.clb n112
+pinlist: s01[3] n113 n114 n115 n112 open 
+subblock: n112 0 1 2 3 4 open 
+
+.clb n203
+pinlist: s08[3] n204 n205 n206 n203 open 
+subblock: n203 0 1 2 3 4 open 
+
+.clb n268
+pinlist: s13[3] n269 n270 n271 n268 open 
+subblock: n268 0 1 2 3 4 open 
+
+.clb n138
+pinlist: s03[3] n139 n140 n141 n138 open 
+subblock: n138 0 1 2 3 4 open 
+
+.clb n151
+pinlist: s04[3] n152 n153 n154 n151 open 
+subblock: n151 0 1 2 3 4 open 
+
+.clb n281
+pinlist: s14[3] n282 n283 n284 n281 open 
+subblock: n281 0 1 2 3 4 open 
+
+.clb n190
+pinlist: s07[3] n191 n192 n193 n190 open 
+subblock: n190 0 1 2 3 4 open 
+
+.clb n229
+pinlist: s10[3] n230 n231 n232 n229 open 
+subblock: n229 0 1 2 3 4 open 
+
+.clb n216
+pinlist: s09[3] n217 n218 n219 n216 open 
+subblock: n216 0 1 2 3 4 open 
+
+.clb n255
+pinlist: s12[3] n256 n257 n258 n255 open 
+subblock: n255 0 1 2 3 4 open 
+
+.clb n242
+pinlist: s11[3] n243 n244 n245 n242 open 
+subblock: n242 0 1 2 3 4 open 
+
+.clb n177
+pinlist: s06[3] n178 n179 n180 n177 open 
+subblock: n177 0 1 2 3 4 open 
+
+.clb n294
+pinlist: s15[3] n295 n296 n297 n294 open 
+subblock: n294 0 1 2 3 4 open 
+
+.clb n99
+pinlist: s00[3] n100 n101 n102 n99 open 
+subblock: n99 0 1 2 3 4 open 
+
+.clb n125
+pinlist: s02[3] n126 n127 n128 n125 open 
+subblock: n125 0 1 2 3 4 open 
+
+.clb n158
+pinlist: i[14] i[12] s04[1] s04[0] n158 open 
+subblock: n158 0 1 2 3 4 open 
+
+.clb n236
+pinlist: i[14] i[12] s10[1] s10[0] n236 open 
+subblock: n236 0 1 2 3 4 open 
+
+.clb n145
+pinlist: i[14] i[12] s03[1] s03[0] n145 open 
+subblock: n145 0 1 2 3 4 open 
+
+.clb n262
+pinlist: i[14] i[12] s12[1] s12[0] n262 open 
+subblock: n262 0 1 2 3 4 open 
+
+.clb n106
+pinlist: s00[1] s00[0] i[14] i[12] n106 open 
+subblock: n106 0 1 2 3 4 open 
+
+.clb n119
+pinlist: i[14] i[12] s01[1] s01[0] n119 open 
+subblock: n119 0 1 2 3 4 open 
+
+.clb n301
+pinlist: i[14] i[12] s15[1] s15[0] n301 open 
+subblock: n301 0 1 2 3 4 open 
+
+.clb n249
+pinlist: i[14] i[12] s11[1] s11[0] n249 open 
+subblock: n249 0 1 2 3 4 open 
+
+.clb n132
+pinlist: i[14] i[12] s02[1] s02[0] n132 open 
+subblock: n132 0 1 2 3 4 open 
+
+.clb n171
+pinlist: i[14] i[12] s05[1] s05[0] n171 open 
+subblock: n171 0 1 2 3 4 open 
+
+.clb n288
+pinlist: i[14] i[12] s14[1] s14[0] n288 open 
+subblock: n288 0 1 2 3 4 open 
+
+.clb n275
+pinlist: i[14] i[12] s13[1] s13[0] n275 open 
+subblock: n275 0 1 2 3 4 open 
+
+.clb n210
+pinlist: i[14] i[12] s08[1] s08[0] n210 open 
+subblock: n210 0 1 2 3 4 open 
+
+.clb n223
+pinlist: i[14] i[12] s09[1] s09[0] n223 open 
+subblock: n223 0 1 2 3 4 open 
+
+.clb n184
+pinlist: i[14] i[12] s06[1] s06[0] n184 open 
+subblock: n184 0 1 2 3 4 open 
+
+.clb n197
+pinlist: i[14] i[12] s07[1] s07[0] n197 open 
+subblock: n197 0 1 2 3 4 open 
+
+.clb n130
+pinlist: i[1] i[0] s02[1] s02[0] n130 open 
+subblock: n130 0 1 2 3 4 open 
+
+.clb n243
+pinlist: i[6] i[4] s11[1] s11[0] n243 open 
+subblock: n243 0 1 2 3 4 open 
+
+.clb n256
+pinlist: i[6] i[4] s12[1] s12[0] n256 open 
+subblock: n256 0 1 2 3 4 open 
+
+.clb n113
+pinlist: i[6] i[4] s01[1] s01[0] n113 open 
+subblock: n113 0 1 2 3 4 open 
+
+.clb n117
+pinlist: i[1] i[0] s01[1] s01[0] n117 open 
+subblock: n117 0 1 2 3 4 open 
+
+.clb n234
+pinlist: i[1] i[0] s10[1] s10[0] n234 open 
+subblock: n234 0 1 2 3 4 open 
+
+.clb n221
+pinlist: i[1] i[0] s09[1] s09[0] n221 open 
+subblock: n221 0 1 2 3 4 open 
+
+.clb n230
+pinlist: i[6] i[4] s10[1] s10[0] n230 open 
+subblock: n230 0 1 2 3 4 open 
+
+.clb n208
+pinlist: i[1] i[0] s08[1] s08[0] n208 open 
+subblock: n208 0 1 2 3 4 open 
+
+.clb n104
+pinlist: s00[1] s00[0] i[1] i[0] n104 open 
+subblock: n104 0 1 2 3 4 open 
+
+.clb n100
+pinlist: s00[1] s00[0] i[6] i[4] n100 open 
+subblock: n100 0 1 2 3 4 open 
+
+.clb n247
+pinlist: i[1] i[0] s11[1] s11[0] n247 open 
+subblock: n247 0 1 2 3 4 open 
+
+.clb n204
+pinlist: i[6] i[4] s08[1] s08[0] n204 open 
+subblock: n204 0 1 2 3 4 open 
+
+.clb n191
+pinlist: i[6] i[4] s07[1] s07[0] n191 open 
+subblock: n191 0 1 2 3 4 open 
+
+.clb n269
+pinlist: i[6] i[4] s13[1] s13[0] n269 open 
+subblock: n269 0 1 2 3 4 open 
+
+.clb n273
+pinlist: i[1] i[0] s13[1] s13[0] n273 open 
+subblock: n273 0 1 2 3 4 open 
+
+.clb n178
+pinlist: i[6] i[4] s06[1] s06[0] n178 open 
+subblock: n178 0 1 2 3 4 open 
+
+.clb n139
+pinlist: i[6] i[4] s03[1] s03[0] n139 open 
+subblock: n139 0 1 2 3 4 open 
+
+.clb n169
+pinlist: i[1] i[0] s05[1] s05[0] n169 open 
+subblock: n169 0 1 2 3 4 open 
+
+.clb n286
+pinlist: i[1] i[0] s14[1] s14[0] n286 open 
+subblock: n286 0 1 2 3 4 open 
+
+.clb n165
+pinlist: i[6] i[4] s05[1] s05[0] n165 open 
+subblock: n165 0 1 2 3 4 open 
+
+.clb n295
+pinlist: i[6] i[4] s15[1] s15[0] n295 open 
+subblock: n295 0 1 2 3 4 open 
+
+.clb n217
+pinlist: i[6] i[4] s09[1] s09[0] n217 open 
+subblock: n217 0 1 2 3 4 open 
+
+.clb n156
+pinlist: i[1] i[0] s04[1] s04[0] n156 open 
+subblock: n156 0 1 2 3 4 open 
+
+.clb n126
+pinlist: i[6] i[4] s02[1] s02[0] n126 open 
+subblock: n126 0 1 2 3 4 open 
+
+.clb n152
+pinlist: i[6] i[4] s04[1] s04[0] n152 open 
+subblock: n152 0 1 2 3 4 open 
+
+.clb n299
+pinlist: i[1] i[0] s15[1] s15[0] n299 open 
+subblock: n299 0 1 2 3 4 open 
+
+.clb n143
+pinlist: i[1] i[0] s03[1] s03[0] n143 open 
+subblock: n143 0 1 2 3 4 open 
+
+.clb n182
+pinlist: i[1] i[0] s06[1] s06[0] n182 open 
+subblock: n182 0 1 2 3 4 open 
+
+.clb n195
+pinlist: i[1] i[0] s07[1] s07[0] n195 open 
+subblock: n195 0 1 2 3 4 open 
+
+.clb n282
+pinlist: i[6] i[4] s14[1] s14[0] n282 open 
+subblock: n282 0 1 2 3 4 open 
+
+.clb n260
+pinlist: i[1] i[0] s12[1] s12[0] n260 open 
+subblock: n260 0 1 2 3 4 open 
+
+.clb n224
+pinlist: i[13] s09[0] s09[3] n223 n224 open 
+subblock: n224 0 1 2 3 4 open 
+
+.clb n107
+pinlist: s00[0] s00[3] i[13] n106 n107 open 
+subblock: n107 0 1 2 3 4 open 
+
+.clb n259
+pinlist: i[2] i[3] s12[1] n260 n259 open 
+subblock: n259 0 1 2 3 4 open 
+
+.clb n246
+pinlist: i[2] i[3] s11[1] n247 n246 open 
+subblock: n246 0 1 2 3 4 open 
+
+.clb n233
+pinlist: i[2] i[3] s10[1] n234 n233 open 
+subblock: n233 0 1 2 3 4 open 
+
+.clb n116
+pinlist: i[2] i[3] s01[1] n117 n116 open 
+subblock: n116 0 1 2 3 4 open 
+
+.clb n220
+pinlist: i[2] i[3] s09[1] n221 n220 open 
+subblock: n220 0 1 2 3 4 open 
+
+.clb n120
+pinlist: i[13] s01[0] s01[3] n119 n120 open 
+subblock: n120 0 1 2 3 4 open 
+
+.clb n103
+pinlist: s00[1] i[2] i[3] n104 n103 open 
+subblock: n103 0 1 2 3 4 open 
+
+.clb n207
+pinlist: i[2] i[3] s08[1] n208 n207 open 
+subblock: n207 0 1 2 3 4 open 
+
+.clb n237
+pinlist: i[13] s10[0] s10[3] n236 n237 open 
+subblock: n237 0 1 2 3 4 open 
+
+.clb n250
+pinlist: i[13] s11[0] s11[3] n249 n250 open 
+subblock: n250 0 1 2 3 4 open 
+
+.clb n198
+pinlist: i[13] s07[0] s07[3] n197 n198 open 
+subblock: n198 0 1 2 3 4 open 
+
+.clb n194
+pinlist: i[2] i[3] s07[1] n195 n194 open 
+subblock: n194 0 1 2 3 4 open 
+
+.clb n129
+pinlist: i[2] i[3] s02[1] n130 n129 open 
+subblock: n129 0 1 2 3 4 open 
+
+.clb n185
+pinlist: i[13] s06[0] s06[3] n184 n185 open 
+subblock: n185 0 1 2 3 4 open 
+
+.clb n181
+pinlist: i[2] i[3] s06[1] n182 n181 open 
+subblock: n181 0 1 2 3 4 open 
+
+.clb n289
+pinlist: i[13] s14[0] s14[3] n288 n289 open 
+subblock: n289 0 1 2 3 4 open 
+
+.clb n263
+pinlist: i[13] s12[0] s12[3] n262 n263 open 
+subblock: n263 0 1 2 3 4 open 
+
+.clb n172
+pinlist: i[13] s05[0] s05[3] n171 n172 open 
+subblock: n172 0 1 2 3 4 open 
+
+.clb n168
+pinlist: i[2] i[3] s05[1] n169 n168 open 
+subblock: n168 0 1 2 3 4 open 
+
+.clb n302
+pinlist: i[13] s15[0] s15[3] n301 n302 open 
+subblock: n302 0 1 2 3 4 open 
+
+.clb n159
+pinlist: i[13] s04[0] s04[3] n158 n159 open 
+subblock: n159 0 1 2 3 4 open 
+
+.clb n155
+pinlist: i[2] i[3] s04[1] n156 n155 open 
+subblock: n155 0 1 2 3 4 open 
+
+.clb n146
+pinlist: i[13] s03[0] s03[3] n145 n146 open 
+subblock: n146 0 1 2 3 4 open 
+
+.clb n211
+pinlist: i[13] s08[0] s08[3] n210 n211 open 
+subblock: n211 0 1 2 3 4 open 
+
+.clb n298
+pinlist: i[2] i[3] s15[1] n299 n298 open 
+subblock: n298 0 1 2 3 4 open 
+
+.clb n142
+pinlist: i[2] i[3] s03[1] n143 n142 open 
+subblock: n142 0 1 2 3 4 open 
+
+.clb n285
+pinlist: i[2] i[3] s14[1] n286 n285 open 
+subblock: n285 0 1 2 3 4 open 
+
+.clb n276
+pinlist: i[13] s13[0] s13[3] n275 n276 open 
+subblock: n276 0 1 2 3 4 open 
+
+.clb n133
+pinlist: i[13] s02[0] s02[3] n132 n133 open 
+subblock: n133 0 1 2 3 4 open 
+
+.clb n272
+pinlist: i[2] i[3] s13[1] n273 n272 open 
+subblock: n272 0 1 2 3 4 open 
+
+.clb n248
+pinlist: i[15] s11[0] n249 n250 n248 open 
+subblock: n248 0 1 2 3 4 open 
+
+.clb n235
+pinlist: i[15] s10[0] n236 n237 n235 open 
+subblock: n235 0 1 2 3 4 open 
+
+.clb n118
+pinlist: i[15] s01[0] n119 n120 n118 open 
+subblock: n118 0 1 2 3 4 open 
+
+.clb n222
+pinlist: i[15] s09[0] n223 n224 n222 open 
+subblock: n222 0 1 2 3 4 open 
+
+.clb n209
+pinlist: i[15] s08[0] n210 n211 n209 open 
+subblock: n209 0 1 2 3 4 open 
+
+.clb n196
+pinlist: i[15] s07[0] n197 n198 n196 open 
+subblock: n196 0 1 2 3 4 open 
+
+.clb n261
+pinlist: i[15] s12[0] n262 n263 n261 open 
+subblock: n261 0 1 2 3 4 open 
+
+.clb n131
+pinlist: i[15] s02[0] n132 n133 n131 open 
+subblock: n131 0 1 2 3 4 open 
+
+.clb n183
+pinlist: i[15] s06[0] n184 n185 n183 open 
+subblock: n183 0 1 2 3 4 open 
+
+.clb n170
+pinlist: i[15] s05[0] n171 n172 n170 open 
+subblock: n170 0 1 2 3 4 open 
+
+.clb n144
+pinlist: i[15] s03[0] n145 n146 n144 open 
+subblock: n144 0 1 2 3 4 open 
+
+.clb n157
+pinlist: i[15] s04[0] n158 n159 n157 open 
+subblock: n157 0 1 2 3 4 open 
+
+.clb n105
+pinlist: s00[0] i[15] n106 n107 n105 open 
+subblock: n105 0 1 2 3 4 open 
+
+.clb n300
+pinlist: i[15] s15[0] n301 n302 n300 open 
+subblock: n300 0 1 2 3 4 open 
+
+.clb n287
+pinlist: i[15] s14[0] n288 n289 n287 open 
+subblock: n287 0 1 2 3 4 open 
+
+.clb n274
+pinlist: i[15] s13[0] n275 n276 n274 open 
+subblock: n274 0 1 2 3 4 open 
+
+.clb n127
+pinlist: i[7] s02[0] open open n127 open 
+subblock: n127 0 1 open open 4 open 
+
+.clb n257
+pinlist: i[7] s12[0] open open n257 open 
+subblock: n257 0 1 open open 4 open 
+
+.clb n244
+pinlist: i[7] s11[0] open open n244 open 
+subblock: n244 0 1 open open 4 open 
+
+.clb n114
+pinlist: i[7] s01[0] open open n114 open 
+subblock: n114 0 1 open open 4 open 
+
+.clb n232
+pinlist: i[5] s10[0] open open n232 open 
+subblock: n232 0 1 open open 4 open 
+
+.clb n231
+pinlist: i[7] s10[0] open open n231 open 
+subblock: n231 0 1 open open 4 open 
+
+.clb n115
+pinlist: i[5] s01[0] open open n115 open 
+subblock: n115 0 1 open open 4 open 
+
+.clb n219
+pinlist: i[5] s09[0] open open n219 open 
+subblock: n219 0 1 open open 4 open 
+
+.clb n218
+pinlist: i[7] s09[0] open open n218 open 
+subblock: n218 0 1 open open 4 open 
+
+.clb n102
+pinlist: s00[0] i[5] open open n102 open 
+subblock: n102 0 1 open open 4 open 
+
+.clb n101
+pinlist: s00[0] i[7] open open n101 open 
+subblock: n101 0 1 open open 4 open 
+
+.clb n206
+pinlist: i[5] s08[0] open open n206 open 
+subblock: n206 0 1 open open 4 open 
+
+.clb n205
+pinlist: i[7] s08[0] open open n205 open 
+subblock: n205 0 1 open open 4 open 
+
+.clb n258
+pinlist: i[5] s12[0] open open n258 open 
+subblock: n258 0 1 open open 4 open 
+
+.clb n193
+pinlist: i[5] s07[0] open open n193 open 
+subblock: n193 0 1 open open 4 open 
+
+.clb n128
+pinlist: i[5] s02[0] open open n128 open 
+subblock: n128 0 1 open open 4 open 
+
+.clb n192
+pinlist: i[7] s07[0] open open n192 open 
+subblock: n192 0 1 open open 4 open 
+
+.clb n180
+pinlist: i[5] s06[0] open open n180 open 
+subblock: n180 0 1 open open 4 open 
+
+.clb n179
+pinlist: i[7] s06[0] open open n179 open 
+subblock: n179 0 1 open open 4 open 
+
+.clb n167
+pinlist: i[5] s05[0] open open n167 open 
+subblock: n167 0 1 open open 4 open 
+
+.clb n166
+pinlist: i[7] s05[0] open open n166 open 
+subblock: n166 0 1 open open 4 open 
+
+.clb n154
+pinlist: i[5] s04[0] open open n154 open 
+subblock: n154 0 1 open open 4 open 
+
+.clb n153
+pinlist: i[7] s04[0] open open n153 open 
+subblock: n153 0 1 open open 4 open 
+
+.clb n297
+pinlist: i[5] s15[0] open open n297 open 
+subblock: n297 0 1 open open 4 open 
+
+.clb n296
+pinlist: i[7] s15[0] open open n296 open 
+subblock: n296 0 1 open open 4 open 
+
+.clb n141
+pinlist: i[5] s03[0] open open n141 open 
+subblock: n141 0 1 open open 4 open 
+
+.clb n140
+pinlist: i[7] s03[0] open open n140 open 
+subblock: n140 0 1 open open 4 open 
+
+.clb n284
+pinlist: i[5] s14[0] open open n284 open 
+subblock: n284 0 1 open open 4 open 
+
+.clb n283
+pinlist: i[7] s14[0] open open n283 open 
+subblock: n283 0 1 open open 4 open 
+
+.clb n245
+pinlist: i[5] s11[0] open open n245 open 
+subblock: n245 0 1 open open 4 open 
+
+.clb n271
+pinlist: i[5] s13[0] open open n271 open 
+subblock: n271 0 1 open open 4 open 
+
+.clb n270
+pinlist: i[7] s13[0] open open n270 open 
+subblock: n270 0 1 open open 4 open 
+
+.clb n264
+pinlist: i[10] i[11] s12[1] n265 n264 open 
+subblock: n264 0 1 2 3 4 open 
+
+.clb n121
+pinlist: i[10] i[11] s01[1] n122 n121 open 
+subblock: n121 0 1 2 3 4 open 
+
+.clb n238
+pinlist: i[10] i[11] s10[1] n239 n238 open 
+subblock: n238 0 1 2 3 4 open 
+
+.clb n225
+pinlist: i[10] i[11] s09[1] n226 n225 open 
+subblock: n225 0 1 2 3 4 open 
+
+.clb n108
+pinlist: i[10] s00[1] i[11] n109 n108 open 
+subblock: n108 0 1 2 3 4 open 
+
+.clb n212
+pinlist: i[10] i[11] s08[1] n213 n212 open 
+subblock: n212 0 1 2 3 4 open 
+
+.clb n251
+pinlist: i[10] i[11] s11[1] n252 n251 open 
+subblock: n251 0 1 2 3 4 open 
+
+.clb n199
+pinlist: i[10] i[11] s07[1] n200 n199 open 
+subblock: n199 0 1 2 3 4 open 
+
+.clb n186
+pinlist: i[10] i[11] s06[1] n187 n186 open 
+subblock: n186 0 1 2 3 4 open 
+
+.clb n173
+pinlist: i[10] i[11] s05[1] n174 n173 open 
+subblock: n173 0 1 2 3 4 open 
+
+.clb n160
+pinlist: i[10] i[11] s04[1] n161 n160 open 
+subblock: n160 0 1 2 3 4 open 
+
+.clb n303
+pinlist: i[10] i[11] s15[1] n304 n303 open 
+subblock: n303 0 1 2 3 4 open 
+
+.clb n147
+pinlist: i[10] i[11] s03[1] n148 n147 open 
+subblock: n147 0 1 2 3 4 open 
+
+.clb n290
+pinlist: i[10] i[11] s14[1] n291 n290 open 
+subblock: n290 0 1 2 3 4 open 
+
+.clb n277
+pinlist: i[10] i[11] s13[1] n278 n277 open 
+subblock: n277 0 1 2 3 4 open 
+
+.clb n134
+pinlist: i[10] i[11] s02[1] n135 n134 open 
+subblock: n134 0 1 2 3 4 open 
+
+.clb n265
+pinlist: i[9] i[8] s12[1] s12[0] n265 open 
+subblock: n265 0 1 2 3 4 open 
+
+.clb n122
+pinlist: i[9] i[8] s01[1] s01[0] n122 open 
+subblock: n122 0 1 2 3 4 open 
+
+.clb n239
+pinlist: i[9] i[8] s10[1] s10[0] n239 open 
+subblock: n239 0 1 2 3 4 open 
+
+.clb n226
+pinlist: i[9] i[8] s09[1] s09[0] n226 open 
+subblock: n226 0 1 2 3 4 open 
+
+.clb n109
+pinlist: s00[1] i[9] s00[0] i[8] n109 open 
+subblock: n109 0 1 2 3 4 open 
+
+.clb n213
+pinlist: i[9] i[8] s08[1] s08[0] n213 open 
+subblock: n213 0 1 2 3 4 open 
+
+.clb n252
+pinlist: i[9] i[8] s11[1] s11[0] n252 open 
+subblock: n252 0 1 2 3 4 open 
+
+.clb n200
+pinlist: i[9] i[8] s07[1] s07[0] n200 open 
+subblock: n200 0 1 2 3 4 open 
+
+.clb n187
+pinlist: i[9] i[8] s06[1] s06[0] n187 open 
+subblock: n187 0 1 2 3 4 open 
+
+.clb n174
+pinlist: i[9] i[8] s05[1] s05[0] n174 open 
+subblock: n174 0 1 2 3 4 open 
+
+.clb n161
+pinlist: i[9] i[8] s04[1] s04[0] n161 open 
+subblock: n161 0 1 2 3 4 open 
+
+.clb n304
+pinlist: i[9] i[8] s15[1] s15[0] n304 open 
+subblock: n304 0 1 2 3 4 open 
+
+.clb n148
+pinlist: i[9] i[8] s03[1] s03[0] n148 open 
+subblock: n148 0 1 2 3 4 open 
+
+.clb n291
+pinlist: i[9] i[8] s14[1] s14[0] n291 open 
+subblock: n291 0 1 2 3 4 open 
+
+.clb n278
+pinlist: i[9] i[8] s13[1] s13[0] n278 open 
+subblock: n278 0 1 2 3 4 open 
+
+.clb n135
+pinlist: i[9] i[8] s02[1] s02[0] n135 open 
+subblock: n135 0 1 2 3 4 open 
+

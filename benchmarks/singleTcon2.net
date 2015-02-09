@@ -1,0 +1,21 @@
+.input i0
+pinlist: i0
+
+.input i1
+pinlist: i1
+
+.output o0
+pinlist: o0
+
+.output o1
+pinlist: o1
+
+.tcon tcon0
+sourcelist: i0 i1
+sinklist: o0 o1
+net: 0 0
+net: 1 1
+net: 0 1
+net: 1 0
+scheme: 0 1
+scheme: 2 3

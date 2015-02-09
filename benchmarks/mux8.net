@@ -1,0 +1,47 @@
+.input i0
+pinlist: i0
+
+.input i1
+pinlist: i1
+
+.input i2
+pinlist: i2
+
+.input i3
+pinlist: i3
+
+.input i4
+pinlist: i4
+
+.input i5
+pinlist: i5
+
+.input i6
+pinlist: i6
+
+.input i7
+pinlist: i7
+
+
+.output o0
+pinlist: o0
+
+.tcon tcon0
+sourcelist: i0 i1 i2 i3 i4 i5 i6 i7 
+sinklist: o0
+scheme:
+net: 0 0
+scheme:
+net: 1 0
+scheme:
+net: 2 0
+scheme:
+net: 3 0
+scheme:
+net: 4 0
+scheme:
+net: 5 0
+scheme:
+net: 6 0
+scheme:
+net: 7 0

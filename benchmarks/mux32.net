@@ -1,0 +1,200 @@
+net: 0 0
+net: 0 1.clb i0
+pinlist: open open open open i0 open
+subblock: block open open open open 4 open
+
+.clb i1
+pinlist: open open open open i1 open
+subblock: block open open open open 4 open
+
+.clb i2
+pinlist: open open open open i2 open
+subblock: block open open open open 4 open
+
+.clb i3
+pinlist: open open open open i3 open
+subblock: block open open open open 4 open
+
+.clb i4
+pinlist: open open open open i4 open
+subblock: block open open open open 4 open
+
+.clb i5
+pinlist: open open open open i5 open
+subblock: block open open open open 4 open
+
+.clb i6
+pinlist: open open open open i6 open
+subblock: block open open open open 4 open
+
+.clb i7
+pinlist: open open open open i7 open
+subblock: block open open open open 4 open
+
+.clb i8
+pinlist: open open open open i8 open
+subblock: block open open open open 4 open
+
+.clb i9
+pinlist: open open open open i9 open
+subblock: block open open open open 4 open
+
+.clb i10
+pinlist: open open open open i10 open
+subblock: block open open open open 4 open
+
+.clb i11
+pinlist: open open open open i11 open
+subblock: block open open open open 4 open
+
+.clb i12
+pinlist: open open open open i12 open
+subblock: block open open open open 4 open
+
+.clb i13
+pinlist: open open open open i13 open
+subblock: block open open open open 4 open
+
+.clb i14
+pinlist: open open open open i14 open
+subblock: block open open open open 4 open
+
+.clb i15
+pinlist: open open open open i15 open
+subblock: block open open open open 4 open
+
+.clb i16
+pinlist: open open open open i16 open
+subblock: block open open open open 4 open
+
+.clb i17
+pinlist: open open open open i17 open
+subblock: block open open open open 4 open
+
+.clb i18
+pinlist: open open open open i18 open
+subblock: block open open open open 4 open
+
+.clb i19
+pinlist: open open open open i19 open
+subblock: block open open open open 4 open
+
+.clb i20
+pinlist: open open open open i20 open
+subblock: block open open open open 4 open
+
+.clb i21
+pinlist: open open open open i21 open
+subblock: block open open open open 4 open
+
+.clb i22
+pinlist: open open open open i22 open
+subblock: block open open open open 4 open
+
+.clb i23
+pinlist: open open open open i23 open
+subblock: block open open open open 4 open
+
+.clb i24
+pinlist: open open open open i24 open
+subblock: block open open open open 4 open
+
+.clb i25
+pinlist: open open open open i25 open
+subblock: block open open open open 4 open
+
+.clb i26
+pinlist: open open open open i26 open
+subblock: block open open open open 4 open
+
+.clb i27
+pinlist: open open open open i27 open
+subblock: block open open open open 4 open
+
+.clb i28
+pinlist: open open open open i28 open
+subblock: block open open open open 4 open
+
+.clb i29
+pinlist: open open open open i29 open
+subblock: block open open open open 4 open
+
+.clb i30
+pinlist: open open open open i30 open
+subblock: block open open open open 4 open
+
+.clb i31
+pinlist: open open open open i31 open
+subblock: block open open open open 4 open
+
+.clb o0
+pinlist: o0 open open open open open
+subblock: block 0 open open open open open
+
+.tcon tcon0
+sourcelist: i0 i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i11 i12 i13 i14 i15 i16 i17 i18 i19 i20 i21 i22 i23 i24 i25 i26 i27 i28 i29 i30 i31
+sinklist: o0
+scheme:
+net: 0 0
+scheme:
+net: 1 0
+scheme:
+net: 2 0
+scheme:
+net: 3 0
+scheme:
+net: 4 0
+scheme:
+net: 5 0
+scheme:
+net: 6 0
+scheme:
+net: 7 0
+scheme:
+net: 8 0
+scheme:
+net: 9 0
+scheme:
+net: 10 0
+scheme:
+net: 11 0
+scheme:
+net: 12 0
+scheme:
+net: 13 0
+scheme:
+net: 14 0
+scheme:
+net: 15 0
+scheme:
+net: 16 0
+scheme:
+net: 17 0
+scheme:
+net: 18 0
+scheme:
+net: 19 0
+scheme:
+net: 20 0
+scheme:
+net: 21 0
+scheme:
+net: 22 0
+scheme:
+net: 23 0
+scheme:
+net: 24 0
+scheme:
+net: 25 0
+scheme:
+net: 26 0
+scheme:
+net: 27 0
+scheme:
+net: 28 0
+scheme:
+net: 29 0
+scheme:
+net: 30 0
+scheme:
+net: 31 0

@@ -1,0 +1,11 @@
+.input in1
+pinlist: in1
+
+.output out1
+pinlist: in1
+
+.input in2
+pinlist: in2
+
+.output out2
+pinlist: in2  

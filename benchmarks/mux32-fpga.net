@@ -1,0 +1,261 @@
+.clb i[0]
+pinlist: open open open open i[0] open
+subblock: block open open open open 4 open
+
+.clb i[1]
+pinlist: open open open open i[1] open
+subblock: block open open open open 4 open
+
+.clb i[2]
+pinlist: open open open open i[2] open
+subblock: block open open open open 4 open
+
+.clb i[3]
+pinlist: open open open open i[3] open
+subblock: block open open open open 4 open
+
+.clb i[4]
+pinlist: open open open open i[4] open
+subblock: block open open open open 4 open
+
+.clb i[5]
+pinlist: open open open open i[5] open
+subblock: block open open open open 4 open
+
+.clb i[6]
+pinlist: open open open open i[6] open
+subblock: block open open open open 4 open
+
+.clb i[7]
+pinlist: open open open open i[7] open
+subblock: block open open open open 4 open
+
+.clb i[8]
+pinlist: open open open open i[8] open
+subblock: block open open open open 4 open
+
+.clb i[9]
+pinlist: open open open open i[9] open
+subblock: block open open open open 4 open
+
+.clb i[10]
+pinlist: open open open open i[10] open
+subblock: block open open open open 4 open
+
+.clb i[11]
+pinlist: open open open open i[11] open
+subblock: block open open open open 4 open
+
+.clb i[12]
+pinlist: open open open open i[12] open
+subblock: block open open open open 4 open
+
+.clb i[13]
+pinlist: open open open open i[13] open
+subblock: block open open open open 4 open
+
+.clb i[14]
+pinlist: open open open open i[14] open
+subblock: block open open open open 4 open
+
+.clb i[15]
+pinlist: open open open open i[15] open
+subblock: block open open open open 4 open
+
+.clb i[16]
+pinlist: open open open open i[16] open
+subblock: block open open open open 4 open
+
+.clb i[17]
+pinlist: open open open open i[17] open
+subblock: block open open open open 4 open
+
+.clb i[18]
+pinlist: open open open open i[18] open
+subblock: block open open open open 4 open
+
+.clb i[19]
+pinlist: open open open open i[19] open
+subblock: block open open open open 4 open
+
+.clb i[20]
+pinlist: open open open open i[20] open
+subblock: block open open open open 4 open
+
+.clb i[21]
+pinlist: open open open open i[21] open
+subblock: block open open open open 4 open
+
+.clb i[22]
+pinlist: open open open open i[22] open
+subblock: block open open open open 4 open
+
+.clb i[23]
+pinlist: open open open open i[23] open
+subblock: block open open open open 4 open
+
+.clb i[24]
+pinlist: open open open open i[24] open
+subblock: block open open open open 4 open
+
+.clb i[25]
+pinlist: open open open open i[25] open
+subblock: block open open open open 4 open
+
+.clb i[26]
+pinlist: open open open open i[26] open
+subblock: block open open open open 4 open
+
+.clb i[27]
+pinlist: open open open open i[27] open
+subblock: block open open open open 4 open
+
+.clb i[28]
+pinlist: open open open open i[28] open
+subblock: block open open open open 4 open
+
+.clb i[29]
+pinlist: open open open open i[29] open
+subblock: block open open open open 4 open
+
+.clb i[30]
+pinlist: open open open open i[30] open
+subblock: block open open open open 4 open
+
+.clb i[31]
+pinlist: open open open open i[31] open
+subblock: block open open open open 4 open
+
+.clb o0
+pinlist: o open open open open open
+subblock: block 0 open open open open open
+
+.clb s[0]
+pinlist: open open open open s[0] open
+subblock: block open open open open 4 open
+
+.clb s[1]
+pinlist: open open open open s[1] open
+subblock: block open open open open 4 open
+
+.clb s[2]
+pinlist: open open open open s[2] open
+subblock: block open open open open 4 open
+
+.clb s[3]
+pinlist: open open open open s[3] open
+subblock: block open open open open 4 open
+
+.clb s[4]
+pinlist: open open open open s[4] open
+subblock: block open open open open 4 open
+
+
+.clb o
+pinlist: s[4] n40 n53 open o open 
+subblock: o 0 1 2 open 4 open 
+
+.clb n53
+pinlist: s[3] n54 n61 n64 n53 open 
+subblock: n53 0 1 2 3 4 open 
+
+.clb n40
+pinlist: s[1] n41 n48 n51 n40 open 
+subblock: n40 0 1 2 3 4 open 
+
+.clb n41
+pinlist: s[1] s[0] n42 n46 n41 open 
+subblock: n41 0 1 2 3 4 open 
+
+.clb n54
+pinlist: s[3] s[2] n55 n59 n54 open 
+subblock: n54 0 1 2 3 4 open 
+
+.clb n55
+pinlist: s[3] n56 n57 n58 n55 open 
+subblock: n55 0 1 2 3 4 open 
+
+.clb n42
+pinlist: s[1] n43 n44 n45 n42 open 
+subblock: n42 0 1 2 3 4 open 
+
+.clb n49
+pinlist: s[3] s[2] i[23] i[19] n49 open 
+subblock: n49 0 1 2 3 4 open 
+
+.clb n62
+pinlist: s[1] s[0] i[14] i[12] n62 open 
+subblock: n62 0 1 2 3 4 open 
+
+.clb n43
+pinlist: s[3] s[2] i[21] i[17] n43 open 
+subblock: n43 0 1 2 3 4 open 
+
+.clb n47
+pinlist: s[3] s[2] i[24] i[16] n47 open 
+subblock: n47 0 1 2 3 4 open 
+
+.clb n56
+pinlist: s[1] s[0] i[6] i[4] n56 open 
+subblock: n56 0 1 2 3 4 open 
+
+.clb n60
+pinlist: s[1] s[0] i[1] i[0] n60 open 
+subblock: n60 0 1 2 3 4 open 
+
+.clb n59
+pinlist: s[1] i[2] i[3] n60 n59 open 
+subblock: n59 0 1 2 3 4 open 
+
+.clb n46
+pinlist: s[2] i[20] i[28] n47 n46 open 
+subblock: n46 0 1 2 3 4 open 
+
+.clb n50
+pinlist: s[1] s[3] i[27] n49 n50 open 
+subblock: n50 0 1 2 3 4 open 
+
+.clb n63
+pinlist: s[0] s[3] i[13] n62 n63 open 
+subblock: n63 0 1 2 3 4 open 
+
+.clb n48
+pinlist: s[3] i[31] n49 n50 n48 open 
+subblock: n48 0 1 2 3 4 open 
+
+.clb n61
+pinlist: s[0] i[15] n62 n63 n61 open 
+subblock: n61 0 1 2 3 4 open 
+
+.clb n45
+pinlist: s[3] i[25] open open n45 open 
+subblock: n45 0 1 open open 4 open 
+
+.clb n44
+pinlist: s[3] i[29] open open n44 open 
+subblock: n44 0 1 open open 4 open 
+
+.clb n57
+pinlist: s[0] i[7] open open n57 open 
+subblock: n57 0 1 open open 4 open 
+
+.clb n58
+pinlist: s[0] i[5] open open n58 open 
+subblock: n58 0 1 open open 4 open 
+
+.clb n51
+pinlist: s[2] i[22] i[30] n52 n51 open 
+subblock: n51 0 1 2 3 4 open 
+
+.clb n64
+pinlist: i[10] s[1] i[11] n65 n64 open 
+subblock: n64 0 1 2 3 4 open 
+
+.clb n52
+pinlist: s[3] s[2] i[26] i[18] n52 open 
+subblock: n52 0 1 2 3 4 open 
+
+.clb n65
+pinlist: s[1] i[9] s[0] i[8] n65 open 
+subblock: n65 0 1 2 3 4 open 
+

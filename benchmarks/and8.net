@@ -1,0 +1,40 @@
+.input in0
+pinlist: in0
+
+.input in1
+pinlist: in1
+
+.input in2
+pinlist: in2
+
+.input in3
+pinlist: in3
+
+.input in4
+pinlist: in4
+
+.input in5
+pinlist: in5
+
+.input in6
+pinlist: in6
+
+.input in7
+pinlist: in7
+
+.clb and0
+pinlist: in0 in1 in2 in3 and0 open 
+subblock: and0 0 1 2 3 4 open 
+
+.clb and1
+pinlist: in4 in5 in6 in7 and1 open 
+subblock: and1 0 1 2 3 4 open 
+
+.clb and3
+pinlist: and0 and1 open open out open 
+subblock: and3 0 1 open open 4 open 
+
+
+.output out
+pinlist: out  
+
