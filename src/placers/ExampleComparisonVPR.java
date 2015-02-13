@@ -9,8 +9,10 @@ import java.util.Iterator;
 import java.util.Random;
 
 import architecture.FourLutSanitized;
+import packers.BlePacker;
 import placement.parser.Placement;
 import placement.parser.Readplaatsing;
+import prepackedcircuit.Ble;
 import prepackedcircuit.Flipflop;
 import prepackedcircuit.Lut;
 import prepackedcircuit.PrePackedCircuit;
@@ -69,8 +71,8 @@ public class ExampleComparisonVPR {
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/2/i1.blif");
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/2/ecc.blif");
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/2/i1.blif");
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif");
 		}
 		catch(IOException ioe)
 		{
@@ -127,6 +129,56 @@ public class ExampleComparisonVPR {
 			}
 			System.out.println();
 		}
+		
+		System.out.println();
+		System.out.println();
+		System.out.println("PACKED CIRCUIT:");
+		BlePacker packer = new BlePacker(prePackedCircuit);
+		PrePackedCircuit packedCircuit = packer.pack();
+		Collection<Input> packedInputs = packedCircuit.getInputs().values();
+		System.out.println("Inputs: " + packedInputs.size());
+		for(Input input:packedInputs)
+		{
+			System.out.println(input.toString());
+		}
+		System.out.println();
+		Collection<Output> packedOutputs = packedCircuit.getOutputs().values();
+		System.out.println("Outputs: " + packedOutputs.size());
+		for(Output output:packedOutputs)
+		{
+			System.out.println(output.toString());
+		}
+		System.out.println();
+		Collection<Ble> packedBles = packedCircuit.getBles().values();
+		System.out.println("BLEs: " + packedBles.size());
+		int nbFlipflops = 0;
+		int nbLUTs = 0;
+		for(Ble ble:packedBles)
+		{
+			System.out.print("LUT: ");
+			if(ble.getLut() != null)
+			{
+				System.out.print(ble.getLut().name);
+				nbLUTs++;
+			}
+			else
+			{
+				System.out.print("none");
+			}
+			System.out.print(", FF: ");
+			if(ble.getFlipflop() != null)
+			{
+				System.out.print(ble.getFlipflop().name);
+				nbFlipflops++;
+			}
+			else
+			{
+				System.out.print("none");
+			}
+			System.out.println();
+		}
+		System.out.println("Nb of LUTs: " + nbLUTs);
+		System.out.println("Nb of FFs: " + nbFlipflops);
 		System.out.println();
 		
 		//****************************************************************************************************************************

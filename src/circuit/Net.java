@@ -31,6 +31,11 @@ public class Net extends Block{
 		source = net.source;
 		routeNodes = new HashSet<RouteNode>(net.routeNodes);
 		
+		// Make sure all cons of the sinks are well connected
+		for(int i = 0; i < sinks.size(); i++)
+		{
+			sinks.get(i).con = net.sinks.get(i).con;
+		}
 	}
 
 	public Net(String name) {
@@ -52,6 +57,11 @@ public class Net extends Block{
 		if (source==null){
 			source = output;
 			source.routingBlock = this;
+			// Make sure all sinks are well connected
+			for(int i = 0; i < sinks.size(); i++)
+			{
+				sinks.get(i).con = new Connection(source, sinks.get(i));
+			}
 		}else{
 			System.out.println("Net "+source.name+" has  multiple sources!");
 		}
@@ -61,6 +71,7 @@ public class Net extends Block{
 		if(!sinks.contains(input)){
 			sinks.add(input);
 			input.routingBlock = this;
+			input.con = new Connection(this.source, input);
 		}
 	}
 

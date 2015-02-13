@@ -22,8 +22,8 @@ public class Flipflop extends Block
 		super(name, BlockType.FLIPFLOP);
 		this.flipflopType = flipflopType;
 		this.initVal = initVal;
-		output = new Pin(name + "_in", PinType.SOURCE, this);
-		input = new Pin(name + "_out", PinType.SINK, this);
+		output = new Pin(name + "_out", PinType.SOURCE, this);
+		input = new Pin(name + "_in", PinType.SINK, this);
 		clock = new Pin(name + "_clock", PinType.SINK, this);
 	}
 

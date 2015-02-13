@@ -23,8 +23,6 @@ public class BlifReader
 	public PrePackedCircuit readBlif(String fileName) throws IOException
 	{
 		circuit = new PrePackedCircuit();
-		//Map<String,Pin> sourcePins = new HashMap<String,Pin>(); // net name, source pin of the net
-		//Map<String,Vector<Pin>> sinkPins = new HashMap<String,Vector<Pin>>(); // net name, sink pins of the net
 		Path path = Paths.get(fileName);
 		try(BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8))
 		{

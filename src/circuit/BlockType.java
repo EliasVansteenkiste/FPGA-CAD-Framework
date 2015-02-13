@@ -1,5 +1,5 @@
 package circuit;
 
 public enum BlockType {
-	CLB, LUT, FLIPFLOP, INPUT, OUTPUT, TCON, NET, BUNDLE
+	CLB, BLE, LUT, FLIPFLOP, INPUT, OUTPUT, TCON, NET, BUNDLE
 }
