@@ -27,7 +27,7 @@ public class Example {
 	 * @throws ParseException 
 	 */
 	public static void main(String[] args) throws FileNotFoundException, placement.parser.ParseException, ParseException {
-		String netFile = "cc.net";
+		String netFile = "benchmarks/cc.net";
 //		String placementOutFile = "cc.p";
 		int height = 12;
 		int width = 12;
