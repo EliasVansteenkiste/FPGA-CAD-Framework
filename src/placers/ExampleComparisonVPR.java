@@ -180,6 +180,27 @@ public class ExampleComparisonVPR {
 		System.out.println("Nb of LUTs: " + nbLUTs);
 		System.out.println("Nb of FFs: " + nbFlipflops);
 		System.out.println();
+		Iterator<Net> packedNetsIterator = packedCircuit.getNets().values().iterator();
+		System.out.println("Nets: " + packedCircuit.getNets().values().size());
+		while(packedNetsIterator.hasNext())
+		{
+			Net currentNet = packedNetsIterator.next();
+			System.out.print("Source: " + currentNet.source.name + " Sinks: ");
+			int vectorSize = currentNet.sinks.size();
+			for(int i = 0; i < vectorSize; i++)
+			{
+				if(i < vectorSize - 1)
+				{
+					System.out.print(currentNet.sinks.get(i).name + ", ");
+				}
+				else
+				{
+					System.out.print(currentNet.sinks.get(i).name);
+				}
+			}
+			System.out.println();
+		}
+		System.out.println();
 		
 		//****************************************************************************************************************************
 		// The above is new
