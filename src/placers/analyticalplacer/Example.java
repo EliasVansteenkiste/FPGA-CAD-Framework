@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import packers.BlePacker;
+import timinganalysis.TimingGraph;
 import circuit.Ble;
 import circuit.Flipflop;
 import circuit.Input;
@@ -24,8 +25,8 @@ public class Example
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -33,12 +34,15 @@ public class Example
 			return;
 		}
 		
-		printUnpackedCircuit(prePackedCircuit);
+		//printUnpackedCircuit(prePackedCircuit);
 		
 		BlePacker packer = new BlePacker(prePackedCircuit);
 		BlePackedCircuit blePackedCircuit = packer.pack();
 		
-		printBlePackedCircuit(blePackedCircuit);
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		//TimingGraph timingGraph = new TimingGraph();
+		//timingGraph.buildTimingGraph(prePackedCircuit);
 	}
 	
 	private static void printUnpackedCircuit(PrePackedCircuit prePackedCircuit)

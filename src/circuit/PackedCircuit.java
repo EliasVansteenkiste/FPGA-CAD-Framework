@@ -127,17 +127,6 @@ public class PackedCircuit extends Circuit{
 		}
 		stream.close();
 	}
-	
-	/*
-	 * Calculates the maximal Manhattan distance in the placed circuit
-	 */
-	public int calculateMHD()
-	{
-		// 1) build graph
-		// 		- CLBs, inputs and outputs as vertices
-		//		- every connection as edge with edge weight Manhattan distance
-		// 2) search path in graph with highest weight
-	}
 
 	public int totalRouteNodes() {
 		//Making one big set of all routenodes
