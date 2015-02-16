@@ -5,7 +5,7 @@ import java.util.Iterator;
 
 import circuit.Block;
 import circuit.BlockType;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Clb;
 import circuit.Input;
 import circuit.Net;
@@ -16,9 +16,9 @@ import circuit.PinType;
 import circuit.Pattern;
 
 public class WriteNetlist {
-	Circuit circuit;
+	PackedCircuit circuit;
 	
-	public WriteNetlist(Circuit c) {
+	public WriteNetlist(PackedCircuit c) {
 		circuit = c;
 	}
 

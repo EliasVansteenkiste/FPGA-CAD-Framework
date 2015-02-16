@@ -14,7 +14,7 @@ import architecture.FourLutSanitized;
 import architecture.IoSite;
 import architecture.RouteNode;
 import architecture.Site;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Net;
 import circuit.Pattern;
 import circuit.Tcon;
@@ -36,9 +36,9 @@ public class ArchitecturePanel extends JPanel {
 	private Map<Site, SiteData> siteData;
 
 	FourLutSanitized a;
-	Circuit c;
+	PackedCircuit c;
 
-	public ArchitecturePanel(int size, FourLutSanitized a, final Circuit c) {
+	public ArchitecturePanel(int size, FourLutSanitized a, final PackedCircuit c) {
 		this.a = a;
 
 		zoom = size

@@ -4,7 +4,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.JFrame;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Pattern;
 import circuit.Net;
 import circuit.Tcon;
@@ -30,7 +30,7 @@ public class MapViewer {
 	ConnectionPanel conPanel;
 
 	FourLutSanitized a;
-	Circuit c;
+	PackedCircuit c;
 	ArchitecturePanel architecturePanel;
 	Tcon selectedTcon;
 	Connection selectedCon;
@@ -133,7 +133,7 @@ public class MapViewer {
 
 	}
 
-	public MapViewer(FourLutSanitized a, Circuit c) {
+	public MapViewer(FourLutSanitized a, PackedCircuit c) {
 		super();
 		this.a = a;
 		this.c = c;

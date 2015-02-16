@@ -3,7 +3,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Clb;
 import circuit.Input;
 import circuit.Output;
@@ -15,7 +15,7 @@ import architecture.Site;
 
 public class Rplace {
 
-	public static void place(Circuit c, FourLutSanitized a) {
+	public static void place(PackedCircuit c, FourLutSanitized a) {
 		Random rand= new Random();
 		Set<Site> temp = new HashSet<Site>();
 		for (int x=1;x<a.width+1;x++) {
@@ -34,7 +34,7 @@ public class Rplace {
 		}
 	}
 	
-	public static void placeCLBs(Circuit c, FourLutSanitized a, Random rand) {
+	public static void placeCLBs(PackedCircuit c, FourLutSanitized a, Random rand) {
 		Set<Site> temp = new HashSet<Site>();
 		for (int x=1;x<a.width+1;x++) {
 			for (int y=1;y<a.height+1;y++) {
@@ -55,7 +55,7 @@ public class Rplace {
 	}
 	
 	
-	public static void placeCLBsandIOs(Circuit c, FourLutSanitized a, Random rand) {
+	public static void placeCLBsandIOs(PackedCircuit c, FourLutSanitized a, Random rand) {
 		//Random place CLBs
 		Set<Site> temp = new HashSet<Site>();
 		for (int x=1;x<a.width+1;x++) {

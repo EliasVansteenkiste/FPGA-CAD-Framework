@@ -1,19 +1,17 @@
-package prepackedcircuit;
+package circuit;
 
-import circuit.Block;
-import circuit.BlockType;
-import circuit.Pin;
-import circuit.PinType;
 
 public class Lut extends Block
 {
 	
 	private Pin[] outputs;
 	private Pin[] inputs;
+	private int nbInputs;
 	
 	public Lut(String name, int nbOutputs, int nbInputs)
 	{
 		super(name, BlockType.LUT);
+		this.nbInputs = nbInputs;
 		
 		outputs = new Pin[nbOutputs];
 		for(int i = 0; i < nbOutputs; i++)
@@ -34,6 +32,11 @@ public class Lut extends Block
 
 	public Pin[] getInputs() {
 		return inputs;
+	}
+	
+	public int getNbInputs()
+	{
+		return this.nbInputs;
 	}
 	
 }

@@ -1,11 +1,11 @@
 package placers;
 
 //import circuit.Block;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 
 public interface CostCalculator {
 	
-	public abstract Circuit getCircuit();
+	public abstract PackedCircuit getCircuit();
 
 	public abstract double calculateTotalCost();
 

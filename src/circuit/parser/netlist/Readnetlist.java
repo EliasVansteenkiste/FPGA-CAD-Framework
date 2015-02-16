@@ -8,7 +8,7 @@ import circuit.*;
 
 public class Readnetlist implements ReadnetlistConstants {
 
-  Circuit circuit;
+  PackedCircuit circuit;
   Vector<String> global;
 
   private Net getAndOrMakeNet (String name) {
@@ -22,8 +22,8 @@ public class Readnetlist implements ReadnetlistConstants {
         return net;
   }
 
-  public Circuit read(boolean excludeGlobals) throws ParseException, FileNotFoundException  {
-    circuit = new Circuit();
+  public PackedCircuit read(boolean excludeGlobals) throws ParseException, FileNotFoundException  {
+    circuit = new PackedCircuit();
     global = new Vector<String>();
     Netlist();
     if(excludeGlobals)

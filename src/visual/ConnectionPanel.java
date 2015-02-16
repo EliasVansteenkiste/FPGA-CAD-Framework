@@ -17,7 +17,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import circuit.Connection;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 
 import java.util.*;
 
@@ -32,7 +32,7 @@ public class ConnectionPanel extends JPanel {
 
 	ItemListener itemListener;
 
-	public ConnectionPanel(ItemListener itemListener, Circuit c) {
+	public ConnectionPanel(ItemListener itemListener, PackedCircuit c) {
 		super();
 		this.itemListener = itemListener;
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));

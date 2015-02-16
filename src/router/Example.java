@@ -11,7 +11,7 @@ import placers.Rplace;
 import placers.Vplace;
 
 import architecture.FourLutSanitized;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.parser.netlist.ParseException;
 import circuit.parser.netlist.Readnetlist;
 
@@ -35,7 +35,7 @@ public class Example {
 		
 		System.out.println("Read in netlist...");
 		Readnetlist parser=new Readnetlist(new FileInputStream(new File(netFile)));
-		Circuit c=parser.read(true);
+		PackedCircuit c=parser.read(true);
 
 		System.out.println("Constructing architecture...");
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);

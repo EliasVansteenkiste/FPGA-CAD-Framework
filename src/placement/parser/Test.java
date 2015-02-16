@@ -3,7 +3,7 @@ package placement.parser;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.parser.netlist.Readnetlist;
 
 public class Test {
@@ -20,7 +20,7 @@ public class Test {
 		Readplaatsing plaats_parser=new Readplaatsing(new FileInputStream("e64-4lut.p"));
 		Placement p=plaats_parser.read();
 		Readnetlist netlist_parser=new Readnetlist(new FileInputStream("e64-4lut.net"));
-		Circuit c=netlist_parser.read(true);
+		PackedCircuit c=netlist_parser.read(true);
 		
 		Placement IO_p=p.IOPlacement(c);
 		

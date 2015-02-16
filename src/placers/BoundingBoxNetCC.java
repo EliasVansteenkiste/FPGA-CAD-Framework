@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import circuit.Block;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Clb;
 import circuit.Input;
 import circuit.Output;
@@ -13,15 +13,15 @@ import circuit.Net;;
 public class BoundingBoxNetCC implements CostCalculator {
 	Map<Net, BoundingBoxData> netData;
 	Map<Block, BlockData> blockData;
-	Circuit circuit;
+	PackedCircuit circuit;
 	
 
-	public BoundingBoxNetCC(Circuit c) {
+	public BoundingBoxNetCC(PackedCircuit c) {
 		this.circuit=c;
 		this.initializeData();
 	}
 	
-	public Circuit getCircuit(){
+	public PackedCircuit getCircuit(){
 		return circuit;
 	}
 

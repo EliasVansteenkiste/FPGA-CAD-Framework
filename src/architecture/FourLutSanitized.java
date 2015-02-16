@@ -3,7 +3,7 @@ package architecture;
 
 import java.util.Vector;
 
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Clb;
 import circuit.Input;
 import circuit.Output;
@@ -135,7 +135,7 @@ public class FourLutSanitized extends Architecture {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public FourLutSanitized(FourLutSanitized a, Circuit c, int channelWidth) {
+	public FourLutSanitized(FourLutSanitized a, PackedCircuit c, int channelWidth) {
 		super();
 		this.width=a.width;
 		this.height=a.height;

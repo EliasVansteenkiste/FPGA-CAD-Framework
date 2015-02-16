@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 import java.util.Random;
 
 import architecture.FourLutSanitized;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.parser.netlist.ParseException;
 import circuit.parser.netlist.Readnetlist;
 
@@ -40,7 +40,7 @@ public class ExampleParallelPlacer {
 // why not reading net list if it means to show that cc.net is found	
 		System.out.println("Read in netlist.");
 		Readnetlist parser=new Readnetlist(new FileInputStream(new File(netFile)));
-		Circuit c=parser.read(true);
+		PackedCircuit c=parser.read(true);
 	
 		System.out.println("Constructing architecture.");
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);

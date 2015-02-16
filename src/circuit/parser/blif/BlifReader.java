@@ -1,4 +1,4 @@
-package prepackedcircuit.parser.blif;
+package circuit.parser.blif;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -7,20 +7,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import circuit.Flipflop;
 import circuit.Input;
+import circuit.Lut;
 import circuit.Net;
 import circuit.Output;
+import circuit.PrePackedCircuit;
 
-import prepackedcircuit.Flipflop;
-import prepackedcircuit.Lut;
-import prepackedcircuit.PrePackedCircuit;
 
 public class BlifReader 
 {
 	
 	private PrePackedCircuit circuit;
 	
-	public PrePackedCircuit readBlif(String fileName) throws IOException
+	public PrePackedCircuit readBlif(String fileName, int nbLutInputs) throws IOException
 	{
 		circuit = new PrePackedCircuit();
 		Path path = Paths.get(fileName);
@@ -50,13 +50,17 @@ public class BlifReader
 							processOutputs(command);
 							break;
 						case ".names":
-							processNames(command);
+							boolean succes = processNames(command, nbLutInputs);
 							reader.mark(200);
 							while(!reader.readLine().startsWith(".")) //skip truth table
 							{
 								reader.mark(200);
 							}
 							reader.reset(); //reset reader to last mark
+							if(!succes)
+							{
+								return null;
+							}
 							break;
 						case ".latch":
 							processLatch(command);
@@ -107,26 +111,37 @@ public class BlifReader
 		}
 	}
 	
-	private void processNames(String[] command)
+	/*
+	 * Returns false if failed, true if succeeded
+	 */
+	private boolean processNames(String[] command, int nbLutInputs)
 	{
-		Lut lut = new Lut(command[command.length - 1], 1, command.length - 2); //name of LUT = output of LUT
-		circuit.addLut(lut);
-		// Take care of nets that are LUT inputs
-		for(int i = 1; i <= command.length - 2; i++)
+		if(command.length - 2 > nbLutInputs)
 		{
-			if(!circuit.getNets().containsKey(command[i])) //net still needs to be added to the nets hashmap
+			return false;
+		}
+		else
+		{
+			Lut lut = new Lut(command[command.length - 1], 1, nbLutInputs); //name of LUT = output of LUT
+			circuit.addLut(lut);
+			// Take care of nets that are LUT inputs
+			for(int i = 1; i <= command.length - 2; i++)
 			{
-				circuit.getNets().put(command[i], new Net(command[i]));
+				if(!circuit.getNets().containsKey(command[i])) //net still needs to be added to the nets hashmap
+				{
+					circuit.getNets().put(command[i], new Net(command[i]));
+				}
+				circuit.getNets().get(command[i]).addSink(lut.getInputs()[i-1]);
 			}
-			circuit.getNets().get(command[i]).addSink(lut.getInputs()[i-1]);
+			
+			//Take care of net at the LUT output
+			if(!circuit.getNets().containsKey(command[command.length - 1])) //net still needs to be added to the nets hashmap
+			{
+				circuit.getNets().put(command[command.length - 1], new Net(command[command.length - 1]));
+			}
+			circuit.getNets().get(command[command.length - 1]).addSource(lut.getOutputs()[0]);
+			return true;
 		}
-		
-		//Take care of net at the LUT output
-		if(!circuit.getNets().containsKey(command[command.length - 1])) //net still needs to be added to the nets hashmap
-		{
-			circuit.getNets().put(command[command.length - 1], new Net(command[command.length - 1]));
-		}
-		circuit.getNets().get(command[command.length - 1]).addSource(lut.getOutputs()[0]);
 	}
 	
 	private void processLatch(String[] command)

@@ -9,7 +9,7 @@ import architecture.FourLutSanitized;
 import architecture.Site;
 import circuit.Block;
 import circuit.BlockType;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Clb;
 
 public class PlacementManipulatorIOCLB implements PlacementManipulator {
@@ -17,11 +17,11 @@ public class PlacementManipulatorIOCLB implements PlacementManipulator {
 	protected FourLutSanitized a;
 	Random rand;
 
-	protected Circuit circuit;
+	protected PackedCircuit circuit;
 	protected int maxFPGAdimension;
 
 
-	public PlacementManipulatorIOCLB(FourLutSanitized a, Circuit c) {
+	public PlacementManipulatorIOCLB(FourLutSanitized a, PackedCircuit c) {
 		this.a=a;
 		this.circuit=c;
 		maxFPGAdimension = Math.max(a.width,a.height);
@@ -33,7 +33,7 @@ public class PlacementManipulatorIOCLB implements PlacementManipulator {
 		a.rand = rand;
 	}
 	
-	public PlacementManipulatorIOCLB(FourLutSanitized a, Circuit c, Random rand) {
+	public PlacementManipulatorIOCLB(FourLutSanitized a, PackedCircuit c, Random rand) {
 		this.a=a;
 		this.circuit=c;
 		maxFPGAdimension = Math.max(a.width,a.height);

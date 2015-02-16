@@ -1,9 +1,5 @@
-package prepackedcircuit;
+package circuit;
 
-import circuit.Block;
-import circuit.BlockType;
-import circuit.Pin;
-import circuit.PinType;
 
 public class Flipflop extends Block
 {

@@ -5,7 +5,7 @@ import java.util.PriorityQueue;
 
 import architecture.Architecture;
 import architecture.RouteNode;
-import circuit.Circuit;
+import circuit.PackedCircuit;
 import circuit.Net;
 import circuit.Pin;
 
@@ -20,9 +20,9 @@ public class PathfinderRouter {
 	private boolean queueEmpty;
 	
 	Architecture a;
-	Circuit c;
+	PackedCircuit c;
 	
-	public PathfinderRouter(Circuit c) {
+	public PathfinderRouter(PackedCircuit c) {
 		super();
 		//initialize data
 		this.c=c;

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import circuit.Circuit;
+import circuit.PackedCircuit;
 
 public class Placement {
 	public String netlist_file;
@@ -20,7 +20,7 @@ public class Placement {
 		plaatsingsmap= new HashMap<String,PlaatsingUnit>(); 
 	}
 	
-	public Placement IOPlacement(Circuit c) {
+	public Placement IOPlacement(PackedCircuit c) {
 		Placement result;
 		result = new Placement();
 		
