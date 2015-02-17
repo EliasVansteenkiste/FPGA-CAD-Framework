@@ -7,9 +7,6 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.Vector;
 
-import placers.BoundingBoxData;
-
-import circuit.Block;
 import circuit.BlockType;
 import circuit.Flipflop;
 import circuit.Net;
@@ -24,20 +21,23 @@ public class TimingGraph
 	private static final double MHD_DELAY = 0.5;
 	private static final double LUT_DELAY = 1.0;
 	
+	private PrePackedCircuit circuit;
+	
 	private List<Pin> startNodes;
 	private List<Pin> endNodes;
 	private Map<Pin,Vector<Pin>> edges;
 	private Map<Pin,Vector<Double>> edgeWeights; //only valid boundingbox data for circuit inputs, lut outputs and ff outputs
 	
-	public TimingGraph()
+	public TimingGraph(PrePackedCircuit circuit)
 	{
+		this.circuit = circuit;
 		startNodes = new ArrayList<>();
 		endNodes = new ArrayList<>();
 		edges = new HashMap<>();
 		edgeWeights = new HashMap<>();
 	}
 	
-	public void buildTimingGraph(PrePackedCircuit circuit)
+	public void buildTimingGraph()
 	{
 		Map<String,Net> nets = circuit.getNets();
 		
@@ -54,7 +54,7 @@ public class TimingGraph
 				delayVector.add(bb * MHD_DELAY);
 			}
 			edgeWeights.put(input.output, delayVector);
-			processStartPin(nets, startNet);
+			processStartPin(startNet);
 		}
 		
 		//Build all trees starting from flipflop outputs
@@ -70,7 +70,70 @@ public class TimingGraph
 				delayVector.add(bb * MHD_DELAY);
 			}
 			edgeWeights.put(flipflop.getOutput(), delayVector);
-			processStartPin(nets, startNet);
+			processStartPin(startNet);
+		}
+	}
+	
+	public void updateDelays()
+	{
+		edgeWeights = new HashMap<>();
+		for(Pin startPin:startNodes)
+		{
+			Pin currentPin = startPin;
+			Vector<Pin> currentSinks = edges.get(startPin);
+			if(currentSinks.size() == 0)
+			{
+				continue;
+			}
+			int currentIndex = 0;
+			Stack<Pin> pinStack = new Stack<>();
+			Stack<Integer> indexStack = new Stack<>();
+			boolean keepGoing = true;
+			while(keepGoing)
+			{
+				currentSinks = edges.get(currentPin);
+				if(currentSinks != null && currentIndex < currentSinks.size()) //Move deeper
+				{
+					if(!edgeWeights.containsKey(currentPin))
+					{
+						Vector<Double> delayVector = new Vector<>();
+						if(currentPin.owner == currentSinks.get(0).owner)
+						{
+							delayVector.add(LUT_DELAY);
+						}
+						else
+						{
+							
+							for(Pin sinkPin:currentSinks)
+							{
+								int bb = Math.abs(currentPin.owner.site.x - sinkPin.owner.site.x) + Math.abs(currentPin.owner.site.y - sinkPin.owner.site.y) + 2;
+								delayVector.add(bb * MHD_DELAY);
+							}
+						}
+						edgeWeights.put(currentPin, delayVector);
+					}
+					pinStack.push(currentPin);
+					currentPin = currentSinks.get(currentIndex);
+					indexStack.push(currentIndex + 1);
+					currentIndex = 0;
+				}
+				else
+				{
+					if(pinStack.isEmpty()) //We are back at the top level
+					{
+						keepGoing = false;
+					}
+					else
+					{
+						if(!edgeWeights.containsKey(currentPin))
+						{
+							edgeWeights.put(currentPin, null);
+						}
+						currentPin = pinStack.pop();
+						currentIndex = indexStack.pop();
+					}
+				}
+			}
 		}
 	}
 	
@@ -79,11 +142,55 @@ public class TimingGraph
 	 */
 	public double calculateMaximalDelay()
 	{
-		double curMax = 0.0;
+		double maxDelay = 0.0;
 		for(Pin startPin:startNodes)
 		{
-			
+			Pin currentPin = startPin;
+			Vector<Pin> currentSinks = edges.get(startPin);
+			if(currentSinks.size() == 0)
+			{
+				continue;
+			}
+			double currentDelay = 0.0;
+			int currentIndex = 0;
+			Stack<Pin> pinStack = new Stack<>();
+			Stack<Double> delayStack = new Stack<>();
+			Stack<Integer> indexStack = new Stack<>();
+			boolean keepGoing = true;
+			while(keepGoing)
+			{
+				currentSinks = edges.get(currentPin);
+				if(currentSinks != null && currentIndex < currentSinks.size()) //Move deeper
+				{
+					double edgeDelay = edgeWeights.get(currentPin).get(currentIndex);
+					currentDelay += edgeDelay;
+					delayStack.push(edgeDelay);
+					pinStack.push(currentPin);
+					currentPin = currentSinks.get(currentIndex);
+					indexStack.push(currentIndex + 1);
+					currentIndex = 0;
+				}
+				else
+				{
+					if(pinStack.isEmpty()) //We are back at the top level
+					{
+						keepGoing = false;
+					}
+					else
+					{
+						if(currentDelay > maxDelay)
+						{
+							maxDelay = currentDelay;
+						}
+						currentPin = pinStack.pop();
+						currentDelay -= delayStack.pop();
+						currentIndex = indexStack.pop();
+					}
+				}
+				
+			}
 		}
+		return maxDelay;
 	}
 	
 //	public void test(PrePackedCircuit circuit)
@@ -118,8 +225,9 @@ public class TimingGraph
 //		System.out.println();
 //	}
 	
-	private void processStartPin(Map<String,Net> nets, Net startNet)
+	private void processStartPin(Net startNet)
 	{
+		Map<String,Net> nets = circuit.getNets();
 		Stack<Net> netsStack = new Stack<>();
 		Stack<Integer> sinkIndexStack = new Stack<>();
 		Net currentNet = startNet;
@@ -134,7 +242,10 @@ public class TimingGraph
 			Pin currentSink = currentNet.sinks.get(currentIndex);
 			if(currentSink.owner.type == BlockType.FLIPFLOP || currentSink.owner.type == BlockType.OUTPUT)
 			{
-				endNodes.add(currentSink);
+				if(!endNodes.contains(currentSink))
+				{
+					endNodes.add(currentSink);
+				}
 				edges.put(currentSink, null);
 				edgeWeights.put(currentSink, null);
 			}

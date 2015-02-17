@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 
+import architecture.Site;
+import architecture.SiteType;
+
 import packers.BlePacker;
 import timinganalysis.TimingGraph;
 import circuit.Ble;
@@ -41,8 +44,60 @@ public class Example
 		
 		//printBlePackedCircuit(blePackedCircuit);
 		
-		//TimingGraph timingGraph = new TimingGraph();
-		//timingGraph.buildTimingGraph(prePackedCircuit);
+		int i = 0;
+		int j = 0;
+		
+		for(Input input:prePackedCircuit.getInputs().values())
+		{
+			input.site = new Site(i, j, 0, SiteType.IO, "Input_" + i + "_" + j);
+			i++;
+			if(i >= 11)
+			{
+				i = 0;
+				j++;
+			}
+		}
+		
+		for(Output output: prePackedCircuit.getOutputs().values())
+		{
+			output.site = new Site(i, j, 1, SiteType.IO, "Output_" + i + "_" + j);
+			i++;
+			if(i >= 11)
+			{
+				i = 0;
+				j++;
+			}
+		}
+		
+		for(Lut lut:prePackedCircuit.getLuts().values())
+		{
+			lut.site = new Site(i, j, 0, SiteType.CLB, "LUT_" + i + "_" + j);
+			i++;
+			if(i >= 11)
+			{
+				i = 0;
+				j++;
+			}
+		}
+		
+		for(Flipflop flipflop:prePackedCircuit.getFlipflops().values())
+		{
+			flipflop.site = new Site(i, j, 0, SiteType.CLB, "CLB_" + i + "_" + j);
+			i++;
+			if(i >= 11)
+			{
+				i = 0;
+				j++;
+			}
+		}
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		System.out.println("Maximal delay in the circuit: " + maxDelay);
+		timingGraph.updateDelays();
+		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
+		System.out.println("New maximal delay in the circuit: " + maxDelayUpdated);
 	}
 	
 	private static void printUnpackedCircuit(PrePackedCircuit prePackedCircuit)
