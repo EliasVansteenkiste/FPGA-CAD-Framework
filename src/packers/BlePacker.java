@@ -32,7 +32,7 @@ public class BlePacker
 	
 	public BlePackedCircuit pack()
 	{
-		this.afterBlePacking = new BlePackedCircuit(beforeBlePacking.getOutputs(), beforeBlePacking.getInputs());
+		this.afterBlePacking = new BlePackedCircuit(beforeBlePacking.getOutputs(), beforeBlePacking.getInputs(), beforeBlePacking.getNbLutInputs());
 		
 		Map<String,Net> beforeNets = beforeBlePacking.getNets();
 		
@@ -50,7 +50,7 @@ public class BlePacker
 			if(netSinkPins.size() == 1 && netSinkPins.get(0).owner.type == BlockType.FLIPFLOP)
 			{
 				Flipflop connectedFF = (Flipflop)netSinkPins.get(0).owner;
-				Ble ble = new Ble(connectedFF.name, lut.getNbInputs(), connectedFF, lut, true);
+				Ble ble = new Ble(connectedFF.name, beforeBlePacking.getNbLutInputs(), connectedFF, lut, true);
 				this.afterBlePacking.addBle(ble);
 				lutToBle.put(lut.name, ble.name);
 			}
@@ -58,7 +58,7 @@ public class BlePacker
 			{
 				//If the LUT drives no FF inputs: pack LUT alone in a BLE
 				//If the LUT drives multiple FFs: pack LUT alone in a BLE
-				Ble ble = new Ble(lut.name, lut.getNbInputs(), null, lut, false);
+				Ble ble = new Ble(lut.name, beforeBlePacking.getNbLutInputs(), null, lut, false);
 				this.afterBlePacking.addBle(ble);
 				lutToBle.put(lut.name, ble.name);
 			}
@@ -72,7 +72,7 @@ public class BlePacker
 			//If it has not been put in a BLE yet: pack FF alone in a BLE
 			if(!afterBlePacking.getBles().containsKey(flipflop.name)) //We still need to add the flipflop to a BLE
 			{
-				Ble ble = new Ble(flipflop.name, ((Lut)(luts.toArray()[0])).getNbInputs(), flipflop, null, true);
+				Ble ble = new Ble(flipflop.name, beforeBlePacking.getNbLutInputs(), flipflop, null, true);
 				this.afterBlePacking.addBle(ble);
 			}
 		}
@@ -129,6 +129,7 @@ public class BlePacker
 								if(input.name == sink.name)
 								{
 									index = i;
+									break;
 								}
 							}
 							afterNets.get(net.name).addSink(afterBlePacking.getBles().get(sinkName).getInputs()[index]);

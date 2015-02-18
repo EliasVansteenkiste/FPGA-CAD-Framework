@@ -1,5 +1,7 @@
 package circuit;
 
+import architecture.Site;
+
 
 /*
  * A Ble contains one Lut and one FF
@@ -18,11 +20,11 @@ public class Ble extends Block
 	{
 		super(name, BlockType.BLE);
 		this.isFFUsed = isFFUsed;
-		output = new Pin(name + "_out", PinType.SOURCE, this);
+		output = new Pin(name + "_BLEout", PinType.SOURCE, this);
 		inputs = new Pin[nbInputs];
 		for(int i = 0; i < nbInputs; i++)
 		{
-			inputs[i] = new Pin(name + "_in_" + i, PinType.SINK, this);
+			inputs[i] = new Pin(name + "_BLEin_" + i, PinType.SINK, this);
 		}
 		this.nbInputs = nbInputs;
 		this.flipflop = flipflop;
@@ -52,6 +54,20 @@ public class Ble extends Block
 	public int getNbInputs()
 	{
 		return this.nbInputs;
+	}
+	
+	@Override
+	public void setSite(Site site) ////Pushes site through to embedded LUT and FF
+	{
+		super.setSite(site);
+		if(this.lut != null)
+		{
+			this.lut.setSite(site);
+		}
+		if(this.flipflop != null)
+		{
+			this.flipflop.setSite(site);
+		}
 	}
 	
 }

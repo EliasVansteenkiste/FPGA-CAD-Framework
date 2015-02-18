@@ -48,7 +48,7 @@ public class PlacementManipulatorIOCLBParallel implements PlacementManipulator {
 	public Swap findSwap(int Rlim) {
 		Swap swap=new Swap();
 		Block b = circuit.vBlocks.elementAt(rand.nextInt(circuit.vBlocks.size()));
-		swap.pl1 = b.site;
+		swap.pl1 = b.getSite();
 		if(b.type==BlockType.CLB){
 			swap.pl2 = a.randomSite(Rlim, swap.pl1);
 		}else if(b.type == BlockType.INPUT){
@@ -65,8 +65,8 @@ public class PlacementManipulatorIOCLBParallel implements PlacementManipulator {
 	
 	public void swap(Swap swap) {
 		
-		if (swap.pl1.block!=null) swap.pl1.block.site=swap.pl2;
-		if (swap.pl2.block!=null) swap.pl2.block.site=swap.pl1;
+		if (swap.pl1.block!=null) swap.pl1.block.setSite(swap.pl2);
+		if (swap.pl2.block!=null) swap.pl2.block.setSite(swap.pl1);
 		Block temp1=swap.pl1.block;
 		swap.pl1.block=swap.pl2.block;
 		swap.pl2.block=temp1;

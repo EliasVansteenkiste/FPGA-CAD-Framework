@@ -179,10 +179,10 @@ public class PathfinderRouter {
 			//Clear Queue
 			queue.clear();
 			//Add source to queue
-			RouteNode source = net.source.owner.site.source;
+			RouteNode source = net.source.owner.getSite().source;
 			addNodeToQueue(source, null, getCost(source,net));
 			//Set target flag sink
-			RouteNode sink = sinkPin.owner.site.sink;
+			RouteNode sink = sinkPin.owner.getSite().sink;
 			sink.target=true;
 			//Start Dijkstra
 			while (!targetReached()) {

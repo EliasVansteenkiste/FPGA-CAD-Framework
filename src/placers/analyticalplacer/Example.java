@@ -3,18 +3,25 @@ package placers.analyticalplacer;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Random;
 
-import architecture.Site;
-import architecture.SiteType;
+import architecture.FourLutSanitized;
 
 import packers.BlePacker;
+import packers.ClbPacker;
+import placers.BoundingBoxNetCC;
+import placers.PlacementManipulatorIOCLB;
+import placers.Rplace;
+import placers.Vplace;
 import timinganalysis.TimingGraph;
 import circuit.Ble;
+import circuit.Clb;
 import circuit.Flipflop;
 import circuit.Input;
 import circuit.Lut;
 import circuit.Net;
 import circuit.Output;
+import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
 import circuit.BlePackedCircuit;
 import circuit.parser.blif.BlifReader;
@@ -28,8 +35,8 @@ public class Example
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -39,65 +46,63 @@ public class Example
 		
 		//printUnpackedCircuit(prePackedCircuit);
 		
-		BlePacker packer = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = packer.pack();
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
 		
 		//printBlePackedCircuit(blePackedCircuit);
 		
-		int i = 0;
-		int j = 0;
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
 		
-		for(Input input:prePackedCircuit.getInputs().values())
-		{
-			input.site = new Site(i, j, 0, SiteType.IO, "Input_" + i + "_" + j);
-			i++;
-			if(i >= 11)
-			{
-				i = 0;
-				j++;
-			}
-		}
+		//printPackedCircuit(packedCircuit);
 		
-		for(Output output: prePackedCircuit.getOutputs().values())
-		{
-			output.site = new Site(i, j, 1, SiteType.IO, "Output_" + i + "_" + j);
-			i++;
-			if(i >= 11)
-			{
-				i = 0;
-				j++;
-			}
-		}
+		System.out.println("SIMULATED ANNEALING PLACEMENT:");
+
+		simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+	}
+	
+	private static void simulatedAnnealingPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		int height = 16;
+		int width = 16;
+		int trackwidth = 4;
+		Double placementEffort = 10.;
 		
-		for(Lut lut:prePackedCircuit.getLuts().values())
-		{
-			lut.site = new Site(i, j, 0, SiteType.CLB, "LUT_" + i + "_" + j);
-			i++;
-			if(i >= 11)
-			{
-				i = 0;
-				j++;
-			}
-		}
+		System.out.println("Constructing architecture.");
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
-		for(Flipflop flipflop:prePackedCircuit.getFlipflops().values())
-		{
-			flipflop.site = new Site(i, j, 0, SiteType.CLB, "CLB_" + i + "_" + j);
-			i++;
-			if(i >= 11)
-			{
-				i = 0;
-				j++;
-			}
-		}
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		
+		//Random placement
+		Rplace.placeCLBsandIOs(c, a, rand);
+		pm.PlacementCLBsConsistencyCheck();
+		System.out.println("Total Cost random placement: " + bbncc.calculateTotalCost());
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
-		System.out.println("Maximal delay in the circuit: " + maxDelay);
+		System.out.println("Critical path delay before SA: " + maxDelay);
+		
+		Vplace placer= new Vplace(pm,bbncc);
+		//Time placement process
+		final long startTime = System.nanoTime();
+		final long endTime;
+		try {
+			placer.place(placementEffort);
+		} finally {
+		  endTime = System.nanoTime();
+		}
+		final long duration = endTime - startTime;
+		System.out.println("Runtime: "+(duration/1.0E9));
+		System.out.println("Total Cost javaVPR placement: " + bbncc.calculateTotalCost());
+		pm.PlacementCLBsConsistencyCheck();
+		
 		timingGraph.updateDelays();
 		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
-		System.out.println("New maximal delay in the circuit: " + maxDelayUpdated);
+		System.out.println("Critical path delay after SA: " + maxDelayUpdated);
 	}
 	
 	private static void printUnpackedCircuit(PrePackedCircuit prePackedCircuit)
@@ -157,7 +162,7 @@ public class Example
 	{
 		System.out.println();
 		System.out.println();
-		System.out.println("PACKED CIRCUIT:");
+		System.out.println("BLE PACKED CIRCUIT:");
 		Collection<Input> packedInputs = blePackedCircuit.getInputs().values();
 		System.out.println("Inputs: " + packedInputs.size());
 		for(Input input:packedInputs)
@@ -252,4 +257,48 @@ public class Example
 		System.out.println();
 	}
 	
+	private static void printPackedCircuit(PackedCircuit circuit)
+	{
+		System.out.println();
+		System.out.println();
+		System.out.println("PACKED CIRCUIT:");
+		Collection<Input> inputs = circuit.getInputs().values();
+		System.out.println("Inputs: " + inputs.size());
+		for(Input input:inputs)
+		{
+			System.out.println(input.toString());
+		}
+		System.out.println();
+		Collection<Output> outputs = circuit.getOutputs().values();
+		System.out.println("Outputs: " + outputs.size());
+		for(Output output:outputs)
+		{
+			System.out.println(output.toString());
+		}
+		System.out.println();
+		Collection<Clb> clbs = circuit.clbs.values();
+		System.out.println("CLBs: " + clbs.size());
+		System.out.println();
+		Iterator<Net> netsIterator = circuit.getNets().values().iterator();
+		System.out.println("Nets: " + circuit.getNets().values().size());
+		while(netsIterator.hasNext())
+		{
+			Net currentNet = netsIterator.next();
+			System.out.print("Source: " + currentNet.source.name + " Sinks: ");
+			int vectorSize = currentNet.sinks.size();
+			for(int i = 0; i < vectorSize; i++)
+			{
+				if(i < vectorSize - 1)
+				{
+					System.out.print(currentNet.sinks.get(i).name + ", ");
+				}
+				else
+				{
+					System.out.print(currentNet.sinks.get(i).name);
+				}
+			}
+			System.out.println();
+		}
+		System.out.println();
+	}
 }

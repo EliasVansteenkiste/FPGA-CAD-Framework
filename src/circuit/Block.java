@@ -6,7 +6,7 @@ public class Block {
 	public String name;
 	public BlockType type;
 	
-	public Site site;
+	private Site site;
 	public boolean fixed;
 
 	public Block(String name, BlockType type) {
@@ -25,6 +25,14 @@ public class Block {
 		return name.hashCode()^type.hashCode();
 	}
 	
+	public Site getSite()
+	{
+		return this.site;
+	}
 	
+	public void setSite(Site site)
+	{
+		this.site = site;
+	}
 	
 }

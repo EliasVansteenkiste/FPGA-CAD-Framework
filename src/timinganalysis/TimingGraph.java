@@ -50,7 +50,7 @@ public class TimingGraph
 			Vector<Double> delayVector = new Vector<>();
 			for(Pin sinkPin:startNet.sinks)
 			{
-				int bb = Math.abs(input.site.x - sinkPin.owner.site.x) + Math.abs(input.site.y - sinkPin.owner.site.y) + 2;
+				int bb = Math.abs(input.getSite().x - sinkPin.owner.getSite().x) + Math.abs(input.getSite().y - sinkPin.owner.getSite().y) + 2;
 				delayVector.add(bb * MHD_DELAY);
 			}
 			edgeWeights.put(input.output, delayVector);
@@ -66,7 +66,7 @@ public class TimingGraph
 			Vector<Double> delayVector = new Vector<>();
 			for(Pin sinkPin:startNet.sinks)
 			{
-				int bb = Math.abs(flipflop.site.x - sinkPin.owner.site.x) + Math.abs(flipflop.site.y - sinkPin.owner.site.y) + 2;
+				int bb = Math.abs(flipflop.getSite().x - sinkPin.owner.getSite().x) + Math.abs(flipflop.getSite().y - sinkPin.owner.getSite().y) + 2;
 				delayVector.add(bb * MHD_DELAY);
 			}
 			edgeWeights.put(flipflop.getOutput(), delayVector);
@@ -106,7 +106,7 @@ public class TimingGraph
 							
 							for(Pin sinkPin:currentSinks)
 							{
-								int bb = Math.abs(currentPin.owner.site.x - sinkPin.owner.site.x) + Math.abs(currentPin.owner.site.y - sinkPin.owner.site.y) + 2;
+								int bb = Math.abs(currentPin.owner.getSite().x - sinkPin.owner.getSite().x) + Math.abs(currentPin.owner.getSite().y - sinkPin.owner.getSite().y) + 2;
 								delayVector.add(bb * MHD_DELAY);
 							}
 						}
@@ -137,9 +137,6 @@ public class TimingGraph
 		}
 	}
 	
-	/*
-	 * Calculates the maximal Manhattan distance in the placed circuit
-	 */
 	public double calculateMaximalDelay()
 	{
 		double maxDelay = 0.0;
@@ -265,8 +262,8 @@ public class TimingGraph
 				Vector<Double> delayVector2 = new Vector<>();
 				for(Pin sinkPin:currentNet.sinks)
 				{
-					int bb = Math.abs(currentNet.source.owner.site.x - sinkPin.owner.site.x) + 
-							Math.abs(currentNet.source.owner.site.y - sinkPin.owner.site.y) + 2;
+					int bb = Math.abs(currentNet.source.owner.getSite().x - sinkPin.owner.getSite().x) + 
+							Math.abs(currentNet.source.owner.getSite().y - sinkPin.owner.getSite().y) + 2;
 					delayVector2.add(bb * MHD_DELAY);
 				}
 				edgeWeights.put(currentNet.source, delayVector2);

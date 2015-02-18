@@ -37,8 +37,14 @@ public class PackedCircuit extends Circuit{
 		clbs = new HashMap<String,Clb>();
 		globalNets = new HashMap<String,Net>();
 		connections = new HashMap<String,Connection>();
-
-
+	}
+	
+	public PackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs)
+	{
+		super(outputs, inputs);
+		clbs = new HashMap<String,Clb>();
+		globalNets = new HashMap<String,Net>();
+		connections = new HashMap<String,Connection>();
 	}
 
 	public int numBlocks() {
@@ -50,8 +56,8 @@ public class PackedCircuit extends Circuit{
 			PlaatsingUnit pu=i.next();
 			Block b=getBlock(pu.naam);
 			Site s = a.getSite(pu.x, pu.y, pu.n);
-			b.site = s;
-			b.site.block = b;
+			b.setSite(s);
+			b.getSite().block = b;
 			b.fixed=true;
 		}
 	}
@@ -73,8 +79,8 @@ public class PackedCircuit extends Circuit{
 			Block b=getBlock(pu.naam);
 			Site pl=(Site) temp.toArray()[rand.nextInt(temp.size())];
 			temp.remove(pl);
-			b.site = pl;
-			b.site.block = b;
+			b.setSite(pl);
+			b.getSite().block = b;
 			b.fixed=true;
 		}
 	}
@@ -93,8 +99,8 @@ public class PackedCircuit extends Circuit{
 			int idx = rand.nextInt(temp.size());
 			Site pl=(Site) temp.toArray()[idx];
 			temp.remove(pl);
-			b.site = pl;
-			b.site.block = b;
+			b.setSite(pl);
+			b.getSite().block = b;
 			b.fixed=true;
 		}
 	}
@@ -117,13 +123,13 @@ public class PackedCircuit extends Circuit{
 		stream.println("#----------	--	--	------	------------");
 				
 		for(Block blok:inputs.values()) {
-			stream.println(blok.name+"	"+blok.site.x+"	"+blok.site.y+"	"+blok.site.n);
+			stream.println(blok.name+"	"+blok.getSite().x+"	"+blok.getSite().y+"	"+blok.getSite().n);
 		}
 		for(Block blok:clbs.values()) {
-			stream.println(blok.name+"	"+blok.site.x+"	"+blok.site.y+"	"+blok.site.n);
+			stream.println(blok.name+"	"+blok.getSite().x+"	"+blok.getSite().y+"	"+blok.getSite().n);
 		}
 		for(Block blok:outputs.values()) {
-			stream.println(blok.name+"	"+blok.site.x+"	"+blok.site.y+"	"+blok.site.n);
+			stream.println(blok.name+"	"+blok.getSite().x+"	"+blok.getSite().y+"	"+blok.getSite().n);
 		}
 		stream.close();
 	}

@@ -46,17 +46,17 @@ public class BoundingBoxData {
 			Iterator<Block> it = blocks.iterator();
 			Block b = it.next();
 			Block c = it.next();
-			bb=Math.abs(b.site.x-c.site.x)+Math.abs(b.site.y-c.site.y)+2;
+			bb=Math.abs(b.getSite().x-c.getSite().x)+Math.abs(b.getSite().y-c.getSite().y)+2;
 		}else{
 			int xmin = Integer.MAX_VALUE;
 			int xmax = -1;
 			int ymin = Integer.MAX_VALUE;
 			int ymax = -1;
 			for(Block bl : blocks) {
-				if (bl.site.x < xmin)xmin=bl.site.x;			
-				if (bl.site.x > xmax)xmax=bl.site.x;			
-				if (bl.site.y < ymin)ymin=bl.site.y;
-				if (bl.site.y > ymax)ymax=bl.site.y;
+				if (bl.getSite().x < xmin)xmin=bl.getSite().x;			
+				if (bl.getSite().x > xmax)xmax=bl.getSite().x;			
+				if (bl.getSite().y < ymin)ymin=bl.getSite().y;
+				if (bl.getSite().y > ymax)ymax=bl.getSite().y;
 			}
 			
 			bb=(xmax-xmin+1)+(ymax-ymin+1);
@@ -80,29 +80,29 @@ public class BoundingBoxData {
 	public int[] boundingBox(Block b1, Site newSite1, Block b2, Site newSite2) {
 		int[]output = new int[5];
 		if(blocks.size()==2){
-			Site oldSite1 = b1.site;
-			b1.site = newSite1;
-			Site oldSite2 = b2.site;
-			b2.site = newSite2;
+			Site oldSite1 = b1.getSite();
+			b1.setSite(newSite1);
+			Site oldSite2 = b2.getSite();
+			b2.setSite(newSite2);
 			Iterator<Block> it = blocks.iterator();
-			Site s1 = it.next().site;
-			Site s2 = it.next().site;
+			Site s1 = it.next().getSite();
+			Site s2 = it.next().getSite();
 			output[0]=Math.abs(s1.x-s2.x)+Math.abs(s1.y-s2.y)+2;
 			output[1]=-2;
-			b1.site = oldSite1;
-			b2.site = oldSite2;
+			b1.setSite(oldSite1);
+			b2.setSite(oldSite2);
 		}else{
-			Site oldSite1 = b1.site;
-			b1.site = newSite1;
-			Site oldSite2 = b2.site;
-			b2.site = newSite2;
+			Site oldSite1 = b1.getSite();
+			b1.setSite(newSite1);
+			Site oldSite2 = b2.getSite();
+			b2.setSite(newSite2);
 			int xmin = Integer.MAX_VALUE;
 			int xmax = -1;
 			int ymin = Integer.MAX_VALUE;
 			int ymax = -1;
 			for(Block bl : blocks) {
 				Site s;
-				s=bl.site;
+				s=bl.getSite();
 				if (s.x < xmin)xmin=s.x;
 				if (s.x > xmax)xmax=s.x;
 				if (s.y < ymin)ymin=s.y;
@@ -113,8 +113,8 @@ public class BoundingBoxData {
 			output[2]= xmax;
 			output[3]= ymin;
 			output[4]= ymax;
-			b1.site = oldSite1;
-			b2.site = oldSite2;
+			b1.setSite(oldSite1);
+			b2.setSite(oldSite2);
 		}
 		return output;
 	}
@@ -122,24 +122,24 @@ public class BoundingBoxData {
 	public int[] boundingBox(Block b, Site newSite) {
 		int[] output = new int[5];
 		if (blocks.size() == 2) {
-			Site oldSite1 = b.site;
-			b.site = newSite;
+			Site oldSite1 = b.getSite();
+			b.setSite(newSite);
 			Iterator<Block> it = blocks.iterator();
-			Site s1 = it.next().site;
-			Site s2 = it.next().site;
+			Site s1 = it.next().getSite();
+			Site s2 = it.next().getSite();
 			output[0] = Math.abs(s1.x - s2.x) + Math.abs(s1.y - s2.y) + 2;
 			output[1] = -2;
-			b.site = oldSite1;
+			b.setSite(oldSite1);
 		} else if (blocks.size() < 5) {
-			Site oldSite1 = b.site;
-			b.site = newSite;
+			Site oldSite1 = b.getSite();
+			b.setSite(newSite);
 			int xmin = Integer.MAX_VALUE;
 			int xmax = -1;
 			int ymin = Integer.MAX_VALUE;
 			int ymax = -1;
 			for (Block bl : blocks) {
 				Site s;
-				s = bl.site;
+				s = bl.getSite();
 				if (s.x < xmin)
 					xmin = s.x;
 				if (s.x > xmax)
@@ -154,9 +154,9 @@ public class BoundingBoxData {
 			output[2] = xmax;
 			output[3] = ymin;
 			output[4] = ymax;
-			b.site = oldSite1;
+			b.setSite(oldSite1);
 		} else {
-			if (b.site.x < max_x && b.site.x > min_x && b.site.y < max_y && b.site.y > min_y) {
+			if (b.getSite().x < max_x && b.getSite().x > min_x && b.getSite().y < max_y && b.getSite().y > min_y) {
 				//b inside BB and not on the edges of the BB
 				if (newSite.x <= max_x && newSite.x >= min_x && newSite.y <= max_y && newSite.y >= min_y && boundingBox != -1) {
 					//newSite inside BB or on the edges of the BB
@@ -182,15 +182,15 @@ public class BoundingBoxData {
 					output[4] = ymax;
 				}
 			} else {
-				Site oldSite1 = b.site;
-				b.site = newSite;
+				Site oldSite1 = b.getSite();
+				b.setSite(newSite);
 				int xmin = Integer.MAX_VALUE;
 				int xmax = -1;
 				int ymin = Integer.MAX_VALUE;
 				int ymax = -1;
 				for (Block bl : blocks) {
 					Site s;
-					s = bl.site;
+					s = bl.getSite();
 					if (s.x < xmin)
 						xmin = s.x;
 					if (s.x > xmax)
@@ -205,7 +205,7 @@ public class BoundingBoxData {
 				output[2] = xmax;
 				output[3] = ymin;
 				output[4] = ymax;
-				b.site = oldSite1;
+				b.setSite(oldSite1);
 			}
 
 		}

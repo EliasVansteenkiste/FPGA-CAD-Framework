@@ -29,7 +29,7 @@ public class Rplace {
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
 				site.block = (Clb) b;
-				b.site = site;
+				b.setSite(site);
 			}	
 		}
 	}
@@ -49,7 +49,7 @@ public class Rplace {
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
 				site.block = (Clb) b;
-				b.site = site;
+				b.setSite(site);
 			}	
 		}
 	}
@@ -71,7 +71,7 @@ public class Rplace {
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
 				site.block = (Clb) b;
-				b.site = site;
+				b.setSite(site);
 			}	
 		}
 		//Random Place IOs
@@ -115,7 +115,7 @@ public class Rplace {
 				Site site=(Site) tempInputs.toArray()[rand.nextInt(tempInputs.size())];
 				tempInputs.remove(site);
 				site.block = (Input) in;
-				in.site = site;
+				in.setSite(site);
 			}	
 		}
 		for(Output out:c.outputs.values()) {
@@ -124,7 +124,7 @@ public class Rplace {
 				Site site=(Site) tempOutputs.toArray()[rand.nextInt(tempOutputs.size())];
 				tempOutputs.remove(site);
 				site.block = (Output) out;
-				out.site = site;
+				out.setSite(site);
 			}	
 		}
 	}

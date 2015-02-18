@@ -22,7 +22,7 @@ public class BlifReader
 	
 	public PrePackedCircuit readBlif(String fileName, int nbLutInputs) throws IOException
 	{
-		circuit = new PrePackedCircuit();
+		circuit = new PrePackedCircuit(nbLutInputs);
 		Path path = Paths.get(fileName);
 		try(BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8))
 		{

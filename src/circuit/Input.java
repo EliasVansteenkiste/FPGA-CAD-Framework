@@ -5,6 +5,6 @@ public class Input extends Block {
 
 	public Input(String name) {
 		super(name, BlockType.INPUT);
-		output = new Pin(name+"_out", PinType.SOURCE,this);
+		output = new Pin(name+"_INPUTout", PinType.SOURCE,this);
 	}
 }

@@ -12,27 +12,42 @@ public class BlePackedCircuit extends Circuit
 {
 
 	private Map<String,Ble> bles;
+	private int nbBleInputs;
 	
-	public BlePackedCircuit()
+	public BlePackedCircuit(int nbBleInputs)
 	{
 		super();
+		this.nbBleInputs = nbBleInputs;
 		this.bles = new HashMap<String,Ble>();
 	}
 	
-	public BlePackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs)
+	public BlePackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs, int nbBleInputs)
 	{
 		super(outputs, inputs);
+		this.nbBleInputs = nbBleInputs;
 		this.bles = new HashMap<String,Ble>();
 	}
 	
 	public void addBle(Ble ble)
 	{
-		this.bles.put(ble.name, ble);
+		if(ble.getInputs().length == this.nbBleInputs)
+		{
+			this.bles.put(ble.name, ble);
+		}
+		else
+		{
+			System.err.println("Wrong BLE size!");
+		}
 	}
 	
 	public Map<String, Ble> getBles()
 	{
 		return bles;
+	}
+	
+	public int getNbBleInputs()
+	{
+		return this.nbBleInputs;
 	}
 	
 }

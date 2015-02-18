@@ -74,10 +74,10 @@ public class BoundingBoxNetCC implements CostCalculator {
 		double costBefore=calculateNetCost(swap.pl1.block)+calculateNetCost(swap.pl2.block);
 		
 		if (swap.pl1.block!=null) {
-			swap.pl1.block.site=swap.pl2;
+			swap.pl1.block.setSite(swap.pl2);
 		}
 		if (swap.pl2.block!=null) {
-			swap.pl2.block.site=swap.pl1;
+			swap.pl2.block.setSite(swap.pl1);
 		}
 	
 		
@@ -85,18 +85,18 @@ public class BoundingBoxNetCC implements CostCalculator {
 		double deltaCost = costAfter-costBefore;
 		
 		if (swap.pl1.block!=null){
-			swap.pl1.block.site=swap.pl1;
+			swap.pl1.block.setSite(swap.pl1);
 		}
 		if (swap.pl2.block!=null){
-			swap.pl2.block.site=swap.pl2;
+			swap.pl2.block.setSite(swap.pl2);
 		}
 		
 		return deltaCost;
 	}
 	
 	public void apply(Swap swap) {
-		if (swap.pl1.block!=null) swap.pl1.block.site=swap.pl2;
-		if (swap.pl2.block!=null) swap.pl2.block.site=swap.pl1;
+		if (swap.pl1.block!=null) swap.pl1.block.setSite(swap.pl2);
+		if (swap.pl2.block!=null) swap.pl2.block.setSite(swap.pl1);
 		Block temp1=swap.pl1.block;
 		swap.pl1.block=swap.pl2.block;
 		swap.pl2.block=temp1;

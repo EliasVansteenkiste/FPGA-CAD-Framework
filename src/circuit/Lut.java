@@ -16,13 +16,13 @@ public class Lut extends Block
 		outputs = new Pin[nbOutputs];
 		for(int i = 0; i < nbOutputs; i++)
 		{
-			outputs[i] = new Pin(name + "_out_" + i, PinType.SOURCE, this);
+			outputs[i] = new Pin(name + "_LUTout_" + i, PinType.SOURCE, this);
 		}
 		
 		inputs = new Pin[nbInputs];
 		for(int i = 0; i < nbInputs; i++)
 		{
-			inputs[i] = new Pin(name + "_in_" + i, PinType.SINK, this);
+			inputs[i] = new Pin(name + "_LUTin_" + i, PinType.SINK, this);
 		}
 	}
 

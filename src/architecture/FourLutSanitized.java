@@ -226,24 +226,24 @@ public class FourLutSanitized extends Architecture {
 		
 		//
 		for(Clb clb:c.clbs.values()){
-			int xco = clb.site.x;
-			int yco = clb.site.y;
+			int xco = clb.getSite().x;
+			int yco = clb.getSite().y;
 			Site site = siteArray[xco][yco][0];
-			clb.site = site;
+			clb.setSite(site);
 			site.block = clb;
 		}
 		for(Input input:c.inputs.values()){
-			int xco = input.site.x;
-			int yco = input.site.y;
+			int xco = input.getSite().x;
+			int yco = input.getSite().y;
 			Site site = siteArray[xco][yco][0];
-			input.site = site;
+			input.setSite(site);
 			site.block = input;
 		}
 		for(Output output:c.outputs.values()){
-			int xco = output.site.x;
-			int yco = output.site.y;
+			int xco = output.getSite().x;
+			int yco = output.getSite().y;
 			Site site = siteArray[xco][yco][1];
-			output.site = site;
+			output.setSite(site);
 			site.block = output;
 		}
 		
