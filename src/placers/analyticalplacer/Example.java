@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
 
+import mathtools.CGSolver;
 import mathtools.Crs;
 
 import architecture.FourLutSanitized;
@@ -61,7 +62,9 @@ public class Example
 		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
 		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
 		
-		testCrs();
+		//testCrs();
+		
+		testCGSolver();
 		
 	}
 	
@@ -338,6 +341,64 @@ public class Example
 		for(int i = 0; i < row_ptr.length; i++)
 		{
 			System.out.print(row_ptr[i] + " ");
+		}
+		
+		System.out.println();
+		System.out.println("Print in matrix format:");
+		for(int i = 0; i < 6; i++)
+		{
+			for(int j = 0; j < 6; j++)
+			{
+				System.out.print(crsBuilder.getElement(i, j) + "\t");
+			}
+			System.out.println();
+		}
+	}
+	
+	private static void testCGSolver()
+	{
+		Crs crsBuilder = new Crs(10);
+		crsBuilder.setElement(0, 0, 7.3);
+		crsBuilder.setElement(0, 3, 2.1);
+		crsBuilder.setElement(0, 7, 1.3);
+		crsBuilder.setElement(1, 1, 9.2);
+		crsBuilder.setElement(1, 2, 0.9);
+		crsBuilder.setElement(1, 5, 1.1);
+		crsBuilder.setElement(2, 1, 0.9);
+		crsBuilder.setElement(2, 2, 8.7);
+		crsBuilder.setElement(2, 6, 1.7);
+		crsBuilder.setElement(3, 0, 2.1);
+		crsBuilder.setElement(3, 3, 7.6);
+		crsBuilder.setElement(3, 4, 0.7);
+		crsBuilder.setElement(4, 3, 0.7);
+		crsBuilder.setElement(4, 4, 8.1);
+		crsBuilder.setElement(4, 8, 0.6);
+		crsBuilder.setElement(5, 1, 1.1);
+		crsBuilder.setElement(5, 5, 9.1);
+		crsBuilder.setElement(5, 9, 0.5);
+		crsBuilder.setElement(6, 2, 1.7);
+		crsBuilder.setElement(6, 6, 8.9);
+		crsBuilder.setElement(6, 9, 1.4);
+		crsBuilder.setElement(7, 0, 1.3);
+		crsBuilder.setElement(7, 7, 7.9);
+		crsBuilder.setElement(7, 8, 0.9);
+		crsBuilder.setElement(8, 4, 0.6);
+		crsBuilder.setElement(8, 7, 0.9);
+		crsBuilder.setElement(8, 8, 8.8);
+		crsBuilder.setElement(9, 5, 0.5);
+		crsBuilder.setElement(9, 6, 1.4);
+		crsBuilder.setElement(9, 9, 8.9);
+		
+		double[] vector = {10.7, 12.7, 13.5, 14.3, 11.3, 10.9, 13.3, 14.4, 12.2, 11.1};
+		double epselon = 0.000001;
+		
+		CGSolver solver = new CGSolver(crsBuilder, vector);
+		double[] solution = solver.solve(epselon);
+		
+		System.out.println("Solution: ");
+		for(int i = 0; i < solution.length; i++)
+		{
+			System.out.println(solution[i] + "   ");
 		}
 	}
 	

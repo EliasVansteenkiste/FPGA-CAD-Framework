@@ -19,9 +19,9 @@ public class Crs
 		row_ptr = new int[nbRows + 1];
 		for(int i = 0; i < nbRows; i++)
 		{
-			row_ptr[i] = 0;
+			row_ptr[i] = -1;
 		}
-		row_ptr[nbRows] = 1;
+		row_ptr[nbRows] = 0;
 	}
 	
 	/*
@@ -33,21 +33,21 @@ public class Crs
 		int nextRowStartIndex = 0;
 		while(nextRowPointer < row_ptr.length)
 		{
-			if(row_ptr[nextRowPointer] != 0)
+			if(row_ptr[nextRowPointer] != -1)
 			{
-				nextRowStartIndex = row_ptr[nextRowPointer] - 1;
+				nextRowStartIndex = row_ptr[nextRowPointer];
 				break;
 			}
 			nextRowPointer++;
 		}
-		if(row_ptr[i] == 0) //All elements in the row are zero
+		if(row_ptr[i] == -1) //All elements in the row are zero
 		{
 			val.add(nextRowStartIndex, value);
-			col_ind.add(nextRowStartIndex, j+1);
-			row_ptr[i] = nextRowStartIndex + 1;
+			col_ind.add(nextRowStartIndex, j);
+			row_ptr[i] = nextRowStartIndex;
 			for(int index = i+1; index < row_ptr.length; index++)
 			{
-				if(row_ptr[index] != 0)
+				if(row_ptr[index] != -1)
 				{
 					row_ptr[index] += 1;
 				}
@@ -55,26 +55,26 @@ public class Crs
 		}
 		else //There are already nonzero elements in the matrix
 		{
-			int rowStartIndex = row_ptr[i] - 1;
+			int rowStartIndex = row_ptr[i];
 			int columnIndex;
 			for(columnIndex = rowStartIndex; columnIndex < nextRowStartIndex; columnIndex++)
 			{
-				if(col_ind.get(columnIndex) - 1 >= j)
+				if(col_ind.get(columnIndex) >= j)
 				{
 					break;
 				}
 			}
-			if(col_ind.get(columnIndex) - 1 == j) //The element was already in the matrix ==> only change the value
+			if(columnIndex < col_ind.size() && col_ind.get(columnIndex) == j) //The element was already in the matrix ==> only change the value
 			{
 				val.set(columnIndex, value);
 			}
 			else
 			{
 				val.add(columnIndex, value);
-				col_ind.add(columnIndex, j+1);
+				col_ind.add(columnIndex, j);
 				for(int index = i+1; index < row_ptr.length; index++)
 				{
-					if(row_ptr[index] != 0)
+					if(row_ptr[index] != -1)
 					{
 						row_ptr[index] += 1;
 					}
@@ -88,24 +88,24 @@ public class Crs
 	 */
 	public double getElement(int i, int j)
 	{
-		if(row_ptr[i] == 0) //All elements in the row are zero
+		if(row_ptr[i] == -1) //All elements in the row are zero
 		{
 			return 0.0;
 		}
-		int rowStartIndex = row_ptr[i] - 1;
+		int rowStartIndex = row_ptr[i];
 		int nextRowPointer = i+1;
 		while(nextRowPointer < row_ptr.length)
 		{
-			if(row_ptr[nextRowPointer] != 0)
+			if(row_ptr[nextRowPointer] != -1)
 			{
 				break;
 			}
 			nextRowPointer++;
 		}
-		int rowEndIndex = row_ptr[nextRowPointer] - 1;
+		int rowEndIndex = row_ptr[nextRowPointer];
 		for(int index = rowStartIndex; index < rowEndIndex; index++)
 		{
-			if(col_ind.get(index) == j + 1)
+			if(col_ind.get(index) == j)
 			{
 				return val.get(index);
 			}
