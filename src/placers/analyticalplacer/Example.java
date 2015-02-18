@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
 
+import mathtools.Crs;
+
 import architecture.FourLutSanitized;
 
 import packers.BlePacker;
@@ -56,9 +58,11 @@ public class Example
 		
 		//printPackedCircuit(packedCircuit);
 		
-		System.out.println("SIMULATED ANNEALING PLACEMENT:");
-
-		simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
+		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+		
+		testCrs();
+		
 	}
 	
 	private static void simulatedAnnealingPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
@@ -301,4 +305,40 @@ public class Example
 		}
 		System.out.println();
 	}
+	
+	private static void testCrs()
+	{
+		Crs crsBuilder = new Crs(6);
+		crsBuilder.setElement(0, 0, 1.5);
+		crsBuilder.setElement(1, 2, 3.3);
+		crsBuilder.setElement(4, 4, 10.6);
+		crsBuilder.setElement(3, 3, 4.9);
+		crsBuilder.setElement(2, 5, 22.1);
+		crsBuilder.setElement(5, 1, 30.7);
+		crsBuilder.setElement(1, 0, 36.4);
+		crsBuilder.setElement(1, 4, 39.4);
+		crsBuilder.setElement(1, 4, 40.4);
+		
+		double[] val = crsBuilder.getVal();
+		int[] col_ind = crsBuilder.getCol_ind();
+		int[] row_ptr = crsBuilder.getRow_ptr();
+		System.out.print("Values array: ");
+		for(int i = 0; i < val.length; i++)
+		{
+			System.out.print(val[i] + " ");
+		}
+		System.out.println();
+		System.out.print("Column index array: ");
+		for(int i = 0; i < col_ind.length; i++)
+		{
+			System.out.print(col_ind[i] + " ");
+		}
+		System.out.println();
+		System.out.print("Row pointer array: ");
+		for(int i = 0; i < row_ptr.length; i++)
+		{
+			System.out.print(row_ptr[i] + " ");
+		}
+	}
+	
 }
