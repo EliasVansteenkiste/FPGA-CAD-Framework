@@ -38,8 +38,8 @@ public class Example
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -61,11 +61,35 @@ public class Example
 		
 		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
 		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+		//System.out.println();
+		//System.out.println("SA placed block locations");
+		//printPlacedCircuit(packedCircuit);
 		
-		//testCrs();
+		System.out.println("ANALYTICAL PLACEMENT:");
+		analyticalPlace(packedCircuit, prePackedCircuit);
+		//printPlacedCircuit(packedCircuit);
+	}
+	
+	private static void analyticalPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		int height = 16;
+		int width = 16;
+		int trackwidth = 4;
 		
-		testCGSolver();
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		AnalyticalPlacer placer = new AnalyticalPlacer(a, c);
+		placer.place();
 		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
+		
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
+		pm.PlacementCLBsConsistencyCheck();
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
+		System.out.println("Critical path delay after analytical placement: " + maxDelayUpdated);
 	}
 	
 	private static void simulatedAnnealingPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
@@ -75,7 +99,6 @@ public class Example
 		int trackwidth = 4;
 		Double placementEffort = 10.;
 		
-		System.out.println("Constructing architecture.");
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
@@ -91,7 +114,7 @@ public class Example
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
-		System.out.println("Critical path delay before SA: " + maxDelay);
+		System.out.println("Critical path delay random placement: " + maxDelay);
 		
 		Vplace placer= new Vplace(pm,bbncc);
 		//Time placement process
@@ -104,12 +127,31 @@ public class Example
 		}
 		final long duration = endTime - startTime;
 		System.out.println("Runtime: "+(duration/1.0E9));
-		System.out.println("Total Cost javaVPR placement: " + bbncc.calculateTotalCost());
+		System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
 		pm.PlacementCLBsConsistencyCheck();
 		
 		timingGraph.updateDelays();
 		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
-		System.out.println("Critical path delay after SA: " + maxDelayUpdated);
+		System.out.println("Critical path delay after SA placement: " + maxDelayUpdated);
+	}
+	
+	private static void printPlacedCircuit(PackedCircuit packedCircuit)
+	{
+		System.out.println("INPUTS:");
+		for(Input input:packedCircuit.inputs.values())
+		{
+			System.out.println(input.name + ": (" + input.getSite().x + "," + input.getSite().y + "," + input.getSite().n + ")");
+		}
+		System.out.println("\nOUTPUTS:");
+		for(Output output:packedCircuit.outputs.values())
+		{
+			System.out.println(output.name + ": (" + output.getSite().x + "," + output.getSite().y + "," +  output.getSite().n + ")");
+		}
+		System.out.println("\nCLBs:");
+		for(Clb clb:packedCircuit.clbs.values())
+		{
+			System.out.println(clb.name + ": (" + clb.getSite().x + "," + clb.getSite().y + ")");
+		}
 	}
 	
 	private static void printUnpackedCircuit(PrePackedCircuit prePackedCircuit)

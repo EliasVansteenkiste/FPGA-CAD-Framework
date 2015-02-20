@@ -20,7 +20,9 @@ public class Rplace {
 		Set<Site> temp = new HashSet<Site>();
 		for (int x=1;x<a.width+1;x++) {
 			for (int y=1;y<a.height+1;y++) {
-				temp.add(a.siteArray[x][y][0]);				
+				Site s = a.siteArray[x][y][0];
+				s.block = null;
+				temp.add(s);				
 			}
 		}
 		for(Clb b:c.clbs.values()) {
