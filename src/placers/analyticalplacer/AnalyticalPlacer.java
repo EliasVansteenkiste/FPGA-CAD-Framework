@@ -626,87 +626,219 @@ public class AnalyticalPlacer
 	
 	private void clusterCutSpreadRecursive()
 	{
-		int nbTodo = linearX.length;
-		boolean[] todo = new boolean[linearX.length];
+		//int nbTodo = linearX.length;
+		//boolean[] todo = new boolean[linearX.length];
+		List<Integer> todo = new ArrayList<>();
 		for(int i = 0; i < linearX.length; i++)
 		{
-			todo[i] = true;
+			todo.add(i);
 		}
-		while(nbTodo != 0)
+		while(todo.size() != 0)
 		{
 			//Cluster
 			int areaXUpBound = 0;
 			int areaXDownBound = 0;
-			int areaYUpbound = 0;
+			int areaYUpBound = 0;
 			int areaYDownBound = 0;
 			List<Integer> indices = new ArrayList<>();
 			List<Double> positionsX = new ArrayList<>();
 			List<Double> positionsY = new ArrayList<>();
+			
 			//Find a starting point for the cluster
-			for(int i = 0; i < linearX.length; i++)
+			int startIndex = todo.get(0);
+			areaXUpBound = (int)Math.floor(linearX[startIndex] + 1.0);
+			areaXDownBound = (int)Math.floor(linearX[startIndex]);
+			areaYUpBound = (int)Math.floor(linearY[startIndex] + 1.0);
+			areaYDownBound = (int)Math.floor(linearY[startIndex]);
+			indices.add(startIndex);
+			positionsX.add(linearX[startIndex]);
+			positionsY.add(linearY[startIndex]);
+			todo.remove(0);
+			for(int i = 0; i < todo.size(); i++)
 			{
-				if(todo[i])
+				int currentIndex = todo.get(i);
+				if(linearX[currentIndex] >= areaXDownBound && linearX[currentIndex] < areaXUpBound && linearY[currentIndex] >= areaYDownBound && linearY[currentIndex] < areaYUpBound)
 				{
-					areaXUpBound = (int)Math.floor(linearX[i] + 1.0);
-					areaXDownBound = (int)Math.floor(linearX[i]);
-					areaYUpbound = (int)Math.floor(linearY[i] + 1.0);
-					areaYDownBound = (int)Math.floor(linearY[i]);
-					indices.add(i);
-					positionsX.add(linearX[i]);
-					positionsY.add(linearY[i]);
-					todo[i] = false;
-					nbTodo--;
-					for(int j = i+1; j < linearX.length; j++)
-					{
-						if(todo[j] && linearX[j] >= areaXDownBound && linearX[j] < areaXUpBound && linearY[j] >= areaYDownBound && linearY[j] < areaYUpbound)
-						{
-							indices.add(j);
-							positionsX.add(linearX[j]);
-							positionsY.add(linearY[j]);
-							todo[j] = false;
-							nbTodo--;
-						}
-					}
-					break;
+					indices.add(currentIndex);
+					positionsX.add(linearX[currentIndex]);
+					positionsY.add(linearY[currentIndex]);
+					todo.remove(i);
+					i--;
 				}
 			}
+
 			//Grow cluster until it is surrounded by non overutilized areas
-			
 			boolean expanded = false;
 			while(expanded)
 			{
+				expanded = false;
 				//Check if need to grow to the right
-				List<Integer> rightIndices = new ArrayList<>();
-				for(int i = 0; i < linearX.length; i++)
+				boolean addRight = false;
+				for(int y = areaYDownBound; y < areaYUpBound; y++)
 				{
-					if(todo[i] && linearX[i] >= areaXUpBound && linearX[i] < areaXUpBound + 1 && linearY[i] >= areaYDownBound && linearY[i] < areaYUpbound)
+					int nbCells = 0;
+					for(int i = 0; i < todo.size(); i++)
 					{
-						rightIndices.add(i);
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= areaXUpBound && linearX[currentIndex] < areaXUpBound+1 && linearY[currentIndex] >= y && linearY[currentIndex] < y+1)
+						{
+							nbCells++;
+							if(nbCells >= 2)
+							{
+								addRight = true;
+								break;
+							}
+						}
+					}
+					if(addRight)
+					{
+						break;
 					}
 				}
-				double topUtilization = (double)rightIndices.size() / (double)(areaYUpbound - areaYDownBound);
-				if(topUtilization > utilizationFactor)
+				if(addRight)
 				{
-					areaXUpBound = areaXUpBound + 1;
-					for(Integer index:rightIndices)
+					areaXUpBound += 1;
+					expanded = true;
+					for(int i = 0; i < todo.size(); i++)
 					{
-						indices.add(index);
-						positionsX.add(linearX[index]);
-						positionsY.add(linearY[index]);
-						todo[index] = false;
-						nbTodo--;
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= areaXDownBound && linearX[currentIndex] < areaXUpBound && linearY[currentIndex] >= areaYDownBound && linearY[currentIndex] < areaYUpBound)
+						{
+							indices.add(currentIndex);
+							positionsX.add(linearX[currentIndex]);
+							positionsY.add(linearY[currentIndex]);
+							todo.remove(i);
+							i--;
+						}
 					}
 				}
 				
 				//Check if need to grow to the top
+				boolean addTop = false;
+				for(int x = areaXDownBound; x < areaXUpBound; x++)
+				{
+					int nbCells = 0;
+					for(int i = 0; i < todo.size(); i++)
+					{
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= x && linearX[currentIndex] < x+1 && linearY[currentIndex] >= areaYDownBound-1 && linearY[currentIndex] < areaYDownBound)
+						{
+							nbCells++;
+							if(nbCells >= 2)
+							{
+								addTop = true;
+								break;
+							}
+						}
+					}
+					if(addTop)
+					{
+						break;
+					}
+				}
+				if(addTop)
+				{
+					areaYDownBound -= 1;
+					expanded = true;
+					for(int i = 0; i < todo.size(); i++)
+					{
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= areaXDownBound && linearX[currentIndex] < areaXUpBound && linearY[currentIndex] >= areaYDownBound && linearY[currentIndex] < areaYUpBound)
+						{
+							indices.add(currentIndex);
+							positionsX.add(linearX[currentIndex]);
+							positionsY.add(linearY[currentIndex]);
+							todo.remove(i);
+							i--;
+						}
+					}
+				}
 				
 				//Check if need to grow to the left
+				boolean addLeft = false;
+				for(int y = areaYDownBound; y < areaYUpBound; y++)
+				{
+					int nbCells = 0;
+					for(int i = 0; i < todo.size(); i++)
+					{
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= areaXDownBound-1 && linearX[currentIndex] < areaXDownBound && linearY[currentIndex] >= y && linearY[currentIndex] < y+1)
+						{
+							nbCells++;
+							if(nbCells >= 2)
+							{
+								addLeft = true;
+								break;
+							}
+						}
+					}
+					if(addLeft)
+					{
+						break;
+					}
+				}
+				if(addLeft)
+				{
+					areaXDownBound -= 1;
+					expanded = true;
+					for(int i = 0; i < todo.size(); i++)
+					{
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= areaXDownBound && linearX[currentIndex] < areaXUpBound && linearY[currentIndex] >= areaYDownBound && linearY[currentIndex] < areaYUpBound)
+						{
+							indices.add(currentIndex);
+							positionsX.add(linearX[currentIndex]);
+							positionsY.add(linearY[currentIndex]);
+							todo.remove(i);
+							i--;
+						}
+					}
+				}
 				
 				//Check if need to grow to the bottom
+				boolean addBottom = false;
+				for(int x = areaXDownBound; x < areaXDownBound; x++)
+				{
+					int nbCells = 0;
+					for(int i = 0; i < todo.size(); i++)
+					{
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= x && linearX[currentIndex] < x+1 && linearY[currentIndex] >= areaYUpBound && linearY[currentIndex] < areaYUpBound+1)
+						{
+							nbCells++;
+							if(nbCells >= 2)
+							{
+								addBottom = true;
+								break;
+							}
+						}
+					}
+					if(addBottom)
+					{
+						break;
+					}
+				}
+				if(addBottom)
+				{
+					areaYUpBound += 1;
+					expanded = true;
+					for(int i = 0; i < todo.size(); i++)
+					{
+						int currentIndex = todo.get(i);
+						if(linearX[currentIndex] >= areaXDownBound && linearX[currentIndex] < areaXUpBound && linearY[currentIndex] >= areaYDownBound && linearY[currentIndex] < areaYUpBound)
+						{
+							indices.add(currentIndex);
+							positionsX.add(linearX[currentIndex]);
+							positionsY.add(linearY[currentIndex]);
+							todo.remove(i);
+							i--;
+						}
+					}
+				}
 				
 			}
 			//Grow area until not overutilized
-			double curUtilization = (double)positionsX.size() / (double)1;
+			double curUtilization = (double)positionsX.size() / (double)((areaXUpBound - areaXDownBound) * (areaYUpBound - areaYDownBound));
 		}
 		
 		//Cut and spread
