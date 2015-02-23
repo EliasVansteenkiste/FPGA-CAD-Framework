@@ -2,6 +2,7 @@ package placers.analyticalplacer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import mathtools.CGSolver;
@@ -29,11 +30,21 @@ public class AnalyticalPlacer
 	private Map<Clb,Integer> indexMap; //Maps an index to a Clb
 	private double[] linearX;
 	private double[] linearY;
+	private double utilizationFactor;
+	private int minimalX;
+	private int maximalX;
+	private int minimalY;
+	private int maximalY;
 	
 	public AnalyticalPlacer(FourLutSanitized architecture, PackedCircuit circuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
+		this.utilizationFactor = 0.9;
+		minimalX = 1;
+		maximalX = 16;
+		minimalY = 1;
+		maximalY = 16;
 	}
 	
 	public void place()
@@ -41,6 +52,7 @@ public class AnalyticalPlacer
 		randomInitialPlace();
 		initializeDataStructures();
 		solveLinear(true);
+		clusterCutSpreadRecursive();
 	}
 	
 	/*
@@ -535,75 +547,169 @@ public class AnalyticalPlacer
 		
 		
 		
+		linearX = xSolution;
+		linearY = ySolution;
 		
-		System.out.println("Indices:");
-		for(Clb clb:circuit.clbs.values())
-		{
-			System.out.println(clb.name + ": " + indexMap.get(clb));
-		}
-		System.out.println("\n\n");
 		
-		System.out.println("Nets:");
-		for(Net net:circuit.getNets().values())
-		{
-			System.out.print("Source: " + net.source.owner.name + "(" + net.source.owner.getSite().x + "," + net.source.owner.getSite().y + ") Sinks: ");
-			for(Pin sink:net.sinks)
-			{
-				System.out.print(sink.owner.name + "(" + sink.owner.getSite().x + "," + sink.owner.getSite().y + ") ");
-			}
-			System.out.println();
-		}
-		System.out.println("\n\n");
 		
-		System.out.println("XMatrix:");
-		for(int i = 0; i < xVector.length; i++)
-		{
-			for(int j = 0; j < xVector.length; j++)
-			{
-				System.out.print(xMatrix.getElement(i, j) + "       ");
-			}
-			System.out.println();
-		}
-		System.out.println("\n\n");
 		
-		System.out.println("XVector:");
-		for(int i = 0; i < xVector.length; i++)
-		{
-			System.out.println(xVector[i] + "   ");
-		}
-		System.out.println("\n\n");
 		
+//		System.out.println("Indices:");
+//		for(Clb clb:circuit.clbs.values())
+//		{
+//			System.out.println(clb.name + ": " + indexMap.get(clb));
+//		}
+//		System.out.println("\n\n");
+//		
+//		System.out.println("Nets:");
+//		for(Net net:circuit.getNets().values())
+//		{
+//			System.out.print("Source: " + net.source.owner.name + "(" + net.source.owner.getSite().x + "," + net.source.owner.getSite().y + ") Sinks: ");
+//			for(Pin sink:net.sinks)
+//			{
+//				System.out.print(sink.owner.name + "(" + sink.owner.getSite().x + "," + sink.owner.getSite().y + ") ");
+//			}
+//			System.out.println();
+//		}
+//		System.out.println("\n\n");
+//		
+//		System.out.println("XMatrix:");
+//		for(int i = 0; i < xVector.length; i++)
+//		{
+//			for(int j = 0; j < xVector.length; j++)
+//			{
+//				System.out.print(xMatrix.getElement(i, j) + "       ");
+//			}
+//			System.out.println();
+//		}
+//		System.out.println("\n\n");
+//		
+//		System.out.println("XVector:");
+//		for(int i = 0; i < xVector.length; i++)
+//		{
+//			System.out.println(xVector[i] + "   ");
+//		}
+//		System.out.println("\n\n");
+//		
 		System.out.println("\n\nX-SOLUTION:");
 		for(int i = 0; i < xSolution.length; i++)
 		{
 			System.out.println(xSolution[i] + "   ");
 		}
 		System.out.println("\n\n");
-		
-		System.out.println("YMatrix:");
-		for(int i = 0; i < yVector.length; i++)
-		{
-			for(int j = 0; j < yVector.length; j++)
-			{
-				System.out.print(yMatrix.getElement(i, j) + "       ");
-			}
-			System.out.println();
-		}
-		System.out.println("\n\n");
-		
-		System.out.println("YVector:");
-		for(int i = 0; i < yVector.length; i++)
-		{
-			System.out.println(yVector[i] + "   ");
-		}
-		System.out.println("\n\n");
-		
+//		
+//		System.out.println("YMatrix:");
+//		for(int i = 0; i < yVector.length; i++)
+//		{
+//			for(int j = 0; j < yVector.length; j++)
+//			{
+//				System.out.print(yMatrix.getElement(i, j) + "       ");
+//			}
+//			System.out.println();
+//		}
+//		System.out.println("\n\n");
+//		
+//		System.out.println("YVector:");
+//		for(int i = 0; i < yVector.length; i++)
+//		{
+//			System.out.println(yVector[i] + "   ");
+//		}
+//		System.out.println("\n\n");
+//		
 		System.out.println("\n\nY-SOLUTION:");
 		for(int i = 0; i < ySolution.length; i++)
 		{
 			System.out.println(ySolution[i] + "   ");
 		}
 		System.out.println("\n\n");
+	}
+	
+	private void clusterCutSpreadRecursive()
+	{
+		int nbTodo = linearX.length;
+		boolean[] todo = new boolean[linearX.length];
+		for(int i = 0; i < linearX.length; i++)
+		{
+			todo[i] = true;
+		}
+		while(nbTodo != 0)
+		{
+			//Cluster
+			int areaXUpBound = 0;
+			int areaXDownBound = 0;
+			int areaYUpbound = 0;
+			int areaYDownBound = 0;
+			List<Integer> indices = new ArrayList<>();
+			List<Double> positionsX = new ArrayList<>();
+			List<Double> positionsY = new ArrayList<>();
+			//Find a starting point for the cluster
+			for(int i = 0; i < linearX.length; i++)
+			{
+				if(todo[i])
+				{
+					areaXUpBound = (int)Math.floor(linearX[i] + 1.0);
+					areaXDownBound = (int)Math.floor(linearX[i]);
+					areaYUpbound = (int)Math.floor(linearY[i] + 1.0);
+					areaYDownBound = (int)Math.floor(linearY[i]);
+					indices.add(i);
+					positionsX.add(linearX[i]);
+					positionsY.add(linearY[i]);
+					todo[i] = false;
+					nbTodo--;
+					for(int j = i+1; j < linearX.length; j++)
+					{
+						if(todo[j] && linearX[j] >= areaXDownBound && linearX[j] < areaXUpBound && linearY[j] >= areaYDownBound && linearY[j] < areaYUpbound)
+						{
+							indices.add(j);
+							positionsX.add(linearX[j]);
+							positionsY.add(linearY[j]);
+							todo[j] = false;
+							nbTodo--;
+						}
+					}
+					break;
+				}
+			}
+			//Grow cluster until it is surrounded by non overutilized areas
+			
+			boolean expanded = false;
+			while(expanded)
+			{
+				//Check if need to grow to the right
+				List<Integer> rightIndices = new ArrayList<>();
+				for(int i = 0; i < linearX.length; i++)
+				{
+					if(todo[i] && linearX[i] >= areaXUpBound && linearX[i] < areaXUpBound + 1 && linearY[i] >= areaYDownBound && linearY[i] < areaYUpbound)
+					{
+						rightIndices.add(i);
+					}
+				}
+				double topUtilization = (double)rightIndices.size() / (double)(areaYUpbound - areaYDownBound);
+				if(topUtilization > utilizationFactor)
+				{
+					areaXUpBound = areaXUpBound + 1;
+					for(Integer index:rightIndices)
+					{
+						indices.add(index);
+						positionsX.add(linearX[index]);
+						positionsY.add(linearY[index]);
+						todo[index] = false;
+						nbTodo--;
+					}
+				}
+				
+				//Check if need to grow to the top
+				
+				//Check if need to grow to the left
+				
+				//Check if need to grow to the bottom
+				
+			}
+			//Grow area until not overutilized
+			double curUtilization = (double)positionsX.size() / (double)1;
+		}
+		
+		//Cut and spread
 	}
 	
 	private void randomInitialPlace()
@@ -636,11 +742,17 @@ public class AnalyticalPlacer
 		linearX = new double[dimensions];
 		linearY = new double[dimensions];
 		int index = 0;
+		double xPos = 0.15;
+		double yPos = 0.09;
 		for(Clb clb:circuit.clbs.values())
 		{
 			indexMap.put(clb, index);
-			linearX[index] = clb.getSite().x;
-			linearY[index] = clb.getSite().y;
+			//linearX[index] = clb.getSite().x;
+			//linearY[index] = clb.getSite().y;
+			linearX[index] = xPos;
+			linearY[index] = yPos;
+			xPos += 0.15;
+			yPos += 0.09;
 			index++;
 		}
 	}
