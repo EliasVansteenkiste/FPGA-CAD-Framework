@@ -594,7 +594,7 @@ public class AnalyticalPlacer
 		System.out.println("\n\nX-SOLUTION:");
 		for(int i = 0; i < xSolution.length; i++)
 		{
-			System.out.println(xSolution[i] + "   ");
+			System.out.printf(i + ": %.3f\n",xSolution[i]);
 		}
 		System.out.println("\n\n");
 //		
@@ -616,12 +616,12 @@ public class AnalyticalPlacer
 //		}
 //		System.out.println("\n\n");
 //		
-		System.out.println("\n\nY-SOLUTION:");
+		System.out.println("\nY-SOLUTION:");
 		for(int i = 0; i < ySolution.length; i++)
 		{
-			System.out.println(ySolution[i] + "   ");
+			System.out.printf(i + ": %.3f\n", ySolution[i]);
 		}
-		System.out.println("\n\n");
+		System.out.println();
 	}
 	
 	private void clusterCutSpreadRecursive()
@@ -669,6 +669,10 @@ public class AnalyticalPlacer
 
 			//Grow cluster until it is surrounded by non overutilized areas
 			boolean expanded = false;
+			if(indices.size() > 1)
+			{
+				expanded = true;
+			}
 			while(expanded)
 			{
 				expanded = false;
@@ -797,7 +801,7 @@ public class AnalyticalPlacer
 				
 				//Check if need to grow to the bottom
 				boolean addBottom = false;
-				for(int x = areaXDownBound; x < areaXDownBound; x++)
+				for(int x = areaXDownBound; x < areaXUpBound; x++)
 				{
 					int nbCells = 0;
 					for(int i = 0; i < todo.size(); i++)
@@ -837,11 +841,299 @@ public class AnalyticalPlacer
 				}
 				
 			}
+			
+			System.out.println("\n\nINDICES:");
+			for(int index:indices)
+			{
+				System.out.print(index + " ");
+			}
+			System.out.println("\nX_LOCATIONS:");
+			for(double x:positionsX)
+			{
+				System.out.printf("%.3f ", x);
+			}
+			System.out.println("\nYLOCATIONS:");
+			for(double y:positionsY)
+			{
+				System.out.printf("%.3f ", y);
+			}
+			System.out.println("\nXDown: " + areaXDownBound + ", XUp: " + areaXUpBound + ", YDown: " + areaYDownBound + ", YUp: " + areaYUpBound);
+			
+			
+			
+			
+			if(indices.size() == 1)
+			{
+				System.out.println();
+				continue;
+			}
+			
+			
+			
+			
 			//Grow area until not overutilized
 			double curUtilization = (double)positionsX.size() / (double)((areaXUpBound - areaXDownBound) * (areaYUpBound - areaYDownBound));
+			System.out.printf("Utilization: %.3f\n", curUtilization);
+			int curDirection = 0; //0 = right, 1 = top, 2 = left, 3 = bottom
+			while(curUtilization >= utilizationFactor)
+			{
+				switch(curDirection)
+				{
+					case 0: //Grow to the right if possible
+						if(areaXUpBound <= maximalX)
+						{
+							areaXUpBound += 1;
+						}
+						break;
+					case 1: //Grow to the top if possible
+						if(areaYDownBound >= minimalY)
+						{
+							areaYDownBound -= 1;
+						}
+						break;
+					case 2: //Grow to the left if possible
+						if(areaXDownBound >= minimalX)
+						{
+							areaXDownBound -= 1;
+						}
+						break;
+					default: //Grow to the bottom if possible
+						if(areaYUpBound <= maximalY)
+						{
+							areaYUpBound += 1;
+						}
+						break;
+				}
+				curUtilization = (double)positionsX.size() / (double)((areaXUpBound - areaXDownBound) * (areaYUpBound - areaYDownBound));
+				curDirection++;
+				curDirection %= 4;
+			}
+			System.out.println("New limits: XDown: " + areaXDownBound + ", XUp: " + areaXUpBound + ", YDown: " + areaYDownBound + ", YUp: " + areaYUpBound);
+			System.out.printf("New utilization: %.3f\n", curUtilization);
+			
+			
+			
+			
+			//Cut and spread
+			boolean cutDir = true; //Initial cut is horizontally
+			if(areaYUpBound - areaYDownBound <= 1) //Check if it is possible to cut horizontally
+			{
+				cutDir = false; //Cut vertically if not possible to cut horizontally
+			}
+			cutAndSpread(cutDir, indices, positionsX, positionsY, areaXDownBound, areaXUpBound, areaYDownBound, areaYUpBound); 
+
+			
+			
+			
+			
+			System.out.println();
+		}
+	}
+	
+	/*
+	 * Cut and spread recursively
+	 * horCutDirection = true ==> cut horizontally, horCutDirection = false ==> cut vertically
+	 */
+	private void cutAndSpread(boolean horCutDirection, List<Integer> indices, List<Double> positionsX, List<Double> positionsY, 
+								int areaXDownBound, int areaXUpBound, int areaYDownBound, int areaYUpBound)
+	{
+		//Bug checks
+		if(areaXDownBound >= areaXUpBound || areaYDownBound >= areaYUpBound)
+		{
+			System.err.println("ERROR: A DOWNBOUND IS BIGGER THAN OR EQUAL TO AN UPBOUND");
 		}
 		
-		//Cut and spread
+		//Sort
+		if(horCutDirection) //Cut horizontally => sort in i
+		{
+			sort(false, indices, positionsX, positionsY);
+		}
+		else //Cut vertically
+		{
+			sort(true, indices, positionsX, positionsY);
+		}
+		
+		//Source cut
+		int endIndex = indices.size();
+		int middleIndex = endIndex / 2; //If odd ==> one more in last set than in first set
+		List<Integer> indices1 = new ArrayList<>();
+		List<Double> positionsX1 = new ArrayList<>();
+		List<Double> positionsY1 = new ArrayList<>();
+		for(int i = 0; i < middleIndex; i++)
+		{
+			indices1.add(indices.get(i));
+			positionsX1.add(positionsX.get(i));
+			positionsY1.add(positionsY.get(i));
+		}
+		List<Integer> indices2 = new ArrayList<>();
+		List<Double> positionsX2 = new ArrayList<>();
+		List<Double> positionsY2 = new ArrayList<>();
+		for(int i = middleIndex; i < endIndex; i++)
+		{
+			indices2.add(indices.get(i));
+			positionsX2.add(positionsX.get(i));
+			positionsY2.add(positionsY.get(i));
+		}
+		
+		//Target cut
+		int cutPosition;
+		if(horCutDirection) //Cut horizontally
+		{
+			cutPosition = (areaYDownBound + areaYUpBound) / 2;
+			double utilizationTop = (double)positionsY1.size() / (double)((areaXUpBound - areaXDownBound) * (cutPosition - areaYDownBound));
+			while(utilizationTop > 1.0) //Move blocks from top to bottom
+			{
+				int indexToShift = indices1.remove(indices1.size() - 1);
+				indices2.add(0, indexToShift);
+				double xPosToShift = positionsX1.remove(positionsX1.size() - 1);
+				positionsX2.add(0, xPosToShift);
+				double yPosToShift = positionsY1.remove(positionsY1.size() - 1);
+				positionsY2.add(0, yPosToShift);
+				utilizationTop = (double)positionsY1.size() / (double)((areaXUpBound - areaXDownBound) * (cutPosition - areaYDownBound));
+			}
+			double utilizationBottom = (double)positionsY2.size() / (double)((areaXUpBound - areaXDownBound) * (areaYUpBound - cutPosition));
+			if(utilizationBottom > 1.0 || utilizationTop > 1.0)
+			{
+				System.err.println("AN ERROR OCCURRED WHILE CUTTING!");
+			}
+			else
+			{
+				System.out.println("Horizontal cut y-position: " + cutPosition);
+				System.out.printf("Top utilization: %.3f\n", utilizationTop);
+				System.out.printf("Bottom utilization: %.3f\n", utilizationBottom);
+			}
+		}
+		else //Cut vertically
+		{
+			cutPosition = (areaXDownBound + areaXUpBound) / 2;
+			double utilizationLeft = (double)positionsX1.size() / (double)((cutPosition - areaXDownBound) * (areaYUpBound - areaYDownBound));
+			while(utilizationLeft > 1.0) //Move blocks from left to right
+			{
+				int indexToShift = indices1.remove(indices1.size() - 1);
+				indices2.add(0, indexToShift);
+				double xPosToShift = positionsX1.remove(positionsX1.size() - 1);
+				positionsX2.add(0, xPosToShift);
+				double yPosToShift = positionsY1.remove(positionsY1.size() - 1);
+				positionsY2.add(0, yPosToShift);
+				utilizationLeft = (double)positionsX1.size() / (double)((cutPosition - areaXDownBound) * (areaYUpBound - areaYDownBound));
+			}
+			double utilizationRight = (double)positionsX2.size() / (double)((areaXUpBound - cutPosition) * (areaYUpBound - areaYDownBound));
+			if(utilizationRight > 1.0 || utilizationLeft > 1.0)
+			{
+				System.out.println("AN ERROR OCCURRED WHILE CUTTING!");
+			}
+			else
+			{
+				System.out.println("Vertical cut x-position: " + cutPosition);
+				System.out.printf("Left utilization: %.3f\n", utilizationLeft);
+				System.out.printf("Right utilization: %.3f\n", utilizationRight);
+			}
+		}
+		
+		//Recursive calls if necessary (check for base cases)
+		if(indices1.size() > 1) //Do recursive call
+		{
+			if(horCutDirection)
+			{
+				boolean nextCut = !horCutDirection; //Next cut will be vertical
+				if(areaXUpBound - areaXDownBound <= 1) //Next cut will be vertical ==> check if it will be possible to cut vertically
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, areaXUpBound, areaYDownBound, cutPosition);
+			}
+			else
+			{
+				boolean nextCut = !horCutDirection; //Next cut will be horizontal
+				if(areaYUpBound - areaYDownBound <= 1)
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, cutPosition, areaYDownBound, areaYUpBound);
+			}
+		}
+		else //Snap to grid
+		{
+			System.out.printf("Index: %d, X: %d, Y: %d\n", indices1.get(0), areaXDownBound, areaYDownBound);
+		}
+		if(indices2.size() > 1) //Do recursive call
+		{
+			if(horCutDirection)
+			{
+				boolean nextCut = !horCutDirection; //Next cut will be vertical
+				if(areaXUpBound - areaXDownBound <= 1)
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, areaXDownBound, areaXUpBound, cutPosition, areaYUpBound);
+			}
+			else
+			{
+				boolean nextCut = !horCutDirection; //Next cut will be horizontal
+				if(areaYUpBound - areaYDownBound <= 1)
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, cutPosition, areaXUpBound, areaYDownBound, areaYUpBound);
+			}
+		}
+		else //Snap to grid
+		{
+			if(horCutDirection)
+			{
+				System.out.printf("Index: %d, X: %d, Y: %d\n", indices2.get(0), areaXDownBound, cutPosition);
+			}
+			else
+			{
+				System.out.printf("Index: %d, X: %d, Y: %d\n", indices2.get(0), cutPosition, areaYDownBound);
+			}
+		}
+	}
+	
+	/*
+	 * Sort in increasing order of X or Y position
+	 * xDir = true ==> sort in x direction, xDir = false ==> sort in Y direction
+	 */
+	private void sort(boolean xDir, List<Integer> indices, List<Double> positionsX, List<Double> positionsY)
+	{
+		for(int i = 0; i < indices.size(); i++)
+		{
+			int minIndex = i;
+			double minValue;
+			if(xDir)
+			{
+				minValue = positionsX.get(i);
+			}
+			else
+			{
+				minValue = positionsY.get(i);
+			}
+			for(int j = i+1; j < indices.size(); j++)
+			{
+				if(xDir && positionsX.get(j) < minValue)
+				{
+					minIndex = j;
+					minValue = positionsX.get(j);
+				}
+				if(!xDir && positionsY.get(j) < minValue)
+				{
+					minIndex = j;
+					minValue = positionsY.get(j);
+				}
+			}
+			if(minIndex != i) //Switch index, X-position and Y-position between i and minIndex
+			{
+				int previousIIndex = indices.get(i);
+				double previousIX = positionsX.get(i);
+				double previousIY = positionsY.get(i);
+				indices.set(i, indices.get(minIndex));
+				positionsX.set(i, positionsX.get(minIndex));
+				positionsY.set(i, positionsY.get(minIndex));
+				indices.set(minIndex, previousIIndex);
+				positionsX.set(minIndex, previousIX);
+				positionsY.set(minIndex, previousIY);
+			}
+		}
 	}
 	
 	private void randomInitialPlace()
