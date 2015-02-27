@@ -86,7 +86,7 @@ public class PlacementManipulatorIOCLB implements PlacementManipulator {
 		for(Site s:a.siteMap.values()){
 			if(s.block!=null&&s.block.type==BlockType.CLB){
 				if(clbs.remove(s.block.name)==null){
-					System.out.println("Placement consistency check failed! clb:"+s.block+", site:"+s);
+					System.out.println("Placement consistency check failed! clb:"+s.block.name+", site:"+s);
 					return;
 				}
 			}

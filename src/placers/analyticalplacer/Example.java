@@ -59,8 +59,8 @@ public class Example
 		
 		//printPackedCircuit(packedCircuit);
 		
-		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
-		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+		System.out.println("SIMULATED ANNEALING PLACEMENT:");
+		simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
 		//System.out.println();
 		//System.out.println("SA placed block locations");
 		//printPlacedCircuit(packedCircuit);

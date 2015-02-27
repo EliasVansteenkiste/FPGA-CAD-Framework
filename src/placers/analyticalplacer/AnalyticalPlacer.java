@@ -8,9 +8,6 @@ import java.util.Map;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import placers.Rplace;
-
-import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
 import circuit.Input;
@@ -30,6 +27,8 @@ public class AnalyticalPlacer
 	private Map<Clb,Integer> indexMap; //Maps an index to a Clb
 	private double[] linearX;
 	private double[] linearY;
+	private int[] legalX;
+	private int[] legalY;
 	private double utilizationFactor;
 	private int minimalX;
 	private int maximalX;
@@ -51,8 +50,13 @@ public class AnalyticalPlacer
 	{
 		randomInitialPlace();
 		initializeDataStructures();
-		solveLinear(true);
+		for(int i = 0; i < 5; i++)
+		{
+			System.out.println("SOLVE " + i);
+			solveLinear(true);
+		}
 		clusterCutSpreadRecursive();
+		writeFinal();
 	}
 	
 	/*
@@ -211,8 +215,9 @@ public class AnalyticalPlacer
 			if(!(minXIndex == -1 && maxXIndex == -1))
 			{
 				double delta = maxX - minX;
-				if(delta == 0)
+				if(delta == 0.0)
 				{
+					System.out.println("Problem 1");
 					delta = 0.001;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
@@ -244,8 +249,9 @@ public class AnalyticalPlacer
 			if(!(minYIndex == -1 && maxYIndex == -1))
 			{
 				double delta = maxY - minY;
-				if(delta == 0)
+				if(delta == 0.0)
 				{
+					System.out.println("Problem 2");
 					delta = 0.001;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
@@ -280,8 +286,9 @@ public class AnalyticalPlacer
 				if(index != minXIndex)
 				{
 					double deltaMaxX = Math.abs(linearX[index] - maxX);
-					if(deltaMaxX == 0)
+					if(deltaMaxX == 0.0)
 					{
+						System.out.println("Problem 3: maxX = " + maxX + " and linearX = " + linearX[index]);
 						deltaMaxX = 0.001;
 					}
 					double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
@@ -327,8 +334,9 @@ public class AnalyticalPlacer
 				if(index != maxXIndex)
 				{
 					double deltaMinX = Math.abs(linearX[index] - minX);
-					if(deltaMinX == 0)
+					if(deltaMinX == 0.0)
 					{
+						System.out.println("Problem 4");
 						deltaMinX = 0.001;
 					}
 					double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
@@ -372,8 +380,9 @@ public class AnalyticalPlacer
 				if(index != minYIndex)
 				{
 					double deltaMaxY = Math.abs(linearY[index] - maxY);
-					if(deltaMaxY == 0)
+					if(deltaMaxY == 0.0)
 					{
+						System.out.println("Problem 5");
 						deltaMaxY = 0.001;
 					}
 					double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
@@ -399,8 +408,9 @@ public class AnalyticalPlacer
 				if(index != maxYIndex)
 				{
 					double deltaMinY = Math.abs(linearY[index] - minY);
-					if(deltaMinY == 0)
+					if(deltaMinY == 0.0)
 					{
+						System.out.println("Problem 6");
 						deltaMinY = 0.001;
 					}
 					double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
@@ -433,8 +443,9 @@ public class AnalyticalPlacer
 					if(!(maxXIndex == -1))
 					{
 						double deltaMaxX = Math.abs(fixedXPosition - maxX);
-						if(deltaMaxX == 0)
+						if(deltaMaxX == 0.0)
 						{
+							System.out.println("Problem 7");
 							deltaMaxX = 0.001;
 						}
 						double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
@@ -462,8 +473,9 @@ public class AnalyticalPlacer
 					if(!(minXIndex == -1))
 					{
 						double deltaMinX = Math.abs(fixedXPosition - minX);
-						if(deltaMinX == 0)
+						if(deltaMinX == 0.0)
 						{
+							System.out.println("Problem 8");
 							deltaMinX = 0.001;
 						}
 						double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
@@ -496,8 +508,9 @@ public class AnalyticalPlacer
 					if(!(maxYIndex == -1))
 					{
 						double deltaMaxY = Math.abs(fixedYPosition - maxY);
-						if(deltaMaxY == 0)
+						if(deltaMaxY == 0.0)
 						{
+							System.out.println("Problem 9");
 							deltaMaxY = 0.001;
 						}
 						double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
@@ -516,8 +529,9 @@ public class AnalyticalPlacer
 					if(!(minYIndex == -1))
 					{
 						double deltaMinY = Math.abs(fixedYPosition - minY);
-						if(deltaMinY == 0)
+						if(deltaMinY == 0.0)
 						{
+							System.out.println("Problem 10");
 							deltaMinY = 0.001;
 						}
 						double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
@@ -533,7 +547,7 @@ public class AnalyticalPlacer
 			}
 		}
 		
-		double epselon = 0.000001;
+		double epselon = 0.0001;
 		
 		//Solve x problem
 		CGSolver xSolver = new CGSolver(xMatrix, xVector);
@@ -626,8 +640,8 @@ public class AnalyticalPlacer
 	
 	private void clusterCutSpreadRecursive()
 	{
-		//int nbTodo = linearX.length;
-		//boolean[] todo = new boolean[linearX.length];
+		int[] semiLegalXPositions = new int[linearX.length];
+		int[] semiLegalYPositions = new int[linearX.length];
 		List<Integer> todo = new ArrayList<>();
 		for(int i = 0; i < linearX.length; i++)
 		{
@@ -864,6 +878,12 @@ public class AnalyticalPlacer
 			
 			if(indices.size() == 1)
 			{
+				int x = (int)Math.round(positionsX.get(0));
+				int y = (int)Math.round(positionsY.get(0));
+				int index = indices.get(0);
+				semiLegalXPositions[index] = x;
+				semiLegalYPositions[index] = y;
+				System.out.printf("Index: %d, X: %d, Y: %d\n", indices.get(0), x, y);
 				System.out.println();
 				continue;
 			}
@@ -920,7 +940,8 @@ public class AnalyticalPlacer
 			{
 				cutDir = false; //Cut vertically if not possible to cut horizontally
 			}
-			cutAndSpread(cutDir, indices, positionsX, positionsY, areaXDownBound, areaXUpBound, areaYDownBound, areaYUpBound); 
+			cutAndSpread(cutDir, indices, positionsX, positionsY, areaXDownBound, areaXUpBound, areaYDownBound, areaYUpBound, 
+							semiLegalXPositions, semiLegalYPositions); 
 
 			
 			
@@ -928,6 +949,15 @@ public class AnalyticalPlacer
 			
 			System.out.println();
 		}
+		
+		
+		
+		
+		
+		finalLegalization(semiLegalXPositions, semiLegalYPositions);
+		
+		
+		
 	}
 	
 	/*
@@ -935,7 +965,8 @@ public class AnalyticalPlacer
 	 * horCutDirection = true ==> cut horizontally, horCutDirection = false ==> cut vertically
 	 */
 	private void cutAndSpread(boolean horCutDirection, List<Integer> indices, List<Double> positionsX, List<Double> positionsY, 
-								int areaXDownBound, int areaXUpBound, int areaYDownBound, int areaYUpBound)
+								int areaXDownBound, int areaXUpBound, int areaYDownBound, int areaYUpBound, 
+								int[] semiLegalXPositions, int[] semiLegalYPositions)
 	{
 		//Bug checks
 		if(areaXDownBound >= areaXUpBound || areaYDownBound >= areaYUpBound)
@@ -1040,7 +1071,8 @@ public class AnalyticalPlacer
 				{
 					nextCut = horCutDirection;
 				}
-				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, areaXUpBound, areaYDownBound, cutPosition);
+				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, areaXUpBound, areaYDownBound, cutPosition, 
+								semiLegalXPositions, semiLegalYPositions);
 			}
 			else
 			{
@@ -1049,12 +1081,77 @@ public class AnalyticalPlacer
 				{
 					nextCut = horCutDirection;
 				}
-				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, cutPosition, areaYDownBound, areaYUpBound);
+				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, cutPosition, areaYDownBound, areaYUpBound, 
+								semiLegalXPositions, semiLegalYPositions);
 			}
 		}
 		else //Snap to grid
 		{
-			System.out.printf("Index: %d, X: %d, Y: %d\n", indices1.get(0), areaXDownBound, areaYDownBound);
+
+			int x;
+			int y;
+			if(positionsX1.get(0) <= areaXDownBound)
+			{
+				x = areaXDownBound;
+			}
+			else
+			{
+				if(horCutDirection)
+				{
+					if(positionsX1.get(0) >= areaXUpBound - 1)
+					{
+						x = areaXUpBound - 1;
+					}
+					else
+					{
+						x = (int)Math.round(positionsX1.get(0));
+					}
+				}
+				else
+				{
+					if(positionsX1.get(0) >= cutPosition - 1)
+					{
+						x = cutPosition - 1;
+					}
+					else
+					{
+						x = (int)Math.round(cutPosition - 1);
+					}
+				}
+			}
+			if(positionsY2.get(0) <= areaYDownBound)
+			{
+				y = areaYDownBound;
+			}
+			else
+			{
+				if(horCutDirection)
+				{
+					if(positionsY2.get(0) >= cutPosition - 1)
+					{	
+						y = cutPosition - 1;
+					}
+					else
+					{
+						y = (int)Math.round(positionsY2.get(0));
+					}
+				}
+				else
+				{
+					if(positionsY2.get(0) >= areaYUpBound - 1)
+					{	
+						y = areaYUpBound - 1;
+					}
+					else
+					{
+						y = (int)Math.round(positionsY2.get(0));
+					}
+				}
+			}
+			int index = indices1.get(0);
+			System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+			semiLegalXPositions[index] = x;
+			semiLegalYPositions[index] = y;
 		}
 		if(indices2.size() > 1) //Do recursive call
 		{
@@ -1065,7 +1162,8 @@ public class AnalyticalPlacer
 				{
 					nextCut = horCutDirection;
 				}
-				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, areaXDownBound, areaXUpBound, cutPosition, areaYUpBound);
+				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, areaXDownBound, areaXUpBound, cutPosition, areaYUpBound, 
+								semiLegalXPositions, semiLegalYPositions);
 			}
 			else
 			{
@@ -1074,18 +1172,297 @@ public class AnalyticalPlacer
 				{
 					nextCut = horCutDirection;
 				}
-				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, cutPosition, areaXUpBound, areaYDownBound, areaYUpBound);
+				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, cutPosition, areaXUpBound, areaYDownBound, areaYUpBound, 
+								semiLegalXPositions, semiLegalYPositions);
 			}
 		}
 		else //Snap to grid
 		{
-			if(horCutDirection)
+			int x;
+			int y;
+			if(positionsX2.get(0) >= areaXUpBound - 1)
 			{
-				System.out.printf("Index: %d, X: %d, Y: %d\n", indices2.get(0), areaXDownBound, cutPosition);
+				x = areaXUpBound - 1;
 			}
 			else
 			{
-				System.out.printf("Index: %d, X: %d, Y: %d\n", indices2.get(0), cutPosition, areaYDownBound);
+				if(horCutDirection)
+				{
+					if(positionsX2.get(0) <= areaXDownBound)
+					{
+						x = areaXDownBound;
+					}
+					else
+					{
+						x = (int)Math.round(positionsX2.get(0));
+					}
+				}
+				else
+				{
+					if(positionsX2.get(0) <= cutPosition)
+					{
+						x = cutPosition;
+					}
+					else
+					{
+						x = (int)Math.round(positionsX2.get(0));
+					}
+				}
+			}
+			if(positionsY2.get(0) >= areaYUpBound - 1)
+			{
+				y = areaYUpBound - 1;
+			}
+			else
+			{
+				if(horCutDirection)
+				{
+					if(positionsY2.get(0) <= cutPosition)
+					{
+						y = cutPosition;
+					}
+					else
+					{
+						y = (int)Math.round(positionsY2.get(0));
+					}
+				}
+				else
+				{
+					if(positionsY2.get(0) <= areaYDownBound)
+					{
+						y = areaYDownBound;
+					}
+					else
+					{
+						y = (int)Math.round(positionsY2.get(0));
+					}
+				}
+			}
+			int index = indices2.get(0);
+			System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+			semiLegalXPositions[index] = x;
+			semiLegalYPositions[index] = y;
+		}
+	}
+	
+	/*
+	 * Eliminates the final overlaps (between different clusters)
+	 * Works from left to right
+	 */
+	private void finalLegalization(int[] semiLegalXPositions, int[] semiLegalYPositions)
+	{
+		int[] semiLegalIndices = new int[semiLegalXPositions.length];
+		for(int i = 0; i < semiLegalIndices.length; i++)
+		{
+			semiLegalIndices[i] = i;
+		}
+		
+		System.out.println("BEFORE FINAL LEGALIZATION:");
+		for(int i = 0; i < semiLegalIndices.length; i++)
+		{
+			System.out.printf("Index: %d, X: %d, Y: %d\n", semiLegalIndices[i], semiLegalXPositions[i], semiLegalYPositions[i]);
+		}
+		
+		sort(true, semiLegalIndices, semiLegalXPositions, semiLegalYPositions); //Sort in x direction
+		
+		int ySize = maximalY - minimalY + 1;
+		int xSize = maximalX - minimalY + 1;
+		boolean[][] occupied = new boolean[ySize][xSize]; //True if CLB site is occupied, false if not
+		for(int i = 0; i < ySize; i++)
+		{
+			for(int j = 0; j < xSize; j++)
+			{
+				occupied[i][j] = false;
+			}
+		}
+		
+		for(int i = 0; i < semiLegalIndices.length; i++)
+		{
+			int index = semiLegalIndices[i];
+			int x = semiLegalXPositions[i];
+			int y = semiLegalYPositions[i];
+			
+			//Shift to legal zone
+			while(x < minimalX)
+			{
+				x++;
+			}
+			while(x > maximalX)
+			{
+				x--;
+			}
+			while(y < minimalY)
+			{
+				y++;
+			}
+			while(y > maximalX)
+			{
+				y--;
+			}
+			
+			//Eliminate overlap
+			if(!occupied[y-minimalY][x-minimalX])
+			{
+				occupied[y-minimalY][x-minimalX] = true;
+				legalX[index] = x;
+				legalY[index] = y;
+			}
+			else
+			{
+				//Look around for free spot ==> counterclockwise with increasing boxSize till we found available position
+				int currentX = x;
+				int currentY = y-1;
+				int curBoxSize = 1;
+				boolean xDir = true; //true = x-direction, false = y-direction
+				int moveSpeed = -1; //Always +1 or -1
+				System.out.println("Need to search around X = " + x + " and Y = " + y);
+				while(currentX < minimalX || currentX > maximalX || currentY < minimalY || currentY > maximalY || occupied[currentY-minimalY][currentX-minimalX])
+				{
+					System.out.println("X = " + currentX + ", Y = " + currentY + " is not free");
+					if(xDir && currentX == x-curBoxSize) //Check if we reached top left corner
+					{
+						System.out.println("Here 1");
+						xDir = false;
+						moveSpeed = 1;
+						currentY = y - curBoxSize + 1;
+					}
+					else
+					{
+						if(!xDir && currentY == y+curBoxSize) //Check if we reached bottom left corner
+						{
+							System.out.println("Here 2");
+							xDir = true;
+							moveSpeed = 1;
+							currentX = x - curBoxSize + 1;
+						}
+						else
+						{
+							if(xDir && currentX == x+curBoxSize) //Check if we reached bottom right corner
+							{
+								System.out.println("Here 3");
+								xDir = false;
+								moveSpeed = -1;
+								currentY = y + curBoxSize -1;
+							}
+							else
+							{
+								if(!xDir && currentY == y-curBoxSize) //Check if we reached top right corner
+								{
+									System.out.println("Here 4");
+									xDir = true;
+									moveSpeed = -1;
+									currentX = x + curBoxSize - 1;
+								}
+								else // We didn't reach a corner and just have to keep moving
+								{
+									if(xDir) //Move in x-direction
+									{
+										currentX += moveSpeed;
+									}
+									else //Move in y-direction
+									{
+										currentY += moveSpeed;
+									}
+									if(currentX == x && currentY == y - curBoxSize) //We've went completely around the box and didn't find an available position ==> increas box size
+									{
+										curBoxSize++;
+										currentX = x;
+										currentY = y-curBoxSize;
+										xDir = true;
+										moveSpeed = -1;
+									}
+								}
+							}
+						}
+					}
+				}
+				occupied[currentY-minimalY][currentX-minimalX] = true;
+				legalX[index] = currentX;
+				legalY[index] = currentY;
+			}
+		}
+		
+		System.out.println("AFTER FINAL LEGALIZATION:");
+		for(int i = 0; i < legalX.length; i++)
+		{
+			System.out.printf("Index: %d, X: %d, Y: %d\n", i, legalX[i], legalY[i]);
+		}
+	}
+	
+	private void writeFinal()
+	{
+		//Clear all previous locations
+		for(int i = minimalX; i < maximalX; i++)
+		{
+			for(int j = minimalY; j < maximalY; j++)
+			{
+				architecture.getSite(i, j, 0).block = null;
+			}
+		}
+		
+		//Update locations
+		for(Clb clb:circuit.clbs.values())
+		{
+			int index = indexMap.get(clb);
+			Site site = architecture.getSite(legalX[index], legalY[index], 0);
+			site.block = clb;
+			clb.setSite(site);
+		}
+		
+//		//Check consistency
+//		for(int i = minimalX; i < maximalX; i++)
+//		{
+//			for(int j = minimalY; j < maximalY; j++)
+//			{
+//				Site site = architecture.getSite(i, j, 0);
+//				if(site.block != null)
+//				{
+//					System.out.println(site.block.name + " is at site location X = " + i + ", Y = " + j);
+//					System.out.println(site.x + "," + site.y);
+//					System.out.println(site.block.getSite().x + "," + site.block.getSite().y);
+//				}
+//			}
+//		}
+	}
+	
+	private void sort(boolean xDir, int[] indices, int[] positionsX, int[] positionsY)
+	{
+		for(int i = 0; i < indices.length; i++)
+		{
+			int minIndex = i;
+			int minValue;
+			if(xDir)
+			{
+				minValue = positionsX[i];
+			}
+			else
+			{
+				minValue = positionsY[i];
+			}
+			for(int j = i+1; j < indices.length; j++)
+			{
+				if(xDir && positionsX[j] < minValue)
+				{
+					minIndex = j;
+					minValue = positionsX[j];
+				}
+				if(!xDir && positionsY[j] < minValue)
+				{
+					minIndex = j;
+					minValue = positionsY[j];
+				}
+			}
+			if(minIndex != i)
+			{
+				int previousIIndex = indices[i];
+				int previousIX = positionsX[i];
+				int previousIY = positionsY[i];
+				indices[i] = indices[minIndex];
+				positionsX[i] = positionsX[minIndex];
+				positionsY[i] = positionsY[minIndex];
+				indices[minIndex] = previousIIndex;
+				positionsX[minIndex] = previousIX;
+				positionsY[minIndex] = previousIY;
 			}
 		}
 	}
@@ -1139,7 +1516,7 @@ public class AnalyticalPlacer
 	private void randomInitialPlace()
 	{
 		// Generate random placing (CLBs only)
-		Rplace.place(circuit, architecture);
+		//Rplace.place(circuit, architecture);
 		// Place IO's (not random because IOs are not placed by the analytical placer for now)
 		int index = 0;
 		for(Input input:circuit.inputs.values())
@@ -1165,6 +1542,8 @@ public class AnalyticalPlacer
 		indexMap = new HashMap<>();;
 		linearX = new double[dimensions];
 		linearY = new double[dimensions];
+		legalX = new int[dimensions];
+		legalY = new int[dimensions];
 		int index = 0;
 		double xPos = 0.15;
 		double yPos = 0.09;
