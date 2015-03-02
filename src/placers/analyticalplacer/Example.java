@@ -40,6 +40,7 @@ public class Example
 		{
 			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -65,8 +66,8 @@ public class Example
 		//System.out.println("SA placed block locations");
 		//printPlacedCircuit(packedCircuit);
 		
-		System.out.println("ANALYTICAL PLACEMENT:");
-		analyticalPlace(packedCircuit, prePackedCircuit);
+		//System.out.println("ANALYTICAL PLACEMENT:");
+		//analyticalPlace(packedCircuit, prePackedCircuit);
 		//printPlacedCircuit(packedCircuit);
 	}
 	
@@ -107,7 +108,7 @@ public class Example
 		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		
 		//Random placement
-		Rplace.placeCLBsandIOs(c, a, rand);
+		Rplace.placeCLBsandFixedIOs(c, a, rand);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total Cost random placement: " + bbncc.calculateTotalCost());
 		

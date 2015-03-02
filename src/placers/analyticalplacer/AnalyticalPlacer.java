@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+
+import placers.Rplace;
 
 import mathtools.CGSolver;
 import mathtools.Crs;
@@ -46,37 +49,105 @@ public class AnalyticalPlacer
 		maximalY = 16;
 	}
 	
+//	public void place()
+//	{
+//		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+//		initializeDataStructures();
+//		
+//		System.out.println("Inputs:");
+//		for(Input input:circuit.inputs.values())
+//		{
+//			System.out.println(input.name + ": (" + input.getSite().x + "," + input.getSite().y + ")");
+//		}
+//		System.out.println("\nOutputs:");
+//		for(Output output:circuit.outputs.values())
+//		{
+//			System.out.println(output.name + ": (" + output.getSite().x + "," + output.getSite().y + ")");
+//		}
+//		
+//		//Initial linear solves, should normally be done 5-7 times
+//		for(int i = 0; i < 1; i++)
+//		{
+//			solveLinear(true, 0.0);
+//		}
+//		
+//		System.out.println("Linear solutions:\n\nX-Solution:");
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.println("" + i + ": " + linearX[i]);
+//		}
+//		System.out.println("\nY-solution");
+//		for(int i = 0; i < linearY.length; i++)
+//		{
+//			System.out.println("" + i + ": " + linearY[i]);
+//		}
+//		
+//		//Initial legalization
+//		clusterCutSpreadRecursive();
+//		
+//		//Iterative solves with pseudonets
+//		for(int i = 0; i < 4; i++)
+//		{
+//			System.out.println("SOLVE " + i);
+//			solveLinear(false, (i+1)*0.3);
+//			clusterCutSpreadRecursive();
+//		}
+//		
+//		writeFinal();
+//	}
+	
 	public void place()
 	{
-		randomInitialPlace();
+		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
-		for(int i = 0; i < 5; i++)
+		
+		Crs xMatrix = new Crs(3);
+		xMatrix.setElement(0, 0, 8.628);
+		xMatrix.setElement(0, 1, -0.628);
+		xMatrix.setElement(1, 0, -0.628);
+		xMatrix.setElement(1, 1, 1.878);
+		xMatrix.setElement(1, 2, -1.25);
+		xMatrix.setElement(2, 1, -1.25);
+		xMatrix.setElement(2, 2, 2.96);
+		
+		double[] xVector = new double[] {0.0, 0.0, 5.13};
+		
+		double epselon = 0.0001;
+		CGSolver xSolver = new CGSolver(xMatrix, xVector);
+		double[] xSolution = xSolver.solve(epselon);
+		
+		for(int i = 0; i < 3; i++)
 		{
-			System.out.println("SOLVE " + i);
-			solveLinear(true);
+			System.out.print("" + xSolution[i] + " ");
 		}
-		clusterCutSpreadRecursive();
-		writeFinal();
 	}
 	
 	/*
 	 * Build and solve the linear system ==> recalculates linearX and linearY
 	 * If it is the first time we solve the linear system ==> don't take pseudonets into account
 	 */
-	private void solveLinear(boolean firstSolve)
+	private void solveLinear(boolean firstSolve, double pseudoWeight)
 	{
-		if(!firstSolve)
-		{
-			//Process pseudonets into account
-			System.out.println("Not first solve is not supported yet!");
-		}
-		
-		//Build the linear systems (x and y are solved separately)
 		int dimension = linearX.length;
 		Crs xMatrix = new Crs(dimension);
 		double[] xVector = new double[dimension];
 		Crs yMatrix = new Crs(dimension);
 		double[] yVector = new double[dimension];
+				
+		//Add pseudo connections
+		if(!firstSolve)
+		{
+			//Process pseudonets
+			for(int i = 0; i < dimension; i++)
+			{
+				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeight);
+				xVector[i] += pseudoWeight * legalX[i];
+				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeight);
+				yVector[i] += pseudoWeight*legalY[i];
+			}
+		}
+		
+		//Build the linear systems (x and y are solved separately)
 		for(Net net:circuit.getNets().values())
 		{
 			ArrayList<Integer> netClbIndices = new ArrayList<>();
@@ -199,13 +270,13 @@ public class AnalyticalPlacer
 			}
 			
 			
-			if(net.name.contains("pv22_5"))
-			{
-				System.out.println("MAX_X: " + maxX + ",\tIndex: " + maxXIndex);
-				System.out.println("MIN_X: " + minX + ",\tIndex: " + minXIndex);
-				System.out.println("MAX_Y: " + maxY + ",\tIndex: " + maxYIndex);
-				System.out.println("MIN_Y: " + minY + ",\tIndex: " + minYIndex);
-			}
+//			if(net.name.contains("pv22_5"))
+//			{
+//				System.out.println("MAX_X: " + maxX + ",\tIndex: " + maxXIndex);
+//				System.out.println("MIN_X: " + minX + ",\tIndex: " + minXIndex);
+//				System.out.println("MAX_Y: " + maxY + ",\tIndex: " + maxYIndex);
+//				System.out.println("MIN_Y: " + minY + ",\tIndex: " + minYIndex);
+//			}
 			
 			
 			
@@ -217,7 +288,7 @@ public class AnalyticalPlacer
 				double delta = maxX - minX;
 				if(delta == 0.0)
 				{
-					System.out.println("Problem 1");
+					//System.out.println("Problem 1");
 					delta = 0.001;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
@@ -251,7 +322,7 @@ public class AnalyticalPlacer
 				double delta = maxY - minY;
 				if(delta == 0.0)
 				{
-					System.out.println("Problem 2");
+					//System.out.println("Problem 2");
 					delta = 0.001;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
@@ -288,7 +359,7 @@ public class AnalyticalPlacer
 					double deltaMaxX = Math.abs(linearX[index] - maxX);
 					if(deltaMaxX == 0.0)
 					{
-						System.out.println("Problem 3: maxX = " + maxX + " and linearX = " + linearX[index]);
+						//System.out.println("Problem 3: maxX = " + maxX + " and linearX = " + linearX[index]);
 						deltaMaxX = 0.001;
 					}
 					double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
@@ -301,10 +372,10 @@ public class AnalyticalPlacer
 						
 						if(index == 0)
 						{
-							System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
+							//System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
 							if(net.name.contains("pv22_5"))
 							{
-								System.out.println("HERE 1");
+								//System.out.println("HERE 1");
 							}
 						}
 						
@@ -321,10 +392,10 @@ public class AnalyticalPlacer
 							
 							if(index == 0 || maxXIndex == 0)
 							{
-								System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
+								//System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
 								if(net.name.contains("pv22_5"))
 								{
-									System.out.println("HERE 2: weight = " + weightMaxX + ", delta = " + deltaMaxX);
+									//System.out.println("HERE 2: weight = " + weightMaxX + ", delta = " + deltaMaxX);
 								}
 							}
 						}
@@ -336,7 +407,7 @@ public class AnalyticalPlacer
 					double deltaMinX = Math.abs(linearX[index] - minX);
 					if(deltaMinX == 0.0)
 					{
-						System.out.println("Problem 4");
+						//System.out.println("Problem 4");
 						deltaMinX = 0.001;
 					}
 					double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
@@ -348,10 +419,10 @@ public class AnalyticalPlacer
 						
 						if(index == 0)
 						{
-							System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
+							//System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
 							if(net.name.contains("pv22_5"))
 							{
-								System.out.println("HERE 3: weight = " + weightMinX + ", delta = " + deltaMinX);
+								//System.out.println("HERE 3: weight = " + weightMinX + ", delta = " + deltaMinX);
 							}
 						}
 					}
@@ -367,10 +438,10 @@ public class AnalyticalPlacer
 							
 							if(index == 0 || minXIndex == 0)
 							{
-								System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
+								//System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
 								if(net.name.contains("pv22_5"))
 								{
-									System.out.println("HERE 4");
+									//System.out.println("HERE 4");
 								}
 							}
 						}
@@ -382,7 +453,7 @@ public class AnalyticalPlacer
 					double deltaMaxY = Math.abs(linearY[index] - maxY);
 					if(deltaMaxY == 0.0)
 					{
-						System.out.println("Problem 5");
+						//System.out.println("Problem 5");
 						deltaMaxY = 0.001;
 					}
 					double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
@@ -410,7 +481,7 @@ public class AnalyticalPlacer
 					double deltaMinY = Math.abs(linearY[index] - minY);
 					if(deltaMinY == 0.0)
 					{
-						System.out.println("Problem 6");
+						//System.out.println("Problem 6");
 						deltaMinY = 0.001;
 					}
 					double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
@@ -445,7 +516,7 @@ public class AnalyticalPlacer
 						double deltaMaxX = Math.abs(fixedXPosition - maxX);
 						if(deltaMaxX == 0.0)
 						{
-							System.out.println("Problem 7");
+							//System.out.println("Problem 7");
 							deltaMaxX = 0.001;
 						}
 						double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
@@ -455,10 +526,10 @@ public class AnalyticalPlacer
 						
 						if(maxXIndex == 0)
 						{
-							System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
+							//System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
 							if(net.name.contains("pv22_5"))
 							{
-								System.out.println("HERE 5");
+								//System.out.println("HERE 5");
 							}
 						}
 					}
@@ -475,7 +546,7 @@ public class AnalyticalPlacer
 						double deltaMinX = Math.abs(fixedXPosition - minX);
 						if(deltaMinX == 0.0)
 						{
-							System.out.println("Problem 8");
+							//System.out.println("Problem 8");
 							deltaMinX = 0.001;
 						}
 						double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
@@ -485,10 +556,10 @@ public class AnalyticalPlacer
 						
 						if(minXIndex == 0)
 						{
-							System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
+							//System.out.println("New (0,0) value: " + xMatrix.getElement(0, 0));
 							if(net.name.contains("pv22_5"))
 							{
-								System.out.println("HERE 6");
+								//System.out.println("HERE 6");
 							}
 						}
 					}
@@ -510,7 +581,7 @@ public class AnalyticalPlacer
 						double deltaMaxY = Math.abs(fixedYPosition - maxY);
 						if(deltaMaxY == 0.0)
 						{
-							System.out.println("Problem 9");
+							//System.out.println("Problem 9");
 							deltaMaxY = 0.001;
 						}
 						double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
@@ -531,7 +602,7 @@ public class AnalyticalPlacer
 						double deltaMinY = Math.abs(fixedYPosition - minY);
 						if(deltaMinY == 0.0)
 						{
-							System.out.println("Problem 10");
+							//System.out.println("Problem 10");
 							deltaMinY = 0.001;
 						}
 						double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
@@ -605,12 +676,12 @@ public class AnalyticalPlacer
 //		}
 //		System.out.println("\n\n");
 //		
-		System.out.println("\n\nX-SOLUTION:");
-		for(int i = 0; i < xSolution.length; i++)
-		{
-			System.out.printf(i + ": %.3f\n",xSolution[i]);
-		}
-		System.out.println("\n\n");
+//		System.out.println("\n\nX-SOLUTION:");
+//		for(int i = 0; i < xSolution.length; i++)
+//		{
+//			System.out.printf(i + ": %.3f\n",xSolution[i]);
+//		}
+//		System.out.println("\n\n");
 //		
 //		System.out.println("YMatrix:");
 //		for(int i = 0; i < yVector.length; i++)
@@ -630,12 +701,12 @@ public class AnalyticalPlacer
 //		}
 //		System.out.println("\n\n");
 //		
-		System.out.println("\nY-SOLUTION:");
-		for(int i = 0; i < ySolution.length; i++)
-		{
-			System.out.printf(i + ": %.3f\n", ySolution[i]);
-		}
-		System.out.println();
+//		System.out.println("\nY-SOLUTION:");
+//		for(int i = 0; i < ySolution.length; i++)
+//		{
+//			System.out.printf(i + ": %.3f\n", ySolution[i]);
+//		}
+//		System.out.println();
 	}
 	
 	private void clusterCutSpreadRecursive()
@@ -856,22 +927,22 @@ public class AnalyticalPlacer
 				
 			}
 			
-			System.out.println("\n\nINDICES:");
-			for(int index:indices)
-			{
-				System.out.print(index + " ");
-			}
-			System.out.println("\nX_LOCATIONS:");
-			for(double x:positionsX)
-			{
-				System.out.printf("%.3f ", x);
-			}
-			System.out.println("\nYLOCATIONS:");
-			for(double y:positionsY)
-			{
-				System.out.printf("%.3f ", y);
-			}
-			System.out.println("\nXDown: " + areaXDownBound + ", XUp: " + areaXUpBound + ", YDown: " + areaYDownBound + ", YUp: " + areaYUpBound);
+//			System.out.println("\n\nINDICES:");
+//			for(int index:indices)
+//			{
+//				System.out.print(index + " ");
+//			}
+//			System.out.println("\nX_LOCATIONS:");
+//			for(double x:positionsX)
+//			{
+//				System.out.printf("%.3f ", x);
+//			}
+//			System.out.println("\nYLOCATIONS:");
+//			for(double y:positionsY)
+//			{
+//				System.out.printf("%.3f ", y);
+//			}
+//			System.out.println("\nXDown: " + areaXDownBound + ", XUp: " + areaXUpBound + ", YDown: " + areaYDownBound + ", YUp: " + areaYUpBound);
 			
 			
 			
@@ -883,8 +954,8 @@ public class AnalyticalPlacer
 				int index = indices.get(0);
 				semiLegalXPositions[index] = x;
 				semiLegalYPositions[index] = y;
-				System.out.printf("Index: %d, X: %d, Y: %d\n", indices.get(0), x, y);
-				System.out.println();
+				//System.out.printf("Index: %d, X: %d, Y: %d\n", indices.get(0), x, y);
+				//System.out.println();
 				continue;
 			}
 			
@@ -893,7 +964,7 @@ public class AnalyticalPlacer
 			
 			//Grow area until not overutilized
 			double curUtilization = (double)positionsX.size() / (double)((areaXUpBound - areaXDownBound) * (areaYUpBound - areaYDownBound));
-			System.out.printf("Utilization: %.3f\n", curUtilization);
+			//System.out.printf("Utilization: %.3f\n", curUtilization);
 			int curDirection = 0; //0 = right, 1 = top, 2 = left, 3 = bottom
 			while(curUtilization >= utilizationFactor)
 			{
@@ -928,8 +999,8 @@ public class AnalyticalPlacer
 				curDirection++;
 				curDirection %= 4;
 			}
-			System.out.println("New limits: XDown: " + areaXDownBound + ", XUp: " + areaXUpBound + ", YDown: " + areaYDownBound + ", YUp: " + areaYUpBound);
-			System.out.printf("New utilization: %.3f\n", curUtilization);
+			//System.out.println("New limits: XDown: " + areaXDownBound + ", XUp: " + areaXUpBound + ", YDown: " + areaYDownBound + ", YUp: " + areaYUpBound);
+			//System.out.printf("New utilization: %.3f\n", curUtilization);
 			
 			
 			
@@ -947,7 +1018,7 @@ public class AnalyticalPlacer
 			
 			
 			
-			System.out.println();
+			//System.out.println();
 		}
 		
 		
@@ -1029,9 +1100,9 @@ public class AnalyticalPlacer
 			}
 			else
 			{
-				System.out.println("Horizontal cut y-position: " + cutPosition);
-				System.out.printf("Top utilization: %.3f\n", utilizationTop);
-				System.out.printf("Bottom utilization: %.3f\n", utilizationBottom);
+				//System.out.println("Horizontal cut y-position: " + cutPosition);
+				//System.out.printf("Top utilization: %.3f\n", utilizationTop);
+				//System.out.printf("Bottom utilization: %.3f\n", utilizationBottom);
 			}
 		}
 		else //Cut vertically
@@ -1051,13 +1122,13 @@ public class AnalyticalPlacer
 			double utilizationRight = (double)positionsX2.size() / (double)((areaXUpBound - cutPosition) * (areaYUpBound - areaYDownBound));
 			if(utilizationRight > 1.0 || utilizationLeft > 1.0)
 			{
-				System.out.println("AN ERROR OCCURRED WHILE CUTTING!");
+				System.err.println("AN ERROR OCCURRED WHILE CUTTING!");
 			}
 			else
 			{
-				System.out.println("Vertical cut x-position: " + cutPosition);
-				System.out.printf("Left utilization: %.3f\n", utilizationLeft);
-				System.out.printf("Right utilization: %.3f\n", utilizationRight);
+				//System.out.println("Vertical cut x-position: " + cutPosition);
+				//System.out.printf("Left utilization: %.3f\n", utilizationLeft);
+				//System.out.printf("Right utilization: %.3f\n", utilizationRight);
 			}
 		}
 		
@@ -1149,7 +1220,7 @@ public class AnalyticalPlacer
 				}
 			}
 			int index = indices1.get(0);
-			System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+			//System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
 			semiLegalXPositions[index] = x;
 			semiLegalYPositions[index] = y;
 		}
@@ -1239,7 +1310,7 @@ public class AnalyticalPlacer
 				}
 			}
 			int index = indices2.get(0);
-			System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+			//System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
 			semiLegalXPositions[index] = x;
 			semiLegalYPositions[index] = y;
 		}
@@ -1257,10 +1328,10 @@ public class AnalyticalPlacer
 			semiLegalIndices[i] = i;
 		}
 		
-		System.out.println("BEFORE FINAL LEGALIZATION:");
+		//System.out.println("BEFORE FINAL LEGALIZATION:");
 		for(int i = 0; i < semiLegalIndices.length; i++)
 		{
-			System.out.printf("Index: %d, X: %d, Y: %d\n", semiLegalIndices[i], semiLegalXPositions[i], semiLegalYPositions[i]);
+			//System.out.printf("Index: %d, X: %d, Y: %d\n", semiLegalIndices[i], semiLegalXPositions[i], semiLegalYPositions[i]);
 		}
 		
 		sort(true, semiLegalIndices, semiLegalXPositions, semiLegalYPositions); //Sort in x direction
@@ -1315,13 +1386,13 @@ public class AnalyticalPlacer
 				int curBoxSize = 1;
 				boolean xDir = true; //true = x-direction, false = y-direction
 				int moveSpeed = -1; //Always +1 or -1
-				System.out.println("Need to search around X = " + x + " and Y = " + y);
+				//System.out.println("Need to search around X = " + x + " and Y = " + y);
 				while(currentX < minimalX || currentX > maximalX || currentY < minimalY || currentY > maximalY || occupied[currentY-minimalY][currentX-minimalX])
 				{
-					System.out.println("X = " + currentX + ", Y = " + currentY + " is not free");
+					//System.out.println("X = " + currentX + ", Y = " + currentY + " is not free");
 					if(xDir && currentX == x-curBoxSize) //Check if we reached top left corner
 					{
-						System.out.println("Here 1");
+						//System.out.println("Here 1");
 						xDir = false;
 						moveSpeed = 1;
 						currentY = y - curBoxSize + 1;
@@ -1330,7 +1401,7 @@ public class AnalyticalPlacer
 					{
 						if(!xDir && currentY == y+curBoxSize) //Check if we reached bottom left corner
 						{
-							System.out.println("Here 2");
+							//System.out.println("Here 2");
 							xDir = true;
 							moveSpeed = 1;
 							currentX = x - curBoxSize + 1;
@@ -1339,7 +1410,7 @@ public class AnalyticalPlacer
 						{
 							if(xDir && currentX == x+curBoxSize) //Check if we reached bottom right corner
 							{
-								System.out.println("Here 3");
+								//System.out.println("Here 3");
 								xDir = false;
 								moveSpeed = -1;
 								currentY = y + curBoxSize -1;
@@ -1348,7 +1419,7 @@ public class AnalyticalPlacer
 							{
 								if(!xDir && currentY == y-curBoxSize) //Check if we reached top right corner
 								{
-									System.out.println("Here 4");
+									//System.out.println("Here 4");
 									xDir = true;
 									moveSpeed = -1;
 									currentX = x + curBoxSize - 1;
@@ -1382,10 +1453,10 @@ public class AnalyticalPlacer
 			}
 		}
 		
-		System.out.println("AFTER FINAL LEGALIZATION:");
+		//System.out.println("AFTER FINAL LEGALIZATION:");
 		for(int i = 0; i < legalX.length; i++)
 		{
-			System.out.printf("Index: %d, X: %d, Y: %d\n", i, legalX[i], legalY[i]);
+			//System.out.printf("Index: %d, X: %d, Y: %d\n", i, legalX[i], legalY[i]);
 		}
 	}
 	
@@ -1510,29 +1581,6 @@ public class AnalyticalPlacer
 				positionsX.set(minIndex, previousIX);
 				positionsY.set(minIndex, previousIY);
 			}
-		}
-	}
-	
-	private void randomInitialPlace()
-	{
-		// Generate random placing (CLBs only)
-		//Rplace.place(circuit, architecture);
-		// Place IO's (not random because IOs are not placed by the analytical placer for now)
-		int index = 0;
-		for(Input input:circuit.inputs.values())
-		{
-			Site site = architecture.Isites.get(index);
-			site.block = input;
-			input.setSite(site);
-			index++;
-		}
-		index = 0;
-		for(Output output:circuit.outputs.values())
-		{
-			Site site = architecture.Osites.get(index);
-			site.block = output;
-			output.setSite(site);
-			index++;
 		}
 	}
 	

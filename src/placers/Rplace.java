@@ -131,5 +131,50 @@ public class Rplace {
 		}
 	}
 	
-
+	public static void placeCLBsandFixedIOs(PackedCircuit c, FourLutSanitized a, Random rand) {
+		//Random place CLBs
+		Set<Site> temp = new HashSet<Site>();
+		for (int x=1;x<a.width+1;x++) {
+			for (int y=1;y<a.height+1;y++) {
+				Site s = a.siteArray[x][y][0];
+				s.block = null;
+				temp.add(s);				
+			}
+		}
+		for(Clb b:c.clbs.values()) {
+			if (b instanceof Clb) {
+				//System.out.println("yeah");
+				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
+				temp.remove(site);
+				site.block = (Clb) b;
+				b.setSite(site);
+			}	
+		}
+		int index = 0;
+		for(Input input:c.inputs.values())
+		{
+			input.fixed = true;
+			Site site = a.Isites.get(index);
+			site.block = input;
+			input.setSite(site);
+			index += 2;
+			if(index >= a.Isites.size())
+			{
+				index = 1;
+			}
+		}
+		index = 0;
+		for(Output output:c.outputs.values())
+		{
+			output.fixed = true;
+			Site site = a.Osites.get(index);
+			site.block = output;
+			output.setSite(site);
+			index += 2;
+			if(index >= a.Osites.size())
+			{
+				index = 1;
+			}
+		}
+	}
 }

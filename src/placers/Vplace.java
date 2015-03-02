@@ -51,19 +51,29 @@ public class Vplace {
 				final long startTime2 = System.nanoTime();
       			final long endTime2;
       			
-				try {
-					double deltaCost = calculator.calculateDeltaCost(swap);
-
-					if(deltaCost<=0){
-						calculator.apply(swap);
-						alphaAbs+=1;
-					}else{
-						if(rand.nextDouble()<Math.exp(-deltaCost/T)) {
+				try 
+				{
+					if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+					{
+						double deltaCost = calculator.calculateDeltaCost(swap);
+	
+						if(deltaCost<=0)
+						{
 							calculator.apply(swap);
 							alphaAbs+=1;
 						}
+						else
+						{
+							if(rand.nextDouble()<Math.exp(-deltaCost/T))
+							{
+								calculator.apply(swap);
+								alphaAbs+=1;
+							}
+						}
 					}
-			} finally {
+				}
+				finally 
+				{
 				  endTime2 = System.nanoTime();
 				}
 				final long duration2 = endTime2 - startTime2;
@@ -113,7 +123,10 @@ public class Vplace {
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap
-			calculator.apply(swap);
+			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			{
+				calculator.apply(swap);
+			}
 
 			somDeltaKost+=deltaCost;
 			kwadratischeSomDeltaKost+=Math.pow(deltaCost,2);
