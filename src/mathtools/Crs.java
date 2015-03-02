@@ -64,7 +64,7 @@ public class Crs
 					break;
 				}
 			}
-			if(columnIndex < col_ind.size() && col_ind.get(columnIndex) == j) //The element was already in the matrix ==> only change the value
+			if(columnIndex < nextRowStartIndex && columnIndex < col_ind.size() && col_ind.get(columnIndex) == j) //The element was already in the matrix ==> only change the value
 			{
 				val.set(columnIndex, value);
 			}
@@ -136,6 +136,21 @@ public class Crs
 	public int[] getRow_ptr() 
 	{
 		return row_ptr;
+	}
+	
+	public boolean isSymmetrical()
+	{
+		for(int i = 0; i < row_ptr.length - 1; i++)
+		{
+			for(int j = 0; j < row_ptr.length - 1; j++)
+			{
+				if(i != j && getElement(i, j) != getElement(j, i))
+				{
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 	
 }

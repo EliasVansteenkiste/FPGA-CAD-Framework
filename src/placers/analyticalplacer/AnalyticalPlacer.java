@@ -49,11 +49,17 @@ public class AnalyticalPlacer
 		maximalY = 16;
 	}
 	
-//	public void place()
-//	{
-//		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
-//		initializeDataStructures();
-//		
+	public void place()
+	{
+		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		initializeDataStructures();
+		
+//		for(Clb clb:circuit.clbs.values())
+//		{
+//			int index = indexMap.get(clb);
+//			System.out.println(clb.name + " (" + index + "): (" + linearX[index] + "," + linearY[index] + ")");
+//		}
+		
 //		System.out.println("Inputs:");
 //		for(Input input:circuit.inputs.values())
 //		{
@@ -64,13 +70,21 @@ public class AnalyticalPlacer
 //		{
 //			System.out.println(output.name + ": (" + output.getSite().x + "," + output.getSite().y + ")");
 //		}
-//		
-//		//Initial linear solves, should normally be done 5-7 times
-//		for(int i = 0; i < 1; i++)
+		
+		//Initial linear solves, should normally be done 5-7 times
+//		for(int i = 0; i < 2; i++)
 //		{
+//			System.out.println("Solving linear system...");
 //			solveLinear(true, 0.0);
 //		}
-//		
+		
+		solveLinear(true, 0.0);
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.println("" + i + ": " + linearX[i]);
+//		}
+		solveLinear(true, 0.0);
+		
 //		System.out.println("Linear solutions:\n\nX-Solution:");
 //		for(int i = 0; i < linearX.length; i++)
 //		{
@@ -81,46 +95,47 @@ public class AnalyticalPlacer
 //		{
 //			System.out.println("" + i + ": " + linearY[i]);
 //		}
-//		
-//		//Initial legalization
-//		clusterCutSpreadRecursive();
-//		
-//		//Iterative solves with pseudonets
+		
+		//Initial legalization
+		System.out.println("Legalizing...");
+		clusterCutSpreadRecursive();
+		
+		//Iterative solves with pseudonets
 //		for(int i = 0; i < 4; i++)
 //		{
 //			System.out.println("SOLVE " + i);
 //			solveLinear(false, (i+1)*0.3);
 //			clusterCutSpreadRecursive();
 //		}
-//		
-//		writeFinal();
-//	}
-	
-	public void place()
-	{
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
-		initializeDataStructures();
 		
-		Crs xMatrix = new Crs(3);
-		xMatrix.setElement(0, 0, 8.628);
-		xMatrix.setElement(0, 1, -0.628);
-		xMatrix.setElement(1, 0, -0.628);
-		xMatrix.setElement(1, 1, 1.878);
-		xMatrix.setElement(1, 2, -1.25);
-		xMatrix.setElement(2, 1, -1.25);
-		xMatrix.setElement(2, 2, 2.96);
-		
-		double[] xVector = new double[] {0.0, 0.0, 5.13};
-		
-		double epselon = 0.0001;
-		CGSolver xSolver = new CGSolver(xMatrix, xVector);
-		double[] xSolution = xSolver.solve(epselon);
-		
-		for(int i = 0; i < 3; i++)
-		{
-			System.out.print("" + xSolution[i] + " ");
-		}
+		writeFinal();
 	}
+	
+//	public void place()
+//	{
+//		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+//		initializeDataStructures();
+//		
+//		Crs xMatrix = new Crs(3);
+//		xMatrix.setElement(0, 0, 8.628);
+//		xMatrix.setElement(0, 1, -0.628);
+//		xMatrix.setElement(1, 0, -0.628);
+//		xMatrix.setElement(1, 1, 1.878);
+//		xMatrix.setElement(1, 2, -1.25);
+//		xMatrix.setElement(2, 1, -1.25);
+//		xMatrix.setElement(2, 2, 2.96);
+//		
+//		double[] xVector = new double[] {0.0, 0.0, 5.13};
+//		
+//		double epselon = 0.0001;
+//		CGSolver xSolver = new CGSolver(xMatrix, xVector);
+//		double[] xSolution = xSolver.solve(epselon);
+//		
+//		for(int i = 0; i < 3; i++)
+//		{
+//			System.out.print("" + xSolution[i] + " ");
+//		}
+//	}
 	
 	/*
 	 * Build and solve the linear system ==> recalculates linearX and linearY
@@ -156,11 +171,11 @@ public class AnalyticalPlacer
 			int nbPins = 1 + net.sinks.size();
 			double minX = Double.MAX_VALUE;
 			int minXIndex = -1; //Index = -1 means fixed block
-			double maxX = Double.MIN_VALUE;
+			double maxX = -Double.MAX_VALUE;
 			int maxXIndex = -1;
 			double minY = Double.MAX_VALUE;
 			int minYIndex = -1;
-			double maxY = Double.MIN_VALUE;
+			double maxY = -Double.MAX_VALUE;
 			int maxYIndex = -1;
 			if(net.source.owner.type == BlockType.CLB)
 			{
@@ -246,6 +261,7 @@ public class AnalyticalPlacer
 					double xPosition = pin.owner.getSite().x;
 					double yPosition = pin.owner.getSite().y;
 					fixedXPositions.add(xPosition);
+					fixedYPositions.add(yPosition);
 					if(xPosition > maxX)
 					{
 						maxX = xPosition;
@@ -277,7 +293,7 @@ public class AnalyticalPlacer
 //				System.out.println("MAX_Y: " + maxY + ",\tIndex: " + maxYIndex);
 //				System.out.println("MIN_Y: " + minY + ",\tIndex: " + minYIndex);
 //			}
-			
+			//System.out.println("\n" + net.name + ": minX = " + minX + " (index: " + minXIndex + ")" + ", maxX" + maxX + " (index: " + maxXIndex + ")");
 			
 			
 			
@@ -295,7 +311,10 @@ public class AnalyticalPlacer
 				if(maxXIndex == -1)
 				{
 					//maxX fixed but minX not
+					//System.out.println("Set weight 0: " + weight);
+					//System.out.println("Before: " + xMatrix.getElement(minXIndex, minXIndex));
 					xMatrix.setElement(minXIndex, minXIndex, xMatrix.getElement(minXIndex, minXIndex) + weight);
+					//System.out.println("After: " + xMatrix.getElement(minXIndex, minXIndex));
 					xVector[minXIndex] = xVector[minXIndex] + weight*maxX;
 				}
 				else
@@ -303,16 +322,24 @@ public class AnalyticalPlacer
 					if(minXIndex == -1)
 					{
 						//minX fixed but maxX not
+						//System.out.println("Set weight 1: " + weight);
+						//System.out.println("Before: " + xMatrix.getElement(maxXIndex, maxXIndex));
 						xMatrix.setElement(maxXIndex, maxXIndex, xMatrix.getElement(maxXIndex, maxXIndex) + weight);
+						//System.out.println("After: " + xMatrix.getElement(maxXIndex, maxXIndex));
 						xVector[maxXIndex] = xVector[maxXIndex] + weight*minX;
 					}
 					else
 					{
 						//neither of both fixed
+						//System.out.println("Set weight 2: " + weight);
+						//System.out.println("Before 1: " + xMatrix.getElement(minXIndex, minXIndex));
+						//System.out.println("Before 2: " + xMatrix.getElement(maxXIndex, maxXIndex));
 						xMatrix.setElement(minXIndex, minXIndex, xMatrix.getElement(minXIndex, minXIndex) + weight);
 						xMatrix.setElement(maxXIndex, maxXIndex, xMatrix.getElement(maxXIndex, maxXIndex) + weight);
 						xMatrix.setElement(minXIndex, maxXIndex, xMatrix.getElement(minXIndex, maxXIndex) - weight);
 						xMatrix.setElement(maxXIndex, minXIndex, xMatrix.getElement(maxXIndex, minXIndex) - weight);
+						//System.out.println("After 1: " + xMatrix.getElement(minXIndex, minXIndex));
+						//System.out.println("After 2: " + xMatrix.getElement(maxXIndex, maxXIndex));
 					}
 				}
 			}
@@ -366,9 +393,11 @@ public class AnalyticalPlacer
 					if(maxXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
+						//System.out.println("Set weight 3: " + weightMaxX);
+						//System.out.println("Before: " + xMatrix.getElement(index, index));
 						xMatrix.setElement(index, index, xMatrix.getElement(index, index) + weightMaxX);
+						//System.out.println("After: " + xMatrix.getElement(index, index));
 						xVector[index] = xVector[index] + weightMaxX*maxX;
-						
 						
 						if(index == 0)
 						{
@@ -385,10 +414,21 @@ public class AnalyticalPlacer
 						//Connection between two non fixed blocks
 						if(!(maxXIndex == index))
 						{
+							//System.out.println("Set weight 4: " + weightMaxX);
+							//System.out.println("Before 1: " + xMatrix.getElement(index, index));
+							//System.out.println("Before 2: " + xMatrix.getElement(maxXIndex, maxXIndex));
 							xMatrix.setElement(index, index, xMatrix.getElement(index, index) + weightMaxX);
 							xMatrix.setElement(maxXIndex, maxXIndex, xMatrix.getElement(maxXIndex, maxXIndex) + weightMaxX);
-							xMatrix.setElement(index, maxXIndex, xMatrix.getElement(index, maxXIndex) - weightMaxX);
+							//System.out.println("Index: " + index);
+							//System.out.println("maxXIndex: " + maxXIndex);
+							//System.out.println("After 1: " + xMatrix.getElement(index, index));
+							//System.out.println("After 2: " + xMatrix.getElement(maxXIndex, maxXIndex));
+							xMatrix.setElement(index, maxXIndex, xMatrix.getElement(index, maxXIndex) - weightMaxX); //This line contains the problem
+							//System.out.println("After 1: " + xMatrix.getElement(index, index));
+							//System.out.println("After 2: " + xMatrix.getElement(maxXIndex, maxXIndex));
 							xMatrix.setElement(maxXIndex, index, xMatrix.getElement(maxXIndex, index) - weightMaxX);
+							//System.out.println("After 1: " + xMatrix.getElement(index, index));
+							//System.out.println("After 2: " + xMatrix.getElement(maxXIndex, maxXIndex));
 							
 							if(index == 0 || maxXIndex == 0)
 							{
@@ -414,7 +454,10 @@ public class AnalyticalPlacer
 					if(minXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
+						//System.out.println("Set weight 5: " + weightMinX);
+						//System.out.println("Before: " + xMatrix.getElement(index, index));
 						xMatrix.setElement(index, index, xMatrix.getElement(index, index) + weightMinX);
+						//System.out.println("After: " + xMatrix.getElement(index, index));
 						xVector[index] = xVector[index] + weightMinX*minX;
 						
 						if(index == 0)
@@ -431,10 +474,15 @@ public class AnalyticalPlacer
 						//Connection between two non fixed blocks
 						if(!(minXIndex == index))
 						{
+							//System.out.println("Set weight 6: " + weightMinX);
+							//System.out.println("Before 1: " + xMatrix.getElement(index, index));
+							//System.out.println("Before 2: " + xMatrix.getElement(minXIndex, minXIndex));
 							xMatrix.setElement(index, index, xMatrix.getElement(index, index) + weightMinX);
 							xMatrix.setElement(minXIndex, minXIndex, xMatrix.getElement(minXIndex, minXIndex) + weightMinX);
 							xMatrix.setElement(index, minXIndex, xMatrix.getElement(index, minXIndex) - weightMinX);
 							xMatrix.setElement(minXIndex, index, xMatrix.getElement(minXIndex, index) - weightMinX);
+							//System.out.println("After 1: " + xMatrix.getElement(index, index));
+							//System.out.println("After 2: " + xMatrix.getElement(minXIndex, minXIndex));
 							
 							if(index == 0 || minXIndex == 0)
 							{
@@ -521,7 +569,10 @@ public class AnalyticalPlacer
 						}
 						double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
 						//Connection between fixed and non fixed block
+						//System.out.println("Set weight 7: " + weightMaxX);
+						//System.out.println("Before: " + xMatrix.getElement(maxXIndex, maxXIndex));
 						xMatrix.setElement(maxXIndex, maxXIndex, xMatrix.getElement(maxXIndex, maxXIndex) + weightMaxX);
+						//System.out.println("After: " + xMatrix.getElement(maxXIndex, maxXIndex));
 						xVector[maxXIndex] = xVector[maxXIndex] + weightMaxX*fixedXPosition;
 						
 						if(maxXIndex == 0)
@@ -551,7 +602,10 @@ public class AnalyticalPlacer
 						}
 						double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
 						//Connection between fixed and non fixed block
+						//System.out.println("Set weight 8: " + weightMinX);
+						//System.out.println("Before: " + xMatrix.getElement(minXIndex, minXIndex));
 						xMatrix.setElement(minXIndex, minXIndex, xMatrix.getElement(minXIndex, minXIndex) + weightMinX);
+						//System.out.println("After: " + xMatrix.getElement(minXIndex, minXIndex));
 						xVector[minXIndex] = xVector[minXIndex] + weightMinX*fixedXPosition;
 						
 						if(minXIndex == 0)
@@ -618,13 +672,57 @@ public class AnalyticalPlacer
 			}
 		}
 		
-		double epselon = 0.0001;
 		
+		
+		
+		
+//		for(int i = 0; i < xVector.length; i++)
+//		{
+//			for(int j = 0; j < xVector.length; j++)
+//			{
+//				System.out.print(xMatrix.getElement(i, j) + " ");
+//			}
+//			System.out.println();
+//		}
+		
+		
+//		for(int i = 0; i < xVector.length; i++)
+//		{
+//			for(int j = 0; j < xVector.length; j++)
+//			{
+//				double valueX = xMatrix.getElement(i, j);
+//				if(valueX > 1000.0 || valueX < -1000.0)
+//				{
+//					System.out.println("Large element in xMatrix at position (" + i + "," + j + "): " + valueX);
+//				}
+//				double valueY = yMatrix.getElement(i, j);
+//				if(valueY > 1000.0 || valueY < -1000.0)
+//				{
+//					System.out.println("Large element in yMatrix at position (" + i + "," + j + "): " + valueY);
+//				}
+//			}
+//		}
+		
+		
+		if(!xMatrix.isSymmetrical())
+		{
+			System.err.println("ERROR: X-Matrix is assymmetrical: there must be a bug in the code!");
+		}
+		if(!yMatrix.isSymmetrical())
+		{
+			System.err.println("ERROR: Y-Matrix is assymmetrical: there must be a bug in the code!");
+		}
+		
+		
+		
+		
+		double epselon = 0.0001;
 		//Solve x problem
+		//System.out.println("Solving x...");
 		CGSolver xSolver = new CGSolver(xMatrix, xVector);
 		double[] xSolution = xSolver.solve(epselon);
-		
 		//Solve y problem
+		//System.out.println("Solving y...");
 		CGSolver ySolver = new CGSolver(yMatrix, yVector);
 		double[] ySolution = ySolver.solve(epselon);
 		
@@ -1024,7 +1122,7 @@ public class AnalyticalPlacer
 		
 		
 		
-		
+		System.out.println("Started final legalization...");
 		finalLegalization(semiLegalXPositions, semiLegalYPositions);
 		
 		
@@ -1337,7 +1435,7 @@ public class AnalyticalPlacer
 		sort(true, semiLegalIndices, semiLegalXPositions, semiLegalYPositions); //Sort in x direction
 		
 		int ySize = maximalY - minimalY + 1;
-		int xSize = maximalX - minimalY + 1;
+		int xSize = maximalX - minimalX + 1;
 		boolean[][] occupied = new boolean[ySize][xSize]; //True if CLB site is occupied, false if not
 		for(int i = 0; i < ySize; i++)
 		{
@@ -1366,21 +1464,21 @@ public class AnalyticalPlacer
 			{
 				y++;
 			}
-			while(y > maximalX)
+			while(y > maximalY)
 			{
 				y--;
 			}
 			
-			//Eliminate overlap
+			//Check if there's overlap
 			if(!occupied[y-minimalY][x-minimalX])
 			{
 				occupied[y-minimalY][x-minimalX] = true;
 				legalX[index] = x;
 				legalY[index] = y;
 			}
-			else
+			else //Eliminate overlap
 			{
-				//Look around for free spot ==> counterclockwise with increasing boxSize till we found available position
+				//Look around for free spot ==> counterclockwise with increasing boxSize till we find available position
 				int currentX = x;
 				int currentY = y-1;
 				int curBoxSize = 1;
@@ -1389,6 +1487,7 @@ public class AnalyticalPlacer
 				//System.out.println("Need to search around X = " + x + " and Y = " + y);
 				while(currentX < minimalX || currentX > maximalX || currentY < minimalY || currentY > maximalY || occupied[currentY-minimalY][currentX-minimalX])
 				{
+					//System.out.println("CurBoxSize: " + curBoxSize);
 					//System.out.println("X = " + currentX + ", Y = " + currentY + " is not free");
 					if(xDir && currentX == x-curBoxSize) //Check if we reached top left corner
 					{
@@ -1423,6 +1522,14 @@ public class AnalyticalPlacer
 									xDir = true;
 									moveSpeed = -1;
 									currentX = x + curBoxSize - 1;
+									if(currentX == x && currentY == y - curBoxSize) //We've went completely around the box and didn't find an available position ==> increas box size
+									{
+										curBoxSize++;
+										currentX = x;
+										currentY = y-curBoxSize;
+										xDir = true;
+										moveSpeed = -1;
+									}
 								}
 								else // We didn't reach a corner and just have to keep moving
 								{
@@ -1463,10 +1570,14 @@ public class AnalyticalPlacer
 	private void writeFinal()
 	{
 		//Clear all previous locations
-		for(int i = minimalX; i < maximalX; i++)
+		for(int i = minimalX; i <= maximalX; i++)
 		{
-			for(int j = minimalY; j < maximalY; j++)
+			for(int j = minimalY; j <= maximalY; j++)
 			{
+				if(architecture.getSite(i, j, 0).block != null)
+				{
+					architecture.getSite(i, j, 0).block.setSite(null);
+				}
 				architecture.getSite(i, j, 0).block = null;
 			}
 		}
@@ -1480,7 +1591,7 @@ public class AnalyticalPlacer
 			clb.setSite(site);
 		}
 		
-//		//Check consistency
+		//Check consistency
 //		for(int i = minimalX; i < maximalX; i++)
 //		{
 //			for(int j = minimalY; j < maximalY; j++)
@@ -1593,7 +1704,7 @@ public class AnalyticalPlacer
 		legalX = new int[dimensions];
 		legalY = new int[dimensions];
 		int index = 0;
-		double xPos = 0.15;
+		double xPos = 0.09;
 		double yPos = 0.09;
 		for(Clb clb:circuit.clbs.values())
 		{
@@ -1602,7 +1713,7 @@ public class AnalyticalPlacer
 			//linearY[index] = clb.getSite().y;
 			linearX[index] = xPos;
 			linearY[index] = yPos;
-			xPos += 0.15;
+			xPos += 0.09;
 			yPos += 0.09;
 			index++;
 		}

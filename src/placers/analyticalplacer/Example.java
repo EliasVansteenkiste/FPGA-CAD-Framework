@@ -38,8 +38,8 @@ public class Example
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
 		}
 		catch(IOException ioe)
@@ -66,10 +66,15 @@ public class Example
 		//System.out.println("SA placed block locations");
 		//printPlacedCircuit(packedCircuit);
 		
-		//System.out.println("ANALYTICAL PLACEMENT:");
-		//analyticalPlace(packedCircuit, prePackedCircuit);
+		System.out.println("\nANALYTICAL PLACEMENT:");
+		analyticalPlace(packedCircuit, prePackedCircuit);
 		//printPlacedCircuit(packedCircuit);
 	}
+	
+//	public static void main(String[] args)
+//	{
+//		crsBugReconstruct();
+//	}
 	
 	private static void analyticalPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
@@ -357,6 +362,7 @@ public class Example
 		Crs crsBuilder = new Crs(6);
 		crsBuilder.setElement(0, 0, 1.5);
 		crsBuilder.setElement(1, 2, 3.3);
+		crsBuilder.setElement(0, 5, 69.69);
 		crsBuilder.setElement(4, 4, 10.6);
 		crsBuilder.setElement(3, 3, 4.9);
 		crsBuilder.setElement(2, 5, 22.1);
@@ -396,6 +402,63 @@ public class Example
 			}
 			System.out.println();
 		}
+	}
+	
+	private static void crsBugReconstruct()
+	{
+		Crs crsBuilder = new Crs(2);
+		crsBuilder.setElement(1, 1, 20.5);
+		for(int i = 0; i < 2; i++)
+		{
+			for(int j = 0; j < 2; j++)
+			{
+				System.out.print(crsBuilder.getElement(i, j) + "\t");
+			}
+			System.out.println();
+		}
+		System.out.println();
+		crsBuilder.setElement(0, 0, 19.5);
+		for(int i = 0; i < 2; i++)
+		{
+			for(int j = 0; j < 2; j++)
+			{
+				System.out.print(crsBuilder.getElement(i, j) + "\t");
+			}
+			System.out.println();
+		}
+		System.out.println();
+		crsBuilder.setElement(0, 1, 18.5);
+		for(int i = 0; i < 2; i++)
+		{
+			for(int j = 0; j < 2; j++)
+			{
+				System.out.print(crsBuilder.getElement(i, j) + "\t");
+			}
+			System.out.println();
+		}
+		System.out.println();
+		
+		double[] val = crsBuilder.getVal();
+		int[] col_ind = crsBuilder.getCol_ind();
+		int[] row_ptr = crsBuilder.getRow_ptr();
+		System.out.print("Values array: ");
+		for(int i = 0; i < val.length; i++)
+		{
+			System.out.print(val[i] + " ");
+		}
+		System.out.println();
+		System.out.print("Column index array: ");
+		for(int i = 0; i < col_ind.length; i++)
+		{
+			System.out.print(col_ind[i] + " ");
+		}
+		System.out.println();
+		System.out.print("Row pointer array: ");
+		for(int i = 0; i < row_ptr.length; i++)
+		{
+			System.out.print(row_ptr[i] + " ");
+		}
+		
 	}
 	
 	private static void testCGSolver()
