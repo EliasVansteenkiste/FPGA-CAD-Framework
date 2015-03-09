@@ -41,6 +41,7 @@ public class Example
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
 			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -60,8 +61,8 @@ public class Example
 		
 		//printPackedCircuit(packedCircuit);
 		
-		System.out.println("SIMULATED ANNEALING PLACEMENT:");
-		simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
+		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
 		//System.out.println();
 		//System.out.println("SA placed block locations");
 		//printPlacedCircuit(packedCircuit);
@@ -78,15 +79,16 @@ public class Example
 	
 	private static void analyticalPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
-		int height = 16;
-		int width = 16;
+		int height = 30;
+		int width = 30;
 		int trackwidth = 4;
 		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		AnalyticalPlacer placer = new AnalyticalPlacer(a, c);
+		AnalyticalPlacer placer = new AnalyticalPlacer(a, c, bbncc);
 		placer.place();
 		
-		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
@@ -100,8 +102,8 @@ public class Example
 	
 	private static void simulatedAnnealingPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
-		int height = 16;
-		int width = 16;
+		int height = 30;
+		int width = 30;
 		int trackwidth = 4;
 		Double placementEffort = 10.;
 		
