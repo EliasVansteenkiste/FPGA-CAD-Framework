@@ -67,9 +67,15 @@ public class Example
 		//System.out.println("SA placed block locations");
 		//printPlacedCircuit(packedCircuit);
 		
-		System.out.println("\nANALYTICAL PLACEMENT:");
-		analyticalPlace(packedCircuit, prePackedCircuit);
+		//System.out.println("\nANALYTICAL PLACEMENT:");
+		//analyticalPlace(packedCircuit, prePackedCircuit);
 		//printPlacedCircuit(packedCircuit);
+		
+		//System.out.println("\nANALYTICAL PLACEMENT TWO");
+		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
+		
+		System.out.println("\nANALYTICAL PLACEMENT THREE");
+		analyticalPlaceThree(packedCircuit, prePackedCircuit);
 	}
 	
 //	public static void main(String[] args)
@@ -87,6 +93,52 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		AnalyticalPlacer placer = new AnalyticalPlacer(a, c, bbncc);
+		placer.place();
+		
+		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
+		
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
+		pm.PlacementCLBsConsistencyCheck();
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
+		System.out.println("Critical path delay after analytical placement: " + maxDelayUpdated);
+	}
+	
+	private static void analyticalPlaceTwo(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		AnalyticalPlacerTwo placer = new AnalyticalPlacerTwo(a, c, bbncc);
+		placer.place();
+		
+		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
+		
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
+		pm.PlacementCLBsConsistencyCheck();
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
+		System.out.println("Critical path delay after analytical placement: " + maxDelayUpdated);
+	}
+	
+	private static void analyticalPlaceThree(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		AnalyticalPlacerThree placer = new AnalyticalPlacerThree(a, c, bbncc);
 		placer.place();
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
