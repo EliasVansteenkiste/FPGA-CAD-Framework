@@ -1477,6 +1477,146 @@ public class AnalyticalPlacerTwo
 		}
 	}
 	
+	/*
+	 * Eliminates the final overlaps (between different clusters)
+	 */
+	private void finalLegalizationTwo(int[] semiLegalXPositions, int[] semiLegalYPositions)
+	{
+		List<Integer> remainingIndices = new ArrayList<>();
+		int ySize = maximalY - minimalY + 1;
+		int xSize = maximalX - minimalX + 1;
+		boolean[][] occupied = new boolean[ySize][xSize]; //True if CLB site is occupied, false if not
+		
+		for(int i = 0; i < ySize; i++)
+		{
+			for(int j = 0; j < xSize; j++)
+			{
+				occupied[i][j] = false;
+			}
+		}
+		
+		for(int i = 0; i < semiLegalXPositions.length; i++)
+		{
+			int x = semiLegalXPositions[i];
+			int y = semiLegalYPositions[i];
+			
+			//Shift to legal zone
+			while(x < minimalX)
+			{
+				x++;
+			}
+			while(x > maximalX)
+			{
+				x--;
+			}
+			while(y < minimalY)
+			{
+				y++;
+			}
+			while(y > maximalY)
+			{
+				y--;
+			}
+			
+			//Check if there's overlap
+			if(!occupied[y-minimalY][x-minimalX])
+			{
+				occupied[y-minimalY][x-minimalX] = true;
+				legalX[i] = x;
+				legalY[i] = y;
+			}
+			else //Add to remaining indices list
+			{
+				remainingIndices.add(i);
+			}
+		}
+		
+		for(int index:remainingIndices)
+		{
+			//Look around for free spot ==> counterclockwise with increasing boxSize till we find available position
+			int x = semiLegalXPositions[index];
+			int y = semiLegalYPositions[index];
+			int currentX = x;
+			int currentY = y-1;
+			int curBoxSize = 1;
+			boolean xDir = true; //true = x-direction, false = y-direction
+			int moveSpeed = -1; //Always +1 or -1
+			//System.out.println("Need to search around X = " + x + " and Y = " + y);
+			while(currentX < minimalX || currentX > maximalX || currentY < minimalY || currentY > maximalY || occupied[currentY-minimalY][currentX-minimalX])
+			{
+				//System.out.println("CurBoxSize: " + curBoxSize);
+				//System.out.println("X = " + currentX + ", Y = " + currentY + " is not free");
+				if(xDir && currentX == x-curBoxSize) //Check if we reached top left corner
+				{
+					//System.out.println("Here 1");
+					xDir = false;
+					moveSpeed = 1;
+					currentY = y - curBoxSize + 1;
+				}
+				else
+				{
+					if(!xDir && currentY == y+curBoxSize) //Check if we reached bottom left corner
+					{
+						//System.out.println("Here 2");
+						xDir = true;
+						moveSpeed = 1;
+						currentX = x - curBoxSize + 1;
+					}
+					else
+					{
+						if(xDir && currentX == x+curBoxSize) //Check if we reached bottom right corner
+						{
+							//System.out.println("Here 3");
+							xDir = false;
+							moveSpeed = -1;
+							currentY = y + curBoxSize -1;
+						}
+						else
+						{
+							if(!xDir && currentY == y-curBoxSize) //Check if we reached top right corner
+							{
+								//System.out.println("Here 4");
+								xDir = true;
+								moveSpeed = -1;
+								currentX = x + curBoxSize - 1;
+								if(currentX == x && currentY == y - curBoxSize) //We've went completely around the box and didn't find an available position ==> increas box size
+								{
+									curBoxSize++;
+									currentX = x;
+									currentY = y-curBoxSize;
+									xDir = true;
+									moveSpeed = -1;
+								}
+							}
+							else // We didn't reach a corner and just have to keep moving
+							{
+								if(xDir) //Move in x-direction
+								{
+									currentX += moveSpeed;
+								}
+								else //Move in y-direction
+								{
+									currentY += moveSpeed;
+								}
+								if(currentX == x && currentY == y - curBoxSize) //We've went completely around the box and didn't find an available position ==> increas box size
+								{
+									curBoxSize++;
+									currentX = x;
+									currentY = y-curBoxSize;
+									xDir = true;
+									moveSpeed = -1;
+								}
+							}
+						}
+					}
+				}
+			}
+			occupied[currentY-minimalY][currentX-minimalX] = true;
+			legalX[index] = currentX;
+			legalY[index] = currentY;
+		}
+	}
+	
 	private void updateBestLegal()
 	{
 		if(bestLegalX == null) //This is the first time ==> current legal placement is best

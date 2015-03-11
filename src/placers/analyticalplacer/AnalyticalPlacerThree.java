@@ -50,7 +50,10 @@ public class AnalyticalPlacerThree
 	private double currentCost;
 	private double currentOverlapFactor;
 	
-	private final double ALPHA = 0.3;
+	private final double OVERLAP_INCREASE_FACTOR = 22;
+	private final double MAX_OVERLAP = 0.10;
+	private final double COST_INCREASE_FACTOR = 1.10;
+	private final double ALPHA = 0.30;
 	
 	public AnalyticalPlacerThree(FourLutSanitized architecture, PackedCircuit circuit, CostCalculator calculator)
 	{
@@ -77,29 +80,34 @@ public class AnalyticalPlacerThree
 			solveLinear(true, 0.0);
 		}
 		
+		double linearCost = calculateTotalCost(linearX, linearY);
+		System.out.println("Linear Cost: " + linearCost);
+		
 		//Initial legalization
 //		System.out.println("Legalizing...");
 		clusterCutSpreadRecursive();
 		updateBestLegal();
 		
 		//Iterative solves with pseudonets
-		for(int i = 0; i < 30; i++)
+		for(int i = 0; i < 50; i++)
 		{
 //			System.out.println("SOLVE " + i);
-			solveLinear(false, (i+1)*ALPHA);
+			solveLinear(false, (double)(i+1)*ALPHA);
 			clusterCutSpreadRecursive();
 			updateBestLegal();
+			linearCost = calculateTotalCost(linearX, linearY);
+			System.out.println("Linear Cost: " + linearCost);
 		}
 		
 		int[] finalX = new int[linearX.length];
 		int[] finalY = new int[linearY.length];
-		finalLegalization(bestSemiLegalX, bestSemiLegalY, finalX, finalY);
+		finalLegalizationTwo(bestSemiLegalX, bestSemiLegalY, finalX, finalY);
 		updateCircuit(finalX, finalY);
 		
 		int nbAttempts = 5000;
 		iterativeRefinement(nbAttempts);
 		
-		double cost = calculateTotalCost(bestSemiLegalX, bestSemiLegalY);
+		double cost = calculateTotalCost(finalX, finalY);
 		System.out.println("COST BEFORE REFINEMENT = " + cost);
 	}
 	
@@ -548,12 +556,15 @@ public class AnalyticalPlacerThree
 		int[] semiLegalXPositions = new int[linearX.length];
 		int[] semiLegalYPositions = new int[linearX.length];
 		List<Integer> todo = new ArrayList<>();
+		int nbClusters = 0;
 		for(int i = 0; i < linearX.length; i++)
 		{
 			todo.add(i);
 		}
 		while(todo.size() != 0)
 		{
+			nbClusters++;
+			
 			//Cluster
 			int areaXUpBound = 0;
 			int areaXDownBound = 0;
@@ -761,6 +772,28 @@ public class AnalyticalPlacerThree
 				
 			}
 			
+			//Adapt cluster to legal area
+			while(areaXDownBound < minimalX)
+			{
+				areaXDownBound++;
+				areaXUpBound++;
+			}
+			while(areaXUpBound > maximalY+1)
+			{
+				areaXUpBound--;
+				areaXDownBound--;
+			}
+			while(areaYDownBound < minimalY)
+			{
+				areaYDownBound++;
+				areaYUpBound++;
+			}
+			while(areaYUpBound > maximalY+1)
+			{
+				areaYUpBound--;
+				areaYDownBound--;
+			}
+			
 //			System.out.println("\n\nINDICES:");
 //			for(int index:indices)
 //			{
@@ -784,7 +817,23 @@ public class AnalyticalPlacerThree
 			if(indices.size() == 1)
 			{
 				int x = (int)Math.round(positionsX.get(0));
+				if(x < minimalX)
+				{
+					x = minimalX;
+				}
+				if(x > maximalX)
+				{
+					x = maximalX;
+				}
 				int y = (int)Math.round(positionsY.get(0));
+				if(y < minimalY)
+				{
+					y = minimalY;
+				}
+				if(y > maximalY)
+				{
+					y = maximalY;
+				}
 				int index = indices.get(0);
 				semiLegalXPositions[index] = x;
 				semiLegalYPositions[index] = y;
@@ -825,7 +874,7 @@ public class AnalyticalPlacerThree
 						}
 						break;
 					case 1: //Grow to the top if possible
-						if(areaYDownBound >= minimalY)
+						if(areaYDownBound > minimalY)
 						{
 							areaYDownBound -= 1;
 							
@@ -845,7 +894,7 @@ public class AnalyticalPlacerThree
 						}
 						break;
 					case 2: //Grow to the left if possible
-						if(areaXDownBound >= minimalX)
+						if(areaXDownBound > minimalX)
 						{
 							areaXDownBound -= 1;
 							
@@ -912,6 +961,8 @@ public class AnalyticalPlacerThree
 		
 		semiLegalX = semiLegalXPositions;
 		semiLegalY = semiLegalYPositions;
+		
+		System.out.println("Number of clusters: " + nbClusters);
 	}
 	
 	/*
@@ -1217,15 +1268,24 @@ public class AnalyticalPlacerThree
 		{
 			double newCost = calculateTotalCost(semiLegalX, semiLegalY);
 			double newOverlapFactor = calculateOverlapFactor(semiLegalX,semiLegalY);
-			if(newCost < currentCost)
+			System.out.println("New overlap: " + newOverlapFactor + ", new cost: " + newCost);
+			if((newCost < currentCost && newOverlapFactor <= OVERLAP_INCREASE_FACTOR*currentOverlapFactor && newOverlapFactor < MAX_OVERLAP) || (newOverlapFactor < currentOverlapFactor && newCost < COST_INCREASE_FACTOR * currentCost))
 			{
 				currentCost = newCost;
 				currentOverlapFactor = newOverlapFactor;
+				System.out.println("NEW OPTIMUM: overlap: " + currentOverlapFactor + ", cost: " + currentCost);
 				for(int i = 0; i < semiLegalX.length; i++)
 				{
 					bestSemiLegalX[i] = semiLegalX[i];
 					bestSemiLegalY[i] = semiLegalY[i];
 				}
+//				if(currentCost > 2622 && currentCost < 2623)
+//				{
+//					for(int i = 0; i < bestSemiLegalX.length; i++)
+//					{
+//						System.out.println("" + bestSemiLegalX[i] + ";" + bestSemiLegalY[i]);
+//					}
+//				}
 			}
 		}
 	}
@@ -1375,6 +1435,129 @@ public class AnalyticalPlacerThree
 				legalY[index] = currentY;
 			}
 		}
+//		for(int i = 0; i < legalX.length; i++)
+//		{
+//			System.out.println("" + legalX[i] + ";" + legalY[i]);
+//		}
+	}
+	
+	private void finalLegalizationTwo(int[] semiLegalXPositions, int[] semiLegalYPositions, int[] legalX, int[] legalY)
+	{
+		List<Integer> remainingIndices = new ArrayList<>();
+		int ySize = maximalY - minimalY + 1;
+		int xSize = maximalX - minimalX + 1;
+		boolean[][] occupied = new boolean[ySize][xSize]; //True if CLB site is occupied, false if not
+		
+		for(int i = 0; i < ySize; i++)
+		{
+			for(int j = 0; j < xSize; j++)
+			{
+				occupied[i][j] = false;
+			}
+		}
+		
+		for(int i = 0; i < semiLegalXPositions.length; i++)
+		{
+			int x = semiLegalXPositions[i];
+			int y = semiLegalYPositions[i];
+			
+			//Check if there's overlap
+			if(!occupied[y-minimalY][x-minimalX])
+			{
+				occupied[y-minimalY][x-minimalX] = true;
+				legalX[i] = x;
+				legalY[i] = y;
+			}
+			else //Add to remaining indices list
+			{
+				remainingIndices.add(i);
+			}
+		}
+		
+		for(int index:remainingIndices)
+		{
+			//Look around for free spot ==> counterclockwise with increasing boxSize till we find available position
+			int x = semiLegalXPositions[index];
+			int y = semiLegalYPositions[index];
+			int currentX = x;
+			int currentY = y-1;
+			int curBoxSize = 1;
+			boolean xDir = true; //true = x-direction, false = y-direction
+			int moveSpeed = -1; //Always +1 or -1
+			//System.out.println("Need to search around X = " + x + " and Y = " + y);
+			while(currentX < minimalX || currentX > maximalX || currentY < minimalY || currentY > maximalY || occupied[currentY-minimalY][currentX-minimalX])
+			{
+				//System.out.println("CurBoxSize: " + curBoxSize);
+				//System.out.println("X = " + currentX + ", Y = " + currentY + " is not free");
+				if(xDir && currentX == x-curBoxSize) //Check if we reached top left corner
+				{
+					//System.out.println("Here 1");
+					xDir = false;
+					moveSpeed = 1;
+					currentY = y - curBoxSize + 1;
+				}
+				else
+				{
+					if(!xDir && currentY == y+curBoxSize) //Check if we reached bottom left corner
+					{
+						//System.out.println("Here 2");
+						xDir = true;
+						moveSpeed = 1;
+						currentX = x - curBoxSize + 1;
+					}
+					else
+					{
+						if(xDir && currentX == x+curBoxSize) //Check if we reached bottom right corner
+						{
+							//System.out.println("Here 3");
+							xDir = false;
+							moveSpeed = -1;
+							currentY = y + curBoxSize -1;
+						}
+						else
+						{
+							if(!xDir && currentY == y-curBoxSize) //Check if we reached top right corner
+							{
+								//System.out.println("Here 4");
+								xDir = true;
+								moveSpeed = -1;
+								currentX = x + curBoxSize - 1;
+								if(currentX == x && currentY == y - curBoxSize) //We've went completely around the box and didn't find an available position ==> increas box size
+								{
+									curBoxSize++;
+									currentX = x;
+									currentY = y-curBoxSize;
+									xDir = true;
+									moveSpeed = -1;
+								}
+							}
+							else // We didn't reach a corner and just have to keep moving
+							{
+								if(xDir) //Move in x-direction
+								{
+									currentX += moveSpeed;
+								}
+								else //Move in y-direction
+								{
+									currentY += moveSpeed;
+								}
+								if(currentX == x && currentY == y - curBoxSize) //We've went completely around the box and didn't find an available position ==> increas box size
+								{
+									curBoxSize++;
+									currentX = x;
+									currentY = y-curBoxSize;
+									xDir = true;
+									moveSpeed = -1;
+								}
+							}
+						}
+					}
+				}
+			}
+			occupied[currentY-minimalY][currentX-minimalX] = true;
+			legalX[index] = currentX;
+			legalY[index] = currentY;
+		}
 	}
 	
 	private void updateCircuit(int[] xPos, int[] yPos)
@@ -1438,14 +1621,20 @@ public class AnalyticalPlacerThree
 		
 		for(int i = 0; i < xArray.length; i++)
 		{
-			if(!(occupied[yArray[i]][xArray[i]]))
+			if(!(occupied[yArray[i]-1][xArray[i]-1]))
 			{
-				occupied[yArray[i]][xArray[i]] = true;
+				occupied[yArray[i]-1][xArray[i]-1] = true;
 				nbPositionsOccupied++;
+			}
+			else
+			{
+				//System.out.println("Overlap: (" + xArray[i] + "," + yArray[i] + ")");
 			}
 		}
 		
-		return 1.0 - ((double)nbPositionsOccupied) / ((double)xArray.length);
+		double overlapFactor = 1.0 - ((double)nbPositionsOccupied) / ((double)xArray.length);
+		//System.out.println("" + overlapFactor + "\n\n");
+		return overlapFactor;
 	}
 	
 	private double calculateTotalCost(int[] xArray, int[] yArray)
@@ -1457,6 +1646,85 @@ public class AnalyticalPlacerThree
 			int maxX;
 			int minY;
 			int maxY;
+			Block sourceBlock = net.source.owner;
+			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
+			{
+				minX = sourceBlock.getSite().x;
+				maxX = sourceBlock.getSite().x;
+				minY = sourceBlock.getSite().y;
+				maxY = sourceBlock.getSite().y;
+			}
+			else
+			{
+				int index = indexMap.get((Clb)sourceBlock);
+				minX = xArray[index];
+				maxX = xArray[index];
+				minY = yArray[index];
+				maxY = yArray[index];
+			}
+			
+			for(Pin pin:net.sinks)
+			{
+				Block sinkOwner = pin.owner;
+				if(sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
+				{
+					Site sinkOwnerSite = sinkOwner.getSite();
+					if(sinkOwnerSite.x < minX)
+					{
+						minX = sinkOwnerSite.x;
+					}
+					if(sinkOwnerSite.x > maxX)
+					{
+						maxX = sinkOwnerSite.x;
+					}
+					if(sinkOwnerSite.y < minY)
+					{
+						minY = sinkOwnerSite.y;
+					}
+					if(sinkOwnerSite.y > maxY)
+					{
+						maxY = sinkOwnerSite.y;
+					}
+				}
+				else
+				{
+					int index = indexMap.get((Clb)sinkOwner);
+					if(xArray[index] < minX)
+					{
+						minX = xArray[index];
+					}
+					if(xArray[index] > maxX)
+					{
+						maxX = xArray[index];
+					}
+					if(yArray[index] < minY)
+					{
+						minY = yArray[index];
+					}
+					if(yArray[index] > maxY)
+					{
+						maxY = yArray[index];
+					}
+				}
+			}
+			Set<Block> blocks = new HashSet<>();
+			blocks.addAll(net.blocks());
+			double weight = getWeight(blocks.size());
+			cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
+			
+		}
+		return cost;
+	}
+	
+	private double calculateTotalCost(double[] xArray, double[] yArray)
+	{
+		double cost = 0.0;
+		for(Net net:circuit.nets.values())
+		{
+			double minX;
+			double maxX;
+			double minY;
+			double maxY;
 			Block sourceBlock = net.source.owner;
 			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
 			{

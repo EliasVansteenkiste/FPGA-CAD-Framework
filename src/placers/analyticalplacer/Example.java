@@ -71,11 +71,11 @@ public class Example
 		//analyticalPlace(packedCircuit, prePackedCircuit);
 		//printPlacedCircuit(packedCircuit);
 		
-		//System.out.println("\nANALYTICAL PLACEMENT TWO");
-		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
+		System.out.println("\nANALYTICAL PLACEMENT TWO");
+		analyticalPlaceTwo(packedCircuit, prePackedCircuit);
 		
-		System.out.println("\nANALYTICAL PLACEMENT THREE");
-		analyticalPlaceThree(packedCircuit, prePackedCircuit);
+		//System.out.println("\nANALYTICAL PLACEMENT THREE");
+		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
 	}
 	
 //	public static void main(String[] args)
