@@ -1,13 +1,11 @@
-package Visual;
+package visual;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.JFrame;
 import circuit.PackedCircuit;
-import circuit.Pattern;
 import circuit.Net;
-import circuit.Tcon;
 import circuit.Connection;
 
 import architecture.FourLutSanitized;

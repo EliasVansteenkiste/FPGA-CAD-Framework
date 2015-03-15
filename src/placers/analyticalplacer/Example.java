@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
 
+import javax.swing.JFrame;
+
 import mathtools.CGSolver;
 import mathtools.Crs;
 
@@ -17,6 +19,7 @@ import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
 import placers.Vplace;
 import timinganalysis.TimingGraph;
+import visual.ArchitecturePanel;
 import circuit.Ble;
 import circuit.Clb;
 import circuit.Flipflop;
@@ -71,17 +74,77 @@ public class Example
 		//analyticalPlace(packedCircuit, prePackedCircuit);
 		//printPlacedCircuit(packedCircuit);
 		
-		System.out.println("\nANALYTICAL PLACEMENT TWO");
-		analyticalPlaceTwo(packedCircuit, prePackedCircuit);
+		//System.out.println("\nANALYTICAL PLACEMENT TWO");
+		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
 		
 		//System.out.println("\nANALYTICAL PLACEMENT THREE");
 		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
+		
+		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
+		//analyticalPlaceFour(packedCircuit, prePackedCircuit);
+		
+		//visualAnalytical(packedCircuit);
+		visualSA(packedCircuit);
 	}
 	
 //	public static void main(String[] args)
 //	{
 //		crsBugReconstruct();
 //	}
+	
+	private static void visualAnalytical(PackedCircuit c)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a, c, bbncc);
+		placer.place();
+		
+		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(950,950);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
+	private static void visualSA(PackedCircuit c)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		Double placementEffort = 10.0;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		
+		//Random placement
+		Rplace.placeCLBsandFixedIOs(c, a, rand);
+		pm.PlacementCLBsConsistencyCheck();
+		
+		Vplace placer= new Vplace(pm,bbncc);
+		placer.place(placementEffort);
+		pm.PlacementCLBsConsistencyCheck();
+		
+		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(950,950);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
 	
 	private static void analyticalPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
@@ -139,6 +202,29 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		AnalyticalPlacerThree placer = new AnalyticalPlacerThree(a, c, bbncc);
+		placer.place();
+		
+		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
+		
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
+		pm.PlacementCLBsConsistencyCheck();
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
+		System.out.println("Critical path delay after analytical placement: " + maxDelayUpdated);
+	}
+	
+	private static void analyticalPlaceFour(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a, c, bbncc);
 		placer.place();
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());

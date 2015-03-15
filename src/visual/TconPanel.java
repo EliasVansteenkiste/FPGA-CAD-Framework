@@ -1,4 +1,4 @@
-package Visual;
+package visual;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -17,8 +17,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import circuit.Net;
-import circuit.Pattern;
-import circuit.Tcon;
 
 public class TconPanel extends JPanel {
 

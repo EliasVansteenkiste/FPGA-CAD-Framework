@@ -1,9 +1,8 @@
-package Visual;
+package visual;
 
 import java.awt.Color;
 import java.awt.Graphics;
 
-import architecture.ClbSite;
 import architecture.Site;
 
 public class SiteData {

@@ -1,4 +1,4 @@
-package Visual;
+package visual;
 
 import java.io.PrintStream;
 import java.util.Collection;

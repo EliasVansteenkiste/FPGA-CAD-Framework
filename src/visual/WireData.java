@@ -1,9 +1,8 @@
-package Visual;
+package visual;
 
 //import java.awt.Color;
 //import java.awt.Graphics;
 import java.awt.*;
-import javax.swing.*;
 
 import architecture.RouteNode;
 

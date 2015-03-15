@@ -1,4 +1,4 @@
-package Visual;
+package visual;
 
 public class Range {
 	double x;

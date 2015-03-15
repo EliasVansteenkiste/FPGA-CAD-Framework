@@ -1,7 +1,5 @@
-package Visual;
+package visual;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -9,8 +7,6 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.util.Vector;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -18,8 +14,6 @@ import javax.swing.JPanel;
 
 import circuit.Connection;
 import circuit.PackedCircuit;
-
-import java.util.*;
 
 public class ConnectionPanel extends JPanel {
 
