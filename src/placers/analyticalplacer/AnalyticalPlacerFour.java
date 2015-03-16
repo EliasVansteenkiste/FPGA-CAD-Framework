@@ -1,5 +1,9 @@
 package placers.analyticalplacer;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,6 +85,65 @@ public class AnalyticalPlacerFour
 			solveLinear(false, (i+1)*ALPHA);
 			clusterCutSpreadRecursive();
 			updateBestLegal();
+		}
+		
+		updateCircuit(true);
+		
+		int nbAttempts = 5000;
+		iterativeRefinement(nbAttempts);
+		
+		double cost = calculateTotalCost(bestLegalX, bestLegalY);
+		System.out.println("COST BEFORE REFINEMENT = " + cost);
+	}
+	
+	/*
+	 * Write cost convergence in CSV format
+	 */
+	public void place(String fileName)
+	{
+		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		initializeDataStructures();
+		
+		//Initial linear solves, should normally be done 5-7 times
+		for(int i = 0; i < 20; i++)
+		{
+			solveLinear(true, 0.0);
+		}
+		
+		//Initial legalization
+		clusterCutSpreadRecursive();
+		updateBestLegal();
+		
+		String totalString = "Linear;Legal;BestLegal\n";
+		
+		//Iterative solves with pseudonets
+		for(int i = 0; i < 30; i++)
+		{
+//			System.out.println("SOLVE " + i);
+			solveLinear(false, (i+1)*ALPHA);
+			clusterCutSpreadRecursive();
+			updateBestLegal();
+			double costLinear = calculateTotalCost(linearX, linearY);
+			double costLegal = calculateTotalCost(legalX, legalY);
+			double costBestLegal = calculateTotalCost(bestLegalX, bestLegalY);
+			String formattedString = String.format("%.3f;%.3f;%.3f\n", costLinear, costLegal, costBestLegal);
+			totalString += formattedString;
+		}
+		
+		try{
+			File csvFile = new File(fileName);
+			if(!csvFile.exists())
+			{
+				csvFile.createNewFile();
+			}
+			FileWriter fileWriter = new FileWriter(csvFile.getAbsoluteFile());
+			BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+			bufferedWriter.write(totalString);
+			bufferedWriter.close();
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't write csv file: " + fileName);
 		}
 		
 		updateCircuit(true);
@@ -1580,6 +1643,85 @@ public class AnalyticalPlacerFour
 			int maxX;
 			int minY;
 			int maxY;
+			Block sourceBlock = net.source.owner;
+			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
+			{
+				minX = sourceBlock.getSite().x;
+				maxX = sourceBlock.getSite().x;
+				minY = sourceBlock.getSite().y;
+				maxY = sourceBlock.getSite().y;
+			}
+			else
+			{
+				int index = indexMap.get((Clb)sourceBlock);
+				minX = xArray[index];
+				maxX = xArray[index];
+				minY = yArray[index];
+				maxY = yArray[index];
+			}
+			
+			for(Pin pin:net.sinks)
+			{
+				Block sinkOwner = pin.owner;
+				if(sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
+				{
+					Site sinkOwnerSite = sinkOwner.getSite();
+					if(sinkOwnerSite.x < minX)
+					{
+						minX = sinkOwnerSite.x;
+					}
+					if(sinkOwnerSite.x > maxX)
+					{
+						maxX = sinkOwnerSite.x;
+					}
+					if(sinkOwnerSite.y < minY)
+					{
+						minY = sinkOwnerSite.y;
+					}
+					if(sinkOwnerSite.y > maxY)
+					{
+						maxY = sinkOwnerSite.y;
+					}
+				}
+				else
+				{
+					int index = indexMap.get((Clb)sinkOwner);
+					if(xArray[index] < minX)
+					{
+						minX = xArray[index];
+					}
+					if(xArray[index] > maxX)
+					{
+						maxX = xArray[index];
+					}
+					if(yArray[index] < minY)
+					{
+						minY = yArray[index];
+					}
+					if(yArray[index] > maxY)
+					{
+						maxY = yArray[index];
+					}
+				}
+			}
+			Set<Block> blocks = new HashSet<>();
+			blocks.addAll(net.blocks());
+			double weight = getWeight(blocks.size());
+			cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
+			
+		}
+		return cost;
+	}
+	
+	private double calculateTotalCost(double[] xArray, double[] yArray)
+	{
+		double cost = 0.0;
+		for(Net net:circuit.nets.values())
+		{
+			double minX;
+			double maxX;
+			double minY;
+			double maxY;
 			Block sourceBlock = net.source.owner;
 			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
 			{

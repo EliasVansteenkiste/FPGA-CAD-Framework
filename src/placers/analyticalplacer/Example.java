@@ -81,7 +81,7 @@ public class Example
 		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
 		
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
-		//analyticalPlaceFour(packedCircuit, prePackedCircuit);
+		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
 		//visualAnalytical(packedCircuit);
 		visualSA(packedCircuit);
@@ -215,7 +215,7 @@ public class Example
 		System.out.println("Critical path delay after analytical placement: " + maxDelayUpdated);
 	}
 	
-	private static void analyticalPlaceFour(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	private static void analyticalPlaceFour(PackedCircuit c, PrePackedCircuit prePackedCircuit, boolean writeCSV)
 	{
 		int height = 30;
 		int width = 30;
@@ -225,7 +225,14 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a, c, bbncc);
-		placer.place();
+		if(writeCSV)
+		{
+			placer.place("convergence.csv");
+		}
+		else
+		{
+			placer.place();
+		}
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
