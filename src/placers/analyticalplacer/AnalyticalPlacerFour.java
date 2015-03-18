@@ -109,7 +109,7 @@ public class AnalyticalPlacerFour
 //		}
 		
 		//Iterative solves with pseudonets
-		for(int i = 0; i < 20; i++)
+		for(int i = 0; i < 30; i++)
 		{
 //			System.out.println("SOLVE " + i);
 			solveLinear(false, (i+1)*ALPHA);
@@ -132,6 +132,31 @@ public class AnalyticalPlacerFour
 		double cost = calculateTotalCost(bestLegalX, bestLegalY);
 		System.out.println("COST BEFORE REFINEMENT = " + cost);
 	}
+	
+//	public void place()
+//	{
+//		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+//		initializeDataStructures();
+//		
+//		solveLinear(true, 0.0);
+//		solveLinear(true, 0.0);
+//		solveLinear(true, 0.0);
+//		solveLinear(true, 0.0);
+//		solveLinear(true, 0.0);
+//		solveLinear(true, 0.0);
+//		solveLinear(true, 0.0);
+//		solveLinear(true, 0.0);
+//		
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+//		}
+//		
+//		clusterCutSpreadRecursive();
+//		updateBestLegal();
+//		
+//		updateCircuit(true);
+//	}
 	
 	/*
 	 * Write cost convergence in CSV format
@@ -236,7 +261,7 @@ public class AnalyticalPlacerFour
 			for(int i = 0; i < dimension; i++)
 			{
 				double deltaX = Math.abs(bestLegalX[i] - linearX[i]);
-				if(deltaX == 0.0)
+				if(deltaX < 0.001)
 				{
 					deltaX = 0.001;
 				}
@@ -244,7 +269,7 @@ public class AnalyticalPlacerFour
 				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
 				xVector[i] += pseudoWeightX * bestLegalX[i];
 				double deltaY = Math.abs(bestLegalY[i] - linearY[i]);
-				if(deltaY == 0.0)
+				if(deltaY < 0.001)
 				{
 					deltaY = 0.001;
 				}
@@ -381,7 +406,7 @@ public class AnalyticalPlacerFour
 			if(!(minXIndex == -1 && maxXIndex == -1))
 			{
 				double delta = maxX - minX;
-				if(delta == 0.0)
+				if(delta < 0.001)
 				{
 					delta = 0.001;
 				}
@@ -414,7 +439,7 @@ public class AnalyticalPlacerFour
 			if(!(minYIndex == -1 && maxYIndex == -1))
 			{
 				double delta = maxY - minY;
-				if(delta == 0.0)
+				if(delta < 0.001)
 				{
 					delta = 0.001;
 				}
@@ -450,7 +475,7 @@ public class AnalyticalPlacerFour
 				if(index != minXIndex)
 				{
 					double deltaMaxX = Math.abs(linearX[index] - maxX);
-					if(deltaMaxX == 0.0)
+					if(deltaMaxX < 0.001)
 					{
 						deltaMaxX = 0.001;
 					}
@@ -477,7 +502,7 @@ public class AnalyticalPlacerFour
 				if(index != maxXIndex)
 				{
 					double deltaMinX = Math.abs(linearX[index] - minX);
-					if(deltaMinX == 0.0)
+					if(deltaMinX < 0.001)
 					{
 						//System.out.println("Problem 4");
 						deltaMinX = 0.001;
@@ -505,7 +530,7 @@ public class AnalyticalPlacerFour
 				if(index != minYIndex)
 				{
 					double deltaMaxY = Math.abs(linearY[index] - maxY);
-					if(deltaMaxY == 0.0)
+					if(deltaMaxY < 0.001)
 					{
 						deltaMaxY = 0.001;
 					}
@@ -532,7 +557,7 @@ public class AnalyticalPlacerFour
 				if(index != maxYIndex)
 				{
 					double deltaMinY = Math.abs(linearY[index] - minY);
-					if(deltaMinY == 0.0)
+					if(deltaMinY < 0.001)
 					{
 						deltaMinY = 0.001;
 					}
@@ -566,7 +591,7 @@ public class AnalyticalPlacerFour
 					if(!(maxXIndex == -1))
 					{
 						double deltaMaxX = Math.abs(fixedXPosition - maxX);
-						if(deltaMaxX == 0.0)
+						if(deltaMaxX < 0.001)
 						{
 							deltaMaxX = 0.001;
 						}
@@ -586,7 +611,7 @@ public class AnalyticalPlacerFour
 					if(!(minXIndex == -1))
 					{
 						double deltaMinX = Math.abs(fixedXPosition - minX);
-						if(deltaMinX == 0.0)
+						if(deltaMinX < 0.001)
 						{
 							deltaMinX = 0.001;
 						}
@@ -611,7 +636,7 @@ public class AnalyticalPlacerFour
 					if(!(maxYIndex == -1))
 					{
 						double deltaMaxY = Math.abs(fixedYPosition - maxY);
-						if(deltaMaxY == 0.0)
+						if(deltaMaxY < 0.001)
 						{
 							deltaMaxY = 0.001;
 						}
@@ -631,7 +656,7 @@ public class AnalyticalPlacerFour
 					if(!(minYIndex == -1))
 					{
 						double deltaMinY = Math.abs(fixedYPosition - minY);
-						if(deltaMinY == 0.0)
+						if(deltaMinY < 0.001)
 						{
 							deltaMinY = 0.001;
 						}

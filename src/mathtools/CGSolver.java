@@ -66,7 +66,28 @@ public class CGSolver
 			vectorUpdate(s, d, beta, d);
 		}
 		
+		checkCorrect(x);
 		return x;
+	}
+	
+	private boolean checkCorrect(double[] solution)
+	{
+		double[] calculatedB = new double[solution.length];
+		sparseMatrixVectorProduct(solution, calculatedB);
+		for(int i = 0; i < calculatedB.length; i++)
+		{
+			if(calculatedB[i] - vector[i] < -0.3 || calculatedB[i] - vector[i] > 0.3)
+			{
+				//System.err.println("Solution was not correct");
+				//System.err.println("i: " + i + ", calc: " + calculatedB[i] + ", orig: " + vector[i]);
+//				for(int j = 0; j < val.length; j++)
+//				{
+//					System.err.println("" + j + ": " + val[j]);
+//				}
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	private double[] constructJacobi()
