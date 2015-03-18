@@ -113,14 +113,14 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a, c, bbncc);
-		placer.place("convergence.csv");
+		placer.place();
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
-		Vplace saPlacer= new Vplace(pm,bbncc);
-		saPlacer.lowTempAnneal(300, 5, 2000);
+//		Vplace saPlacer= new Vplace(pm,bbncc);
+//		saPlacer.lowTempAnneal(300, 5, 2000);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost after low temperature anneal: " + bbncc.calculateTotalCost());
 		

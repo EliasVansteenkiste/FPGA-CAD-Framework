@@ -103,18 +103,25 @@ public class AnalyticalPlacerFour
 		clusterCutSpreadRecursive();
 		updateBestLegal();
 		
-		for(int i = 0; i < linearX.length; i++)
-		{
-			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-		}
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+//		}
 		
 		//Iterative solves with pseudonets
-		for(int i = 0; i < 30; i++)
+		for(int i = 0; i < 20; i++)
 		{
 //			System.out.println("SOLVE " + i);
 			solveLinear(false, (i+1)*ALPHA);
 			clusterCutSpreadRecursive();
 			updateBestLegal();
+			costLinear = calculateTotalCost(linearX, linearY);
+			System.out.println("Linear cost: " + costLinear);
+		}
+		
+		for(int i = 0; i < linearX.length; i++)
+		{
+			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
 		}
 		
 		updateCircuit(true);
@@ -228,10 +235,20 @@ public class AnalyticalPlacerFour
 			//Process pseudonets
 			for(int i = 0; i < dimension; i++)
 			{
-				double pseudoWeightX = 2*pseudoWeightFactor*(1/(Math.abs(bestLegalX[i] - linearX[i])));
+				double deltaX = Math.abs(bestLegalX[i] - linearX[i]);
+				if(deltaX == 0.0)
+				{
+					deltaX = 0.001;
+				}
+				double pseudoWeightX = 2*pseudoWeightFactor*(1/deltaX);
 				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
 				xVector[i] += pseudoWeightX * bestLegalX[i];
-				double pseudoWeightY = 2*pseudoWeightFactor*(1/(Math.abs(bestLegalY[i] - linearY[i])));
+				double deltaY = Math.abs(bestLegalY[i] - linearY[i]);
+				if(deltaY == 0.0)
+				{
+					deltaY = 0.001;
+				}
+				double pseudoWeightY = 2*pseudoWeightFactor*(1/deltaY);
 				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeightY);
 				yVector[i] += pseudoWeightY*bestLegalY[i];
 			}
