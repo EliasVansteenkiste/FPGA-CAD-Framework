@@ -92,6 +92,61 @@ public class Vplace {
 	//	System.out.println("timeSpendFindSwap: "+(timeSpendFindSwap/1.0E9));
 	//	System.out.println("timeSpendCalcDCAndApplySwap: "+(timeSpendCalcDCAndApplySwap/1.0E9));
 	}
+	
+	public void lowTempAnneal(double initialTemp, int initialRLim, int nbMovesPerTemp)
+	{
+		Random rand= new Random(1);
+		int Rlim = initialRLim;
+		double T = initialTemp;
+		int movesPerTemperature = nbMovesPerTemp;
+		
+		while (T>0.005*calculator.averageNetCost()) {
+			int alphaAbs=0;
+//			System.out.println("Temperature: "+T+", Total Cost: "+calculator.calculateTotalCost());
+			for (int i =0; i<movesPerTemperature;i++) {
+				Swap swap;
+				
+				try
+				{
+					swap=manipulator.findSwap(Rlim);
+				}
+				finally
+				{
+
+				}
+      			
+				try 
+				{
+					if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+					{
+						double deltaCost = calculator.calculateDeltaCost(swap);
+	
+						if(deltaCost<=0)
+						{
+							calculator.apply(swap);
+							alphaAbs+=1;
+						}
+						else
+						{
+							if(rand.nextDouble()<Math.exp(-deltaCost/T))
+							{
+								calculator.apply(swap);
+								alphaAbs+=1;
+							}
+						}
+					}
+				}
+				finally 
+				{
+				 
+				}
+			}
+
+			double alpha = (double)alphaAbs/movesPerTemperature;
+			Rlim = updateRlim(alpha);
+			T=updateTemperature(T,alpha);
+		}
+	}
 
 	private double updateTemperature(double temperature, double alpha) {
 		double gamma;

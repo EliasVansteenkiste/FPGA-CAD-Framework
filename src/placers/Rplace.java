@@ -150,27 +150,29 @@ public class Rplace {
 				b.setSite(site);
 			}	
 		}
-		int index = 0;
+		int index = 11;
+		//int index = 4;
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
 			Site site = a.Isites.get(index);
 			site.block = input;
 			input.setSite(site);
-			index += 2;
+			index += 8;
 			if(index >= a.Isites.size())
 			{
 				index = 1;
 			}
 		}
-		index = 0;
+		index = 8;
+		//index = 12;
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
 			Site site = a.Osites.get(index);
 			site.block = output;
 			output.setSite(site);
-			index += 2;
+			index += 8;
 			if(index >= a.Osites.size())
 			{
 				index = 1;

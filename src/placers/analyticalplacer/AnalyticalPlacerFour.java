@@ -69,14 +69,44 @@ public class AnalyticalPlacerFour
 		initializeDataStructures();
 		
 		//Initial linear solves, should normally be done 5-7 times
-		for(int i = 0; i < 20; i++)
+		solveLinear(true, 0.0);
+		double costLinear = calculateTotalCost(linearX, linearY);
+		double bestCostLinear = costLinear;
+		double[] doublePreviousLinearX = null;
+		double[] doublePreviousLinearY = null;
+		double[] previousLinearX = linearX;
+		double[] previousLinearY = linearY;
+		solveLinear(true, 0.0);
+		costLinear = calculateTotalCost(linearX, linearY);
+		
+		int iterations = 2;
+		while(costLinear < bestCostLinear)
 		{
+			bestCostLinear = costLinear;
+			doublePreviousLinearX = previousLinearX;
+			doublePreviousLinearY = previousLinearY;
+			previousLinearX = linearX;
+			previousLinearY = linearY;
 			solveLinear(true, 0.0);
+			costLinear = calculateTotalCost(linearX, linearY);
+			iterations++;
 		}
+		
+		linearX = doublePreviousLinearX;
+		linearY = doublePreviousLinearY;
+		
+		System.out.println("Iterations: " + iterations);
+		costLinear = calculateTotalCost(linearX, linearY);
+		System.out.println("Linear cost = " + costLinear);
 		
 		//Initial legalization
 		clusterCutSpreadRecursive();
 		updateBestLegal();
+		
+		for(int i = 0; i < linearX.length; i++)
+		{
+			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+		}
 		
 		//Iterative solves with pseudonets
 		for(int i = 0; i < 30; i++)
@@ -89,8 +119,8 @@ public class AnalyticalPlacerFour
 		
 		updateCircuit(true);
 		
-		int nbAttempts = 5000;
-		iterativeRefinement(nbAttempts);
+		//int nbAttempts = 20000;
+		//iterativeRefinement(nbAttempts);
 		
 		double cost = calculateTotalCost(bestLegalX, bestLegalY);
 		System.out.println("COST BEFORE REFINEMENT = " + cost);
@@ -105,10 +135,35 @@ public class AnalyticalPlacerFour
 		initializeDataStructures();
 		
 		//Initial linear solves, should normally be done 5-7 times
-		for(int i = 0; i < 20; i++)
+		solveLinear(true, 0.0);
+		double costLinear = calculateTotalCost(linearX, linearY);
+		double bestCostLinear = costLinear;
+		double[] doublePreviousLinearX = null;
+		double[] doublePreviousLinearY = null;
+		double[] previousLinearX = linearX;
+		double[] previousLinearY = linearY;
+		solveLinear(true, 0.0);
+		costLinear = calculateTotalCost(linearX, linearY);
+		
+		int iterations = 2;
+		while(costLinear < bestCostLinear)
 		{
+			bestCostLinear = costLinear;
+			doublePreviousLinearX = previousLinearX;
+			doublePreviousLinearY = previousLinearY;
+			previousLinearX = linearX;
+			previousLinearY = linearY;
 			solveLinear(true, 0.0);
+			costLinear = calculateTotalCost(linearX, linearY);
+			iterations++;
 		}
+		
+		linearX = doublePreviousLinearX;
+		linearY = doublePreviousLinearY;
+		
+		System.out.println("Iterations: " + iterations);
+		costLinear = calculateTotalCost(linearX, linearY);
+		System.out.println("Linear cost = " + costLinear);
 		
 		//Initial legalization
 		clusterCutSpreadRecursive();
@@ -123,7 +178,7 @@ public class AnalyticalPlacerFour
 			solveLinear(false, (i+1)*ALPHA);
 			clusterCutSpreadRecursive();
 			updateBestLegal();
-			double costLinear = calculateTotalCost(linearX, linearY);
+			costLinear = calculateTotalCost(linearX, linearY);
 			double costLegal = calculateTotalCost(legalX, legalY);
 			double costBestLegal = calculateTotalCost(bestLegalX, bestLegalY);
 			String formattedString = String.format("%.3f;%.3f;%.3f\n", costLinear, costLegal, costBestLegal);
@@ -148,8 +203,8 @@ public class AnalyticalPlacerFour
 		
 		updateCircuit(true);
 		
-		int nbAttempts = 5000;
-		iterativeRefinement(nbAttempts);
+		//int nbAttempts = 5000;
+		//iterativeRefinement(nbAttempts);
 		
 		double cost = calculateTotalCost(bestLegalX, bestLegalY);
 		System.out.println("COST BEFORE REFINEMENT = " + cost);
@@ -159,7 +214,7 @@ public class AnalyticalPlacerFour
 	 * Build and solve the linear system ==> recalculates linearX and linearY
 	 * If it is the first time we solve the linear system ==> don't take pseudonets into account
 	 */
-	private void solveLinear(boolean firstSolve, double pseudoWeight)
+	private void solveLinear(boolean firstSolve, double pseudoWeightFactor)
 	{
 		int dimension = linearX.length;
 		Crs xMatrix = new Crs(dimension);
@@ -173,10 +228,12 @@ public class AnalyticalPlacerFour
 			//Process pseudonets
 			for(int i = 0; i < dimension; i++)
 			{
-				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeight);
-				xVector[i] += pseudoWeight * bestLegalX[i];
-				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeight);
-				yVector[i] += pseudoWeight*bestLegalY[i];
+				double pseudoWeightX = 2*pseudoWeightFactor*(1/(Math.abs(bestLegalX[i] - linearX[i])));
+				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
+				xVector[i] += pseudoWeightX * bestLegalX[i];
+				double pseudoWeightY = 2*pseudoWeightFactor*(1/(Math.abs(bestLegalY[i] - linearY[i])));
+				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeightY);
+				yVector[i] += pseudoWeightY*bestLegalY[i];
 			}
 		}
 		
@@ -1952,18 +2009,54 @@ public class AnalyticalPlacerFour
 		legalX = new int[dimensions];
 		legalY = new int[dimensions];
 		int index = 0;
-		double xPos = 0.09;
-		double yPos = 0.09;
+		Random random = new Random();
 		for(Clb clb:circuit.clbs.values())
 		{
 			indexMap.put(clb, index);
-			//linearX[index] = clb.getSite().x;
-			//linearY[index] = clb.getSite().y;
-			linearX[index] = xPos;
-			linearY[index] = yPos;
-			xPos += 0.09;
-			yPos += 0.09;
+			linearX[index] = minimalX + (maximalX - minimalX)*random.nextDouble();
+			linearY[index] = minimalY + (maximalY - minimalY)*random.nextDouble();
 			index++;
 		}
 	}
+	
+//	private void initializeDataStructures()
+//	{
+//		System.out.println("WATCH OUT: SPECIAL VERSION OF THE INITIALIZE DATASTRUCTURES FUNCTION!!");
+//		int dimensions = circuit.clbs.values().size();
+//		indexMap = new HashMap<>();;
+//		linearX = new double[dimensions];
+//		linearY = new double[dimensions];
+//		legalX = new int[dimensions];
+//		legalY = new int[dimensions];
+//		int index = 0;
+//		for(Clb clb:circuit.clbs.values())
+//		{
+//			indexMap.put(clb, index);
+//			//linearX[index] = clb.getSite().x;
+//			//linearY[index] = clb.getSite().y;
+//			//linearX[index] = minimalX + (maximalX - minimalX)*random.nextDouble();
+//			//linearY[index] = minimalY + (maximalY - minimalY)*random.nextDouble();
+//			if(clb.name.contains("clb_a"))
+//			{
+//				linearX[index] = 12;
+//				linearY[index] = 1;
+//			}
+//			if(clb.name.contains("clb_b"))
+//			{
+//				linearX[index] = 14;
+//				linearY[index] = 4;
+//			}
+//			if(clb.name.contains("clb_c"))
+//			{
+//				linearX[index] = 16;
+//				linearY[index] = 6;
+//			}
+//			if(clb.name.contains("clb_d"))
+//			{
+//				linearX[index] = 18;
+//				linearY[index] = 10;
+//			}
+//			index++;
+//		}
+//	}
 }

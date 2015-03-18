@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Vector;
 
 import javax.swing.JFrame;
 
@@ -28,6 +29,7 @@ import circuit.Lut;
 import circuit.Net;
 import circuit.Output;
 import circuit.PackedCircuit;
+import circuit.Pin;
 import circuit.PrePackedCircuit;
 import circuit.BlePackedCircuit;
 import circuit.parser.blif.BlifReader;
@@ -83,9 +85,18 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		//visualAnalytical(packedCircuit);
-		visualSA(packedCircuit);
+		visualAnalytical(packedCircuit);
+		//visualSA(packedCircuit);
 	}
+	
+//	public static void main(String[] args)
+//	{
+//		PackedCircuit circuit = constructTestCircuit();
+//		//printPackedCircuit(circuit);
+//		
+//		visualAnalytical(circuit);
+//		//printPlacedCircuit(circuit);
+//	}
 	
 //	public static void main(String[] args)
 //	{
@@ -102,7 +113,16 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a, c, bbncc);
-		placer.place();
+		placer.place("convergence.csv");
+		
+		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
+		
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
+		Vplace saPlacer= new Vplace(pm,bbncc);
+		saPlacer.lowTempAnneal(300, 5, 2000);
+		pm.PlacementCLBsConsistencyCheck();
+		System.out.println("Total cost after low temperature anneal: " + bbncc.calculateTotalCost());
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
@@ -135,6 +155,7 @@ public class Example
 		Vplace placer= new Vplace(pm,bbncc);
 		placer.place(placementEffort);
 		pm.PlacementCLBsConsistencyCheck();
+		System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
@@ -286,6 +307,59 @@ public class Example
 		timingGraph.updateDelays();
 		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
 		System.out.println("Critical path delay after SA placement: " + maxDelayUpdated);
+	}
+	
+	private static PackedCircuit constructTestCircuit()
+	{
+		PackedCircuit circuit = new PackedCircuit();
+		Input input3 = new Input("input_3");
+		circuit.inputs.put(input3.name, input3);
+		Output output7 = new Output("output_7");
+		circuit.outputs.put(output7.name, output7);
+		Clb clba = new Clb("clb_a", 1, 6);
+		circuit.clbs.put(clba.name, clba);
+		Clb clbb = new Clb("clb_b", 1, 6);
+		circuit.clbs.put(clbb.name, clbb);
+		Clb clbc = new Clb("clb_c", 1, 6);
+		circuit.clbs.put(clbc.name, clbc);
+		Clb clbd = new Clb("clb_d", 1, 6);
+		circuit.clbs.put(clbd.name, clbd);
+		
+		Net net1 = new Net(input3.name);
+		net1.source = input3.output;
+		net1.sinks = new Vector<Pin>();
+		net1.sinks.add(clba.input[0]);
+		net1.sinks.add(clbc.input[0]);
+		circuit.getNets().put(net1.name, net1);
+		
+		Net net2 = new Net(clbc.name);
+		net2.source = clbc.output[0];
+		net2.sinks = new Vector<Pin>();
+		net2.sinks.add(output7.input);
+		circuit.getNets().put(net2.name, net2);
+		
+		Net net3 = new Net(clba.name);
+		net3.source = clba.output[0];
+		net3.sinks = new Vector<Pin>();
+		net3.sinks.add(clbb.input[0]);
+		net3.sinks.add(clbc.input[1]);
+		circuit.getNets().put(net3.name, net3);
+		
+		Net net4 = new Net(clbb.name);
+		net4.source = clbb.output[0];
+		net4.sinks = new Vector<Pin>();
+		net4.sinks.add(clbc.input[2]);
+		net4.sinks.add(clbd.input[0]);
+		circuit.getNets().put(net4.name, net4);
+		
+		Net net5 = new Net(clbd.name);
+		net5.source = clbd.output[0];
+		net5.sinks = new Vector<Pin>();
+		net5.sinks.add(clba.input[1]);
+		net5.sinks.add(clbb.input[1]);
+		circuit.getNets().put(net5.name, net5);
+		
+		return circuit;
 	}
 	
 	private static void printPlacedCircuit(PackedCircuit packedCircuit)
