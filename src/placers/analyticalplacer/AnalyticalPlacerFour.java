@@ -68,45 +68,23 @@ public class AnalyticalPlacerFour
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		
-		//Initial linear solves, should normally be done 5-7 times
-		solveLinear(true, 0.0);
-		double costLinear = calculateTotalCost(linearX, linearY);
-		double bestCostLinear = costLinear;
-		double[] doublePreviousLinearX = null;
-		double[] doublePreviousLinearY = null;
-		double[] previousLinearX = linearX;
-		double[] previousLinearY = linearY;
-		solveLinear(true, 0.0);
-		costLinear = calculateTotalCost(linearX, linearY);
-		
-		int iterations = 2;
-		while(costLinear < bestCostLinear)
+		//Initial linear solves, should normally be done 5-7 times		
+		for(int i = 0; i < 40; i++)
 		{
-			bestCostLinear = costLinear;
-			doublePreviousLinearX = previousLinearX;
-			doublePreviousLinearY = previousLinearY;
-			previousLinearX = linearX;
-			previousLinearY = linearY;
 			solveLinear(true, 0.0);
-			costLinear = calculateTotalCost(linearX, linearY);
-			iterations++;
 		}
 		
-		linearX = doublePreviousLinearX;
-		linearY = doublePreviousLinearY;
-		
-		System.out.println("Iterations: " + iterations);
-		costLinear = calculateTotalCost(linearX, linearY);
-		System.out.println("Linear cost = " + costLinear);
+		double costLinear = calculateTotalCost(linearX, linearY);
+		System.out.println("Linear cost before legalizing = " + costLinear);
 		
 		//Initial legalization
 		clusterCutSpreadRecursive();
 		updateBestLegal();
 		
-//		for(int i = 0; i < linearX.length; i++)
-//		{
-//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-//		}
+		for(int i = 0; i < linearX.length; i++)
+		{
+			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+		}
 		
 		//Iterative solves with pseudonets
 		for(int i = 0; i < 30; i++)
@@ -119,10 +97,10 @@ public class AnalyticalPlacerFour
 			System.out.println("Linear cost: " + costLinear);
 		}
 		
-		for(int i = 0; i < linearX.length; i++)
-		{
-			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-		}
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+//		}
 		
 		updateCircuit(true);
 		

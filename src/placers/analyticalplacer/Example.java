@@ -85,8 +85,8 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		visualAnalytical(packedCircuit);
-		//visualSA(packedCircuit);
+		//visualAnalytical(packedCircuit);
+		visualSA(packedCircuit);
 	}
 	
 //	public static void main(String[] args)
