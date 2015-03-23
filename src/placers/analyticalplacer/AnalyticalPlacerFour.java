@@ -69,7 +69,7 @@ public class AnalyticalPlacerFour
 		initializeDataStructures();
 		
 		//Initial linear solves, should normally be done 5-7 times		
-		for(int i = 0; i < 40; i++)
+		for(int i = 0; i < 20; i++)
 		{
 			solveLinear(true, 0.0);
 		}
@@ -89,7 +89,6 @@ public class AnalyticalPlacerFour
 		//Iterative solves with pseudonets
 		for(int i = 0; i < 30; i++)
 		{
-//			System.out.println("SOLVE " + i);
 			solveLinear(false, (i+1)*ALPHA);
 			clusterCutSpreadRecursive();
 			updateBestLegal();
@@ -239,17 +238,17 @@ public class AnalyticalPlacerFour
 			for(int i = 0; i < dimension; i++)
 			{
 				double deltaX = Math.abs(bestLegalX[i] - linearX[i]);
-				if(deltaX < 0.001)
+				if(deltaX < 0.005)
 				{
-					deltaX = 0.001;
+					deltaX = 0.005;
 				}
 				double pseudoWeightX = 2*pseudoWeightFactor*(1/deltaX);
 				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
 				xVector[i] += pseudoWeightX * bestLegalX[i];
 				double deltaY = Math.abs(bestLegalY[i] - linearY[i]);
-				if(deltaY < 0.001)
+				if(deltaY < 0.005)
 				{
-					deltaY = 0.001;
+					deltaY = 0.005;
 				}
 				double pseudoWeightY = 2*pseudoWeightFactor*(1/deltaY);
 				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeightY);
@@ -384,9 +383,9 @@ public class AnalyticalPlacerFour
 			if(!(minXIndex == -1 && maxXIndex == -1))
 			{
 				double delta = maxX - minX;
-				if(delta < 0.001)
+				if(delta < 0.005)
 				{
-					delta = 0.001;
+					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
 				if(maxXIndex == -1)
@@ -417,9 +416,9 @@ public class AnalyticalPlacerFour
 			if(!(minYIndex == -1 && maxYIndex == -1))
 			{
 				double delta = maxY - minY;
-				if(delta < 0.001)
+				if(delta < 0.005)
 				{
-					delta = 0.001;
+					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
 				if(maxYIndex == -1)
@@ -453,9 +452,9 @@ public class AnalyticalPlacerFour
 				if(index != minXIndex)
 				{
 					double deltaMaxX = Math.abs(linearX[index] - maxX);
-					if(deltaMaxX < 0.001)
+					if(deltaMaxX < 0.005)
 					{
-						deltaMaxX = 0.001;
+						deltaMaxX = 0.005;
 					}
 					double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
 					if(maxXIndex == -1) //maxX is a fixed block
@@ -480,10 +479,10 @@ public class AnalyticalPlacerFour
 				if(index != maxXIndex)
 				{
 					double deltaMinX = Math.abs(linearX[index] - minX);
-					if(deltaMinX < 0.001)
+					if(deltaMinX < 0.005)
 					{
 						//System.out.println("Problem 4");
-						deltaMinX = 0.001;
+						deltaMinX = 0.005;
 					}
 					double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
 					if(minXIndex == -1) //maxX is a fixed block
@@ -508,9 +507,9 @@ public class AnalyticalPlacerFour
 				if(index != minYIndex)
 				{
 					double deltaMaxY = Math.abs(linearY[index] - maxY);
-					if(deltaMaxY < 0.001)
+					if(deltaMaxY < 0.005)
 					{
-						deltaMaxY = 0.001;
+						deltaMaxY = 0.005;
 					}
 					double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
 					if(maxYIndex == -1) //maxX is a fixed block
@@ -535,9 +534,9 @@ public class AnalyticalPlacerFour
 				if(index != maxYIndex)
 				{
 					double deltaMinY = Math.abs(linearY[index] - minY);
-					if(deltaMinY < 0.001)
+					if(deltaMinY < 0.005)
 					{
-						deltaMinY = 0.001;
+						deltaMinY = 0.005;
 					}
 					double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
 					if(minYIndex == -1) //maxX is a fixed block
@@ -569,9 +568,9 @@ public class AnalyticalPlacerFour
 					if(!(maxXIndex == -1))
 					{
 						double deltaMaxX = Math.abs(fixedXPosition - maxX);
-						if(deltaMaxX < 0.001)
+						if(deltaMaxX < 0.005)
 						{
-							deltaMaxX = 0.001;
+							deltaMaxX = 0.005;
 						}
 						double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
 						//Connection between fixed and non fixed block
@@ -589,9 +588,9 @@ public class AnalyticalPlacerFour
 					if(!(minXIndex == -1))
 					{
 						double deltaMinX = Math.abs(fixedXPosition - minX);
-						if(deltaMinX < 0.001)
+						if(deltaMinX < 0.005)
 						{
-							deltaMinX = 0.001;
+							deltaMinX = 0.005;
 						}
 						double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
 						//Connection between fixed and non fixed block
@@ -614,9 +613,9 @@ public class AnalyticalPlacerFour
 					if(!(maxYIndex == -1))
 					{
 						double deltaMaxY = Math.abs(fixedYPosition - maxY);
-						if(deltaMaxY < 0.001)
+						if(deltaMaxY < 0.005)
 						{
-							deltaMaxY = 0.001;
+							deltaMaxY = 0.005;
 						}
 						double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
 						//Connection between fixed and non fixed block
@@ -634,9 +633,9 @@ public class AnalyticalPlacerFour
 					if(!(minYIndex == -1))
 					{
 						double deltaMinY = Math.abs(fixedYPosition - minY);
-						if(deltaMinY < 0.001)
+						if(deltaMinY < 0.005)
 						{
-							deltaMinY = 0.001;
+							deltaMinY = 0.005;
 						}
 						double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
 						//Connection between fixed and non fixed block

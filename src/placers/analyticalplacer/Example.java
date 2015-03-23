@@ -3,6 +3,7 @@ package placers.analyticalplacer;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
@@ -12,6 +13,7 @@ import mathtools.CGSolver;
 import mathtools.Crs;
 
 import architecture.FourLutSanitized;
+import architecture.Site;
 
 import packers.BlePacker;
 import packers.ClbPacker;
@@ -85,8 +87,10 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		//visualAnalytical(packedCircuit);
-		visualSA(packedCircuit);
+		visualAnalytical(packedCircuit);
+		//visualSA(packedCircuit);
+		
+		//visualLegalizerTest();
 	}
 	
 //	public static void main(String[] args)
@@ -112,15 +116,18 @@ public class Example
 		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a, c, bbncc);
+		int legalizer = 1;
+		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, c, legalizer);
+		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
 		placer.place();
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
-		Vplace saPlacer= new Vplace(pm,bbncc);
-		saPlacer.lowTempAnneal(300, 5, 2000);
+		//Vplace saPlacer= new Vplace(pm,bbncc);
+		//saPlacer.lowTempAnneal(300, 5, 2000);
+		//saPlacer.place(10.0);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost after low temperature anneal: " + bbncc.calculateTotalCost());
 		
@@ -156,6 +163,52 @@ public class Example
 		placer.place(placementEffort);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
+		
+		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(950,950);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
+	private static void visualLegalizerTest()
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		
+		int size = 45;
+		double[] linearX = new double[size];
+		double[] linearY = new double[size];
+		for(int i = 0; i < size; i++)
+		{
+			linearX[i] = 15.0;
+			linearY[i] = 15.0;
+		}
+		
+		PackedCircuit circuit = new PackedCircuit();
+		
+		LegalizerOne legalizer = new LegalizerOne(1, 30, 1, 30, size);
+		legalizer.legalize(linearX, linearY, circuit.getNets().values(), null);
+		int[] legalX = new int[size];
+		int[] legalY = new int[size];
+		legalizer.getBestLegal(legalX, legalY);
+		
+		Map<String,Clb> clbs = circuit.clbs;
+		for(int i = 0; i < size; i++)
+		{
+			String name = String.format("Nb_%d", i);
+			Clb clb = new Clb(name,1,6);
+			Site site = a.getSite(legalX[i], legalY[i], 0);
+			site.block = clb;
+			clb.setSite(site);
+			clbs.put(name,clb);
+		}
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
