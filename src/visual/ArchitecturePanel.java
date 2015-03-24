@@ -2,7 +2,10 @@ package visual;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,10 +16,11 @@ import architecture.FourLutSanitized;
 import architecture.IoSite;
 import architecture.RouteNode;
 import architecture.Site;
+import circuit.Block;
 import circuit.Net;
 import circuit.Connection;
 
-public class ArchitecturePanel extends JPanel
+public class ArchitecturePanel extends JPanel implements MouseMotionListener
 {
 
 	private static final long serialVersionUID = 1L;
@@ -31,6 +35,10 @@ public class ArchitecturePanel extends JPanel
 	private Map<Site, SiteData> siteData;
 
 	FourLutSanitized a;
+	
+	private int mouseCurrentX;
+	private int mouseCurrentY;
+	String curClbText;
 
 	public ArchitecturePanel(int size, FourLutSanitized a, boolean drawRouteNodes)
 	{
@@ -45,7 +53,11 @@ public class ArchitecturePanel extends JPanel
 		buildRouteNodeData();
 
 		// setBorder(BorderFactory.createLineBorder(Color.black));
-
+		
+		addMouseMotionListener(this);
+		mouseCurrentX = 0;
+		mouseCurrentY = 0;
+		curClbText = "";
 	}
 
 	// public void setNodeColor(Tcon tcon, Color color) {
@@ -102,7 +114,7 @@ public class ArchitecturePanel extends JPanel
 
 	public Dimension getPreferredSize()
 	{
-		return new Dimension(900, 900);
+		return new Dimension(891, 910);
 	}
 
 	public void paintComponent(Graphics g)
@@ -119,7 +131,13 @@ public class ArchitecturePanel extends JPanel
 		{
 			data.draw(g, zoom);
 		}
-
+		
+		//g.setColor(Color.RED);
+		//g.fillRect(5, 894, 875, 13);
+		g.setFont(new Font("Arial", Font.BOLD, 13));
+		g.setColor(Color.BLUE);
+		g.drawString("CLB:", 10, 905);
+		g.drawString(curClbText, 50, 905);
 	}
 
 	public void buildRouteNodeData()
@@ -348,6 +366,45 @@ public class ArchitecturePanel extends JPanel
 			drawNode(site.opin, x - 0.1 * CLB_WIDTH, y - 0.30 * CLB_WIDTH);
 			drawNode(site.sink, x + 0.1 * CLB_WIDTH, y + 0.30 * CLB_WIDTH);
 			drawNode(site.ipin, x + 0.1 * CLB_WIDTH, y - 0.30 * CLB_WIDTH);
+		}
+	}
+	
+	public void mouseDragged(MouseEvent e)
+	{
+		
+	}
+	
+	public void mouseMoved(MouseEvent e)
+	{
+		int xPos = e.getX();
+		int yPos = e.getY();
+		
+		double tileWidth = CLB_WIDTH + (a.channelWidth + 1) * WIRE_SPACE;
+		int siteX = (int)((double)xPos / tileWidth / zoom);
+		int siteY = (int)((double)yPos / tileWidth / zoom);
+		
+		if(siteX != mouseCurrentX || siteY != mouseCurrentY)
+		{
+			//System.out.println("X: " + siteX + ", Y: " + siteY);
+			mouseCurrentX = siteX;
+			mouseCurrentY = siteY;
+			if(siteX >= 1 && siteX <= a.width && siteY >= 1 && siteY <= a.height)
+			{
+				Block block = a.getSite(siteX, siteY, 0).block;
+				if(block != null)
+				{
+					curClbText = String.format("(%d,%d) Name: %s", siteX, siteY, block.name);
+				}
+				else
+				{
+					curClbText = String.format("(%d,%d)", siteX, siteY);
+				}
+			}
+			else
+			{
+				curClbText = String.format("(%d,%d)", siteX, siteY);
+			}
+			repaint(5, 893, 875, 16);
 		}
 	}
 

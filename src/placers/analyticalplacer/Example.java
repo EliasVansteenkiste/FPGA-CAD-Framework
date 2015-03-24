@@ -87,10 +87,10 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		//visualAnalytical(packedCircuit);
+		visualAnalytical(packedCircuit);
 		//visualSA(packedCircuit);
 		
-		visualLegalizerTest();
+		//visualLegalizerTest();
 	}
 	
 //	public static void main(String[] args)
@@ -116,7 +116,7 @@ public class Example
 		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		int legalizer = 2;
+		int legalizer = 1;
 		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, c, legalizer);
 		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
 		placer.place();
@@ -125,9 +125,9 @@ public class Example
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
-		//Vplace saPlacer= new Vplace(pm,bbncc);
+		Vplace saPlacer= new Vplace(pm,bbncc);
 		//saPlacer.lowTempAnneal(300, 5, 2000);
-		//saPlacer.place(10.0);
+		saPlacer.place(10.0);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost after low temperature anneal: " + bbncc.calculateTotalCost());
 		
@@ -135,7 +135,7 @@ public class Example
 		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(950,950);
+		frame.setSize(945,970);
 		frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
@@ -185,10 +185,12 @@ public class Example
 		int size = 45;
 		double[] linearX = new double[size];
 		double[] linearY = new double[size];
+		String[] names = new String[size];
 		for(int i = 0; i < size; i++)
 		{
-			linearX[i] = 31.0;
-			linearY[i] = 15.0;
+			linearX[i] = 15.0 + 0.2*i;
+			linearY[i] = 15.0 + 0.2*i;
+			names[i] = String.format("Nb_%d", i);
 		}
 		
 		PackedCircuit circuit = new PackedCircuit();
@@ -202,7 +204,7 @@ public class Example
 		Map<String,Clb> clbs = circuit.clbs;
 		for(int i = 0; i < size; i++)
 		{
-			String name = String.format("Nb_%d", i);
+			String name = names[i];
 			Clb clb = new Clb(name,1,6);
 			Site site = a.getSite(legalX[i], legalY[i], 0);
 			site.block = clb;
@@ -210,11 +212,17 @@ public class Example
 			clbs.put(name,clb);
 		}
 		
+		Clb clb = circuit.clbs.get("Nb_0");
+		if(clb != null)
+		{
+			System.out.println("Nb_0: (" + clb.getSite().x + "," + clb.getSite().y + ")");
+		}
+		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(950,950);
+		frame.setSize(945,970);
 		frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);

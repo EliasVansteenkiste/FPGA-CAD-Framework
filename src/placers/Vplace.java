@@ -172,8 +172,10 @@ public class Vplace {
 	public double calculateInitialTemperature() {
 		double	somDeltaKost=0;
 		double 	kwadratischeSomDeltaKost=0;
+		int counter = 0;
 		for (int i=0;i<manipulator.numBlocks();i++) {
-			Swap swap=manipulator.findSwap(manipulator.maxFPGAdimension());
+			//Swap swap=manipulator.findSwap(manipulator.maxFPGAdimension());
+			Swap swap = manipulator.findSwapInCircuit();
 			
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
@@ -183,10 +185,35 @@ public class Vplace {
 				calculator.apply(swap);
 			}
 
+			if(deltaCost > 0)
+			{
+				counter++;
+				if(deltaCost > 100.0)
+				{
+					System.out.println("Delta cost: " + deltaCost);
+				}
+			}
+			else
+			{
+				if(deltaCost < -100.0)
+				{
+					System.out.println("Delta cost: " + deltaCost);
+				}
+			}
+			
 			somDeltaKost+=deltaCost;
 			kwadratischeSomDeltaKost+=Math.pow(deltaCost,2);
 		}
-		double stdafwijkingDeltaKost=Math.sqrt(kwadratischeSomDeltaKost/manipulator.numBlocks()-Math.pow(somDeltaKost/manipulator.numBlocks(),2));
+		System.out.println("Positive costs: " + counter + " times / " + manipulator.numBlocks() + " in total");
+		System.out.println("Som delta kost: " + somDeltaKost);
+		System.out.println("Som kwadraten: "  + kwadratischeSomDeltaKost);
+		double somKwadraten = kwadratischeSomDeltaKost;
+		System.out.println("Som v/d kwadraten: " + somKwadraten);
+		double kwadraatSom = Math.pow(somDeltaKost,2);
+		System.out.println("Kwadraat v/d som: " + kwadraatSom);
+		double nbElements = manipulator.numBlocks();
+		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
+		System.out.println("Standaard afwijking: " + stdafwijkingDeltaKost);
 		double T=20*stdafwijkingDeltaKost;
 		return T;
 	}

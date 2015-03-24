@@ -9,6 +9,8 @@ import architecture.FourLutSanitized;
 import architecture.Site;
 import circuit.Block;
 import circuit.BlockType;
+import circuit.Input;
+import circuit.Output;
 import circuit.PackedCircuit;
 import circuit.Clb;
 
@@ -60,6 +62,39 @@ public class PlacementManipulatorIOCLB implements PlacementManipulator {
 		//	System.out.println("Something went wrong.");
 		//}
 		
+		return swap;
+	}
+	
+	public Swap findSwapInCircuit()
+	{
+		Swap swap = new Swap();
+		Block b = circuit.vBlocks.elementAt(rand.nextInt(circuit.vBlocks.size()));
+		swap.pl1 = b.getSite();
+		if(b.type == BlockType.CLB)
+		{
+			int nbClbs = circuit.clbs.values().size();
+			Clb[] clbs = new Clb[nbClbs];
+			circuit.clbs.values().toArray(clbs);
+			Clb clbToSwap = clbs[rand.nextInt(nbClbs)];
+			swap.pl2 = clbToSwap.getSite();
+		}
+		else if(b.type == BlockType.INPUT)
+		{
+			int nbInputs = circuit.getInputs().values().size();
+			Input[] inputs = new Input[nbInputs];
+			circuit.getInputs().values().toArray(inputs);
+			Input inputToSwap = inputs[rand.nextInt(nbInputs)];
+			swap.pl2 = inputToSwap.getSite();
+		}
+		else if(b.type == BlockType.OUTPUT)
+		{
+			int nbOutputs = circuit.getOutputs().values().size();
+			Output[] outputs = new Output[nbOutputs];
+			circuit.getOutputs().values().toArray(outputs);
+			Output outputToSwap = outputs[rand.nextInt(nbOutputs)];
+			swap.pl2 = outputToSwap.getSite();
+		}
+		//System.out.println("From (" + swap.pl1.x + "," + swap.pl1.y + ") to (" + swap.pl2.x + "," + swap.pl2.y + ")");
 		return swap;
 	}
 	
