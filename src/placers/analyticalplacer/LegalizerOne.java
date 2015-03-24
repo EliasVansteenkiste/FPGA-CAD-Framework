@@ -313,7 +313,8 @@ public class LegalizerOne implements Legalizer
 				continue;
 			}
 			
-			
+			//System.out.println("Nb elements: " + indices.size());
+			//System.out.printf("MinX = %.2f\nMaxX = %.2f\nMinY = %.2f\nMaxY = %.2f\n", areaXDownBoundHalf, areaXUpBoundHalf, areaYDownBoundHalf, areaYUpBoundHalf);
 			
 			
 			//Grow area until not overutilized
@@ -325,7 +326,7 @@ public class LegalizerOne implements Legalizer
 				switch(curDirection)
 				{
 					case 0: //Grow to the right if possible
-						if(areaXUpBoundHalf <= maximalX+1.0)
+						if(areaXUpBoundHalf <= maximalX)
 						{
 							areaXUpBoundHalf += 1.0;
 							
@@ -346,7 +347,7 @@ public class LegalizerOne implements Legalizer
 						}
 						break;
 					case 1: //Grow to the top if possible
-						if(areaYDownBoundHalf >= minimalY-1.0)
+						if(areaYDownBoundHalf >= minimalY)
 						{
 							areaYDownBoundHalf -= 1.0;
 							
@@ -367,7 +368,7 @@ public class LegalizerOne implements Legalizer
 						}
 						break;
 					case 2: //Grow to the left if possible
-						if(areaXDownBoundHalf >= minimalX-1.0)
+						if(areaXDownBoundHalf >= minimalX)
 						{
 							areaXDownBoundHalf -= 1.0;
 							
@@ -388,7 +389,7 @@ public class LegalizerOne implements Legalizer
 						}
 						break;
 					default: //Grow to the bottom if possible
-						if(areaYUpBoundHalf <= maximalY+1.0)
+						if(areaYUpBoundHalf <= maximalY)
 						{
 							areaYUpBoundHalf += 1.0;
 							
@@ -430,8 +431,36 @@ public class LegalizerOne implements Legalizer
 			int areaXUpBound = (int)Math.ceil(areaXUpBoundHalf);
 			int areaYDownBound = (int)Math.ceil(areaYDownBoundHalf);
 			int areaYUpBound = (int)Math.ceil(areaYUpBoundHalf);
+			
+			//System.out.printf("MinX = %d\nMaxX = %d\nMinY = %d\nMaxY = %d\n", areaXDownBound, areaXUpBound, areaYDownBound, areaYUpBound);
+			
+			while(areaXDownBound < minimalX)
+			{
+				areaXDownBound++;
+				areaXUpBound++;
+			}
+			while(areaXUpBound > maximalX + 1)
+			{
+				areaXDownBound--;
+				areaXUpBound--;
+			}
+			while(areaYDownBound < minimalY)
+			{
+				areaYDownBound++;
+				areaYUpBound++;
+			}
+			while(areaYUpBound > maximalY + 1)
+			{
+				areaYDownBound--;
+				areaYUpBound--;
+			}
+			
+			//System.out.printf("MinX = %d\nMaxX = %d\nMinY = %d\nMaxY = %d\n", areaXDownBound, areaXUpBound, areaYDownBound, areaYUpBound);
+			
 			cutAndSpread(cutDir, indices, positionsX, positionsY, areaXDownBound, areaXUpBound, areaYDownBound, areaYUpBound, 
-							semiLegalX, semiLegalY); 
+							semiLegalX, semiLegalY);
+			
+			
 
 			//System.out.println();
 		}

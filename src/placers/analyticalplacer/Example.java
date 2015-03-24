@@ -87,10 +87,10 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		visualAnalytical(packedCircuit);
+		//visualAnalytical(packedCircuit);
 		//visualSA(packedCircuit);
 		
-		//visualLegalizerTest();
+		visualLegalizerTest();
 	}
 	
 //	public static void main(String[] args)
@@ -116,7 +116,7 @@ public class Example
 		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		int legalizer = 1;
+		int legalizer = 2;
 		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, c, legalizer);
 		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
 		placer.place();
@@ -187,7 +187,7 @@ public class Example
 		double[] linearY = new double[size];
 		for(int i = 0; i < size; i++)
 		{
-			linearX[i] = 15.0;
+			linearX[i] = 31.0;
 			linearY[i] = 15.0;
 		}
 		

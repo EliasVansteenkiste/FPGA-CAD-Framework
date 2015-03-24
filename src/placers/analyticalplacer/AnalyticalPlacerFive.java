@@ -51,8 +51,10 @@ public class AnalyticalPlacerFive
 		{
 			case 1:
 				this.legalizer = new LegalizerOne(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
+				break;
 			default:
 				this.legalizer = new LegalizerTwo(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
+				break;
 		}
 	}
 	
