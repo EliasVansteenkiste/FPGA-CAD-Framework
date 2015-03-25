@@ -91,6 +91,7 @@ public class Vplace {
 		}
 	//	System.out.println("timeSpendFindSwap: "+(timeSpendFindSwap/1.0E9));
 	//	System.out.println("timeSpendCalcDCAndApplySwap: "+(timeSpendCalcDCAndApplySwap/1.0E9));
+		System.out.println("Last temp: " + T);
 	}
 	
 	public void lowTempAnneal(double initialTemp, int initialRLim, int nbMovesPerTemp)
@@ -146,6 +147,8 @@ public class Vplace {
 			Rlim = updateRlim(alpha);
 			T=updateTemperature(T,alpha);
 		}
+		
+		System.out.println("Last temp: " + T);
 	}
 
 	private double updateTemperature(double temperature, double alpha) {
@@ -173,6 +176,14 @@ public class Vplace {
 		double	somDeltaKost=0;
 		double 	kwadratischeSomDeltaKost=0;
 		int counter = 0;
+		int[] countArray = new int[25];
+		for(int i = 0; i < countArray.length; i++)
+		{
+			countArray[i] = 0;
+		}
+		double sumNegDeltaCost = 0.0;
+		int numNegDeltaCost = 0;
+		double quadraticSumNegDeltaCost = 0.0;
 		for (int i=0;i<manipulator.numBlocks();i++) {
 			//Swap swap=manipulator.findSwap(manipulator.maxFPGAdimension());
 			Swap swap = manipulator.findSwapInCircuit();
@@ -199,10 +210,29 @@ public class Vplace {
 				{
 					System.out.println("Delta cost: " + deltaCost);
 				}
+				sumNegDeltaCost -= deltaCost;
+				quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
+				numNegDeltaCost++;
 			}
 			
 			somDeltaKost+=deltaCost;
 			kwadratischeSomDeltaKost+=Math.pow(deltaCost,2);
+			
+			double temp = (deltaCost + 100) / 10;
+			int temp2 = (int) temp;
+			if(temp2 < 0)
+			{
+				temp2 = 0;
+			}
+			if(temp2 >= countArray.length)
+			{
+				temp2 = countArray.length - 1;
+			}
+			countArray[temp2] = countArray[temp2] + 1;
+			if(deltaCost >= 100 && deltaCost <= 110)
+			{
+				System.out.println("YES");
+			}
 		}
 		System.out.println("Positive costs: " + counter + " times / " + manipulator.numBlocks() + " in total");
 		System.out.println("Som delta kost: " + somDeltaKost);
@@ -215,7 +245,23 @@ public class Vplace {
 		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
 		System.out.println("Standaard afwijking: " + stdafwijkingDeltaKost);
 		double T=20*stdafwijkingDeltaKost;
+		
+		System.out.printf("... to -90: %d\n", countArray[0]);
+		for(int i = 1; i < countArray.length-1; i++)
+		{
+			System.out.printf("%d - %d: %d\n", (i-10)*10, (i-9)*10,countArray[i]);
+		}
+		System.out.printf("140 to ...: %d\n", countArray[countArray.length - 1]);
+		
+		double somNegKwadraten = quadraticSumNegDeltaCost;
+		double negKwadraatSom = Math.pow(sumNegDeltaCost, 2);
+		double stdafwijkingNegDeltaKost = Math.sqrt(somNegKwadraten/numNegDeltaCost - negKwadraatSom/(numNegDeltaCost*numNegDeltaCost));
+		System.out.println("Negative standard deviation: " + stdafwijkingNegDeltaKost);
+		
+		double newT = 20*stdafwijkingNegDeltaKost;
+		
 		return T;
+		//return newT;
 	}
 
 

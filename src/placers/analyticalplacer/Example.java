@@ -46,9 +46,10 @@ public class Example
 		try
 		{
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -87,8 +88,8 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		visualAnalytical(packedCircuit);
-		//visualSA(packedCircuit);
+		//visualAnalytical(packedCircuit);
+		visualSA(packedCircuit);
 		
 		//visualLegalizerTest();
 	}
@@ -117,7 +118,7 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		int legalizer = 1;
-		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, c, legalizer);
+		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, c, legalizer, bbncc);
 		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
 		placer.place();
 		
@@ -126,8 +127,8 @@ public class Example
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
 		Vplace saPlacer= new Vplace(pm,bbncc);
-		//saPlacer.lowTempAnneal(300, 5, 2000);
-		saPlacer.place(10.0);
+		saPlacer.lowTempAnneal(130, 5, 10000);
+		//saPlacer.place(4.0);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost after low temperature anneal: " + bbncc.calculateTotalCost());
 		

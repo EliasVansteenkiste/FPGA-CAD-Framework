@@ -10,7 +10,11 @@ import java.util.Set;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
+import placers.CostCalculator;
+import placers.PlacementManipulator;
+import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
+import placers.Swap;
 
 import architecture.FourLutSanitized;
 import architecture.Site;
@@ -36,10 +40,11 @@ public class AnalyticalPlacerFive
 	private int[] anchorPointsX;
 	private int[] anchorPointsY;
 	private Legalizer legalizer;
+	private CostCalculator calculator;
 	
 	private final double ALPHA = 0.3;
 	
-	public AnalyticalPlacerFive(FourLutSanitized architecture, PackedCircuit circuit, int legalizer)
+	public AnalyticalPlacerFive(FourLutSanitized architecture, PackedCircuit circuit, int legalizer, CostCalculator calculator)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
@@ -56,6 +61,7 @@ public class AnalyticalPlacerFive
 				this.legalizer = new LegalizerTwo(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
 				break;
 		}
+		this.calculator = calculator;
 	}
 	
 	public void place()
@@ -96,7 +102,7 @@ public class AnalyticalPlacerFive
 		
 		updateCircuit();
 		
-		//int nbAttempts = 20000;
+		//int nbAttempts = 640000;
 		//iterativeRefinement(nbAttempts);
 		
 		double cost = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
@@ -555,6 +561,24 @@ public class AnalyticalPlacerFive
 		
 		linearX = xSolution;
 		linearY = ySolution;
+	}
+	
+	private void iterativeRefinement(int nbAttempts)
+	{
+		PlacementManipulator manipulator = new PlacementManipulatorIOCLB(architecture, circuit);
+		for(int i = 0; i < nbAttempts; i++)
+		{
+			Swap swap;
+			swap=manipulator.findSwap(3);
+			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			{
+				double deltaCost = calculator.calculateDeltaCost(swap);
+				if(deltaCost<=0) //Only accept the move if it improves the total cost
+				{
+					calculator.apply(swap);
+				}
+			}
+		}
 	}
 	
 	private void updateCircuit()
