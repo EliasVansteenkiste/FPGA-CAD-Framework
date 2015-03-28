@@ -22,6 +22,7 @@ import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
 import placers.Vplace;
 import timinganalysis.TimingGraph;
+import tools.CsvWriter;
 import visual.ArchitecturePanel;
 import circuit.Ble;
 import circuit.Clb;
@@ -46,10 +47,10 @@ public class Example
 		try
 		{
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
 		}
 		catch(IOException ioe)
@@ -121,16 +122,26 @@ public class Example
 		int legalizer = 3;
 		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, c, legalizer, bbncc);
 		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
-		placer.place();
-		
-		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
 		Vplace saPlacer= new Vplace(pm,bbncc);
-		//saPlacer.lowTempAnneal(15, 5, 16000);
-		saPlacer.lowTempAnneal(15, 5, 5000);
+		
+		long startTime;
+		long analyticalTime;
+		long endTime;
+		startTime = System.nanoTime();
+		placer.place();
+		//saPlacer.customAnneal(30, 4, 12500);
 		//saPlacer.place(4.0);
+		analyticalTime = System.nanoTime();
+		saPlacer.lowTempAnneal(4.0);
+		endTime = System.nanoTime();
+		
+		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
+		System.out.printf("\tAnalytical placement time: %.3f s\n", (double)(analyticalTime - startTime)/1000000000);
+		System.out.printf("\tSimulated annealing refinement time: %.3f s\n", (double)(endTime - analyticalTime)/1000000000);
+		
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost after low temperature anneal: " + bbncc.calculateTotalCost());
 		
@@ -163,7 +174,15 @@ public class Example
 		pm.PlacementCLBsConsistencyCheck();
 		
 		Vplace placer= new Vplace(pm,bbncc);
+		
+		long startTime;
+		long endTime;
+		startTime = System.nanoTime();
 		placer.place(placementEffort);
+		endTime = System.nanoTime();
+		
+		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
+		
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
 		

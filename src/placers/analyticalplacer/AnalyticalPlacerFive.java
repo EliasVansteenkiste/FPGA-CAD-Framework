@@ -84,10 +84,10 @@ public class AnalyticalPlacerFive
 		//Initial legalization
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 		
-		for(int i = 0; i < linearX.length; i++)
-		{
-			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-		}
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+//		}
 		
 		//Iterative solves with pseudonets
 		for(int i = 0; i < 30; i++)
@@ -95,7 +95,7 @@ public class AnalyticalPlacerFive
 			solveLinear(false, (i+1)*ALPHA);
 			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 			costLinear = calculateTotalCost(linearX, linearY);
-			System.out.println("Linear cost: " + costLinear);
+			//System.out.println("Linear cost: " + costLinear);
 		}
 		
 //		for(int i = 0; i < linearX.length; i++)
@@ -105,7 +105,7 @@ public class AnalyticalPlacerFive
 		
 		updateCircuit();
 		
-		//int nbAttempts = 600000;
+		//int nbAttempts = 1000000;
 		//iterativeRefinement(nbAttempts);
 		
 		double cost = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
