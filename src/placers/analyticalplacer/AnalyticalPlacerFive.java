@@ -57,8 +57,11 @@ public class AnalyticalPlacerFive
 			case 1:
 				this.legalizer = new LegalizerOne(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
 				break;
-			default:
+			case 2:
 				this.legalizer = new LegalizerTwo(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
+				break;
+			default:
+				this.legalizer = new LegalizerThree(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
 				break;
 		}
 		this.calculator = calculator;
@@ -102,7 +105,7 @@ public class AnalyticalPlacerFive
 		
 		updateCircuit();
 		
-		//int nbAttempts = 640000;
+		//int nbAttempts = 600000;
 		//iterativeRefinement(nbAttempts);
 		
 		double cost = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
@@ -569,7 +572,7 @@ public class AnalyticalPlacerFive
 		for(int i = 0; i < nbAttempts; i++)
 		{
 			Swap swap;
-			swap=manipulator.findSwap(3);
+			swap=manipulator.findSwap(5);
 			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 			{
 				double deltaCost = calculator.calculateDeltaCost(swap);
