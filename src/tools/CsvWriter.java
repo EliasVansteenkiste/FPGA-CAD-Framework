@@ -23,7 +23,7 @@ public class CsvWriter
 		}
 	}
 		
-	public boolean addColumn(String[] rowData)
+	public boolean addRow(String[] rowData)
 	{
 		boolean toReturn;
 		if(rowData.length != nbColumns)

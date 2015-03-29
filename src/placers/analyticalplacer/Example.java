@@ -1,5 +1,6 @@
 package placers.analyticalplacer;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
@@ -40,60 +41,83 @@ import circuit.parser.blif.BlifReader;
 public class Example 
 {
 	
+//	public static void main(String[] args)
+//	{
+//		BlifReader blifReader = new BlifReader();
+//		PrePackedCircuit prePackedCircuit;
+//		try
+//		{
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.err.println("Couldn't read blif file!");
+//			return;
+//		}
+//		
+//		//printUnpackedCircuit(prePackedCircuit);
+//		
+//		BlePacker blePacker = new BlePacker(prePackedCircuit);
+//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		
+//		//printBlePackedCircuit(blePackedCircuit);
+//		
+//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+//		PackedCircuit packedCircuit = clbPacker.pack();
+//		
+//		//printPackedCircuit(packedCircuit);
+//		
+//		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
+//		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+//		//System.out.println();
+//		//System.out.println("SA placed block locations");
+//		//printPlacedCircuit(packedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT:");
+//		//analyticalPlace(packedCircuit, prePackedCircuit);
+//		//printPlacedCircuit(packedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT TWO");
+//		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT THREE");
+//		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
+//		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
+//		
+//		visualAnalytical(packedCircuit);
+//		//visualSA(packedCircuit);
+//		
+//		//visualLegalizerTest();
+//	}
+	
 	public static void main(String[] args)
 	{
-		BlifReader blifReader = new BlifReader();
-		PrePackedCircuit prePackedCircuit;
-		try
+		File folder = new File("benchmarks/Blif/6/");
+		File[] listOfFiles = folder.listFiles();
+		CsvWriter csvWriter = new CsvWriter(10);
+		csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "SA time", 
+					"SA cost", "Analytical solve time", "Analytical anneal time", "Analytical cost pre-anneal", 
+					"Analytical cost post-anneal"});
+		for(int i = 0; i < listOfFiles.length; i++)
 		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+			if(listOfFiles[i].isFile())
+			{
+				String fileName = listOfFiles[i].getName();
+				if(fileName.substring(fileName.length() - 4).contains("blif"))
+				{
+					String totalFilename = "benchmarks/Blif/6/" + fileName;
+					processBenchmark(totalFilename,csvWriter);
+				}
+			}
 		}
-		catch(IOException ioe)
-		{
-			System.err.println("Couldn't read blif file!");
-			return;
-		}
-		
-		//printUnpackedCircuit(prePackedCircuit);
-		
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		//printBlePackedCircuit(blePackedCircuit);
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
-		
-		//printPackedCircuit(packedCircuit);
-		
-		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
-		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
-		//System.out.println();
-		//System.out.println("SA placed block locations");
-		//printPlacedCircuit(packedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT:");
-		//analyticalPlace(packedCircuit, prePackedCircuit);
-		//printPlacedCircuit(packedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT TWO");
-		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT THREE");
-		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
-		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
-		
-		visualAnalytical(packedCircuit);
-		//visualSA(packedCircuit);
-		
-		//visualLegalizerTest();
+		csvWriter.writeFile("benchmarks.csv");
 	}
 	
 //	public static void main(String[] args)
@@ -194,6 +218,178 @@ public class Example
 		frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
+	}
+	
+	private static void processBenchmark(String totalFilename, CsvWriter csvWriter)
+	{
+		double[] sAResults = new double[5];
+		processSABenchmark(sAResults,totalFilename);
+		double sATime = sAResults[0];
+		double sACost = sAResults[1];
+		int nbClbs = (int)Math.round(sAResults[2]);
+		int nbInputs = (int)Math.round(sAResults[3]);
+		int nbOutputs = (int)Math.round(sAResults[4]);
+
+		double[] analyticalResults = new double[4];
+		processAnalyticalBenchmark(analyticalResults, totalFilename);
+		double analyticalSolveTime = analyticalResults[0];
+		double analyticalAnnealTime = analyticalResults[1];
+		double analyticalCostBefore = analyticalResults[2];
+		double analyticalCostAfter = analyticalResults[3];
+		
+		String nbClbsString = String.format("%d", nbClbs);
+		String nbInputsString = String.format("%d", nbInputs);
+		String nbOutputsString = String.format("%d", nbOutputs);
+		String sATimeString = String.format("%.3f", sATime);
+		String sACostString = String.format("%.3f", sACost);
+		String analyticalSolveTimeString = String.format("%.3f", analyticalSolveTime);
+		String analyticalAnnealTimeString = String.format("%.3f", analyticalAnnealTime);
+		String analyticalCostBeforeString = String.format("%.3f", analyticalCostBefore);
+		String analyticalCostAfterString = String.format("%.3f", analyticalCostAfter);
+		
+		csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, sATimeString, sACostString, 
+						analyticalSolveTimeString, analyticalAnnealTimeString, analyticalCostBeforeString, analyticalCostAfterString});
+	}
+	
+	private static void processAnalyticalBenchmark(double[] results, String totalFilename)
+	{
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			prePackedCircuit =  blifReader.readBlif(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+	
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+	
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+	
+		int dimension = calculateArchDimension(packedCircuit);
+		
+		int height = dimension;
+		int width = dimension;
+		int trackwidth = 4;
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(packedCircuit);
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		int legalizer = 3;
+		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, packedCircuit, legalizer, bbncc);
+		
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
+		Vplace saPlacer= new Vplace(pm,bbncc);
+		
+		long startTime;
+		long analyticalEndTime;
+		long annealStartTime;
+		long endTime;
+		startTime = System.nanoTime();
+		placer.place();
+		analyticalEndTime = System.nanoTime();
+		
+		results[2] = bbncc.calculateTotalCost();
+		
+		annealStartTime = System.nanoTime();
+		saPlacer.lowTempAnneal(4.0);
+		endTime = System.nanoTime();
+		
+		results[0] = (double)(analyticalEndTime - startTime)/1000000000;
+		results[1] = (double)(endTime - annealStartTime)/1000000000;
+		
+		pm.PlacementCLBsConsistencyCheck();
+		results[3] = bbncc.calculateTotalCost();
+	}
+	
+	private static void processSABenchmark(double[] results, String totalFilename)
+	{
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			prePackedCircuit =  blifReader.readBlif(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+	
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+	
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+	
+		int dimension = calculateArchDimension(packedCircuit);
+		
+		int height = dimension;
+		int width = dimension;
+		int trackwidth = 4;
+		
+		Double placementEffort = 10.0;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(packedCircuit);
+		
+		//Random placement
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		pm.PlacementCLBsConsistencyCheck();
+		
+		Vplace placer= new Vplace(pm,bbncc);
+		
+		long startTime;
+		long endTime;
+		startTime = System.nanoTime();
+		placer.place(placementEffort);
+		endTime = System.nanoTime();
+		
+		results[0] = (double)(endTime - startTime)/1000000000;
+		
+		pm.PlacementCLBsConsistencyCheck();
+		results[1] = bbncc.calculateTotalCost();
+		results[2] = packedCircuit.clbs.values().size();
+		results[3] = packedCircuit.getInputs().values().size();
+		results[4] = packedCircuit.getOutputs().values().size();
+	}
+	
+	private static int calculateArchDimension(PackedCircuit circuit)
+	{
+		int nbInputs = circuit.getInputs().values().size();
+		int nbOutputs = circuit.getOutputs().values().size();
+		int nbClbs = circuit.clbs.values().size();
+		int maxIO;
+		if(nbInputs > nbOutputs)
+		{
+			maxIO = nbInputs;
+		}
+		else
+		{
+			maxIO = nbOutputs;
+		}
+		int x1 = (maxIO + 3) / 4;
+		int x2 = (int)Math.ceil(Math.sqrt(nbClbs * 1.20));
+		int x;
+		if(x1 > x2)
+		{
+			x = x1;
+		}
+		else
+		{
+			x = x2;
+		}
+		return x;
 	}
 	
 	private static void visualLegalizerTest()
