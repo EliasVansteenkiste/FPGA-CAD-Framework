@@ -163,6 +163,10 @@ public class Vplace {
 		Random rand= new Random(1);
 		int biggestDistance = getBiggestDistance();
 		Rlimd = biggestDistance / 3;
+		if(Rlimd == 0)
+		{
+			Rlimd = 1;
+		}
 		int Rlim = initialRlim();
 		double T = calculateInitialTemperatureLow();
 		System.out.println("Initial temperature: "+T);
@@ -178,7 +182,7 @@ public class Vplace {
 				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 				{
 					double deltaCost = calculator.calculateDeltaCost(swap);
-	
+					
 					if(deltaCost<=0)
 					{
 						calculator.apply(swap);
@@ -197,7 +201,7 @@ public class Vplace {
 
 			double alpha = (double)alphaAbs/movesPerTemperature;
 			Rlim = updateRlim(alpha);
-			T=updateTemperature(T,alpha);		
+			T=updateTemperature(T,alpha);
 		}
 	}
 	
@@ -362,6 +366,12 @@ public class Vplace {
 		System.out.println("Negative standard deviation: " + stdafwijkingNegDeltaKost);
 		
 		double T = 2*stdafwijkingNegDeltaKost;
+		
+		if(!(T > 0 && T < 10000))
+		{
+			System.out.println("Trouble");
+			T = 1.0;
+		}
 		
 		return T;
 	}
