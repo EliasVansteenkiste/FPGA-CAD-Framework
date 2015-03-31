@@ -22,6 +22,12 @@ public class CsvWriter
 			data.add(i, new ArrayList<String>());
 		}
 	}
+	
+	public CsvWriter(List<List<String>> data, int nbColumns)
+	{
+		this.data = data;
+		this.nbColumns = nbColumns;
+	}
 		
 	public boolean addRow(String[] rowData)
 	{

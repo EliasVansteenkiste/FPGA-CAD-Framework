@@ -23,6 +23,7 @@ import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
 import placers.Vplace;
 import timinganalysis.TimingGraph;
+import tools.CsvReader;
 import tools.CsvWriter;
 import visual.ArchitecturePanel;
 import circuit.Ble;
@@ -102,10 +103,23 @@ public class Example
 	{
 		File folder = new File("benchmarks/Blif/6/");
 		File[] listOfFiles = folder.listFiles();
-		CsvWriter csvWriter = new CsvWriter(13);
-		csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "SA time", 
+		CsvWriter csvWriter;
+		CsvReader csvReader = new CsvReader();
+		boolean success = csvReader.readFile("benchmarks.csv");
+		String[] alreadyDoneFiles;
+		if(success)
+		{
+			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+		}
+		else
+		{
+			csvWriter = new CsvWriter(13);
+			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "SA time", 
 					"SA cost", "SA max delay", "Analytical solve time", "Analytical anneal time", "Analytical cost pre-anneal", 
 					"Analytical cost post-anneal", "Analytical max delay pre-anneal", "Analytical max delay post-anneal"});
+			alreadyDoneFiles = null;
+		}
 		for(int i = 0; i < listOfFiles.length; i++)
 		{
 			if(listOfFiles[i].isFile())
@@ -115,12 +129,52 @@ public class Example
 				{
 					System.out.println("Processing benchmark: " + fileName);
 					String totalFilename = "benchmarks/Blif/6/" + fileName;
-					processBenchmark(totalFilename,csvWriter);
+					if(alreadyDone(totalFilename, alreadyDoneFiles))
+					{
+						System.out.println("Already done this benchmark!");
+					}
+					else
+					{
+						processBenchmark(totalFilename,csvWriter);
+					}
 				}
 			}
 			csvWriter.writeFile("benchmarks.csv");
 		}
 	}
+	
+	private static boolean alreadyDone(String fileName, String[] alreadyDoneFiles)
+	{
+		for(int i = 0; i < alreadyDoneFiles.length; i++)
+		{
+			if(alreadyDoneFiles[i].contains(fileName))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+//	public static void main(String[] args)
+//	{
+//		CsvReader csvReader = new CsvReader();
+//		boolean test = csvReader.readFile("benchmarks.csv");
+//		if(test)
+//		{
+//			System.out.println("Succeeded");
+//		}
+//		else
+//		{
+//			System.out.println("Failed");
+//		}
+//		CsvWriter csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+//		csvWriter.addRow(new String[] {"Test", "Test", "Test", "Test", "Test", "Test", "Test", "Test", "Test", "Test", "Test", "Test", "Test", });
+//		String[] columnOne = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+//		for(int i = 0; i < 2; i++)
+//		{
+//			System.out.println(columnOne[i]);
+//		}
+//	}
 	
 //	public static void main(String[] args)
 //	{
@@ -319,8 +373,9 @@ public class Example
 		
 		pm.PlacementCLBsConsistencyCheck();
 		results[3] = bbncc.calculateTotalCost();
-		timingGraph.updateDelays();
-		double maxDelayAfter = timingGraph.calculateMaximalDelay();
+		TimingGraph timingGraphTwo = new TimingGraph(prePackedCircuit);
+		timingGraphTwo.buildTimingGraph();
+		double maxDelayAfter = timingGraphTwo.calculateMaximalDelay();
 		results[5] = maxDelayAfter;
 	}
 	
