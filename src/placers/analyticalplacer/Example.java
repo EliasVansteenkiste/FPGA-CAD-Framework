@@ -19,6 +19,7 @@ import architecture.Site;
 import packers.BlePacker;
 import packers.ClbPacker;
 import placers.BoundingBoxNetCC;
+import placers.EfficientBoundingBoxData;
 import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
 import placers.Vplace;
@@ -44,104 +45,169 @@ public class Example
 	
 //	public static void main(String[] args)
 //	{
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
+//		FourLutSanitized a = new FourLutSanitized(10, 10, 4);
 //		
-//		//printUnpackedCircuit(prePackedCircuit);
+//		Clb clb1 = new Clb("Clb1", 1, 6);
+//		clb1.setSite(a.getSite(5, 5, 0));
+//		Clb clb2 = new Clb("Clb2", 1, 6);
+//		clb2.setSite(a.getSite(6, 6, 0));
+//		Clb clb3 = new Clb("Clb3", 1, 6);
+//		clb3.setSite(a.getSite(7, 7, 0));
+//		Clb clb4 = new Clb("Clb4", 1, 6);
+//		clb4.setSite(a.getSite(4, 4, 0));
+//		Clb clb5 = new Clb("Clb5", 1, 6);
+//		clb5.setSite(a.getSite(3, 3, 0));
+//		Clb clb6 = new Clb("Clb6", 1, 6);
+//		clb6.setSite(a.getSite(2, 2, 0));
 //		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		Net net = new Net("Net1");
+//		net.addSource(clb1.output[0]);
+//		net.addSink(clb2.input[0]);
+//		net.addSink(clb3.input[0]);
+//		net.addSink(clb4.input[0]);
+//		net.addSink(clb5.input[0]);
+//		net.addSink(clb6.input[0]);
 //		
-//		//printBlePackedCircuit(blePackedCircuit);
+//		EfficientBoundingBoxData bbData = new EfficientBoundingBoxData(net);
+//		double bbCost = bbData.getNetCost();
 //		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
+//		System.out.println("Initial total cost: " + bbCost);
 //		
-//		//printPackedCircuit(packedCircuit);
+//		double deltaCost = bbData.calculateDeltaCost(clb1, a.getSite(4, 5, 0));
+//		System.out.println("Delta 1: " + deltaCost);
 //		
-//		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
-//		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
-//		//System.out.println();
-//		//System.out.println("SA placed block locations");
-//		//printPlacedCircuit(packedCircuit);
+//		deltaCost = bbData.calculateDeltaCost(clb1, a.getSite(1, 5, 0));
+//		System.out.println("Delta 2: " + deltaCost);
+//		bbData.revert();
+//		System.out.println("New total: " + bbData.getNetCost());
 //		
-//		//System.out.println("\nANALYTICAL PLACEMENT:");
-//		//analyticalPlace(packedCircuit, prePackedCircuit);
-//		//printPlacedCircuit(packedCircuit);
-//		
-//		//System.out.println("\nANALYTICAL PLACEMENT TWO");
-//		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
-//		
-//		//System.out.println("\nANALYTICAL PLACEMENT THREE");
-//		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
-//		
-//		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
-//		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
-//		
-//		visualAnalytical(packedCircuit);
-//		//visualSA(packedCircuit);
-//		
-//		//visualLegalizerTest();
+//		deltaCost = bbData.calculateDeltaCost(clb3, a.getSite(5, 6, 0));
+//		System.out.println("Delta 3: " + deltaCost);
+//		System.out.println("New total: " + bbData.getNetCost());
 //	}
 	
 	public static void main(String[] args)
 	{
-		File folder = new File("benchmarks/Blif/6/");
-		File[] listOfFiles = folder.listFiles();
-		CsvWriter csvWriter;
-		CsvReader csvReader = new CsvReader();
-		boolean success = csvReader.readFile("benchmarks.csv");
-		String[] alreadyDoneFiles;
-		if(success)
+		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
+			    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+		if(isDebug)
 		{
-			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
-			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+			System.out.println("Debugging");
 		}
 		else
 		{
-			csvWriter = new CsvWriter(13);
-			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "SA time", 
-					"SA cost", "SA max delay", "Analytical solve time", "Analytical anneal time", "Analytical cost pre-anneal", 
-					"Analytical cost post-anneal", "Analytical max delay pre-anneal", "Analytical max delay post-anneal"});
-			alreadyDoneFiles = null;
+			System.out.println("Not debugging");
 		}
-		for(int i = 0; i < listOfFiles.length; i++)
+		
+		//Wait for enter to start (necessary for easy profiling)
+		System.out.println("Hit any key to continue...");
+		try
 		{
-			if(listOfFiles[i].isFile())
-			{
-				String fileName = listOfFiles[i].getName();
-				if(fileName.substring(fileName.length() - 4).contains("blif"))
-				{
-					System.out.println("Processing benchmark: " + fileName);
-					String totalFilename = "benchmarks/Blif/6/" + fileName;
-					if(alreadyDone(totalFilename, alreadyDoneFiles))
-					{
-						System.out.println("Already done this benchmark!");
-					}
-					else
-					{
-						processBenchmark(totalFilename,csvWriter);
-					}
-				}
-			}
-			csvWriter.writeFile("benchmarks.csv");
+			System.in.read();
 		}
+		catch(IOException ioe)
+		{
+			System.out.println("Something went wrong");
+		}
+		
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		//printUnpackedCircuit(prePackedCircuit);
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+		
+		//printPackedCircuit(packedCircuit);
+		
+		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
+		simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+		//System.out.println();
+		//System.out.println("SA placed block locations");
+		//printPlacedCircuit(packedCircuit);
+		
+		//System.out.println("\nANALYTICAL PLACEMENT:");
+		//analyticalPlace(packedCircuit, prePackedCircuit);
+		//printPlacedCircuit(packedCircuit);
+		
+		//System.out.println("\nANALYTICAL PLACEMENT TWO");
+		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
+		
+		//System.out.println("\nANALYTICAL PLACEMENT THREE");
+		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
+		
+		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
+		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
+		
+		//visualAnalytical(packedCircuit);
+		//visualSA(packedCircuit);
+		
+		//visualLegalizerTest();
 	}
+	
+//	public static void main(String[] args)
+//	{
+//		File folder = new File("benchmarks/Blif/6/");
+//		File[] listOfFiles = folder.listFiles();
+//		CsvWriter csvWriter;
+//		CsvReader csvReader = new CsvReader();
+//		boolean success = csvReader.readFile("benchmarks.csv");
+//		String[] alreadyDoneFiles;
+//		if(success)
+//		{
+//			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+//			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+//		}
+//		else
+//		{
+//			csvWriter = new CsvWriter(13);
+//			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "SA time", 
+//					"SA cost", "SA max delay", "Analytical solve time", "Analytical anneal time", "Analytical cost pre-anneal", 
+//					"Analytical cost post-anneal", "Analytical max delay pre-anneal", "Analytical max delay post-anneal"});
+//			alreadyDoneFiles = null;
+//		}
+//		for(int i = 0; i < listOfFiles.length; i++)
+//		{
+//			if(listOfFiles[i].isFile())
+//			{
+//				String fileName = listOfFiles[i].getName();
+//				if(fileName.substring(fileName.length() - 4).contains("blif"))
+//				{
+//					System.out.println("Processing benchmark: " + fileName);
+//					String totalFilename = "benchmarks/Blif/6/" + fileName;
+//					if(alreadyDone(totalFilename, alreadyDoneFiles))
+//					{
+//						System.out.println("Already done this benchmark!");
+//					}
+//					else
+//					{
+//						processBenchmark(totalFilename,csvWriter);
+//					}
+//				}
+//			}
+//			csvWriter.writeFile("benchmarks.csv");
+//		}
+//	}
 	
 	private static boolean alreadyDone(String fileName, String[] alreadyDoneFiles)
 	{

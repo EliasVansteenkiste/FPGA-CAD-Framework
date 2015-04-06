@@ -11,19 +11,16 @@ import architecture.Site;
 public class BoundingBoxData {
 
 	private double weight;
-	
 	private int size;
+	private Set<Block> blocks;
+	private int boundingBox;
 	
-	public Set<Block> blocks;
+	private int min_x;
+	private int min_y;
+	private int max_x;
+	private int max_y;
 	
-	int boundingBox;
-	
-	int min_x;
-	int min_y;
-	int max_x;
-	int max_y;
-	
-	Block owner;
+	private Block owner;
 	
 	public double getWeight(){
 		return weight;
@@ -46,17 +43,22 @@ public class BoundingBoxData {
 			Iterator<Block> it = blocks.iterator();
 			Block b = it.next();
 			Block c = it.next();
-			bb=Math.abs(b.getSite().x-c.getSite().x)+Math.abs(b.getSite().y-c.getSite().y)+2;
+			//bb=Math.abs(b.getSite().x-c.getSite().x)+Math.abs(b.getSite().y-c.getSite().y)+2;
+			bb=Math.abs(b.x-c.x)+Math.abs(b.y-c.y)+2;
 		}else{
 			int xmin = Integer.MAX_VALUE;
 			int xmax = -1;
 			int ymin = Integer.MAX_VALUE;
 			int ymax = -1;
 			for(Block bl : blocks) {
-				if (bl.getSite().x < xmin)xmin=bl.getSite().x;			
-				if (bl.getSite().x > xmax)xmax=bl.getSite().x;			
-				if (bl.getSite().y < ymin)ymin=bl.getSite().y;
-				if (bl.getSite().y > ymax)ymax=bl.getSite().y;
+				//if (bl.getSite().x < xmin)xmin=bl.getSite().x;			
+				//if (bl.getSite().x > xmax)xmax=bl.getSite().x;			
+				//if (bl.getSite().y < ymin)ymin=bl.getSite().y;
+				//if (bl.getSite().y > ymax)ymax=bl.getSite().y;
+				if (bl.x < xmin)xmin=bl.x;			
+				if (bl.x > xmax)xmax=bl.x;			
+				if (bl.y < ymin)ymin=bl.y;
+				if (bl.y > ymax)ymax=bl.y;
 			}
 			
 			bb=(xmax-xmin+1)+(ymax-ymin+1);
@@ -68,11 +70,14 @@ public class BoundingBoxData {
 		return bb;
 	}
 	
-	public int getBoundingBox() {
-		if(boundingBox==-1){
+	public int getBoundingBox()
+	{
+		if(boundingBox==-1)
+		{
 			return calculateBoundingBox();
-		}else{
-			//if(calculateBoundingBox()!=boundingBox)System.out.println("check:nok");
+		}
+		else
+		{
 			return boundingBox;
 		}
 	}

@@ -59,7 +59,7 @@ public class Ble extends Block
 	@Override
 	public void setSite(Site site) ////Pushes site through to embedded LUT and FF
 	{
-		super.setSite(site);
+		//super.setSite(site);
 		if(this.lut != null)
 		{
 			this.lut.setSite(site);

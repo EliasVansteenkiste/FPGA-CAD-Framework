@@ -189,18 +189,7 @@ public class TimingGraph
 		}
 		return maxDelay;
 	}
-	
-//	public void test(PrePackedCircuit circuit)
-//	{
-//		Lut lut = circuit.getLuts().get("[96]");
-//		Pin output = lut.getOutputs()[0];
-//		Vector<Pin> pinVector = edges.get(output);
-//		for(Pin pin:pinVector)
-//		{
-//			System.out.print(" " + pin.name);
-//		}
-//	}
-//	
+
 //	public void printGraph()
 //	{
 //		for(Pin startPin:startNodes)

@@ -11,11 +11,11 @@ import circuit.Output;
 import circuit.Net;;
 
 public class BoundingBoxNetCC implements CostCalculator {
-	Map<Net, BoundingBoxData> netData;
-	Map<Block, BlockData> blockData;
+	
+	Map<Net, BoundingBoxData> netData; //Contains for every net a boundingboxdata object
+	Map<Block, BlockData> blockData; //Contains for every block all UNIQUE nets that are connected to this block (inside the BlockData object)
 	PackedCircuit circuit;
 	
-
 	public BoundingBoxNetCC(PackedCircuit c) {
 		this.circuit=c;
 		this.initializeData();
@@ -31,7 +31,7 @@ public class BoundingBoxNetCC implements CostCalculator {
 			//System.out.println(blockData.get(block).blocks.size());
 			for (Block b:blockData.get(block).blocks) {
 				BoundingBoxData nd;
-				if((nd = netData.get(b))!=null){
+				if((nd = netData.get(b))!=null){ //will only be different from null when b is a net!
 					result+=nd.calculateCost();
 				}
 			}

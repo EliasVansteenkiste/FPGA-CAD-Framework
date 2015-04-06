@@ -1,10 +1,19 @@
 package placers;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
+import architecture.FourLutSanitized;
 import circuit.Block;
+import circuit.BlockType;
 import circuit.Clb;
+import circuit.Input;
+import circuit.Net;
+import circuit.Output;
+import circuit.PackedCircuit;
 
 import com.sun.org.apache.bcel.internal.generic.SWAP;
 
@@ -17,6 +26,76 @@ public class Vplace {
 	public Vplace(PlacementManipulator manipulator, CostCalculator calculator) {
 		this.manipulator=manipulator;
 		this.calculator=calculator;
+	}
+	
+	public void efficientPlace(double inner_num, PackedCircuit c, FourLutSanitized a)
+	{
+		//Initialize SA parameters
+		Random rand = new Random(1);
+		Rlimd = Math.max(a.width,a.height);
+		int Rlim = initialRlim();
+		double T = calculateInitialTemperature();
+		int movesPerTemperature = (int) (inner_num*Math.pow(c.numBlocks(),4.0/3.0));
+		
+		//Print SA parameters
+		System.out.println("Initial temperature: " + T);
+		System.out.println("Moves per temperature: " + movesPerTemperature);
+		
+		//Initialize EfficientBoundingBoxNetCC
+		EfficientBoundingBoxNetCC efficientCalculator = new EfficientBoundingBoxNetCC();
+		
+		while (T > 0.005*efficientCalculator.averageNetCost())
+		{
+			int alphaAbs=0;
+			for (int i =0; i<movesPerTemperature;i++) 
+			{
+				Swap swap = findSwap(c, Rlim, rand, a);
+				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+				{
+					double deltaCost = efficientCalculator.calculateDeltaCost(swap);
+					if(deltaCost<=0)
+					{
+						swap.apply();
+						alphaAbs+=1;
+					}
+					else
+					{
+						if(rand.nextDouble()<Math.exp(-deltaCost/T))
+						{
+							swap.apply();
+							alphaAbs+=1;
+						}
+					}
+				}
+			}
+
+			double alpha = (double)alphaAbs/movesPerTemperature;
+			Rlim = updateRlim(alpha);
+			T=updateTemperature(T,alpha);		
+		}
+		
+		System.out.println("Last temp: " + T);
+	}
+	
+	private Swap findSwap(PackedCircuit circuit, int Rlim, Random rand, FourLutSanitized a)
+	{
+		Swap swap=new Swap();
+		Block b = circuit.vBlocks.elementAt(rand.nextInt(circuit.vBlocks.size()));
+		swap.pl1 = b.getSite();
+		if(b.type==BlockType.CLB)
+		{
+			swap.pl2 = a.randomSite(Rlim, swap.pl1);
+		}
+		else if(b.type == BlockType.INPUT)
+		{
+			swap.pl2 = a.randomISite(Rlim, swap.pl1);
+		}
+		else if(b.type == BlockType.OUTPUT)
+		{
+			swap.pl2 = a.randomOSite(Rlim, swap.pl1);
+		}
+			
+		return swap;
 	}
 
 	public void place(double inner_num) {
