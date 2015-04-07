@@ -1,5 +1,8 @@
 package placers;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import architecture.Site;
 
 import circuit.Block;
@@ -10,6 +13,7 @@ public class EfficientBoundingBoxData
 	
 	private double weight;
 	private Block[] blocks;
+	private boolean alreadySaved;
 	
 	private int min_x;
 	private int nb_min_x;
@@ -33,12 +37,14 @@ public class EfficientBoundingBoxData
 	
 	public EfficientBoundingBoxData(Net net)
 	{
-		blocks = new Block[1 + net.sinks.size()];
-		blocks[0] = net.source.owner;
-		for(int i = 0; i < blocks.length - 1; i++)
+		Set<Block> blockSet = new HashSet<>();
+		blockSet.add(net.source.owner);
+		for(int i = 0; i < net.sinks.size(); i++)
 		{
-			blocks[i+1] = net.sinks.get(i).owner;
+			blockSet.add(net.sinks.get(i).owner);
 		}
+		blocks = new Block[blockSet.size()];
+		blockSet.toArray(blocks);
 		setWeightandSize();
 		boundingBox = -1;
 		min_x = Integer.MAX_VALUE;
@@ -46,6 +52,7 @@ public class EfficientBoundingBoxData
 		max_x = Integer.MAX_VALUE;
 		max_y = -1;
 		calculateBoundingBoxFromScratch();
+		alreadySaved = false;
 	}
 	
 	public double calculateDeltaCost(Block block, Site newSite)
@@ -61,15 +68,6 @@ public class EfficientBoundingBoxData
 		}
 		else
 		{
-			min_x_old = min_x;
-			nb_min_x_old = nb_min_x;
-			max_x_old = max_x;
-			nb_max_x_old = nb_max_x;
-			min_y_old = min_y;
-			nb_min_y_old = nb_min_y;
-			max_y_old = max_y;
-			nb_max_y_old = nb_max_y;
-			boundingBox_old = boundingBox;
 			if(newSite.x < min_x)
 			{
 				min_x = newSite.x;
@@ -124,6 +122,10 @@ public class EfficientBoundingBoxData
 		return weight*(boundingBox-originalBB);
 	}
 	
+	public void pushThrough()
+	{
+		alreadySaved = false;
+	}
 	
 	public void revert()
 	{
@@ -136,6 +138,24 @@ public class EfficientBoundingBoxData
 		nb_min_y = nb_min_y_old;
 		max_y = max_y_old;
 		nb_max_y = nb_max_y_old;
+		alreadySaved = false;
+	}
+	
+	public void saveState()
+	{
+		if(!alreadySaved)
+		{
+			min_x_old = min_x;
+			nb_min_x_old = nb_min_x;
+			max_x_old = max_x;
+			nb_max_x_old = nb_max_x;
+			min_y_old = min_y;
+			nb_min_y_old = nb_min_y;
+			max_y_old = max_y;
+			nb_max_y_old = nb_max_y;
+			boundingBox_old = boundingBox;
+			alreadySaved = true;
+		}
 	}
 	
 	public double getNetCost()
@@ -145,16 +165,6 @@ public class EfficientBoundingBoxData
 	
 	private void calculateBoundingBoxFromScratch() 
 	{
-		min_x_old = min_x;
-		nb_min_x_old = nb_min_x;
-		max_x_old = max_x;
-		nb_max_x_old = nb_max_x;
-		min_y_old = min_y;
-		nb_min_y_old = nb_min_y;
-		max_y_old = max_y;
-		nb_max_y_old = nb_max_y;
-		boundingBox_old = boundingBox;
-		
 		min_x = Integer.MAX_VALUE;
 		max_x = -1;
 		min_y = Integer.MAX_VALUE;

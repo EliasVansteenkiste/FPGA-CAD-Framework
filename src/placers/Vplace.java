@@ -42,9 +42,9 @@ public class Vplace {
 		System.out.println("Moves per temperature: " + movesPerTemperature);
 		
 		//Initialize EfficientBoundingBoxNetCC
-		EfficientBoundingBoxNetCC efficientCalculator = new EfficientBoundingBoxNetCC();
+		EfficientBoundingBoxNetCC efficientCalculator = new EfficientBoundingBoxNetCC(c);
 		
-		while (T > 0.005*efficientCalculator.averageNetCost())
+		while (T > 0.005*efficientCalculator.calculateAverageNetCost())
 		{
 			int alphaAbs=0;
 			for (int i =0; i<movesPerTemperature;i++) 
@@ -53,10 +53,17 @@ public class Vplace {
 				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 				{
 					double deltaCost = efficientCalculator.calculateDeltaCost(swap);
+					double deltaCostOld = calculator.calculateDeltaCost(swap);
+					if(deltaCost != deltaCostOld)
+					{
+						System.out.printf("ERROR: %.3f (old) VS %.3f (new)\n", deltaCostOld, deltaCost);
+					}
+					
 					if(deltaCost<=0)
 					{
 						swap.apply();
 						alphaAbs+=1;
+						efficientCalculator.pushThrough();
 					}
 					else
 					{
@@ -64,6 +71,11 @@ public class Vplace {
 						{
 							swap.apply();
 							alphaAbs+=1;
+							efficientCalculator.pushThrough();
+						}
+						else
+						{
+							efficientCalculator.revert();
 						}
 					}
 				}

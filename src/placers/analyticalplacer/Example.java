@@ -20,14 +20,18 @@ import packers.BlePacker;
 import packers.ClbPacker;
 import placers.BoundingBoxNetCC;
 import placers.EfficientBoundingBoxData;
+import placers.EfficientBoundingBoxNetCC;
 import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
+import placers.Swap;
 import placers.Vplace;
 import timinganalysis.TimingGraph;
 import tools.CsvReader;
 import tools.CsvWriter;
 import visual.ArchitecturePanel;
 import circuit.Ble;
+import circuit.Block;
+import circuit.BlockType;
 import circuit.Clb;
 import circuit.Flipflop;
 import circuit.Input;
@@ -100,15 +104,15 @@ public class Example
 		}
 		
 		//Wait for enter to start (necessary for easy profiling)
-		System.out.println("Hit any key to continue...");
-		try
-		{
-			System.in.read();
-		}
-		catch(IOException ioe)
-		{
-			System.out.println("Something went wrong");
-		}
+//		System.out.println("Hit any key to continue...");
+//		try
+//		{
+//			System.in.read();
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.out.println("Something went wrong");
+//		}
 		
 		BlifReader blifReader = new BlifReader();
 		PrePackedCircuit prePackedCircuit;
@@ -141,7 +145,7 @@ public class Example
 		//printPackedCircuit(packedCircuit);
 		
 		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
-		simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
 		//System.out.println();
 		//System.out.println("SA placed block locations");
 		//printPlacedCircuit(packedCircuit);
@@ -163,6 +167,8 @@ public class Example
 		//visualSA(packedCircuit);
 		
 		//visualLegalizerTest();
+		
+		testCostCalculator(packedCircuit);
 	}
 	
 //	public static void main(String[] args)
@@ -716,6 +722,7 @@ public class Example
 		final long endTime;
 		try {
 			placer.place(placementEffort);
+			//placer.efficientPlace(placementEffort, c, a);
 		} finally {
 		  endTime = System.nanoTime();
 		}
@@ -724,9 +731,126 @@ public class Example
 		System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
 		pm.PlacementCLBsConsistencyCheck();
 		
+		
+		
+		//Start test efficient costCalculator
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
+		System.out.println("\nTest efficient costcalculator:");
+		System.out.printf("\tTotal cost: old method = %.3f; new method = %.3f\n", bbncc.calculateTotalCost(), effcc.calculateTotalCost());
+		Swap swap1 = new Swap();
+		swap1.pl1 = a.getSite(4, 4, 0);
+		swap1.pl2 = a.getSite(4, 5, 0);
+		System.out.printf("\tSwap ((4,4) -> (4,5)): old method = %.3f; new method = %.3f\n", bbncc.calculateDeltaCost(swap1), effcc.calculateDeltaCost(swap1));
+		effcc.pushThrough();
+		swap1.apply();
+		System.out.printf("\tNew total cost: old method = %.3f; new method = %.3f\n", bbncc.calculateTotalCost(), effcc.calculateTotalCost());
+		Swap swap2 = new Swap();
+		swap2.pl1 = a.getSite(3, 5, 0);
+		swap2.pl2 = a.getSite(25, 25, 0);
+		System.out.printf("\tSwap ((3,5) -> (25,25)): old method = %.3f; new method = %.3f\n", bbncc.calculateDeltaCost(swap2), effcc.calculateDeltaCost(swap2));
+		effcc.pushThrough();
+		swap2.apply();
+		System.out.printf("\tNew total cost: old method = %.3f; new method = %.3f\n", bbncc.calculateTotalCost(), effcc.calculateTotalCost());
+		System.out.printf("\tAverage net cost: old method = %.3f; new method = %.3f\n\n", bbncc.averageNetCost(), effcc.calculateAverageNetCost());
+		//End test efficient costCalculator
+		
+		
+		
 		timingGraph.updateDelays();
 		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
 		System.out.println("Critical path delay after SA placement: " + maxDelayUpdated);
+	}
+	
+	private static void testCostCalculator(PackedCircuit c)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		Random rand = new Random(1);
+		
+		//Random placement
+		Rplace.placeCLBsandFixedIOs(c, a, rand);
+		
+		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
+		
+		c.vBlocks = new Vector<Block>();
+		c.vBlocks.addAll(c.clbs.values());
+		c.vBlocks.addAll(c.inputs.values());
+		c.vBlocks.addAll(c.outputs.values());
+		
+		for(int i = 0; i < 100; i++)
+		{
+			Swap swap=new Swap();
+			Block b = c.vBlocks.elementAt(rand.nextInt(c.vBlocks.size()));
+			swap.pl1 = b.getSite();
+			if(b.type==BlockType.CLB)
+			{
+				swap.pl2 = a.randomSite(15, swap.pl1);
+			}
+			else if(b.type == BlockType.INPUT)
+			{
+				swap.pl2 = a.randomISite(15, swap.pl1);
+			}
+			else if(b.type == BlockType.OUTPUT)
+			{
+				swap.pl2 = a.randomOSite(15, swap.pl1);
+			}
+			double deltaCostOld = bbncc.calculateDeltaCost(swap);
+			double deltaCostNew = effcc.calculateDeltaCost(swap);
+			if(deltaCostOld < 0)
+			{
+				swap.apply();
+				effcc.pushThrough();
+			}
+			else
+			{
+				effcc.revert();
+			}
+			if(!(deltaCostOld > deltaCostNew - 0.05 && deltaCostOld < deltaCostNew + 0.05) || 
+						!(bbncc.calculateTotalCost() > effcc.calculateTotalCost() - 0.05 && bbncc.calculateTotalCost() < effcc.calculateTotalCost() + 0.05))
+			{
+				System.out.printf("Old total = %.3f; new total = %.3f; old delta = %.3f; new delta = %.3f\n", 
+						bbncc.calculateTotalCost(), effcc.calculateTotalCost(), deltaCostOld, deltaCostNew);
+				if(swap.pl1.block == null)
+				{
+					System.out.println("First block null");
+				}
+				if(swap.pl2.block == null)
+				{
+					System.out.println("Second block null");
+				}
+				Block consideredBlock = swap.pl2.block;
+				for(Net net: c.getNets().values())
+				{
+					boolean affected = false;
+					if(net.source.owner == consideredBlock)
+					{
+						affected = true;
+					}
+					for(Pin pin: net.sinks)
+					{
+						if(pin.owner == consideredBlock)
+						{
+							affected = true;
+							break;
+						}
+					}
+					if(affected)
+					{
+						System.out.printf("Net blocks: (%d,%d), ", net.source.owner.x, net.source.owner.y);
+						for(Pin pin: net.sinks)
+						{
+							System.out.printf("(%d,%d), ", pin.owner.x, pin.owner.y);
+						}
+						System.out.println();
+					}
+				}
+				break;
+			}
+		}
 	}
 	
 	private static PackedCircuit constructTestCircuit()
