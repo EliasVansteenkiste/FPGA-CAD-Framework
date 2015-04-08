@@ -1,4 +1,4 @@
-package placers;
+package placers.SAPlacer;
 
 import circuit.Block;
 import architecture.Site;

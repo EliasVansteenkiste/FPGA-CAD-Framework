@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
+import placers.SAPlacer.Swap;
+
 import architecture.FourLutSanitized;
 import architecture.Site;
 import circuit.Block;
@@ -127,6 +129,11 @@ public class PlacementManipulatorIOCLB implements PlacementManipulator {
 			}
 		}
 		System.out.println("Placement consistency check passed!");
+	}
+	
+	public PackedCircuit getCircuit()
+	{
+		return circuit;
 	}
 
 

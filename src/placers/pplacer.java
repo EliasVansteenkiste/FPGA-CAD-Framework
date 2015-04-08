@@ -1,11 +1,10 @@
 package placers;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Random;
 
-import architecture.Site;
-
+import placers.SAPlacer.Swap;
 
 public class pplacer {
 	private double Rlimd;
@@ -35,12 +34,12 @@ public class pplacer {
 		System.out.println("Moves per temperature: "+movesPerTemperature);
 		//generate array with random moves here
 		
-		long timeSpendFindSwap = 0;
-		long timeSpendCalcDCAndApplySwap = 0;
+		//long timeSpendFindSwap = 0;
+		//long timeSpendCalcDCAndApplySwap = 0;
 		
 		
 		
-		while (T>0.005*calculator.averageNetCost()) {
+		while (T>0.005*calculator.calculateAverageNetCost()) {
 			//GENERATION OF RANDOM SWAPS
 			final HashSet<Swap> randommoves = new HashSet<Swap>();// Creating array list
 			for (int i =1; i<movesPerTemperature;i++) {
@@ -127,7 +126,8 @@ public class pplacer {
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap
-			calculator.apply(swap);
+			//calculator.apply(swap);
+			swap.apply();
 
 			somDeltaKost+=deltaCost;
 			kwadratischeSomDeltaKost+=Math.pow(deltaCost,2);

@@ -19,12 +19,13 @@ import architecture.Site;
 import packers.BlePacker;
 import packers.ClbPacker;
 import placers.BoundingBoxNetCC;
-import placers.EfficientBoundingBoxData;
-import placers.EfficientBoundingBoxNetCC;
 import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
-import placers.Swap;
 import placers.Vplace;
+import placers.SAPlacer.EfficientBoundingBoxData;
+import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import placers.SAPlacer.Swap;
+import placers.SAPlacer.SAPlacer;
 import timinganalysis.TimingGraph;
 import tools.CsvReader;
 import tools.CsvWriter;
@@ -46,49 +47,6 @@ import circuit.parser.blif.BlifReader;
 
 public class Example 
 {
-	
-//	public static void main(String[] args)
-//	{
-//		FourLutSanitized a = new FourLutSanitized(10, 10, 4);
-//		
-//		Clb clb1 = new Clb("Clb1", 1, 6);
-//		clb1.setSite(a.getSite(5, 5, 0));
-//		Clb clb2 = new Clb("Clb2", 1, 6);
-//		clb2.setSite(a.getSite(6, 6, 0));
-//		Clb clb3 = new Clb("Clb3", 1, 6);
-//		clb3.setSite(a.getSite(7, 7, 0));
-//		Clb clb4 = new Clb("Clb4", 1, 6);
-//		clb4.setSite(a.getSite(4, 4, 0));
-//		Clb clb5 = new Clb("Clb5", 1, 6);
-//		clb5.setSite(a.getSite(3, 3, 0));
-//		Clb clb6 = new Clb("Clb6", 1, 6);
-//		clb6.setSite(a.getSite(2, 2, 0));
-//		
-//		Net net = new Net("Net1");
-//		net.addSource(clb1.output[0]);
-//		net.addSink(clb2.input[0]);
-//		net.addSink(clb3.input[0]);
-//		net.addSink(clb4.input[0]);
-//		net.addSink(clb5.input[0]);
-//		net.addSink(clb6.input[0]);
-//		
-//		EfficientBoundingBoxData bbData = new EfficientBoundingBoxData(net);
-//		double bbCost = bbData.getNetCost();
-//		
-//		System.out.println("Initial total cost: " + bbCost);
-//		
-//		double deltaCost = bbData.calculateDeltaCost(clb1, a.getSite(4, 5, 0));
-//		System.out.println("Delta 1: " + deltaCost);
-//		
-//		deltaCost = bbData.calculateDeltaCost(clb1, a.getSite(1, 5, 0));
-//		System.out.println("Delta 2: " + deltaCost);
-//		bbData.revert();
-//		System.out.println("New total: " + bbData.getNetCost());
-//		
-//		deltaCost = bbData.calculateDeltaCost(clb3, a.getSite(5, 6, 0));
-//		System.out.println("Delta 3: " + deltaCost);
-//		System.out.println("New total: " + bbData.getNetCost());
-//	}
 	
 	public static void main(String[] args)
 	{
@@ -125,6 +83,7 @@ public class Example
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -163,12 +122,12 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		//visualAnalytical(packedCircuit);
+		visualAnalytical(packedCircuit);
 		//visualSA(packedCircuit);
 		
 		//visualLegalizerTest();
 		
-		testCostCalculator(packedCircuit);
+		//testCostCalculator(packedCircuit);
 	}
 	
 //	public static void main(String[] args)
@@ -264,38 +223,50 @@ public class Example
 	
 	private static void visualAnalytical(PackedCircuit c)
 	{
-		int height = 30;
-		int width = 30;
+		int archSize = calculateArchDimension(c);
+		int height = archSize;
+		int width = archSize;
+//		int height = 30;
+//		int width = 30;
 		int trackwidth = 4;
-		
-		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		int legalizer = 3;
-		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, c, legalizer, bbncc);
+		AnalyticalPlacerFive analyticalPlacer = new AnalyticalPlacerFive(a, c, legalizer);
 		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
-		Vplace saPlacer= new Vplace(pm,bbncc);
 		
-		long startTime;
-		long analyticalTime;
-		long endTime;
-		startTime = System.nanoTime();
-		placer.place();
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long SAStartTime;
+		long SAEndTime;
+		
+		//Analytical phase
+		analyticalStartTime = System.nanoTime();
+		analyticalPlacer.place();
+		analyticalEndTime = System.nanoTime();
+		
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
+		SAPlacer saPlacer= new SAPlacer(effcc, a, c);
+		
+		//SA phase
+		SAStartTime = System.nanoTime();
 		//saPlacer.customAnneal(30, 4, 12500);
 		//saPlacer.place(4.0);
-		analyticalTime = System.nanoTime();
 		saPlacer.lowTempAnneal(4.0);
-		endTime = System.nanoTime();
+		SAEndTime = System.nanoTime();
 		
-		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
-		System.out.printf("\tAnalytical placement time: %.3f s\n", (double)(analyticalTime - startTime)/1000000000);
-		System.out.printf("\tSimulated annealing refinement time: %.3f s\n", (double)(endTime - analyticalTime)/1000000000);
+		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
+		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
+		
+		System.out.printf("Time necessary to place: %.3f s\n", AnalyticalTime + SATime);
+		System.out.printf("\tAnalytical placement time: %.3f s\n", AnalyticalTime);
+		System.out.printf("\tSimulated annealing refinement time: %.3f s\n", SATime);
 		
 		pm.PlacementCLBsConsistencyCheck();
-		System.out.println("Total cost after low temperature anneal: " + bbncc.calculateTotalCost());
+		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
@@ -319,13 +290,13 @@ public class Example
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
 		
-		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
-		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(c, a, rand);
 		pm.PlacementCLBsConsistencyCheck();
 		
-		Vplace placer= new Vplace(pm,bbncc);
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
+		
+		SAPlacer placer= new SAPlacer(effcc, a, c);
 		
 		long startTime;
 		long endTime;
@@ -336,7 +307,7 @@ public class Example
 		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
 		
 		pm.PlacementCLBsConsistencyCheck();
-		System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
+		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
@@ -412,15 +383,16 @@ public class Example
 		int width = dimension;
 		int trackwidth = 4;
 		
-		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(packedCircuit);
-		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		int legalizer = 3;
-		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, packedCircuit, legalizer, bbncc);
+		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, packedCircuit, legalizer);
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
-		Vplace saPlacer= new Vplace(pm,bbncc);
+		
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		
+		SAPlacer saPlacer= new SAPlacer(effcc, a, packedCircuit);
 		
 		long startTime;
 		long analyticalEndTime;
@@ -430,7 +402,7 @@ public class Example
 		placer.place();
 		analyticalEndTime = System.nanoTime();
 		
-		results[2] = bbncc.calculateTotalCost();
+		results[2] = effcc.calculateTotalCost();
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
 		double maxDelayBefore = timingGraph.calculateMaximalDelay();
@@ -444,7 +416,7 @@ public class Example
 		results[1] = (double)(endTime - annealStartTime)/1000000000;
 		
 		pm.PlacementCLBsConsistencyCheck();
-		results[3] = bbncc.calculateTotalCost();
+		results[3] = effcc.calculateTotalCost();
 		TimingGraph timingGraphTwo = new TimingGraph(prePackedCircuit);
 		timingGraphTwo.buildTimingGraph();
 		double maxDelayAfter = timingGraphTwo.calculateMaximalDelay();
@@ -484,13 +456,13 @@ public class Example
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
 		
-		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(packedCircuit);
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		pm.PlacementCLBsConsistencyCheck();
 		
-		Vplace placer= new Vplace(pm,bbncc);
+		SAPlacer placer= new SAPlacer(effcc, a, packedCircuit);
 		
 		long startTime;
 		long endTime;
@@ -501,7 +473,7 @@ public class Example
 		results[0] = (double)(endTime - startTime)/1000000000;
 		
 		pm.PlacementCLBsConsistencyCheck();
-		results[1] = bbncc.calculateTotalCost();
+		results[1] = effcc.calculateTotalCost();
 		results[2] = packedCircuit.clbs.values().size();
 		results[3] = packedCircuit.getInputs().values().size();
 		results[4] = packedCircuit.getOutputs().values().size();
@@ -694,68 +666,48 @@ public class Example
 	
 	private static void simulatedAnnealingPlace(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
+//		int archSize = calculateArchDimension(c);
+//		int width = archSize;
+//		int height = archSize;
 		int height = 30;
 		int width = 30;
 		int trackwidth = 4;
-		Double placementEffort = 10.;
+		Double placementEffort = 10.0;
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
 		
-		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
+		//BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(c, a, rand);
 		pm.PlacementCLBsConsistencyCheck();
-		System.out.println("Total Cost random placement: " + bbncc.calculateTotalCost());
+		System.out.println("Total Cost random placement: " + effcc.calculateTotalCost());
+		//System.out.println("Total Cost random placement: " + bbncc.calculateTotalCost());
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.println("Critical path delay random placement: " + maxDelay);
 		
-		Vplace placer= new Vplace(pm,bbncc);
+		SAPlacer placer= new SAPlacer(effcc, a, c);
+		//Vplace placer= new Vplace(pm, bbncc);
 		//Time placement process
 		final long startTime = System.nanoTime();
 		final long endTime;
 		try {
 			placer.place(placementEffort);
-			//placer.efficientPlace(placementEffort, c, a);
 		} finally {
 		  endTime = System.nanoTime();
 		}
 		final long duration = endTime - startTime;
 		System.out.println("Runtime: "+(duration/1.0E9));
-		System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
-		pm.PlacementCLBsConsistencyCheck();
-		
-		
-		
-		//Start test efficient costCalculator
-		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
-		System.out.println("\nTest efficient costcalculator:");
-		System.out.printf("\tTotal cost: old method = %.3f; new method = %.3f\n", bbncc.calculateTotalCost(), effcc.calculateTotalCost());
-		Swap swap1 = new Swap();
-		swap1.pl1 = a.getSite(4, 4, 0);
-		swap1.pl2 = a.getSite(4, 5, 0);
-		System.out.printf("\tSwap ((4,4) -> (4,5)): old method = %.3f; new method = %.3f\n", bbncc.calculateDeltaCost(swap1), effcc.calculateDeltaCost(swap1));
-		effcc.pushThrough();
-		swap1.apply();
-		System.out.printf("\tNew total cost: old method = %.3f; new method = %.3f\n", bbncc.calculateTotalCost(), effcc.calculateTotalCost());
-		Swap swap2 = new Swap();
-		swap2.pl1 = a.getSite(3, 5, 0);
-		swap2.pl2 = a.getSite(25, 25, 0);
-		System.out.printf("\tSwap ((3,5) -> (25,25)): old method = %.3f; new method = %.3f\n", bbncc.calculateDeltaCost(swap2), effcc.calculateDeltaCost(swap2));
-		effcc.pushThrough();
-		swap2.apply();
-		System.out.printf("\tNew total cost: old method = %.3f; new method = %.3f\n", bbncc.calculateTotalCost(), effcc.calculateTotalCost());
-		System.out.printf("\tAverage net cost: old method = %.3f; new method = %.3f\n\n", bbncc.averageNetCost(), effcc.calculateAverageNetCost());
-		//End test efficient costCalculator
-		
-		
-		
+		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
+		//System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
+		pm.PlacementCLBsConsistencyCheck();		
 		timingGraph.updateDelays();
 		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
 		System.out.println("Critical path delay after SA placement: " + maxDelayUpdated);
@@ -781,7 +733,7 @@ public class Example
 		c.vBlocks.addAll(c.inputs.values());
 		c.vBlocks.addAll(c.outputs.values());
 		
-		for(int i = 0; i < 100; i++)
+		for(int i = 0; i < 10000; i++)
 		{
 			Swap swap=new Swap();
 			Block b = c.vBlocks.elementAt(rand.nextInt(c.vBlocks.size()));
@@ -840,10 +792,10 @@ public class Example
 					}
 					if(affected)
 					{
-						System.out.printf("Net blocks: (%d,%d), ", net.source.owner.x, net.source.owner.y);
+						System.out.printf("Net blocks: (%d,%d), ", net.source.owner.getSite().x, net.source.owner.getSite().y);
 						for(Pin pin: net.sinks)
 						{
-							System.out.printf("(%d,%d), ", pin.owner.x, pin.owner.y);
+							System.out.printf("(%d,%d), ", pin.owner.getSite().x, pin.owner.getSite().y);
 						}
 						System.out.println();
 					}

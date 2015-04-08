@@ -1,4 +1,4 @@
-package placers;
+package placers.SAPlacer;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -58,8 +58,8 @@ public class EfficientBoundingBoxData
 	public double calculateDeltaCost(Block block, Site newSite)
 	{
 		double originalBB = boundingBox;
-		if((block.x == min_x && nb_min_x == 1 && newSite.x > min_x) || (block.x == max_x && nb_max_x == 1 && newSite.x < max_x) || 
-					(block.y == min_y && nb_min_y == 1 && newSite.y > min_y) || (block.y == max_y && nb_max_y == 1 && newSite.y < max_y))
+		if((block.getSite().x == min_x && nb_min_x == 1 && newSite.x > min_x) || (block.getSite().x == max_x && nb_max_x == 1 && newSite.x < max_x) || 
+					(block.getSite().y == min_y && nb_min_y == 1 && newSite.y > min_y) || (block.getSite().y == max_y && nb_max_y == 1 && newSite.y < max_y))
 		{
 			Site originalSite = block.getSite();
 			block.setSite(newSite);
@@ -75,9 +75,13 @@ public class EfficientBoundingBoxData
 			}
 			else
 			{
-				if(newSite.x == min_x && block.x != min_x)
+				if(newSite.x == min_x && block.getSite().x != min_x)
 				{
 					nb_min_x++;
+				}
+				else if(newSite.x > min_x && block.getSite().x == min_x)
+				{
+					nb_min_x--;
 				}
 			}
 			if(newSite.x > max_x)
@@ -87,9 +91,13 @@ public class EfficientBoundingBoxData
 			}
 			else
 			{
-				if(newSite.x == max_x && block.x != max_x)
+				if(newSite.x == max_x && block.getSite().x != max_x)
 				{
 					nb_max_x++;
+				}
+				else if(newSite.x < max_x && block.getSite().x == max_x)
+				{
+					nb_max_x--;
 				}
 			}
 			if(newSite.y < min_y)
@@ -99,9 +107,13 @@ public class EfficientBoundingBoxData
 			}
 			else
 			{
-				if(newSite.y == min_y && block.y != min_y)
+				if(newSite.y == min_y && block.getSite().y != min_y)
 				{
 					nb_min_y++;
+				}
+				else if(newSite.y > min_y && block.getSite().y == min_y)
+				{
+					nb_min_y--;
 				}
 			}
 			if(newSite.y > max_y)
@@ -111,9 +123,13 @@ public class EfficientBoundingBoxData
 			}
 			else
 			{
-				if(newSite.y == max_y && block.y != max_y)
+				if(newSite.y == max_y && block.getSite().y != max_y)
 				{
 					nb_max_y++;
+				}
+				else if(newSite.y < max_y && block.getSite().y == max_y)
+				{
+					nb_max_y--;
 				}
 			}
 		}
@@ -163,7 +179,7 @@ public class EfficientBoundingBoxData
 		return boundingBox*weight;
 	}
 	
-	private void calculateBoundingBoxFromScratch() 
+	public void calculateBoundingBoxFromScratch() 
 	{
 		min_x = Integer.MAX_VALUE;
 		max_x = -1;
@@ -171,50 +187,50 @@ public class EfficientBoundingBoxData
 		max_y = -1;
 		for(int i = 0; i < blocks.length; i++)
 		{
-			if(blocks[i].x < min_x)
+			if(blocks[i].getSite().x < min_x)
 			{
-				min_x = blocks[i].x;
+				min_x = blocks[i].getSite().x;
 				nb_min_x = 1;
 			}
 			else
 			{
-				if(blocks[i].x == min_x)
+				if(blocks[i].getSite().x == min_x)
 				{
 					nb_min_x++;
 				}
 			}
-			if(blocks[i].x > max_x)
+			if(blocks[i].getSite().x > max_x)
 			{
-				max_x = blocks[i].x;
+				max_x = blocks[i].getSite().x;
 				nb_max_x = 1;
 			}
 			else
 			{
-				if(blocks[i].x == max_x)
+				if(blocks[i].getSite().x == max_x)
 				{
 					nb_max_x++;
 				}
 			}
-			if(blocks[i].y < min_y)
+			if(blocks[i].getSite().y < min_y)
 			{
-				min_y = blocks[i].y;
+				min_y = blocks[i].getSite().y;
 				nb_min_y = 1;
 			}
 			else
 			{
-				if(blocks[i].y == min_y)
+				if(blocks[i].getSite().y == min_y)
 				{
 					nb_min_y++;
 				}
 			}
-			if(blocks[i].y > max_y)
+			if(blocks[i].getSite().y > max_y)
 			{
-				max_y = blocks[i].y;
+				max_y = blocks[i].getSite().y;
 				nb_max_y = 1;
 			}
 			else
 			{
-				if(blocks[i].y == max_y)
+				if(blocks[i].getSite().y == max_y)
 				{
 					nb_max_y++;
 				}

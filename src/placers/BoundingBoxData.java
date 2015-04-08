@@ -44,7 +44,7 @@ public class BoundingBoxData {
 			Block b = it.next();
 			Block c = it.next();
 			//bb=Math.abs(b.getSite().x-c.getSite().x)+Math.abs(b.getSite().y-c.getSite().y)+2;
-			bb=Math.abs(b.x-c.x)+Math.abs(b.y-c.y)+2;
+			bb=Math.abs(b.getSite().x-c.getSite().x)+Math.abs(b.getSite().y-c.getSite().y)+2;
 		}else{
 			int xmin = Integer.MAX_VALUE;
 			int xmax = -1;
@@ -55,10 +55,10 @@ public class BoundingBoxData {
 				//if (bl.getSite().x > xmax)xmax=bl.getSite().x;			
 				//if (bl.getSite().y < ymin)ymin=bl.getSite().y;
 				//if (bl.getSite().y > ymax)ymax=bl.getSite().y;
-				if (bl.x < xmin)xmin=bl.x;			
-				if (bl.x > xmax)xmax=bl.x;			
-				if (bl.y < ymin)ymin=bl.y;
-				if (bl.y > ymax)ymax=bl.y;
+				if (bl.getSite().x < xmin)xmin=bl.getSite().x;			
+				if (bl.getSite().x > xmax)xmax=bl.getSite().x;			
+				if (bl.getSite().y < ymin)ymin=bl.getSite().y;
+				if (bl.getSite().y > ymax)ymax=bl.getSite().y;
 			}
 			
 			bb=(xmax-xmin+1)+(ymax-ymin+1);

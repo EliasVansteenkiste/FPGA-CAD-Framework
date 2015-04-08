@@ -3,6 +3,8 @@ package placers;
 import java.util.HashMap;
 import java.util.Map;
 
+import placers.SAPlacer.Swap;
+
 import circuit.Block;
 import circuit.PackedCircuit;
 import circuit.Clb;
@@ -47,7 +49,7 @@ public class BoundingBoxNetCC implements CostCalculator {
 		return totaleKost;
 	}
 
-	public double averageNetCost() {
+	public double calculateAverageNetCost() {
 		return calculateTotalCost()/netData.size();
 	}
 

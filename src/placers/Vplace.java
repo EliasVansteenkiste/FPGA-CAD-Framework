@@ -1,24 +1,21 @@
 package placers;
-import java.util.ArrayList;
+
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
+
+import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import placers.SAPlacer.Swap;
 
 import architecture.FourLutSanitized;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
-import circuit.Input;
-import circuit.Net;
-import circuit.Output;
 import circuit.PackedCircuit;
-
-import com.sun.org.apache.bcel.internal.generic.SWAP;
 
 
 public class Vplace {
+	
 	private double Rlimd;
 	PlacementManipulator manipulator;
 	CostCalculator calculator;
@@ -53,12 +50,6 @@ public class Vplace {
 				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 				{
 					double deltaCost = efficientCalculator.calculateDeltaCost(swap);
-					double deltaCostOld = calculator.calculateDeltaCost(swap);
-					if(deltaCost != deltaCostOld)
-					{
-						System.out.printf("ERROR: %.3f (old) VS %.3f (new)\n", deltaCostOld, deltaCost);
-					}
-					
 					if(deltaCost<=0)
 					{
 						swap.apply();
@@ -126,7 +117,7 @@ public class Vplace {
 //		long timeSpendFindSwap = 0;
 //		long timeSpendCalcDCAndApplySwap = 0;
 		
-		while (T>0.005*calculator.averageNetCost()) {
+		while (T>0.005*calculator.calculateAverageNetCost()) {
 			int alphaAbs=0;
 //			System.out.println("Temperature: "+T+", Total Cost: "+calculator.calculateTotalCost());
 			for (int i =0; i<movesPerTemperature;i++) {
@@ -155,14 +146,16 @@ public class Vplace {
 	
 						if(deltaCost<=0)
 						{
-							calculator.apply(swap);
+							//calculator.apply(swap);
+							swap.apply();
 							alphaAbs+=1;
 						}
 						else
 						{
 							if(rand.nextDouble()<Math.exp(-deltaCost/T))
 							{
-								calculator.apply(swap);
+								//calculator.apply(swap);
+								swap.apply();
 								alphaAbs+=1;
 							}
 						}
@@ -198,7 +191,7 @@ public class Vplace {
 		double T = initialTemp;
 		int movesPerTemperature = nbMovesPerTemp;
 		
-		while (T>0.005*calculator.averageNetCost()) {
+		while (T>0.005*calculator.calculateAverageNetCost()) {
 			int alphaAbs=0;
 //			System.out.println("Temperature: "+T+", Total Cost: "+calculator.calculateTotalCost());
 			for (int i =0; i<movesPerTemperature;i++) {
@@ -221,14 +214,16 @@ public class Vplace {
 	
 						if(deltaCost<=0)
 						{
-							calculator.apply(swap);
+							//calculator.apply(swap);
+							swap.apply();
 							alphaAbs+=1;
 						}
 						else
 						{
 							if(rand.nextDouble()<Math.exp(-deltaCost/T))
 							{
-								calculator.apply(swap);
+								//calculator.apply(swap);
+								swap.apply();
 								alphaAbs+=1;
 							}
 						}
@@ -264,7 +259,7 @@ public class Vplace {
 		int movesPerTemperature=(int) (innerNum*Math.pow(manipulator.numBlocks(),4.0/3.0));
 		System.out.println("Moves per temperature: "+movesPerTemperature);
 		
-		while (T>0.005*calculator.averageNetCost()) {
+		while (T>0.005*calculator.calculateAverageNetCost()) {
 			int alphaAbs=0;
 			for (int i =0; i<movesPerTemperature;i++) {
 				Swap swap;
@@ -276,14 +271,16 @@ public class Vplace {
 					
 					if(deltaCost<=0)
 					{
-						calculator.apply(swap);
+						//calculator.apply(swap);
+						swap.apply();
 						alphaAbs+=1;
 					}
 					else
 					{
 						if(rand.nextDouble()<Math.exp(-deltaCost/T))
 						{
-							calculator.apply(swap);
+							//calculator.apply(swap);
+							swap.apply();
 							alphaAbs+=1;
 						}
 					}
@@ -298,7 +295,7 @@ public class Vplace {
 	
 	private int getBiggestDistance()
 	{
-		Collection<Clb> clbs = calculator.getCircuit().clbs.values();
+		Collection<Clb> clbs = manipulator.getCircuit().clbs.values();
 		Iterator<Clb> clbIterator = clbs.iterator();
 		int minX = Integer.MAX_VALUE;
 		int maxX = 0;
@@ -364,13 +361,15 @@ public class Vplace {
 		double 	kwadratischeSomDeltaKost=0;
 		for (int i=0;i<manipulator.numBlocks();i++) 
 		{
-			Swap swap=manipulator.findSwap(manipulator.maxFPGAdimension());			
+			Swap swap=manipulator.findSwap(manipulator.maxFPGAdimension());
+			System.out.println("MaxFPGAdimension: " + manipulator.maxFPGAdimension());
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap
 			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 			{
-				calculator.apply(swap);
+				//calculator.apply(swap);
+				swap.apply();
 			}
 			
 			somDeltaKost+=deltaCost;
@@ -379,6 +378,7 @@ public class Vplace {
 		double somKwadraten = kwadratischeSomDeltaKost;
 		double kwadraatSom = Math.pow(somDeltaKost,2);
 		double nbElements = manipulator.numBlocks();
+		System.out.println("nbElements: " + nbElements);
 		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
 		double T=20*stdafwijkingDeltaKost;
 		
@@ -404,7 +404,8 @@ public class Vplace {
 			//Swap
 			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 			{
-				calculator.apply(swap);
+				//calculator.apply(swap);
+				swap.apply();
 			}
 
 			if(deltaCost > 0)

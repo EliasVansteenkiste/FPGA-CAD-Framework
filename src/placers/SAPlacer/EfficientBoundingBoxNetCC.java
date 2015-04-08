@@ -1,4 +1,4 @@
-package placers;
+package placers.SAPlacer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,7 +9,7 @@ import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
 
-public class EfficientBoundingBoxNetCC
+public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 {
 	
 	private Map<Block,ArrayList<EfficientBoundingBoxData>> bbDataMap;
@@ -109,6 +109,14 @@ public class EfficientBoundingBoxNetCC
 		}
 		
 		return totalDeltaCost;
+	}
+	
+	public void recalculateFromScratch()
+	{
+		for(int i = 0; i < bbDataArray.length; i++)
+		{
+			bbDataArray[i].calculateBoundingBoxFromScratch();
+		}
 	}
 	
 	public void revert()

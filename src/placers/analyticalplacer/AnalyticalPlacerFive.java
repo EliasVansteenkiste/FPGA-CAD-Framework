@@ -10,11 +10,11 @@ import java.util.Set;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import placers.CostCalculator;
 import placers.PlacementManipulator;
 import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
-import placers.Swap;
+import placers.SAPlacer.Swap;
+import placers.SAPlacer.EfficientCostCalculator;
 
 import architecture.FourLutSanitized;
 import architecture.Site;
@@ -40,11 +40,10 @@ public class AnalyticalPlacerFive
 	private int[] anchorPointsX;
 	private int[] anchorPointsY;
 	private Legalizer legalizer;
-	private CostCalculator calculator;
 	
 	private final double ALPHA = 0.3;
 	
-	public AnalyticalPlacerFive(FourLutSanitized architecture, PackedCircuit circuit, int legalizer, CostCalculator calculator)
+	public AnalyticalPlacerFive(FourLutSanitized architecture, PackedCircuit circuit, int legalizer)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
@@ -64,7 +63,6 @@ public class AnalyticalPlacerFive
 				this.legalizer = new LegalizerThree(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
 				break;
 		}
-		this.calculator = calculator;
 	}
 	
 	public void place()
@@ -90,13 +88,22 @@ public class AnalyticalPlacerFive
 //		}
 		
 		//Iterative solves with pseudonets
+		int nbIterations = 0;
 		for(int i = 0; i < 30; i++)
 		{
+			nbIterations++;
 			solveLinear(false, (i+1)*ALPHA);
 			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 			costLinear = calculateTotalCost(linearX, linearY);
+			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
+			if(costLinear / costLegal > 0.7)
+			{
+				break;
+			}
 			//System.out.println("Linear cost: " + costLinear);
 		}
+		
+		System.out.println("Nb of iterations: " + nbIterations);
 		
 //		for(int i = 0; i < linearX.length; i++)
 //		{
@@ -566,23 +573,23 @@ public class AnalyticalPlacerFive
 		linearY = ySolution;
 	}
 	
-	private void iterativeRefinement(int nbAttempts)
-	{
-		PlacementManipulator manipulator = new PlacementManipulatorIOCLB(architecture, circuit);
-		for(int i = 0; i < nbAttempts; i++)
-		{
-			Swap swap;
-			swap=manipulator.findSwap(5);
-			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
-			{
-				double deltaCost = calculator.calculateDeltaCost(swap);
-				if(deltaCost<=0) //Only accept the move if it improves the total cost
-				{
-					calculator.apply(swap);
-				}
-			}
-		}
-	}
+//	private void iterativeRefinement(int nbAttempts)
+//	{
+//		PlacementManipulator manipulator = new PlacementManipulatorIOCLB(architecture, circuit);
+//		for(int i = 0; i < nbAttempts; i++)
+//		{
+//			Swap swap;
+//			swap=manipulator.findSwap(5);
+//			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+//			{
+//				double deltaCost = calculator.calculateDeltaCost(swap);
+//				if(deltaCost<=0) //Only accept the move if it improves the total cost
+//				{
+//					swap.apply();
+//				}
+//			}
+//		}
+//	}
 	
 	private void updateCircuit()
 	{

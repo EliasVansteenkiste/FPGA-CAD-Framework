@@ -8,9 +8,6 @@ public class Block {
 	
 	private Site site;
 	public boolean fixed;
-	
-	public int x;
-	public int y;
 
 	public Block(String name, BlockType type) {
 		super();
@@ -36,8 +33,6 @@ public class Block {
 	public void setSite(Site site)
 	{
 		this.site = site;
-		this.x = site.x;
-		this.y = site.y;
 	}
 	
 }

@@ -1,10 +1,10 @@
 package placers;
 
-
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Random;
+
+import placers.SAPlacer.Swap;
 
 import architecture.Site;
 
@@ -48,7 +48,8 @@ public synchronized void hashsubtracter(Site c){
 // THIS SYNCHRONIZED FUNCTION APPLIES THE MOVES SAVES THE ACCEPTED SWAPS AND ALSO INCREMENT'S 
 //THE alphaAbs VALUE WHICH IS IMPORANTAN FOR UPGDATING THE TEMPERATURE
 public synchronized void increment(Swap b){
-	    calculator.apply(b);
+	    //calculator.apply(b);
+		b.apply();
 	    AcceptedSwaps.add(b);
 	    alphaAbs+=1;	
 }

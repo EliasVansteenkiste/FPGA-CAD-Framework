@@ -1,5 +1,8 @@
 package placers;
 
+import circuit.PackedCircuit;
+import placers.SAPlacer.Swap;
+
 public interface PlacementManipulator {
 
 	public Swap findSwap(int Rlim);
@@ -13,5 +16,7 @@ public interface PlacementManipulator {
 	public double numBlocks();
 	
 	public void PlacementCLBsConsistencyCheck();
+	
+	public PackedCircuit getCircuit();
 
 }

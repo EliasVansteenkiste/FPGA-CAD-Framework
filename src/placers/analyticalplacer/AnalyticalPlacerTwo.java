@@ -15,7 +15,7 @@ import placers.CostCalculator;
 import placers.PlacementManipulator;
 import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
-import placers.Swap;
+import placers.SAPlacer.Swap;
 import architecture.FourLutSanitized;
 import architecture.Site;
 import circuit.Block;
@@ -1691,7 +1691,7 @@ public class AnalyticalPlacerTwo
 				double deltaCost = calculator.calculateDeltaCost(swap);
 				if(deltaCost<=0) //Only accept the move if it improves the total cost
 				{
-					calculator.apply(swap);
+					swap.apply();
 				}
 			}
 		}
