@@ -71,7 +71,7 @@ public class AnalyticalPlacerFive
 		initializeDataStructures();
 		
 		//Initial linear solves, should normally be done 5-7 times		
-		for(int i = 0; i < 20; i++)
+		for(int i = 0; i < 7; i++)
 		{
 			solveLinear(true, 0.0);
 		}
