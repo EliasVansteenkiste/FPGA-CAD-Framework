@@ -5,219 +5,102 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.Vector;
 
+import circuit.Block;
 import circuit.BlockType;
 import circuit.Flipflop;
+import circuit.Input;
+import circuit.Lut;
 import circuit.Net;
 import circuit.Pin;
 import circuit.PrePackedCircuit;
-import circuit.Input;
-import circuit.Lut;
 
-public class TimingGraph 
+public class TimingGraph
 {
 
 	private static final double MHD_DELAY = 0.5;
 	private static final double LUT_DELAY = 1.0;
 	
 	private PrePackedCircuit circuit;
-	
-	private List<Pin> startNodes;
-	private List<Pin> endNodes;
-	private Map<Pin,Vector<Pin>> edges;
-	private Map<Pin,Vector<Double>> edgeWeights; //only valid boundingbox data for circuit inputs, lut outputs and ff outputs
+	private List<TimingNode> startNodes;
+	private List<TimingNode> endNodes;
+	private Map<Block,ArrayList<TimingNode>> blockMap; //Maps a block to all its associated timingnodes
 	
 	public TimingGraph(PrePackedCircuit circuit)
 	{
 		this.circuit = circuit;
 		startNodes = new ArrayList<>();
 		endNodes = new ArrayList<>();
-		edges = new HashMap<>();
-		edgeWeights = new HashMap<>();
+		blockMap = new HashMap<>();
 	}
 	
 	public void buildTimingGraph()
 	{
-		Map<String,Net> nets = circuit.getNets();
-		
 		//Build all trees starting from circuit inputs
 		for(Input input:circuit.getInputs().values())
 		{
-			startNodes.add(input.output);
-			Net startNet = nets.get(input.name);
-			edges.put(input.output, startNet.sinks);
-			Vector<Double> delayVector = new Vector<>();
-			for(Pin sinkPin:startNet.sinks)
-			{
-				int bb = Math.abs(input.getSite().x - sinkPin.owner.getSite().x) + Math.abs(input.getSite().y - sinkPin.owner.getSite().y);
-				delayVector.add(bb * MHD_DELAY);
-			}
-			edgeWeights.put(input.output, delayVector);
-			processStartPin(startNet);
+			processStartPin(input.output);
 		}
 		
 		//Build all trees starting from flipflop outputs
 		for(Flipflop flipflop:circuit.getFlipflops().values())
 		{
-			startNodes.add(flipflop.getOutput());
-			Net startNet = nets.get(flipflop.name);
-			edges.put(flipflop.getOutput(), startNet.sinks);
-			Vector<Double> delayVector = new Vector<>();
-			for(Pin sinkPin:startNet.sinks)
-			{
-				int bb = Math.abs(flipflop.getSite().x - sinkPin.owner.getSite().x) + Math.abs(flipflop.getSite().y - sinkPin.owner.getSite().y);
-				delayVector.add(bb * MHD_DELAY);
-			}
-			edgeWeights.put(flipflop.getOutput(), delayVector);
-			processStartPin(startNet);
+			processStartPin(flipflop.getOutput());
 		}
 	}
 	
-	public void updateDelays()
+	public double calculateMaximumDelay()
 	{
-		edgeWeights = new HashMap<>();
-		for(Pin startPin:startNodes)
-		{
-			Pin currentPin = startPin;
-			Vector<Pin> currentSinks = edges.get(startPin);
-			if(currentSinks.size() == 0)
-			{
-				continue;
-			}
-			int currentIndex = 0;
-			Stack<Pin> pinStack = new Stack<>();
-			Stack<Integer> indexStack = new Stack<>();
-			boolean keepGoing = true;
-			while(keepGoing)
-			{
-				currentSinks = edges.get(currentPin);
-				if(currentSinks != null && currentIndex < currentSinks.size()) //Move deeper
-				{
-					if(!edgeWeights.containsKey(currentPin))
-					{
-						Vector<Double> delayVector = new Vector<>();
-						if(currentPin.owner == currentSinks.get(0).owner)
-						{
-							delayVector.add(LUT_DELAY);
-						}
-						else
-						{
-							
-							for(Pin sinkPin:currentSinks)
-							{
-								int bb = Math.abs(currentPin.owner.getSite().x - sinkPin.owner.getSite().x) + Math.abs(currentPin.owner.getSite().y - sinkPin.owner.getSite().y);
-								delayVector.add(bb * MHD_DELAY);
-							}
-						}
-						edgeWeights.put(currentPin, delayVector);
-					}
-					pinStack.push(currentPin);
-					currentPin = currentSinks.get(currentIndex);
-					indexStack.push(currentIndex + 1);
-					currentIndex = 0;
-				}
-				else
-				{
-					if(pinStack.isEmpty()) //We are back at the top level
-					{
-						keepGoing = false;
-					}
-					else
-					{
-						if(!edgeWeights.containsKey(currentPin))
-						{
-							edgeWeights.put(currentPin, null);
-						}
-						currentPin = pinStack.pop();
-						currentIndex = indexStack.pop();
-					}
-				}
-			}
-		}
-	}
-	
-	public double calculateMaximalDelay()
-	{
+		calculateArrivalTimesFromScratch();
 		double maxDelay = 0.0;
-		for(Pin startPin:startNodes)
+		for(TimingNode endNode:endNodes)
 		{
-			Pin currentPin = startPin;
-			Vector<Pin> currentSinks = edges.get(startPin);
-			if(currentSinks.size() == 0)
+			if(endNode.getTarrival() > maxDelay)
 			{
-				continue;
-			}
-			double currentDelay = 0.0;
-			int currentIndex = 0;
-			Stack<Pin> pinStack = new Stack<>();
-			Stack<Double> delayStack = new Stack<>();
-			Stack<Integer> indexStack = new Stack<>();
-			boolean keepGoing = true;
-			while(keepGoing)
-			{
-				currentSinks = edges.get(currentPin);
-				if(currentSinks != null && currentIndex < currentSinks.size()) //Move deeper
-				{
-					double edgeDelay = edgeWeights.get(currentPin).get(currentIndex);
-					currentDelay += edgeDelay;
-					delayStack.push(edgeDelay);
-					pinStack.push(currentPin);
-					currentPin = currentSinks.get(currentIndex);
-					indexStack.push(currentIndex + 1);
-					currentIndex = 0;
-				}
-				else
-				{
-					if(pinStack.isEmpty()) //We are back at the top level
-					{
-						keepGoing = false;
-					}
-					else
-					{
-						if(currentDelay > maxDelay)
-						{
-							maxDelay = currentDelay;
-						}
-						currentPin = pinStack.pop();
-						currentDelay -= delayStack.pop();
-						currentIndex = indexStack.pop();
-					}
-				}
-				
+				maxDelay = endNode.getTarrival();
 			}
 		}
 		return maxDelay;
 	}
-
-//	public void printGraph()
-//	{
-//		for(Pin startPin:startNodes)
-//		{
-//			System.out.print(startPin.name);
-//			Vector<Pin> currentPins = edges.get(startPin);
-//			if(currentPins.size() == 0)
-//			{
-//				System.out.println();
-//				continue;
-//			}
-//			while(currentPins != null)
-//			{
-//				System.out.print(" --> " + currentPins.get(0).name);
-//				currentPins = edges.get(currentPins.get(0));
-//			}
-//			System.out.println();
-//		}
-//		System.out.println();
-//	}
 	
-	private void processStartPin(Net startNet)
+	private void calculateArrivalTimesFromScratch()
+	{
+		//Do a breadth first search of the timing graph
+		List<TimingNode> nextLevelNodes = new ArrayList<>();
+		for(TimingNode startNode: startNodes)
+		{
+			startNode.setTarrival(0.0);
+			nextLevelNodes.addAll(startNode.getOutputs());
+		}
+		while(!nextLevelNodes.isEmpty())
+		{
+			List<TimingNode> curLevelNodes = nextLevelNodes;
+			nextLevelNodes = new ArrayList<>();
+			for(TimingNode node: curLevelNodes)
+			{
+				node.setTarrival(0.0);
+				nextLevelNodes.addAll(node.getOutputs());
+			}
+		}
+	}
+	
+	private void processStartPin(Pin startPin)
 	{
 		Map<String,Net> nets = circuit.getNets();
 		Stack<Net> netsStack = new Stack<>();
 		Stack<Integer> sinkIndexStack = new Stack<>();
-		Net currentNet = startNet;
+		Stack<TimingNode> currentTimingNodeStack = new Stack<>();
+		TimingNode startNode = new TimingNode(TimingNodeType.StartNode, startPin);
+		Block startBlock = startPin.owner;
+		startNodes.add(startNode);
+		if(blockMap.get(startBlock) == null)
+		{
+			blockMap.put(startBlock, new ArrayList<TimingNode>());
+		}
+		blockMap.get(startBlock).add(startNode);
+		Net currentNet = nets.get(startBlock.name);
 		int currentIndex = 0;
+		TimingNode currentNode = startNode;
 		if(currentNet.sinks.size() == 0) //Can happen with clock nets which are declared as an input in the blif file
 		{
 			return;
@@ -226,38 +109,56 @@ public class TimingGraph
 		while(keepGoing)
 		{
 			Pin currentSink = currentNet.sinks.get(currentIndex);
+			int mhd = Math.abs(currentNode.getPin().owner.getSite().x - currentSink.owner.getSite().x) 
+					+ Math.abs(currentNode.getPin().owner.getSite().y - currentSink.owner.getSite().y);
 			if(currentSink.owner.type == BlockType.FLIPFLOP || currentSink.owner.type == BlockType.OUTPUT)
 			{
-				if(!endNodes.contains(currentSink))
+				TimingNode endNode = new TimingNode(TimingNodeType.EndNode, currentSink);
+				currentNode.addOutput(endNode, mhd * MHD_DELAY);
+				endNode.addInput(currentNode);
+				endNodes.add(endNode);
+				if(blockMap.get(currentSink.owner) == null)
 				{
-					endNodes.add(currentSink);
+					blockMap.put(currentSink.owner, new ArrayList<TimingNode>());
 				}
-				edges.put(currentSink, null);
-				edgeWeights.put(currentSink, null);
+				blockMap.get(currentSink.owner).add(endNode);
 			}
 			else //Must be a LUT ==> keep on going
 			{
-				Vector <Pin> pinVector= new Vector<Pin>();
-				pinVector.add(((Lut)(currentSink.owner)).getOutputs()[0]);
-				edges.put(currentSink, pinVector);
-				Vector<Double> delayVector1 = new Vector<>();
-				delayVector1.add(LUT_DELAY);
-				edgeWeights.put(currentSink,delayVector1);
+				//Process TimingNode for Lut input
+				TimingNode inputNode = new TimingNode(TimingNodeType.InternalNode, currentSink);
+				currentNode.addOutput(inputNode, mhd * MHD_DELAY);
+				inputNode.addInput(currentNode);
+				if(blockMap.get(currentSink.owner) == null)
+				{
+					blockMap.put(currentSink.owner, new ArrayList<TimingNode>());
+				}
+				List<TimingNode> lutNodeList = blockMap.get(currentSink.owner);
+				lutNodeList.add(inputNode);
+				TimingNode outputNode = null;
+				Pin lutOutput = ((Lut)currentSink.owner).getOutputs()[0];
+				for(TimingNode localNode: lutNodeList)
+				{
+					if(localNode.getPin() == lutOutput)
+					{
+						outputNode = localNode;
+						break;
+					}
+				}
+				if(outputNode == null)
+				{
+					outputNode = new TimingNode(TimingNodeType.InternalNode, lutOutput);
+					lutNodeList.add(outputNode);
+				}
+				inputNode.addOutput(outputNode, LUT_DELAY);
+				outputNode.addInput(inputNode);
 				netsStack.push(currentNet);
 				sinkIndexStack.push(currentIndex);
+				currentTimingNodeStack.push(currentNode);
 				currentNet = nets.get(currentSink.owner.name);
 				currentIndex = -1; //will immediately be increased (see below)
-				edges.put(currentNet.source, currentNet.sinks);
-				Vector<Double> delayVector2 = new Vector<>();
-				for(Pin sinkPin:currentNet.sinks)
-				{
-					int bb = Math.abs(currentNet.source.owner.getSite().x - sinkPin.owner.getSite().x) + 
-							Math.abs(currentNet.source.owner.getSite().y - sinkPin.owner.getSite().y);
-					delayVector2.add(bb * MHD_DELAY);
-				}
-				edgeWeights.put(currentNet.source, delayVector2);
+				currentNode = outputNode;
 			}
-			
 			++currentIndex;
 			if(!(currentIndex < currentNet.sinks.size()))
 			{
@@ -271,6 +172,7 @@ public class TimingGraph
 					{
 						currentNet = netsStack.pop();
 						currentIndex = sinkIndexStack.pop();
+						currentNode = currentTimingNodeStack.pop();
 						++currentIndex;
 					}
 				}
