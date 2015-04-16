@@ -10,28 +10,24 @@ public class TimingNode
 	
 	private Pin pin;
 	private TimingNodeType type;
-	private double Tarrival;
-	private double Trequired;
-	private List<TimingNode> inputs; //
-	private List<TimingNode> outputs;
-	//Contains the delay from output of this node to the input of the corresponding connected TimingBlock (contained in outputs)
-	private List<Double> outputDelays;
+	private double tArrival;
+	private double tRequired;
+	private List<TimingEdge> inputs;
+	private List<TimingEdge> outputs;
 	
 	public TimingNode(TimingNodeType type, Pin pin)
 	{
 		this.type = type;
 		this.pin = pin;
-		Tarrival = 0.0;
-		Trequired = 0.0;
+		this.tArrival = 0.0;
+		this.tRequired = 0.0;
 		if(type != TimingNodeType.EndNode)
 		{
 			outputs = new ArrayList<>();
-			outputDelays = new ArrayList<>();
 		}
 		else
 		{
 			outputs = null;
-			outputDelays = null;
 		}
 		if(type != TimingNodeType.StartNode)
 		{
@@ -44,40 +40,44 @@ public class TimingNode
 		}
 	}
 	
-	public double getTarrival()
+	public double getTArrival()
 	{
-		return Tarrival;
+		return tArrival;
 	}
 	
-	public void setTarrival(double Tarrival)
+	public void setTArrival(double tArrival)
 	{
-		this.Tarrival = Tarrival;
+		this.tArrival = tArrival;
 	}
 	
-	public double getTrequired()
+	public double getTRequired()
 	{
-		return Trequired;
+		return tRequired;
 	}
 	
-	public void setTrequired(double Trequired)
+	public void setTRequired(double tRequired)
 	{
-		this.Trequired = Trequired;
+		this.tRequired = tRequired;
 	}
 	
-	public void addOutput(TimingNode outputNode, double outputDelay)
+	public void setTrequired(double tRequired)
+	{
+		this.tRequired = tRequired;
+	}
+	
+	public void addOutput(TimingEdge outputEdge)
 	{
 		if(type != TimingNodeType.EndNode)
 		{
-			outputs.add(outputNode);
-			outputDelays.add(outputDelay);
+			outputs.add(outputEdge);
 		}
 	}
 	
-	public void addInput(TimingNode inputNode)
+	public void addInput(TimingEdge inputEdge)
 	{
 		if(type != TimingNodeType.StartNode)
 		{
-			inputs.add(inputNode);
+			inputs.add(inputEdge);
 		}
 	}
 	
@@ -86,9 +86,22 @@ public class TimingNode
 		return pin;
 	}
 	
-	public List<TimingNode> getOutputs()
+	public List<TimingEdge> getOutputs()
 	{
+		if(outputs == null)
+		{
+			return new ArrayList<>();
+		}
 		return outputs;
+	}
+	
+	public List<TimingEdge> getInputs()
+	{
+		if(inputs == null)
+		{
+			return new ArrayList<>();
+		}
+		return inputs;
 	}
 	
 }

@@ -27,6 +27,7 @@ import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import placers.SAPlacer.Swap;
 import placers.SAPlacer.SAPlacer;
 import timinganalysis.TimingGraph;
+import timinganalysis.TimingGraphOld;
 import tools.CsvReader;
 import tools.CsvWriter;
 import visual.ArchitecturePanel;
@@ -77,9 +78,9 @@ public class Example
 		try
 		{
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
@@ -123,7 +124,7 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		visualAnalytical(packedCircuit);
+		visualAnalytical(packedCircuit, prePackedCircuit);
 		//visualSA(packedCircuit);
 		
 		//visualLegalizerTest();
@@ -226,7 +227,7 @@ public class Example
 //		crsBugReconstruct();
 //	}
 	
-	private static void visualAnalytical(PackedCircuit c)
+	private static void visualAnalytical(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
 		int archSize = calculateArchDimension(c);
 		int height = archSize;
@@ -272,6 +273,18 @@ public class Example
 		
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
+		
+		TimingGraphOld timingGraphOld = new TimingGraphOld(prePackedCircuit);
+		timingGraphOld.buildTimingGraph();
+		double maxDelayOld = timingGraphOld.calculateMaximalDelay();
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		System.out.println("Built it!");
+		System.out.println(timingGraph.toString());
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		
+		System.out.println("Max delay old = " + maxDelayOld + ", max delay new = " + maxDelay);
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		

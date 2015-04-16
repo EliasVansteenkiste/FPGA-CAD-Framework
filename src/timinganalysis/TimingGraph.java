@@ -47,17 +47,21 @@ public class TimingGraph
 		{
 			processStartPin(flipflop.getOutput());
 		}
+		
+		//Calculate arrival and required times (definition: see VPR book)
+		System.out.println("Processed start pins");
+		calculateArrivalTimesFromScratch();
 	}
 	
-	public double calculateMaximumDelay()
+	public double calculateMaximalDelay()
 	{
 		calculateArrivalTimesFromScratch();
 		double maxDelay = 0.0;
 		for(TimingNode endNode:endNodes)
 		{
-			if(endNode.getTarrival() > maxDelay)
+			if(endNode.getTArrival() > maxDelay)
 			{
-				maxDelay = endNode.getTarrival();
+				maxDelay = endNode.getTArrival();
 			}
 		}
 		return maxDelay;
@@ -69,17 +73,37 @@ public class TimingGraph
 		List<TimingNode> nextLevelNodes = new ArrayList<>();
 		for(TimingNode startNode: startNodes)
 		{
-			startNode.setTarrival(0.0);
-			nextLevelNodes.addAll(startNode.getOutputs());
+			startNode.setTArrival(0.0);
+			for(TimingEdge edge: startNode.getOutputs())
+			{
+				nextLevelNodes.add(edge.getOutput());
+			}
 		}
 		while(!nextLevelNodes.isEmpty())
 		{
+			System.out.println(nextLevelNodes.size());
+			for(TimingNode node: nextLevelNodes)
+			{
+				List<TimingEdge> inputs = node.getInputs();
+				double maxTArrival = 0.0;
+				for(TimingEdge inputEdge: inputs)
+				{
+					double tArrival = inputEdge.getInput().getTArrival() + inputEdge.getDelay();
+					if(tArrival > maxTArrival)
+					{
+						maxTArrival = tArrival;
+					}
+				}
+				node.setTArrival(maxTArrival);
+			}
 			List<TimingNode> curLevelNodes = nextLevelNodes;
 			nextLevelNodes = new ArrayList<>();
 			for(TimingNode node: curLevelNodes)
 			{
-				node.setTarrival(0.0);
-				nextLevelNodes.addAll(node.getOutputs());
+				for(TimingEdge edge: node.getOutputs())
+				{
+					nextLevelNodes.add(edge.getOutput());
+				}
 			}
 		}
 	}
@@ -109,13 +133,15 @@ public class TimingGraph
 		while(keepGoing)
 		{
 			Pin currentSink = currentNet.sinks.get(currentIndex);
+			System.out.println(currentSink.name);
 			int mhd = Math.abs(currentNode.getPin().owner.getSite().x - currentSink.owner.getSite().x) 
 					+ Math.abs(currentNode.getPin().owner.getSite().y - currentSink.owner.getSite().y);
 			if(currentSink.owner.type == BlockType.FLIPFLOP || currentSink.owner.type == BlockType.OUTPUT)
 			{
 				TimingNode endNode = new TimingNode(TimingNodeType.EndNode, currentSink);
-				currentNode.addOutput(endNode, mhd * MHD_DELAY);
-				endNode.addInput(currentNode);
+				TimingEdge connection = new TimingEdge(currentNode, endNode, mhd * MHD_DELAY);
+				currentNode.addOutput(connection);
+				endNode.addInput(connection);
 				endNodes.add(endNode);
 				if(blockMap.get(currentSink.owner) == null)
 				{
@@ -127,8 +153,9 @@ public class TimingGraph
 			{
 				//Process TimingNode for Lut input
 				TimingNode inputNode = new TimingNode(TimingNodeType.InternalNode, currentSink);
-				currentNode.addOutput(inputNode, mhd * MHD_DELAY);
-				inputNode.addInput(currentNode);
+				TimingEdge connectionOne = new TimingEdge(currentNode, inputNode, mhd * MHD_DELAY);
+				currentNode.addOutput(connectionOne);
+				inputNode.addInput(connectionOne);
 				if(blockMap.get(currentSink.owner) == null)
 				{
 					blockMap.put(currentSink.owner, new ArrayList<TimingNode>());
@@ -150,8 +177,9 @@ public class TimingGraph
 					outputNode = new TimingNode(TimingNodeType.InternalNode, lutOutput);
 					lutNodeList.add(outputNode);
 				}
-				inputNode.addOutput(outputNode, LUT_DELAY);
-				outputNode.addInput(inputNode);
+				TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
+				inputNode.addOutput(connectionTwo);
+				outputNode.addInput(connectionTwo);
 				netsStack.push(currentNet);
 				sinkIndexStack.push(currentIndex);
 				currentTimingNodeStack.push(currentNode);
@@ -178,6 +206,25 @@ public class TimingGraph
 				}
 			}
 		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		String toReturn = "";
+		for(TimingNode startNode: startNodes)
+		{
+			toReturn += (startNode.getPin().name);
+			List<TimingEdge> connectedEdges = startNode.getOutputs();
+			while(!connectedEdges.isEmpty())
+			{
+				TimingEdge firstEdge = connectedEdges.get(0);
+				toReturn += "--" + firstEdge.getDelay() + "-->" + firstEdge.getOutput().getPin().name;
+				connectedEdges = firstEdge.getOutput().getOutputs();
+			}
+			toReturn += "\n";
+		}
+		return toReturn;
 	}
 	
 }
