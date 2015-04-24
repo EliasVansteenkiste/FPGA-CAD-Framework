@@ -63,15 +63,15 @@ public class Example
 		}
 		
 		//Wait for enter to start (necessary for easy profiling)
-		System.out.println("Hit any key to continue...");
-		try
-		{
-			System.in.read();
-		}
-		catch(IOException ioe)
-		{
-			System.out.println("Something went wrong");
-		}
+//		System.out.println("Hit any key to continue...");
+//		try
+//		{
+//			System.in.read();
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.out.println("Something went wrong");
+//		}
 		
 		BlifReader blifReader = new BlifReader();
 		PrePackedCircuit prePackedCircuit;
@@ -236,6 +236,9 @@ public class Example
 //		int width = 30;
 		int trackwidth = 4;
 		
+		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
+				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
+		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		int legalizer = 3;
 		AnalyticalPlacerFive analyticalPlacer = new AnalyticalPlacerFive(a, c, legalizer);
@@ -280,11 +283,12 @@ public class Example
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
-		System.out.println("Built it!");
-		System.out.println(timingGraph.toString());
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		
 		System.out.println("Max delay old = " + maxDelayOld + ", max delay new = " + maxDelay);
+		
+		//System.out.println(timingGraph.getMapString());
+		//System.out.println(timingGraph.getStartSlacks());
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		

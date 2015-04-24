@@ -15,6 +15,7 @@ import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
 import placers.SAPlacer.Swap;
 import placers.SAPlacer.EfficientCostCalculator;
+import tools.CsvWriter;
 
 import architecture.FourLutSanitized;
 import architecture.Site;
@@ -87,6 +88,9 @@ public class AnalyticalPlacerFive
 //			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
 //		}
 		
+		CsvWriter csvWriter = new CsvWriter(2);
+		csvWriter.addRow(new String[] {"Linear", "BestLegal"});
+		
 		//Iterative solves with pseudonets
 		int nbIterations = 0;
 		for(int i = 0; i < 30; i++)
@@ -96,12 +100,15 @@ public class AnalyticalPlacerFive
 			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 			costLinear = calculateTotalCost(linearX, linearY);
 			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
-			if(costLinear / costLegal > 0.7)
+			csvWriter.addRow(new String[] {"" + costLinear, "" + costLegal});
+			if(costLinear / costLegal > 0.70)
 			{
 				break;
 			}
 			//System.out.println("Linear cost: " + costLinear);
 		}
+		
+		csvWriter.writeFile("convergence.csv");
 		
 		System.out.println("Nb of iterations: " + nbIterations);
 		

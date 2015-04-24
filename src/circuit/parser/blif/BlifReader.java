@@ -22,7 +22,8 @@ public class BlifReader
 	
 	public PrePackedCircuit readBlif(String fileName, int nbLutInputs) throws IOException
 	{
-		circuit = new PrePackedCircuit(nbLutInputs);
+		int lastIndexSlash = fileName.lastIndexOf('/');
+		circuit = new PrePackedCircuit(nbLutInputs, fileName.substring(lastIndexSlash + 1));
 		Path path = Paths.get(fileName);
 		try(BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8))
 		{
@@ -80,7 +81,7 @@ public class BlifReader
 	
 	private void processModel(String[] command)
 	{
-		circuit.setName(command[1]);
+		//circuit.setName(command[1]);
 	}
 	
 	private void processInputs(String[] command)

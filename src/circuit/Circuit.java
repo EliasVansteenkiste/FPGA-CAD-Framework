@@ -10,13 +10,21 @@ public class Circuit
 	public Map<String,Input> inputs;
 	public Map<String,Net>	nets;
 	
-	public String name;
+	private String name;
 	
 	public Circuit()
 	{
 		this.outputs = new HashMap<String,Output>();
 		this.inputs = new HashMap<String,Input>();
 		this.nets = new HashMap<String,Net>();
+	}
+	
+	public Circuit(String name)
+	{
+		this.outputs = new HashMap<String,Output>();
+		this.inputs = new HashMap<String,Input>();
+		this.nets = new HashMap<String,Net>();
+		this.name = name;
 	}
 	
 	public Circuit(Map<String,Output> outputs, Map<String,Input> inputs)

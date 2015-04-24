@@ -20,7 +20,7 @@ public class TimingNode
 		this.type = type;
 		this.pin = pin;
 		this.tArrival = 0.0;
-		this.tRequired = 0.0;
+		this.tRequired = Double.MAX_VALUE;
 		if(type != TimingNodeType.EndNode)
 		{
 			outputs = new ArrayList<>();
@@ -56,11 +56,6 @@ public class TimingNode
 	}
 	
 	public void setTRequired(double tRequired)
-	{
-		this.tRequired = tRequired;
-	}
-	
-	public void setTrequired(double tRequired)
 	{
 		this.tRequired = tRequired;
 	}

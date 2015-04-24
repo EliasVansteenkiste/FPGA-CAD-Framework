@@ -23,6 +23,14 @@ public class PrePackedCircuit extends Circuit
 		this.flipflops = new HashMap<String,Flipflop>();
 	}
 	
+	public PrePackedCircuit(int nbLutInputs, String name)
+	{
+		super(name);
+		this.nbLutInputs = nbLutInputs;
+		this.luts = new HashMap<String,Lut>();
+		this.flipflops = new HashMap<String,Flipflop>();
+	}
+	
 	public PrePackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs, int nbLutInputs)
 	{
 		super(outputs, inputs);
