@@ -277,15 +277,16 @@ public class Example
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
 		
-		TimingGraphOld timingGraphOld = new TimingGraphOld(prePackedCircuit);
-		timingGraphOld.buildTimingGraph();
-		double maxDelayOld = timingGraphOld.calculateMaximalDelay();
+		//TimingGraphOld timingGraphOld = new TimingGraphOld(prePackedCircuit);
+		//timingGraphOld.buildTimingGraph();
+		//double maxDelayOld = timingGraphOld.calculateMaximalDelay();
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		
-		System.out.println("Max delay old = " + maxDelayOld + ", max delay new = " + maxDelay);
+		//System.out.println("Max delay old = " + maxDelayOld + ", max delay new = " + maxDelay);
+		System.out.println("Max delay new timing graph = " + maxDelay);
 		
 		//System.out.println(timingGraph.getMapString());
 		//System.out.println(timingGraph.getStartSlacks());

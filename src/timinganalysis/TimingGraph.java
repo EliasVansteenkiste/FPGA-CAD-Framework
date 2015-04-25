@@ -8,8 +8,11 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Stack;
 
+import placers.SAPlacer.Swap;
+
 import circuit.Block;
 import circuit.BlockType;
+import circuit.Clb;
 import circuit.Flipflop;
 import circuit.Input;
 import circuit.Lut;
@@ -58,7 +61,7 @@ public class TimingGraph
 		calculateArrivalTimesFromScratch();
 		maxDelay = calculateMaximalDelay();
 		calculateRequiredTimesFromScratch();
-		recalculateAllSlacks();
+		recalculateAllSlacksCriticalities();
 	}
 	
 	public double calculateMaximalDelay()
@@ -72,6 +75,61 @@ public class TimingGraph
 			}
 		}
 		return maxDelay;
+	}
+	
+	public double calculateDeltaCost(Swap swap)
+	{
+		double deltaCost = 0.0;
+		//Get the timingEdge objects who's delay might possibly change
+		LinkedList<TimingEdge> affectedEdgeList = new LinkedList<>();
+		if(swap.pl1.block != null && swap.pl2.block != null)
+		{
+			Block block1 = swap.pl1.block;
+			Block block2 = swap.pl2.block;
+			Lut lut1 = null;
+			Lut lut2 = null;
+			Flipflop ff1 = null;
+			Flipflop ff2 = null;
+			if(block1.type == BlockType.CLB && block2.type == BlockType.CLB)
+			{
+				lut1 = ((Clb)block1).getBle().getLut();
+				ff1 = ((Clb)block1).getBle().getFlipflop();
+				lut2 = ((Clb)block2).getBle().getLut();
+				ff2 = ((Clb)block2).getBle().getFlipflop();
+			}
+			if(ff1 != null)
+			{
+				TimingNode sourceNode = null;
+				ArrayList<TimingNode> ff1NodeList = blockMap.get(ff1);
+				for(int i = 0; i < ff1NodeList.size(); i++)
+				{
+					if(ff1NodeList.get(i).getType() == TimingNodeType.StartNode)
+					{
+						sourceNode = ff1NodeList.get(i);
+						break;
+					}
+				}
+				for(TimingEdge connectedEdge: sourceNode.getOutputs())
+				{
+					Block owner = connectedEdge.getOutput().getPin().owner;
+					if(owner != ff2 && owner != lut2 && owner != lut1)
+					{
+						int mhd = Math.abs(connectedEdge.getOutput().getPin().owner.getSite().x - swap.pl2.x) 
+								+ Math.abs(connectedEdge.getOutput().getPin().owner.getSite().y - swap.pl2.y);
+						deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+						affectedEdgeList.add(connectedEdge);
+					}
+				}
+			}
+			else //only a lut in the clb, no ff
+			{
+				
+			}
+		}
+		else
+		{
+			
+		}
 	}
 	
 	private void calculateArrivalTimesFromScratch()
@@ -126,11 +184,11 @@ public class TimingGraph
 		}
 	}
 	
-	private void recalculateAllSlacks()
+	private void recalculateAllSlacksCriticalities()
 	{
 		for(TimingEdge edge: edges)
 		{
-			edge.recalculateSlack();
+			edge.recalculateSlackCriticality(this.maxDelay);
 		}
 	}
 	
@@ -178,7 +236,7 @@ public class TimingGraph
 			else //Must be a LUT ==> keep on going
 			{
 				//Process TimingNode for Lut input
-				TimingNode inputNode = new TimingNode(TimingNodeType.InternalNode, currentSink);
+				TimingNode inputNode = new TimingNode(TimingNodeType.InternalSinkNode, currentSink);
 				TimingEdge connectionOne = new TimingEdge(currentNode, inputNode, mhd * MHD_DELAY);
 				edges.add(connectionOne);
 				currentNode.addOutput(connectionOne);
@@ -201,7 +259,7 @@ public class TimingGraph
 				}
 				if(outputNode == null)
 				{
-					outputNode = new TimingNode(TimingNodeType.InternalNode, lutOutput);
+					outputNode = new TimingNode(TimingNodeType.InternalSourceNode, lutOutput);
 					lutNodeList.add(outputNode);
 					TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
 					edges.add(connectionTwo);
@@ -269,7 +327,7 @@ public class TimingGraph
 			toReturn += node.getPin().name + ": ";
 			for(TimingEdge connectedEdge: node.getOutputs())
 			{
-				toReturn += connectedEdge.getSlack() + ", ";
+				toReturn += connectedEdge.getSlack() + "(" + connectedEdge.getCriticality() + "), ";
 			}
 			toReturn += "\n";
 		}

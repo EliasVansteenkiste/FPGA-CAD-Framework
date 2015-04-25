@@ -2,5 +2,5 @@ package timinganalysis;
 
 public enum TimingNodeType
 {
-	StartNode, InternalNode, EndNode
+	StartNode, InternalSourceNode, InternalSinkNode, EndNode
 }

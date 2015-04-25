@@ -99,4 +99,9 @@ public class TimingNode
 		return inputs;
 	}
 	
+	public TimingNodeType getType()
+	{
+		return this.type;
+	}
+	
 }
