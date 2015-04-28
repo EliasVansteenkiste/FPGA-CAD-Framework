@@ -83,11 +83,12 @@ public class Example
 		try
 		{
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
@@ -132,9 +133,9 @@ public class Example
 		//visualAnalytical(packedCircuit, prePackedCircuit);
 		
 		//visualSA(prePackedCircuit, packedCircuit);
-		//visualTDSA(prePackedCircuit, packedCircuit);
+		visualTDSA(prePackedCircuit, packedCircuit);
 		
-		RunWlVsTdSaBenchmarks();
+		//RunWlVsTdSaBenchmarks();
 		
 		//visualLegalizerTest();
 		
@@ -407,8 +408,8 @@ public class Example
 	
 	private static void visualTDSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		int height = 30;
-		int width = 30;
+		int height = 35;
+		int width = 35;
 		int trackwidth = 4;
 		Double placementEffort = 10.0;
 		

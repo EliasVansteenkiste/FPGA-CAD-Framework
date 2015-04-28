@@ -123,25 +123,36 @@ public class BlifReader
 		}
 		else
 		{
-			Lut lut = new Lut(command[command.length - 1], 1, nbLutInputs); //name of LUT = output of LUT
-			circuit.addLut(lut);
-			// Take care of nets that are LUT inputs
-			for(int i = 1; i <= command.length - 2; i++)
+			if(command.length <= 2) //We don't add dummy luts
 			{
-				if(!circuit.getNets().containsKey(command[i])) //net still needs to be added to the nets hashmap
+				if(command.length == 2 && circuit.getNets().get(command[1]) != null)
 				{
-					circuit.getNets().put(command[i], new Net(command[i]));
+					circuit.getNets().remove(command[1]);
 				}
-				circuit.getNets().get(command[i]).addSink(lut.getInputs()[i-1]);
+				return true;
 			}
-			
-			//Take care of net at the LUT output
-			if(!circuit.getNets().containsKey(command[command.length - 1])) //net still needs to be added to the nets hashmap
+			else
 			{
-				circuit.getNets().put(command[command.length - 1], new Net(command[command.length - 1]));
+				Lut lut = new Lut(command[command.length - 1], 1, nbLutInputs); //name of LUT = output of LUT
+				circuit.addLut(lut);
+				// Take care of nets that are LUT inputs
+				for(int i = 1; i <= command.length - 2; i++)
+				{
+					if(!circuit.getNets().containsKey(command[i])) //net still needs to be added to the nets hashmap
+					{
+						circuit.getNets().put(command[i], new Net(command[i]));
+					}
+					circuit.getNets().get(command[i]).addSink(lut.getInputs()[i-1]);
+				}
+				
+				//Take care of net at the LUT output
+				if(!circuit.getNets().containsKey(command[command.length - 1])) //net still needs to be added to the nets hashmap
+				{
+					circuit.getNets().put(command[command.length - 1], new Net(command[command.length - 1]));
+				}
+				circuit.getNets().get(command[command.length - 1]).addSource(lut.getOutputs()[0]);
+				return true;
 			}
-			circuit.getNets().get(command[command.length - 1]).addSource(lut.getOutputs()[0]);
-			return true;
 		}
 	}
 	
