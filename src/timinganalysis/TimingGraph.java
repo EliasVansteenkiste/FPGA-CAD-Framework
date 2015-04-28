@@ -43,7 +43,7 @@ public class TimingGraph
 		blockMap = new HashMap<>();
 		edges = new ArrayList<>();
 		maxDelay = 0.0;
-		criticalityExponent = 2.0;
+		criticalityExponent = 9.0;
 		affectedEdgeList = new LinkedList<>();
 	}
 	
@@ -444,16 +444,6 @@ public class TimingGraph
 		return totalCost;
 	}
 	
-	public double calculateSumDelays()
-	{
-		double totalDelay = 0.0;
-		for(TimingEdge edge: edges)
-		{
-			totalDelay += edge.getDelay();
-		}
-		return totalDelay;
-	}
-	
 	private void calculateArrivalTimesFromScratch()
 	{
 		//Clear all arrival times
@@ -529,6 +519,11 @@ public class TimingGraph
 		{
 			edge.recalculateSlackCriticality(maxDelay, criticalityExponent);
 		}
+	}
+	
+	public void setCriticalityExponent(double criticalityExponent)
+	{
+		this.criticalityExponent = criticalityExponent;
 	}
 	
 	private void processStartPin(Pin startPin)
