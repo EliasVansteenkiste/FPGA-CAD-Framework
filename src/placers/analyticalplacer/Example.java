@@ -124,12 +124,13 @@ public class Example
 		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
-		visualAnalytical(packedCircuit, prePackedCircuit);
+		//visualAnalytical(packedCircuit, prePackedCircuit);
 		//visualSA(packedCircuit);
 		
 		//visualLegalizerTest();
 		
 		//testCostCalculator(packedCircuit);
+		testTimingCostCalculator(prePackedCircuit, packedCircuit);
 	}
 	
 //	public static void main(String[] args)
@@ -826,6 +827,67 @@ public class Example
 				break;
 			}
 		}
+	}
+	
+	private static void testTimingCostCalculator(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		Random rand = new Random(1);
+		
+		//Random placement
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		
+		TimingGraph tcc = new TimingGraph(prePackedCircuit);
+		tcc.buildTimingGraph();
+		double startCost = tcc.calculateTotalCost();
+		double startDelay = tcc.calculateSumDelays();
+		double startMaxDelay = tcc.calculateMaximalDelay();
+		
+		System.out.println("\nOriginal cost = " + startCost);
+		System.out.println("Original sum of delays = " + startDelay);
+		System.out.println("Original max delay = " + startMaxDelay);
+		System.out.println();
+		
+		packedCircuit.vBlocks = new Vector<Block>();
+		packedCircuit.vBlocks.addAll(packedCircuit.clbs.values());
+		
+		for(int i = 0; i < 10000; i++)
+		{
+			Swap swap=new Swap();
+			Block b = packedCircuit.vBlocks.elementAt(rand.nextInt(packedCircuit.vBlocks.size()));
+			swap.pl1 = b.getSite();
+			swap.pl2 = a.randomSite(15, swap.pl1);
+			
+			double deltaCost = tcc.calculateDeltaCost(swap);
+			if(deltaCost < 0)
+			{
+				swap.apply();
+				tcc.pushThrough();
+			}
+			else
+			{
+				tcc.revert();
+			}
+		}
+		
+		tcc.recalculateAllSlacksCriticalities();
+		double totalCost = tcc.calculateTotalCost();
+		double totalDelay = tcc.calculateSumDelays();
+		double maxDelay = tcc.calculateMaximalDelay();
+		
+		TimingGraph newTimingGraph = new TimingGraph(prePackedCircuit);
+		newTimingGraph.buildTimingGraph();
+		double newCost = newTimingGraph.calculateTotalCost();
+		double newDelay = newTimingGraph.calculateSumDelays();
+		double newMaxDelay = newTimingGraph.calculateMaximalDelay();
+		
+		System.out.println("Swapped cost = " + totalCost + ", new cost = " + newCost);
+		System.out.println("Old sum of delays = " + totalDelay + ", new sum of delays = " + newDelay);
+		System.out.println("Old maximum delay = " + maxDelay + ", new maximal delay = " + newMaxDelay);
 	}
 	
 	private static PackedCircuit constructTestCircuit()

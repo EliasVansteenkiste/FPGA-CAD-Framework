@@ -8,6 +8,8 @@ public class TimingEdge
 	private double delay;
 	private double slack;
 	private double criticality;
+	private double criticalityWithExponent;
+	private double possibleNewDelay;
 	
 	public TimingEdge(TimingNode input, TimingNode output, double delay)
 	{
@@ -16,6 +18,7 @@ public class TimingEdge
 		this.delay = delay;
 		this.slack = -1.0;
 		this.criticality = -1.0;
+		this.criticalityWithExponent = -1.0;
 	}
 	
 	public double getDelay()
@@ -38,10 +41,32 @@ public class TimingEdge
 		return output;
 	}
 	
-	public void recalculateSlackCriticality(double maxDelay)
+	public void recalculateSlackCriticality(double maxDelay, double criticalityExponent)
 	{
 		this.slack = output.getTRequired() - input.getTArrival() - this.delay;
 		this.criticality = 1 - slack/maxDelay;
+		this.criticalityWithExponent = Math.pow(criticality, criticalityExponent);
+	}
+	
+	public double calculateDeltaCost(double newDelay)
+	{
+		possibleNewDelay = newDelay;
+		return (newDelay - delay)*criticalityWithExponent;
+	}
+	
+	public void revert()
+	{
+		//Do nothing
+	}
+	
+	public void pushThrough()
+	{
+		this.delay = possibleNewDelay;
+	}
+	
+	public double getCost()
+	{
+		return criticalityWithExponent*delay;
 	}
 	
 	public double getSlack()
