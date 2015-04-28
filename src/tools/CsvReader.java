@@ -44,7 +44,7 @@ public class CsvReader
 		}
 		catch(IOException ioe)
 		{
-			System.err.println("Couldn't write csv file: " + fileName);
+			System.err.println("Couldn't read csv file: " + fileName);
 			return false;
 		}
 		nbColumns = 1;

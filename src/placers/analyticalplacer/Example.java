@@ -1,7 +1,10 @@
 package placers.analyticalplacer;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,6 +29,8 @@ import placers.SAPlacer.EfficientBoundingBoxData;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import placers.SAPlacer.Swap;
 import placers.SAPlacer.SAPlacer;
+import placers.SAPlacer.TD_SAPlacer;
+import placers.SAPlacer.WLD_SAPlacer;
 import timinganalysis.TimingGraph;
 import timinganalysis.TimingGraphOld;
 import tools.CsvReader;
@@ -125,12 +130,16 @@ public class Example
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
 		//visualAnalytical(packedCircuit, prePackedCircuit);
-		//visualSA(packedCircuit);
+		
+		//visualSA(prePackedCircuit, packedCircuit);
+		//visualTDSA(prePackedCircuit, packedCircuit);
+		
+		RunWlVsTdSaBenchmarks();
 		
 		//visualLegalizerTest();
 		
 		//testCostCalculator(packedCircuit);
-		testTimingCostCalculator(prePackedCircuit, packedCircuit);
+		//testTimingCostCalculator(prePackedCircuit, packedCircuit);
 	}
 	
 //	public static void main(String[] args)
@@ -176,6 +185,100 @@ public class Example
 //			csvWriter.writeFile("benchmarks.csv");
 //		}
 //	}
+	
+	private static void RunWlVsTdSaBenchmarks()
+	{
+		String toDoFileName = "BenchmarksToDo.txt";
+		String[] fileNamesToDo;
+		try
+		{
+			File toDoFile = new File(toDoFileName);
+			if(!toDoFile.exists())
+			{
+				System.out.println("No TODO file found\nAborting...");
+			}
+			FileReader fileReader = new FileReader(toDoFile.getAbsoluteFile());
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			ArrayList<String> rowsList = new ArrayList<>();
+			String curLine = bufferedReader.readLine();
+			int nbRows = 0;
+			while(curLine != null)
+			{
+				rowsList.add(curLine);
+				nbRows++;
+				curLine = bufferedReader.readLine();
+			}
+			bufferedReader.close();
+			fileNamesToDo = new String[nbRows];
+			rowsList.toArray(fileNamesToDo);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read TODO file: " + toDoFileName);
+			return;
+		}
+		
+		CsvWriter csvWriter;
+		CsvReader csvReader = new CsvReader();
+		boolean success = csvReader.readFile("benchmarksSa_TdVsWld.csv");
+		String[] alreadyDoneFiles;
+		if(success)
+		{
+			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+		}
+		else
+		{
+			csvWriter = new CsvWriter(10);
+			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "WLD SA time", 
+					"WLD SA cost", "WLD SA max delay", "TD SA time", "TD SA cost", "TD SA max delay"});
+			alreadyDoneFiles = null;
+		}
+		for(int i = 0; i < fileNamesToDo.length; i++)
+		{
+			if(fileNamesToDo[i].substring(fileNamesToDo[i].length() - 4).contains("blif"))
+			{
+				System.out.println("Processing benchmark: " + fileNamesToDo[i]);
+				String totalFilename = fileNamesToDo[i];
+				if(alreadyDone(totalFilename, alreadyDoneFiles))
+				{
+					System.out.println("Already done this benchmark!");
+				}
+				else
+				{
+					double[] wldSAResults = new double[6];
+					processWLDSABenchmark(wldSAResults,totalFilename);
+					double wldSATime = wldSAResults[0];
+					double wldSACost = wldSAResults[1];
+					int nbClbs = (int)Math.round(wldSAResults[2]);
+					int nbInputs = (int)Math.round(wldSAResults[3]);
+					int nbOutputs = (int)Math.round(wldSAResults[4]);
+					double wldSAMaxDelay = wldSAResults[5];
+
+					double[] tdSAResults = new double[6];
+					processTDSABenchmark(tdSAResults, totalFilename);
+					double tdSATime = tdSAResults[0];
+					double tdSACost = tdSAResults[1];
+					double tdSAMaxDelay = tdSAResults[5];
+					
+					String nbClbsString = String.format("%d", nbClbs);
+					String nbInputsString = String.format("%d", nbInputs);
+					String nbOutputsString = String.format("%d", nbOutputs);
+					String wldSATimeString = String.format("%.3f", wldSATime);
+					String wldSACostString = String.format("%.3f", wldSACost);
+					String wldSAMaxDelayString = String.format("%.3f", wldSAMaxDelay);
+					String tdSATimeString = String.format("%.3f", tdSATime);
+					String tdSACostString = String.format("%.3f", tdSACost);
+					String tdSAMaxDelayString = String.format("%.3f", tdSAMaxDelay);
+					
+					
+					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, wldSATimeString, wldSACostString, 
+									wldSAMaxDelayString, tdSATimeString, tdSACostString, tdSAMaxDelayString});
+				}
+			}
+			csvWriter.writeFile("benchmarksSa_TdVsWld.csv");
+		}
+	}
 	
 	private static boolean alreadyDone(String fileName, String[] alreadyDoneFiles)
 	{
@@ -259,7 +362,7 @@ public class Example
 		analyticalEndTime = System.nanoTime();
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
-		SAPlacer saPlacer= new SAPlacer(effcc, a, c);
+		WLD_SAPlacer saPlacer= new WLD_SAPlacer(effcc, a, c);
 		
 		//SA phase
 		SAStartTime = System.nanoTime();
@@ -302,7 +405,7 @@ public class Example
 		frame.setVisible(true);
 	}
 	
-	private static void visualSA(PackedCircuit c)
+	private static void visualTDSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
 		int height = 30;
 		int width = 30;
@@ -312,15 +415,17 @@ public class Example
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
 		
 		//Random placement
-		Rplace.placeCLBsandFixedIOs(c, a, rand);
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		pm.PlacementCLBsConsistencyCheck();
 		
-		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		TimingGraph tcc = new TimingGraph(prePackedCircuit);
+		tcc.buildTimingGraph();
 		
-		SAPlacer placer= new SAPlacer(effcc, a, c);
+		TD_SAPlacer placer= new TD_SAPlacer(effcc, a, packedCircuit, tcc);
 		
 		long startTime;
 		long endTime;
@@ -332,6 +437,57 @@ public class Example
 		
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		System.out.println("Maximum delay: " + maxDelay);
+		
+		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(950,950);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
+	private static void visualSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
+	{
+		int height = 30;
+		int width = 30;
+		int trackwidth = 4;
+		Double placementEffort = 10.0;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
+		
+		//Random placement
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		pm.PlacementCLBsConsistencyCheck();
+		
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		
+		WLD_SAPlacer placer= new WLD_SAPlacer(effcc, a, packedCircuit);
+		
+		long startTime;
+		long endTime;
+		startTime = System.nanoTime();
+		placer.place(placementEffort);
+		endTime = System.nanoTime();
+		
+		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
+		
+		pm.PlacementCLBsConsistencyCheck();
+		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		System.out.println("Maximum delay: " + maxDelay);
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
@@ -346,7 +502,7 @@ public class Example
 	private static void processBenchmark(String totalFilename, CsvWriter csvWriter)
 	{
 		double[] sAResults = new double[6];
-		processSABenchmark(sAResults,totalFilename);
+		processWLDSABenchmark(sAResults,totalFilename);
 		double sATime = sAResults[0];
 		double sACost = sAResults[1];
 		int nbClbs = (int)Math.round(sAResults[2]);
@@ -425,7 +581,7 @@ public class Example
 		analyticalEndTime = System.nanoTime();
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-		SAPlacer saPlacer= new SAPlacer(effcc, a, packedCircuit);
+		WLD_SAPlacer saPlacer= new WLD_SAPlacer(effcc, a, packedCircuit);
 		results[2] = effcc.calculateTotalCost();
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
@@ -447,7 +603,7 @@ public class Example
 		results[5] = maxDelayAfter;
 	}
 	
-	private static void processSABenchmark(double[] results, String totalFilename)
+	private static void processWLDSABenchmark(double[] results, String totalFilename)
 	{
 		BlifReader blifReader = new BlifReader();
 		PrePackedCircuit prePackedCircuit;
@@ -486,7 +642,69 @@ public class Example
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		
-		SAPlacer placer= new SAPlacer(effcc, a, packedCircuit);
+		WLD_SAPlacer placer= new WLD_SAPlacer(effcc, a, packedCircuit);
+		
+		long startTime;
+		long endTime;
+		startTime = System.nanoTime();
+		placer.place(placementEffort);
+		endTime = System.nanoTime();
+		
+		results[0] = (double)(endTime - startTime)/1000000000;
+		
+		pm.PlacementCLBsConsistencyCheck();
+		results[1] = effcc.calculateTotalCost();
+		results[2] = packedCircuit.clbs.values().size();
+		results[3] = packedCircuit.getInputs().values().size();
+		results[4] = packedCircuit.getOutputs().values().size();
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		results[5] = maxDelay;
+	}
+	
+	private static void processTDSABenchmark(double[] results, String totalFilename)
+	{
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			prePackedCircuit =  blifReader.readBlif(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+	
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+	
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+	
+		int dimension = calculateArchDimension(packedCircuit);
+		
+		int height = dimension;
+		int width = dimension;
+		int trackwidth = 4;
+		
+		Double placementEffort = 10.0;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
+		
+		//Random placement
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		pm.PlacementCLBsConsistencyCheck();
+		
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		TimingGraph tcc = new TimingGraph(prePackedCircuit);
+		tcc.buildTimingGraph();
+		
+		TD_SAPlacer placer= new TD_SAPlacer(effcc, a, packedCircuit, tcc);
 		
 		long startTime;
 		long endTime;
@@ -717,7 +935,7 @@ public class Example
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.println("Critical path delay random placement: " + maxDelay);
 		
-		SAPlacer placer= new SAPlacer(effcc, a, c);
+		SAPlacer placer= new WLD_SAPlacer(effcc, a, c);
 		//Vplace placer= new Vplace(pm, bbncc);
 		//Time placement process
 		final long startTime = System.nanoTime();
@@ -844,11 +1062,9 @@ public class Example
 		TimingGraph tcc = new TimingGraph(prePackedCircuit);
 		tcc.buildTimingGraph();
 		double startCost = tcc.calculateTotalCost();
-		double startDelay = tcc.calculateSumDelays();
 		double startMaxDelay = tcc.calculateMaximalDelay();
 		
 		System.out.println("\nOriginal cost = " + startCost);
-		System.out.println("Original sum of delays = " + startDelay);
 		System.out.println("Original max delay = " + startMaxDelay);
 		System.out.println();
 		
@@ -876,17 +1092,14 @@ public class Example
 		
 		tcc.recalculateAllSlacksCriticalities();
 		double totalCost = tcc.calculateTotalCost();
-		double totalDelay = tcc.calculateSumDelays();
 		double maxDelay = tcc.calculateMaximalDelay();
 		
 		TimingGraph newTimingGraph = new TimingGraph(prePackedCircuit);
 		newTimingGraph.buildTimingGraph();
 		double newCost = newTimingGraph.calculateTotalCost();
-		double newDelay = newTimingGraph.calculateSumDelays();
 		double newMaxDelay = newTimingGraph.calculateMaximalDelay();
 		
 		System.out.println("Swapped cost = " + totalCost + ", new cost = " + newCost);
-		System.out.println("Old sum of delays = " + totalDelay + ", new sum of delays = " + newDelay);
 		System.out.println("Old maximum delay = " + maxDelay + ", new maximal delay = " + newMaxDelay);
 	}
 	

@@ -43,7 +43,7 @@ public class TimingGraph
 		blockMap = new HashMap<>();
 		edges = new ArrayList<>();
 		maxDelay = 0.0;
-		criticalityExponent = 9.0;
+		criticalityExponent = 8.0;
 		affectedEdgeList = new LinkedList<>();
 	}
 	
