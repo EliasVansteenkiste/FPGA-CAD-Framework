@@ -92,6 +92,15 @@ public class BlePacker
 			//If source of the net is lut and there is only one sinking block which is a flipflop
 			// ==> net is internal to the BLE
 			// ==> not necessary to add it to the afterBlePacking nets
+			
+			
+			if(net.source == null)
+			{
+				System.out.println("Trouble: " + net.name);
+			}
+			
+			
+			
 			if(!(net.source.owner.type == BlockType.LUT && net.sinks.size() == 1 && net.sinks.get(0).owner.type == BlockType.FLIPFLOP))
 			{
 				afterNets.put(net.name, new Net(net.name));

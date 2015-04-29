@@ -123,16 +123,16 @@ public class BlifReader
 		}
 		else
 		{
-			if(command.length <= 2) //We don't add dummy luts
-			{
-				if(command.length == 2 && circuit.getNets().get(command[1]) != null)
-				{
-					circuit.getNets().remove(command[1]);
-				}
-				return true;
-			}
-			else
-			{
+//			if(command.length <= 2) //We don't add dummy luts
+//			{
+//				if(command.length == 2 && circuit.getNets().get(command[1]) != null)
+//				{
+//					circuit.getNets().remove(command[1]);
+//				}
+//				return true;
+//			}
+//			else
+//			{
 				Lut lut = new Lut(command[command.length - 1], 1, nbLutInputs); //name of LUT = output of LUT
 				circuit.addLut(lut);
 				// Take care of nets that are LUT inputs
@@ -152,7 +152,7 @@ public class BlifReader
 				}
 				circuit.getNets().get(command[command.length - 1]).addSource(lut.getOutputs()[0]);
 				return true;
-			}
+//			}
 		}
 	}
 	
