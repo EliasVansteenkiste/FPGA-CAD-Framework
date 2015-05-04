@@ -79,4 +79,9 @@ public class TimingEdge
 		return this.criticality;
 	}
 	
+	public double getCriticalityWithExponent()
+	{
+		return criticalityWithExponent;
+	}
+	
 }

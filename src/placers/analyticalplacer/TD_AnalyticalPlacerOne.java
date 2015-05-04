@@ -1,11 +1,10 @@
 package placers.analyticalplacer;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
+import mathtools.CGSolver;
 import mathtools.Crs;
 
 import placers.Rplace;
@@ -20,6 +19,7 @@ import circuit.Clb;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
+import circuit.PrePackedCircuit;
 
 /**
  * TODO To watch out for: pseudoweights and Cost calculation: criticalities
@@ -40,18 +40,19 @@ public class TD_AnalyticalPlacerOne
 	private int[] anchorPointsY;
 	private Legalizer legalizer;
 	private TimingGraph timingGraph;
+	private PrePackedCircuit prePackedCircuit;
 	
 	private final double ALPHA = 0.3;
 	
-	public TD_AnalyticalPlacerOne(FourLutSanitized architecture, PackedCircuit circuit, int legalizer, TimingGraph timingGraph)
+	public TD_AnalyticalPlacerOne(FourLutSanitized architecture, PackedCircuit circuit, int legalizer, PrePackedCircuit prePackedCircuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
-		this.timingGraph = timingGraph;
 		this.minimalX = 1;
 		this.maximalX = architecture.width;
 		this.minimalY = 1;
 		this.maximalY = architecture.height;
+		this.prePackedCircuit = prePackedCircuit;
 		switch(legalizer)
 		{
 			case 1:
@@ -79,14 +80,29 @@ public class TD_AnalyticalPlacerOne
 		
 		//Initial legalization
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
+		updateCircuit();
 		
-		for(int i = 0; i < 30; i++)
+		
+		for(int i = 0; i < linearX.length; i++)
 		{
-			solveLinear(false, (i+1)*ALPHA);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
+			System.out.println(linearY[i]);
 		}
 		
-		updateCircuit();
+		
+		
+//		timingGraph = new TimingGraph(prePackedCircuit);
+//		timingGraph.buildTimingGraph();
+//		timingGraph.mapClbsToTimingGraph(circuit);
+//		
+//		for(int i = 0; i < 30; i++)
+//		{
+//			solveLinear(false, (i+1)*ALPHA);
+//			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
+//			updateCircuit();
+//			timingGraph.updateDelays();
+//		}
+//		
+//		updateCircuit();
 		
 		double cost = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
 		System.out.println("COST BEFORE REFINEMENT = " + cost);
@@ -143,8 +159,9 @@ public class TD_AnalyticalPlacerOne
 			if(sourceOwner.type == BlockType.CLB)
 			{
 				isSourceFixed = false;
-				sourceX = linearX[indexMap.get(sourceOwner)];
-				sourceY = linearY[indexMap.get(sourceOwner)];
+				int sourceIndex = indexMap.get(sourceOwner);
+				sourceX = linearX[sourceIndex];
+				sourceY = linearY[sourceIndex];
 			}
 			else
 			{
@@ -161,8 +178,9 @@ public class TD_AnalyticalPlacerOne
 				if(sinkOwner.type == BlockType.CLB)
 				{
 					isSinkFixed = false;
-					sinkX = linearX[indexMap.get(sinkOwner)];
-					sinkY = linearY[indexMap.get(sinkOwner)];
+					int sinkIndex = indexMap.get(sinkOwner);
+					sinkX = linearX[sinkIndex];
+					sinkY = linearY[sinkIndex];
 				}
 				else
 				{
@@ -172,36 +190,71 @@ public class TD_AnalyticalPlacerOne
 				}
 				if(!(isSourceFixed && isSinkFixed)) //Not both fixed
 				{
-					double weightX;
-					double weightY;
-					if(firstSolve) //Don't include timing factor
+					double weightX = (double)2/((nbPins - 1)*Math.abs(sinkX - sourceX));
+					double weightY = (double)2/((nbPins - 1)*Math.abs(sinkY - sourceY));
+					if(!firstSolve) //Include timing factor
 					{
-						weightX = (double)2/((nbPins - 1)*Math.abs(sinkX - sourceX));
-						weightY = (double)2/((nbPins - 1)*Math.abs(sinkY - sourceY));
-					}
-					else //Include timing factor
-					{
-						jkgh
+						//Search for connection in timing graph
+						double criticality = timingGraph.getConnectionCriticalityWithExponent(net.source, sinkPin);
+						weightX *= criticality;
+						weightY *= criticality;
 					}
 					
 					if(isSourceFixed) //Source is fixed, sink is free
 					{
-						
+						int sinkIndex = indexMap.get(sinkOwner);
+						xMatrix.setElement(sinkIndex, sinkIndex, xMatrix.getElement(sinkIndex, sinkIndex) + weightX);
+						xVector[sinkIndex] += weightX * sourceX;
+						yMatrix.setElement(sinkIndex, sinkIndex, yMatrix.getElement(sinkIndex, sinkIndex) + weightY);
+						yVector[sinkIndex] += weightY * sourceY;
 					}
 					else //Source is free
 					{
 						if(isSinkFixed) //Sink is fixed, source is free
 						{
-							
+							int sourceIndex = indexMap.get(sourceOwner);
+							xMatrix.setElement(sourceIndex, sourceIndex, xMatrix.getElement(sourceIndex, sourceIndex) + weightX);
+							xVector[sourceIndex] += weightX * sinkX;
+							yMatrix.setElement(sourceIndex, sourceIndex, yMatrix.getElement(sourceIndex, sourceIndex) + weightY);
+							yVector[sourceIndex] += weightY * sinkY;
 						}
 						else //Both are free
 						{
-							
+							int sourceIndex = indexMap.get(sourceOwner);
+							int sinkIndex = indexMap.get(sinkOwner);
+							xMatrix.setElement(sourceIndex, sourceIndex, xMatrix.getElement(sourceIndex, sourceIndex) + weightX);
+							xMatrix.setElement(sourceIndex, sinkIndex, xMatrix.getElement(sourceIndex, sinkIndex) - weightX);
+							xMatrix.setElement(sinkIndex, sourceIndex, xMatrix.getElement(sinkIndex, sourceIndex) - weightX);
+							xMatrix.setElement(sinkIndex, sinkIndex, xMatrix.getElement(sinkIndex, sinkIndex) + weightX);
+							yMatrix.setElement(sourceIndex, sourceIndex, yMatrix.getElement(sourceIndex, sourceIndex) + weightY);
+							yMatrix.setElement(sourceIndex, sinkIndex, yMatrix.getElement(sourceIndex, sinkIndex) - weightY);
+							yMatrix.setElement(sinkIndex, sourceIndex, yMatrix.getElement(sinkIndex, sourceIndex) - weightY);
+							yMatrix.setElement(sinkIndex, sinkIndex, yMatrix.getElement(sinkIndex, sinkIndex) + weightY);
 						}
 					}
 				}
 			}
 		}
+		
+		if(!xMatrix.isSymmetrical())
+		{
+			System.err.println("ERROR: X-Matrix is assymmetrical: there must be a bug in the code!");
+		}
+		if(!yMatrix.isSymmetrical())
+		{
+			System.err.println("ERROR: Y-Matrix is assymmetrical: there must be a bug in the code!");
+		}
+		
+		double epselon = 0.0001;
+		//Solve x problem
+		CGSolver xSolver = new CGSolver(xMatrix, xVector);
+		double[] xSolution = xSolver.solve(epselon);
+		//Solve y problem
+		CGSolver ySolver = new CGSolver(yMatrix, yVector);
+		double[] ySolution = ySolver.solve(epselon);
+		
+		linearX = xSolution;
+		linearY = ySolution;
 	}
 	
 	private void updateCircuit()

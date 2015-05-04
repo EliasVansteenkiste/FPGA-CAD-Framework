@@ -10,6 +10,7 @@ import java.util.Stack;
 
 import placers.SAPlacer.Swap;
 
+import circuit.Ble;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
@@ -17,6 +18,7 @@ import circuit.Flipflop;
 import circuit.Input;
 import circuit.Lut;
 import circuit.Net;
+import circuit.PackedCircuit;
 import circuit.Pin;
 import circuit.PrePackedCircuit;
 
@@ -33,7 +35,9 @@ public class TimingGraph
 	private ArrayList<TimingEdge> edges; //Contains all edges present in the timing graph
 	private double maxDelay;
 	private double criticalityExponent;
-	LinkedList<TimingEdge> affectedEdgeList; //Collects the timingEdge objects who's delay still needs to be pushed through or reverted
+	private LinkedList<TimingEdge> affectedEdgeList; //Collects the timingEdge objects who's delay still needs to be pushed through or reverted
+	private boolean clbsMapped;
+	private Map<Pin,TimingNode> clbPinMap;
 	
 	public TimingGraph(PrePackedCircuit circuit)
 	{
@@ -45,6 +49,8 @@ public class TimingGraph
 		maxDelay = 0.0;
 		criticalityExponent = 8.0;
 		affectedEdgeList = new LinkedList<>();
+		clbsMapped = false;
+		clbPinMap = null;
 	}
 	
 	public void buildTimingGraph()
@@ -463,72 +469,6 @@ public class TimingGraph
 		return totalCost;
 	}
 	
-	private void calculateArrivalTimesFromScratch()
-	{
-		//Clear all arrival times
-		for(TimingEdge edge: edges)
-		{
-			edge.getInput().setTArrival(0.0);
-			edge.getOutput().setTArrival(0.0);
-		}
-		
-		//Do a breadth first search of the timing graph (every startNode separately)
-		for(TimingNode startNode: startNodes)
-		{
-			startNode.setTArrival(0.0);
-			Queue<TimingNode> nodeQueue = new LinkedList<>();
-			nodeQueue.add(startNode);
-			
-			while(!nodeQueue.isEmpty())
-			{
-				TimingNode currentNode = nodeQueue.remove();
-				for(TimingEdge edge: currentNode.getOutputs())
-				{
-					TimingNode connectedNode = edge.getOutput();
-					double possibleNewTArrival = currentNode.getTArrival() + edge.getDelay();
-					if(possibleNewTArrival > connectedNode.getTArrival())
-					{
-						connectedNode.setTArrival(possibleNewTArrival);
-						nodeQueue.add(connectedNode);
-					}
-				}
-			}
-		}
-	}
-	
-	private void calculateRequiredTimesFromScratch()
-	{
-		//Clear all required times
-		for(TimingEdge edge: edges)
-		{
-			edge.getInput().setTRequired(Double.MAX_VALUE);
-			edge.getOutput().setTRequired(Double.MAX_VALUE);
-		}
-		
-		//Do a breadth first search of the timing graph (every endNode separately)
-		for(TimingNode endNode: endNodes)
-		{
-			endNode.setTRequired(maxDelay);
-			Queue<TimingNode> nodeQueue = new LinkedList<>();
-			nodeQueue.add(endNode);
-			
-			while(!nodeQueue.isEmpty())
-			{
-				TimingNode currentNode = nodeQueue.remove();
-				for(TimingEdge edge: currentNode.getInputs())
-				{
-					TimingNode connectedNode = edge.getInput();
-					double possibleNewTRequired = currentNode.getTRequired() - edge.getDelay();
-					if(possibleNewTRequired < connectedNode.getTRequired())
-					{
-						connectedNode.setTRequired(possibleNewTRequired);
-						nodeQueue.add(connectedNode);
-					}
-				}
-			}
-		}
-	}
-	
 	public void recalculateAllSlacksCriticalities()
 	{
 		calculateArrivalTimesFromScratch();
@@ -543,6 +483,116 @@ public class TimingGraph
 	public void setCriticalityExponent(double criticalityExponent)
 	{
 		this.criticalityExponent = criticalityExponent;
+	}
+	
+	public void mapClbsToTimingGraph(PackedCircuit packedCircuit)
+	{
+		clbsMapped = true;
+		clbPinMap = new HashMap<>();
+		for(Net net: packedCircuit.getNets().values())
+		{
+			//Process net source
+			TimingNode sourceNode = null;
+			if(net.source.owner.type == BlockType.INPUT)
+			{
+				sourceNode = blockMap.get(net.source.owner).get(0);
+			}
+			else //Owner of net source is a CLB
+			{
+				Ble ble = ((Clb)net.source.owner).getBle();
+				if(ble.isFFUsed())
+				{
+					ArrayList<TimingNode> nodeList = blockMap.get(ble.getFlipflop());
+					for(TimingNode node: nodeList)
+					{
+						if(node.getType() == TimingNodeType.StartNode)
+						{
+							sourceNode = node;
+							break;
+						}
+					}
+				}
+				else
+				{
+					ArrayList<TimingNode> nodeList = blockMap.get(ble.getLut());
+					for(TimingNode node: nodeList)
+					{
+						if(node.getType() == TimingNodeType.InternalSourceNode)
+						{
+							sourceNode = node;
+							break;
+						}
+					}
+				}
+			}
+			clbPinMap.put(net.source, sourceNode);
+			
+			//Process net sinks
+			for(Pin sinkPin: net.sinks)
+			{
+				TimingNode sinkNode = null;
+				if(sinkPin.owner.type == BlockType.OUTPUT)
+				{
+					sinkNode = blockMap.get(sinkPin.owner).get(0);
+				}
+				else //Owner of the net sink is a CLB
+				{
+					Ble ble = ((Clb)sinkPin.owner).getBle();
+					if(ble.getLut() == null) //Clb only contains a flipflop
+					{
+						ArrayList<TimingNode> ffNodes = blockMap.get(ble.getFlipflop());
+						for(TimingNode node: ffNodes)
+						{
+							if(node.getType() == TimingNodeType.EndNode)
+							{
+								sinkNode = node;
+								break;
+							}
+						}
+					}
+					else //Clb contains a LUT
+					{
+						ArrayList<TimingNode> lutNodes = blockMap.get(ble.getLut());
+						for(TimingNode node: lutNodes)
+						{
+							if(node.getPin().owner == ble.getLut())
+							{
+								sinkNode = node;
+								break;
+							}
+						}
+					}
+				}
+				clbPinMap.put(sinkPin, sinkNode);
+			}
+		}
+	}
+	
+	public double getConnectionCriticalityWithExponent(Pin sourceClbPin, Pin sinkClbPin)
+	{
+		double criticalityWithExponent = -1.0;
+		if(clbsMapped)
+		{
+			TimingNode sourceNode = clbPinMap.get(sourceClbPin);
+			for(TimingEdge edge: sourceNode.getOutputs())
+			{
+				Block sinkBlock = edge.getOutput().getPin().owner;
+				if(sinkBlock == sinkClbPin.owner)
+				{
+					criticalityWithExponent = edge.getCriticalityWithExponent();
+					break;
+				}
+			}
+			if(criticalityWithExponent < 0.0)
+			{
+				System.err.println("Trouble: criticality not found!");
+			}
+		}
+		else
+		{
+			System.err.println("Trouble: clbMap not yet initialized!");
+		}
+		return criticalityWithExponent;
 	}
 	
 	private void processStartPin(Pin startPin)
@@ -648,6 +698,72 @@ public class TimingGraph
 						currentIndex = sinkIndexStack.pop();
 						currentNode = currentTimingNodeStack.pop();
 						++currentIndex;
+					}
+				}
+			}
+		}
+	}
+	
+	private void calculateArrivalTimesFromScratch()
+	{
+		//Clear all arrival times
+		for(TimingEdge edge: edges)
+		{
+			edge.getInput().setTArrival(0.0);
+			edge.getOutput().setTArrival(0.0);
+		}
+		
+		//Do a breadth first search of the timing graph (every startNode separately)
+		for(TimingNode startNode: startNodes)
+		{
+			startNode.setTArrival(0.0);
+			Queue<TimingNode> nodeQueue = new LinkedList<>();
+			nodeQueue.add(startNode);
+			
+			while(!nodeQueue.isEmpty())
+			{
+				TimingNode currentNode = nodeQueue.remove();
+				for(TimingEdge edge: currentNode.getOutputs())
+				{
+					TimingNode connectedNode = edge.getOutput();
+					double possibleNewTArrival = currentNode.getTArrival() + edge.getDelay();
+					if(possibleNewTArrival > connectedNode.getTArrival())
+					{
+						connectedNode.setTArrival(possibleNewTArrival);
+						nodeQueue.add(connectedNode);
+					}
+				}
+			}
+		}
+	}
+	
+	private void calculateRequiredTimesFromScratch()
+	{
+		//Clear all required times
+		for(TimingEdge edge: edges)
+		{
+			edge.getInput().setTRequired(Double.MAX_VALUE);
+			edge.getOutput().setTRequired(Double.MAX_VALUE);
+		}
+		
+		//Do a breadth first search of the timing graph (every endNode separately)
+		for(TimingNode endNode: endNodes)
+		{
+			endNode.setTRequired(maxDelay);
+			Queue<TimingNode> nodeQueue = new LinkedList<>();
+			nodeQueue.add(endNode);
+			
+			while(!nodeQueue.isEmpty())
+			{
+				TimingNode currentNode = nodeQueue.remove();
+				for(TimingEdge edge: currentNode.getInputs())
+				{
+					TimingNode connectedNode = edge.getInput();
+					double possibleNewTRequired = currentNode.getTRequired() - edge.getDelay();
+					if(possibleNewTRequired < connectedNode.getTRequired())
+					{
+						connectedNode.setTRequired(possibleNewTRequired);
+						nodeQueue.add(connectedNode);
 					}
 				}
 			}
