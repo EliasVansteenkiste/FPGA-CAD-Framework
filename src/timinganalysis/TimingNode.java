@@ -21,7 +21,7 @@ public class TimingNode
 		this.pin = pin;
 		this.tArrival = 0.0;
 		this.tRequired = Double.MAX_VALUE;
-		if(type != TimingNodeType.EndNode)
+		if(type != TimingNodeType.END_NODE)
 		{
 			outputs = new ArrayList<>();
 		}
@@ -29,7 +29,7 @@ public class TimingNode
 		{
 			outputs = null;
 		}
-		if(type != TimingNodeType.StartNode)
+		if(type != TimingNodeType.START_NODE)
 		{
 			inputs = new ArrayList<>();
 			
@@ -62,7 +62,7 @@ public class TimingNode
 	
 	public void addOutput(TimingEdge outputEdge)
 	{
-		if(type != TimingNodeType.EndNode)
+		if(type != TimingNodeType.END_NODE)
 		{
 			outputs.add(outputEdge);
 		}
@@ -70,7 +70,7 @@ public class TimingNode
 	
 	public void addInput(TimingEdge inputEdge)
 	{
-		if(type != TimingNodeType.StartNode)
+		if(type != TimingNodeType.START_NODE)
 		{
 			inputs.add(inputEdge);
 		}

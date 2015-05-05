@@ -109,7 +109,7 @@ public class TimingGraph
 				ArrayList<TimingNode> ff1NodeList = blockMap.get(ff1);
 				for(int i = 0; i < ff1NodeList.size(); i++)
 				{
-					if(ff1NodeList.get(i).getType() == TimingNodeType.StartNode)
+					if(ff1NodeList.get(i).getType() == TimingNodeType.START_NODE)
 					{
 						sourceNode = ff1NodeList.get(i);
 						break;
@@ -135,7 +135,7 @@ public class TimingGraph
 				{
 					for(int i = 0; i < lut1NodeList.size(); i++)
 					{
-						if(lut1NodeList.get(i).getType() == TimingNodeType.InternalSourceNode)
+						if(lut1NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
 						{
 							sourceNode = lut1NodeList.get(i);
 						}
@@ -162,7 +162,7 @@ public class TimingGraph
 					for(int i = 0; i < lut1NodeList.size(); i++)
 					{
 						TimingNode node = lut1NodeList.get(i);
-						if(node.getType() == TimingNodeType.InternalSinkNode)
+						if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
 						{
 							if(node.getInputs().size() > 1)
 							{
@@ -187,7 +187,7 @@ public class TimingGraph
 				for(int i = 0; i < ff1NodeList.size(); i++)
 				{
 					TimingNode node = ff1NodeList.get(i);
-					if(node.getType() == TimingNodeType.EndNode)
+					if(node.getType() == TimingNodeType.END_NODE)
 					{
 						if(node.getInputs().size() > 1)
 						{
@@ -214,7 +214,7 @@ public class TimingGraph
 				ArrayList<TimingNode> ff2NodeList = blockMap.get(ff2);
 				for(int i = 0; i < ff2NodeList.size(); i++)
 				{
-					if(ff2NodeList.get(i).getType() == TimingNodeType.StartNode)
+					if(ff2NodeList.get(i).getType() == TimingNodeType.START_NODE)
 					{
 						sourceNode = ff2NodeList.get(i);
 						break;
@@ -240,7 +240,7 @@ public class TimingGraph
 				{
 					for(int i = 0; i < lut2NodeList.size(); i++)
 					{
-						if(lut2NodeList.get(i).getType() == TimingNodeType.InternalSourceNode)
+						if(lut2NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
 						{
 							sourceNode = lut2NodeList.get(i);
 						}
@@ -267,7 +267,7 @@ public class TimingGraph
 					for(int i = 0; i < lut2NodeList.size(); i++)
 					{
 						TimingNode node = lut2NodeList.get(i);
-						if(node.getType() == TimingNodeType.InternalSinkNode)
+						if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
 						{
 							if(node.getInputs().size() > 1)
 							{
@@ -292,7 +292,7 @@ public class TimingGraph
 				for(int i = 0; i < ff2NodeList.size(); i++)
 				{
 					TimingNode node = ff2NodeList.get(i);
-					if(node.getType() == TimingNodeType.EndNode)
+					if(node.getType() == TimingNodeType.END_NODE)
 					{
 						if(node.getInputs().size() > 1)
 						{
@@ -344,7 +344,7 @@ public class TimingGraph
 				ArrayList<TimingNode> ffNodeList = blockMap.get(ff);
 				for(int i = 0; i < ffNodeList.size(); i++)
 				{
-					if(ffNodeList.get(i).getType() == TimingNodeType.StartNode)
+					if(ffNodeList.get(i).getType() == TimingNodeType.START_NODE)
 					{
 						sourceNode = ffNodeList.get(i);
 						break;
@@ -370,7 +370,7 @@ public class TimingGraph
 				{
 					for(int i = 0; i < lutNodeList.size(); i++)
 					{
-						if(lutNodeList.get(i).getType() == TimingNodeType.InternalSourceNode)
+						if(lutNodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
 						{
 							sourceNode = lutNodeList.get(i);
 						}
@@ -396,7 +396,7 @@ public class TimingGraph
 					for(int i = 0; i < lutNodeList.size(); i++)
 					{
 						TimingNode node = lutNodeList.get(i);
-						if(node.getType() == TimingNodeType.InternalSinkNode)
+						if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
 						{
 							if(node.getInputs().size() > 1)
 							{
@@ -421,7 +421,7 @@ public class TimingGraph
 				for(int i = 0; i < ffNodeList.size(); i++)
 				{
 					TimingNode node = ffNodeList.get(i);
-					if(node.getType() == TimingNodeType.EndNode)
+					if(node.getType() == TimingNodeType.END_NODE)
 					{
 						if(node.getInputs().size() > 1)
 						{
@@ -505,7 +505,7 @@ public class TimingGraph
 					ArrayList<TimingNode> nodeList = blockMap.get(ble.getFlipflop());
 					for(TimingNode node: nodeList)
 					{
-						if(node.getType() == TimingNodeType.StartNode)
+						if(node.getType() == TimingNodeType.START_NODE)
 						{
 							sourceNode = node;
 							break;
@@ -515,9 +515,13 @@ public class TimingGraph
 				else
 				{
 					ArrayList<TimingNode> nodeList = blockMap.get(ble.getLut());
+					if(nodeList == null)
+					{
+						continue;
+					}
 					for(TimingNode node: nodeList)
 					{
-						if(node.getType() == TimingNodeType.InternalSourceNode)
+						if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
 						{
 							sourceNode = node;
 							break;
@@ -543,7 +547,7 @@ public class TimingGraph
 						ArrayList<TimingNode> ffNodes = blockMap.get(ble.getFlipflop());
 						for(TimingNode node: ffNodes)
 						{
-							if(node.getType() == TimingNodeType.EndNode)
+							if(node.getType() == TimingNodeType.END_NODE)
 							{
 								sinkNode = node;
 								break;
@@ -574,13 +578,31 @@ public class TimingGraph
 		if(clbsMapped)
 		{
 			TimingNode sourceNode = clbPinMap.get(sourceClbPin);
+			if(sourceNode == null)
+			{
+				return 0.1;
+			}
 			for(TimingEdge edge: sourceNode.getOutputs())
 			{
-				Block sinkBlock = edge.getOutput().getPin().owner;
-				if(sinkBlock == sinkClbPin.owner)
+				Block sinkBlock = edge.getOutput().getPin().owner; //Will be a circuit output, Lut input or FF input
+				
+				
+				if(sinkClbPin.owner.type == BlockType.CLB)
 				{
-					criticalityWithExponent = edge.getCriticalityWithExponent();
-					break;
+					Ble sinkBle = ((Clb)sinkClbPin.owner).getBle();
+					if(sinkBlock == sinkBle.getLut() || sinkBlock == sinkBle.getFlipflop())
+					{
+						criticalityWithExponent = edge.getCriticalityWithExponent();
+						break;
+					}
+				}
+				else //SinkClbPin must come from a circuit output
+				{
+					if(sinkBlock == sinkClbPin.owner)
+					{
+						criticalityWithExponent = edge.getCriticalityWithExponent();
+						break;
+					}
 				}
 			}
 			if(criticalityWithExponent < 0.0)
@@ -595,13 +617,30 @@ public class TimingGraph
 		return criticalityWithExponent;
 	}
 	
+	public void updateDelays()
+	{
+		for(TimingEdge edge: edges)
+		{
+			TimingNode edgeInput = edge.getInput();
+			Block edgeInputOwner = edgeInput.getPin().owner;
+			Block edgeOutputOwner = edge.getOutput().getPin().owner;
+			if(edgeInput.getType() == TimingNodeType.START_NODE || edgeInput.getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
+			{
+				int mhd = Math.abs(edgeInputOwner.getSite().x - edgeOutputOwner.getSite().x)
+						+ Math.abs(edgeInputOwner.getSite().y - edgeOutputOwner.getSite().y);
+				edge.setDelay(MHD_DELAY * mhd);
+			}
+		}
+		recalculateAllSlacksCriticalities();
+	}
+	
 	private void processStartPin(Pin startPin)
 	{
 		Map<String,Net> nets = circuit.getNets();
 		Stack<Net> netsStack = new Stack<>();
 		Stack<Integer> sinkIndexStack = new Stack<>();
 		Stack<TimingNode> currentTimingNodeStack = new Stack<>();
-		TimingNode startNode = new TimingNode(TimingNodeType.StartNode, startPin);
+		TimingNode startNode = new TimingNode(TimingNodeType.START_NODE, startPin);
 		Block startBlock = startPin.owner;
 		startNodes.add(startNode);
 		if(blockMap.get(startBlock) == null)
@@ -624,7 +663,7 @@ public class TimingGraph
 					+ Math.abs(currentNode.getPin().owner.getSite().y - currentSink.owner.getSite().y);
 			if(currentSink.owner.type == BlockType.FLIPFLOP || currentSink.owner.type == BlockType.OUTPUT)
 			{
-				TimingNode endNode = new TimingNode(TimingNodeType.EndNode, currentSink);
+				TimingNode endNode = new TimingNode(TimingNodeType.END_NODE, currentSink);
 				TimingEdge connection = new TimingEdge(currentNode, endNode, mhd * MHD_DELAY);
 				edges.add(connection);
 				currentNode.addOutput(connection);
@@ -639,7 +678,7 @@ public class TimingGraph
 			else //Must be a LUT ==> keep on going
 			{
 				//Process TimingNode for Lut input
-				TimingNode inputNode = new TimingNode(TimingNodeType.InternalSinkNode, currentSink);
+				TimingNode inputNode = new TimingNode(TimingNodeType.INTERNAL_SINK_NODE, currentSink);
 				TimingEdge connectionOne = new TimingEdge(currentNode, inputNode, mhd * MHD_DELAY);
 				edges.add(connectionOne);
 				currentNode.addOutput(connectionOne);
@@ -662,7 +701,7 @@ public class TimingGraph
 				}
 				if(outputNode == null)
 				{
-					outputNode = new TimingNode(TimingNodeType.InternalSourceNode, lutOutput);
+					outputNode = new TimingNode(TimingNodeType.INTERNAL_SOURCE_NODE, lutOutput);
 					lutNodeList.add(outputNode);
 					TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
 					edges.add(connectionTwo);

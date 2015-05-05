@@ -83,26 +83,24 @@ public class TD_AnalyticalPlacerOne
 		updateCircuit();
 		
 		
-		for(int i = 0; i < linearX.length; i++)
-		{
-			System.out.println(linearY[i]);
-		}
-		
-		
-		
-//		timingGraph = new TimingGraph(prePackedCircuit);
-//		timingGraph.buildTimingGraph();
-//		timingGraph.mapClbsToTimingGraph(circuit);
-//		
-//		for(int i = 0; i < 30; i++)
+//		for(int i = 0; i < linearX.length; i++)
 //		{
-//			solveLinear(false, (i+1)*ALPHA);
-//			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
-//			updateCircuit();
-//			timingGraph.updateDelays();
+//			System.out.println(linearY[i]);
 //		}
-//		
-//		updateCircuit();
+		
+		
+		
+		timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		timingGraph.mapClbsToTimingGraph(circuit);
+		
+		for(int i = 0; i < 30; i++)
+		{
+			solveLinear(false, (i+1)*ALPHA);
+			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
+			updateCircuit();
+			timingGraph.updateDelays();
+		}
 		
 		double cost = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
 		System.out.println("COST BEFORE REFINEMENT = " + cost);
@@ -130,17 +128,17 @@ public class TD_AnalyticalPlacerOne
 			for(int i = 0; i < dimension; i++)
 			{
 				double deltaX = Math.abs(anchorPointsX[i] - linearX[i]);
-				if(deltaX < 0.005)
+				if(deltaX < 0.001)
 				{
-					deltaX = 0.005;
+					deltaX = 0.001;
 				}
 				double pseudoWeightX = 2*pseudoWeightFactor*(1/deltaX);
 				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
 				xVector[i] += pseudoWeightX * anchorPointsX[i];
 				double deltaY = Math.abs(anchorPointsY[i] - linearY[i]);
-				if(deltaY < 0.005)
+				if(deltaY < 0.001)
 				{
-					deltaY = 0.005;
+					deltaY = 0.001;
 				}
 				double pseudoWeightY = 2*pseudoWeightFactor*(1/deltaY);
 				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeightY);
@@ -190,8 +188,18 @@ public class TD_AnalyticalPlacerOne
 				}
 				if(!(isSourceFixed && isSinkFixed)) //Not both fixed
 				{
-					double weightX = (double)2/((nbPins - 1)*Math.abs(sinkX - sourceX));
-					double weightY = (double)2/((nbPins - 1)*Math.abs(sinkY - sourceY));
+					double deltaX = Math.abs(sinkX - sourceX);
+					if(deltaX < 0.001)
+					{
+						deltaX = 0.001;
+					}
+					double weightX = (double)2/((nbPins - 1)*deltaX);
+					double deltaY = Math.abs(sinkY - sourceY);
+					if(deltaY < 0.001)
+					{
+						deltaY = 0.001;
+					}
+					double weightY = (double)2/((nbPins - 1)*deltaY);
 					if(!firstSolve) //Include timing factor
 					{
 						//Search for connection in timing graph
