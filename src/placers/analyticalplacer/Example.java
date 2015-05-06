@@ -78,38 +78,38 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-		BlifReader blifReader = new BlifReader();
-		PrePackedCircuit prePackedCircuit;
-		try
-		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-		}
-		catch(IOException ioe)
-		{
-			System.err.println("Couldn't read blif file!");
-			return;
-		}
-		
-		//printUnpackedCircuit(prePackedCircuit);
-		
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		//printBlePackedCircuit(blePackedCircuit);
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
+//		BlifReader blifReader = new BlifReader();
+//		PrePackedCircuit prePackedCircuit;
+//		try
+//		{
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.err.println("Couldn't read blif file!");
+//			return;
+//		}
+//		
+//		//printUnpackedCircuit(prePackedCircuit);
+//		
+//		BlePacker blePacker = new BlePacker(prePackedCircuit);
+//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		
+//		//printBlePackedCircuit(blePackedCircuit);
+//		
+//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+//		PackedCircuit packedCircuit = clbPacker.pack();
 		
 		//printPackedCircuit(packedCircuit);
 		
@@ -133,7 +133,9 @@ public class Example
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
 		//visualAnalytical(packedCircuit, prePackedCircuit);
-		visualTDAnalytical(packedCircuit, prePackedCircuit);
+		//visualTDAnalytical(packedCircuit, prePackedCircuit);
+		
+		visualTDanalyticalTestCircuit();
 		
 		//visualSA(prePackedCircuit, packedCircuit);
 		//visualTDSA(prePackedCircuit, packedCircuit);
@@ -190,6 +192,55 @@ public class Example
 //			csvWriter.writeFile("benchmarks.csv");
 //		}
 //	}
+	
+	private static void visualTDanalyticalTestCircuit()
+	{
+		PrePackedCircuit prePackedCircuit = new PrePackedCircuit(6);
+		PackedCircuit c = new PackedCircuit();
+		FourLutSanitized a = constructTestCircuit(prePackedCircuit, c);
+		
+		System.out.println("Here 1");
+		
+		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, prePackedCircuit);
+		
+		System.out.println("Here 2");
+		
+		Random rand = new Random(1);
+		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
+		
+		System.out.println("Here 3");
+		
+		tDAnalyticalPlacer.place();
+		
+		System.out.println("Here 4");
+		
+		pm.PlacementCLBsConsistencyCheck();
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
+		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
+		
+		//TimingGraphOld timingGraphOld = new TimingGraphOld(prePackedCircuit);
+		//timingGraphOld.buildTimingGraph();
+		//double maxDelayOld = timingGraphOld.calculateMaximalDelay();
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		
+		//System.out.println("Max delay old = " + maxDelayOld + ", max delay new = " + maxDelay);
+		System.out.println("Max delay new timing graph = " + maxDelay);
+		
+		//System.out.println(timingGraph.getMapString());
+		//System.out.println(timingGraph.getStartSlacks());
+		
+		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(945,970);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
 	
 	private static void RunTDSaVsAnalyticalBenchmarks()
 	{
@@ -1401,7 +1452,7 @@ public class Example
 		return circuit;
 	}
 	
-	private FourLutSanitized constructTestCircuit(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
+	private static FourLutSanitized constructTestCircuit(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
 		//Input
 		Input input3 = new Input("input_3");
@@ -1415,56 +1466,97 @@ public class Example
 		Lut luta = new Lut("lut_a", 1, 6);
 		Ble blea = new Ble("ble_a", 6, null, luta, false);
 		Clb clba = new Clb("clb_a", 1, 6, blea);
-		prePackedCircuit.getLuts().put("lut_a", luta);
+		prePackedCircuit.getLuts().put(luta.name, luta);
 		packedCircuit.clbs.put(clba.name, clba);
 		//Block b
 		Lut lutb = new Lut("lut_b", 1, 6);
 		Ble bleb = new Ble("ble_b", 6, null, lutb, false);
 		Clb clbb = new Clb("clb_b", 1, 6, bleb);
-		prePackedCircuit.getLuts().put("lut_b", lutb);
+		prePackedCircuit.getLuts().put(lutb.name, lutb);
 		packedCircuit.clbs.put(clbb.name, clbb);
 		//Block c
 		Lut lutc = new Lut("lut_c", 1, 6);
 		Ble blec = new Ble("ble_c", 6, null, lutc, false);
 		Clb clbc = new Clb("clb_c", 1, 6, blec);
+		prePackedCircuit.getLuts().put(lutc.name, lutc);
 		packedCircuit.clbs.put(clbc.name, clbc);
 		//Block d
+		Lut lutd = new Lut("lut_d", 1, 6);
+		Ble bled = new Ble("ble_d", 6, null, lutd, false);
 		Clb clbd = new Clb("clb_d", 1, 6, bled);
+		prePackedCircuit.getLuts().put(lutd.name, lutd);
 		packedCircuit.clbs.put(clbd.name, clbd);
 		
-		Net net1 = new Net(input3.name);
-		net1.source = input3.output;
-		net1.sinks = new Vector<Pin>();
-		net1.sinks.add(clba.input[0]);
-		net1.sinks.add(clbc.input[0]);
-		packedCircuit.getNets().put(net1.name, net1);
+		Net prePackedNet1 = new Net(input3.name);
+		prePackedNet1.source = input3.output;
+		prePackedNet1.sinks = new Vector<Pin>();
+		prePackedNet1.sinks.add(luta.getInputs()[0]);
+		prePackedNet1.sinks.add(lutc.getInputs()[0]);
+		prePackedCircuit.getNets().put(prePackedNet1.name, prePackedNet1);
+		Net packedNet1 = new Net(input3.name);
+		packedNet1.source = input3.output;
+		packedNet1.sinks = new Vector<Pin>();
+		packedNet1.sinks.add(clba.input[0]);
+		packedNet1.sinks.add(clbc.input[0]);
+		packedCircuit.getNets().put(packedNet1.name, packedNet1);
 		
-		Net net2 = new Net(clbc.name);
-		net2.source = clbc.output[0];
-		net2.sinks = new Vector<Pin>();
-		net2.sinks.add(output7.input);
-		packedCircuit.getNets().put(net2.name, net2);
+		Net prePackedNet2 = new Net(lutc.name);
+		prePackedNet2.source = lutc.getOutputs()[0];
+		prePackedNet2.sinks = new Vector<Pin>();
+		prePackedNet2.sinks.add(output7.input);
+		prePackedCircuit.getNets().put(prePackedNet2.name, prePackedNet2);
+		Net packedNet2 = new Net(clbc.name);
+		packedNet2.source = clbc.output[0];
+		packedNet2.sinks = new Vector<Pin>();
+		packedNet2.sinks.add(output7.input);
+		packedCircuit.getNets().put(packedNet2.name, packedNet2);
 		
-		Net net3 = new Net(clba.name);
-		net3.source = clba.output[0];
-		net3.sinks = new Vector<Pin>();
-		net3.sinks.add(clbb.input[0]);
-		net3.sinks.add(clbc.input[1]);
-		packedCircuit.getNets().put(net3.name, net3);
+		Net prePackedNet3 = new Net(luta.name);
+		prePackedNet3.source = luta.getOutputs()[0];
+		prePackedNet3.sinks = new Vector<Pin>();
+		prePackedNet3.sinks.add(lutb.getInputs()[0]);
+		prePackedNet3.sinks.add(lutc.getInputs()[1]);
+		prePackedCircuit.getNets().put(prePackedNet3.name, prePackedNet3);
+		Net packedNet3 = new Net(clba.name);
+		packedNet3.source = clba.output[0];
+		packedNet3.sinks = new Vector<Pin>();
+		packedNet3.sinks.add(clbb.input[0]);
+		packedNet3.sinks.add(clbc.input[1]);
+		packedCircuit.getNets().put(packedNet3.name, packedNet3);
 		
-		Net net4 = new Net(clbb.name);
-		net4.source = clbb.output[0];
-		net4.sinks = new Vector<Pin>();
-		net4.sinks.add(clbc.input[2]);
-		net4.sinks.add(clbd.input[0]);
-		packedCircuit.getNets().put(net4.name, net4);
+		Net prePackedNet4 = new Net(lutb.name);
+		prePackedNet4.source = lutb.getOutputs()[0];
+		prePackedNet4.sinks = new Vector<Pin>();
+		prePackedNet4.sinks.add(lutc.getInputs()[2]);
+		prePackedNet4.sinks.add(lutd.getInputs()[0]);
+		prePackedCircuit.getNets().put(prePackedNet4.name, prePackedNet4);
+		Net packedNet4 = new Net(clbb.name);
+		packedNet4.source = clbb.output[0];
+		packedNet4.sinks = new Vector<Pin>();
+		packedNet4.sinks.add(clbc.input[2]);
+		packedNet4.sinks.add(clbd.input[0]);
+		packedCircuit.getNets().put(packedNet4.name, packedNet4);
 		
-		Net net5 = new Net(clbd.name);
-		net5.source = clbd.output[0];
-		net5.sinks = new Vector<Pin>();
-		net5.sinks.add(clba.input[1]);
-		net5.sinks.add(clbb.input[1]);
-		packedCircuit.getNets().put(net5.name, net5);
+		Net prePackedNet5 = new Net(lutd.name);
+		prePackedNet5.source = lutd.getOutputs()[0];
+		prePackedNet5.sinks = new Vector<Pin>();
+		prePackedNet5.sinks.add(luta.getInputs()[1]);
+		prePackedNet5.sinks.add(lutb.getInputs()[1]);
+		prePackedCircuit.getNets().put(prePackedNet5.name, prePackedNet5);
+		Net packedNet5 = new Net(clbd.name);
+		packedNet5.source = clbd.output[0];
+		packedNet5.sinks = new Vector<Pin>();
+		packedNet5.sinks.add(clba.input[1]);
+		packedNet5.sinks.add(clbb.input[1]);
+		packedCircuit.getNets().put(packedNet5.name, packedNet5);
+		
+		FourLutSanitized architecture = new FourLutSanitized(10, 10, 4);
+		architecture.Isites.get(6).block = input3;
+		input3.setSite(architecture.Isites.get(6));
+		architecture.Osites.get(14).block = output7;
+		output7.setSite(architecture.Osites.get(14));
+		
+		return architecture;
 	}
 	
 	private static void printPlacedCircuit(PackedCircuit packedCircuit)
