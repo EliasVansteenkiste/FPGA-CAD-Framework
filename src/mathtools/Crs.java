@@ -22,25 +22,25 @@ public class Crs
 	}
 	
 	/*
-	 * Set element at row i (stating from 0) and column j (starting from 0)
+	 * Set element at row 'row' (stating from 0) and column 'col' (starting from 0)
 	 */
-	public void setElement(int i, int j, double value)
+	public void setElement(int row, int col, double value)
 	{
-		ArrayList<Double> valuesRow = values.get(i);
-		ArrayList<Integer> colIndRow = col_ind.get(i);
+		ArrayList<Double> valuesRow = values.get(row);
+		ArrayList<Integer> colIndRow = col_ind.get(row);
 		boolean added = false;
 		for(int counter = 0; counter < valuesRow.size(); counter++)
 		{
-			if(colIndRow.get(counter) == j)
+			if(colIndRow.get(counter) == col)
 			{
 				valuesRow.set(counter, value);
 				added = true;
 				break;
 			}
-			if(colIndRow.get(counter) > j)
+			if(colIndRow.get(counter) > col)
 			{
 				valuesRow.add(counter, value);
-				colIndRow.add(counter, j);
+				colIndRow.add(counter, col);
 				totalNbOfElements++;
 				added = true;
 				break;
@@ -49,27 +49,27 @@ public class Crs
 		if(!added)
 		{
 			valuesRow.add(value);
-			colIndRow.add(j);
+			colIndRow.add(col);
 			totalNbOfElements++;
 		}
 	}
 	
 	/*
-	 * Get element at row i (stating from 0) and column j (starting from 0)
+	 * Get element at row 'row' (stating from 0) and column 'col' (starting from 0)
 	 */
-	public double getElement(int i, int j)
+	public double getElement(int row, int col)
 	{
 		double toReturn = 0.0;
-		ArrayList<Double> valuesRow = values.get(i);
-		ArrayList<Integer> colIndRow = col_ind.get(i);
+		ArrayList<Double> valuesRow = values.get(row);
+		ArrayList<Integer> colIndRow = col_ind.get(row);
 		for(int counter = 0; counter < valuesRow.size(); counter++)
 		{
-			if(colIndRow.get(counter) == j)
+			if(colIndRow.get(counter) == col)
 			{
 				toReturn = valuesRow.get(counter);
 				break;
 			}
-			if(colIndRow.get(counter) > j)
+			if(colIndRow.get(counter) > col)
 			{
 				break;
 			}

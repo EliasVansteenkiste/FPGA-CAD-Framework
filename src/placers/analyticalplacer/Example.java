@@ -78,38 +78,38 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		//printUnpackedCircuit(prePackedCircuit);
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		//printBlePackedCircuit(blePackedCircuit);
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		//printUnpackedCircuit(prePackedCircuit);
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
 		
 		//printPackedCircuit(packedCircuit);
 		
@@ -133,9 +133,9 @@ public class Example
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
 		//visualAnalytical(packedCircuit, prePackedCircuit);
-		//visualTDAnalytical(packedCircuit, prePackedCircuit);
+		visualTDAnalytical(packedCircuit, prePackedCircuit);
 		
-		visualTDanalyticalTestCircuit();
+		//visualTDanalyticalTestCircuit();
 		
 		//visualSA(prePackedCircuit, packedCircuit);
 		//visualTDSA(prePackedCircuit, packedCircuit);
@@ -199,20 +199,12 @@ public class Example
 		PackedCircuit c = new PackedCircuit();
 		FourLutSanitized a = constructTestCircuit(prePackedCircuit, c);
 		
-		System.out.println("Here 1");
-		
 		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, prePackedCircuit);
-		
-		System.out.println("Here 2");
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
 		
-		System.out.println("Here 3");
-		
 		tDAnalyticalPlacer.place();
-		
-		System.out.println("Here 4");
 		
 		pm.PlacementCLBsConsistencyCheck();
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
@@ -1491,70 +1483,76 @@ public class Example
 		prePackedNet1.source = input3.output;
 		prePackedNet1.sinks = new Vector<Pin>();
 		prePackedNet1.sinks.add(luta.getInputs()[0]);
-		prePackedNet1.sinks.add(lutc.getInputs()[0]);
+		prePackedNet1.sinks.add(lutb.getInputs()[0]);
 		prePackedCircuit.getNets().put(prePackedNet1.name, prePackedNet1);
 		Net packedNet1 = new Net(input3.name);
 		packedNet1.source = input3.output;
 		packedNet1.sinks = new Vector<Pin>();
 		packedNet1.sinks.add(clba.input[0]);
-		packedNet1.sinks.add(clbc.input[0]);
+		packedNet1.sinks.add(clbb.input[0]);
 		packedCircuit.getNets().put(packedNet1.name, packedNet1);
 		
-		Net prePackedNet2 = new Net(lutc.name);
-		prePackedNet2.source = lutc.getOutputs()[0];
+		Net prePackedNet2 = new Net(luta.name);
+		prePackedNet2.source = luta.getOutputs()[0];
 		prePackedNet2.sinks = new Vector<Pin>();
-		prePackedNet2.sinks.add(output7.input);
+		prePackedNet2.sinks.add(lutc.getInputs()[0]);
 		prePackedCircuit.getNets().put(prePackedNet2.name, prePackedNet2);
-		Net packedNet2 = new Net(clbc.name);
-		packedNet2.source = clbc.output[0];
+		Net packedNet2 = new Net(clba.name);
+		packedNet2.source = clba.output[0];
 		packedNet2.sinks = new Vector<Pin>();
-		packedNet2.sinks.add(output7.input);
+		packedNet2.sinks.add(clbc.input[0]);
 		packedCircuit.getNets().put(packedNet2.name, packedNet2);
 		
-		Net prePackedNet3 = new Net(luta.name);
-		prePackedNet3.source = luta.getOutputs()[0];
+		Net prePackedNet3 = new Net(lutb.name);
+		prePackedNet3.source = lutb.getOutputs()[0];
 		prePackedNet3.sinks = new Vector<Pin>();
-		prePackedNet3.sinks.add(lutb.getInputs()[0]);
+		prePackedNet3.sinks.add(luta.getInputs()[1]);
 		prePackedNet3.sinks.add(lutc.getInputs()[1]);
+		prePackedNet3.sinks.add(lutd.getInputs()[0]);
 		prePackedCircuit.getNets().put(prePackedNet3.name, prePackedNet3);
-		Net packedNet3 = new Net(clba.name);
-		packedNet3.source = clba.output[0];
+		Net packedNet3 = new Net(clbb.name);
+		packedNet3.source = clbb.output[0];
 		packedNet3.sinks = new Vector<Pin>();
-		packedNet3.sinks.add(clbb.input[0]);
+		packedNet3.sinks.add(clba.input[1]);
 		packedNet3.sinks.add(clbc.input[1]);
+		packedNet3.sinks.add(clbd.input[0]);
 		packedCircuit.getNets().put(packedNet3.name, packedNet3);
 		
-		Net prePackedNet4 = new Net(lutb.name);
-		prePackedNet4.source = lutb.getOutputs()[0];
+		Net prePackedNet4 = new Net(lutc.name);
+		prePackedNet4.source = lutc.getOutputs()[0];
 		prePackedNet4.sinks = new Vector<Pin>();
-		prePackedNet4.sinks.add(lutc.getInputs()[2]);
-		prePackedNet4.sinks.add(lutd.getInputs()[0]);
+		prePackedNet4.sinks.add(lutd.getInputs()[1]);
 		prePackedCircuit.getNets().put(prePackedNet4.name, prePackedNet4);
-		Net packedNet4 = new Net(clbb.name);
-		packedNet4.source = clbb.output[0];
+		Net packedNet4 = new Net(clbc.name);
+		packedNet4.source = clbc.output[0];
 		packedNet4.sinks = new Vector<Pin>();
-		packedNet4.sinks.add(clbc.input[2]);
-		packedNet4.sinks.add(clbd.input[0]);
+		packedNet4.sinks.add(clbd.input[1]);
 		packedCircuit.getNets().put(packedNet4.name, packedNet4);
 		
 		Net prePackedNet5 = new Net(lutd.name);
 		prePackedNet5.source = lutd.getOutputs()[0];
 		prePackedNet5.sinks = new Vector<Pin>();
-		prePackedNet5.sinks.add(luta.getInputs()[1]);
-		prePackedNet5.sinks.add(lutb.getInputs()[1]);
+		prePackedNet5.sinks.add(output7.input);
 		prePackedCircuit.getNets().put(prePackedNet5.name, prePackedNet5);
 		Net packedNet5 = new Net(clbd.name);
 		packedNet5.source = clbd.output[0];
 		packedNet5.sinks = new Vector<Pin>();
-		packedNet5.sinks.add(clba.input[1]);
-		packedNet5.sinks.add(clbb.input[1]);
+		packedNet5.sinks.add(output7.input);
 		packedCircuit.getNets().put(packedNet5.name, packedNet5);
 		
 		FourLutSanitized architecture = new FourLutSanitized(10, 10, 4);
-		architecture.Isites.get(6).block = input3;
-		input3.setSite(architecture.Isites.get(6));
-		architecture.Osites.get(14).block = output7;
-		output7.setSite(architecture.Osites.get(14));
+		architecture.Isites.get(4).block = input3;
+		input3.setSite(architecture.Isites.get(4));
+		architecture.Osites.get(12).block = output7;
+		output7.setSite(architecture.Osites.get(12));
+		architecture.getSite(1, 4, 0).block = clba;
+		clba.setSite(architecture.getSite(1, 4, 0));
+		architecture.getSite(1, 5, 0).block = clbb;
+		clbb.setSite(architecture.getSite(1, 5, 0));
+		architecture.getSite(1, 6, 0).block = clbc;
+		clbc.setSite(architecture.getSite(1, 6, 0));
+		architecture.getSite(1, 8, 0).block = clbd;
+		clbd.setSite(architecture.getSite(1, 8, 0));
 		
 		return architecture;
 	}
