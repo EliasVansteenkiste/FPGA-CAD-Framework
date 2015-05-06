@@ -78,37 +78,38 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		//printUnpackedCircuit(prePackedCircuit);
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		//printBlePackedCircuit(blePackedCircuit);
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		//printUnpackedCircuit(prePackedCircuit);
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
 		
 		//printPackedCircuit(packedCircuit);
 		
@@ -132,13 +133,13 @@ public class Example
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
 		//visualAnalytical(packedCircuit, prePackedCircuit);
-		//visualTDAnalytical(packedCircuit, prePackedCircuit);
+		visualTDAnalytical(packedCircuit, prePackedCircuit);
 		
 		//visualSA(prePackedCircuit, packedCircuit);
 		//visualTDSA(prePackedCircuit, packedCircuit);
 		
 		//RunWlVsTdSaBenchmarks();
-		RunTDSaVsAnalyticalBenchmarks();
+		//RunTDSaVsAnalyticalBenchmarks();
 		
 		//visualLegalizerTest();
 		
@@ -193,7 +194,7 @@ public class Example
 	private static void RunTDSaVsAnalyticalBenchmarks()
 	{
 		String toDoFileName = "BenchmarksToDo.txt";
-		String csvFileName = "benchmarksTD_SaVsAnalytical.csv";
+		String csvFileName = "benchmarksTDAnalyticalVsWLDAnalyticalVsTDSaVsWLDSa.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -234,12 +235,10 @@ public class Example
 		}
 		else
 		{
-			//csvWriter = new CsvWriter(8);
-			csvWriter = new CsvWriter(10);
-//			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "WL TD_Analytical", 
-//					"Max delay TD_Analytical", "WL TD_SA", "Max delay TD_SA"});
+			csvWriter = new CsvWriter(12);
 			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "WL TD_Analytical", 
-					"Max delay TD_Analytical", "WL TD_SA", "Max delay TD_SA", "WL WLD_SA", "Max delay WLD_SA"});
+					"Max delay TD_Analytical", "WL WLD_Analytical", "Max delay WLD_Analytical", "WL TD_SA", "Max delay TD_SA", 
+					"WL WLD_SA", "Max delay WLD_SA"});
 			alreadyDoneFiles = null;
 		}
 		for(int i = 0; i < fileNamesToDo.length; i++)
@@ -255,9 +254,14 @@ public class Example
 				else
 				{
 					double[] tdAnalyticalResults = new double[2];
-					processTDAnalyticalBenchmark(tdAnalyticalResults, totalFilename);
+					processTDAnalyticalBenchmark_NoRefinement(tdAnalyticalResults, totalFilename);
 					double tdAnalyticalMaxDelay = tdAnalyticalResults[0];
 					double tdAnalyticalWL = tdAnalyticalResults[1];
+					
+					double[] wldAnalyticalResults = new double[2];
+					processWLDAnalyticalBenchmark_NoRefinement(wldAnalyticalResults, totalFilename);
+					double wldAnalyticalMaxDelay = wldAnalyticalResults[0];
+					double wldAnalyticalWL = wldAnalyticalResults[1];
 					
 					double[] tdSAResults = new double[6];
 					processTDSABenchmark(tdSAResults, totalFilename);
@@ -277,16 +281,16 @@ public class Example
 					String nbOutputsString = String.format("%d", nbOutputs);
 					String tdAnalyticalMaxDelayString = String.format("%.3f", tdAnalyticalMaxDelay);
 					String tdAnalyticalWLString = String.format("%.3f", tdAnalyticalWL);
+					String wldAnalyticalMaxDelayString = String.format("%.3f", wldAnalyticalMaxDelay);
+					String wldAnalyticalWLString = String.format("%.3f", wldAnalyticalWL);
 					String tdSAWLString = String.format("%.3f", tdSAWL);
 					String tdSAMaxDelayString = String.format("%.3f", tdSAMaxDelay);
 					String wldSAWLString = String.format("%.3f", wldSAWL);
 					String wldSAMaxDelayString = String.format("%.3f", wldSAMaxDelay);
 					
-					
-//					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, tdAnalyticalWLString,
-//							tdAnalyticalMaxDelayString, tdSAWLString, tdSAMaxDelayString});
 					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, tdAnalyticalWLString,
-							tdAnalyticalMaxDelayString, tdSAWLString, tdSAMaxDelayString, wldSAWLString, wldSAMaxDelayString});
+							tdAnalyticalMaxDelayString, wldAnalyticalWLString, wldAnalyticalMaxDelayString, tdSAWLString, 
+							tdSAMaxDelayString, wldSAWLString, wldSAMaxDelayString});
 				}
 			}
 			csvWriter.writeFile(csvFileName);
@@ -479,7 +483,7 @@ public class Example
 		SAStartTime = System.nanoTime();
 		//saPlacer.customAnneal(30, 4, 12500);
 		//saPlacer.place(4.0);
-		saPlacer.lowTempAnneal(4.0);
+		//saPlacer.lowTempAnneal(4.0);
 		SAEndTime = System.nanoTime();
 		
 		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
@@ -527,8 +531,7 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
-		int legalizer = 3;
-		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, legalizer, prePackedCircuit);
+		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, prePackedCircuit);
 		
 		Random rand = new Random(1);
 		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
@@ -760,7 +763,7 @@ public class Example
 		results[5] = maxDelayAfter;
 	}
 	
-	private static void processTDAnalyticalBenchmark(double[] results, String totalFilename)
+	private static void processWLDAnalyticalBenchmark_NoRefinement(double[] results, String totalFilename)
 	{
 		BlifReader blifReader = new BlifReader();
 		PrePackedCircuit prePackedCircuit;
@@ -788,7 +791,49 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		int legalizer = 3;
-		TD_AnalyticalPlacerOne placer = new TD_AnalyticalPlacerOne(a, packedCircuit, legalizer, prePackedCircuit);
+		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, packedCircuit, legalizer);
+		
+		placer.place();
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		double totalBBCost = effcc.calculateTotalCost();
+		
+		results[0] = maxDelay;
+		results[1] = totalBBCost;
+	}
+	
+	private static void processTDAnalyticalBenchmark_NoRefinement(double[] results, String totalFilename)
+	{
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			prePackedCircuit =  blifReader.readBlif(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+	
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+	
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+	
+		int dimension = calculateArchDimension(packedCircuit);
+		
+		int height = dimension;
+		int width = dimension;
+		int trackwidth = 4;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		TD_AnalyticalPlacerOne placer = new TD_AnalyticalPlacerOne(a, packedCircuit, prePackedCircuit);
 		
 		placer.place();
 		
@@ -1354,6 +1399,72 @@ public class Example
 		circuit.getNets().put(net5.name, net5);
 		
 		return circuit;
+	}
+	
+	private FourLutSanitized constructTestCircuit(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
+	{
+		//Input
+		Input input3 = new Input("input_3");
+		prePackedCircuit.inputs.put(input3.name, input3);
+		packedCircuit.inputs.put(input3.name, input3);
+		//Output
+		Output output7 = new Output("output_7");
+		prePackedCircuit.outputs.put(output7.name, output7);
+		packedCircuit.outputs.put(output7.name, output7);
+		//Block a
+		Lut luta = new Lut("lut_a", 1, 6);
+		Ble blea = new Ble("ble_a", 6, null, luta, false);
+		Clb clba = new Clb("clb_a", 1, 6, blea);
+		prePackedCircuit.getLuts().put("lut_a", luta);
+		packedCircuit.clbs.put(clba.name, clba);
+		//Block b
+		Lut lutb = new Lut("lut_b", 1, 6);
+		Ble bleb = new Ble("ble_b", 6, null, lutb, false);
+		Clb clbb = new Clb("clb_b", 1, 6, bleb);
+		prePackedCircuit.getLuts().put("lut_b", lutb);
+		packedCircuit.clbs.put(clbb.name, clbb);
+		//Block c
+		Lut lutc = new Lut("lut_c", 1, 6);
+		Ble blec = new Ble("ble_c", 6, null, lutc, false);
+		Clb clbc = new Clb("clb_c", 1, 6, blec);
+		packedCircuit.clbs.put(clbc.name, clbc);
+		//Block d
+		Clb clbd = new Clb("clb_d", 1, 6, bled);
+		packedCircuit.clbs.put(clbd.name, clbd);
+		
+		Net net1 = new Net(input3.name);
+		net1.source = input3.output;
+		net1.sinks = new Vector<Pin>();
+		net1.sinks.add(clba.input[0]);
+		net1.sinks.add(clbc.input[0]);
+		packedCircuit.getNets().put(net1.name, net1);
+		
+		Net net2 = new Net(clbc.name);
+		net2.source = clbc.output[0];
+		net2.sinks = new Vector<Pin>();
+		net2.sinks.add(output7.input);
+		packedCircuit.getNets().put(net2.name, net2);
+		
+		Net net3 = new Net(clba.name);
+		net3.source = clba.output[0];
+		net3.sinks = new Vector<Pin>();
+		net3.sinks.add(clbb.input[0]);
+		net3.sinks.add(clbc.input[1]);
+		packedCircuit.getNets().put(net3.name, net3);
+		
+		Net net4 = new Net(clbb.name);
+		net4.source = clbb.output[0];
+		net4.sinks = new Vector<Pin>();
+		net4.sinks.add(clbc.input[2]);
+		net4.sinks.add(clbd.input[0]);
+		packedCircuit.getNets().put(net4.name, net4);
+		
+		Net net5 = new Net(clbd.name);
+		net5.source = clbd.output[0];
+		net5.sinks = new Vector<Pin>();
+		net5.sinks.add(clba.input[1]);
+		net5.sinks.add(clbb.input[1]);
+		packedCircuit.getNets().put(net5.name, net5);
 	}
 	
 	private static void printPlacedCircuit(PackedCircuit packedCircuit)

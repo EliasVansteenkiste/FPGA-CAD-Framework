@@ -12,7 +12,6 @@ import placers.Rplace;
 import timinganalysis.TimingGraph;
 
 import architecture.FourLutSanitized;
-import architecture.Site;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
@@ -38,13 +37,12 @@ public class TD_AnalyticalPlacerOne
 	private double[] linearY;
 	private int[] anchorPointsX;
 	private int[] anchorPointsY;
-	private Legalizer legalizer;
+	private TD_LegalizerOne legalizer;
 	private TimingGraph timingGraph;
-	private PrePackedCircuit prePackedCircuit;
 	
 	private final double ALPHA = 0.3;
 	
-	public TD_AnalyticalPlacerOne(FourLutSanitized architecture, PackedCircuit circuit, int legalizer, PrePackedCircuit prePackedCircuit)
+	public TD_AnalyticalPlacerOne(FourLutSanitized architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
@@ -52,19 +50,10 @@ public class TD_AnalyticalPlacerOne
 		this.maximalX = architecture.width;
 		this.minimalY = 1;
 		this.maximalY = architecture.height;
-		this.prePackedCircuit = prePackedCircuit;
-		switch(legalizer)
-		{
-			case 1:
-				this.legalizer = new LegalizerOne(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
-				break;
-			case 2:
-				this.legalizer = new LegalizerTwo(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
-				break;
-			default:
-				this.legalizer = new LegalizerThree(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
-				break;
-		}
+		this.timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.setCriticalityExponent(1.0);
+		this.legalizer = new TD_LegalizerOne(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size(), timingGraph, 
+												circuit, architecture);
 	}
 	
 	public void place()
@@ -72,38 +61,28 @@ public class TD_AnalyticalPlacerOne
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		
+		timingGraph.buildTimingGraph();
+		timingGraph.mapClbsToTimingGraph(circuit);
+		
 		//Initial linear solves, should normally be done 5-7 times		
-		for(int i = 0; i < 7; i++)
+		for(int i = 0; i < 15; i++)
 		{
 			solveLinear(true, 0.0);
 		}
 		
 		//Initial legalization
-		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
-		updateCircuit();
+		legalizer.legalize(linearX, linearY, indexMap);		
 		
-		
-//		for(int i = 0; i < linearX.length; i++)
-//		{
-//			System.out.println(linearY[i]);
-//		}
-		
-		
-		
-		timingGraph = new TimingGraph(prePackedCircuit);
-		timingGraph.buildTimingGraph();
-		timingGraph.mapClbsToTimingGraph(circuit);
-		
+		for(int i = 0; i < linearX.length; i++)
+		{
+			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+		}
+				
 		for(int i = 0; i < 30; i++)
 		{
 			solveLinear(false, (i+1)*ALPHA);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
-			updateCircuit();
-			timingGraph.updateDelays();
+			legalizer.legalize(linearX, linearY, indexMap);
 		}
-		
-		double cost = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
-		System.out.println("COST BEFORE REFINEMENT = " + cost);
 	}
 	
 	/*
@@ -263,36 +242,6 @@ public class TD_AnalyticalPlacerOne
 		
 		linearX = xSolution;
 		linearY = ySolution;
-	}
-	
-	private void updateCircuit()
-	{
-		int[] bestLegalX = new int[linearX.length];
-		int[] bestLegalY = new int[linearY.length];
-		
-		legalizer.getBestLegal(bestLegalX, bestLegalY);
-		
-		//Clear all previous locations
-		for(int i = minimalX; i <= maximalX; i++)
-		{
-			for(int j = minimalY; j <= maximalY; j++)
-			{
-				if(architecture.getSite(i, j, 0).block != null)
-				{
-					architecture.getSite(i, j, 0).block.setSite(null);
-				}
-				architecture.getSite(i, j, 0).block = null;
-			}
-		}
-		
-		//Update locations
-		for(Clb clb:circuit.clbs.values())
-		{
-			int index = indexMap.get(clb);
-			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-			site.block = clb;
-			clb.setSite(site);
-		}
 	}
 	
 	private void initializeDataStructures()

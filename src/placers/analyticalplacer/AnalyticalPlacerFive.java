@@ -79,10 +79,10 @@ public class AnalyticalPlacerFive
 		//Initial legalization
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 		
-//		for(int i = 0; i < linearX.length; i++)
-//		{
-//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-//		}
+		for(int i = 0; i < linearX.length; i++)
+		{
+			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+		}
 		
 //		CsvWriter csvWriter = new CsvWriter(2);
 //		csvWriter.addRow(new String[] {"Linear", "BestLegal"});
