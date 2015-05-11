@@ -21,11 +21,12 @@ public abstract class SAPlacer
 	protected FourLutSanitized architecture;
 	protected Random rand;
 	
-	public SAPlacer(EfficientCostCalculator calculator, FourLutSanitized architecture, PackedCircuit circuit)
+	public SAPlacer(FourLutSanitized architecture, PackedCircuit circuit)
 	{
-		this.calculator = calculator;
 		this.architecture = architecture;
 		this.circuit = circuit;
+		this.calculator = new EfficientBoundingBoxNetCC(circuit);
+		circuit.fillVector();
 	}
 	
 	public abstract void place(double inner_num);

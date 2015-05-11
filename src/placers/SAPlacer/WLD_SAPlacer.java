@@ -8,9 +8,9 @@ import circuit.PackedCircuit;
 public class WLD_SAPlacer extends SAPlacer
 {
 
-	public WLD_SAPlacer(EfficientCostCalculator calculator, FourLutSanitized architecture, PackedCircuit circuit)
+	public WLD_SAPlacer(FourLutSanitized architecture, PackedCircuit circuit)
 	{
-		super(calculator, architecture, circuit);
+		super(architecture, circuit);
 	}
 	
 	@Override

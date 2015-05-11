@@ -959,7 +959,7 @@ public class TD_LegalizerOne
 								+ (1 - TRADE_OFF_FACTOR) * ((newBBCost - previousBBCost) / previousBBCost);
 			if (deltaCost < 0)
 			{
-				System.out.println("Improved: bb cost = " + newBBCost + ", critical path = " + timingGraph.calculateMaximalDelay());
+				//System.out.println("Improved: bb cost = " + newBBCost + ", critical path = " + timingGraph.calculateMaximalDelay());
 				for (int i = 0; i < legalX.length; i++)
 				{
 					bestLegalX[i] = legalX[i];

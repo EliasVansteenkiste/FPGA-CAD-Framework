@@ -22,17 +22,14 @@ import architecture.Site;
 import packers.BlePacker;
 import packers.ClbPacker;
 import placers.BoundingBoxNetCC;
-import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
-import placers.Vplace;
-import placers.SAPlacer.EfficientBoundingBoxData;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import placers.SAPlacer.EfficientCostCalculator;
 import placers.SAPlacer.Swap;
 import placers.SAPlacer.SAPlacer;
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
 import timinganalysis.TimingGraph;
-import timinganalysis.TimingGraphOld;
 import tools.CsvReader;
 import tools.CsvWriter;
 import visual.ArchitecturePanel;
@@ -78,38 +75,38 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-		BlifReader blifReader = new BlifReader();
-		PrePackedCircuit prePackedCircuit;
-		try
-		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-		}
-		catch(IOException ioe)
-		{
-			System.err.println("Couldn't read blif file!");
-			return;
-		}
-		
-		//printUnpackedCircuit(prePackedCircuit);
-		
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		//printBlePackedCircuit(blePackedCircuit);
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
+//		BlifReader blifReader = new BlifReader();
+//		PrePackedCircuit prePackedCircuit;
+//		try
+//		{
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.err.println("Couldn't read blif file!");
+//			return;
+//		}
+//		
+//		//printUnpackedCircuit(prePackedCircuit);
+//		
+//		BlePacker blePacker = new BlePacker(prePackedCircuit);
+//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		
+//		//printBlePackedCircuit(blePackedCircuit);
+//		
+//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+//		PackedCircuit packedCircuit = clbPacker.pack();
 		
 		//printPackedCircuit(packedCircuit);
 		
@@ -133,17 +130,17 @@ public class Example
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
 		//visualAnalytical(packedCircuit, prePackedCircuit);
-		visualTDAnalytical(packedCircuit, prePackedCircuit);
-		
-		//visualTDanalyticalTestCircuit();
+		//visualTDAnalytical(packedCircuit, prePackedCircuit);
 		
 		//visualSA(prePackedCircuit, packedCircuit);
 		//visualTDSA(prePackedCircuit, packedCircuit);
 		
 		//RunWlVsTdSaBenchmarks();
-		//RunTDSaVsAnalyticalBenchmarks();
+		RunTDSaVsAnalyticalBenchmarks();
 		
 		//visualLegalizerTest();
+		
+		//visualTDanalyticalTestCircuit();
 		
 		//testCostCalculator(packedCircuit);
 		//testTimingCostCalculator(prePackedCircuit, packedCircuit);
@@ -201,12 +198,9 @@ public class Example
 		
 		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, prePackedCircuit);
 		
-		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
-		
 		tDAnalyticalPlacer.place();
 		
-		pm.PlacementCLBsConsistencyCheck();
+		c.placementCLBsConsistencyCheck(a);
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
 		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
 		
@@ -237,7 +231,7 @@ public class Example
 	private static void RunTDSaVsAnalyticalBenchmarks()
 	{
 		String toDoFileName = "BenchmarksToDo.txt";
-		String csvFileName = "benchmarksTDAnalyticalVsWLDAnalyticalVsTDSaVsWLDSa.csv";
+		String csvFileName = "benchmarksTdAnalyticalVsWldAnalyticalVsTDSaVsWldSa.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -278,10 +272,12 @@ public class Example
 		}
 		else
 		{
-			csvWriter = new CsvWriter(12);
-			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "WL TD_Analytical", 
-					"Max delay TD_Analytical", "WL WLD_Analytical", "Max delay WLD_Analytical", "WL TD_SA", "Max delay TD_SA", 
-					"WL WLD_SA", "Max delay WLD_SA"});
+			csvWriter = new CsvWriter(22);
+			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "Analytical time TD_Analytical",
+					"SA time TD_Analytical", "WL TD_Analytical before anneal", "Max delay TD_Analytical before anneal", "WL TD_Analytical after anneal",
+					"Max delay TD_Analytical after anneal", "Analytical time WLD_Analytical", "SA time WLD_Analytical", "WL WLD_Analytical before anneal",
+					"Max delay WLD_Analytical before anneal", "WL WLD_Analytical after anneal", "Max delay WLD_Analytical after anneal", "Time TD_SA",
+					"WL TD_SA", "Max delay TD_SA", "Time WLD_SA", "WL WLD_SA", "Max delay WLD_SA"});
 			alreadyDoneFiles = null;
 		}
 		for(int i = 0; i < fileNamesToDo.length; i++)
@@ -296,18 +292,27 @@ public class Example
 				}
 				else
 				{
-					double[] tdAnalyticalResults = new double[2];
-					processTDAnalyticalBenchmark_NoRefinement(tdAnalyticalResults, totalFilename);
-					double tdAnalyticalMaxDelay = tdAnalyticalResults[0];
-					double tdAnalyticalWL = tdAnalyticalResults[1];
+					double[] tdAnalyticalResults = new double[6];
+					processTDAnalyticalBenchmark(tdAnalyticalResults, totalFilename);
+					double tdAnalyticalAnalyticalTime = tdAnalyticalResults[0];
+					double tdAnalyticalSaTime = tdAnalyticalResults[1];
+					double tdAnalyticalBeforeWL = tdAnalyticalResults[2];
+					double tdAnalyticalAfterWL = tdAnalyticalResults[3];
+					double tdAnalyticalBeforeMaxDelay = tdAnalyticalResults[4];
+					double tdAnalyticalAfterMaxDelay = tdAnalyticalResults[5];					
 					
-					double[] wldAnalyticalResults = new double[2];
-					processWLDAnalyticalBenchmark_NoRefinement(wldAnalyticalResults, totalFilename);
-					double wldAnalyticalMaxDelay = wldAnalyticalResults[0];
-					double wldAnalyticalWL = wldAnalyticalResults[1];
+					double[] wldAnalyticalResults = new double[6];
+					processWLDAnalyticalBenchmark(wldAnalyticalResults, totalFilename);
+					double wldAnalyticalAnalyticalTime = wldAnalyticalResults[0];
+					double wldAnalyticalSATime = wldAnalyticalResults[1];
+					double wldAnalyticalBeforeWL = wldAnalyticalResults[2];
+					double wldAnalyticalAfterWL = wldAnalyticalResults[3];
+					double wldAnalyticalBeforeMaxDelay = wldAnalyticalResults[4];
+					double wldAnalyticalAfterMaxDelay = wldAnalyticalResults[5];
 					
 					double[] tdSAResults = new double[6];
 					processTDSABenchmark(tdSAResults, totalFilename);
+					double tdSATime = tdSAResults[0];
 					double tdSAWL = tdSAResults[1];
 					int nbClbs = (int)Math.round(tdSAResults[2]);
 					int nbInputs = (int)Math.round(tdSAResults[3]);
@@ -316,24 +321,37 @@ public class Example
 					
 					double[] wldSAResults = new double[6];
 					processWLDSABenchmark(wldSAResults, totalFilename);
+					double wldSATime = wldSAResults[0];
 					double wldSAWL = wldSAResults[1];
 					double wldSAMaxDelay = wldSAResults[5];
 					
+					String tdAnalyticalAnalyticalTimeString = String.format("%.3f", tdAnalyticalAnalyticalTime);
+					String tdAnalyticalSATimeString = String.format("%.3f", tdAnalyticalSaTime);
+					String tdAnalyticalBeforeWLString = String.format("%.3f", tdAnalyticalBeforeWL);
+					String tdAnalyticalAfterWLString = String.format("%.3f", tdAnalyticalAfterWL);
+					String tdAnalyticalBeforeMaxDelayString = String.format("%.3f", tdAnalyticalBeforeMaxDelay);
+					String tdAnalyticalAfterMaxDelayString = String.format("%.3f", tdAnalyticalAfterMaxDelay);
+					String wldAnalyticalAnalyticalTimeString = String.format("%.3f", wldAnalyticalAnalyticalTime);
+					String wldAnalyticalSATimeString = String.format("%.3f", wldAnalyticalSATime);
+					String wldAnalyticalBeforeWLString = String.format("%.3f", wldAnalyticalBeforeWL);
+					String wldAnalyticalAfterWLString = String.format("%.3f", wldAnalyticalAfterWL);
+					String wldAnalyticalBeforeMaxDelayString = String.format("%.3f", wldAnalyticalBeforeMaxDelay);
+					String wldAnalyticalAfterMaxDelayString = String.format("%.3f", wldAnalyticalAfterMaxDelay);
+					String tdSaTimeString = String.format("%.3f", tdSATime);
+					String tdSAWLString = String.format("%.3f", tdSAWL);
 					String nbClbsString = String.format("%d", nbClbs);
 					String nbInputsString = String.format("%d", nbInputs);
 					String nbOutputsString = String.format("%d", nbOutputs);
-					String tdAnalyticalMaxDelayString = String.format("%.3f", tdAnalyticalMaxDelay);
-					String tdAnalyticalWLString = String.format("%.3f", tdAnalyticalWL);
-					String wldAnalyticalMaxDelayString = String.format("%.3f", wldAnalyticalMaxDelay);
-					String wldAnalyticalWLString = String.format("%.3f", wldAnalyticalWL);
-					String tdSAWLString = String.format("%.3f", tdSAWL);
 					String tdSAMaxDelayString = String.format("%.3f", tdSAMaxDelay);
+					String wldSATimeString = String.format("%.3f", wldSATime);
 					String wldSAWLString = String.format("%.3f", wldSAWL);
 					String wldSAMaxDelayString = String.format("%.3f", wldSAMaxDelay);
 					
-					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, tdAnalyticalWLString,
-							tdAnalyticalMaxDelayString, wldAnalyticalWLString, wldAnalyticalMaxDelayString, tdSAWLString, 
-							tdSAMaxDelayString, wldSAWLString, wldSAMaxDelayString});
+					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, tdAnalyticalAnalyticalTimeString, 
+							tdAnalyticalSATimeString, tdAnalyticalBeforeWLString, tdAnalyticalBeforeMaxDelayString, tdAnalyticalAfterWLString, 
+							tdAnalyticalAfterMaxDelayString, wldAnalyticalAnalyticalTimeString, wldAnalyticalSATimeString, wldAnalyticalBeforeWLString, 
+							wldAnalyticalBeforeMaxDelayString, wldAnalyticalAfterWLString, wldAnalyticalAfterMaxDelayString, tdSaTimeString, 
+							tdSAWLString, tdSAMaxDelayString, wldSATimeString, wldSAWLString, wldSAMaxDelayString});
 				}
 			}
 			csvWriter.writeFile(csvFileName);
@@ -502,9 +520,6 @@ public class Example
 		AnalyticalPlacerFive analyticalPlacer = new AnalyticalPlacerFive(a, c, legalizer);
 		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
 		
-		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
-		
 		long analyticalStartTime;
 		long analyticalEndTime;
 		long SAStartTime;
@@ -515,18 +530,17 @@ public class Example
 		analyticalPlacer.place();
 		analyticalEndTime = System.nanoTime();
 		
-		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
-		WLD_SAPlacer saPlacer= new WLD_SAPlacer(effcc, a, c);
+		WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, c);
 		
-		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
-		timingGraph.buildTimingGraph();
-		double maxDelayBeforeRefinement = timingGraph.calculateMaximalDelay();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
 		
 		//SA phase
 		SAStartTime = System.nanoTime();
 		//saPlacer.customAnneal(30, 4, 12500);
 		//saPlacer.place(4.0);
-		//saPlacer.lowTempAnneal(4.0);
+		saPlacer.lowTempAnneal(4.0);
 		SAEndTime = System.nanoTime();
 		
 		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
@@ -536,21 +550,15 @@ public class Example
 		System.out.printf("\tAnalytical placement time: %.3f s\n", AnalyticalTime);
 		System.out.printf("\tSimulated annealing refinement time: %.3f s\n", SATime);
 		
-		pm.PlacementCLBsConsistencyCheck();
-		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
-		
-		timingGraph.updateDelays();
-		double maxDelayAfterRefinement = timingGraph.calculateMaximalDelay();
-		
-		TimingGraph newTimingGraph = new TimingGraph(prePackedCircuit);
-		newTimingGraph.buildTimingGraph();
-		double maxDelayAfterRefinement2 = newTimingGraph.calculateMaximalDelay();
+		c.placementCLBsConsistencyCheck(a);
+		EfficientCostCalculator effccAfter = new EfficientBoundingBoxNetCC(c);
+		System.out.println("Total cost after low temperature anneal: " + effccAfter.calculateTotalCost());
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfterRefinement = tgAfter.calculateMaximalDelay();
 		
 		System.out.println("Max delay before refinement: " + maxDelayBeforeRefinement);
-		System.out.println("Max delay after refinement: " + maxDelayAfterRefinement + " (" + maxDelayAfterRefinement2 + ")");
-		
-		//System.out.println(timingGraph.getMapString());
-		//System.out.println(timingGraph.getStartSlacks());
+		System.out.println("Max delay after refinement: " + maxDelayAfterRefinement);
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
 		
@@ -577,30 +585,47 @@ public class Example
 		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, prePackedCircuit);
 		
 		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
 		
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long SAStartTime;
+		long SAEndTime;
+		
+		analyticalStartTime = System.nanoTime();
 		tDAnalyticalPlacer.place();
+		analyticalEndTime = System.nanoTime();
+		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
 		
-		pm.PlacementCLBsConsistencyCheck();
-		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
-		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
+		c.placementCLBsConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(c);
+		double wlCostBeforeRefinement = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
 		
-		//TimingGraphOld timingGraphOld = new TimingGraphOld(prePackedCircuit);
-		//timingGraphOld.buildTimingGraph();
-		//double maxDelayOld = timingGraphOld.calculateMaximalDelay();
+		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, c, prePackedCircuit);
 		
-		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
-		timingGraph.buildTimingGraph();
-		double maxDelay = timingGraph.calculateMaximalDelay();
+		SAStartTime = System.nanoTime();
+		tdSaPlacer.lowTempAnneal(4.0);
+		SAEndTime = System.nanoTime();
+		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
 		
-		//System.out.println("Max delay old = " + maxDelayOld + ", max delay new = " + maxDelay);
-		System.out.println("Max delay new timing graph = " + maxDelay);
+		c.placementCLBsConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(c);
+		double wlCostAfterRefinement = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfterRefinement = tgAfter.calculateMaximalDelay();
 		
-		//System.out.println(timingGraph.getMapString());
-		//System.out.println(timingGraph.getStartSlacks());
+		System.out.printf("\nAnalytical placement time: %.3f s\n", AnalyticalTime);
+		System.out.println("\tWL cost before low temperature anneal: " + wlCostBeforeRefinement);
+		System.out.println("\tMax delay before low temperature anneal: = " + maxDelayBeforeRefinement);
+		System.out.printf("Simulated annealing refinement time: %.3f s\n", SATime);
+		System.out.println("\tWL cost after low temperature anneal: " + wlCostAfterRefinement);
+		System.out.println("\tMax delay after low temperature anneal: = " + maxDelayAfterRefinement);
+		System.out.printf("Total time necessary to place: %.3f s\n", AnalyticalTime + SATime);
 		
 		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
-		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(945,970);
@@ -620,17 +645,16 @@ public class Example
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
-		pm.PlacementCLBsConsistencyCheck();
+		packedCircuit.placementCLBsConsistencyCheck(a);
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		TimingGraph tcc = new TimingGraph(prePackedCircuit);
 		tcc.buildTimingGraph();
 		
-		TD_SAPlacer placer= new TD_SAPlacer(effcc, a, packedCircuit, tcc);
+		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
 		long startTime;
 		long endTime;
@@ -640,7 +664,7 @@ public class Example
 		
 		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
 		
-		pm.PlacementCLBsConsistencyCheck();
+		packedCircuit.placementCLBsConsistencyCheck(a);
 		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
@@ -668,15 +692,14 @@ public class Example
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
-		pm.PlacementCLBsConsistencyCheck();
+		packedCircuit.placementCLBsConsistencyCheck(a);
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		
-		WLD_SAPlacer placer= new WLD_SAPlacer(effcc, a, packedCircuit);
+		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
 		long startTime;
 		long endTime;
@@ -686,7 +709,7 @@ public class Example
 		
 		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
 		
-		pm.PlacementCLBsConsistencyCheck();
+		packedCircuit.placementCLBsConsistencyCheck(a);
 		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
@@ -772,9 +795,6 @@ public class Example
 		int legalizer = 3;
 		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, packedCircuit, legalizer);
 		
-		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
-		
 		long startTime;
 		long analyticalEndTime;
 		long annealStartTime;
@@ -783,13 +803,14 @@ public class Example
 		placer.place();
 		analyticalEndTime = System.nanoTime();
 		
-		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-		WLD_SAPlacer saPlacer= new WLD_SAPlacer(effcc, a, packedCircuit);
-		results[2] = effcc.calculateTotalCost();
-		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
-		timingGraph.buildTimingGraph();
-		double maxDelayBefore = timingGraph.calculateMaximalDelay();
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[2] = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		double maxDelayBefore = tgBefore.calculateMaximalDelay();
 		results[4] = maxDelayBefore;
+		
+		WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, packedCircuit);
 		
 		annealStartTime = System.nanoTime();
 		saPlacer.lowTempAnneal(4.0);
@@ -798,11 +819,11 @@ public class Example
 		results[0] = (double)(analyticalEndTime - startTime)/1000000000;
 		results[1] = (double)(endTime - annealStartTime)/1000000000;
 		
-		pm.PlacementCLBsConsistencyCheck();
-		results[3] = effcc.calculateTotalCost();
-		TimingGraph timingGraphTwo = new TimingGraph(prePackedCircuit);
-		timingGraphTwo.buildTimingGraph();
-		double maxDelayAfter = timingGraphTwo.calculateMaximalDelay();
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[3] = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfter = tgAfter.calculateMaximalDelay();
 		results[5] = maxDelayAfter;
 	}
 	
@@ -847,6 +868,67 @@ public class Example
 		
 		results[0] = maxDelay;
 		results[1] = totalBBCost;
+	}
+	
+	private static void processTDAnalyticalBenchmark(double[] results, String totalFilename)
+	{
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			prePackedCircuit =  blifReader.readBlif(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+	
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+	
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+	
+		int dimension = calculateArchDimension(packedCircuit);
+		
+		int height = dimension;
+		int width = dimension;
+		int trackwidth = 4;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		TD_AnalyticalPlacerOne placer = new TD_AnalyticalPlacerOne(a, packedCircuit, prePackedCircuit);
+		
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long saStartTime;
+		long saEndTime;
+		
+		analyticalStartTime = System.nanoTime();
+		placer.place();
+		analyticalEndTime = System.nanoTime();
+		
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[2] = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		results[4] = tgBefore.calculateMaximalDelay();
+		
+		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
+		
+		saStartTime = System.nanoTime();
+		tdSaPlacer.lowTempAnneal(4.0);
+		saEndTime = System.nanoTime();
+		
+		results[0] = (double)(analyticalEndTime - analyticalStartTime)/1000000000;
+		results[1] = (double)(saEndTime - saStartTime)/1000000000;
+		
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[3] = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfter = tgAfter.calculateMaximalDelay();
+		results[5] = maxDelayAfter;
 	}
 	
 	private static void processTDAnalyticalBenchmark_NoRefinement(double[] results, String totalFilename)
@@ -922,15 +1004,13 @@ public class Example
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
-		pm.PlacementCLBsConsistencyCheck();
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		
-		WLD_SAPlacer placer= new WLD_SAPlacer(effcc, a, packedCircuit);
+		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
 		long startTime;
 		long endTime;
@@ -940,7 +1020,6 @@ public class Example
 		
 		results[0] = (double)(endTime - startTime)/1000000000;
 		
-		pm.PlacementCLBsConsistencyCheck();
 		results[1] = effcc.calculateTotalCost();
 		results[2] = packedCircuit.clbs.values().size();
 		results[3] = packedCircuit.getInputs().values().size();
@@ -982,17 +1061,15 @@ public class Example
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,packedCircuit,rand);
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
-		pm.PlacementCLBsConsistencyCheck();
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		TimingGraph tcc = new TimingGraph(prePackedCircuit);
 		tcc.buildTimingGraph();
 		
-		TD_SAPlacer placer= new TD_SAPlacer(effcc, a, packedCircuit, tcc);
+		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
 		long startTime;
 		long endTime;
@@ -1001,8 +1078,6 @@ public class Example
 		endTime = System.nanoTime();
 		
 		results[0] = (double)(endTime - startTime)/1000000000;
-		
-		pm.PlacementCLBsConsistencyCheck();
 		results[1] = effcc.calculateTotalCost();
 		results[2] = packedCircuit.clbs.values().size();
 		results[3] = packedCircuit.getInputs().values().size();
@@ -1109,8 +1184,7 @@ public class Example
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
-		pm.PlacementCLBsConsistencyCheck();
+		c.placementCLBsConsistencyCheck(a);
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
@@ -1132,8 +1206,7 @@ public class Example
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
-		pm.PlacementCLBsConsistencyCheck();
+		c.placementCLBsConsistencyCheck(a);
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
@@ -1155,8 +1228,7 @@ public class Example
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
-		pm.PlacementCLBsConsistencyCheck();
+		c.placementCLBsConsistencyCheck(a);
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
@@ -1185,8 +1257,7 @@ public class Example
 		
 		System.out.println("Total cost analytical placement: " + bbncc.calculateTotalCost());
 		
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,new Random(1));
-		pm.PlacementCLBsConsistencyCheck();
+		c.placementCLBsConsistencyCheck(a);
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
@@ -1207,14 +1278,13 @@ public class Example
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
 		Random rand = new Random(1);
-		PlacementManipulatorIOCLB pm = new PlacementManipulatorIOCLB(a,c,rand);
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
 		//BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(c, a, rand);
-		pm.PlacementCLBsConsistencyCheck();
+		c.placementCLBsConsistencyCheck(a);
 		System.out.println("Total Cost random placement: " + effcc.calculateTotalCost());
 		//System.out.println("Total Cost random placement: " + bbncc.calculateTotalCost());
 		
@@ -1223,7 +1293,7 @@ public class Example
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.println("Critical path delay random placement: " + maxDelay);
 		
-		SAPlacer placer= new WLD_SAPlacer(effcc, a, c);
+		SAPlacer placer= new WLD_SAPlacer(a, c);
 		//Vplace placer= new Vplace(pm, bbncc);
 		//Time placement process
 		final long startTime = System.nanoTime();
@@ -1237,7 +1307,7 @@ public class Example
 		System.out.println("Runtime: "+(duration/1.0E9));
 		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
 		//System.out.println("Total cost SA placement: " + bbncc.calculateTotalCost());
-		pm.PlacementCLBsConsistencyCheck();		
+		c.placementCLBsConsistencyCheck(a);
 		timingGraph.updateDelays();
 		double maxDelayUpdated = timingGraph.calculateMaximalDelay();
 		System.out.println("Critical path delay after SA placement: " + maxDelayUpdated);

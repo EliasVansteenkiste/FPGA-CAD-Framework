@@ -5,6 +5,7 @@ import java.util.Random;
 import timinganalysis.TimingGraph;
 import architecture.FourLutSanitized;
 import circuit.PackedCircuit;
+import circuit.PrePackedCircuit;
 
 public class TD_SAPlacer extends SAPlacer
 {
@@ -17,10 +18,11 @@ public class TD_SAPlacer extends SAPlacer
 	private double inversePreviousBBCost;
 	private double inversePreviousTDCost;
 
-	public TD_SAPlacer(EfficientCostCalculator calculator, FourLutSanitized architecture, PackedCircuit circuit, TimingGraph timingGraph)
+	public TD_SAPlacer(FourLutSanitized architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
-		super(calculator, architecture, circuit);
-		this.timingGraph = timingGraph;
+		super(architecture, circuit);
+		this.timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
 	}
 	
 	@Override

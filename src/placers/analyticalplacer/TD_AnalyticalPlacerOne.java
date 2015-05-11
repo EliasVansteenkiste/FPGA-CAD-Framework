@@ -73,10 +73,10 @@ public class TD_AnalyticalPlacerOne
 		//Initial legalization
 		legalizer.legalize(linearX, linearY, indexMap);		
 		
-		for(int i = 0; i < linearX.length; i++)
-		{
-			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-		}
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+//		}
 				
 		for(int i = 0; i < 30; i++)
 		{
