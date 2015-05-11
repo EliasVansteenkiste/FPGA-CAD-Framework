@@ -29,6 +29,7 @@ import placers.SAPlacer.Swap;
 import placers.SAPlacer.SAPlacer;
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
+import timinganalysis.TimingEdge;
 import timinganalysis.TimingGraph;
 import tools.CsvReader;
 import tools.CsvWriter;
@@ -75,38 +76,38 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		//printUnpackedCircuit(prePackedCircuit);
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		//printBlePackedCircuit(blePackedCircuit);
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		//printUnpackedCircuit(prePackedCircuit);
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
 		
 		//printPackedCircuit(packedCircuit);
 		
@@ -136,7 +137,9 @@ public class Example
 		//visualTDSA(prePackedCircuit, packedCircuit);
 		
 		//RunWlVsTdSaBenchmarks();
-		RunTDSaVsAnalyticalBenchmarks();
+		//RunTDSaVsAnalyticalBenchmarks();
+		
+		testEdgeMap(prePackedCircuit, packedCircuit);
 		
 		//visualLegalizerTest();
 		
@@ -196,7 +199,7 @@ public class Example
 		PackedCircuit c = new PackedCircuit();
 		FourLutSanitized a = constructTestCircuit(prePackedCircuit, c);
 		
-		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, prePackedCircuit);
+		TD_AnalyticalPlacerNewNetOne tDAnalyticalPlacer = new TD_AnalyticalPlacerNewNetOne(a, c, prePackedCircuit);
 		
 		tDAnalyticalPlacer.place();
 		
@@ -582,7 +585,7 @@ public class Example
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
 		
-		TD_AnalyticalPlacerOne tDAnalyticalPlacer = new TD_AnalyticalPlacerOne(a, c, prePackedCircuit);
+		TD_AnalyticalPlacerNewNetOne tDAnalyticalPlacer = new TD_AnalyticalPlacerNewNetOne(a, c, prePackedCircuit);
 		
 		Random rand = new Random(1);
 		
@@ -897,7 +900,7 @@ public class Example
 		int trackwidth = 4;
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		TD_AnalyticalPlacerOne placer = new TD_AnalyticalPlacerOne(a, packedCircuit, prePackedCircuit);
+		TD_AnalyticalPlacerNewNetOne placer = new TD_AnalyticalPlacerNewNetOne(a, packedCircuit, prePackedCircuit);
 		
 		long analyticalStartTime;
 		long analyticalEndTime;
@@ -958,7 +961,7 @@ public class Example
 		int trackwidth = 4;
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		TD_AnalyticalPlacerOne placer = new TD_AnalyticalPlacerOne(a, packedCircuit, prePackedCircuit);
+		TD_AnalyticalPlacerNewNetOne placer = new TD_AnalyticalPlacerNewNetOne(a, packedCircuit, prePackedCircuit);
 		
 		placer.place();
 		
@@ -1459,6 +1462,49 @@ public class Example
 		
 		System.out.println("Swapped cost = " + totalCost + ", new cost = " + newCost);
 		System.out.println("Old maximum delay = " + maxDelay + ", new maximal delay = " + newMaxDelay);
+	}
+	
+	private static void testEdgeMap(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
+	{
+		int dimension = calculateArchDimension(packedCircuit);
+		int height = dimension;
+		int width = dimension;
+		int trackwidth = 4;
+		
+		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, new Random(1));
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		timingGraph.mapNetsToEdges(packedCircuit);
+		
+		int nbCorrect = 0;
+		int nbTotal = 0;
+		for(Net net: packedCircuit.getNets().values())
+		{
+			if(net.sinks.size() > 0)
+			{
+				nbTotal++;
+				ArrayList<TimingEdge> netEdges = timingGraph.getNetEdges(net);
+				if(netEdges == null)
+				{
+					System.out.print("" + net.source.name + ": ");
+					for(Pin sink: net.sinks)
+					{
+						System.out.print("" + sink.name + " ");
+					}
+					System.out.println();
+				}
+				if(netEdges.size() == net.sinks.size())
+				{
+					nbCorrect++;
+				}
+			}
+		}
+		
+		System.out.println("Total number of nets: " + nbTotal);
+		System.out.println("Nb of nets correct: " + nbCorrect);
 	}
 	
 	private static PackedCircuit constructTestCircuit()

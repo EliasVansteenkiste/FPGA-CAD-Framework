@@ -2,28 +2,29 @@ package placers.analyticalplacer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import mathtools.CGSolver;
 import mathtools.Crs;
 
 import placers.Rplace;
+import timinganalysis.TimingEdge;
+import timinganalysis.TimingGraph;
 
 import architecture.FourLutSanitized;
-import architecture.Site;
-import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
+import circuit.PrePackedCircuit;
 
-public class AnalyticalPlacerFive
+public class TD_AnalyticalPlacerOldNetOne
 {
-
+	
+	private final double ALPHA = 0.3;
+	
 	private FourLutSanitized architecture;
 	private PackedCircuit circuit;
 	private Map<Clb,Integer> indexMap; //Maps an index to a Clb
@@ -35,11 +36,10 @@ public class AnalyticalPlacerFive
 	private double[] linearY;
 	private int[] anchorPointsX;
 	private int[] anchorPointsY;
-	private Legalizer legalizer;
+	private TD_LegalizerOne legalizer;
+	private TimingGraph timingGraph;
 	
-	private final double ALPHA = 0.3;
-	
-	public AnalyticalPlacerFive(FourLutSanitized architecture, PackedCircuit circuit, int legalizer)
+	public TD_AnalyticalPlacerOldNetOne(FourLutSanitized architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
@@ -47,18 +47,10 @@ public class AnalyticalPlacerFive
 		this.maximalX = architecture.width;
 		this.minimalY = 1;
 		this.maximalY = architecture.height;
-		switch(legalizer)
-		{
-			case 1:
-				this.legalizer = new LegalizerOne(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
-				break;
-			case 2:
-				this.legalizer = new LegalizerTwo(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
-				break;
-			default:
-				this.legalizer = new LegalizerThree(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size());
-				break;
-		}
+		this.timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.setCriticalityExponent(1.0);
+		legalizer = new TD_LegalizerOne(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size(), 
+												timingGraph, circuit, architecture);
 	}
 	
 	public void place()
@@ -66,59 +58,29 @@ public class AnalyticalPlacerFive
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		
+		timingGraph.buildTimingGraph();
+		timingGraph.mapNetsToEdges(circuit);
+		
 		//Initial linear solves, should normally be done 5-7 times		
 		for(int i = 0; i < 7; i++)
 		{
 			solveLinear(true, 0.0);
 		}
 		
-		double costLinear = calculateTotalCost(linearX, linearY);
-		System.out.println("Linear cost before legalizing = " + costLinear);
-		
 		//Initial legalization
-		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
+		legalizer.legalize(linearX, linearY, indexMap);
 		
 //		for(int i = 0; i < linearX.length; i++)
 //		{
 //			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
 //		}
-		
-//		CsvWriter csvWriter = new CsvWriter(2);
-//		csvWriter.addRow(new String[] {"Linear", "BestLegal"});
 		
 		//Iterative solves with pseudonets
-		int nbIterations = 0;
 		for(int i = 0; i < 30; i++)
 		{
-			nbIterations++;
 			solveLinear(false, (i+1)*ALPHA);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
-			costLinear = calculateTotalCost(linearX, linearY);
-			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
-//			csvWriter.addRow(new String[] {"" + costLinear, "" + costLegal});
-			if(costLinear / costLegal > 0.70)
-			{
-				break;
-			}
-			//System.out.println("Linear cost: " + costLinear);
+			legalizer.legalize(linearX, linearY, indexMap);
 		}
-		
-//		csvWriter.writeFile("convergence.csv");
-		
-		System.out.println("Nb of iterations: " + nbIterations);
-		
-//		for(int i = 0; i < linearX.length; i++)
-//		{
-//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-//		}
-		
-		updateCircuit();
-		
-		//int nbAttempts = 1000000;
-		//iterativeRefinement(nbAttempts);
-		
-		double cost = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
-		System.out.println("COST BEFORE REFINEMENT = " + cost);
 	}
 	
 	/*
@@ -167,6 +129,11 @@ public class AnalyticalPlacerFive
 			ArrayList<Double> fixedXPositions = new ArrayList<>();
 			ArrayList<Double> fixedYPositions = new ArrayList<>();
 			int nbPins = 1 + net.sinks.size();
+			double timingWeightFactor = 0.0;
+			for(TimingEdge edge: timingGraph.getNetEdges(net))
+			{
+				timingWeightFactor += edge.getCost();
+			}
 			double minX = Double.MAX_VALUE;
 			int minXIndex = -1; //Index = -1 means fixed block
 			double maxX = -Double.MAX_VALUE;
@@ -292,6 +259,10 @@ public class AnalyticalPlacerFive
 					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
+				if(!firstSolve)
+				{
+					weight *= timingWeightFactor;
+				}
 				if(maxXIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -325,6 +296,10 @@ public class AnalyticalPlacerFive
 					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
+				if(!firstSolve)
+				{
+					weight *= timingWeightFactor;
+				}
 				if(maxYIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -361,6 +336,10 @@ public class AnalyticalPlacerFive
 						deltaMaxX = 0.005;
 					}
 					double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
+					if(!firstSolve)
+					{
+						weightMaxX *= timingWeightFactor;
+					}
 					if(maxXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -389,6 +368,10 @@ public class AnalyticalPlacerFive
 						deltaMinX = 0.005;
 					}
 					double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
+					if(!firstSolve)
+					{
+						weightMinX *= timingWeightFactor;
+					}
 					if(minXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -416,6 +399,10 @@ public class AnalyticalPlacerFive
 						deltaMaxY = 0.005;
 					}
 					double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
+					if(!firstSolve)
+					{
+						weightMaxY *= timingWeightFactor;
+					}
 					if(maxYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -443,6 +430,10 @@ public class AnalyticalPlacerFive
 						deltaMinY = 0.005;
 					}
 					double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
+					if(!firstSolve)
+					{
+						weightMinY *= timingWeightFactor;
+					}
 					if(minYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -477,6 +468,10 @@ public class AnalyticalPlacerFive
 							deltaMaxX = 0.005;
 						}
 						double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
+						if(!firstSolve)
+						{
+							weightMaxX *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(maxXIndex, maxXIndex, xMatrix.getElement(maxXIndex, maxXIndex) + weightMaxX);
 						xVector[maxXIndex] = xVector[maxXIndex] + weightMaxX*fixedXPosition;
@@ -497,6 +492,10 @@ public class AnalyticalPlacerFive
 							deltaMinX = 0.005;
 						}
 						double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
+						if(!firstSolve)
+						{
+							weightMinX *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(minXIndex, minXIndex, xMatrix.getElement(minXIndex, minXIndex) + weightMinX);
 						xVector[minXIndex] = xVector[minXIndex] + weightMinX*fixedXPosition;
@@ -522,6 +521,10 @@ public class AnalyticalPlacerFive
 							deltaMaxY = 0.005;
 						}
 						double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
+						if(!firstSolve)
+						{
+							weightMaxY *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(maxYIndex, maxYIndex, yMatrix.getElement(maxYIndex, maxYIndex) + weightMaxY);
 						yVector[maxYIndex] = yVector[maxYIndex] + weightMaxY*fixedYPosition;
@@ -542,6 +545,10 @@ public class AnalyticalPlacerFive
 							deltaMinY = 0.005;
 						}
 						double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
+						if(!firstSolve)
+						{
+							weightMinY *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(minYIndex, minYIndex, yMatrix.getElement(minYIndex, minYIndex) + weightMinY);
 						yVector[minYIndex] = yVector[minYIndex] + weightMinY*fixedYPosition;
@@ -573,192 +580,6 @@ public class AnalyticalPlacerFive
 		
 		linearX = xSolution;
 		linearY = ySolution;
-	}
-	
-//	private void iterativeRefinement(int nbAttempts)
-//	{
-//		PlacementManipulator manipulator = new PlacementManipulatorIOCLB(architecture, circuit);
-//		for(int i = 0; i < nbAttempts; i++)
-//		{
-//			Swap swap;
-//			swap=manipulator.findSwap(5);
-//			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
-//			{
-//				double deltaCost = calculator.calculateDeltaCost(swap);
-//				if(deltaCost<=0) //Only accept the move if it improves the total cost
-//				{
-//					swap.apply();
-//				}
-//			}
-//		}
-//	}
-	
-	private void updateCircuit()
-	{
-		int[] bestLegalX = new int[linearX.length];
-		int[] bestLegalY = new int[linearY.length];
-		
-		legalizer.getBestLegal(bestLegalX, bestLegalY);
-		
-		//Clear all previous locations
-		for(int i = minimalX; i <= maximalX; i++)
-		{
-			for(int j = minimalY; j <= maximalY; j++)
-			{
-				if(architecture.getSite(i, j, 0).block != null)
-				{
-					architecture.getSite(i, j, 0).block.setSite(null);
-				}
-				architecture.getSite(i, j, 0).block = null;
-			}
-		}
-		
-		//Update locations
-		for(Clb clb:circuit.clbs.values())
-		{
-			int index = indexMap.get(clb);
-			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-			site.block = clb;
-			clb.setSite(site);
-		}
-	}
-	
-	private double calculateTotalCost(double[] xArray, double[] yArray)
-	{
-		double cost = 0.0;
-		for(Net net:circuit.nets.values())
-		{
-			double minX;
-			double maxX;
-			double minY;
-			double maxY;
-			Block sourceBlock = net.source.owner;
-			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
-			{
-				minX = sourceBlock.getSite().x;
-				maxX = sourceBlock.getSite().x;
-				minY = sourceBlock.getSite().y;
-				maxY = sourceBlock.getSite().y;
-			}
-			else
-			{
-				int index = indexMap.get((Clb)sourceBlock);
-				minX = xArray[index];
-				maxX = xArray[index];
-				minY = yArray[index];
-				maxY = yArray[index];
-			}
-			
-			for(Pin pin:net.sinks)
-			{
-				Block sinkOwner = pin.owner;
-				if(sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
-				{
-					Site sinkOwnerSite = sinkOwner.getSite();
-					if(sinkOwnerSite.x < minX)
-					{
-						minX = sinkOwnerSite.x;
-					}
-					if(sinkOwnerSite.x > maxX)
-					{
-						maxX = sinkOwnerSite.x;
-					}
-					if(sinkOwnerSite.y < minY)
-					{
-						minY = sinkOwnerSite.y;
-					}
-					if(sinkOwnerSite.y > maxY)
-					{
-						maxY = sinkOwnerSite.y;
-					}
-				}
-				else
-				{
-					int index = indexMap.get((Clb)sinkOwner);
-					if(xArray[index] < minX)
-					{
-						minX = xArray[index];
-					}
-					if(xArray[index] > maxX)
-					{
-						maxX = xArray[index];
-					}
-					if(yArray[index] < minY)
-					{
-						minY = yArray[index];
-					}
-					if(yArray[index] > maxY)
-					{
-						maxY = yArray[index];
-					}
-				}
-			}
-			Set<Block> blocks = new HashSet<>();
-			blocks.addAll(net.blocks());
-			double weight = getWeight(blocks.size());
-			cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
-			
-		}
-		return cost;
-	}
-	
-	private double getWeight(int size)
-	{
-		double weight = 0.0;
-		switch (size) {
-			case 1:  weight=1; break;
-			case 2:  weight=1; break;
-			case 3:  weight=1; break;
-			case 4:  weight=1.0828; break;
-			case 5:  weight=1.1536; break;
-			case 6:  weight=1.2206; break;
-			case 7:  weight=1.2823; break;
-			case 8:  weight=1.3385; break;
-			case 9:  weight=1.3991; break;
-			case 10: weight=1.4493; break;
-			case 11:
-			case 12:
-			case 13:
-			case 14:
-			case 15: weight=(size-10)*(1.6899-1.4493)/5+1.4493;break;				
-			case 16:
-			case 17:
-			case 18:
-			case 19:
-			case 20: weight=(size-15)*(1.8924-1.6899)/5+1.6899;break;
-			case 21:
-			case 22:
-			case 23:
-			case 24:
-			case 25: weight=(size-20)*(2.0743-1.8924)/5+1.8924;break;		
-			case 26:
-			case 27:
-			case 28:
-			case 29:
-			case 30: weight=(size-25)*(2.2334-2.0743)/5+2.0743;break;		
-			case 31:
-			case 32:
-			case 33:
-			case 34:
-			case 35: weight=(size-30)*(2.3895-2.2334)/5+2.2334;break;		
-			case 36:
-			case 37:
-			case 38:
-			case 39:
-			case 40: weight=(size-35)*(2.5356-2.3895)/5+2.3895;break;		
-			case 41:
-			case 42:
-			case 43:
-			case 44:
-			case 45: weight=(size-40)*(2.6625-2.5356)/5+2.5356;break;		
-			case 46:
-			case 47:
-			case 48:
-			case 49:
-			case 50: weight=(size-45)*(2.7933-2.6625)/5+2.6625;break;
-			default: weight=(size-50)*0.02616+2.7933;break;
-		}
-		return weight;
 	}
 	
 	private void initializeDataStructures()

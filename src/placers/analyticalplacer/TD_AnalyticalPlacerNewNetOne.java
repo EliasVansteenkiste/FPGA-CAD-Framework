@@ -23,9 +23,11 @@ import circuit.PrePackedCircuit;
 /**
  * TODO To watch out for: pseudoweights and Cost calculation: criticalities
  */
-public class TD_AnalyticalPlacerOne
+public class TD_AnalyticalPlacerNewNetOne
 {
 
+	private final double ALPHA = 0.3;
+	
 	private FourLutSanitized architecture;
 	private PackedCircuit circuit;
 	private Map<Clb,Integer> indexMap; //Maps an index to a Clb
@@ -40,9 +42,7 @@ public class TD_AnalyticalPlacerOne
 	private TD_LegalizerOne legalizer;
 	private TimingGraph timingGraph;
 	
-	private final double ALPHA = 0.3;
-	
-	public TD_AnalyticalPlacerOne(FourLutSanitized architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
+	public TD_AnalyticalPlacerNewNetOne(FourLutSanitized architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;

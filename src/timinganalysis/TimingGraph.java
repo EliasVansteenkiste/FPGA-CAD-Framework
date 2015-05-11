@@ -38,6 +38,7 @@ public class TimingGraph
 	private LinkedList<TimingEdge> affectedEdgeList; //Collects the timingEdge objects who's delay still needs to be pushed through or reverted
 	private boolean clbsMapped;
 	private Map<Pin,TimingNode> clbPinMap;
+	private Map<Net,ArrayList<TimingEdge>> edgeMap;
 	
 	public TimingGraph(PrePackedCircuit circuit)
 	{
@@ -51,6 +52,7 @@ public class TimingGraph
 		affectedEdgeList = new LinkedList<>();
 		clbsMapped = false;
 		clbPinMap = null;
+		edgeMap = null;
 	}
 	
 	public void buildTimingGraph()
@@ -570,6 +572,41 @@ public class TimingGraph
 				clbPinMap.put(sinkPin, sinkNode);
 			}
 		}
+	}
+	
+	public void mapNetsToEdges(PackedCircuit packedCircuit)
+	{
+		edgeMap = new HashMap<>();
+		for(TimingEdge edge: edges)
+		{
+			Block inputOwner = edge.getInput().getPin().owner;
+			Block outputOwner = edge.getOutput().getPin().owner;
+			Net net = null;
+			if(inputOwner.type == BlockType.FLIPFLOP || inputOwner.type == BlockType.INPUT)
+			{
+				net = packedCircuit.nets.get(inputOwner.name);
+			}
+			else
+			{
+				if(inputOwner.type == BlockType.LUT && inputOwner != outputOwner)
+				{
+					net = packedCircuit.nets.get(inputOwner.name); //Will be null if the net is internal to clb (lut -> ff)
+				}
+			}
+			if(net != null)
+			{
+				if(edgeMap.get(net) == null)
+				{
+					edgeMap.put(net, new ArrayList<TimingEdge>());
+				}
+				edgeMap.get(net).add(edge);
+			}
+		}
+	}
+	
+	public ArrayList<TimingEdge> getNetEdges(Net net)
+	{
+		return edgeMap.get(net);
 	}
 	
 	public double getConnectionCriticalityWithExponent(Pin sourceClbPin, Pin sinkClbPin)

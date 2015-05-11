@@ -84,4 +84,10 @@ public class TimingEdge
 		return criticalityWithExponent;
 	}
 	
+	@Override
+	public int hashCode()
+	{
+		return input.getPin().name.hashCode() ^ output.getPin().name.hashCode();
+	}
+	
 }
