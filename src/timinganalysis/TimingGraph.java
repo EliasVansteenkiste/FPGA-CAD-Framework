@@ -69,6 +69,15 @@ public class TimingGraph
 			processStartPin(flipflop.getOutput());
 		}
 		
+		//Build all trees starting from a lut which has no inputs
+		for(Lut lut: circuit.getLuts().values())
+		{
+			if(lut.getIsSourceLut())
+			{
+				processStartPin(lut.getOutputs()[0]);
+			}
+		}
+		
 		//Calculate arrival and required times (definition: see VPR book)
 		recalculateAllSlacksCriticalities();
 	}

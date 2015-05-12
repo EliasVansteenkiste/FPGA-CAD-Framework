@@ -130,9 +130,17 @@ public class TD_AnalyticalPlacerOldNetOne
 			ArrayList<Double> fixedYPositions = new ArrayList<>();
 			int nbPins = 1 + net.sinks.size();
 			double timingWeightFactor = 0.0;
-			for(TimingEdge edge: timingGraph.getNetEdges(net))
+			ArrayList<TimingEdge> netEdges = timingGraph.getNetEdges(net);
+			if(netEdges != null)
 			{
-				timingWeightFactor += edge.getCost();
+				for(TimingEdge edge: netEdges)
+				{
+					timingWeightFactor += edge.getCost();
+				}
+			}
+			else
+			{
+				timingWeightFactor = 1.0;
 			}
 			double minX = Double.MAX_VALUE;
 			int minXIndex = -1; //Index = -1 means fixed block
