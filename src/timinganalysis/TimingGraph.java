@@ -146,7 +146,9 @@ public class TimingGraph
 				{
 					for(int i = 0; i < lut1NodeList.size(); i++)
 					{
-						if(lut1NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
+						//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
+						if(lut1NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE ||
+										lut1NodeList.get(i).getType() == TimingNodeType.START_NODE)
 						{
 							sourceNode = lut1NodeList.get(i);
 						}
@@ -251,11 +253,13 @@ public class TimingGraph
 				{
 					for(int i = 0; i < lut2NodeList.size(); i++)
 					{
-						if(lut2NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
+						//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
+						if(lut2NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE || 
+										lut2NodeList.get(i).getType() == TimingNodeType.START_NODE)
 						{
 							sourceNode = lut2NodeList.get(i);
 						}
-					}
+					}					
 					for(TimingEdge connectedEdge: sourceNode.getOutputs())
 					{
 						Block owner = connectedEdge.getOutput().getPin().owner;
@@ -381,7 +385,9 @@ public class TimingGraph
 				{
 					for(int i = 0; i < lutNodeList.size(); i++)
 					{
-						if(lutNodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
+						//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
+						if(lutNodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE ||
+								lutNodeList.get(i).getType() == TimingNodeType.START_NODE)
 						{
 							sourceNode = lutNodeList.get(i);
 						}

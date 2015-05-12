@@ -86,10 +86,10 @@ public class Example
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
 //		}
