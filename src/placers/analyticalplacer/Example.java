@@ -75,38 +75,38 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		//printUnpackedCircuit(prePackedCircuit);
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		//printBlePackedCircuit(blePackedCircuit);
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		//printUnpackedCircuit(prePackedCircuit);
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
 		
 		//printPackedCircuit(packedCircuit);
 		
@@ -130,12 +130,12 @@ public class Example
 		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 		
 		//visualAnalytical(packedCircuit, prePackedCircuit);
-		//visualTDAnalytical(packedCircuit, prePackedCircuit);
+		visualTDAnalytical(packedCircuit, prePackedCircuit);
 		
 		//visualSA(prePackedCircuit, packedCircuit);
 		//visualTDSA(prePackedCircuit, packedCircuit);
 		
-		runAllPlacersBenchmarks();
+		//runAllPlacersBenchmarks();
 		//runWlVsTdSaBenchmarks();
 		//runTDSaVsAnalyticalBenchmarks();
 		
@@ -159,7 +159,7 @@ public class Example
 		
 		tDAnalyticalPlacer.place();
 		
-		c.placementCLBsConsistencyCheck(a);
+		//c.placementCLBsConsistencyCheck(a);
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(c);
 		System.out.println("Total cost after low temperature anneal: " + effcc.calculateTotalCost());
 		
@@ -632,7 +632,7 @@ public class Example
 		System.out.printf("\tAnalytical placement time: %.3f s\n", AnalyticalTime);
 		System.out.printf("\tSimulated annealing refinement time: %.3f s\n", SATime);
 		
-		c.placementCLBsConsistencyCheck(a);
+		//c.placementCLBsConsistencyCheck(a);
 		EfficientCostCalculator effccAfter = new EfficientBoundingBoxNetCC(c);
 		System.out.println("Total cost after low temperature anneal: " + effccAfter.calculateTotalCost());
 		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
@@ -663,7 +663,6 @@ public class Example
 				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
 		
 		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		
 		TD_AnalyticalPlacerNewNetOne tDAnalyticalPlacer = new TD_AnalyticalPlacerNewNetOne(a, c, prePackedCircuit);
 		
 		long analyticalStartTime;
@@ -677,7 +676,7 @@ public class Example
 		analyticalEndTime = System.nanoTime();
 		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
 		
-		c.placementCLBsConsistencyCheck(a);
+		//c.placementCLBsConsistencyCheck(a);
 		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(c);
 		double wlCostBeforeRefinement = effccBefore.calculateTotalCost();
 		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
@@ -692,7 +691,7 @@ public class Example
 		SAEndTime = System.nanoTime();
 		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
 		
-		c.placementCLBsConsistencyCheck(a);
+		//c.placementCLBsConsistencyCheck(a);
 		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(c);
 		double wlCostAfterRefinement = effccAfter.calculateTotalCost();
 		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
@@ -729,7 +728,7 @@ public class Example
 		//Random placement
 		Random rand = new Random(1);
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
-		packedCircuit.placementCLBsConsistencyCheck(a);
+		//packedCircuit.placementCLBsConsistencyCheck(a);
 		
 		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
@@ -741,7 +740,7 @@ public class Example
 		
 		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
 		
-		packedCircuit.placementCLBsConsistencyCheck(a);
+		//packedCircuit.placementCLBsConsistencyCheck(a);
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
 		
@@ -772,7 +771,7 @@ public class Example
 		//Random placement
 		Random rand = new Random(1);
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
-		packedCircuit.placementCLBsConsistencyCheck(a);
+		//packedCircuit.placementCLBsConsistencyCheck(a);
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
@@ -785,7 +784,7 @@ public class Example
 		
 		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
 		
-		packedCircuit.placementCLBsConsistencyCheck(a);
+		//packedCircuit.placementCLBsConsistencyCheck(a);
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
 		

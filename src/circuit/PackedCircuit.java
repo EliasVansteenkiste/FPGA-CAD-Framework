@@ -134,17 +134,22 @@ public class PackedCircuit extends Circuit{
 		stream.close();
 	}
 	
-	public void placementCLBsConsistencyCheck(FourLutSanitized a){
-		for(Site s:a.siteMap.values()){
-			if(s.block!=null&&s.block.type==BlockType.CLB){
-				if(clbs.remove(s.block.name)==null){
-					System.out.println("Placement consistency check failed! clb:"+s.block.name+", site:"+s);
-					return;
-				}
-			}
-		}
-		System.out.println("Placement consistency check passed!");
-	}
+	/*
+	 * Doesn't work at the moment
+	 * Breaks the circuit!!!!!!!!!!!!!!!!!
+	 * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	 */
+//	public void placementCLBsConsistencyCheck(FourLutSanitized a){
+//		for(Site s:a.siteMap.values()){
+//			if(s.block!=null&&s.block.type==BlockType.CLB){
+//				if(clbs.remove(s.block.name)==null){
+//					System.out.println("Placement consistency check failed! clb:"+s.block.name+", site:"+s);
+//					return;
+//				}
+//			}
+//		}
+//		System.out.println("Placement consistency check passed!");
+//	}
 	
 	public void fillVector()
 	{

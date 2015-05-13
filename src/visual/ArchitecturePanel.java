@@ -50,7 +50,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 						* (CLB_WIDTH + (a.channelWidth + 1) * WIRE_SPACE) - (a.channelWidth + 1)
 						* WIRE_SPACE);
 
-		buildRouteNodeData();
+		buildData();
 
 		// setBorder(BorderFactory.createLineBorder(Color.black));
 		
@@ -59,13 +59,6 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		mouseCurrentY = 0;
 		curClbText = "";
 	}
-
-	// public void setNodeColor(Tcon tcon, Color color) {
-	// for (RouteNode node : tcon.routeNodes) {
-	// RouteNodeData data = routeNodeData.get(node);
-	// data.setColor(color);
-	// }
-	// }
 
 	public void setNodeColor(Connection con, Color color)
 	{
@@ -84,13 +77,6 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		}
 	}
 
-	// public void setNodeColor(Pattern scheme, Color color) {
-	// for (RouteNode node : scheme.routeNodes) {
-	// RouteNodeData data = routeNodeData.get(node);
-	// data.setColor(color);
-	// }
-	// }
-
 	public void setNodeColor(Net net, Color color)
 	{
 		for (RouteNode node : net.routeNodes)
@@ -100,7 +86,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		}
 	}
 
-	RouteNode getNode(int x, int y)
+	public RouteNode getNode(int x, int y)
 	{
 		for (RouteNodeData data : routeNodeData.values())
 		{
@@ -112,11 +98,13 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		return null;
 	}
 
+	@Override
 	public Dimension getPreferredSize()
 	{
 		return new Dimension(891, 910);
 	}
 
+	@Override
 	public void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
@@ -132,15 +120,13 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 			data.draw(g, zoom);
 		}
 		
-		//g.setColor(Color.RED);
-		//g.fillRect(5, 894, 875, 13);
 		g.setFont(new Font("Arial", Font.BOLD, 13));
 		g.setColor(Color.BLUE);
 		g.drawString("CLB:", 10, 905);
 		g.drawString(curClbText, 50, 905);
 	}
 
-	public void buildRouteNodeData()
+	private void buildData()
 	{
 
 		routeNodeData = new HashMap<RouteNode, RouteNodeData>();
@@ -369,11 +355,13 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		}
 	}
 	
+	@Override
 	public void mouseDragged(MouseEvent e)
 	{
 		
 	}
 	
+	@Override
 	public void mouseMoved(MouseEvent e)
 	{
 		int xPos = e.getX();

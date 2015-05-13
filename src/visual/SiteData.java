@@ -6,8 +6,8 @@ import java.awt.Graphics;
 import architecture.Site;
 
 public class SiteData {
-	static double clbWidth = 1.0;
-	static double ioWidth = 0.45;
+	private static final double CLB_WIDTH = 1.0;
+	private static final double IO_WIDTH = 0.45;
 
 	double x;
 	double y;
@@ -42,28 +42,28 @@ public class SiteData {
 
 		switch (type) {
 		case CLB:
-			xCoord = (int) ((x - clbWidth / 2.0) * zoom);
-			yCoord = (int) ((y - clbWidth / 2.0) * zoom);
-			width = (int) (clbWidth * zoom);
-			hight = (int) (clbWidth * zoom);
+			xCoord = (int) ((x - CLB_WIDTH / 2.0) * zoom);
+			yCoord = (int) ((y - CLB_WIDTH / 2.0) * zoom);
+			width = (int) (CLB_WIDTH * zoom);
+			hight = (int) (CLB_WIDTH * zoom);
 
 			g.drawRect(xCoord, yCoord, width, hight);
 			break;
 		case IO_LEFT:
 		case IO_RIGHT:
-			xCoord = (int) ((x - clbWidth / 2.0) * zoom);
-			yCoord = (int) ((y - ioWidth / 2.0) * zoom);
-			width = (int) (clbWidth * zoom);
-			hight = (int) (ioWidth * zoom);
+			xCoord = (int) ((x - CLB_WIDTH / 2.0) * zoom);
+			yCoord = (int) ((y - IO_WIDTH / 2.0) * zoom);
+			width = (int) (CLB_WIDTH * zoom);
+			hight = (int) (IO_WIDTH * zoom);
 
 			g.drawRect(xCoord, yCoord, width, hight);
 			break;
 		case IO_UP:
 		case IO_DOWN:
-			xCoord = (int) ((x - ioWidth / 2.0) * zoom);
-			yCoord = (int) ((y - clbWidth / 2.0) * zoom);
-			width = (int) (ioWidth * zoom);
-			hight = (int) (clbWidth * zoom);
+			xCoord = (int) ((x - IO_WIDTH / 2.0) * zoom);
+			yCoord = (int) ((y - CLB_WIDTH / 2.0) * zoom);
+			width = (int) (IO_WIDTH * zoom);
+			hight = (int) (CLB_WIDTH * zoom);
 
 			g.drawRect(xCoord, yCoord, width, hight);
 			break;
