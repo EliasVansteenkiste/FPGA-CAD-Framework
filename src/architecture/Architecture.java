@@ -1,48 +1,31 @@
 package architecture;
+
 import java.io.PrintStream;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
-
+import java.util.Vector;
 
 public class Architecture {
-	public Random rand;
-	public Map<String,Site> siteMap;
-	public Map<String,RouteNode> routeNodeMap;
-	public Site getPlace(String name) {
-		return siteMap.get(name);
-	}
 	
-	public Architecture() {
+	protected Random rand;
+	protected Vector<Site> siteVector;
+	protected Vector<RouteNode> routeNodeVector;
+	
+	public Architecture()
+	{
 		super();
-
 		rand= new Random();
-
-		siteMap = new HashMap<String,Site>();
-		
-		routeNodeMap = new HashMap<String, RouteNode>();
-
-		
+		siteVector = new Vector<>();
+		routeNodeVector = new Vector<>();
 	}
 	
-	public RouteNode getOrMakeRouteNode(String name) {
-		RouteNode result=routeNodeMap.get(name);
-		if (result==null) {
-			result=new RouteNode(name);
-			putRouteNode(result);
-		}
-		return result;
-	}
-
-	public void putRouteNode(RouteNode node) {
-		routeNodeMap.put(node.name, node);
-	}
-
-	public void printRoutingGraph(PrintStream stream) {
-		for(RouteNode node : routeNodeMap.values()) {
+	public void printRoutingGraph(PrintStream stream)
+	{
+		for(RouteNode node : routeNodeVector)
+		{
 			stream.println("Node "+node.name);
-			for (RouteNode child : node.children) {
+			for(RouteNode child : node.children)
+			{
 				stream.print(child.name+ " ");
 			}
 			stream.println();
@@ -50,8 +33,19 @@ public class Architecture {
 		}
 	}
 	
-	public Collection<Site> sites() {
-		return siteMap.values();
+	public Collection<Site> getSites()
+	{
+		return siteVector;
+	}
+	
+	public Collection<RouteNode> getRouteNodes()
+	{
+		return routeNodeVector;
+	}
+	
+	public void setRand(Random rand)
+	{
+		this.rand = rand;
 	}
 
 }

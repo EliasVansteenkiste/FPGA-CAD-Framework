@@ -44,9 +44,9 @@ public class AnalyticalPlacerFive
 		this.architecture = architecture;
 		this.circuit = circuit;
 		this.minimalX = 1;
-		this.maximalX = architecture.width;
+		this.maximalX = architecture.getWidth();
 		this.minimalY = 1;
-		this.maximalY = architecture.height;
+		this.maximalY = architecture.getHeight();
 		switch(legalizer)
 		{
 			case 1:

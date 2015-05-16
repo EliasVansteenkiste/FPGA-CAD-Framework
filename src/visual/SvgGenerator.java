@@ -16,7 +16,7 @@ public class SvgGenerator {
 
 	public static void go(FourLutSanitized a, Collection<RouteNode> nodes,
 			PrintStream stream) {
-		int tileWidth = clbWidth + (a.channelWidth + 1) * wireSpace;
+		int tileWidth = clbWidth + (a.getChannelWidth() + 1) * wireSpace;
 		String standaardLineStyle = "stroke:grey;stroke-width:2";
 		String highlightLineStyle = "stroke:rgb(255,0,0);stroke-width:2";
 
@@ -25,16 +25,16 @@ public class SvgGenerator {
 		stream.println("<svg width=\"100%\" height=\"100%\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\">");
 
 		stream.println("<g transform=\"matrix(1,0,0,-1,0,"
-				+ ((a.height + 1) * tileWidth + clbWidth) + ")\">");
+				+ ((a.getHeight() + 1) * tileWidth + clbWidth) + ")\">");
 		// stream.println("<g transform=\"matrix(1,0,0,-1,0,0)\">");
 
 		stream.println("<rect x=\"0\" y=\"0\" width=\""
-				+ ((a.width + 1) * tileWidth + clbWidth) + "\" height=\""
-				+ ((a.height + 1) * tileWidth + clbWidth)
+				+ ((a.getWidth() + 1) * tileWidth + clbWidth) + "\" height=\""
+				+ ((a.getHeight() + 1) * tileWidth + clbWidth)
 				+ "\" style=\"fill:rgb(255,255,255)\" />");
 
 		// Drawing the sites
-		for (Site site : a.sites()) {
+		for (Site site : a.getSites()) {
 			switch (site.type) {
 			case IO:
 				if (site.x == 0) {
@@ -49,7 +49,7 @@ public class SvgGenerator {
 						drawIoSite(stream, x, y, 0, site, nodes);
 					}
 				}
-				if (site.x == a.width + 1) {
+				if (site.x == a.getWidth() + 1) {
 					if (site.n == 0) {
 						double x = site.x * tileWidth + clbWidth / 2.0;
 						double y = site.y * tileWidth + ioWidth / 2.0;
@@ -73,7 +73,7 @@ public class SvgGenerator {
 						drawIoSite(stream, x, y, 90, site, nodes);
 					}
 				}
-				if (site.y == a.height + 1) {
+				if (site.y == a.getHeight() + 1) {
 					if (site.n == 0) {
 						double x = site.x * tileWidth + ioWidth / 2.0;
 						double y = site.y * tileWidth + clbWidth / 2.0;
@@ -101,7 +101,7 @@ public class SvgGenerator {
 		// Drawing the channels
 		int x1, x2, y1, y2;
 		String lineStyle;
-		for (RouteNode node : a.routeNodeMap.values()) {
+		for (RouteNode node : a.getRouteNodes()) {
 			if (nodes.contains(node))
 				lineStyle = highlightLineStyle;
 			else
@@ -137,6 +137,10 @@ public class SvgGenerator {
 					case SINK:
 						break;
 					case IPIN:
+						break;
+					case VCHAN:
+						break;
+					case HCHAN:
 						break;
 					}
 					break;

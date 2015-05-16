@@ -18,9 +18,9 @@ public class Rplace {
 	public static void place(PackedCircuit c, FourLutSanitized a) {
 		Random rand= new Random();
 		Set<Site> temp = new HashSet<Site>();
-		for (int x=1;x<a.width+1;x++) {
-			for (int y=1;y<a.height+1;y++) {
-				Site s = a.siteArray[x][y][0];
+		for (int x=1;x<a.getWidth()+1;x++) {
+			for (int y=1;y<a.getHeight()+1;y++) {
+				Site s = a.getSite(x,y,0);
 				s.block = null;
 				temp.add(s);				
 			}
@@ -38,9 +38,9 @@ public class Rplace {
 	
 	public static void placeCLBs(PackedCircuit c, FourLutSanitized a, Random rand) {
 		Set<Site> temp = new HashSet<Site>();
-		for (int x=1;x<a.width+1;x++) {
-			for (int y=1;y<a.height+1;y++) {
-				Site s = a.siteArray[x][y][0];
+		for (int x=1;x<a.getWidth()+1;x++) {
+			for (int y=1;y<a.getHeight()+1;y++) {
+				Site s = a.getSite(x,y,0);
 				s.block = null;
 				temp.add(s);				
 			}
@@ -60,9 +60,9 @@ public class Rplace {
 	public static void placeCLBsandIOs(PackedCircuit c, FourLutSanitized a, Random rand) {
 		//Random place CLBs
 		Set<Site> temp = new HashSet<Site>();
-		for (int x=1;x<a.width+1;x++) {
-			for (int y=1;y<a.height+1;y++) {
-				Site s = a.siteArray[x][y][0];
+		for (int x=1;x<a.getWidth()+1;x++) {
+			for (int y=1;y<a.getHeight()+1;y++) {
+				Site s = a.getSite(x,y,0);
 				s.block = null;
 				temp.add(s);				
 			}
@@ -78,36 +78,36 @@ public class Rplace {
 		}
 		//Random Place IOs
 		Set<Site> tempInputs = new HashSet<Site>();
-		for (int x=1;x<a.width+1;x++) {
-			Site s = a.siteArray[x][0][0];
+		for (int x=1;x<a.getWidth()+1;x++) {
+			Site s = a.getSite(x,0,0);
 			s.block = null;
 			tempInputs.add(s);
-			Site t = a.siteArray[x][a.height+1][0];
+			Site t = a.getSite(x,a.getHeight()+1,0);
 			t.block = null;
 			tempInputs.add(t);
 		}
-		for (int y=1;y<a.height+1;y++) {
-			Site s = a.siteArray[0][y][0];
+		for (int y=1;y<a.getHeight()+1;y++) {
+			Site s = a.getSite(0,y,0);
 			s.block = null;
 			tempInputs.add(s);
-			Site t = a.siteArray[a.width+1][y][0];
+			Site t = a.getSite(a.getWidth()+1,y,0);
 			t.block = null;
 			tempInputs.add(t);
 		}
 		Set<Site> tempOutputs = new HashSet<Site>();
-		for (int x=1;x<a.width+1;x++) {
-			Site s = a.siteArray[x][0][1];
+		for (int x=1;x<a.getWidth()+1;x++) {
+			Site s = a.getSite(x,0,1);
 			s.block = null;
 			tempOutputs.add(s);
-			Site t = a.siteArray[x][a.height+1][1];
+			Site t = a.getSite(x,a.getHeight()+1,1);
 			t.block = null;
 			tempOutputs.add(t);
 		}
-		for (int y=1;y<a.height+1;y++) {
-			Site s = a.siteArray[0][y][1];
+		for (int y=1;y<a.getHeight()+1;y++) {
+			Site s = a.getSite(0,y,1);
 			s.block = null;
 			tempOutputs.add(s);
-			Site t = a.siteArray[a.width+1][y][1];
+			Site t = a.getSite(a.getWidth()+1,y,1);
 			t.block = null;
 			tempOutputs.add(t);
 		}
@@ -134,9 +134,9 @@ public class Rplace {
 	public static void placeCLBsandFixedIOs(PackedCircuit c, FourLutSanitized a, Random rand) {
 		//Random place CLBs
 		Set<Site> temp = new HashSet<Site>();
-		for (int x=1;x<a.width+1;x++) {
-			for (int y=1;y<a.height+1;y++) {
-				Site s = a.siteArray[x][y][0];
+		for (int x=1;x<a.getWidth()+1;x++) {
+			for (int y=1;y<a.getHeight()+1;y++) {
+				Site s = a.getSite(x,y,0);
 				s.block = null;
 				temp.add(s);				
 			}
@@ -150,32 +150,29 @@ public class Rplace {
 				b.setSite(site);
 			}	
 		}
-		//int index = 11;
-		//int index = 4;
+
 		int index = 0;
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
-			Site site = a.Isites.get(index);
+			Site site = a.getISite(index);
 			site.block = input;
 			input.setSite(site);
 			index += 2;
-			if(index >= a.Isites.size())
+			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
 				index = 1;
 			}
 		}
-		//index = 8;
-		//index = 12;
 		index = 0;
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
-			Site site = a.Osites.get(index);
+			Site site = a.getOSite(index);
 			site.block = output;
 			output.setSite(site);
 			index += 2;
-			if(index >= a.Osites.size())
+			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
 				index = 1;
 			}

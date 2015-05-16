@@ -28,25 +28,25 @@ public class PlacementManipulatorIOCLBParallelOld implements PlacementManipulato
 	public PlacementManipulatorIOCLBParallelOld(FourLutSanitized a, PackedCircuit c) {
 		this.a=a;
 		this.circuit=c;
-		maxFPGAdimension = Math.max(a.width,a.height);
+		maxFPGAdimension = Math.max(a.getWidth(),a.getHeight());
 		circuit.vBlocks = new Vector<Block>();
 		circuit.vBlocks.addAll(circuit.clbs.values());
 		circuit.vBlocks.addAll(circuit.inputs.values());
 		circuit.vBlocks.addAll(circuit.outputs.values());
 		rand = new Random();
-		a.rand = rand;
+		a.setRand(rand);
 	}
 	
 	public PlacementManipulatorIOCLBParallelOld(FourLutSanitized a, PackedCircuit c, Random rand) {
 		this.a=a;
 		this.circuit=c;
-		maxFPGAdimension = Math.max(a.width,a.height);
+		maxFPGAdimension = Math.max(a.getWidth(),a.getHeight());
 		circuit.vBlocks = new Vector<Block>();
 		circuit.vBlocks.addAll(circuit.clbs.values());
 		circuit.vBlocks.addAll(circuit.inputs.values());
 		circuit.vBlocks.addAll(circuit.outputs.values());
 		this.rand = rand;
-		a.rand = rand;
+		a.setRand(rand);
 	}
 
 	public Swap findSwap(int Rlim) {
@@ -131,7 +131,7 @@ public class PlacementManipulatorIOCLBParallelOld implements PlacementManipulato
 	
 	public void PlacementCLBsConsistencyCheck(){
 		Map<String,Clb> clbs = new HashMap<String,Clb>(circuit.clbs);
-		for(Site s:a.siteMap.values()){
+		for(Site s:a.getSites()){
 			if(s.block!=null&&s.block.type==BlockType.CLB){
 				if(clbs.remove(s.block.name)==null){
 					System.out.println("Placement consistency check failed! clb:"+s.block+", site:"+s);

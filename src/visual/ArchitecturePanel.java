@@ -46,8 +46,8 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		this.drawRouteNodes = drawRouteNodes;
 
 		zoom = size
-				/ ((a.width + 2)
-						* (CLB_WIDTH + (a.channelWidth + 1) * WIRE_SPACE) - (a.channelWidth + 1)
+				/ ((a.getWidth() + 2)
+						* (CLB_WIDTH + (a.getChannelWidth() + 1) * WIRE_SPACE) - (a.getChannelWidth() + 1)
 						* WIRE_SPACE);
 
 		buildData();
@@ -130,7 +130,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 	{
 
 		routeNodeData = new HashMap<RouteNode, RouteNodeData>();
-		for (RouteNode node : a.routeNodeMap.values())
+		for (RouteNode node : a.getRouteNodes())
 		{
 			switch (node.type)
 			{
@@ -145,15 +145,15 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		}
 
 		siteData = new HashMap<Site, SiteData>();
-		for (Site site : a.siteMap.values())
+		for (Site site : a.getSites())
 		{
 			siteData.put(site, new SiteData(site));
 		}
 
-		double tileWidth = CLB_WIDTH + (a.channelWidth + 1) * WIRE_SPACE;
+		double tileWidth = CLB_WIDTH + (a.getChannelWidth() + 1) * WIRE_SPACE;
 
 		// Drawing the sites
-		for (Site site : a.sites())
+		for (Site site : a.getSites())
 		{
 			switch (site.type)
 			{
@@ -173,7 +173,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 						drawLeftIoSite(x, y, site);
 					}
 				}
-				if (site.x == a.width + 1)
+				if (site.x == a.getWidth() + 1)
 				{
 					if (site.n == 0)
 					{
@@ -203,7 +203,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 						drawUpIoSite(x, y, site);
 					}
 				}
-				if (site.y == a.height + 1)
+				if (site.y == a.getHeight() + 1)
 				{
 					if (site.n == 0)
 					{
@@ -234,7 +234,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		// Drawing the channels
 		double x1, x2, y1, y2;
 		WireData data;
-		for (RouteNode node : a.routeNodeMap.values())
+		for (RouteNode node : a.getRouteNodes())
 		{
 			switch (node.type)
 			{
@@ -367,7 +367,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		int xPos = e.getX();
 		int yPos = e.getY();
 		
-		double tileWidth = CLB_WIDTH + (a.channelWidth + 1) * WIRE_SPACE;
+		double tileWidth = CLB_WIDTH + (a.getChannelWidth() + 1) * WIRE_SPACE;
 		int siteX = (int)((double)xPos / tileWidth / zoom);
 		int siteY = (int)((double)yPos / tileWidth / zoom);
 		
@@ -376,7 +376,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 			//System.out.println("X: " + siteX + ", Y: " + siteY);
 			mouseCurrentX = siteX;
 			mouseCurrentY = siteY;
-			if(siteX >= 1 && siteX <= a.width && siteY >= 1 && siteY <= a.height)
+			if(siteX >= 1 && siteX <= a.getWidth() && siteY >= 1 && siteY <= a.getHeight())
 			{
 				Block block = a.getSite(siteX, siteY, 0).block;
 				if(block != null)

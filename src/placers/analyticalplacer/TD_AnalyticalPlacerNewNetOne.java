@@ -47,9 +47,9 @@ public class TD_AnalyticalPlacerNewNetOne
 		this.architecture = architecture;
 		this.circuit = circuit;
 		this.minimalX = 1;
-		this.maximalX = architecture.width;
+		this.maximalX = architecture.getWidth();
 		this.minimalY = 1;
-		this.maximalY = architecture.height;
+		this.maximalY = architecture.getHeight();
 		this.timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.setCriticalityExponent(1.0);
 		this.legalizer = new TD_LegalizerOne(minimalX, maximalX, minimalY, maximalY, circuit.clbs.values().size(), timingGraph, 

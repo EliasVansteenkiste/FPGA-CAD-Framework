@@ -9,9 +9,6 @@ import circuit.PackedCircuit;
 import circuit.Net;
 import circuit.Pin;
 
-
-
-
 public class PathfinderRouter {
 	public HashMap<RouteNode,RouteNodeData> routeNodeData;
 	private PriorityQueue<QueueElement> queue;
@@ -53,7 +50,7 @@ public class PathfinderRouter {
 
 	private void allocateRouteNodeData(Architecture a) {
 		routeNodeData = new HashMap<RouteNode, RouteNodeData>();
-		for (RouteNode node:a.routeNodeMap.values()) {
+		for (RouteNode node:a.getRouteNodes()) {
 			routeNodeData.put(node, new RouteNodeData());			
 		}
 	}
@@ -126,7 +123,6 @@ public class PathfinderRouter {
 
 	        //Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (routingIsFeasable()){
-				c.netRouted = true;
 				System.out.println("\nRouting succeeded in "+iteration+" trials.");
 				System.out.println("Total wires used: "+c.totalWires());
 				return iteration;
@@ -136,7 +132,7 @@ public class PathfinderRouter {
 			int noUsed = 0;
 			int noOverused = 0;
 			int totalOveruse = 0;
-			for (RouteNode node: a.routeNodeMap.values()) {
+			for (RouteNode node: a.getRouteNodes()) {
 				RouteNodeData data=routeNodeData.get(node);
 				if(data.occupation>0){
 					noUsed++;
@@ -161,7 +157,7 @@ public class PathfinderRouter {
 		}
 		if (iteration==maxNOiterations+1){
 			System.out.println("Routing failled after "+iteration+" trials!");
-			for (RouteNode node: a.routeNodeMap.values()) {
+			for (RouteNode node: a.getRouteNodes()) {
 				RouteNodeData data=routeNodeData.get(node);
 				if (node.capacity < data.occupation) {
 					System.out.println(node);
@@ -202,7 +198,7 @@ public class PathfinderRouter {
 	}
 		
 	private boolean routingIsFeasable() {
-		for (RouteNode node: a.routeNodeMap.values()) {
+		for (RouteNode node: a.getRouteNodes()) {
 			RouteNodeData data=routeNodeData.get(node);
 			if (node.capacity < data.occupation) {
 				return false;
@@ -231,7 +227,7 @@ public class PathfinderRouter {
 	}
 	
 	private void updateCost(double pres_fac, double acc_fac){
-		 for (RouteNode node : a.routeNodeMap.values()) {
+		 for (RouteNode node : a.getRouteNodes()) {
 			RouteNodeData data = routeNodeData.get(node);
 			int occ = data.occupation;
 			int cap = node.capacity;
@@ -246,5 +242,3 @@ public class PathfinderRouter {
 	}
 
 }
-
-

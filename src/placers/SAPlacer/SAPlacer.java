@@ -105,7 +105,7 @@ public abstract class SAPlacer
 	protected int updateRlim(double alpha)
 	{
 		Rlimd=Rlimd*(1-0.44+alpha);
-		int maxFPGAdimension = Math.max(architecture.height, architecture.width);
+		int maxFPGAdimension = Math.max(architecture.getHeight(), architecture.getWidth());
 		if(Rlimd>maxFPGAdimension)
 		{
 			Rlimd=maxFPGAdimension;

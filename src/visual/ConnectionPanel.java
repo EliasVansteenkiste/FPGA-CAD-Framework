@@ -26,19 +26,16 @@ public class ConnectionPanel extends JPanel {
 
 	ItemListener itemListener;
 
-	public ConnectionPanel(ItemListener itemListener, PackedCircuit c) {
+	public ConnectionPanel(ItemListener itemListener, PackedCircuit c)
+	{
 		super();
 		this.itemListener = itemListener;
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		this.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-		connections = new Vector<Connection>(c.cons);
-
 		this.add(new JLabel(c.toString()));
 		checkBoxConnection = new Vector<JCheckBox>();
 		checkedConnection = new Vector<Boolean>();
 		connections = new Vector<Connection>();
-
 	}
 
 	public void setCon(Connection con) {

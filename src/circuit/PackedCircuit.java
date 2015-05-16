@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.Vector;
 
@@ -21,22 +20,13 @@ import architecture.Site;
 public class PackedCircuit extends Circuit{
 
 	public Map<String,Clb>	clbs;
-	public Vector<Clb> vClbs;
 	public Vector<Block> vBlocks;
 	public Map<String,Net>	globalNets;
-	public Map<String,Connection> connections;
-	public Set<Connection> cons;
-
-	public Map<Pin,Map<RouteNode,Integer>> BundleRns;
-	public Map<Pin,Map<RouteNode,Pin>> firstConnectionEnd;
-
-	public boolean netRouted;
 	
 	public PackedCircuit() {
 		super();
 		clbs = new HashMap<String,Clb>();
 		globalNets = new HashMap<String,Net>();
-		connections = new HashMap<String,Connection>();
 	}
 	
 	public PackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs)
@@ -44,10 +34,10 @@ public class PackedCircuit extends Circuit{
 		super(outputs, inputs);
 		clbs = new HashMap<String,Clb>();
 		globalNets = new HashMap<String,Net>();
-		connections = new HashMap<String,Connection>();
 	}
 
-	public int numBlocks() {
+	public int numBlocks()
+	{
 		return inputs.size()+outputs.size()+clbs.size();
 	}
 
@@ -60,57 +50,6 @@ public class PackedCircuit extends Circuit{
 			b.getSite().block = b;
 			b.fixed=true;
 		}
-	}
-	
-	public void randomPlace(Placement io_p, FourLutSanitized a) {
-		Random rand= new Random();
-		Set<Site> temp = new HashSet<Site>();
-		for(int x=0;x<a.width+2;x++){
-			for(int y=1;y<a.height+1;y++){
-				temp.add(a.getSite(x, y, 0));
-			}
-		}
-		for(int x=1;x<a.width+1;x++){
-			temp.add(a.getSite(x, 0, 0));
-			temp.add(a.getSite(x, a.height+1, 0));
-		}
-		for(Iterator<PlaatsingUnit> i=io_p.plaatsingsmap.values().iterator();i.hasNext();) {
-			PlaatsingUnit pu=i.next();
-			Block b=getBlock(pu.naam);
-			Site pl=(Site) temp.toArray()[rand.nextInt(temp.size())];
-			temp.remove(pl);
-			b.setSite(pl);
-			b.getSite().block = b;
-			b.fixed=true;
-		}
-	}
-	
-	public void RandomPlaceCLBsWithSeed(Placement io_p, FourLutSanitized a, Random rand) {
-		Vector<Site> temp = new Vector<Site>();
-		for(int x=1;x<a.width+1;x++){
-			for(int y=1;y<a.height+1;y++){
-				temp.add(a.getSite(x, y, 0));
-			}
-		}
-
-		for(Iterator<PlaatsingUnit> i=io_p.plaatsingsmap.values().iterator();i.hasNext();) {
-			PlaatsingUnit pu=i.next();
-			Block b=getBlock(pu.naam);
-			int idx = rand.nextInt(temp.size());
-			Site pl=(Site) temp.toArray()[idx];
-			temp.remove(pl);
-			b.setSite(pl);
-			b.getSite().block = b;
-			b.fixed=true;
-		}
-	}
-
-	private Block getBlock(String naam) {
-		Block result=null;
-		result=clbs.get(naam);
-		if (result == null) result=inputs.get(naam);
-		if (result == null) result=outputs.get(naam);
-		return result;
 	}
 	
 	public void dumpPlacement(String file) throws FileNotFoundException {
@@ -185,6 +124,14 @@ public class PackedCircuit extends Circuit{
 		for(Net net:this.nets.values()){
 			net.routeNodes.clear();
 		}
+	}
+	
+	private Block getBlock(String naam) {
+		Block result=null;
+		result=clbs.get(naam);
+		if (result == null) result=inputs.get(naam);
+		if (result == null) result=outputs.get(naam);
+		return result;
 	}
 
 }

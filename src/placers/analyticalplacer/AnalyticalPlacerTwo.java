@@ -59,9 +59,9 @@ public class AnalyticalPlacerTwo
 		this.utilizationFactor = 0.90;
 		this.currentCost = Double.MAX_VALUE;
 		minimalX = 1;
-		maximalX = architecture.width;
+		maximalX = architecture.getWidth();
 		minimalY = 1;
-		maximalY = architecture.height;
+		maximalY = architecture.getHeight();
 	}
 	
 	public void place()

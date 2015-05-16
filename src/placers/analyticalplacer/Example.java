@@ -591,7 +591,7 @@ public class Example
 	
 	private static void visualAnalytical(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
-		int archSize = calculateArchDimension(c);
+		int archSize = FourLutSanitized.calculateSquareArchDimensions(c);
 		int height = archSize;
 		int width = archSize;
 		int trackwidth = 4;
@@ -654,7 +654,7 @@ public class Example
 	
 	private static void visualTDAnalytical(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
-		int archSize = calculateArchDimension(c);
+		int archSize = FourLutSanitized.calculateSquareArchDimensions(c);
 		int height = archSize;
 		int width = archSize;
 		int trackwidth = 4;
@@ -717,7 +717,7 @@ public class Example
 	
 	private static void visualTDSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		int archSize = calculateArchDimension(packedCircuit);
+		int archSize = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
 		int height = archSize;
 		int width = archSize;
 		int trackwidth = 4;
@@ -823,7 +823,7 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = calculateArchDimension(packedCircuit);
+		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
 		int height = dimension;
 		int width = dimension;
 		int trackwidth = 4;
@@ -884,7 +884,7 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = calculateArchDimension(packedCircuit);
+		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
 		int height = dimension;
 		int width = dimension;
 		int trackwidth = 4;
@@ -944,7 +944,7 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = calculateArchDimension(packedCircuit);
+		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
 		int height = dimension;
 		int width = dimension;
 		int trackwidth = 4;
@@ -1004,7 +1004,7 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = calculateArchDimension(packedCircuit);
+		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
 		int height = dimension;
 		int width = dimension;
 		int trackwidth = 4;
@@ -1057,7 +1057,7 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = calculateArchDimension(packedCircuit);
+		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
 		int height = dimension;
 		int width = dimension;
 		int trackwidth = 4;
@@ -1088,34 +1088,6 @@ public class Example
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		results[5] = maxDelay;
-	}
-	
-	private static int calculateArchDimension(PackedCircuit circuit)
-	{
-		int nbInputs = circuit.getInputs().values().size();
-		int nbOutputs = circuit.getOutputs().values().size();
-		int nbClbs = circuit.clbs.values().size();
-		int maxIO;
-		if(nbInputs > nbOutputs)
-		{
-			maxIO = nbInputs;
-		}
-		else
-		{
-			maxIO = nbOutputs;
-		}
-		int x1 = (maxIO + 3) / 4;
-		int x2 = (int)Math.ceil(Math.sqrt(nbClbs * 1.20));
-		int x;
-		if(x1 > x2)
-		{
-			x = x1;
-		}
-		else
-		{
-			x = x2;
-		}
-		return x;
 	}
 	
 	private static void visualLegalizerTest()
@@ -1322,7 +1294,7 @@ public class Example
 	
 	private static void testEdgeMap(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		int dimension = calculateArchDimension(packedCircuit);
+		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
 		int height = dimension;
 		int width = dimension;
 		int trackwidth = 4;
@@ -1516,10 +1488,10 @@ public class Example
 		packedCircuit.getNets().put(packedNet5.name, packedNet5);
 		
 		FourLutSanitized architecture = new FourLutSanitized(10, 10, 4);
-		architecture.Isites.get(4).block = input3;
-		input3.setSite(architecture.Isites.get(4));
-		architecture.Osites.get(12).block = output7;
-		output7.setSite(architecture.Osites.get(12));
+		architecture.getISite(4).block = input3;
+		input3.setSite(architecture.getISite(4));
+		architecture.getOSite(12).block = output7;
+		output7.setSite(architecture.getOSite(12));
 		architecture.getSite(1, 4, 0).block = clba;
 		clba.setSite(architecture.getSite(1, 4, 0));
 		architecture.getSite(1, 5, 0).block = clbb;

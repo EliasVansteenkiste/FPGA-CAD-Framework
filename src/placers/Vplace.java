@@ -29,7 +29,7 @@ public class Vplace {
 	{
 		//Initialize SA parameters
 		Random rand = new Random(1);
-		Rlimd = Math.max(a.width,a.height);
+		Rlimd = Math.max(a.getWidth(),a.getHeight());
 		int Rlim = initialRlim();
 		double T = calculateInitialTemperature();
 		int movesPerTemperature = (int) (inner_num*Math.pow(c.numBlocks(),4.0/3.0));

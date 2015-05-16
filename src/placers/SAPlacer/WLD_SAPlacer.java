@@ -19,7 +19,7 @@ public class WLD_SAPlacer extends SAPlacer
 		//Initialize SA parameters
 		calculator.recalculateFromScratch();
 		rand = new Random(1);
-		Rlimd = Math.max(architecture.width,architecture.height);
+		Rlimd = Math.max(architecture.getWidth(),architecture.getHeight());
 		int Rlim = initialRlim();
 		double T = calculateInitialTemperature();
 		int movesPerTemperature = (int) (inner_num*Math.pow(circuit.numBlocks(),4.0/3.0));
@@ -132,7 +132,7 @@ public class WLD_SAPlacer extends SAPlacer
 		double 	kwadratischeSomDeltaKost=0;
 		for (int i = 0; i < circuit.numBlocks(); i++) 
 		{
-			int maxFPGAdimension = Math.max(architecture.width, architecture.height);
+			int maxFPGAdimension = Math.max(architecture.getWidth(), architecture.getHeight());
 			Swap swap = findSwap(maxFPGAdimension);			
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
