@@ -2,6 +2,7 @@ package circuit;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 public class Circuit 
 {
@@ -9,6 +10,7 @@ public class Circuit
 	public Map<String,Output> outputs;
 	public Map<String,Input> inputs;
 	public Map<String,Net>	nets;
+	private Vector<Vector<HardBlock>> hardBlocks;
 	
 	private String name;
 	
@@ -17,6 +19,7 @@ public class Circuit
 		this.outputs = new HashMap<String,Output>();
 		this.inputs = new HashMap<String,Input>();
 		this.nets = new HashMap<String,Net>();
+		this.hardBlocks = new Vector<>();
 	}
 	
 	public Circuit(String name)
@@ -24,6 +27,7 @@ public class Circuit
 		this.outputs = new HashMap<String,Output>();
 		this.inputs = new HashMap<String,Input>();
 		this.nets = new HashMap<String,Net>();
+		this.hardBlocks = new Vector<>();
 		this.name = name;
 	}
 	
@@ -72,6 +76,31 @@ public class Circuit
 	public Map<String, Net> getNets() 
 	{
 		return nets;
+	}
+	
+	public void addHardBlock(HardBlock blockToAdd)
+	{
+		int typeIndex = -1;
+		int counter = 0;
+		for(Vector<HardBlock> vector: hardBlocks)
+		{
+			if(blockToAdd.getTypeName().contains(vector.get(0).getTypeName()))
+			{
+				typeIndex = counter;
+				break;
+			}
+			counter++;
+		}
+		if(counter != -1)
+		{
+			hardBlocks.get(typeIndex).add(blockToAdd);
+		}
+		else
+		{
+			Vector <HardBlock> newVector = new Vector<HardBlock>();
+			newVector.add(blockToAdd);
+			hardBlocks.add(newVector);
+		}
 	}
 	
 	@Override
