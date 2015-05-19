@@ -1,5 +1,7 @@
 package circuit;
 
+import java.util.Vector;
+
 public class HardBlock extends Block
 {
 	
@@ -8,22 +10,24 @@ public class HardBlock extends Block
 	private boolean isClockEdge;
 	private String typeName;
 	
-	public HardBlock(String name, int nbOutputs, int nbInputs, String typeName, boolean isClockEdge)
+	public HardBlock(String name, Vector<String> outputNames, Vector<String> inputNames, String typeName, boolean isClockEdge)
 	{
 		super(name, BlockType.HARDBLOCK);
 		this.typeName = typeName;
 		this.isClockEdge = isClockEdge;
 		
+		int nbOutputs = outputNames.size();
 		outputs = new Pin[nbOutputs];
 		for(int i = 0; i < nbOutputs; i++)
 		{
-			outputs[i] = new Pin(name + "_HBout_" + i, PinType.SOURCE, this);
+			outputs[i] = new Pin(name + "_HBout_" + outputNames.get(i), PinType.SOURCE, this);
 		}
 		
+		int nbInputs = inputNames.size();
 		inputs = new Pin[nbInputs];
 		for(int i = 0; i < nbInputs; i++)
 		{
-			inputs[i] = new Pin(name + "_HBin_" + i, PinType.SINK, this);
+			inputs[i] = new Pin(name + "_HBin_" + inputNames.get(i), PinType.SINK, this);
 		}
 	}
 	

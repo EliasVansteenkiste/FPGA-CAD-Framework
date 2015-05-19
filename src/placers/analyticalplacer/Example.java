@@ -38,6 +38,7 @@ import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
 import circuit.Flipflop;
+import circuit.HardBlock;
 import circuit.Input;
 import circuit.Lut;
 import circuit.Net;
@@ -51,6 +52,7 @@ import circuit.parser.blif.BlifReader;
 public class Example 
 {
 	
+	//Heterogeneous
 	public static void main(String[] args)
 	{
 		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
@@ -64,33 +66,13 @@ public class Example
 			System.out.println("Not debugging");
 		}
 		
-		//Wait for enter to start (necessary for easy profiling)
-//		System.out.println("Hit any key to continue...");
-//		try
-//		{
-//			System.in.read();
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.out.println("Something went wrong");
-//		}
-		
 		BlifReader blifReader = new BlifReader();
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -98,56 +80,107 @@ public class Example
 			return;
 		}
 		
-		//printUnpackedCircuit(prePackedCircuit);
-		
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		//printBlePackedCircuit(blePackedCircuit);
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
-		
-		//printPackedCircuit(packedCircuit);
-		
-		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
-		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
-		//System.out.println();
-		//System.out.println("SA placed block locations");
-		//printPlacedCircuit(packedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT:");
-		//analyticalPlace(packedCircuit, prePackedCircuit);
-		//printPlacedCircuit(packedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT TWO");
-		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT THREE");
-		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
-		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
-		
-		//visualAnalytical(packedCircuit, prePackedCircuit);
-		visualTDAnalytical(packedCircuit, prePackedCircuit);
-		
-		//visualSA(prePackedCircuit, packedCircuit);
-		//visualTDSA(prePackedCircuit, packedCircuit);
-		
-		//runAllPlacersBenchmarks();
-		//runWlVsTdSaBenchmarks();
-		//runTDSaVsAnalyticalBenchmarks();
-		
-		//testEdgeMap(prePackedCircuit, packedCircuit);
-		
-		//visualLegalizerTest();
-		
-		//visualTDanalyticalTestCircuit();
-		
-		//testCostCalculator(packedCircuit);
-		//testTimingCostCalculator(prePackedCircuit, packedCircuit);
+		printUnpackedCircuit(prePackedCircuit);
 	}
+	
+//	//Homegeneous
+//	public static void main(String[] args)
+//	{
+//		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
+//			    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+//		if(isDebug)
+//		{
+//			System.out.println("Debugging");
+//		}
+//		else
+//		{
+//			System.out.println("Not debugging");
+//		}
+//		
+//		//Wait for enter to start (necessary for easy profiling)
+////		System.out.println("Hit any key to continue...");
+////		try
+////		{
+////			System.in.read();
+////		}
+////		catch(IOException ioe)
+////		{
+////			System.out.println("Something went wrong");
+////		}
+//		
+//		BlifReader blifReader = new BlifReader();
+//		PrePackedCircuit prePackedCircuit;
+//		try
+//		{
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.err.println("Couldn't read blif file!");
+//			return;
+//		}
+//		
+//		//printUnpackedCircuit(prePackedCircuit);
+//		
+//		BlePacker blePacker = new BlePacker(prePackedCircuit);
+//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		
+//		//printBlePackedCircuit(blePackedCircuit);
+//		
+//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+//		PackedCircuit packedCircuit = clbPacker.pack();
+//		
+//		//printPackedCircuit(packedCircuit);
+//		
+//		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
+//		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+//		//System.out.println();
+//		//System.out.println("SA placed block locations");
+//		//printPlacedCircuit(packedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT:");
+//		//analyticalPlace(packedCircuit, prePackedCircuit);
+//		//printPlacedCircuit(packedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT TWO");
+//		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT THREE");
+//		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
+//		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
+//		
+//		//visualAnalytical(packedCircuit, prePackedCircuit);
+//		visualTDAnalytical(packedCircuit, prePackedCircuit);
+//		
+//		//visualSA(prePackedCircuit, packedCircuit);
+//		//visualTDSA(prePackedCircuit, packedCircuit);
+//		
+//		//runAllPlacersBenchmarks();
+//		//runWlVsTdSaBenchmarks();
+//		//runTDSaVsAnalyticalBenchmarks();
+//		
+//		//testEdgeMap(prePackedCircuit, packedCircuit);
+//		
+//		//visualLegalizerTest();
+//		
+//		//visualTDanalyticalTestCircuit();
+//		
+//		//testCostCalculator(packedCircuit);
+//		//testTimingCostCalculator(prePackedCircuit, packedCircuit);
+//	}
 	
 	private static void visualTDanalyticalTestCircuit()
 	{
@@ -1552,6 +1585,20 @@ public class Example
 		for(Flipflop flipflop:flipflops)
 		{
 			System.out.println(flipflop.toString());
+		}
+		System.out.println();
+		int nbHardBlocks = 0;
+		for(Vector<HardBlock> hbVector: prePackedCircuit.getHardBlocks())
+		{
+			nbHardBlocks += hbVector.size();
+		}
+		System.out.println("Hardblocks: " + nbHardBlocks);
+		for(Vector<HardBlock> hbVector: prePackedCircuit.getHardBlocks())
+		{
+			for(HardBlock hardBlock: hbVector)
+			{
+				System.out.println(hardBlock.toString() + ": clockedge = " + hardBlock.getIsClockEdge());
+			}
 		}
 		System.out.println();
 		Iterator<Net> iterator = prePackedCircuit.getNets().values().iterator();

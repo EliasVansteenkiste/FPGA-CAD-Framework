@@ -78,6 +78,11 @@ public class Circuit
 		return nets;
 	}
 	
+	public Vector<Vector<HardBlock>> getHardBlocks()
+	{
+		return hardBlocks;
+	}
+	
 	public void addHardBlock(HardBlock blockToAdd)
 	{
 		int typeIndex = -1;
@@ -91,7 +96,7 @@ public class Circuit
 			}
 			counter++;
 		}
-		if(counter != -1)
+		if(typeIndex != -1)
 		{
 			hardBlocks.get(typeIndex).add(blockToAdd);
 		}

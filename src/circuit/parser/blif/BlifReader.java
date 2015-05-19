@@ -6,14 +6,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Vector;
 
 import circuit.Flipflop;
+import circuit.HardBlock;
 import circuit.Input;
 import circuit.Lut;
 import circuit.Net;
 import circuit.Output;
 import circuit.PrePackedCircuit;
-
 
 public class BlifReader 
 {
@@ -25,10 +26,17 @@ public class BlifReader
 		int lastIndexSlash = fileName.lastIndexOf('/');
 		circuit = new PrePackedCircuit(nbLutInputs, fileName.substring(lastIndexSlash + 1));
 		Path path = Paths.get(fileName);
+		Vector<String> blackBoxNames = new Vector<>();
+		Vector<Vector<String>> blackBoxInputs = new Vector<>();
+		Vector<Vector<String>> blackBoxOutputs = new Vector<>();
+		Vector<Boolean> blackBoxClocked = new Vector<>();
+		Vector<Integer> blackBoxNbInstantiated = new Vector<>();
+		int stopLineNb = findBlackBoxes(path, blackBoxNames, blackBoxInputs, blackBoxOutputs, blackBoxClocked, blackBoxNbInstantiated);
 		try(BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8))
 		{
 			String line = null;
-			while((line = reader.readLine()) != null)
+			int lineNumber = 0;
+			while((line = reader.readLine()) != null && lineNumber <= stopLineNb)
 			{
 				while(line.endsWith("\\"))
 				{
@@ -39,41 +47,47 @@ public class BlifReader
 				if(line != null)
 				{
 					String[] command = line.split(" +");
-					switch(command[0])
+					if(command[0].length() > 0 && command[0].charAt(0) != '#')
 					{
-						case ".model":
-							processModel(command);
-							break;
-						case ".inputs":
-							processInputs(command);
-							break;
-						case ".outputs":
-							processOutputs(command);
-							break;
-						case ".names":
-							boolean succes = processNames(command, nbLutInputs);
-							reader.mark(200);
-							while(!reader.readLine().startsWith(".")) //skip truth table
-							{
+						switch(command[0])
+						{
+							case ".model":
+								processModel(command);
+								break;
+							case ".inputs":
+								processInputs(command);
+								break;
+							case ".outputs":
+								processOutputs(command);
+								break;
+							case ".names":
+								boolean succes = processNames(command, nbLutInputs);
 								reader.mark(200);
-							}
-							reader.reset(); //reset reader to last mark
-							if(!succes)
-							{
-								return null;
-							}
-							break;
-						case ".latch":
-							processLatch(command);
-							break;
-						case ".end":
-							break;
-						default:
-							System.out.println("Command " + command[0] + " is not yet supported in blifreader");
-							break;
+								while(!reader.readLine().startsWith(".")) //skip truth table
+								{
+									reader.mark(200);
+								}
+								reader.reset(); //reset reader to last mark
+								if(!succes)
+								{
+									return null;
+								}
+								break;
+							case ".latch":
+								processLatch(command);
+								break;
+							case ".subckt":
+								processSubcircuit(command, blackBoxNames, blackBoxInputs, blackBoxOutputs, blackBoxClocked, blackBoxNbInstantiated);
+								break;
+							case ".end":
+								break;
+							default:
+								System.out.println("Command " + command[0] + " is not yet supported in blifreader");
+								break;
+						}
 					}
 				}
-				
+				lineNumber++;
 			}
 		}
 		return circuit;
@@ -126,6 +140,10 @@ public class BlifReader
 			Lut lut;
 			if(command.length == 2) //This is a source LUT which doesn't sink any nets but does source a net
 			{
+				if(command[1].contains("unconn") && command[1].length() == 6)
+				{
+					return true;
+				}
 				lut = new Lut(command[command.length - 1], 1, nbLutInputs, true);
 			}
 			else
@@ -234,6 +252,163 @@ public class BlifReader
 			circuit.getNets().put(command[2], new Net(command[2]));
 		}
 		circuit.getNets().get(command[2]).addSource(flipflop.getOutput());
+	}
+	
+	private void processSubcircuit(String[] command, Vector<String> blackBoxNames, Vector<Vector<String>> blackBoxInputs, 
+									Vector<Vector<String>> blackBoxOutputs, Vector<Boolean> blackBoxClocked, 
+									Vector<Integer> blackBoxNbInstantiated)
+	{
+		int index = -1;
+		int counter = 0;
+		for(String subcktName: blackBoxNames)
+		{
+			if(subcktName.contains(command[1]))
+			{
+				index = counter;
+				break;
+			}
+			counter++;
+		}
+		if(index == -1)
+		{
+			System.err.println("Subcircuit " + command[1] + " was not found!");
+			return;
+		}
+		HardBlock newHardBlock = new HardBlock(blackBoxNames.get(index) + "_" + blackBoxNbInstantiated.get(index), blackBoxOutputs.get(index), 
+												blackBoxInputs.get(index), blackBoxNames.get(index), blackBoxClocked.get(index));
+		blackBoxNbInstantiated.set(index, blackBoxNbInstantiated.get(index) + 1);
+		circuit.addHardBlock(newHardBlock);
+		
+		int nbInputs = blackBoxInputs.get(index).size();
+		int nbOutputs = blackBoxOutputs.get(index).size();
+		
+		//Take care of nets at subcircuit inputs
+		for(int i = 2; i < 2 + nbInputs; i++)
+		{
+			int equalSignIndex = command[i].indexOf('=');
+			String subcktInputName = command[i].substring(0, equalSignIndex);
+			String netName = command[i].substring(equalSignIndex + 1);
+			if(!subcktInputName.contains(blackBoxInputs.get(index).get(i - 2)))
+			{
+				System.err.println("Subcircuit input " + blackBoxInputs.get(index).get(i - 2) + " is not equal to " + subcktInputName);
+				return;
+			}
+			if(!(netName.contains("unconn") && netName.length() == 6))
+			{
+				if(!circuit.getNets().containsKey(netName)) //net still needs to be added to the nets hashmap
+				{
+					circuit.getNets().put(netName, new Net(netName));
+				}
+				circuit.getNets().get(netName).addSink(newHardBlock.getInputs()[i-2]);
+			}
+		}
+		
+		//Take care of nets at subcircuit outputs
+		int outputStartIndex = 2 + nbInputs;
+		for(int i = outputStartIndex; i < outputStartIndex + nbOutputs; i++)
+		{
+			int equalSignIndex = command[i].indexOf('=');
+			String subcktInputName = command[i].substring(0, equalSignIndex);
+			String netName = command[i].substring(equalSignIndex + 1);
+			if(!subcktInputName.contains(blackBoxOutputs.get(index).get(i - outputStartIndex)))
+			{
+				System.err.println("Subcircuit input " + blackBoxOutputs.get(index).get(i - outputStartIndex) + " is not equal to " + subcktInputName);
+				return;
+			}
+			if(!(netName.contains("unconn") && netName.length() == 6))
+			{
+				if(!circuit.getNets().containsKey(netName)) //net still needs to be added to the nets hashmap
+				{
+					circuit.getNets().put(netName, new Net(netName));
+				}
+				circuit.getNets().get(netName).addSource(newHardBlock.getOutputs()[i-outputStartIndex]);
+			}
+		}
+	}
+	
+	private int findBlackBoxes(Path path, Vector<String> blackBoxNames, Vector<Vector<String>> blackBoxInputs, Vector<Vector<String>> blackBoxOutputs, 
+								Vector<Boolean> blackBoxClocked, Vector<Integer> blackBoxNbInstantiated) throws IOException
+	{
+		boolean insideModel = false;
+		boolean firstEndPassed = false;
+		int endLineNb = 0;
+		String currentModelName = null;
+		Vector<String> inputs = null;
+		Vector<String> outputs = null;
+		boolean clocked = false;
+		try(BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8))
+		{
+			String line = null;
+			while((line = reader.readLine()) != null)
+			{
+				while(line.endsWith("\\"))
+				{
+					line = line.substring(0, line.length() - 1);
+					line = line + reader.readLine();
+				}
+				String[] command = line.split(" +");
+				if(command[0].contains(".model"))
+				{
+					insideModel = true;
+					currentModelName = command[1];
+					inputs = new Vector<>();
+					outputs = new Vector<>();
+					clocked = false;
+				}
+				if(command[0].contains(".inputs"))
+				{
+					for(int i = 1; i < command.length; i++)
+					{
+						inputs.add(command[i]);
+						if(command[i].contains("clk"))
+						{
+							clocked = true;
+						}
+					}
+				}
+				if(command[0].contains(".outputs"))
+				{
+					for(int i = 1; i < command.length; i++)
+					{
+						outputs.add(command[i]);
+					}
+				}
+				if(command[0].contains(".blackbox"))
+				{
+					if(insideModel)
+					{
+						blackBoxNames.add(currentModelName);
+						blackBoxInputs.add(inputs);
+						blackBoxOutputs.add(outputs);
+						blackBoxClocked.add(clocked);
+						blackBoxNbInstantiated.add(0);
+					}
+				}
+				if(command[0].contains(".end"))
+				{
+					insideModel = false;
+					firstEndPassed = true;
+					currentModelName = null;
+					inputs = null;
+					outputs = null;
+					clocked = false;
+				}
+				if(command[0].contains(".names"))
+				{
+					reader.mark(200);
+					while(!reader.readLine().startsWith(".")) //skip truth table
+					{
+						reader.mark(200);
+					}
+					reader.reset(); //reset reader to last mark
+				}
+				if(!firstEndPassed)
+				{
+					endLineNb++;
+				}
+			}
+		}
+		return endLineNb;
 	}
 	
 }
