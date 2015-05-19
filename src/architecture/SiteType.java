@@ -1,5 +1,6 @@
 package architecture;
 
-public enum SiteType {
-	IO, CLB
+public enum SiteType
+{
+	IO, CLB, HARDBLOCK
 }

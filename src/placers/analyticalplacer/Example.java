@@ -17,6 +17,7 @@ import mathtools.CGSolver;
 import mathtools.Crs;
 
 import architecture.FourLutSanitized;
+import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 
 import packers.BlePacker;
@@ -73,6 +74,7 @@ public class Example
 			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -90,7 +92,9 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 		
-		printPackedCircuit(packedCircuit);
+		//printPackedCircuit(packedCircuit);
+		
+		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
 	}
 	
 //	//Homegeneous
@@ -1753,17 +1757,17 @@ public class Example
 		System.out.println("PACKED CIRCUIT:");
 		Collection<Input> inputs = circuit.getInputs().values();
 		System.out.println("Inputs: " + inputs.size());
-//		for(Input input:inputs)
-//		{
-//			System.out.println(input.toString());
-//		}
+		for(Input input:inputs)
+		{
+			System.out.println(input.toString());
+		}
 		System.out.println();
 		Collection<Output> outputs = circuit.getOutputs().values();
 		System.out.println("Outputs: " + outputs.size());
-//		for(Output output:outputs)
-//		{
-//			System.out.println(output.toString());
-//		}
+		for(Output output:outputs)
+		{
+			System.out.println(output.toString());
+		}
 		System.out.println();
 		int nbHardBlocks = 0;
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
@@ -1771,37 +1775,37 @@ public class Example
 			nbHardBlocks += hbVector.size();
 		}
 		System.out.println("Hardblocks: " + nbHardBlocks);
-//		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
-//		{
-//			for(HardBlock hardBlock: hbVector)
-//			{
-//				System.out.println(hardBlock.toString());
-//			}
-//		}
+		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
+		{
+			for(HardBlock hardBlock: hbVector)
+			{
+				System.out.println(hardBlock.toString());
+			}
+		}
 		System.out.println();
 		Collection<Clb> clbs = circuit.clbs.values();
 		System.out.println("CLBs: " + clbs.size());
 		System.out.println();
 		Iterator<Net> netsIterator = circuit.getNets().values().iterator();
 		System.out.println("Nets: " + circuit.getNets().values().size());
-//		while(netsIterator.hasNext())
-//		{
-//			Net currentNet = netsIterator.next();
-//			System.out.print("Source: " + currentNet.source.name + " Sinks: ");
-//			int vectorSize = currentNet.sinks.size();
-//			for(int i = 0; i < vectorSize; i++)
-//			{
-//				if(i < vectorSize - 1)
-//				{
-//					System.out.print(currentNet.sinks.get(i).name + ", ");
-//				}
-//				else
-//				{
-//					System.out.print(currentNet.sinks.get(i).name);
-//				}
-//			}
-//			System.out.println();
-//		}
+		while(netsIterator.hasNext())
+		{
+			Net currentNet = netsIterator.next();
+			System.out.print("Source: " + currentNet.source.name + " Sinks: ");
+			int vectorSize = currentNet.sinks.size();
+			for(int i = 0; i < vectorSize; i++)
+			{
+				if(i < vectorSize - 1)
+				{
+					System.out.print(currentNet.sinks.get(i).name + ", ");
+				}
+				else
+				{
+					System.out.print(currentNet.sinks.get(i).name);
+				}
+			}
+			System.out.println();
+		}
 		System.out.println();
 	}
 	

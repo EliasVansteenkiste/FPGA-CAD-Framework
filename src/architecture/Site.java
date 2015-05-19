@@ -1,20 +1,19 @@
 package architecture;
+
 import circuit.Block;
 
 public class Site {
 	public int x;
 	public int y;
 	public int n;
-	
 	public SiteType type;
-	
 	public Block block;
-	
-	String naam;
+	private String naam;
 	public RouteNode source;
 	public RouteNode sink;
 	
-	public Site(int x, int y, int n, SiteType t, String naam) {
+	public Site(int x, int y, int n, SiteType t, String naam)
+	{
 		super();	
 		this.x=x;
 		this.y=y;
@@ -23,14 +22,15 @@ public class Site {
 		this.naam=naam;
 	}
 	
-	double afstand(Site p) {
+	double afstand(Site p)
+	{
 		return Math.abs(x-p.x)+Math.abs(y-p.y);
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return naam;
 	}
-	
 	
 }
