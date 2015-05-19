@@ -32,7 +32,8 @@ public class BlePacker
 	
 	public BlePackedCircuit pack()
 	{
-		this.afterBlePacking = new BlePackedCircuit(beforeBlePacking.getOutputs(), beforeBlePacking.getInputs(), beforeBlePacking.getNbLutInputs());
+		this.afterBlePacking = new BlePackedCircuit(beforeBlePacking.getOutputs(), beforeBlePacking.getInputs(), 
+													beforeBlePacking.getHardBlocks(), beforeBlePacking.getNbLutInputs());
 		
 		Map<String,Net> beforeNets = beforeBlePacking.getNets();
 		
@@ -93,24 +94,28 @@ public class BlePacker
 			// ==> net is internal to the BLE
 			// ==> not necessary to add it to the afterBlePacking nets
 			
-			
 			if(net.source == null)
 			{
 				System.out.println("Trouble: " + net.name);
 			}
 			
-			
-			
 			if(!(net.source.owner.type == BlockType.LUT && net.sinks.size() == 1 && net.sinks.get(0).owner.type == BlockType.FLIPFLOP))
 			{
 				afterNets.put(net.name, new Net(net.name));
-				if(net.source.owner.type != BlockType.INPUT)
+				if(net.source.owner.type == BlockType.INPUT)
 				{
-					afterNets.get(net.name).addSource(afterBlePacking.getBles().get(net.name).getOutput());
+					afterNets.get(net.name).addSource(afterBlePacking.getInputs().get(net.name).output);
 				}
 				else
 				{
-					afterNets.get(net.name).addSource(afterBlePacking.getInputs().get(net.name).output);
+					if(net.source.owner.type == BlockType.HARDBLOCK_CLOCKED || net.source.owner.type == BlockType.HARDBLOCK_UNCLOCKED)
+					{
+						afterNets.get(net.name).addSource(net.source); //Its the same pin...
+					}
+					else //Source must be a ble pin
+					{
+						afterNets.get(net.name).addSource(afterBlePacking.getBles().get(net.name).getOutput());
+					}
 				}
 				
 				for(Pin sink:net.sinks)
@@ -128,25 +133,30 @@ public class BlePacker
 							sinkName = sink.owner.name;
 							afterNets.get(net.name).addSink(afterBlePacking.getOutputs().get(sinkName).input);
 						}
-						else //sink must be a lut
+						else
 						{
-							sinkName = lutToBle.get(sink.owner.name);
-							int index = -1; //Will throw exception when pin is not found
-							for(int i = 0; i < afterBlePacking.getBles().get(sinkName).getLut().getNbInputs(); i++)
+							if(sink.owner.type == BlockType.HARDBLOCK_CLOCKED || sink.owner.type == BlockType.HARDBLOCK_UNCLOCKED)
 							{
-								Pin input = afterBlePacking.getBles().get(sinkName).getLut().getInputs()[i];
-								if(input.name == sink.name)
-								{
-									index = i;
-									break;
-								}
+								afterNets.get(net.name).addSink(sink); //Its the same pin...
 							}
-							afterNets.get(net.name).addSink(afterBlePacking.getBles().get(sinkName).getInputs()[index]);
+							else //sink must be a lut
+							{
+								sinkName = lutToBle.get(sink.owner.name);
+								int index = -1; //Will throw exception when pin is not found
+								for(int i = 0; i < afterBlePacking.getBles().get(sinkName).getLut().getNbInputs(); i++)
+								{
+									Pin input = afterBlePacking.getBles().get(sinkName).getLut().getInputs()[i];
+									if(input.name == sink.name)
+									{
+										index = i;
+										break;
+									}
+								}
+								afterNets.get(net.name).addSink(afterBlePacking.getBles().get(sinkName).getInputs()[index]);
+							}
 						}
 					}
-					
 				}
-				
 			}
 		}
 	}

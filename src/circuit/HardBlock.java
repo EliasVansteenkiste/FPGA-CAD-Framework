@@ -12,9 +12,13 @@ public class HardBlock extends Block
 	
 	public HardBlock(String name, Vector<String> outputNames, Vector<String> inputNames, String typeName, boolean isClockEdge)
 	{
-		super(name, BlockType.HARDBLOCK);
+		super(name, BlockType.HARDBLOCK_UNCLOCKED);
 		this.typeName = typeName;
 		this.isClockEdge = isClockEdge;
+		if(isClockEdge)
+		{
+			this.type = BlockType.HARDBLOCK_CLOCKED;
+		}
 		
 		int nbOutputs = outputNames.size();
 		outputs = new Pin[nbOutputs];

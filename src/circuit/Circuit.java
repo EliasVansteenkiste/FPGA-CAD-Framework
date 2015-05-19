@@ -31,10 +31,11 @@ public class Circuit
 		this.name = name;
 	}
 	
-	public Circuit(Map<String,Output> outputs, Map<String,Input> inputs)
+	public Circuit(Map<String,Output> outputs, Map<String,Input> inputs, Vector<Vector<HardBlock>> hardBlocks)
 	{
 		this.outputs = outputs;
 		this.inputs = inputs;
+		this.hardBlocks = hardBlocks;
 		this.nets = new HashMap<String,Net>();
 	}
 	

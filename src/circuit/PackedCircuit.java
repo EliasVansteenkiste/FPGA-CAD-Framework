@@ -29,9 +29,9 @@ public class PackedCircuit extends Circuit{
 		globalNets = new HashMap<String,Net>();
 	}
 	
-	public PackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs)
+	public PackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs, Vector<Vector<HardBlock>> hardBlocks)
 	{
-		super(outputs, inputs);
+		super(outputs, inputs, hardBlocks);
 		clbs = new HashMap<String,Clb>();
 		globalNets = new HashMap<String,Net>();
 	}

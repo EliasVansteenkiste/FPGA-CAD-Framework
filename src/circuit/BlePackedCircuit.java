@@ -2,6 +2,7 @@ package circuit;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 /*
  * Represents a circuit that has not yet been completely packed and thus cannot be placed yet
@@ -21,9 +22,9 @@ public class BlePackedCircuit extends Circuit
 		this.bles = new HashMap<String,Ble>();
 	}
 	
-	public BlePackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs, int nbBleInputs)
+	public BlePackedCircuit(Map<String,Output> outputs, Map<String,Input> inputs, Vector<Vector<HardBlock>> hardBlocks, int nbBleInputs)
 	{
-		super(outputs, inputs);
+		super(outputs, inputs, hardBlocks);
 		this.nbBleInputs = nbBleInputs;
 		this.bles = new HashMap<String,Ble>();
 	}

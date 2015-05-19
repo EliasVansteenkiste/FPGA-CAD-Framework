@@ -26,7 +26,7 @@ public class ClbPacker
 	
 	public PackedCircuit pack()
 	{
-		this.afterClbPacking = new PackedCircuit(beforeClbPacking.getOutputs(), beforeClbPacking.getInputs());
+		this.afterClbPacking = new PackedCircuit(beforeClbPacking.getOutputs(), beforeClbPacking.getInputs(), beforeClbPacking.getHardBlocks());
 		int nbClbInputs = beforeClbPacking.getNbBleInputs();
 		
 		for(Ble ble:beforeClbPacking.getBles().values())
@@ -52,9 +52,16 @@ public class ClbPacker
 			{
 				afterNets.get(net.name).addSource(afterClbPacking.clbs.get(net.name).output[0]);
 			}
-			else //Net source must be a circuit input pin
+			else
 			{
-				afterNets.get(net.name).addSource(afterClbPacking.getInputs().get(net.name).output);
+				if(net.source.owner.type == BlockType.INPUT)
+				{
+					afterNets.get(net.name).addSource(afterClbPacking.getInputs().get(net.name).output);
+				}
+				else //Net source must be a hardblock pin
+				{
+					afterNets.get(net.name).addSource(net.source); //Its the same hardblock...
+				}
 			}
 			
 			for(Pin sink:net.sinks)
@@ -75,7 +82,14 @@ public class ClbPacker
 				}
 				else //Sink must be a circuit output pin
 				{
-					afterNets.get(net.name).addSink(afterClbPacking.getOutputs().get(sink.owner.name).input);
+					if(sink.owner.type == BlockType.OUTPUT)
+					{
+						afterNets.get(net.name).addSink(afterClbPacking.getOutputs().get(sink.owner.name).input);
+					}
+					else
+					{
+						afterNets.get(net.name).addSink(sink); //Its the same hard block...
+					}
 				}
 			}
 		}
