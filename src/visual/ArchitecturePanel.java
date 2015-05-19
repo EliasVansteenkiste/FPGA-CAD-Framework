@@ -266,7 +266,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 
 		SiteData data = siteData.get(site);
 		data.setType(SiteType.CLB);
-		data.setPossition(x, y);
+		data.setPosition(x, y);
 
 		if(drawRouteNodes)
 		{
@@ -293,7 +293,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 
 		SiteData data = siteData.get(site);
 		data.setType(SiteType.IO_LEFT);
-		data.setPossition(x, y);
+		data.setPosition(x, y);
 
 		if(drawRouteNodes)
 		{
@@ -310,7 +310,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 
 		SiteData data = siteData.get(site);
 		data.setType(SiteType.IO_RIGHT);
-		data.setPossition(x, y);
+		data.setPosition(x, y);
 
 		if(drawRouteNodes)
 		{
@@ -327,7 +327,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 
 		SiteData data = siteData.get(site);
 		data.setType(SiteType.IO_UP);
-		data.setPossition(x, y);
+		data.setPosition(x, y);
 
 		if(drawRouteNodes)
 		{
@@ -344,7 +344,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 
 		SiteData data = siteData.get(site);
 		data.setType(SiteType.IO_DOWN);
-		data.setPossition(x, y);
+		data.setPosition(x, y);
 
 		if(drawRouteNodes)
 		{

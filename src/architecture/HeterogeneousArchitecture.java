@@ -95,35 +95,64 @@ public class HeterogeneousArchitecture extends Architecture
 		{
 			if(x == 0 || x == width+1)//This is an IO column
 			{
-				for(int y = 1; y < height + 1; y++)
-				{
-					putIoSite(x,y,0);
-					putIoSite(x,y,1);
-				}
+				insertIOColumn(x);
 			}
 			else
 			{
-				if(!hardBlocksInThisColumn(x,deltaHardBlockColumns))
+				if(!hardBlocksInThisColumn(x,deltaHardBlockColumns,totalNbHardBlockColumns))
 				{
-					putIoSite(x,0,0);
-					putIoSite(x,0,1);
-					for(int y = 1; y < height + 1; y++)
-					{
-						putClbSite(x,y,0);
-					}
-					putIoSite(x,height+1,0);
-					putIoSite(x,height+1,1);
+					insertClbColumn(x);
 				}
 			}
 		}
 	}
 	
+	public int getWidth()
+	{
+		return width;
+	}
+	
+	public int getHeight()
+	{
+		return height;
+	}
+	
+	public Site getSite(int x, int y, int n)
+	{
+		return siteArray[x][y][n];
+	}
+	
+	private void insertClbColumn(int x)
+	{
+		putIoSite(x,0,0);
+		putIoSite(x,0,1);
+		for(int y = 1; y < height + 1; y++)
+		{
+			putClbSite(x,y,0);
+		}
+		putIoSite(x,height+1,0);
+		putIoSite(x,height+1,1);
+	}
+	
+	private void insertIOColumn(int x)
+	{
+		for(int y = 1; y < height + 1; y++)
+		{
+			putIoSite(x,y,0);
+			putIoSite(x,y,1);
+		}
+	}
+	
 	private void insertHardBlockColumn(int x, String typeName)
 	{
+		putIoSite(x,0,0);
+		putIoSite(x,0,1);
 		for(int y = 1; y < height + 1; y++)
 		{
 			addSite(new HardBlockSite("Site_"+x+"_"+y+"_"+0, x, y, 0, typeName), x, y, 0);
 		}
+		putIoSite(x,height+1,0);
+		putIoSite(x,height+1,1);
 	}
 	
 	private void putClbSite(int x, int y, int n)
@@ -142,10 +171,10 @@ public class HeterogeneousArchitecture extends Architecture
 		siteVector.add(site);
 	}
 	
-	private boolean hardBlocksInThisColumn(int x, int delta)
+	private boolean hardBlocksInThisColumn(int x, int delta, int total)
 	{
 		int under = (x / delta)*delta;
-		if(x != under)
+		if(x != under || x / delta > total)
 		{
 			return false;
 		}

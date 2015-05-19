@@ -4,7 +4,8 @@ import java.util.Vector;
 
 import circuit.PackedCircuit;
 
-public class FourLutSanitized extends Architecture {
+public class FourLutSanitized extends Architecture
+{
 
 	private int width;
 	private int height;

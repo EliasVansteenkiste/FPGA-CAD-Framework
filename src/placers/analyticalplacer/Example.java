@@ -34,6 +34,7 @@ import timinganalysis.TimingGraph;
 import tools.CsvReader;
 import tools.CsvWriter;
 import visual.ArchitecturePanel;
+import visual.HeteroArchitecturePanel;
 import circuit.Ble;
 import circuit.Block;
 import circuit.BlockType;
@@ -95,6 +96,14 @@ public class Example
 		//printPackedCircuit(packedCircuit);
 		
 		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
+		
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(945,970);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
 	}
 	
 //	//Homegeneous
