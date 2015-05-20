@@ -10,6 +10,7 @@ public class HeterogeneousArchitecture extends Architecture
 	private int width;
 	private int height;
 	private Site[][][] siteArray;
+	private String[] hardBlockTypeNames;
 	
 	/*
 	 * A heterogeneousArchitecture is always fitted to a circuit
@@ -20,11 +21,11 @@ public class HeterogeneousArchitecture extends Architecture
 		int nbInputs = circuit.getInputs().values().size();
 		int nbOutputs = circuit.getOutputs().values().size();
 		int[] nbHardBlocksPerType = new int[circuit.getHardBlocks().size()];
-		String[] typeNames = new String[nbHardBlocksPerType.length];
+		hardBlockTypeNames = new String[nbHardBlocksPerType.length];
 		for(int i = 0; i < nbHardBlocksPerType.length; i++)
 		{
 			nbHardBlocksPerType[i] = circuit.getHardBlocks().get(i).size();
-			typeNames[i] = circuit.getHardBlocks().get(i).get(0).getTypeName();
+			hardBlockTypeNames[i] = circuit.getHardBlocks().get(i).get(0).getTypeName();
 		}
 		
 		//Create an x by x architecture which ensures that we can house all IO's and have enough CLB sites
@@ -76,13 +77,13 @@ public class HeterogeneousArchitecture extends Architecture
 		{
 			
 			int leftMaxIndex = getMaxIndex(nbHardBlocksPerType);
-			insertHardBlockColumn(nextLeft, typeNames[leftMaxIndex]);
+			insertHardBlockColumn(nextLeft, hardBlockTypeNames[leftMaxIndex]);
 			nbHardBlocksPerType[leftMaxIndex]--;
 			leftToPlace--;
 			if(nextLeft != nextRight)
 			{
 				int rightMaxIndex = getMaxIndex(nbHardBlocksPerType);
-				insertHardBlockColumn(nextRight, typeNames[rightMaxIndex]);
+				insertHardBlockColumn(nextRight, hardBlockTypeNames[rightMaxIndex]);
 				nbHardBlocksPerType[rightMaxIndex]--;
 				leftToPlace--;
 			}
@@ -120,6 +121,11 @@ public class HeterogeneousArchitecture extends Architecture
 	public Site getSite(int x, int y, int n)
 	{
 		return siteArray[x][y][n];
+	}
+	
+	public String[] getHardBlockTypeNames()
+	{
+		return hardBlockTypeNames;
 	}
 	
 	private void insertClbColumn(int x)

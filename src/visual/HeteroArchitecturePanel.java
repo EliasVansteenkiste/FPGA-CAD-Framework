@@ -26,6 +26,9 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 	private static final double CLB_WIDTH = 1.0;
 	private static final double IO_WIDTH = 0.45;
 	private static final double INTER_CLB_SPACE = 0.10;
+	private static final Color[] COLOR_ORDER_UNOCCUPIED = {new Color(0.80f,0.98f,0.80f), new Color(0.98f,0.80f,0.80f), 
+												new Color(0.97f,0.98f,0.80f), new Color(0.80f,0.80f,0.98f), Color.LIGHT_GRAY}; //hb1,hb2,hb3,clb
+	private static final Color[] COLOR_ORDER_OCCUPIED = {Color.GREEN, Color.RED, Color.YELLOW, Color.BLUE, Color.GRAY}; //hb1,hb2,hb3,clb
 	
 	private double zoom;
 	private Map<Site, SiteData> siteData;
@@ -111,10 +114,44 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 	
 	private void buildData()
 	{
+		String[] hardBlockTypeNames = architecture.getHardBlockTypeNames();
+		
 		siteData = new HashMap<Site, SiteData>();
 		for (Site site : architecture.getSites())
 		{
-			siteData.put(site, new SiteData(site));
+			switch(site.type)
+			{
+				case CLB:
+					siteData.put(site, new SiteData(site,COLOR_ORDER_UNOCCUPIED[3],COLOR_ORDER_OCCUPIED[3]));
+					break;
+				case IO:
+					siteData.put(site,  new SiteData(site,COLOR_ORDER_UNOCCUPIED[4],COLOR_ORDER_OCCUPIED[4]));
+					break;
+				case HARDBLOCK:
+					String typeName = ((HardBlockSite)site).getTypeName();
+					int index = -1;
+					for(int i = 0; i < hardBlockTypeNames.length; i++)
+					{
+						if(typeName.contains(hardBlockTypeNames[i]))
+						{
+							index = i;
+							break;
+						}
+					}
+					if(index < 0)
+					{
+						System.err.println("Didn't find the site typename in the architecture!");
+						index = 0;
+					}
+					if(index > 2)
+					{
+						System.err.println("Found more hardblock types than allowed!");
+						index = 2;
+					}
+					siteData.put(site, new SiteData(site,COLOR_ORDER_UNOCCUPIED[index],COLOR_ORDER_OCCUPIED[index]));
+					break;
+			}
+			
 		}
 		
 		double tileWidth = CLB_WIDTH + INTER_CLB_SPACE;

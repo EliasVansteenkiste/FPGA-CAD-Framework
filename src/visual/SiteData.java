@@ -14,10 +14,14 @@ public class SiteData {
 	private double y;
 	private Site site;
 	private SiteType type;
+	private Color occupiedColor;
+	private Color unoccupiedColor;
 
-	public SiteData(Site s)
+	public SiteData(Site s, Color unoccupiedColor, Color occupiedColor)
 	{
 		site = s;
+		this.unoccupiedColor = unoccupiedColor;
+		this.occupiedColor = occupiedColor;
 	}
 
 	public void setPosition(double x, double y)
@@ -40,13 +44,13 @@ public class SiteData {
 
 		if (site.block != null)
 		{
-			g.setColor(Color.BLUE);
+			g.setColor(occupiedColor);
 		}
 		else
 		{
-			g.setColor(Color.GRAY);
+			g.setColor(unoccupiedColor);
 		}
-
+		
 		switch (type)
 		{
 			case CLB:
@@ -55,7 +59,7 @@ public class SiteData {
 				yCoord = (int) ((y - CLB_WIDTH / 2.0) * zoom);
 				width = (int) (CLB_WIDTH * zoom);
 				hight = (int) (CLB_WIDTH * zoom);
-				g.drawRect(xCoord, yCoord, width, hight);
+				g.fillRect(xCoord, yCoord, width, hight);
 				break;
 			case IO_LEFT:
 			case IO_RIGHT:
@@ -63,7 +67,7 @@ public class SiteData {
 				yCoord = (int) ((y - IO_WIDTH / 2.0) * zoom);
 				width = (int) (CLB_WIDTH * zoom);
 				hight = (int) (IO_WIDTH * zoom);
-				g.drawRect(xCoord, yCoord, width, hight);
+				g.fillRect(xCoord, yCoord, width, hight);
 				break;
 			case IO_UP:
 			case IO_DOWN:
@@ -71,7 +75,7 @@ public class SiteData {
 				yCoord = (int) ((y - CLB_WIDTH / 2.0) * zoom);
 				width = (int) (IO_WIDTH * zoom);
 				hight = (int) (CLB_WIDTH * zoom);
-				g.drawRect(xCoord, yCoord, width, hight);
+				g.fillRect(xCoord, yCoord, width, hight);
 				break;
 			default:
 				break;
