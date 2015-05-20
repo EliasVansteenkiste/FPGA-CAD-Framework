@@ -2,13 +2,13 @@ package placers.SAPlacer;
 
 import java.util.Random;
 
-import architecture.FourLutSanitized;
+import architecture.HeterogeneousArchitecture;
 import circuit.PackedCircuit;
 
 public class WLD_SAPlacer extends SAPlacer
 {
 
-	public WLD_SAPlacer(FourLutSanitized architecture, PackedCircuit circuit)
+	public WLD_SAPlacer(HeterogeneousArchitecture architecture, PackedCircuit circuit)
 	{
 		super(architecture, circuit);
 	}
@@ -28,8 +28,7 @@ public class WLD_SAPlacer extends SAPlacer
 		System.out.println("Initial temperature: " + T);
 		System.out.println("Moves per temperature: " + movesPerTemperature);
 		
-		//Initialize EfficientBoundingBoxNetCC
-		
+		//Do placement
 		while (T > 0.005*calculator.calculateAverageNetCost())
 		{
 			int alphaAbs=0;
@@ -98,7 +97,6 @@ public class WLD_SAPlacer extends SAPlacer
 					
 					if(deltaCost<=0)
 					{
-						//calculator.apply(swap);
 						swap.apply();
 						alphaAbs+=1;
 						calculator.pushThrough();
@@ -107,7 +105,6 @@ public class WLD_SAPlacer extends SAPlacer
 					{
 						if(rand.nextDouble()<Math.exp(-deltaCost/T))
 						{
-							//calculator.apply(swap);
 							swap.apply();
 							alphaAbs+=1;
 							calculator.pushThrough();
@@ -139,7 +136,6 @@ public class WLD_SAPlacer extends SAPlacer
 			//Swap
 			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 			{
-				//calculator.apply(swap);
 				swap.apply();
 				calculator.pushThrough();
 			}
@@ -160,26 +156,19 @@ public class WLD_SAPlacer extends SAPlacer
 		return T;
 	}
 	
-	private double calculateInitialTemperatureLow() {
-//		int counter = 0;
-//		int[] countArray = new int[25];
-//		for(int i = 0; i < countArray.length; i++)
-//		{
-//			countArray[i] = 0;
-//		}
+	private double calculateInitialTemperatureLow()
+	{
 		double sumNegDeltaCost = 0.0;
 		int numNegDeltaCost = 0;
 		double quadraticSumNegDeltaCost = 0.0;
-		for (int i = 0; i < circuit.numBlocks(); i++) {
-			//Swap swap=manipulator.findSwap(manipulator.maxFPGAdimension());
+		for (int i = 0; i < circuit.numBlocks(); i++)
+		{
 			Swap swap = findSwapInCircuit();
-			
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap
 			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 			{
-				//calculator.apply(swap);
 				swap.apply();
 				calculator.pushThrough();
 			}
@@ -188,49 +177,13 @@ public class WLD_SAPlacer extends SAPlacer
 				calculator.revert();
 			}
 
-			if(deltaCost > 0)
+			if(deltaCost <= 0)
 			{
-//				counter++;
-//				if(deltaCost > 100.0)
-//				{
-//					System.out.println("Delta cost: " + deltaCost);
-//				}
-			}
-			else
-			{
-//				if(deltaCost < -100.0)
-//				{
-//					System.out.println("Delta cost: " + deltaCost);
-//				}
 				sumNegDeltaCost -= deltaCost;
 				quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
 				numNegDeltaCost++;
 			}
-			
-//			double temporary = (deltaCost + 100) / 10;
-//			int temporary2 = (int) temporary;
-//			if(temporary2 < 0)
-//			{
-//				temporary2 = 0;
-//			}
-//			if(temporary2 >= countArray.length)
-//			{
-//				temporary2 = countArray.length - 1;
-//			}
-//			countArray[temporary2] = countArray[temporary2] + 1;
-//			if(deltaCost >= 100 && deltaCost <= 110)
-//			{
-//				System.out.println("YES");
-//			}
 		}
-		
-//		System.out.println("Positive costs: " + counter + " times / " + manipulator.numBlocks() + " in total");
-//		System.out.printf("... to -90: %d\n", countArray[0]);
-//		for(int i = 1; i < countArray.length-1; i++)
-//		{
-//			System.out.printf("%d - %d: %d\n", (i-10)*10, (i-9)*10,countArray[i]);
-//		}
-//		System.out.printf("140 to ...: %d\n", countArray[countArray.length - 1]);
 		
 		double somNegKwadraten = quadraticSumNegDeltaCost;
 		double negKwadraatSom = Math.pow(sumNegDeltaCost, 2);
@@ -247,5 +200,4 @@ public class WLD_SAPlacer extends SAPlacer
 		
 		return T;
 	}
-	
 }

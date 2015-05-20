@@ -96,6 +96,10 @@ public class PackedCircuit extends Circuit{
 		vBlocks.addAll(clbs.values());
 		vBlocks.addAll(inputs.values());
 		vBlocks.addAll(outputs.values());
+		for(Vector<HardBlock> hbVector: hardBlocks)
+		{
+			vBlocks.addAll(hbVector);
+		}
 	}
 
 	public int totalRouteNodes() {

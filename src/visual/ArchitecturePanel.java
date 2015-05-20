@@ -147,7 +147,7 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		siteData = new HashMap<Site, SiteData>();
 		for (Site site : a.getSites())
 		{
-			siteData.put(site, new SiteData(site));
+			siteData.put(site, new SiteData(site, Color.LIGHT_GRAY, Color.GRAY));
 		}
 
 		double tileWidth = CLB_WIDTH + (a.getChannelWidth() + 1) * WIRE_SPACE;

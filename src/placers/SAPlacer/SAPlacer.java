@@ -3,11 +3,14 @@ package placers.SAPlacer;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Vector;
 
-import architecture.FourLutSanitized;
+import architecture.HeterogeneousArchitecture;
+import architecture.HardBlockSite;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
+import circuit.HardBlock;
 import circuit.Input;
 import circuit.Output;
 import circuit.PackedCircuit;
@@ -18,10 +21,10 @@ public abstract class SAPlacer
 	protected double Rlimd;
 	protected EfficientCostCalculator calculator;
 	protected PackedCircuit circuit;
-	protected FourLutSanitized architecture;
+	protected HeterogeneousArchitecture architecture;
 	protected Random rand;
 	
-	public SAPlacer(FourLutSanitized architecture, PackedCircuit circuit)
+	public SAPlacer(HeterogeneousArchitecture architecture, PackedCircuit circuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
@@ -40,7 +43,11 @@ public abstract class SAPlacer
 		swap.pl1 = b.getSite();
 		if(b.type==BlockType.CLB)
 		{
-			swap.pl2 = architecture.randomSite(Rlim, swap.pl1);
+			swap.pl2 = architecture.randomClbSite(Rlim, swap.pl1);
+		}
+		else if(b.type == BlockType.HARDBLOCK_CLOCKED || b.type == BlockType.HARDBLOCK_UNCLOCKED)
+		{
+			swap.pl2 = architecture.randomHardBlockSite(Rlim, (HardBlockSite)swap.pl1);
 		}
 		else if(b.type == BlockType.INPUT)
 		{
@@ -65,6 +72,22 @@ public abstract class SAPlacer
 			circuit.clbs.values().toArray(clbs);
 			Clb clbToSwap = clbs[rand.nextInt(nbClbs)];
 			swap.pl2 = clbToSwap.getSite();
+		}
+		else if(b.type == BlockType.HARDBLOCK_CLOCKED || b.type == BlockType.HARDBLOCK_UNCLOCKED)
+		{
+			HardBlock hardBlock = (HardBlock)b;
+			String typeName = hardBlock.getTypeName();
+			Vector<HardBlock> hardBlocksOfType = null;
+			for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
+			{
+				if(hbVector.get(0).getTypeName().contains(typeName))
+				{
+					hardBlocksOfType = hbVector;
+					break;
+				}
+			}
+			HardBlock hbToSwap = hardBlocksOfType.get(rand.nextInt(hardBlocksOfType.size()));
+			swap.pl2 = hbToSwap.getSite();
 		}
 		else if(b.type == BlockType.INPUT)
 		{

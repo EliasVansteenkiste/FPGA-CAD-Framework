@@ -32,14 +32,14 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 	
 	private double zoom;
 	private Map<Site, SiteData> siteData;
-	private HeterogeneousArchitecture architecture;
+	private HeterogeneousArchitecture heteroArchitecture;
 	private int mouseCurrentX;
 	private int mouseCurrentY;
 	String curClbText;
 	
 	public HeteroArchitecturePanel(int size, HeterogeneousArchitecture architecture)
 	{
-		this.architecture = architecture;
+		this.heteroArchitecture = architecture;
 		this.zoom = size / ((architecture.getWidth() + 2) * (CLB_WIDTH + INTER_CLB_SPACE) - INTER_CLB_SPACE);
 		buildData();
 		addMouseMotionListener(this);
@@ -61,8 +61,7 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 		
 		g.setFont(new Font("Arial", Font.BOLD, 13));
 		g.setColor(Color.BLUE);
-		g.drawString("CLB:", 10, 905);
-		g.drawString(curClbText, 50, 905);
+		g.drawString(curClbText, 10, 905);
 	}
 	
 	@Override
@@ -92,16 +91,33 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 			//System.out.println("X: " + siteX + ", Y: " + siteY);
 			mouseCurrentX = siteX;
 			mouseCurrentY = siteY;
-			if(siteX >= 1 && siteX <= architecture.getWidth() && siteY >= 1 && siteY <= architecture.getHeight())
+			if(siteX >= 1 && siteX <= heteroArchitecture.getWidth() && siteY >= 1 && siteY <= heteroArchitecture.getHeight())
 			{
-				Block block = architecture.getSite(siteX, siteY, 0).block;
-				if(block != null)
+				Site site = heteroArchitecture.getSite(siteX, siteY, 0);
+				Block block = site.block;
+				if(site.type == architecture.SiteType.CLB)
 				{
-					curClbText = String.format("(%d,%d) Name: %s", siteX, siteY, block.name);
+					if(block != null)
+					{
+						curClbText = String.format("CLB: (%d,%d) Name: %s", siteX, siteY, block.name);
+					}
+					else
+					{
+						curClbText = String.format("CLB: (%d,%d)", siteX, siteY);
+					}
 				}
-				else
+				else //Must be a hardblock
 				{
-					curClbText = String.format("(%d,%d)", siteX, siteY);
+					HardBlockSite hbSite = (HardBlockSite)site;
+					String typeName = hbSite.getTypeName().toUpperCase();
+					if(block != null)
+					{
+						curClbText = String.format("%s: (%d,%d) Name: %s", typeName, siteX, siteY, block.name);
+					}
+					else
+					{
+						curClbText = String.format("%s: (%d,%d)", typeName, siteX, siteY);
+					}
 				}
 			}
 			else
@@ -114,10 +130,10 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 	
 	private void buildData()
 	{
-		String[] hardBlockTypeNames = architecture.getHardBlockTypeNames();
+		String[] hardBlockTypeNames = heteroArchitecture.getHardBlockTypeNames();
 		
 		siteData = new HashMap<Site, SiteData>();
-		for (Site site : architecture.getSites())
+		for (Site site : heteroArchitecture.getSites())
 		{
 			switch(site.type)
 			{
@@ -157,7 +173,7 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 		double tileWidth = CLB_WIDTH + INTER_CLB_SPACE;
 		
 		// Drawing the sites
-		for (Site site : architecture.getSites())
+		for (Site site : heteroArchitecture.getSites())
 		{
 			switch (site.type)
 			{
@@ -177,7 +193,7 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 							drawLeftIoSite(x, y, site);
 						}
 					}
-					if (site.x == architecture.getWidth() + 1)
+					if (site.x == heteroArchitecture.getWidth() + 1)
 					{
 						if (site.n == 0)
 						{
@@ -207,7 +223,7 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 							drawUpIoSite(x, y, site);
 						}
 					}
-					if (site.y == architecture.getHeight() + 1)
+					if (site.y == heteroArchitecture.getHeight() + 1)
 					{
 						if (site.n == 0)
 						{

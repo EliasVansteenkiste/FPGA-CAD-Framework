@@ -10,7 +10,7 @@ public class Circuit
 	public Map<String,Output> outputs;
 	public Map<String,Input> inputs;
 	public Map<String,Net>	nets;
-	private Vector<Vector<HardBlock>> hardBlocks;
+	protected Vector<Vector<HardBlock>> hardBlocks;
 	
 	private String name;
 	
