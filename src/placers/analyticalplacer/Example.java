@@ -68,14 +68,28 @@ public class Example
 			System.out.println("Not debugging");
 		}
 		
+		//Wait for enter to start (necessary for easy profiling)
+//		System.out.println("Hit any key to continue...");
+//		try
+//		{
+//			System.in.read();
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.out.println("Something went wrong");
+//		}
+		
 		BlifReader blifReader = new BlifReader();
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
+			
 		}
 		catch(IOException ioe)
 		{
@@ -95,19 +109,7 @@ public class Example
 		
 		//printPackedCircuit(packedCircuit);
 		
-		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
-		
-		Rplace.placeCLBsandFixedIOs(packedCircuit, architecture, new Random());
-		WLD_SAPlacer placer = new WLD_SAPlacer(architecture, packedCircuit);
-		placer.place(10.0);		
-		
-		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
-		JFrame frame = new JFrame("Architecture");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(945,970);
-		frame.add(panel);
-		frame.pack();
-		frame.setVisible(true);
+		visualSA(prePackedCircuit, packedCircuit);
 	}
 	
 //	//Homegeneous
@@ -821,12 +823,9 @@ public class Example
 	
 	private static void visualSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		int height = 30;
-		int width = 30;
-		int trackwidth = 4;
 		Double placementEffort = 10.0;
 		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -853,7 +852,7 @@ public class Example
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.println("Maximum delay: " + maxDelay);
 		
-		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
 		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -1063,13 +1062,8 @@ public class Example
 	
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
-	
-		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
-		int height = dimension;
-		int width = dimension;
-		int trackwidth = 4;
 		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
 		//Random placement
 		Random rand = new Random(1);

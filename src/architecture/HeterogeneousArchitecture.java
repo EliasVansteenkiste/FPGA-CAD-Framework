@@ -82,15 +82,15 @@ public class HeterogeneousArchitecture extends Architecture
 		while(leftToPlace > 0)
 		{
 			
-			int leftMaxIndex = getMaxIndex(nbHardBlocksPerType);
+			int leftMaxIndex = getMaxIndex(nbColumnsPerType);
 			insertHardBlockColumn(nextLeft, hardBlockTypeNames[leftMaxIndex]);
-			nbHardBlocksPerType[leftMaxIndex]--;
+			nbColumnsPerType[leftMaxIndex]--;
 			leftToPlace--;
 			if(nextLeft != nextRight)
 			{
-				int rightMaxIndex = getMaxIndex(nbHardBlocksPerType);
+				int rightMaxIndex = getMaxIndex(nbColumnsPerType);
 				insertHardBlockColumn(nextRight, hardBlockTypeNames[rightMaxIndex]);
-				nbHardBlocksPerType[rightMaxIndex]--;
+				nbColumnsPerType[rightMaxIndex]--;
 				leftToPlace--;
 			}
 			nextLeft += deltaHardBlockColumns;
@@ -172,7 +172,11 @@ public class HeterogeneousArchitecture extends Architecture
 			int x_to = rand.nextInt(maxX - minX + 1) + minX;
 			int y_to = rand.nextInt(maxY - minY + 1) + minY;
 			pl2 = siteArray[x_to][y_to][0];
-		}while(pl1 == pl2);
+			if(pl2.type == SiteType.HARDBLOCK)
+			{
+				pl2 = null;
+			}
+		}while(pl2 == null || pl1 == pl2);
 		return pl2;
 	}
 	
@@ -224,7 +228,7 @@ public class HeterogeneousArchitecture extends Architecture
 			{
 				pl2 = null;
 			}
-		}while(pl2 == null);
+		}while(pl2 == null || pl1 == pl2);
 		return pl2;
 	}
 	
