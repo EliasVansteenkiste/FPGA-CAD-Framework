@@ -1,5 +1,7 @@
 package architecture;
 
+import java.util.ArrayList;
+
 import circuit.PackedCircuit;
 
 public class HeterogeneousArchitecture extends Architecture
@@ -126,6 +128,38 @@ public class HeterogeneousArchitecture extends Architecture
 	public String[] getHardBlockTypeNames()
 	{
 		return hardBlockTypeNames;
+	}
+	
+	public ArrayList<Site> getISites()
+	{
+		ArrayList<Site> toReturn = new ArrayList<>();
+		for(int y = 1; y < height + 1; y++)
+		{
+			toReturn.add(siteArray[0][y][0]);
+			toReturn.add(siteArray[width+1][y][0]);
+		}
+		for(int x = 1; x < width + 1; x++)
+		{
+			toReturn.add(siteArray[x][0][0]);
+			toReturn.add(siteArray[x][height+1][0]);
+		}
+		return toReturn;
+	}
+	
+	public ArrayList<Site> getOSites()
+	{
+		ArrayList<Site> toReturn = new ArrayList<>();
+		for(int y = 1; y < height + 1; y++)
+		{
+			toReturn.add(siteArray[0][y][1]);
+			toReturn.add(siteArray[width+1][y][1]);
+		}
+		for(int x = 1; x < width + 1; x++)
+		{
+			toReturn.add(siteArray[x][0][1]);
+			toReturn.add(siteArray[x][height+1][1]);
+		}
+		return toReturn;
 	}
 	
 	private void insertClbColumn(int x)

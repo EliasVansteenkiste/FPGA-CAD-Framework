@@ -88,14 +88,16 @@ public class Example
 		BlePacker blePacker = new BlePacker(prePackedCircuit);
 		BlePackedCircuit blePackedCircuit = blePacker.pack();
 		
-		//printBlePackedCircuit(blePackedCircuit);
+		printBlePackedCircuit(blePackedCircuit);
 		
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 		
-		//printPackedCircuit(packedCircuit);
+		printPackedCircuit(packedCircuit);
 		
 		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
+		
+		Rplace.placeCLBsandFixedIOs(packedCircuit, architecture, new Random());
 		
 		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
 		JFrame frame = new JFrame("Architecture");
