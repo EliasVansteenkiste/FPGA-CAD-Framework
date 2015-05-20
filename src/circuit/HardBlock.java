@@ -6,6 +6,7 @@ public class HardBlock extends Block
 {
 	
 	private Pin[] outputs;
+	private String[] outputNetNames;
 	private Pin[] inputs;
 	private boolean isClockEdge;
 	private String typeName;
@@ -22,6 +23,7 @@ public class HardBlock extends Block
 		
 		int nbOutputs = outputNames.size();
 		outputs = new Pin[nbOutputs];
+		outputNetNames = new String[nbOutputs];
 		for(int i = 0; i < nbOutputs; i++)
 		{
 			outputs[i] = new Pin(name + "_HBout_" + outputNames.get(i), PinType.SOURCE, this);
@@ -43,6 +45,23 @@ public class HardBlock extends Block
 	public Pin[] getOutputs()
 	{
 		return outputs;
+	}
+	
+	public void addOutputNetName(Pin pin, String netName)
+	{
+		for(int i = 0; i < outputs.length; i++)
+		{
+			if(outputs[i] == pin)
+			{
+				outputNetNames[i] = netName;
+				break;
+			}
+		}
+	}
+	
+	public String getOutputNetName(int index)
+	{
+		return outputNetNames[index];
 	}
 	
 	public String getTypeName()

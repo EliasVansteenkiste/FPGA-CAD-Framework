@@ -84,11 +84,11 @@ public class Example
 		try
 		{
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
 			
 		}
 		catch(IOException ioe)

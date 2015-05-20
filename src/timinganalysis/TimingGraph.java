@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.Vector;
 
 import placers.SAPlacer.Swap;
 
@@ -15,6 +16,7 @@ import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
 import circuit.Flipflop;
+import circuit.HardBlock;
 import circuit.Input;
 import circuit.Lut;
 import circuit.Net;
@@ -75,6 +77,21 @@ public class TimingGraph
 			if(lut.getIsSourceLut())
 			{
 				processStartPin(lut.getOutputs()[0]);
+			}
+		}
+		
+		//Build all trees starting from a hardBlock which is clocked
+		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
+		{
+			for(HardBlock hardBlock: hbVector)
+			{
+				if(hardBlock.type == BlockType.HARDBLOCK_CLOCKED)
+				{
+					for(Pin source: hardBlock.getOutputs())
+					{
+						processStartPin(source);
+					}
+				}
 			}
 		}
 		
@@ -700,7 +717,25 @@ public class TimingGraph
 			blockMap.put(startBlock, new ArrayList<TimingNode>());
 		}
 		blockMap.get(startBlock).add(startNode);
-		Net currentNet = nets.get(startBlock.name);
+		Net currentNet;
+		if(startBlock.type != BlockType.HARDBLOCK_CLOCKED)
+		{
+			currentNet = nets.get(startBlock.name);
+		}
+		else
+		{
+			Pin[] hardBlockPins = ((HardBlock)startBlock).getOutputs();
+			int index = 0;
+			for(Pin hbPin: hardBlockPins)
+			{
+				if(hbPin == startPin)
+				{
+					break;
+				}
+				index++;
+			}
+			currentNet = nets.get(((HardBlock)startBlock).getOutputNetName(index));
+		}
 		int currentIndex = 0;
 		TimingNode currentNode = startNode;
 		if(currentNet.sinks.size() == 0) //Can happen with clock nets which are declared as an input in the blif file
@@ -713,7 +748,8 @@ public class TimingGraph
 			Pin currentSink = currentNet.sinks.get(currentIndex);
 			int mhd = Math.abs(currentNode.getPin().owner.getSite().x - currentSink.owner.getSite().x) 
 					+ Math.abs(currentNode.getPin().owner.getSite().y - currentSink.owner.getSite().y);
-			if(currentSink.owner.type == BlockType.FLIPFLOP || currentSink.owner.type == BlockType.OUTPUT)
+			if(currentSink.owner.type == BlockType.FLIPFLOP || currentSink.owner.type == BlockType.OUTPUT || 
+																		currentSink.owner.type == BlockType.HARDBLOCK_CLOCKED)
 			{
 				TimingNode endNode = new TimingNode(TimingNodeType.END_NODE, currentSink);
 				TimingEdge connection = new TimingEdge(currentNode, endNode, mhd * MHD_DELAY);
@@ -727,51 +763,117 @@ public class TimingGraph
 				}
 				blockMap.get(currentSink.owner).add(endNode);
 			}
-			else //Must be a LUT ==> keep on going
+			else
 			{
-				//Process TimingNode for Lut input
-				TimingNode inputNode = new TimingNode(TimingNodeType.INTERNAL_SINK_NODE, currentSink);
-				TimingEdge connectionOne = new TimingEdge(currentNode, inputNode, mhd * MHD_DELAY);
-				edges.add(connectionOne);
-				currentNode.addOutput(connectionOne);
-				inputNode.addInput(connectionOne);
-				if(blockMap.get(currentSink.owner) == null)
+				if(currentSink.owner.type == BlockType.LUT) //Is a LUT ==> keep on going
 				{
-					blockMap.put(currentSink.owner, new ArrayList<TimingNode>());
-				}
-				List<TimingNode> lutNodeList = blockMap.get(currentSink.owner);
-				lutNodeList.add(inputNode);
-				TimingNode outputNode = null;
-				Pin lutOutput = ((Lut)currentSink.owner).getOutputs()[0];
-				for(TimingNode localNode: lutNodeList)
-				{
-					if(localNode.getPin() == lutOutput)
+					//Process TimingNode for Lut input
+					TimingNode inputNode = new TimingNode(TimingNodeType.INTERNAL_SINK_NODE, currentSink);
+					TimingEdge connectionOne = new TimingEdge(currentNode, inputNode, mhd * MHD_DELAY);
+					edges.add(connectionOne);
+					currentNode.addOutput(connectionOne);
+					inputNode.addInput(connectionOne);
+					if(blockMap.get(currentSink.owner) == null)
 					{
-						outputNode = localNode;
-						break;
+						blockMap.put(currentSink.owner, new ArrayList<TimingNode>());
+					}
+					List<TimingNode> lutNodeList = blockMap.get(currentSink.owner);
+					lutNodeList.add(inputNode);
+					TimingNode outputNode = null;
+					Pin lutOutput = ((Lut)currentSink.owner).getOutputs()[0];
+					for(TimingNode localNode: lutNodeList)
+					{
+						if(localNode.getPin() == lutOutput)
+						{
+							outputNode = localNode;
+							break;
+						}
+					}
+					if(outputNode == null)
+					{
+						outputNode = new TimingNode(TimingNodeType.INTERNAL_SOURCE_NODE, lutOutput);
+						lutNodeList.add(outputNode);
+						TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
+						edges.add(connectionTwo);
+						inputNode.addOutput(connectionTwo);
+						outputNode.addInput(connectionTwo);
+						netsStack.push(currentNet);
+						sinkIndexStack.push(currentIndex);
+						currentTimingNodeStack.push(currentNode);
+						currentNet = nets.get(currentSink.owner.name);
+						currentIndex = -1; //will immediately be increased (see below)
+						currentNode = outputNode;
+					}
+					else
+					{
+						TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
+						edges.add(connectionTwo);
+						inputNode.addOutput(connectionTwo);
+						outputNode.addInput(connectionTwo);
 					}
 				}
-				if(outputNode == null)
+				else //Must be an unclocked hardblock ==> keep on going
 				{
-					outputNode = new TimingNode(TimingNodeType.INTERNAL_SOURCE_NODE, lutOutput);
-					lutNodeList.add(outputNode);
-					TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
-					edges.add(connectionTwo);
-					inputNode.addOutput(connectionTwo);
-					outputNode.addInput(connectionTwo);
-					netsStack.push(currentNet);
-					sinkIndexStack.push(currentIndex);
-					currentTimingNodeStack.push(currentNode);
-					currentNet = nets.get(currentSink.owner.name);
-					currentIndex = -1; //will immediately be increased (see below)
-					currentNode = outputNode;
-				}
-				else
-				{
-					TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
-					edges.add(connectionTwo);
-					inputNode.addOutput(connectionTwo);
-					outputNode.addInput(connectionTwo);
+					TimingNode inputNode = new TimingNode(TimingNodeType.INTERNAL_SINK_NODE, currentSink);
+					TimingEdge connectionOne = new TimingEdge(currentNode, inputNode, mhd * MHD_DELAY);
+					edges.add(connectionOne);
+					currentNode.addOutput(connectionOne);
+					inputNode.addInput(connectionOne);
+					if(blockMap.get(currentSink.owner) == null)
+					{
+						blockMap.put(currentSink.owner, new ArrayList<TimingNode>());
+					}
+					List<TimingNode> hbNodeList = blockMap.get(currentSink.owner);
+					hbNodeList.add(inputNode);
+					boolean firstTime = true;
+					Pin[] outputs = ((HardBlock)currentSink.owner).getOutputs();
+					for(int i = 0; i < outputs.length; i++)
+					{
+						Pin hbOutput = outputs[i];
+						TimingNode outputNode = null;
+						for(TimingNode localNode: hbNodeList)
+						{
+							if(localNode.getPin() == hbOutput)
+							{
+								outputNode = localNode;
+								break;
+							}
+						}
+						if(outputNode == null)
+						{
+							firstTime = true;
+							outputNode = new TimingNode(TimingNodeType.INTERNAL_SOURCE_NODE, hbOutput);
+							hbNodeList.add(outputNode);
+							TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
+							edges.add(connectionTwo);
+							inputNode.addOutput(connectionTwo);
+							outputNode.addInput(connectionTwo);
+							if(firstTime)
+							{
+								firstTime = false;
+								netsStack.push(currentNet);
+								sinkIndexStack.push(currentIndex);
+								currentTimingNodeStack.push(currentNode);
+
+							}
+							netsStack.push(nets.get(((HardBlock)currentSink.owner).getOutputNetName(i)));
+							sinkIndexStack.push(-1); //This will be immediateley increased (see below)
+							currentTimingNodeStack.push(outputNode);
+							if(i == outputs.length - 1)
+							{
+								currentNet = netsStack.pop();
+								currentIndex = sinkIndexStack.pop();
+								currentNode = currentTimingNodeStack.pop();
+							}
+						}
+						else
+						{
+							TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
+							edges.add(connectionTwo);
+							inputNode.addOutput(connectionTwo);
+							outputNode.addInput(connectionTwo);
+						}
+					}
 				}
 			}
 			++currentIndex;
@@ -876,21 +978,6 @@ public class TimingGraph
 			toReturn += "\n";
 		}
 		toReturn += "nbBlocks: " + nbBlocks + "\n";
-		return toReturn;
-	}
-	
-	public String getStartSlacks()
-	{
-		String toReturn = "";
-		for(TimingNode node: startNodes)
-		{
-			toReturn += node.getPin().name + ": ";
-			for(TimingEdge connectedEdge: node.getOutputs())
-			{
-				toReturn += connectedEdge.getSlack() + "(" + connectedEdge.getCriticality() + "), ";
-			}
-			toReturn += "\n";
-		}
 		return toReturn;
 	}
 	

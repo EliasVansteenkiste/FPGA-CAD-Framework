@@ -322,6 +322,7 @@ public class BlifReader
 					circuit.getNets().put(netName, new Net(netName));
 				}
 				circuit.getNets().get(netName).addSource(newHardBlock.getOutputs()[i-outputStartIndex]);
+				newHardBlock.addOutputNetName(newHardBlock.getOutputs()[i-outputStartIndex], netName);
 			}
 		}
 	}
