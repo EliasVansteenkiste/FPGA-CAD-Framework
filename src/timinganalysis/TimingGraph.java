@@ -649,7 +649,7 @@ public class TimingGraph
 		this.criticalityExponent = criticalityExponent;
 	}
 	
-	public void mapClbsToTimingGraph(PackedCircuit packedCircuit)
+	public void mapTopLevelPinsToTimingGraph(PackedCircuit packedCircuit)
 	{
 		clbsMapped = true;
 		clbPinMap = new HashMap<>();
@@ -661,31 +661,46 @@ public class TimingGraph
 			{
 				sourceNode = blockMap.get(net.source.owner).get(0);
 			}
-			else //Owner of net source is a CLB
+			else
 			{
-				Ble ble = ((Clb)net.source.owner).getBle();
-				if(ble.isFFUsed())
+				if(net.source.owner.type == BlockType.CLB) //Owner of net source is a CLB
 				{
-					ArrayList<TimingNode> nodeList = blockMap.get(ble.getFlipflop());
-					for(TimingNode node: nodeList)
+					Ble ble = ((Clb)net.source.owner).getBle();
+					if(ble.isFFUsed())
 					{
-						if(node.getType() == TimingNodeType.START_NODE)
+						ArrayList<TimingNode> nodeList = blockMap.get(ble.getFlipflop());
+						for(TimingNode node: nodeList)
 						{
-							sourceNode = node;
-							break;
+							if(node.getType() == TimingNodeType.START_NODE)
+							{
+								sourceNode = node;
+								break;
+							}
+						}
+					}
+					else
+					{
+						ArrayList<TimingNode> nodeList = blockMap.get(ble.getLut());
+//						if(nodeList == null) //Should only occur for special, unimportant cases
+//						{
+//							continue;
+//						}
+						for(TimingNode node: nodeList)
+						{
+							if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
+							{
+								sourceNode = node;
+								break;
+							}
 						}
 					}
 				}
-				else
+				else //Owner of net source is a HardBlock
 				{
-					ArrayList<TimingNode> nodeList = blockMap.get(ble.getLut());
-					if(nodeList == null) //Should only occur for special, unimportant cases
-					{
-						continue;
-					}
+					ArrayList<TimingNode> nodeList = blockMap.get(net.source.owner);
 					for(TimingNode node: nodeList)
 					{
-						if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
+						if(node.getPin() == net.source)
 						{
 							sourceNode = node;
 							break;
@@ -703,27 +718,64 @@ public class TimingGraph
 				{
 					sinkNode = blockMap.get(sinkPin.owner).get(0);
 				}
-				else //Owner of the net sink is a CLB
+				else
 				{
-					Ble ble = ((Clb)sinkPin.owner).getBle();
-					if(ble.getLut() == null) //Clb only contains a flipflop
+					if(sinkPin.owner.type == BlockType.CLB) //Owner of the net sink is a CLB
 					{
-						ArrayList<TimingNode> ffNodes = blockMap.get(ble.getFlipflop());
-						for(TimingNode node: ffNodes)
+						Ble ble = ((Clb)sinkPin.owner).getBle();
+						if(ble.getLut() == null) //Clb only contains a flipflop
 						{
-							if(node.getType() == TimingNodeType.END_NODE)
+							ArrayList<TimingNode> ffNodes = blockMap.get(ble.getFlipflop());
+							for(TimingNode node: ffNodes)
 							{
-								sinkNode = node;
-								break;
+								if(node.getType() == TimingNodeType.END_NODE)
+								{
+									sinkNode = node;
+									break;
+								}
+							}
+						}
+						else //Clb contains a LUT
+						{
+							//To know if we have the correct timingNode we need to know the index of the sinkPin in the CLB
+							int sinkPinIndex = -1;
+							Pin[] clbInputs = ((Clb)sinkPin.owner).input;
+							for(int index = 0; index < clbInputs.length; index++)
+							{
+								if(clbInputs[index] == sinkPin)
+								{
+									sinkPinIndex = index;
+									break;
+								}
+							}
+							ArrayList<TimingNode> lutNodes = blockMap.get(ble.getLut());
+							for(TimingNode node: lutNodes)
+							{
+								//To know if we have the correct timingNode we need to know the index of the pin represented by the timingNode in the LUT
+								int timingNodePinIndex = -1;
+								Pin[] lutInputs = ble.getLut().getInputs();
+								for(int index = 0; index < lutInputs.length; index++)
+								{
+									if(lutInputs[index] == node.getPin())
+									{
+										timingNodePinIndex = index;
+										break;
+									}
+								}
+								if(sinkPinIndex == timingNodePinIndex)
+								{
+									sinkNode = node;
+									break;
+								}
 							}
 						}
 					}
-					else //Clb contains a LUT
+					else //Owner of the net sink is a HardBlock
 					{
-						ArrayList<TimingNode> lutNodes = blockMap.get(ble.getLut());
-						for(TimingNode node: lutNodes)
+						ArrayList<TimingNode> hbNodes = blockMap.get(sinkPin.owner);
+						for(TimingNode node: hbNodes)
 						{
-							if(node.getPin().owner == ble.getLut())
+							if(node.getPin() == sinkPin)
 							{
 								sinkNode = node;
 								break;
@@ -741,8 +793,8 @@ public class TimingGraph
 		edgeMap = new HashMap<>();
 		for(TimingEdge edge: edges)
 		{
-			Block inputOwner = edge.getInput().getPin().owner;
-			Block outputOwner = edge.getOutput().getPin().owner;
+			Block inputOwner = edge.getInput().getPin().owner; //TimingEdge input = net source
+			Block outputOwner = edge.getOutput().getPin().owner; //TimingEdge output = net sink
 			Net net = null;
 			if(inputOwner.type == BlockType.FLIPFLOP || inputOwner.type == BlockType.INPUT)
 			{
@@ -750,9 +802,30 @@ public class TimingGraph
 			}
 			else
 			{
-				if(inputOwner.type == BlockType.LUT && inputOwner != outputOwner)
+				if(inputOwner.type == BlockType.LUT)
 				{
-					net = packedCircuit.nets.get(inputOwner.name); //Will be null if the net is internal to clb (lut -> ff)
+					if(inputOwner != outputOwner)
+					{
+						net = packedCircuit.nets.get(inputOwner.name); //Will be null if the net is internal to clb (lut -> ff)
+					}
+				}
+				else //InputOwner is a HardBlock
+				{
+					if(inputOwner != outputOwner)
+					{
+						HardBlock inputOwnerHb = (HardBlock)inputOwner;
+						Pin sourcePin = edge.getInput().getPin();
+						for(int index = 0; index < inputOwnerHb.getOutputs().length; index++)
+						{
+							Pin pin = inputOwnerHb.getOutputs()[index];
+							if(pin == sourcePin)
+							{
+								net = packedCircuit.nets.get(inputOwnerHb.getOutputNetName(index));
+								break;
+							}
+						}
+						
+					}
 				}
 			}
 			if(net != null)
@@ -771,38 +844,22 @@ public class TimingGraph
 		return edgeMap.get(net);
 	}
 	
-	public double getConnectionCriticalityWithExponent(Pin sourceClbPin, Pin sinkClbPin)
+	public double getConnectionCriticalityWithExponent(Pin sourceTopLevelPin, Pin sinkTopLevelPin)
 	{
 		double criticalityWithExponent = -1.0;
 		if(clbsMapped)
 		{
-			TimingNode sourceNode = clbPinMap.get(sourceClbPin);
-//			if(sourceNode == null) //Should never occur
-//			{
-//				return 0.1;
-//			}
+			TimingNode sourceNode = clbPinMap.get(sourceTopLevelPin);
+			TimingNode sinkNode = clbPinMap.get(sinkTopLevelPin);
 			for(TimingEdge edge: sourceNode.getOutputs())
 			{
-				Block sinkBlock = edge.getOutput().getPin().owner; //Will be a circuit output, Lut input or FF input
-				
-				if(sinkClbPin.owner.type == BlockType.CLB)
+				if(edge.getOutput() == sinkNode)
 				{
-					Ble sinkBle = ((Clb)sinkClbPin.owner).getBle();
-					if(sinkBlock == sinkBle.getLut() || sinkBlock == sinkBle.getFlipflop())
-					{
-						criticalityWithExponent = edge.getCriticalityWithExponent();
-						break;
-					}
-				}
-				else //SinkClbPin must come from a circuit output
-				{
-					if(sinkBlock == sinkClbPin.owner)
-					{
-						criticalityWithExponent = edge.getCriticalityWithExponent();
-						break;
-					}
+					criticalityWithExponent = edge.getCriticalityWithExponent();
+					break;
 				}
 			}
+			
 			if(criticalityWithExponent < 0.0)
 			{
 				System.err.println("Trouble: criticality not found!");
