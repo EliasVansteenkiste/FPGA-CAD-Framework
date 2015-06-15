@@ -9,6 +9,8 @@ import java.util.Queue;
 import java.util.Stack;
 import java.util.Vector;
 
+import architecture.SiteType;
+
 import placers.SAPlacer.Swap;
 
 import circuit.Ble;
@@ -117,90 +119,59 @@ public class TimingGraph
 		double deltaCost = 0.0;
 		if(swap.pl1.block != null && swap.pl2.block != null)
 		{
-			Block block1 = swap.pl1.block;
-			Block block2 = swap.pl2.block;
-			Lut lut1 = null;
-			Lut lut2 = null;
-			Flipflop ff1 = null;
-			Flipflop ff2 = null;
-			if(block1.type == BlockType.CLB && block2.type == BlockType.CLB)
+			if(swap.pl1.type == SiteType.CLB)
 			{
-				lut1 = ((Clb)block1).getBle().getLut();
-				ff1 = ((Clb)block1).getBle().getFlipflop();
-				lut2 = ((Clb)block2).getBle().getLut();
-				ff2 = ((Clb)block2).getBle().getFlipflop();
-			}
-			//Process source net of first clb
-			if(ff1 != null)
-			{
-				TimingNode sourceNode = null;
-				ArrayList<TimingNode> ff1NodeList = blockMap.get(ff1);
-				for(int i = 0; i < ff1NodeList.size(); i++)
+				Block block1 = swap.pl1.block;
+				Block block2 = swap.pl2.block;
+				Lut lut1 = ((Clb)block1).getBle().getLut();
+				Lut lut2 = ((Clb)block2).getBle().getLut();
+				Flipflop ff1 = ((Clb)block1).getBle().getFlipflop();
+				Flipflop ff2 = ((Clb)block2).getBle().getFlipflop();
+
+				//Process source net of first clb
+				if(ff1 != null)
 				{
-					if(ff1NodeList.get(i).getType() == TimingNodeType.START_NODE)
+					TimingNode sourceNode = null;
+					ArrayList<TimingNode> ff1NodeList = blockMap.get(ff1);
+					for(int i = 0; i < ff1NodeList.size(); i++)
 					{
-						sourceNode = ff1NodeList.get(i);
-						break;
-					}
-				}
-				for(TimingEdge connectedEdge: sourceNode.getOutputs())
-				{
-					Block owner = connectedEdge.getOutput().getPin().owner;
-					if(owner != ff2 && owner != lut2 && owner != lut1)
-					{
-						int mhd = Math.abs(owner.getSite().x - swap.pl2.x) 
-								+ Math.abs(owner.getSite().y - swap.pl2.y);
-						deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
-						affectedEdgeList.add(connectedEdge);
-					}
-				}
-			}
-			else //only a lut in the clb, no ff
-			{
-				TimingNode sourceNode = null;
-				ArrayList<TimingNode> lut1NodeList = blockMap.get(lut1);
-				if(lut1NodeList != null)
-				{
-					for(int i = 0; i < lut1NodeList.size(); i++)
-					{
-						//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
-						if(lut1NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE ||
-										lut1NodeList.get(i).getType() == TimingNodeType.START_NODE)
+						if(ff1NodeList.get(i).getType() == TimingNodeType.START_NODE)
 						{
-							sourceNode = lut1NodeList.get(i);
+							sourceNode = ff1NodeList.get(i);
+							break;
 						}
 					}
 					for(TimingEdge connectedEdge: sourceNode.getOutputs())
 					{
 						Block owner = connectedEdge.getOutput().getPin().owner;
-						if(owner != ff2 && owner != lut2) //No need to check for ff1 as this is null
+						if(owner != ff2 && owner != lut2 && owner != lut1)
 						{
-							int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
+							int mhd = Math.abs(owner.getSite().x - swap.pl2.x) 
 									+ Math.abs(owner.getSite().y - swap.pl2.y);
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
 					}
 				}
-			}
-			//Process sink nets of first clb
-			if(lut1 != null)
-			{
-				ArrayList<TimingNode> lut1NodeList = blockMap.get(lut1);
-				if(lut1NodeList != null)
+				else //only a lut in the clb, no ff
 				{
-					for(int i = 0; i < lut1NodeList.size(); i++)
+					TimingNode sourceNode = null;
+					ArrayList<TimingNode> lut1NodeList = blockMap.get(lut1);
+					if(lut1NodeList != null)
 					{
-						TimingNode node = lut1NodeList.get(i);
-						if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
+						for(int i = 0; i < lut1NodeList.size(); i++)
 						{
-							if(node.getInputs().size() > 1)
+							//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
+							if(lut1NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE ||
+										lut1NodeList.get(i).getType() == TimingNodeType.START_NODE)
 							{
-								System.err.println("There should only be one input to an internalSinkNode!");
+								sourceNode = lut1NodeList.get(i);
 							}
-							TimingEdge connectedEdge = node.getInputs().get(0);
-							Block owner = connectedEdge.getInput().getPin().owner;
-							if(owner != ff2 && owner != lut2 && owner != ff1)
+						}
+						for(TimingEdge connectedEdge: sourceNode.getOutputs())
+						{
+							Block owner = connectedEdge.getOutput().getPin().owner;
+							if(owner != ff2 && owner != lut2) //No need to check for ff1 as this is null
 							{
 								int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
 										+ Math.abs(owner.getSite().y - swap.pl2.y);
@@ -210,104 +181,156 @@ public class TimingGraph
 						}
 					}
 				}
-			}
-			else //only a ff in the clb, no lut
-			{
-				ArrayList<TimingNode> ff1NodeList = blockMap.get(ff1);
-				for(int i = 0; i < ff1NodeList.size(); i++)
+				//Process sink nets of first clb
+				if(lut1 != null)
 				{
-					TimingNode node = ff1NodeList.get(i);
-					if(node.getType() == TimingNodeType.END_NODE)
+					ArrayList<TimingNode> lut1NodeList = blockMap.get(lut1);
+					if(lut1NodeList != null)
 					{
-						if(node.getInputs().size() > 1)
+						for(int i = 0; i < lut1NodeList.size(); i++)
 						{
-							System.err.println("There should only be one input to an endNode!");
-						}
-						TimingEdge connectedEdge = node.getInputs().get(0);
-						Block owner = connectedEdge.getInput().getPin().owner;
-						if(owner != ff2 && owner != lut2) //No need to check for lut1 as this is null
-						{
-							int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
-									+ Math.abs(owner.getSite().y - swap.pl2.y);
-							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
-							affectedEdgeList.add(connectedEdge);
+							TimingNode node = lut1NodeList.get(i);
+							if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
+							{
+								if(node.getInputs().size() > 1)
+								{
+									System.err.println("There should only be one input to an internalSinkNode!");
+								}
+								TimingEdge connectedEdge = node.getInputs().get(0);
+								Block owner = connectedEdge.getInput().getPin().owner;
+								if(owner != ff2 && owner != lut2 && owner != ff1)
+								{
+									int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
+											+ Math.abs(owner.getSite().y - swap.pl2.y);
+									deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+									affectedEdgeList.add(connectedEdge);
+								}
+							}
 						}
 					}
 				}
-			}
+				else //only a ff in the clb, no lut
+				{
+					ArrayList<TimingNode> ff1NodeList = blockMap.get(ff1);
+					for(int i = 0; i < ff1NodeList.size(); i++)
+					{
+						TimingNode node = ff1NodeList.get(i);
+						if(node.getType() == TimingNodeType.END_NODE)
+						{
+							if(node.getInputs().size() > 1)
+							{
+								System.err.println("There should only be one input to an endNode!");
+							}
+							TimingEdge connectedEdge = node.getInputs().get(0);
+							Block owner = connectedEdge.getInput().getPin().owner;
+							if(owner != ff2 && owner != lut2) //No need to check for lut1 as this is null
+							{
+								int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
+										+ Math.abs(owner.getSite().y - swap.pl2.y);
+								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+								affectedEdgeList.add(connectedEdge);
+							}
+						}
+					}
+				}
 			
-			//Repeat the whole process for the second clb
-			//Process source net of second clb
-			if(ff2 != null)
-			{
-				TimingNode sourceNode = null;
-				ArrayList<TimingNode> ff2NodeList = blockMap.get(ff2);
-				for(int i = 0; i < ff2NodeList.size(); i++)
+				//Repeat the whole process for the second clb
+				//Process source net of second clb
+				if(ff2 != null)
 				{
-					if(ff2NodeList.get(i).getType() == TimingNodeType.START_NODE)
+					TimingNode sourceNode = null;
+					ArrayList<TimingNode> ff2NodeList = blockMap.get(ff2);
+					for(int i = 0; i < ff2NodeList.size(); i++)
 					{
-						sourceNode = ff2NodeList.get(i);
-						break;
-					}
-				}
-				for(TimingEdge connectedEdge: sourceNode.getOutputs())
-				{
-					Block owner = connectedEdge.getOutput().getPin().owner;
-					if(owner != ff1 && owner != lut1 && owner != lut2)
-					{
-						int mhd = Math.abs(owner.getSite().x - swap.pl1.x) 
-								+ Math.abs(owner.getSite().y - swap.pl1.y);
-						deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
-						affectedEdgeList.add(connectedEdge);
-					}
-				}
-			}
-			else //only a lut in the clb, no ff
-			{
-				TimingNode sourceNode = null;
-				ArrayList<TimingNode> lut2NodeList = blockMap.get(lut2);
-				if(lut2NodeList != null)
-				{
-					for(int i = 0; i < lut2NodeList.size(); i++)
-					{
-						//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
-						if(lut2NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE || 
-										lut2NodeList.get(i).getType() == TimingNodeType.START_NODE)
+						if(ff2NodeList.get(i).getType() == TimingNodeType.START_NODE)
 						{
-							sourceNode = lut2NodeList.get(i);
+							sourceNode = ff2NodeList.get(i);
+							break;
 						}
-					}					
+					}
 					for(TimingEdge connectedEdge: sourceNode.getOutputs())
 					{
 						Block owner = connectedEdge.getOutput().getPin().owner;
-						if(owner != ff1 && owner != lut1) //No need to check for ff2 as this is null
+						if(owner != ff1 && owner != lut1 && owner != lut2)
 						{
-							int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
+							int mhd = Math.abs(owner.getSite().x - swap.pl1.x) 
 									+ Math.abs(owner.getSite().y - swap.pl1.y);
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
 					}
 				}
-			}
-			//Process sink nets of first clb
-			if(lut2 != null)
-			{
-				ArrayList<TimingNode> lut2NodeList = blockMap.get(lut2);
-				if(lut2NodeList != null)
+				else //only a lut in the clb, no ff
 				{
-					for(int i = 0; i < lut2NodeList.size(); i++)
+					TimingNode sourceNode = null;
+					ArrayList<TimingNode> lut2NodeList = blockMap.get(lut2);
+					if(lut2NodeList != null)
 					{
-						TimingNode node = lut2NodeList.get(i);
-						if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
+						for(int i = 0; i < lut2NodeList.size(); i++)
+						{
+							//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
+							if(lut2NodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE || 
+											lut2NodeList.get(i).getType() == TimingNodeType.START_NODE)
+							{
+								sourceNode = lut2NodeList.get(i);
+							}
+						}					
+						for(TimingEdge connectedEdge: sourceNode.getOutputs())
+						{
+							Block owner = connectedEdge.getOutput().getPin().owner;
+							if(owner != ff1 && owner != lut1) //No need to check for ff2 as this is null
+							{
+								int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
+										+ Math.abs(owner.getSite().y - swap.pl1.y);
+								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+								affectedEdgeList.add(connectedEdge);
+							}
+						}
+					}
+				}
+				//Process sink nets of first clb
+				if(lut2 != null)
+				{
+					ArrayList<TimingNode> lut2NodeList = blockMap.get(lut2);
+					if(lut2NodeList != null)
+					{
+						for(int i = 0; i < lut2NodeList.size(); i++)
+						{
+							TimingNode node = lut2NodeList.get(i);
+							if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
+							{
+								if(node.getInputs().size() > 1)
+								{
+									System.err.println("There should only be one input to an internalSinkNode!");
+								}
+								TimingEdge connectedEdge = node.getInputs().get(0);
+								Block owner = connectedEdge.getInput().getPin().owner;
+								if(owner != ff1 && owner != lut1 && owner != ff2)
+								{
+									int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
+											+ Math.abs(owner.getSite().y - swap.pl1.y);
+									deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+									affectedEdgeList.add(connectedEdge);
+								}
+							}
+						}
+					}
+				}
+				else //only a ff in the clb, no lut
+				{
+					ArrayList<TimingNode> ff2NodeList = blockMap.get(ff2);
+					for(int i = 0; i < ff2NodeList.size(); i++)
+					{
+						TimingNode node = ff2NodeList.get(i);
+						if(node.getType() == TimingNodeType.END_NODE)
 						{
 							if(node.getInputs().size() > 1)
 							{
-								System.err.println("There should only be one input to an internalSinkNode!");
+								System.err.println("There should only be one input to an endNode!");
 							}
 							TimingEdge connectedEdge = node.getInputs().get(0);
 							Block owner = connectedEdge.getInput().getPin().owner;
-							if(owner != ff1 && owner != lut1 && owner != ff2)
+							if(owner != ff1 && owner != lut1) //No need to check for lut2 as this is null
 							{
 								int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
 										+ Math.abs(owner.getSite().y - swap.pl1.y);
@@ -318,21 +341,76 @@ public class TimingGraph
 					}
 				}
 			}
-			else //only a ff in the clb, no lut
+			else if(swap.pl1.type == SiteType.HARDBLOCK)
 			{
-				ArrayList<TimingNode> ff2NodeList = blockMap.get(ff2);
-				for(int i = 0; i < ff2NodeList.size(); i++)
+				HardBlock hb1 = (HardBlock)swap.pl1.block;
+				HardBlock hb2 = (HardBlock)swap.pl2.block;
+				
+				//Process first hardBlock (inputs and outputs)
+				ArrayList<TimingNode> hb1NodeList = blockMap.get(hb1);
+				for(TimingNode node: hb1NodeList)
 				{
-					TimingNode node = ff2NodeList.get(i);
-					if(node.getType() == TimingNodeType.END_NODE)
+					if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || 
+									node.getType() == TimingNodeType.START_NODE) //TimingNode represents an output of the hardblock
+					{
+						for(TimingEdge connectedEdge: node.getOutputs())
+						{
+							Block owner = connectedEdge.getOutput().getPin().owner;
+							if(owner != hb2)
+							{
+								int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
+										+ Math.abs(owner.getSite().y - swap.pl2.y);
+								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+								affectedEdgeList.add(connectedEdge);
+							}
+						}
+					}
+					else //TimingNode represents an input of the hardBlock
 					{
 						if(node.getInputs().size() > 1)
 						{
-							System.err.println("There should only be one input to an endNode!");
+							System.err.println("There should only be one input to an endNode or an internalSinkNode!");
 						}
 						TimingEdge connectedEdge = node.getInputs().get(0);
 						Block owner = connectedEdge.getInput().getPin().owner;
-						if(owner != ff1 && owner != lut1) //No need to check for lut2 as this is null
+						if(owner != hb2)
+						{
+							int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
+									+ Math.abs(owner.getSite().y - swap.pl2.y);
+							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+							affectedEdgeList.add(connectedEdge);
+						}
+					}
+				}
+				
+				//Process second hardBlock (inputs and outputs)
+				ArrayList<TimingNode> hb2NodeList = blockMap.get(hb2);
+				for(TimingNode node: hb2NodeList)
+				{
+					if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || 
+									node.getType() == TimingNodeType.START_NODE) //TimingNode represents an output of the hardBlock
+					{
+						for(TimingEdge connectedEdge: node.getOutputs())
+						{
+							Block owner = connectedEdge.getOutput().getPin().owner;
+							if(owner != hb1)
+							{
+								int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
+										+ Math.abs(owner.getSite().y - swap.pl1.y);
+								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+								affectedEdgeList.add(connectedEdge);
+							}
+						}
+					}
+					else //TimingNode represents an input of the hardBlock
+					{
+						if(node.getInputs().size() > 1)
+						{
+							System.err.println("There should only be one input to an endNode or an internalSinkNode!");
+						}
+						TimingEdge connectedEdge = node.getInputs().get(0);
+						Block owner = connectedEdge.getInput().getPin().owner;
+						if(owner != hb1)
 						{
 							int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
 									+ Math.abs(owner.getSite().y - swap.pl1.y);
@@ -345,125 +423,177 @@ public class TimingGraph
 		}
 		else
 		{
-			Lut lut = null;
-			Flipflop ff = null;
-			int newX = 0;
-			int newY = 0;
-			if(swap.pl1.block != null)
+			if(swap.pl1.type == SiteType.CLB)
 			{
-				if(swap.pl1.block.type == BlockType.CLB)
+				Lut lut = null;
+				Flipflop ff = null;
+				int newX = 0;
+				int newY = 0;
+				if(swap.pl1.block != null)
 				{
-					lut = ((Clb)swap.pl1.block).getBle().getLut();
-					ff = ((Clb)swap.pl1.block).getBle().getFlipflop();
-					newX = swap.pl2.x;
-					newY = swap.pl2.y;
-				}
-			}
-			else
-			{
-				if(swap.pl2.block.type == BlockType.CLB)
-				{
-					lut = ((Clb)swap.pl2.block).getBle().getLut();
-					ff = ((Clb)swap.pl2.block).getBle().getFlipflop();
-					newX = swap.pl1.x;
-					newY = swap.pl1.y;
-				}
-			}
-			//Process source net of clb
-			if(ff != null)
-			{
-				TimingNode sourceNode = null;
-				ArrayList<TimingNode> ffNodeList = blockMap.get(ff);
-				for(int i = 0; i < ffNodeList.size(); i++)
-				{
-					if(ffNodeList.get(i).getType() == TimingNodeType.START_NODE)
+					if(swap.pl1.block.type == BlockType.CLB)
 					{
-						sourceNode = ffNodeList.get(i);
-						break;
+						lut = ((Clb)swap.pl1.block).getBle().getLut();
+						ff = ((Clb)swap.pl1.block).getBle().getFlipflop();
+						newX = swap.pl2.x;
+						newY = swap.pl2.y;
 					}
 				}
-				for(TimingEdge connectedEdge: sourceNode.getOutputs())
+				else
 				{
-					Block owner = connectedEdge.getOutput().getPin().owner;
-					if(owner != lut)
+					if(swap.pl2.block.type == BlockType.CLB)
 					{
-						int mhd = Math.abs(owner.getSite().x - newX) 
-								+ Math.abs(owner.getSite().y - newY);
-						deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
-						affectedEdgeList.add(connectedEdge);
+						lut = ((Clb)swap.pl2.block).getBle().getLut();
+						ff = ((Clb)swap.pl2.block).getBle().getFlipflop();
+						newX = swap.pl1.x;
+						newY = swap.pl1.y;
 					}
 				}
-			}
-			else //only a lut in the clb, no ff
-			{
-				TimingNode sourceNode = null;
-				ArrayList<TimingNode> lutNodeList = blockMap.get(lut);
-				if(lutNodeList != null)
+				//Process source net of clb
+				if(ff != null)
 				{
-					for(int i = 0; i < lutNodeList.size(); i++)
+					TimingNode sourceNode = null;
+					ArrayList<TimingNode> ffNodeList = blockMap.get(ff);
+					for(int i = 0; i < ffNodeList.size(); i++)
 					{
-						//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
-						if(lutNodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE ||
-								lutNodeList.get(i).getType() == TimingNodeType.START_NODE)
+						if(ffNodeList.get(i).getType() == TimingNodeType.START_NODE)
 						{
-							sourceNode = lutNodeList.get(i);
+							sourceNode = ffNodeList.get(i);
+							break;
 						}
 					}
-
 					for(TimingEdge connectedEdge: sourceNode.getOutputs())
 					{
 						Block owner = connectedEdge.getOutput().getPin().owner;
-						//No need to check for ff as this is null
-						int mhd = Math.abs(owner.getSite().x - newX)
-								+ Math.abs(owner.getSite().y - newY);
-						deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
-						affectedEdgeList.add(connectedEdge);
+						if(owner != lut)
+						{
+							int mhd = Math.abs(owner.getSite().x - newX) 
+									+ Math.abs(owner.getSite().y - newY);
+							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+							affectedEdgeList.add(connectedEdge);
+						}
 					}
 				}
-			}
-			//Process sink nets of clb
-			if(lut != null)
-			{
-				ArrayList<TimingNode> lutNodeList = blockMap.get(lut);
-				if(lutNodeList != null)
+				else //only a lut in the clb, no ff
 				{
-					for(int i = 0; i < lutNodeList.size(); i++)
+					TimingNode sourceNode = null;
+					ArrayList<TimingNode> lutNodeList = blockMap.get(lut);
+					if(lutNodeList != null)
 					{
-						TimingNode node = lutNodeList.get(i);
-						if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
+						for(int i = 0; i < lutNodeList.size(); i++)
+						{
+							//WATCH OUT: start node in the case of a source LUT (= a LUT that only sources a net but doesn't sink any nets)
+							if(lutNodeList.get(i).getType() == TimingNodeType.INTERNAL_SOURCE_NODE ||
+									lutNodeList.get(i).getType() == TimingNodeType.START_NODE)
+							{
+								sourceNode = lutNodeList.get(i);
+							}
+						}
+
+						for(TimingEdge connectedEdge: sourceNode.getOutputs())
+						{
+							Block owner = connectedEdge.getOutput().getPin().owner;
+							//No need to check for ff as this is null
+							int mhd = Math.abs(owner.getSite().x - newX)
+									+ Math.abs(owner.getSite().y - newY);
+							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+							affectedEdgeList.add(connectedEdge);
+						}
+					}
+				}
+				//Process sink nets of clb
+				if(lut != null)
+				{
+					ArrayList<TimingNode> lutNodeList = blockMap.get(lut);
+					if(lutNodeList != null)
+					{
+						for(int i = 0; i < lutNodeList.size(); i++)
+						{
+							TimingNode node = lutNodeList.get(i);
+							if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE)
+							{
+								if(node.getInputs().size() > 1)
+								{
+									System.err.println("There should only be one input to an internalSinkNode!");
+								}
+								TimingEdge connectedEdge = node.getInputs().get(0);
+								Block owner = connectedEdge.getInput().getPin().owner;
+								if(owner != ff)
+								{
+									int mhd = Math.abs(owner.getSite().x - newX)
+											+ Math.abs(owner.getSite().y - newY);
+									deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+									affectedEdgeList.add(connectedEdge);
+								}
+							}
+						}
+					}
+				}
+				else //only a ff in the clb, no lut
+				{
+					ArrayList<TimingNode> ffNodeList = blockMap.get(ff);
+					for(int i = 0; i < ffNodeList.size(); i++)
+					{
+						TimingNode node = ffNodeList.get(i);
+						if(node.getType() == TimingNodeType.END_NODE)
 						{
 							if(node.getInputs().size() > 1)
 							{
-								System.err.println("There should only be one input to an internalSinkNode!");
+								System.err.println("There should only be one input to an endNode!");
 							}
 							TimingEdge connectedEdge = node.getInputs().get(0);
 							Block owner = connectedEdge.getInput().getPin().owner;
-							if(owner != ff)
-							{
-								int mhd = Math.abs(owner.getSite().x - newX)
-										+ Math.abs(owner.getSite().y - newY);
-								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
-								affectedEdgeList.add(connectedEdge);
-							}
+							//No need to check for lut as this is null
+							int mhd = Math.abs(owner.getSite().x - newX)
+									+ Math.abs(owner.getSite().y - newY);
+							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+							affectedEdgeList.add(connectedEdge);
 						}
 					}
 				}
 			}
-			else //only a ff in the clb, no lut
+			else if(swap.pl1.type == SiteType.HARDBLOCK)
 			{
-				ArrayList<TimingNode> ffNodeList = blockMap.get(ff);
-				for(int i = 0; i < ffNodeList.size(); i++)
+				HardBlock hb;
+				int newX;
+				int newY;
+				if(swap.pl1.block != null)
 				{
-					TimingNode node = ffNodeList.get(i);
-					if(node.getType() == TimingNodeType.END_NODE)
+					hb = (HardBlock)swap.pl1.block;
+					newX = swap.pl2.x;
+					newY = swap.pl2.y;
+				}
+				else
+				{
+					hb = (HardBlock)swap.pl2.block;
+					newX = swap.pl1.x;
+					newY = swap.pl1.y;
+				}
+				
+				//Process hardBlock (inputs and outputs)
+				ArrayList<TimingNode> hbNodeList = blockMap.get(hb);
+				for(TimingNode node: hbNodeList)
+				{
+					if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || 
+									node.getType() == TimingNodeType.START_NODE) //TimingNode represents an output of the hardBlock
+					{
+						for(TimingEdge connectedEdge: node.getOutputs())
+						{
+							Block owner = connectedEdge.getOutput().getPin().owner;
+							int mhd = Math.abs(owner.getSite().x - newX)
+									+ Math.abs(owner.getSite().y - newY);
+							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
+							affectedEdgeList.add(connectedEdge);
+						}
+					}
+					else //TimingNode represents an input of the hardBlock
 					{
 						if(node.getInputs().size() > 1)
 						{
-							System.err.println("There should only be one input to an endNode!");
+							System.err.println("There should only be one input to an endNode or an internalSinkNode!");
 						}
 						TimingEdge connectedEdge = node.getInputs().get(0);
 						Block owner = connectedEdge.getInput().getPin().owner;
-						//No need to check for lut as this is null
 						int mhd = Math.abs(owner.getSite().x - newX)
 								+ Math.abs(owner.getSite().y - newY);
 						deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
@@ -549,7 +679,7 @@ public class TimingGraph
 				else
 				{
 					ArrayList<TimingNode> nodeList = blockMap.get(ble.getLut());
-					if(nodeList == null)
+					if(nodeList == null) //Should only occur for special, unimportant cases
 					{
 						continue;
 					}
@@ -647,14 +777,13 @@ public class TimingGraph
 		if(clbsMapped)
 		{
 			TimingNode sourceNode = clbPinMap.get(sourceClbPin);
-			if(sourceNode == null)
-			{
-				return 0.1;
-			}
+//			if(sourceNode == null) //Should never occur
+//			{
+//				return 0.1;
+//			}
 			for(TimingEdge edge: sourceNode.getOutputs())
 			{
 				Block sinkBlock = edge.getOutput().getPin().owner; //Will be a circuit output, Lut input or FF input
-				
 				
 				if(sinkClbPin.owner.type == BlockType.CLB)
 				{
@@ -779,6 +908,7 @@ public class TimingGraph
 					}
 					List<TimingNode> lutNodeList = blockMap.get(currentSink.owner);
 					lutNodeList.add(inputNode);
+					//Process TimingNode for LUT output
 					TimingNode outputNode = null;
 					Pin lutOutput = ((Lut)currentSink.owner).getOutputs()[0];
 					for(TimingNode localNode: lutNodeList)
@@ -800,8 +930,8 @@ public class TimingGraph
 						netsStack.push(currentNet);
 						sinkIndexStack.push(currentIndex);
 						currentTimingNodeStack.push(currentNode);
-						currentNet = nets.get(currentSink.owner.name);
-						currentIndex = -1; //will immediately be increased (see below)
+						currentNet = nets.get(currentSink.owner.name); //Output net of the LUT
+						currentIndex = -1; //Will immediately be increased (see below)
 						currentNode = outputNode;
 					}
 					else
@@ -827,7 +957,7 @@ public class TimingGraph
 					hbNodeList.add(inputNode);
 					boolean firstTime = true;
 					Pin[] outputs = ((HardBlock)currentSink.owner).getOutputs();
-					for(int i = 0; i < outputs.length; i++)
+					for(int i = 0; i < outputs.length; i++) //Loop over every output of the hardblock
 					{
 						Pin hbOutput = outputs[i];
 						TimingNode outputNode = null;
@@ -839,9 +969,8 @@ public class TimingGraph
 								break;
 							}
 						}
-						if(outputNode == null)
+						if(outputNode == null) //This is the first time we enter the hardblock
 						{
-							firstTime = true;
 							outputNode = new TimingNode(TimingNodeType.INTERNAL_SOURCE_NODE, hbOutput);
 							hbNodeList.add(outputNode);
 							TimingEdge connectionTwo = new TimingEdge(inputNode, outputNode, LUT_DELAY);
@@ -857,7 +986,7 @@ public class TimingGraph
 
 							}
 							netsStack.push(nets.get(((HardBlock)currentSink.owner).getOutputNetName(i)));
-							sinkIndexStack.push(-1); //This will be immediateley increased (see below)
+							sinkIndexStack.push(-1); //This will be immediately increased (see below)
 							currentTimingNodeStack.push(outputNode);
 							if(i == outputs.length - 1)
 							{
@@ -963,21 +1092,21 @@ public class TimingGraph
 		}
 	}
 	
-	public String getMapString()
+	public String getBlockNodesString(String blockName)
 	{
 		String toReturn = "";
-		int nbBlocks = 0;
 		for(Block block:blockMap.keySet())
 		{
-			nbBlocks++;
-			ArrayList<TimingNode> nodeList = blockMap.get(block);
-			for(TimingNode node: nodeList)
+			if(block.name.contains(blockName))
 			{
-				toReturn += node.getPin().name + "(" + node.getTRequired() + ") ";
+				ArrayList<TimingNode> nodeList = blockMap.get(block);
+				for(TimingNode node: nodeList)
+				{
+					toReturn += node.getPin().name + "(" + node.getTRequired() + ") ";
+				}
+				toReturn += "\n";
 			}
-			toReturn += "\n";
 		}
-		toReturn += "nbBlocks: " + nbBlocks + "\n";
 		return toReturn;
 	}
 	

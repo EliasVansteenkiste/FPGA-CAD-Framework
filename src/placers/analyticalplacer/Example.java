@@ -109,7 +109,8 @@ public class Example
 		
 		//printPackedCircuit(packedCircuit);
 		
-		visualSA(prePackedCircuit, packedCircuit);
+		//visualSA(prePackedCircuit, packedCircuit);
+		visualTDSA(prePackedCircuit, packedCircuit);
 	}
 	
 //	//Homegeneous
@@ -779,13 +780,9 @@ public class Example
 	
 	private static void visualTDSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		int archSize = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
-		int height = archSize;
-		int width = archSize;
-		int trackwidth = 4;
 		Double placementEffort = 10.0;
 		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -796,6 +793,7 @@ public class Example
 		
 		long startTime;
 		long endTime;
+		
 		startTime = System.nanoTime();
 		placer.place(placementEffort);
 		endTime = System.nanoTime();
@@ -811,7 +809,7 @@ public class Example
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.println("Maximum delay: " + maxDelay);
 		
-		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
 		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
