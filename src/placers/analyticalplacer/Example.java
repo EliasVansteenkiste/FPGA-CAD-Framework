@@ -79,38 +79,40 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-		BlifReader blifReader = new BlifReader();
-		PrePackedCircuit prePackedCircuit;
-		try
-		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
-			
-		}
-		catch(IOException ioe)
-		{
-			System.err.println("Couldn't read blif file!");
-			return;
-		}
+//		BlifReader blifReader = new BlifReader();
+//		PrePackedCircuit prePackedCircuit;
+//		try
+//		{
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
+//			
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.err.println("Couldn't read blif file!");
+//			return;
+//		}
+//		
+//		//printUnpackedCircuit(prePackedCircuit);
+//		
+//		BlePacker blePacker = new BlePacker(prePackedCircuit);
+//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		
+//		//printBlePackedCircuit(blePackedCircuit);
+//		
+//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+//		PackedCircuit packedCircuit = clbPacker.pack();
+//		
+//		//printPackedCircuit(packedCircuit);
+//		
+//		//visualSA(prePackedCircuit, packedCircuit);
+//		visualTDSA(prePackedCircuit, packedCircuit);
 		
-		//printUnpackedCircuit(prePackedCircuit);
-		
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		//printBlePackedCircuit(blePackedCircuit);
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
-		
-		//printPackedCircuit(packedCircuit);
-		
-		//visualSA(prePackedCircuit, packedCircuit);
-		visualTDSA(prePackedCircuit, packedCircuit);
+		runWlVsTdSaBenchmarks();
 	}
 	
 //	//Homegeneous
@@ -545,7 +547,8 @@ public class Example
 	
 	private static void runWlVsTdSaBenchmarks()
 	{
-		String toDoFileName = "BenchmarksToDo.txt";
+		String toDoFileName = "HeteroBenchmarksToDo.txt";
+		String csvFileName = "HeteroBenchmarksSa_TdVsWld.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -553,6 +556,7 @@ public class Example
 			if(!toDoFile.exists())
 			{
 				System.out.println("No TODO file found\nAborting...");
+				return;
 			}
 			FileReader fileReader = new FileReader(toDoFile.getAbsoluteFile());
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -577,7 +581,7 @@ public class Example
 		
 		CsvWriter csvWriter;
 		CsvReader csvReader = new CsvReader();
-		boolean success = csvReader.readFile("benchmarksSa_TdVsWld.csv");
+		boolean success = csvReader.readFile(csvFileName);
 		String[] alreadyDoneFiles;
 		if(success)
 		{
@@ -628,12 +632,11 @@ public class Example
 					String tdSACostString = String.format("%.3f", tdSACost);
 					String tdSAMaxDelayString = String.format("%.3f", tdSAMaxDelay);
 					
-					
 					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, wldSATimeString, wldSACostString, 
 									wldSAMaxDelayString, tdSATimeString, tdSACostString, tdSAMaxDelayString});
 				}
 			}
-			csvWriter.writeFile("benchmarksSa_TdVsWld.csv");
+			csvWriter.writeFile(csvFileName);
 		}
 	}
 	
@@ -1108,13 +1111,8 @@ public class Example
 	
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
-	
-		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
-		int height = dimension;
-		int width = dimension;
-		int trackwidth = 4;
 		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
 		//Random placement
 		Random rand = new Random(1);
