@@ -79,40 +79,47 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
-//			
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		//printUnpackedCircuit(prePackedCircuit);
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		//printBlePackedCircuit(blePackedCircuit);
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
-//		
-//		//printPackedCircuit(packedCircuit);
-//		
-//		//visualSA(prePackedCircuit, packedCircuit);
-//		visualTDSA(prePackedCircuit, packedCircuit);
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
+			
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
 		
-		runWlVsTdSaBenchmarks();
+		//printUnpackedCircuit(prePackedCircuit);
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+		
+		//printPackedCircuit(packedCircuit);
+		
+		//visualSA(prePackedCircuit, packedCircuit);
+		//visualTDSA(prePackedCircuit, packedCircuit);
+		
+		//Just for testing, needs to be deleted when HeteroAnalyticalPlacerOne is working
+		{
+			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
+			HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(architecture, packedCircuit);
+			placer.place();
+		}
+		
+		//runWlVsTdSaBenchmarks();
 	}
 	
 //	//Homegeneous

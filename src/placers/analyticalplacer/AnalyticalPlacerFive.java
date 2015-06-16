@@ -283,7 +283,7 @@ public class AnalyticalPlacerFive
 				}
 			}
 			
-			//Add connection beween min and max
+			//Add connection between min and max
 			if(!(minXIndex == -1 && maxXIndex == -1))
 			{
 				double delta = maxX - minX;
