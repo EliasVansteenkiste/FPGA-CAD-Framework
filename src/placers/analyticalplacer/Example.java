@@ -84,10 +84,11 @@ public class Example
 		try
 		{
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
 			
 		}
@@ -110,14 +111,14 @@ public class Example
 		//printPackedCircuit(packedCircuit);
 		
 		//visualSA(prePackedCircuit, packedCircuit);
-		//visualTDSA(prePackedCircuit, packedCircuit);
+		visualTDSA(prePackedCircuit, packedCircuit);
 		
 		//Just for testing, needs to be deleted when HeteroAnalyticalPlacerOne is working
-		{
-			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
-			HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(architecture, packedCircuit);
-			placer.place();
-		}
+//		{
+//			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
+//			HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(architecture, packedCircuit);
+//			placer.place();
+//		}
 		
 		//runWlVsTdSaBenchmarks();
 	}
@@ -821,6 +822,9 @@ public class Example
 		
 		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
 		
+		Block[] criticalBlocks = timingGraph.getCriticalPath();
+		panel.setCriticalPath(criticalBlocks);
+		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(950,950);
@@ -861,6 +865,9 @@ public class Example
 		System.out.println("Maximum delay: " + maxDelay);
 		
 		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
+		
+		Block[] criticalBlocks = timingGraph.getCriticalPath();
+		panel.setCriticalPath(criticalBlocks);
 		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

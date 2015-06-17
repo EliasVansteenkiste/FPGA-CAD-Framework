@@ -81,4 +81,14 @@ public class SiteData {
 				break;
 		}
 	}
+	
+	public int getCenterX(double zoom)
+	{
+		return (int)(x*zoom);
+	}
+	
+	public int getCenterY(double zoom)
+	{
+		return (int)(y*zoom);
+	}
 }

@@ -35,7 +35,8 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 	private HeterogeneousArchitecture heteroArchitecture;
 	private int mouseCurrentX;
 	private int mouseCurrentY;
-	String curClbText;
+	private String curClbText;
+	private Block[] criticalPath;
 	
 	public HeteroArchitecturePanel(int size, HeterogeneousArchitecture architecture)
 	{
@@ -59,6 +60,19 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 			data.draw(g, zoom);
 		}
 		
+		if(criticalPath != null)
+		{
+			g.setColor(Color.RED);
+			for(int i = 0; i < criticalPath.length - 1; i++)
+			{
+				int fromX = siteData.get(criticalPath[i].getSite()).getCenterX(zoom);
+				int fromY = siteData.get(criticalPath[i].getSite()).getCenterY(zoom);
+				int toX = siteData.get(criticalPath[i+1].getSite()).getCenterX(zoom);
+				int toY = siteData.get(criticalPath[i+1].getSite()).getCenterY(zoom);
+				g.drawLine(fromX, fromY, toX, toY);
+			}
+		}
+		
 		g.setFont(new Font("Arial", Font.BOLD, 13));
 		g.setColor(Color.BLUE);
 		g.drawString(curClbText, 10, 905);
@@ -68,6 +82,11 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 	public Dimension getPreferredSize()
 	{
 		return new Dimension(891, 910);
+	}
+	
+	public void setCriticalPath(Block[] criticalPath)
+	{
+		this.criticalPath = criticalPath;
 	}
 	
 	@Override

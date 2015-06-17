@@ -1116,6 +1116,115 @@ public class TimingGraph
 		}
 	}
 	
+	public Block[] getCriticalPath()
+	{
+		TimingNode[] criticalPath = null;
+		double curMaxDelay = 0.0;
+		double curDelay = 0.0;
+		Stack<TimingNode> nodeStack = new Stack<>();
+		Stack<Integer> indexStack = new Stack<>();
+		Stack<Double> curDelayStack = new Stack<>();
+		
+		for(TimingNode startNode: startNodes)
+		{
+			TimingNode currentNode = startNode;
+			int currentIndex = 0;
+			
+			boolean firstTime = true;
+			if(startNode.getOutputs().size() == 0)
+			{
+				continue;
+			}
+			while(!nodeStack.isEmpty() || firstTime)
+			{
+				firstTime = false;
+				if(currentNode.getOutputs().size() == 0 && !nodeStack.isEmpty())
+				{
+					while(currentIndex >= currentNode.getOutputs().size() && !nodeStack.isEmpty())
+					{
+						currentNode = nodeStack.pop();
+						curDelay = curDelayStack.pop();
+						currentIndex = indexStack.pop();
+						currentIndex++;
+					}
+					if(nodeStack.isEmpty())
+					{
+						break;
+					}
+				}
+				TimingEdge edge = currentNode.getOutputs().get(currentIndex);
+				if(edge.getOutput().getType() == TimingNodeType.END_NODE) //We reached the end
+				{
+					curDelay += edge.getDelay();
+					if(curDelay > curMaxDelay)
+					{
+						curMaxDelay = curDelay;
+						nodeStack.push(currentNode);
+						nodeStack.push(edge.getOutput());
+						criticalPath = new TimingNode[nodeStack.size()];
+						nodeStack.toArray(criticalPath);
+						nodeStack.pop();
+						nodeStack.pop();
+					}
+					curDelay -= edge.getDelay();
+					currentIndex++;
+					while(currentIndex >= currentNode.getOutputs().size() && !nodeStack.isEmpty())
+					{
+						currentNode = nodeStack.pop();
+						curDelay = curDelayStack.pop();
+						currentIndex = indexStack.pop();
+						currentIndex++;
+					}
+				}
+				else //We have to dig deeper
+				{
+					nodeStack.push(currentNode);
+					indexStack.push(currentIndex);
+					curDelayStack.push(curDelay);
+					curDelay += edge.getDelay();
+					currentNode = edge.getOutput();
+					currentIndex = 0;
+				}
+			}
+			
+		}
+		
+		ArrayList<Block> criticalPathBlocks = new ArrayList<>(); 
+		System.out.println("Max delay = " + curMaxDelay);
+		System.out.print("Critical path: ");
+		for(int i = 0; i < criticalPath.length; i++)
+		{
+			System.out.print(criticalPath[i].getPin().name);
+			if(i != criticalPath.length - 1)
+			{
+				System.out.print(" -- ");
+				System.out.print(criticalPath[i+1].getInputs().get(0).getDelay());
+				System.out.print("-->");
+			}
+			if(criticalPathBlocks.size() > 0 && criticalPathBlocks.get(criticalPathBlocks.size() - 1) != criticalPath[i].getPin().owner)
+			{
+				criticalPathBlocks.add(criticalPath[i].getPin().owner);
+			}
+			else
+			{
+				if(criticalPathBlocks.size() == 0)
+				{
+					criticalPathBlocks.add(criticalPath[i].getPin().owner);
+				}
+			}
+		}
+		System.out.println();
+		
+		for(Block block: criticalPathBlocks)
+		{
+			System.out.print(block.name + " --> ");
+		}
+		
+		Block[] toReturn = new Block[criticalPathBlocks.size()];
+		criticalPathBlocks.toArray(toReturn);
+		return toReturn;
+	}
+	
 	private void calculateRequiredTimesFromScratch()
 	{
 		//Clear all required times

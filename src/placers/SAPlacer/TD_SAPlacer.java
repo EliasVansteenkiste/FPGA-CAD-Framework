@@ -10,13 +10,13 @@ import circuit.PrePackedCircuit;
 public class TD_SAPlacer extends SAPlacer
 {
 	
-	private static final double TRADE_OFF_FACTOR = 0.5;
+	private static final double TRADE_OFF_FACTOR = 0.0;
 	private static final double TD_PLACE_EXP_FIRST = 1.0;
 	private static final double TD_PLACE_EXP_LAST = 8.0;
 	
 	private TimingGraph timingGraph;
-	private double inversePreviousBBCost;
-	private double inversePreviousTDCost;
+	private double previousBBCost;
+	private double previousTDCost;
 
 	public TD_SAPlacer(HeterogeneousArchitecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
@@ -37,8 +37,9 @@ public class TD_SAPlacer extends SAPlacer
 		double criticalityExponent = updateCriticalityExponent(firstRlim);
 		timingGraph.setCriticalityExponent(criticalityExponent);
 		timingGraph.recalculateAllSlacksCriticalities();
-		inversePreviousBBCost = 1 / calculator.calculateTotalCost();
-		inversePreviousTDCost = 1 / timingGraph.calculateTotalCost();
+		previousBBCost = calculator.calculateTotalCost();
+		previousTDCost = timingGraph.calculateTotalCost();
+		System.out.println("PreviousBBCost: " + previousBBCost); 
 		double T = calculateInitialTemperature();
 		int movesPerTemperature = (int) (inner_num*Math.pow(circuit.numBlocks(),4.0/3.0));
 
@@ -46,12 +47,13 @@ public class TD_SAPlacer extends SAPlacer
 		System.out.println("Initial temperature: " + T);
 		System.out.println("Moves per temperature: " + movesPerTemperature);
 		
-		while(T > 0.005 / circuit.getNets().values().size())
+		//while(T > 0.005 / circuit.getNets().values().size())
+		while(T > 0.005 * calculator.calculateAverageNetCost())
 		{
 			timingGraph.setCriticalityExponent(criticalityExponent);
 			timingGraph.recalculateAllSlacksCriticalities();
-			inversePreviousBBCost = 1 / calculator.calculateTotalCost();
-			inversePreviousTDCost = 1 / timingGraph.calculateTotalCost();
+			previousBBCost = calculator.calculateTotalCost();
+			previousTDCost = timingGraph.calculateTotalCost();
 			
 			int alphaAbs=0;
 			for (int i =0; i<movesPerTemperature;i++) 
@@ -61,8 +63,12 @@ public class TD_SAPlacer extends SAPlacer
 				{
 					double deltaBBCost = calculator.calculateDeltaCost(swap);
 					double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-					double deltaCost = (1 - TRADE_OFF_FACTOR) * deltaBBCost * inversePreviousBBCost
-										+ TRADE_OFF_FACTOR * deltaTimingCost * inversePreviousTDCost;
+					
+					//double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
+					//					+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+					
+					double deltaCost = deltaBBCost;
+					
 					if(deltaCost<=0)
 					{
 						swap.apply();
@@ -182,8 +188,10 @@ public class TD_SAPlacer extends SAPlacer
 			{
 				double deltaBBCost = calculator.calculateDeltaCost(swap);
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-				double deltaCost = (1 - TRADE_OFF_FACTOR) * deltaBBCost * inversePreviousBBCost
-									+ TRADE_OFF_FACTOR * deltaTimingCost * inversePreviousTDCost;
+				//double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
+				//					+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+				double deltaCost = deltaBBCost;
+				
 				swap.apply();
 				calculator.pushThrough();
 				timingGraph.pushThrough();
