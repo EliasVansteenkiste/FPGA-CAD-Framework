@@ -2,11 +2,16 @@ package placers.analyticalplacer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import circuit.Block;
+import circuit.BlockType;
 import circuit.Clb;
 import circuit.Net;
+import circuit.Pin;
 
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
@@ -35,15 +40,72 @@ public class HeteroLegalizerOne
 		this.typeNames = typeNames;
 	}
 	
-	public void legalize(double[] linearX, double[] linearY, Collection<Net> nets, Map<Clb,Integer> indexMap, int solveMode)
+	/*
+	 * Legalize the linear solution and store it if it is the best one found so far
+	 * solveMode: 0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
+	 */
+	//public void legalize(double[] linearX, double[] linearY, Collection<Net> nets, Map<Clb,Integer> indexMap, int solveMode)
+	public void legalize(double[] linearX, double[] linearY, int solveMode)
 	{
+		int[] semiLegalX = new int[bestLegalX.length];
+		int[] semiLegalY = new int[bestLegalY.length];
+		if(solveMode == 0)
+		{
+			for(int i = 0; i < typeNames.length; i++)
+			{
+				if(i != typeNames.length - 1)
+				{
+					subTypeLegalize(typeStartIndices[i], typeStartIndices[i+1], linearX, linearY, typeNames[i], semiLegalX, semiLegalY);
+				}
+				else
+				{
+					subTypeLegalize(typeStartIndices[i], bestLegalX.length, linearX, linearY, typeNames[i], semiLegalX, semiLegalY);
+				}
+			}
+			
+		}
+		else
+		{
+			if(solveMode != typeNames.length)
+			{
+				subTypeLegalize(typeStartIndices[solveMode - 1], typeStartIndices[solveMode], linearX, linearY, 
+																typeNames[solveMode - 1], semiLegalX, semiLegalY);
+				for(int i = 0; i < typeStartIndices[solveMode - 1]; i++)
+				{
+					semiLegalX[i] = bestLegalX[i];
+					semiLegalY[i] = bestLegalY[i];
+				}
+				for(int i = typeStartIndices[solveMode]; i < semiLegalX.length; i++)
+				{
+					semiLegalX[i] = bestLegalX[i];
+					semiLegalY[i] = bestLegalY[i];
+				}
+			}
+			else
+			{
+				subTypeLegalize(typeStartIndices[solveMode - 1], bestLegalX.length, linearX, linearY, 
+																typeNames[solveMode - 1], semiLegalX, semiLegalY);
+				for(int i = 0; i < typeStartIndices[solveMode - 1]; i++)
+				{
+					semiLegalX = bestLegalX;
+					semiLegalY = bestLegalY;
+				}
+			}
+		}
 		
+		int[] legalX = new int[semiLegalX.length];
+		int[] legalY = new int[semiLegalY.length];
+		finalLegalization(semiLegalX, semiLegalY, legalX, legalY);
+		
+		//updateBestLegal(legalX, legalY, nets, indexMap);
+		updateBestLegalUnconditionally(legalX, legalY);
 	}
 	
 	/*
 	 * EndIndex is the last index which is not of the considered block type anymore
 	 */
-	private void subTypeLegalize(int startIndex, int endIndex, double[] linearX, double[] linearY, String typeName)
+	private void subTypeLegalize(int startIndex, int endIndex, double[] linearX, double[] linearY, String typeName, 
+														int[] semiLegalX, int[] semiLegalY)
 	{
 		List<Integer> todo = new ArrayList<>();
 		for(int i = startIndex; i < endIndex; i++)
@@ -269,6 +331,7 @@ public class HeteroLegalizerOne
 				}
 			}
 			
+			System.out.println(indices.size());
 			if(indices.size() == 1)
 			{
 				int x = (int)Math.round(positionsX.get(0));
@@ -307,7 +370,7 @@ public class HeteroLegalizerOne
 			int maximalX = architecture.getWidth();
 			int minimalY = 1;
 			int maximalY = architecture.getHeight();
-			while (curUtilization >= UTILIZATION_FACTOR || (areaXDownBoundHalf < minimalX && areaXUpBoundHalf > maximalX && 
+			while(curUtilization >= UTILIZATION_FACTOR && !(areaXDownBoundHalf < minimalX && areaXUpBoundHalf > maximalX && 
 																areaYDownBoundHalf < minimalY && areaYUpBoundHalf > maximalY))
 			{
 				switch (curDirection)
@@ -589,24 +652,684 @@ public class HeteroLegalizerOne
 			{
 				cutDir = false; //Initial cut is vertically if not possible horizontally
 			}
-			sort(true, indices, positionsX, positionsY);			
+			sort(true, indices, positionsX, positionsY);
+			int totalArea = 0;
 			for(int i = 0; i < rectangleStopX.size(); i++)
 			{
+				totalArea += (rectangleStopX.get(i) - rectangleStartX.get(i)) * ((areaYUpBound - areaYDownBound));
+			}
+			
+			int totalNbBlocks = positionsX.size();
+			for(int i = rectangleStopX.size() - 1; i >= 0; i--)
+			{
+				int rectangleArea = (rectangleStopX.get(i) - rectangleStartX.get(i)) * ((areaYUpBound - areaYDownBound));
+				int nbBlocksRectangle;
+				if(i == 0)
+				{
+					nbBlocksRectangle = positionsX.size();
+				}
+				else
+				{
+					nbBlocksRectangle = (int)(((double)rectangleArea)/((double)totalArea) * totalNbBlocks);
+				}
 				ArrayList<Integer> rectangleIndices = new ArrayList<>();
 				ArrayList<Double> rectanglePositionsX = new ArrayList<>();
 				ArrayList<Double> rectanglePositionsY = new ArrayList<>();
-				int totalBlocksRemaining = positionsX.size();
-				for(int j = 0; j < totalBlocksRemaining; j++)
+				for(int j = 0; j< nbBlocksRectangle; j++)
 				{
-					rectangleIndices.add(indices.remove(j));
-					rectanglePositionsX.add(positionsX.remove(j));
-					rectanglePositionsY.add(positionsY.remove(j));
+					rectangleIndices.add(indices.remove(indices.size() - 1));
+					rectanglePositionsX.add(positionsX.remove(positionsX.size() - 1));
+					rectanglePositionsY.add(positionsY.remove(positionsY.size() - 1));
 				}
+				System.out.println("Calling cutAndSpread: " + rectangleIndices.size() + ", " + rectangleStartX.get(i) + ", " + 
+								rectangleStopX.get(i) + ", " + areaYDownBound + ", " + areaYUpBound);
 				cutAndSpread(cutDir, rectangleIndices, rectanglePositionsX, rectanglePositionsY, rectangleStartX.get(i), 
 									rectangleStopX.get(i), areaYDownBound, areaYUpBound, semiLegalX, semiLegalY);
 			}
 			
 		}
+	}
+	
+	/*
+	 * Cut and spread recursively horCutDirection = true ==> cut horizontally,
+	 * horCutDirection = false ==> cut vertically
+	 */
+	private void cutAndSpread(boolean horCutDirection, List<Integer> indices, List<Double> positionsX, List<Double> positionsY, int areaXDownBound,
+			int areaXUpBound, int areaYDownBound, int areaYUpBound, int[] semiLegalXPositions, int[] semiLegalYPositions)
+	{
+		// Bug checks
+		if (areaXDownBound >= areaXUpBound || areaYDownBound >= areaYUpBound)
+		{
+			System.err.println("ERROR: A DOWNBOUND IS BIGGER THAN OR EQUAL TO AN UPBOUND");
+		}
+
+		// Sort
+		if (horCutDirection) // Cut horizontally => sort in i
+		{
+			sort(false, indices, positionsX, positionsY);
+		} else
+		// Cut vertically
+		{
+			sort(true, indices, positionsX, positionsY);
+		}
+
+		// Target cut
+		int cutPosition;
+		int area1; // Top or left
+		int area2; // Bottom or right
+		// area1 will always be smaller or equal to area2
+		if (horCutDirection) // Cut horizontally
+		{
+			cutPosition = (areaYDownBound + areaYUpBound) / 2;
+			area1 = (areaXUpBound - areaXDownBound) * (cutPosition - areaYDownBound);
+			area2 = (areaXUpBound - areaXDownBound) * (areaYUpBound - cutPosition);
+		} else
+		// Cut vertically
+		{
+			cutPosition = (areaXDownBound + areaXUpBound) / 2;
+			area1 = (cutPosition - areaXDownBound) * (areaYUpBound - areaYDownBound);
+			area2 = (areaXUpBound - cutPosition) * (areaYUpBound - areaYDownBound);
+		}
+
+		// Source cut
+		int endIndex = indices.size();
+		double totalUtilization = ((double) positionsX.size()) / ((double) (area1 + area2));
+		int cutIndex = (int) Math.round(area1 * totalUtilization);
+		List<Integer> indices1 = new ArrayList<>();
+		List<Double> positionsX1 = new ArrayList<>();
+		List<Double> positionsY1 = new ArrayList<>();
+		for (int i = 0; i < cutIndex; i++)
+		{
+			indices1.add(indices.get(i));
+			positionsX1.add(positionsX.get(i));
+			positionsY1.add(positionsY.get(i));
+		}
+		List<Integer> indices2 = new ArrayList<>();
+		List<Double> positionsX2 = new ArrayList<>();
+		List<Double> positionsY2 = new ArrayList<>();
+		for (int i = cutIndex; i < endIndex; i++)
+		{
+			indices2.add(indices.get(i));
+			positionsX2.add(positionsX.get(i));
+			positionsY2.add(positionsY.get(i));
+		}
+
+		// Recursive calls if necessary (check for base cases)
+		if (indices1.size() > 1) // Do recursive call
+		{
+			if (horCutDirection)
+			{
+				boolean nextCut = !horCutDirection; // Next cut will be vertical
+				if (areaXUpBound - areaXDownBound <= 1) // Next cut will be
+														// vertical ==> check if
+														// it will be possible
+														// to cut vertically
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, areaXUpBound, areaYDownBound, cutPosition,
+						semiLegalXPositions, semiLegalYPositions);
+			} else
+			{
+				boolean nextCut = !horCutDirection; // Next cut will be
+													// horizontal
+				if (areaYUpBound - areaYDownBound <= 1)
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices1, positionsX1, positionsY1, areaXDownBound, cutPosition, areaYDownBound, areaYUpBound,
+						semiLegalXPositions, semiLegalYPositions);
+			}
+		} else
+		// Snap to grid
+		{
+
+			int x;
+			int y;
+			if (positionsX1.get(0) <= areaXDownBound)
+			{
+				x = areaXDownBound;
+			} else
+			{
+				if (horCutDirection)
+				{
+					if (positionsX1.get(0) >= areaXUpBound - 1)
+					{
+						x = areaXUpBound - 1;
+					} else
+					{
+						x = (int) Math.round(positionsX1.get(0));
+					}
+				} else
+				{
+					if (positionsX1.get(0) >= cutPosition - 1)
+					{
+						x = cutPosition - 1;
+					} else
+					{
+						x = (int) Math.round(cutPosition - 1);
+					}
+				}
+			}
+			if (positionsY2.get(0) <= areaYDownBound)
+			{
+				y = areaYDownBound;
+			} else
+			{
+				if (horCutDirection)
+				{
+					if (positionsY2.get(0) >= cutPosition - 1)
+					{
+						y = cutPosition - 1;
+					} else
+					{
+						y = (int) Math.round(positionsY2.get(0));
+					}
+				} else
+				{
+					if (positionsY2.get(0) >= areaYUpBound - 1)
+					{
+						y = areaYUpBound - 1;
+					} else
+					{
+						y = (int) Math.round(positionsY2.get(0));
+					}
+				}
+			}
+			int index = indices1.get(0);
+			// System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+			semiLegalXPositions[index] = x;
+			semiLegalYPositions[index] = y;
+		}
+		if (indices2.size() > 1) // Do recursive call
+		{
+			if (horCutDirection)
+			{
+				boolean nextCut = !horCutDirection; // Next cut will be vertical
+				if (areaXUpBound - areaXDownBound <= 1)
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, areaXDownBound, areaXUpBound, cutPosition, areaYUpBound,
+						semiLegalXPositions, semiLegalYPositions);
+			} else
+			{
+				boolean nextCut = !horCutDirection; // Next cut will be
+													// horizontal
+				if (areaYUpBound - areaYDownBound <= 1)
+				{
+					nextCut = horCutDirection;
+				}
+				cutAndSpread(nextCut, indices2, positionsX2, positionsY2, cutPosition, areaXUpBound, areaYDownBound, areaYUpBound,
+						semiLegalXPositions, semiLegalYPositions);
+			}
+		} else
+		// Snap to grid
+		{
+			int x;
+			int y;
+			if (positionsX2.get(0) >= areaXUpBound - 1)
+			{
+				x = areaXUpBound - 1;
+			} else
+			{
+				if (horCutDirection)
+				{
+					if (positionsX2.get(0) <= areaXDownBound)
+					{
+						x = areaXDownBound;
+					} else
+					{
+						x = (int) Math.round(positionsX2.get(0));
+					}
+				} else
+				{
+					if (positionsX2.get(0) <= cutPosition)
+					{
+						x = cutPosition;
+					} else
+					{
+						x = (int) Math.round(positionsX2.get(0));
+					}
+				}
+			}
+			if (positionsY2.get(0) >= areaYUpBound - 1)
+			{
+				y = areaYUpBound - 1;
+			} else
+			{
+				if (horCutDirection)
+				{
+					if (positionsY2.get(0) <= cutPosition)
+					{
+						y = cutPosition;
+					} else
+					{
+						y = (int) Math.round(positionsY2.get(0));
+					}
+				} else
+				{
+					if (positionsY2.get(0) <= areaYDownBound)
+					{
+						y = areaYDownBound;
+					} else
+					{
+						y = (int) Math.round(positionsY2.get(0));
+					}
+				}
+			}
+			int index = indices2.get(0);
+			// System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+			semiLegalXPositions[index] = x;
+			semiLegalYPositions[index] = y;
+		}
+	}
+	
+	/*
+	 * Eliminates the final overlaps (between different clusters) Works from
+	 * left to right
+	 */
+	private void finalLegalization(int[] semiLegalXPositions, int[] semiLegalYPositions, int[] legalX, int[] legalY)
+	{
+		int[] semiLegalIndices = new int[semiLegalXPositions.length];
+		for (int i = 0; i < semiLegalIndices.length; i++)
+		{
+			semiLegalIndices[i] = i;
+		}
+		
+		sort(true, semiLegalIndices, semiLegalXPositions, semiLegalYPositions); // Sort in x direction
+		
+		int minimalX = 1;
+		int maximalX = architecture.getWidth();
+		int minimalY = 1;
+		int maximalY = architecture.getHeight();
+		int ySize = maximalY - minimalY + 1;
+		int xSize = maximalX - minimalX + 1;
+		boolean[][] occupied = new boolean[ySize][xSize]; // True if CLB site is occupied, false if not
+		for (int i = 0; i < ySize; i++)
+		{
+			for (int j = 0; j < xSize; j++)
+			{
+				occupied[i][j] = false;
+			}
+		}
+		
+		for (int i = 0; i < semiLegalIndices.length; i++)
+		{
+			int index = semiLegalIndices[i];
+			int x = semiLegalXPositions[i];
+			int y = semiLegalYPositions[i];
+
+			// Shift to legal zone
+			while (x < minimalX)
+			{
+				x++;
+			}
+			while (x > maximalX)
+			{
+				x--;
+			}
+			while (y < minimalY)
+			{
+				y++;
+			}
+			while (y > maximalY)
+			{
+				y--;
+			}
+
+			if (!occupied[y - minimalY][x - minimalX]) // Check if there's overlap, you know for sure that the siteType is always correct
+			{
+				occupied[y - minimalY][x - minimalX] = true;
+				legalX[index] = x;
+				legalY[index] = y;
+			} 
+			else // Eliminate overlap
+			{
+				String typeName = null;
+				for(int j = 0; j < typeNames.length - 1; j++)
+				{
+					if(i >= typeStartIndices[j] && i < typeStartIndices[j+1])
+					{
+						typeName = typeNames[j];
+					}
+				}
+				if(typeName == null)
+				{
+					typeName = typeNames[typeNames.length - 1];
+				}
+				
+				// Look around for free spot ==> counterclockwise with increasing box size until we find available position that is of the correct type
+				int currentX = x;
+				int currentY = y - 1;
+				int curBoxSize = 1;
+				boolean xDir = true; //true = x-direction, false = y-direction
+				int moveSpeed = -1; //Always +1 or -1
+				while(!isValidPosition(currentX, currentY, minimalX, maximalX, minimalY, maximalY, occupied, typeName))
+				{
+					if(xDir && currentX == x - curBoxSize) //Check if we reached top left corner
+					{
+						xDir = false;
+						moveSpeed = 1;
+						currentY = y - curBoxSize + 1;
+					}
+					else
+					{
+						if (!xDir && currentY == y + curBoxSize) //Check if we reached bottom left corner
+						{
+							xDir = true;
+							moveSpeed = 1;
+							currentX = x - curBoxSize + 1;
+						}
+						else
+						{
+							if(xDir && currentX == x + curBoxSize) //Check if we reached bottom right corner
+							{
+								xDir = false;
+								moveSpeed = -1;
+								currentY = y + curBoxSize - 1;
+							}
+							else
+							{
+								if(!xDir && currentY == y - curBoxSize) //Check if we reached top right corner
+								{
+									xDir = true;
+									moveSpeed = -1;
+									currentX = x + curBoxSize - 1;
+									if (currentX == x && currentY == y - curBoxSize) //We've went completely around the box and didn't find an available position ==> increase box size
+									{
+										curBoxSize++;
+										currentX = x;
+										currentY = y - curBoxSize;
+										xDir = true;
+										moveSpeed = -1;
+									}
+								}
+								else //We didn't reach a corner and just have to keep moving
+								{
+									if (xDir) //Move in x-direction
+									{
+										currentX += moveSpeed;
+									}
+									else//Move in y-direction
+									{
+										currentY += moveSpeed;
+									}
+									if(currentX == x && currentY == y - curBoxSize) // We've went completely around the box and didn't find an available position ==> increase box size
+									{
+										curBoxSize++;
+										currentX = x;
+										currentY = y - curBoxSize;
+										xDir = true;
+										moveSpeed = -1;
+									}
+								}
+							}
+						}
+					}
+				}
+				if(currentY == 0)
+				{
+					System.out.println("Trouble");
+				}
+				occupied[currentY - minimalY][currentX - minimalX] = true;
+				legalX[index] = currentX;
+				legalY[index] = currentY;
+			}
+		}
+	}
+	
+	private boolean isValidPosition(int currentX, int currentY, int minimalX, int maximalX, int minimalY, int maximalY,
+																					boolean[][] occupied, String typeName)
+	{
+		boolean toReturn;
+		if(currentX >= minimalX && currentX <= maximalX && currentY >= minimalY && currentY <= maximalY)
+		{
+			Site site = architecture.getSite(currentX, currentY, 0);
+			if(site.type == SiteType.CLB)
+			{
+				if(typeName.equals("CLB") && !occupied[currentY - minimalY][currentX - minimalX])
+				{
+					toReturn = true;
+				}
+				else
+				{
+					toReturn = false;
+				}
+			}
+			else
+			{
+				String siteTypeName = ((HardBlockSite)site).getTypeName();
+				if(siteTypeName.equals(typeName) && !occupied[currentY - minimalY][currentX - minimalX])
+				{
+					toReturn = true;
+				}
+				else
+				{
+					toReturn = false;
+				}
+			}
+		}
+		else
+		{
+			toReturn = false;
+		}
+		return toReturn;
+	}
+	
+	private void updateBestLegalUnconditionally(int[] legalX, int[] legalY)
+	{
+		for (int i = 0; i < legalX.length; i++)
+		{
+			bestLegalX[i] = legalX[i];
+			bestLegalY[i] = legalY[i];
+		}
+	}
+	
+	private void updateBestLegal(int[] legalX, int[] legalY, Collection<Net> nets, Map<Clb, Integer> indexMap)
+	{
+		double newCost = calculateTotalCost(legalX, legalY, nets, indexMap);
+		if (newCost < currentCost)
+		{
+			for (int i = 0; i < legalX.length; i++)
+			{
+				bestLegalX[i] = legalX[i];
+				bestLegalY[i] = legalY[i];
+			}
+			currentCost = newCost;
+		}
+	}
+	
+	public double calculateBestLegalCost(Collection<Net> nets, Map<Clb, Integer> indexMap)
+	{
+		return calculateTotalCost(bestLegalX, bestLegalY, nets, indexMap);
+	}
+	
+	public int[] getBestLegalX()
+	{
+		return bestLegalX;
+	}
+	
+	public int[] getBestLegalY()
+	{
+		return bestLegalY;
+	}
+	
+	private double calculateTotalCost(int[] xArray, int[] yArray, Collection<Net> nets, Map<Clb, Integer> indexMap)
+	{
+		double cost = 0.0;
+		for (Net net : nets)
+		{
+			int minX;
+			int maxX;
+			int minY;
+			int maxY;
+			Block sourceBlock = net.source.owner;
+			if (sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
+			{
+				minX = sourceBlock.getSite().x;
+				maxX = sourceBlock.getSite().x;
+				minY = sourceBlock.getSite().y;
+				maxY = sourceBlock.getSite().y;
+			}
+			else
+			{
+				int index = indexMap.get((Clb) sourceBlock);
+				minX = xArray[index];
+				maxX = xArray[index];
+				minY = yArray[index];
+				maxY = yArray[index];
+			}
+
+			for (Pin pin : net.sinks)
+			{
+				Block sinkOwner = pin.owner;
+				if (sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
+				{
+					Site sinkOwnerSite = sinkOwner.getSite();
+					if (sinkOwnerSite.x < minX)
+					{
+						minX = sinkOwnerSite.x;
+					}
+					if (sinkOwnerSite.x > maxX)
+					{
+						maxX = sinkOwnerSite.x;
+					}
+					if (sinkOwnerSite.y < minY)
+					{
+						minY = sinkOwnerSite.y;
+					}
+					if (sinkOwnerSite.y > maxY)
+					{
+						maxY = sinkOwnerSite.y;
+					}
+				}
+				else
+				{
+					int index = indexMap.get((Clb) sinkOwner);
+					if (xArray[index] < minX)
+					{
+						minX = xArray[index];
+					}
+					if (xArray[index] > maxX)
+					{
+						maxX = xArray[index];
+					}
+					if (yArray[index] < minY)
+					{
+						minY = yArray[index];
+					}
+					if (yArray[index] > maxY)
+					{
+						maxY = yArray[index];
+					}
+				}
+			}
+			Set<Block> blocks = new HashSet<>();
+			blocks.addAll(net.blocks());
+			double weight = getWeight(blocks.size());
+			cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
+
+		}
+		return cost;
+	}
+	
+	private double getWeight(int size)
+	{
+		double weight = 0.0;
+		switch (size)
+		{
+		case 1:
+			weight = 1;
+			break;
+		case 2:
+			weight = 1;
+			break;
+		case 3:
+			weight = 1;
+			break;
+		case 4:
+			weight = 1.0828;
+			break;
+		case 5:
+			weight = 1.1536;
+			break;
+		case 6:
+			weight = 1.2206;
+			break;
+		case 7:
+			weight = 1.2823;
+			break;
+		case 8:
+			weight = 1.3385;
+			break;
+		case 9:
+			weight = 1.3991;
+			break;
+		case 10:
+			weight = 1.4493;
+			break;
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+			weight = (size - 10) * (1.6899 - 1.4493) / 5 + 1.4493;
+			break;
+		case 16:
+		case 17:
+		case 18:
+		case 19:
+		case 20:
+			weight = (size - 15) * (1.8924 - 1.6899) / 5 + 1.6899;
+			break;
+		case 21:
+		case 22:
+		case 23:
+		case 24:
+		case 25:
+			weight = (size - 20) * (2.0743 - 1.8924) / 5 + 1.8924;
+			break;
+		case 26:
+		case 27:
+		case 28:
+		case 29:
+		case 30:
+			weight = (size - 25) * (2.2334 - 2.0743) / 5 + 2.0743;
+			break;
+		case 31:
+		case 32:
+		case 33:
+		case 34:
+		case 35:
+			weight = (size - 30) * (2.3895 - 2.2334) / 5 + 2.2334;
+			break;
+		case 36:
+		case 37:
+		case 38:
+		case 39:
+		case 40:
+			weight = (size - 35) * (2.5356 - 2.3895) / 5 + 2.3895;
+			break;
+		case 41:
+		case 42:
+		case 43:
+		case 44:
+		case 45:
+			weight = (size - 40) * (2.6625 - 2.5356) / 5 + 2.5356;
+			break;
+		case 46:
+		case 47:
+		case 48:
+		case 49:
+		case 50:
+			weight = (size - 45) * (2.7933 - 2.6625) / 5 + 2.6625;
+			break;
+		default:
+			weight = (size - 50) * 0.02616 + 2.7933;
+			break;
+		}
+		return weight;
 	}
 	
 	private double getUtilization(int nbBlocks, double areaXDownBoundHalf, double areaXUpBoundHalf, double areaYDownBoundHalf, 
@@ -640,6 +1363,8 @@ public class HeteroLegalizerOne
 		}
 		return ((double)nbBlocks)/((double)curNumberOfLegalSites);
 	}
+	
+	
 	
 	/*
 	 * Sort in increasing order of X or Y position xDir = true ==> sort in x
@@ -683,6 +1408,51 @@ public class HeteroLegalizerOne
 				indices.set(minIndex, previousIIndex);
 				positionsX.set(minIndex, previousIX);
 				positionsY.set(minIndex, previousIY);
+			}
+		}
+	}
+	
+	/*
+	 * Sort in increasing order of X or Y position xDir = true ==> sort in x
+	 * direction, xDir = false ==> sort in Y direction
+	 */
+	private void sort(boolean xDir, int[] indices, int[] positionsX, int[] positionsY)
+	{
+		for (int i = 0; i < indices.length; i++)
+		{
+			int minIndex = i;
+			int minValue;
+			if (xDir)
+			{
+				minValue = positionsX[i];
+			} else
+			{
+				minValue = positionsY[i];
+			}
+			for (int j = i + 1; j < indices.length; j++)
+			{
+				if (xDir && positionsX[j] < minValue)
+				{
+					minIndex = j;
+					minValue = positionsX[j];
+				}
+				if (!xDir && positionsY[j] < minValue)
+				{
+					minIndex = j;
+					minValue = positionsY[j];
+				}
+			}
+			if (minIndex != i)
+			{
+				int previousIIndex = indices[i];
+				int previousIX = positionsX[i];
+				int previousIY = positionsY[i];
+				indices[i] = indices[minIndex];
+				positionsX[i] = positionsX[minIndex];
+				positionsY[i] = positionsY[minIndex];
+				indices[minIndex] = previousIIndex;
+				positionsX[minIndex] = previousIX;
+				positionsY[minIndex] = previousIY;
 			}
 		}
 	}

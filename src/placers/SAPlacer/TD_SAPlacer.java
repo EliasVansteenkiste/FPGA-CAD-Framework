@@ -13,6 +13,7 @@ public class TD_SAPlacer extends SAPlacer
 	private static final double TRADE_OFF_FACTOR = 0.0;
 	private static final double TD_PLACE_EXP_FIRST = 1.0;
 	private static final double TD_PLACE_EXP_LAST = 8.0;
+	private static final int NB_ITERATIONS_BEFORE_RECALCULATE = 100000;
 	
 	private TimingGraph timingGraph;
 	private double previousBBCost;
@@ -39,7 +40,6 @@ public class TD_SAPlacer extends SAPlacer
 		timingGraph.recalculateAllSlacksCriticalities();
 		previousBBCost = calculator.calculateTotalCost();
 		previousTDCost = timingGraph.calculateTotalCost();
-		System.out.println("PreviousBBCost: " + previousBBCost); 
 		double T = calculateInitialTemperature();
 		int movesPerTemperature = (int) (inner_num*Math.pow(circuit.numBlocks(),4.0/3.0));
 
@@ -47,14 +47,14 @@ public class TD_SAPlacer extends SAPlacer
 		System.out.println("Initial temperature: " + T);
 		System.out.println("Moves per temperature: " + movesPerTemperature);
 		
-		//while(T > 0.005 / circuit.getNets().values().size())
-		while(T > 0.005 * calculator.calculateAverageNetCost())
+		while(T > 0.005 / circuit.getNets().values().size())
 		{
 			timingGraph.setCriticalityExponent(criticalityExponent);
 			timingGraph.recalculateAllSlacksCriticalities();
 			previousBBCost = calculator.calculateTotalCost();
 			previousTDCost = timingGraph.calculateTotalCost();
 			
+			int iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
 			int alphaAbs=0;
 			for (int i =0; i<movesPerTemperature;i++) 
 			{
@@ -64,10 +64,9 @@ public class TD_SAPlacer extends SAPlacer
 					double deltaBBCost = calculator.calculateDeltaCost(swap);
 					double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
 					
-					//double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
-					//					+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
-					
-					double deltaCost = deltaBBCost;
+					double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
+										+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+					//double deltaCost = deltaBBCost;
 					
 					if(deltaCost<=0)
 					{
@@ -91,6 +90,13 @@ public class TD_SAPlacer extends SAPlacer
 							timingGraph.revert();
 						}
 					}
+				}
+				iterationsToGoBeforeRecalculate--;
+				if(iterationsToGoBeforeRecalculate <= 0)
+				{
+					previousBBCost = calculator.calculateTotalCost();
+					previousTDCost = timingGraph.calculateTotalCost();
+					iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
 				}
 			}
 			double alpha = (double)alphaAbs/movesPerTemperature;
@@ -117,8 +123,8 @@ public class TD_SAPlacer extends SAPlacer
 		double criticalityExponent = updateCriticalityExponent(firstRlim);
 		timingGraph.setCriticalityExponent(criticalityExponent);
 		timingGraph.recalculateAllSlacksCriticalities();
-		inversePreviousBBCost = 1 / calculator.calculateTotalCost();
-		inversePreviousTDCost = 1 / timingGraph.calculateTotalCost();
+		previousBBCost = calculator.calculateTotalCost();
+		previousTDCost = timingGraph.calculateTotalCost();
 		double T = calculateInitialTemperatureLow();
 		int movesPerTemperature = (int) (innerNum*Math.pow(circuit.numBlocks(),4.0/3.0));
 		
@@ -130,9 +136,10 @@ public class TD_SAPlacer extends SAPlacer
 		{
 			timingGraph.setCriticalityExponent(criticalityExponent);
 			timingGraph.recalculateAllSlacksCriticalities();
-			inversePreviousBBCost = 1 / calculator.calculateTotalCost();
-			inversePreviousTDCost = 1 / timingGraph.calculateTotalCost();
+			previousBBCost = calculator.calculateTotalCost();
+			previousTDCost = timingGraph.calculateTotalCost();
 			
+			int iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
 			int alphaAbs=0;
 			for (int i =0; i<movesPerTemperature;i++) 
 			{
@@ -141,8 +148,8 @@ public class TD_SAPlacer extends SAPlacer
 				{
 					double deltaBBCost = calculator.calculateDeltaCost(swap);
 					double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-					double deltaCost = (1 - TRADE_OFF_FACTOR) * deltaBBCost * inversePreviousBBCost
-										+ TRADE_OFF_FACTOR * deltaTimingCost * inversePreviousTDCost;
+					double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
+										+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
 					if(deltaCost<=0)
 					{
 						swap.apply();
@@ -166,6 +173,13 @@ public class TD_SAPlacer extends SAPlacer
 						}
 					}
 				}
+				iterationsToGoBeforeRecalculate--;
+				if(iterationsToGoBeforeRecalculate <= 0)
+				{
+					previousBBCost = calculator.calculateTotalCost();
+					previousTDCost = timingGraph.calculateTotalCost();
+					iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+				}
 			}
 			double alpha = (double)alphaAbs/movesPerTemperature;
 			Rlim = updateRlim(alpha);
@@ -178,6 +192,9 @@ public class TD_SAPlacer extends SAPlacer
 	{
 		double	somDeltaKost=0;
 		double 	kwadratischeSomDeltaKost=0;
+		
+		int iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+		
 		for (int i = 0; i < circuit.numBlocks(); i++) 
 		{
 			int maxFPGAdimension = Math.max(architecture.getWidth(), architecture.getHeight());
@@ -188,9 +205,9 @@ public class TD_SAPlacer extends SAPlacer
 			{
 				double deltaBBCost = calculator.calculateDeltaCost(swap);
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-				//double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
-				//					+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
-				double deltaCost = deltaBBCost;
+				double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
+									+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+				//double deltaCost = deltaBBCost;
 				
 				swap.apply();
 				calculator.pushThrough();
@@ -202,6 +219,14 @@ public class TD_SAPlacer extends SAPlacer
 			{
 				calculator.revert();
 				timingGraph.revert();
+			}
+			
+			iterationsToGoBeforeRecalculate--;
+			if(iterationsToGoBeforeRecalculate <= 0)
+			{
+				previousBBCost = calculator.calculateTotalCost();
+				previousTDCost = timingGraph.calculateTotalCost();
+				iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
 			}
 		}
 		double somKwadraten = kwadratischeSomDeltaKost;
@@ -227,8 +252,8 @@ public class TD_SAPlacer extends SAPlacer
 			{
 				double deltaBBCost = calculator.calculateDeltaCost(swap);
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-				double deltaCost = (1 - TRADE_OFF_FACTOR) * deltaBBCost * inversePreviousBBCost
-						+ TRADE_OFF_FACTOR * deltaTimingCost * inversePreviousTDCost;
+				double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
+						+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
 				swap.apply();
 				calculator.pushThrough();
 				timingGraph.pushThrough();
