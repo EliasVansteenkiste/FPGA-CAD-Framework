@@ -93,6 +93,18 @@ public class HeteroLegalizerOne
 			}
 		}
 		
+		for(int i = 0; i < semiLegalX.length; i++)
+		{
+			if(i < 100)
+			{
+				System.out.println("clb_" + i + ": (" + semiLegalX[i] + "," + semiLegalY[i] + ")");
+			}
+			else
+			{
+				System.out.println("hb_" + (i-100) + ": (" + semiLegalX[i] + "," + semiLegalY[i] + ")");
+			}
+		}
+		
 		int[] legalX = new int[semiLegalX.length];
 		int[] legalY = new int[semiLegalY.length];
 		finalLegalization(semiLegalX, semiLegalY, legalX, legalY);
@@ -562,21 +574,17 @@ public class HeteroLegalizerOne
 			while (areaXDownBound < minimalX)
 			{
 				areaXDownBound++;
-				areaXUpBound++;
 			}
 			while (areaXUpBound > maximalX + 1)
 			{
-				areaXDownBound--;
 				areaXUpBound--;
 			}
 			while (areaYDownBound < minimalY)
 			{
 				areaYDownBound++;
-				areaYUpBound++;
 			}
 			while (areaYUpBound > maximalY + 1)
 			{
-				areaYDownBound--;
 				areaYUpBound--;
 			}
 			
@@ -983,13 +991,14 @@ public class HeteroLegalizerOne
 				occupied[y - minimalY][x - minimalX] = true;
 				legalX[index] = x;
 				legalY[index] = y;
+				System.out.println("(" + x + "," + y + ")");
 			} 
 			else // Eliminate overlap
 			{
 				String typeName = null;
 				for(int j = 0; j < typeNames.length - 1; j++)
 				{
-					if(i >= typeStartIndices[j] && i < typeStartIndices[j+1])
+					if(index >= typeStartIndices[j] && index < typeStartIndices[j+1])
 					{
 						typeName = typeNames[j];
 					}
@@ -998,6 +1007,7 @@ public class HeteroLegalizerOne
 				{
 					typeName = typeNames[typeNames.length - 1];
 				}
+				System.out.println(typeName);
 				
 				// Look around for free spot ==> counterclockwise with increasing box size until we find available position that is of the correct type
 				int currentX = x;
