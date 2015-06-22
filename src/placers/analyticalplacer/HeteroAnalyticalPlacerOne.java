@@ -33,22 +33,25 @@ public class HeteroAnalyticalPlacerOne
 	private String[] typeNames;
 	private double[] linearX;
 	private double[] linearY;
-	private int[] anchorPointsX;
-	private int[] anchorPointsY;
+	private HeteroLegalizerOne legalizer;
 
 	private final double ALPHA = 0.3;
 
-	public HeteroAnalyticalPlacerOne(HeterogeneousArchitecture architecture, PackedCircuit circuit)
+	public HeteroAnalyticalPlacerOne(HeterogeneousArchitecture architecture, PackedCircuit circuit, int legalizer)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
+		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		initializeDataStructures();
+		switch(legalizer)
+		{
+			default:
+				this.legalizer = new HeteroLegalizerOne(architecture, typeStartIndices, typeNames, linearX.length);
+		}
 	}
 
 	public void place()
 	{
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
-		initializeDataStructures();
-		
 		int solveMode = 0; //0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
 		
 		//Initial linear solves, should normally be done 5-7 times		
@@ -57,14 +60,19 @@ public class HeteroAnalyticalPlacerOne
 			solveLinear(true, solveMode, 0.0);
 		}
 		
+		for(int i = 0; i < linearX.length; i++)
+		{
+			System.out.println("(" + linearX[i] + "," + linearY[i] + ")");
+		}
+		
 		//Initial legalization
-		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
+		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
 		
 		for(int i = 0; i < 30; i++)
 		{
 			solveMode = (solveMode + 1) % (typeNames.length + 1);
 			solveLinear(false, solveMode, (i+1)*ALPHA);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
+			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
 			double costLinear = calculateTotalCost(linearX, linearY);
 			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
 			if(costLinear / costLegal > 0.70)
@@ -107,31 +115,32 @@ public class HeteroAnalyticalPlacerOne
 		Crs yMatrix = new Crs(dimensions);
 		double[] yVector = new double[dimensions];
 		
-//		//Add pseudo connections
-//		if(!firstSolve)
-//		{
-//			//Process pseudonets
-//			legalizer.getAnchorPoints(anchorPointsX, anchorPointsY);
-//			for(int i = 0; i < dimension; i++)
-//			{
-//				double deltaX = Math.abs(anchorPointsX[i] - linearX[i]);
-//				if(deltaX < 0.005)
-//				{
-//					deltaX = 0.005;
-//				}
-//				double pseudoWeightX = 2*pseudoWeightFactor*(1/deltaX);
-//				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
-//				xVector[i] += pseudoWeightX * anchorPointsX[i];
-//				double deltaY = Math.abs(anchorPointsY[i] - linearY[i]);
-//				if(deltaY < 0.005)
-//				{
-//					deltaY = 0.005;
-//				}
-//				double pseudoWeightY = 2*pseudoWeightFactor*(1/deltaY);
-//				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeightY);
-//				yVector[i] += pseudoWeightY*anchorPointsY[i];
-//			}
-//		}
+		//Add pseudo connections
+		if(!firstSolve)
+		{
+			//Process pseudonets
+			int[] anchorPointsX = legalizer.getAnchorPointsX();
+			int[] anchorPointsY = legalizer.getAnchorPointsY();
+			for(int i = 0; i < dimensions; i++)
+			{
+				double deltaX = Math.abs(anchorPointsX[i] - linearX[i]);
+				if(deltaX < 0.005)
+				{
+					deltaX = 0.005;
+				}
+				double pseudoWeightX = 2*pseudoWeightFactor*(1/deltaX);
+				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
+				xVector[i] += pseudoWeightX * anchorPointsX[i];
+				double deltaY = Math.abs(anchorPointsY[i] - linearY[i]);
+				if(deltaY < 0.005)
+				{
+					deltaY = 0.005;
+				}
+				double pseudoWeightY = 2*pseudoWeightFactor*(1/deltaY);
+				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeightY);
+				yVector[i] += pseudoWeightY*anchorPointsY[i];
+			}
+		}
 		
 		//Build the linear systems (x and y are solved separately)
 		for(Net net:circuit.getNets().values())
@@ -671,9 +680,9 @@ public class HeteroAnalyticalPlacerOne
 		//Clear all previous locations
 		int maximalX = architecture.getWidth();
 		int maximalY = architecture.getHeight();
-		for(int i = 0; i <= maximalX; i++)
+		for(int i = 1; i <= maximalX; i++)
 		{
-			for(int j = 0; j <= maximalY; j++)
+			for(int j = 1; j <= maximalY; j++)
 			{
 				if(architecture.getSite(i, j, 0).block != null)
 				{
@@ -856,8 +865,6 @@ public class HeteroAnalyticalPlacerOne
 		typeNames = new String[nbHardBlockTypes + 1];
 		linearX = new double[dimensions];
 		linearY = new double[dimensions];
-		anchorPointsX = new int[dimensions];
-		anchorPointsY = new int[dimensions];
 		int maximalX = architecture.getWidth();
 		int maximalY = architecture.getHeight();
 		Random random = new Random();

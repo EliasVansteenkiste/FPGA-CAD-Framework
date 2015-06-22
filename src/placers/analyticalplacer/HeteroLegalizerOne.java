@@ -9,7 +9,6 @@ import java.util.Set;
 
 import circuit.Block;
 import circuit.BlockType;
-import circuit.Clb;
 import circuit.Net;
 import circuit.Pin;
 
@@ -44,8 +43,7 @@ public class HeteroLegalizerOne
 	 * Legalize the linear solution and store it if it is the best one found so far
 	 * solveMode: 0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
 	 */
-	//public void legalize(double[] linearX, double[] linearY, Collection<Net> nets, Map<Clb,Integer> indexMap, int solveMode)
-	public void legalize(double[] linearX, double[] linearY, int solveMode)
+	public void legalize(double[] linearX, double[] linearY, Collection<Net> nets, Map<Block,Integer> indexMap, int solveMode)
 	{
 		int[] semiLegalX = new int[bestLegalX.length];
 		int[] semiLegalY = new int[bestLegalY.length];
@@ -93,24 +91,11 @@ public class HeteroLegalizerOne
 			}
 		}
 		
-		for(int i = 0; i < semiLegalX.length; i++)
-		{
-			if(i < 100)
-			{
-				System.out.println("clb_" + i + ": (" + semiLegalX[i] + "," + semiLegalY[i] + ")");
-			}
-			else
-			{
-				System.out.println("hb_" + (i-100) + ": (" + semiLegalX[i] + "," + semiLegalY[i] + ")");
-			}
-		}
-		
 		int[] legalX = new int[semiLegalX.length];
 		int[] legalY = new int[semiLegalY.length];
 		finalLegalization(semiLegalX, semiLegalY, legalX, legalY);
 		
-		//updateBestLegal(legalX, legalY, nets, indexMap);
-		updateBestLegalUnconditionally(legalX, legalY);
+		updateBestLegal(legalX, legalY, nets, indexMap);
 	}
 	
 	/*
@@ -343,7 +328,7 @@ public class HeteroLegalizerOne
 				}
 			}
 			
-			System.out.println(indices.size());
+//			System.out.println(indices.size());
 			if(indices.size() == 1)
 			{
 				int x = (int)Math.round(positionsX.get(0));
@@ -574,18 +559,34 @@ public class HeteroLegalizerOne
 			while (areaXDownBound < minimalX)
 			{
 				areaXDownBound++;
+				if(areaXUpBound == areaXDownBound)
+				{
+					areaXUpBound++;
+				}
 			}
 			while (areaXUpBound > maximalX + 1)
 			{
 				areaXUpBound--;
+				if(areaXDownBound == areaXUpBound)
+				{
+					areaXDownBound--;
+				}
 			}
 			while (areaYDownBound < minimalY)
 			{
 				areaYDownBound++;
+				if(areaYUpBound == areaYDownBound)
+				{
+					areaYUpBound++;
+				}
 			}
 			while (areaYUpBound > maximalY + 1)
 			{
 				areaYUpBound--;
+				if(areaYDownBound == areaYUpBound)
+				{
+					areaYDownBound--;
+				}
 			}
 			
 			//Identify rectangles in which we can put the considered blocks
@@ -689,8 +690,8 @@ public class HeteroLegalizerOne
 					rectanglePositionsX.add(positionsX.remove(positionsX.size() - 1));
 					rectanglePositionsY.add(positionsY.remove(positionsY.size() - 1));
 				}
-				System.out.println("Calling cutAndSpread: " + rectangleIndices.size() + ", " + rectangleStartX.get(i) + ", " + 
-								rectangleStopX.get(i) + ", " + areaYDownBound + ", " + areaYUpBound);
+//				System.out.println("Calling cutAndSpread: " + rectangleIndices.size() + ", " + rectangleStartX.get(i) + ", " + 
+//								rectangleStopX.get(i) + ", " + areaYDownBound + ", " + areaYUpBound);
 				cutAndSpread(cutDir, rectangleIndices, rectanglePositionsX, rectanglePositionsY, rectangleStartX.get(i), 
 									rectangleStopX.get(i), areaYDownBound, areaYUpBound, semiLegalX, semiLegalY);
 			}
@@ -708,7 +709,9 @@ public class HeteroLegalizerOne
 		// Bug checks
 		if (areaXDownBound >= areaXUpBound || areaYDownBound >= areaYUpBound)
 		{
-			System.err.println("ERROR: A DOWNBOUND IS BIGGER THAN OR EQUAL TO AN UPBOUND");
+			System.err.println("ERROR: A DOWNBOUND IS BIGGER THAN OR EQUAL TO AN UPBOUND: downboundX = " + areaXDownBound + 
+					", upboundX = " + areaXUpBound + ", downboundY = " + areaYDownBound + ", upboundY = " + areaYUpBound + 
+					", nbOfBlocks = " + indices.size());
 		}
 
 		// Sort
@@ -743,6 +746,16 @@ public class HeteroLegalizerOne
 		int endIndex = indices.size();
 		double totalUtilization = ((double) positionsX.size()) / ((double) (area1 + area2));
 		int cutIndex = (int) Math.round(area1 * totalUtilization);
+		if(cutIndex == 0 && endIndex >= 2)
+		{
+			cutIndex = 1;
+			//System.out.println("Had to intervene");
+		}
+		if(cutIndex == endIndex && endIndex >=2)
+		{
+			cutIndex = endIndex - 1;
+			//System.out.println("Had to intervene");
+		}
 		List<Integer> indices1 = new ArrayList<>();
 		List<Double> positionsX1 = new ArrayList<>();
 		List<Double> positionsY1 = new ArrayList<>();
@@ -761,7 +774,7 @@ public class HeteroLegalizerOne
 			positionsX2.add(positionsX.get(i));
 			positionsY2.add(positionsY.get(i));
 		}
-
+		
 		// Recursive calls if necessary (check for base cases)
 		if (indices1.size() > 1) // Do recursive call
 		{
@@ -791,63 +804,66 @@ public class HeteroLegalizerOne
 		} else
 		// Snap to grid
 		{
-
-			int x;
-			int y;
-			if (positionsX1.get(0) <= areaXDownBound)
+			if(indices1.size() > 0)
 			{
-				x = areaXDownBound;
-			} else
-			{
-				if (horCutDirection)
+				int x;
+				int y;
+				if (positionsX1.get(0) <= areaXDownBound)
 				{
-					if (positionsX1.get(0) >= areaXUpBound - 1)
+					x = areaXDownBound;
+				}
+				else
+				{
+					if (horCutDirection)
 					{
-						x = areaXUpBound - 1;
+						if (positionsX1.get(0) >= areaXUpBound - 1)
+						{
+							x = areaXUpBound - 1;
+						} else
+						{
+							x = (int) Math.round(positionsX1.get(0));
+						}
 					} else
 					{
-						x = (int) Math.round(positionsX1.get(0));
-					}
-				} else
-				{
-					if (positionsX1.get(0) >= cutPosition - 1)
-					{
-						x = cutPosition - 1;
-					} else
-					{
-						x = (int) Math.round(cutPosition - 1);
+						if (positionsX1.get(0) >= cutPosition - 1)
+						{
+							x = cutPosition - 1;
+						} else
+						{
+							x = (int) Math.round(cutPosition - 1);
+						}
 					}
 				}
-			}
-			if (positionsY2.get(0) <= areaYDownBound)
-			{
-				y = areaYDownBound;
-			} else
-			{
-				if (horCutDirection)
+				if (positionsY1.get(0) <= areaYDownBound)
 				{
-					if (positionsY2.get(0) >= cutPosition - 1)
-					{
-						y = cutPosition - 1;
-					} else
-					{
-						y = (int) Math.round(positionsY2.get(0));
-					}
+					y = areaYDownBound;
 				} else
 				{
-					if (positionsY2.get(0) >= areaYUpBound - 1)
+					if (horCutDirection)
 					{
-						y = areaYUpBound - 1;
+						if (positionsY1.get(0) >= cutPosition - 1)
+						{
+							y = cutPosition - 1;
+						} else
+						{
+							y = (int) Math.round(positionsY1.get(0));
+						}
 					} else
 					{
-						y = (int) Math.round(positionsY2.get(0));
+						if (positionsY1.get(0) >= areaYUpBound - 1)
+						{
+							y = areaYUpBound - 1;
+						} else
+						{
+							y = (int) Math.round(positionsY1.get(0));
+						}
 					}
 				}
+				int index = indices1.get(0);
+				// System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+				semiLegalXPositions[index] = x;
+				semiLegalYPositions[index] = y;
 			}
-			int index = indices1.get(0);
-			// System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
-			semiLegalXPositions[index] = x;
-			semiLegalYPositions[index] = y;
 		}
 		if (indices2.size() > 1) // Do recursive call
 		{
@@ -874,62 +890,65 @@ public class HeteroLegalizerOne
 		} else
 		// Snap to grid
 		{
-			int x;
-			int y;
-			if (positionsX2.get(0) >= areaXUpBound - 1)
+			if(indices2.size() > 0)
 			{
-				x = areaXUpBound - 1;
-			} else
-			{
-				if (horCutDirection)
+				int x;
+				int y;
+				if (positionsX2.get(0) >= areaXUpBound - 1)
 				{
-					if (positionsX2.get(0) <= areaXDownBound)
-					{
-						x = areaXDownBound;
-					} else
-					{
-						x = (int) Math.round(positionsX2.get(0));
-					}
+					x = areaXUpBound - 1;
 				} else
 				{
-					if (positionsX2.get(0) <= cutPosition)
+					if (horCutDirection)
 					{
-						x = cutPosition;
+						if (positionsX2.get(0) <= areaXDownBound)
+						{
+							x = areaXDownBound;
+						} else
+						{
+							x = (int) Math.round(positionsX2.get(0));
+						}
 					} else
 					{
-						x = (int) Math.round(positionsX2.get(0));
+						if (positionsX2.get(0) <= cutPosition)
+						{
+							x = cutPosition;
+						} else
+						{
+							x = (int) Math.round(positionsX2.get(0));
+						}
 					}
 				}
-			}
-			if (positionsY2.get(0) >= areaYUpBound - 1)
-			{
-				y = areaYUpBound - 1;
-			} else
-			{
-				if (horCutDirection)
+				if (positionsY2.get(0) >= areaYUpBound - 1)
 				{
-					if (positionsY2.get(0) <= cutPosition)
-					{
-						y = cutPosition;
-					} else
-					{
-						y = (int) Math.round(positionsY2.get(0));
-					}
+					y = areaYUpBound - 1;
 				} else
 				{
-					if (positionsY2.get(0) <= areaYDownBound)
+					if (horCutDirection)
 					{
-						y = areaYDownBound;
+						if (positionsY2.get(0) <= cutPosition)
+						{
+							y = cutPosition;
+						} else
+						{
+							y = (int) Math.round(positionsY2.get(0));
+						}
 					} else
 					{
-						y = (int) Math.round(positionsY2.get(0));
+						if (positionsY2.get(0) <= areaYDownBound)
+						{
+							y = areaYDownBound;
+						} else
+						{
+							y = (int) Math.round(positionsY2.get(0));
+						}
 					}
 				}
+				int index = indices2.get(0);
+				// System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
+				semiLegalXPositions[index] = x;
+				semiLegalYPositions[index] = y;
 			}
-			int index = indices2.get(0);
-			// System.out.printf("Index: %d, X: %d, Y: %d\n", index, x, y);
-			semiLegalXPositions[index] = x;
-			semiLegalYPositions[index] = y;
 		}
 	}
 	
@@ -991,7 +1010,7 @@ public class HeteroLegalizerOne
 				occupied[y - minimalY][x - minimalX] = true;
 				legalX[index] = x;
 				legalY[index] = y;
-				System.out.println("(" + x + "," + y + ")");
+				//System.out.println("(" + x + "," + y + ")");
 			} 
 			else // Eliminate overlap
 			{
@@ -1007,7 +1026,7 @@ public class HeteroLegalizerOne
 				{
 					typeName = typeNames[typeNames.length - 1];
 				}
-				System.out.println(typeName);
+				//System.out.println(typeName);
 				
 				// Look around for free spot ==> counterclockwise with increasing box size until we find available position that is of the correct type
 				int currentX = x;
@@ -1127,16 +1146,7 @@ public class HeteroLegalizerOne
 		return toReturn;
 	}
 	
-	private void updateBestLegalUnconditionally(int[] legalX, int[] legalY)
-	{
-		for (int i = 0; i < legalX.length; i++)
-		{
-			bestLegalX[i] = legalX[i];
-			bestLegalY[i] = legalY[i];
-		}
-	}
-	
-	private void updateBestLegal(int[] legalX, int[] legalY, Collection<Net> nets, Map<Clb, Integer> indexMap)
+	private void updateBestLegal(int[] legalX, int[] legalY, Collection<Net> nets, Map<Block, Integer> indexMap)
 	{
 		double newCost = calculateTotalCost(legalX, legalY, nets, indexMap);
 		if (newCost < currentCost)
@@ -1150,7 +1160,7 @@ public class HeteroLegalizerOne
 		}
 	}
 	
-	public double calculateBestLegalCost(Collection<Net> nets, Map<Clb, Integer> indexMap)
+	public double calculateBestLegalCost(Collection<Net> nets, Map<Block, Integer> indexMap)
 	{
 		return calculateTotalCost(bestLegalX, bestLegalY, nets, indexMap);
 	}
@@ -1160,12 +1170,22 @@ public class HeteroLegalizerOne
 		return bestLegalX;
 	}
 	
+	public int[] getAnchorPointsX()
+	{
+		return bestLegalX;
+	}
+	
 	public int[] getBestLegalY()
 	{
 		return bestLegalY;
 	}
 	
-	private double calculateTotalCost(int[] xArray, int[] yArray, Collection<Net> nets, Map<Clb, Integer> indexMap)
+	public int[] getAnchorPointsY()
+	{
+		return bestLegalY;
+	}
+	
+	private double calculateTotalCost(int[] xArray, int[] yArray, Collection<Net> nets, Map<Block, Integer> indexMap)
 	{
 		double cost = 0.0;
 		for (Net net : nets)
@@ -1184,7 +1204,7 @@ public class HeteroLegalizerOne
 			}
 			else
 			{
-				int index = indexMap.get((Clb) sourceBlock);
+				int index = indexMap.get(sourceBlock);
 				minX = xArray[index];
 				maxX = xArray[index];
 				minY = yArray[index];
@@ -1216,7 +1236,7 @@ public class HeteroLegalizerOne
 				}
 				else
 				{
-					int index = indexMap.get((Clb) sinkOwner);
+					int index = indexMap.get(sinkOwner);
 					if (xArray[index] < minX)
 					{
 						minX = xArray[index];

@@ -80,106 +80,49 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
-//			
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		//printUnpackedCircuit(prePackedCircuit);
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		//printBlePackedCircuit(blePackedCircuit);
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
-//		
-//		//printPackedCircuit(packedCircuit);
-//		
-//		//visualSA(prePackedCircuit, packedCircuit);
-//		//visualTDSA(prePackedCircuit, packedCircuit);
-//		
-//		//Just for testing, needs to be deleted when HeteroAnalyticalPlacerOne is working
-//		{
-//			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
-//			HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(architecture, packedCircuit);
-//			placer.place();
-//		}
-		
-		//Just for testing, needs to be deleted when HeteroLegalizerOne is working
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
 		{
-			PackedCircuit packedCircuit = new PackedCircuit();
-			int nbClbs = 100;
-			int nbHB1s = 12;
-			int totalNbBlocks = nbClbs + nbHB1s;
-			double[] linearX = new double[totalNbBlocks];
-			double[] linearY = new double[totalNbBlocks];
-			for(int i = 0; i < nbClbs; i++)
-			{
-				Clb clb = new Clb("clb_" + i, 1, 6);
-				packedCircuit.clbs.put(clb.name, clb);
-				int x = i % 10 + 1;
-				if(x >= 6)
-				{
-					x++;
-				}
-				linearX[i] = x;
-				linearY[i] = i / 10 + 1;
-			}
-			for(int i = 0; i < nbHB1s; i++)
-			{
-				Vector<String> outputNames = new Vector<>();
-				Vector<String> inputNames = new Vector<>();
-				for(int j = 0; j < 5; j++)
-				{
-					outputNames.add("hb1_" + i + "_out[" + j + "]");
-					inputNames.add("hb1_" + i + "_in[" + j + "]") ;
-				}
-				HardBlock hb = new HardBlock("hb1_" + i, outputNames, inputNames, "multiply", false);
-				packedCircuit.addHardBlock(hb);
-				linearX[i + nbClbs] = 0.0;
-				linearY[i + nbClbs] = 0.0;
-			}
-			String[] typeNames = new String[2];
-			typeNames[0] = "CLB";
-			typeNames[1] = "multiply";
-			int[] typeStartIndices = new int[2];
-			typeStartIndices[0] = 0;
-			typeStartIndices[1] = nbClbs;
+			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
+			
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		//printUnpackedCircuit(prePackedCircuit);
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		//printBlePackedCircuit(blePackedCircuit);
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+		
+		//printPackedCircuit(packedCircuit);
+		
+		//visualSA(prePackedCircuit, packedCircuit);
+		//visualTDSA(prePackedCircuit, packedCircuit);
+		
+		//Just for testing, needs to be deleted when HeteroAnalyticalPlacerOne is working
+		{
 			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
-			HeteroLegalizerOne legalizer = new HeteroLegalizerOne(architecture, typeStartIndices, typeNames, totalNbBlocks);
-			legalizer.legalize(linearX, linearY, 0);
-			int[] bestLegalX = legalizer.getBestLegalX();
-			int[] bestLegalY = legalizer.getBestLegalY();
-			for(int i = 0; i < nbClbs; i++)
-			{
-				Clb clb = packedCircuit.clbs.get("clb_" + i);
-				Site site = architecture.getSite(bestLegalX[i], bestLegalY[i], 0);
-				clb.setSite(site);
-				site.block = clb;
-			}
-			for(int i = 0; i < nbHB1s; i++)
-			{
-				HardBlock hb = packedCircuit.getHardBlocks().get(0).get(i);
-				Site site = architecture.getSite(bestLegalX[i + nbClbs], bestLegalY[i + nbClbs], 0);
-				hb.setSite(site);
-				site.block = hb;
-			}
+			HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(architecture, packedCircuit, 1);
+			placer.place();
+			
+			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+			double totalCost = effcc.calculateTotalCost();
+			System.out.println("Total cost: " + totalCost);
 			
 			HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
 			
@@ -190,6 +133,76 @@ public class Example
 			frame.pack();
 			frame.setVisible(true);
 		}
+		
+		//Just for testing, needs to be deleted when HeteroLegalizerOne is working
+//		{
+//			PackedCircuit packedCircuit = new PackedCircuit();
+//			int nbClbs = 100;
+//			int nbHB1s = 12;
+//			int totalNbBlocks = nbClbs + nbHB1s;
+//			double[] linearX = new double[totalNbBlocks];
+//			double[] linearY = new double[totalNbBlocks];
+//			for(int i = 0; i < nbClbs; i++)
+//			{
+//				Clb clb = new Clb("clb_" + i, 1, 6);
+//				packedCircuit.clbs.put(clb.name, clb);
+//				int x = i % 10 + 1;
+//				if(x >= 6)
+//				{
+//					x++;
+//				}
+//				linearX[i] = x;
+//				linearY[i] = i / 10 + 1;
+//			}
+//			for(int i = 0; i < nbHB1s; i++)
+//			{
+//				Vector<String> outputNames = new Vector<>();
+//				Vector<String> inputNames = new Vector<>();
+//				for(int j = 0; j < 5; j++)
+//				{
+//					outputNames.add("hb1_" + i + "_out[" + j + "]");
+//					inputNames.add("hb1_" + i + "_in[" + j + "]") ;
+//				}
+//				HardBlock hb = new HardBlock("hb1_" + i, outputNames, inputNames, "multiply", false);
+//				packedCircuit.addHardBlock(hb);
+//				linearX[i + nbClbs] = 0.0;
+//				linearY[i + nbClbs] = 0.0;
+//			}
+//			String[] typeNames = new String[2];
+//			typeNames[0] = "CLB";
+//			typeNames[1] = "multiply";
+//			int[] typeStartIndices = new int[2];
+//			typeStartIndices[0] = 0;
+//			typeStartIndices[1] = nbClbs;
+//			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
+//			HeteroLegalizerOne legalizer = new HeteroLegalizerOne(architecture, typeStartIndices, typeNames, totalNbBlocks);
+//			legalizer.legalize(linearX, linearY, 0);
+//			int[] bestLegalX = legalizer.getBestLegalX();
+//			int[] bestLegalY = legalizer.getBestLegalY();
+//			for(int i = 0; i < nbClbs; i++)
+//			{
+//				Clb clb = packedCircuit.clbs.get("clb_" + i);
+//				Site site = architecture.getSite(bestLegalX[i], bestLegalY[i], 0);
+//				clb.setSite(site);
+//				site.block = clb;
+//			}
+//			for(int i = 0; i < nbHB1s; i++)
+//			{
+//				HardBlock hb = packedCircuit.getHardBlocks().get(0).get(i);
+//				Site site = architecture.getSite(bestLegalX[i + nbClbs], bestLegalY[i + nbClbs], 0);
+//				hb.setSite(site);
+//				site.block = hb;
+//			}
+//			
+//			HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
+//			
+//			JFrame frame = new JFrame("Architecture");
+//			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//			frame.setSize(950,950);
+//			frame.add(panel);
+//			frame.pack();
+//			frame.setVisible(true);
+//		}
 		
 		//runWlVsTdSaBenchmarks();
 		//runTdSaBenchmarks();
