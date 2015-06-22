@@ -123,22 +123,22 @@ public class HeteroAnalyticalPlacerOne
 			int[] anchorPointsY = legalizer.getAnchorPointsY();
 			for(int i = 0; i < dimensions; i++)
 			{
-				double deltaX = Math.abs(anchorPointsX[i] - linearX[i]);
+				double deltaX = Math.abs(anchorPointsX[i + startIndex] - linearX[i + startIndex]);
 				if(deltaX < 0.005)
 				{
 					deltaX = 0.005;
 				}
 				double pseudoWeightX = 2*pseudoWeightFactor*(1/deltaX);
 				xMatrix.setElement(i, i, xMatrix.getElement(i, i) + pseudoWeightX);
-				xVector[i] += pseudoWeightX * anchorPointsX[i];
-				double deltaY = Math.abs(anchorPointsY[i] - linearY[i]);
+				xVector[i] += pseudoWeightX * anchorPointsX[i + startIndex];
+				double deltaY = Math.abs(anchorPointsY[i + startIndex] - linearY[i + startIndex]);
 				if(deltaY < 0.005)
 				{
 					deltaY = 0.005;
 				}
 				double pseudoWeightY = 2*pseudoWeightFactor*(1/deltaY);
 				yMatrix.setElement(i, i, yMatrix.getElement(i, i) + pseudoWeightY);
-				yVector[i] += pseudoWeightY*anchorPointsY[i];
+				yVector[i] += pseudoWeightY*anchorPointsY[i + startIndex];
 			}
 		}
 		
@@ -548,7 +548,7 @@ public class HeteroAnalyticalPlacerOne
 				}
 			}
 			
-			//Add fixed internal connections to min and max for X-problem
+			//Add fixed internal connections to min and max for Y-problem
 			firstMax = true;
 			firstMin = true;
 			for(double fixedYPosition:fixedYPositions)

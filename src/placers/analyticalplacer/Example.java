@@ -84,14 +84,14 @@ public class Example
 		PrePackedCircuit prePackedCircuit;
 		try
 		{
-			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/pdc.blif", 6);
-			
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
+			prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 		}
 		catch(IOException ioe)
 		{
@@ -123,6 +123,16 @@ public class Example
 			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 			double totalCost = effcc.calculateTotalCost();
 			System.out.println("Total cost: " + totalCost);
+			
+			boolean placmenentConsistent = packedCircuit.placementConsistencyCheck(architecture);
+			if(placmenentConsistent)
+			{
+				System.out.println("Placement is consistent!");
+			}
+			else
+			{
+				System.out.println("Placement is not consistent!");
+			}
 			
 			HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
 			
@@ -221,24 +231,24 @@ public class Example
 //		{
 //			System.out.println("Not debugging");
 //		}
-//		
-//		//Wait for enter to start (necessary for easy profiling)
-////		System.out.println("Hit any key to continue...");
-////		try
-////		{
-////			System.in.read();
-////		}
-////		catch(IOException ioe)
-////		{
-////			System.out.println("Something went wrong");
-////		}
-//		
+		
+		//Wait for enter to start (necessary for easy profiling)
+//		System.out.println("Hit any key to continue...");
+//		try
+//		{
+//			System.in.read();
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.out.println("Something went wrong");
+//		}
+		
 //		BlifReader blifReader = new BlifReader();
 //		PrePackedCircuit prePackedCircuit;
 //		try
 //		{
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ecc.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
@@ -268,6 +278,37 @@ public class Example
 //		
 //		//printPackedCircuit(packedCircuit);
 //		
+//	
+//		{
+//			FourLutSanitized architecture = new FourLutSanitized(96, 96, 4);
+//			AnalyticalPlacerFive placer = new AnalyticalPlacerFive(architecture, packedCircuit, 3);
+//			placer.place();
+//			
+//			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+//			double totalCost = effcc.calculateTotalCost();
+//			System.out.println("Total cost: " + totalCost);
+//			
+////			boolean placmenentConsistent = packedCircuit.placementConsistencyCheck(architecture);
+////			if(placmenentConsistent)
+////			{
+////				System.out.println("Placement is consistent!");
+////			}
+////			else
+////			{
+////				System.out.println("Placement is not consistent!");
+////			}
+//			
+//			ArchitecturePanel panel = new ArchitecturePanel(890, architecture, true);
+//			
+//			JFrame frame = new JFrame("Architecture");
+//			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//			frame.setSize(950,950);
+//			frame.add(panel);
+//			frame.pack();
+//			frame.setVisible(true);
+//		}
+	
+	
 //		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
 //		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
 //		//System.out.println();
