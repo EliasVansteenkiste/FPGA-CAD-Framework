@@ -48,6 +48,18 @@ public class HeteroAnalyticalPlacerOne
 			default:
 				this.legalizer = new HeteroLegalizerOne(architecture, typeStartIndices, typeNames, linearX.length);
 		}
+		
+//		System.out.println("\nInputs:");
+//		for(Input input: circuit.getInputs().values())
+//		{
+//			System.out.printf("%s: LOCATION = (%d;%d)\n", input.name, input.getSite().x, input.getSite().y);
+//		}
+		
+//		System.out.println("\nOutputs:");
+//		for(Output output: circuit.getOutputs().values())
+//		{
+//			System.out.printf("%s: LOCATION = (%d;%d)\n", output.name, output.getSite().x, output.getSite().y);
+//		}
 	}
 
 	public void place()
@@ -60,10 +72,11 @@ public class HeteroAnalyticalPlacerOne
 			solveLinear(true, solveMode, 0.0);
 		}
 		
-		for(int i = 0; i < linearX.length; i++)
-		{
-			System.out.println("(" + linearX[i] + "," + linearY[i] + ")");
-		}
+//		System.out.println("\nLinear solution after one iteration:");
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.println("" + i + ": (" + linearX[i] + ";" + linearY[i] + ")");
+//		}
 		
 		//Initial legalization
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
@@ -157,6 +170,11 @@ public class HeteroAnalyticalPlacerOne
 			int minYIndex = -1;
 			double maxY = -Double.MAX_VALUE;
 			int maxYIndex = -1;
+			
+			if(nbPins < 2)
+			{
+				continue;
+			}
 			
 			//Search bounding box boundaries
 			//Handle net source pin
@@ -597,11 +615,11 @@ public class HeteroAnalyticalPlacerOne
 			}
 		}
 		
-		if(!xMatrix.isSymmetrical())
+		if(!xMatrix.isSymmetricalAndFinite())
 		{
 			System.err.println("ERROR: X-Matrix is assymmetrical: there must be a bug in the code!");
 		}
-		if(!yMatrix.isSymmetrical())
+		if(!yMatrix.isSymmetricalAndFinite())
 		{
 			System.err.println("ERROR: Y-Matrix is assymmetrical: there must be a bug in the code!");
 		}
@@ -613,6 +631,30 @@ public class HeteroAnalyticalPlacerOne
 		//Solve y problem
 		CGSolver ySolver = new CGSolver(yMatrix, yVector);
 		double[] ySolution = ySolver.solve(epselon);
+		
+//		if(firstSolve)
+//		{
+//			System.out.println("\nX-matrix:");
+//			for(int i = 0; i < dimensions; i++)
+//			{
+//				System.out.printf("Row %d: ", i);
+//				for(int j = 0; j < dimensions; j++)
+//				{
+//					double value = xMatrix.getElement(i, j);
+//					if(value != 0.0)
+//					{
+//						System.out.printf("(col %d = %.3f) ", j, value);
+//					}
+//				}
+//				System.out.println();
+//			}
+//			
+//			System.out.println("\nxVector:");
+//			for(int i = 0; i < dimensions; i++)
+//			{
+//				System.out.printf("%d: %.3f\n", i, xVector[i]);
+//			}
+//		}
 		
 		//Save results
 		for(int i = 0; i < dimensions; i++)
@@ -871,14 +913,34 @@ public class HeteroAnalyticalPlacerOne
 		typeStartIndices[0] = 0;
 		typeNames[0] = "CLB";
 		int index = 0;
+//		System.out.println("\nCLBs:");
 		for(Clb clb: circuit.clbs.values())
 		{
 			indexMap.put(clb, index);
 			linearX[index] = maximalX * random.nextDouble();
 			linearY[index] = maximalY * random.nextDouble();
+//			if(clb.getBle().getLut() == null)
+//			{
+//				System.out.printf("%s (%d): LUT = none, FLIPFLOP = %s, LOCATION = (%.3f;%.3f)\n", clb.name, 
+//											index, clb.getBle().getFlipflop().name, linearX[index], linearY[index]);
+//			}
+//			else
+//			{
+//				if(clb.getBle().getFlipflop() == null)
+//				{
+//					System.out.printf("%s (%d): LUT = %s, FLIPFLOP = none, LOCATION = (%.3f;%.3f)\n", clb.name, 
+//							index, clb.getBle().getLut().name, linearX[index], linearY[index]);
+//				}
+//				else
+//				{
+//					System.out.printf("%s (%d): LUT = %s, FLIPFLOP = %s, LOCATION = (%.3f;%.3f)\n", clb.name, 
+//							index, clb.getBle().getLut().name, clb.getBle().getFlipflop().name, linearX[index], linearY[index]);
+//				}
+//			}
 			index++;
 		}
 		int hardBlockTypeIndex = 0;
+//		System.out.println("\nHardblocks:");
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
 		{
 			typeStartIndices[hardBlockTypeIndex + 1] = index;
@@ -888,6 +950,7 @@ public class HeteroAnalyticalPlacerOne
 				indexMap.put(hb, index);
 				linearX[index] = maximalX * random.nextDouble();
 				linearY[index] = maximalY * random.nextDouble();
+				//System.out.printf("%s (%d): LOCATION = (%.3f;%.3f)\n", hb.name, index, linearX[index], linearY[index]);
 				index++;
 			}
 			hardBlockTypeIndex++;

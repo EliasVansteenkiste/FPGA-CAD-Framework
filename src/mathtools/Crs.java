@@ -120,13 +120,14 @@ public class Crs
 		return toReturn;
 	}
 	
-	public boolean isSymmetrical()
+	public boolean isSymmetricalAndFinite()
 	{
 		for(int i = 0; i < values.size(); i++)
 		{
 			for(int j = i+1; j < values.get(i).size(); j++)
 			{
-				if(getElement(i, j) != getElement(j, i))
+				double element = getElement(i, j);
+				if(element != getElement(j, i) || Double.isNaN(element))
 				{
 					return false;
 				}

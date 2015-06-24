@@ -650,11 +650,11 @@ public class AnalyticalPlacerFour
 			}
 		}
 		
-		if(!xMatrix.isSymmetrical())
+		if(!xMatrix.isSymmetricalAndFinite())
 		{
 			System.err.println("ERROR: X-Matrix is assymmetrical: there must be a bug in the code!");
 		}
-		if(!yMatrix.isSymmetrical())
+		if(!yMatrix.isSymmetricalAndFinite())
 		{
 			System.err.println("ERROR: Y-Matrix is assymmetrical: there must be a bug in the code!");
 		}
