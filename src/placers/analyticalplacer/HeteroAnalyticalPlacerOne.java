@@ -79,18 +79,52 @@ public class HeteroAnalyticalPlacerOne
 //		}
 		
 		//Initial legalization
+		double costLinearBefore = calculateTotalCost(linearX, linearY);
+		System.out.println("Iteration 0:");
+		System.out.println("\tLinear cost = " + costLinearBefore);
+		
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
+		System.out.println();
+		
+		double[] linearIterationZeroX = new double[linearX.length];
+		double[] linearIterationZeroY = new double[linearY.length];
 		
 		for(int i = 0; i < 30; i++)
 		{
 			solveMode = (solveMode + 1) % (typeNames.length + 1);
+			//System.out.println("SolveMode = " + solveMode);
 			solveLinear(false, solveMode, (i+1)*ALPHA);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
 			double costLinear = calculateTotalCost(linearX, linearY);
+			System.out.println("Iteration " + (i + 1) + ":");
+			System.out.println("\tLinear cost = " + costLinear);
+			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
 			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
 			if(costLinear / costLegal > 0.70)
 			{
 				break;
+			}
+			
+			if(i == 0)
+			{
+				for(int j = 0; j < linearIterationZeroX.length; j++)
+				{
+					linearIterationZeroX[j] = linearX[j];
+					linearIterationZeroY[j] = linearY[j];
+				}
+			}
+			if(i == 1)
+			{
+				for(int j = 0; j < linearX.length; j++)
+				{
+					if(linearX[j] == linearIterationZeroX[j])
+					{
+						//System.out.println("Block " + j + ": EQUAL");
+					}
+					else
+					{
+						//System.out.println("Block " + j + ": NOT EQUAL");
+					}
+				}
 			}
 		}
 		

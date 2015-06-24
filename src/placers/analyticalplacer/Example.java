@@ -85,12 +85,20 @@ public class Example
 		try
 		{
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
 			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
 			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 		}
 		catch(IOException ioe)
@@ -218,7 +226,7 @@ public class Example
 		//runTdSaBenchmarks();
 	}
 	
-//	//Homegeneous
+	//Homegeneous
 //	public static void main(String[] args)
 //	{
 //		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
@@ -231,24 +239,24 @@ public class Example
 //		{
 //			System.out.println("Not debugging");
 //		}
-		
-		//Wait for enter to start (necessary for easy profiling)
-//		System.out.println("Hit any key to continue...");
-//		try
-//		{
-//			System.in.read();
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.out.println("Something went wrong");
-//		}
-		
+//		
+//		//Wait for enter to start (necessary for easy profiling)
+////		System.out.println("Hit any key to continue...");
+////		try
+////		{
+////			System.in.read();
+////		}
+////		catch(IOException ioe)
+////		{
+////			System.out.println("Something went wrong");
+////		}
+//		
 //		BlifReader blifReader = new BlifReader();
 //		PrePackedCircuit prePackedCircuit;
 //		try
 //		{
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
@@ -259,6 +267,7 @@ public class Example
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
 //			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
 //		}
 //		catch(IOException ioe)
 //		{
@@ -279,36 +288,36 @@ public class Example
 //		//printPackedCircuit(packedCircuit);
 //		
 //	
-//		{
-//			FourLutSanitized architecture = new FourLutSanitized(96, 96, 4);
-//			AnalyticalPlacerFive placer = new AnalyticalPlacerFive(architecture, packedCircuit, 3);
-//			placer.place();
-//			
-//			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-//			double totalCost = effcc.calculateTotalCost();
-//			System.out.println("Total cost: " + totalCost);
-//			
-////			boolean placmenentConsistent = packedCircuit.placementConsistencyCheck(architecture);
-////			if(placmenentConsistent)
-////			{
-////				System.out.println("Placement is consistent!");
-////			}
-////			else
-////			{
-////				System.out.println("Placement is not consistent!");
-////			}
-//			
-//			ArchitecturePanel panel = new ArchitecturePanel(890, architecture, true);
-//			
-//			JFrame frame = new JFrame("Architecture");
-//			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//			frame.setSize(950,950);
-//			frame.add(panel);
-//			frame.pack();
-//			frame.setVisible(true);
-//		}
-	
-	
+////		{
+////			FourLutSanitized architecture = new FourLutSanitized(96, 96, 4);
+////			AnalyticalPlacerFive placer = new AnalyticalPlacerFive(architecture, packedCircuit, 3);
+////			placer.place();
+////			
+////			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+////			double totalCost = effcc.calculateTotalCost();
+////			System.out.println("Total cost: " + totalCost);
+////			
+//////			boolean placmenentConsistent = packedCircuit.placementConsistencyCheck(architecture);
+//////			if(placmenentConsistent)
+//////			{
+//////				System.out.println("Placement is consistent!");
+//////			}
+//////			else
+//////			{
+//////				System.out.println("Placement is not consistent!");
+//////			}
+////			
+////			ArchitecturePanel panel = new ArchitecturePanel(890, architecture, true);
+////			
+////			JFrame frame = new JFrame("Architecture");
+////			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+////			frame.setSize(950,950);
+////			frame.add(panel);
+////			frame.pack();
+////			frame.setVisible(true);
+////		}
+//	
+//	
 //		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
 //		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
 //		//System.out.println();
@@ -328,8 +337,8 @@ public class Example
 //		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
 //		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
 //		
-//		//visualAnalytical(packedCircuit, prePackedCircuit);
-//		visualTDAnalytical(packedCircuit, prePackedCircuit);
+//		visualAnalytical(packedCircuit, prePackedCircuit);
+//		//visualTDAnalytical(packedCircuit, prePackedCircuit);
 //		
 //		//visualSA(prePackedCircuit, packedCircuit);
 //		//visualTDSA(prePackedCircuit, packedCircuit);
@@ -905,11 +914,11 @@ public class Example
 		tgBefore.buildTimingGraph();
 		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
 		
-		WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, c);
+		//WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, c);
 		
 		//SA phase
 		SAStartTime = System.nanoTime();
-		saPlacer.lowTempAnneal(4.0);
+		//saPlacer.lowTempAnneal(4.0);
 		SAEndTime = System.nanoTime();
 		
 		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;

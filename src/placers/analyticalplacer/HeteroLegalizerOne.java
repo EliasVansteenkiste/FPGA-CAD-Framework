@@ -27,7 +27,7 @@ public class HeteroLegalizerOne
 	private double currentCost;
 	private HeterogeneousArchitecture architecture;
 	private int[] typeStartIndices;
-	private String[] typeNames;
+	private String[] typeNames;	
 	
 	public HeteroLegalizerOne(HeterogeneousArchitecture architecture, int[] typeStartIndices, String[] typeNames, int nbMovableBlocks)
 	{
@@ -81,12 +81,14 @@ public class HeteroLegalizerOne
 			}
 			else
 			{
+				//System.out.println("Calling subTypeLegalize with startIndex = " + typeStartIndices[solveMode - 1] + 
+				//		" and endIndex = " + bestLegalX.length);
 				subTypeLegalize(typeStartIndices[solveMode - 1], bestLegalX.length, linearX, linearY, 
 																typeNames[solveMode - 1], semiLegalX, semiLegalY);
 				for(int i = 0; i < typeStartIndices[solveMode - 1]; i++)
 				{
-					semiLegalX = bestLegalX;
-					semiLegalY = bestLegalY;
+					semiLegalX[i] = bestLegalX[i];
+					semiLegalY[i] = bestLegalY[i];
 				}
 			}
 		}
@@ -333,6 +335,22 @@ public class HeteroLegalizerOne
 			{
 				int x = (int)Math.round(positionsX.get(0));
 				int y = (int)Math.round(positionsY.get(0));
+				while(x < 1)
+				{
+					x++;
+				}
+				while(x > architecture.getWidth())
+				{
+					x--;
+				}
+				while(y < 1)
+				{
+					y++;
+				}
+				while(y > architecture.getHeight())
+				{
+					y--;
+				}
 				Site site = architecture.getSite(x, y, 0);
 				if(typeName.equals("CLB"))
 				{
@@ -1149,6 +1167,7 @@ public class HeteroLegalizerOne
 	private void updateBestLegal(int[] legalX, int[] legalY, Collection<Net> nets, Map<Block, Integer> indexMap)
 	{
 		double newCost = calculateTotalCost(legalX, legalY, nets, indexMap);
+		System.out.println("\tNew legal cost = " + newCost);
 		if (newCost < currentCost)
 		{
 			for (int i = 0; i < legalX.length; i++)
@@ -1158,6 +1177,7 @@ public class HeteroLegalizerOne
 			}
 			currentCost = newCost;
 		}
+		System.out.println("\tBest legal cost = " + currentCost);
 	}
 	
 	public double calculateBestLegalCost(Collection<Net> nets, Map<Block, Integer> indexMap)
