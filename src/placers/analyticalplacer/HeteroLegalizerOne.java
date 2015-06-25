@@ -17,6 +17,12 @@ import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 import architecture.SiteType;
 
+/*
+ * Uses repetitive partitioning
+ * Takes blocks in cluster when spreading
+ * Legalizes completely: no overlap in anchor points
+ * When reaching the FPGA boundaries: spread twice as fast in opposite direction
+ */
 public class HeteroLegalizerOne
 {
 
@@ -60,7 +66,6 @@ public class HeteroLegalizerOne
 					subTypeLegalize(typeStartIndices[i], bestLegalX.length, linearX, linearY, typeNames[i], semiLegalX, semiLegalY);
 				}
 			}
-			
 		}
 		else
 		{
@@ -101,7 +106,7 @@ public class HeteroLegalizerOne
 	}
 	
 	/*
-	 * EndIndex is the last index which is not of the considered block type anymore
+	 * EndIndex is the first index which is not of the considered block type anymore
 	 */
 	private void subTypeLegalize(int startIndex, int endIndex, double[] linearX, double[] linearY, String typeName, 
 														int[] semiLegalX, int[] semiLegalY)
@@ -165,8 +170,8 @@ public class HeteroLegalizerOne
 					for (int i = 0; i < todo.size(); i++)
 					{
 						int currentIndex = todo.get(i);
-						if (linearX[currentIndex] >= areaXUpBoundHalf && linearX[currentIndex] < areaXUpBoundHalf + 1.0 && linearY[currentIndex] >= y
-								&& linearY[currentIndex] < y + 1.0)
+						if (linearX[currentIndex] >= areaXUpBoundHalf && linearX[currentIndex] < areaXUpBoundHalf + 1.0 && 
+								linearY[currentIndex] >= y && linearY[currentIndex] < y + 1.0)
 						{
 							nbCells++;
 							if (nbCells >= 2)
@@ -208,8 +213,8 @@ public class HeteroLegalizerOne
 					for (int i = 0; i < todo.size(); i++)
 					{
 						int currentIndex = todo.get(i);
-						if (linearX[currentIndex] >= x && linearX[currentIndex] < x + 1.0 && linearY[currentIndex] >= areaYDownBoundHalf - 1.0
-								&& linearY[currentIndex] < areaYDownBoundHalf)
+						if (linearX[currentIndex] >= x && linearX[currentIndex] < x + 1.0 && 
+								linearY[currentIndex] >= areaYDownBoundHalf - 1.0 && linearY[currentIndex] < areaYDownBoundHalf)
 						{
 							nbCells++;
 							if (nbCells >= 2)
@@ -570,9 +575,9 @@ public class HeteroLegalizerOne
 			
 			// Change double boundaries on half coordinates in integer boundaries on integer coordinates
 			int areaXDownBound = (int) Math.ceil(areaXDownBoundHalf);
-			int areaXUpBound = (int) Math.ceil(areaXUpBoundHalf);
+			int areaXUpBound = (int) Math.ceil(areaXUpBoundHalf); //First one that is not valid anymore
 			int areaYDownBound = (int) Math.ceil(areaYDownBoundHalf);
-			int areaYUpBound = (int) Math.ceil(areaYUpBoundHalf);
+			int areaYUpBound = (int) Math.ceil(areaYUpBoundHalf); //First one that is not valid anymore
 			
 			while (areaXDownBound < minimalX)
 			{
@@ -736,8 +741,8 @@ public class HeteroLegalizerOne
 		if (horCutDirection) // Cut horizontally => sort in i
 		{
 			sort(false, indices, positionsX, positionsY);
-		} else
-		// Cut vertically
+		} 
+		else //Cut vertically
 		{
 			sort(true, indices, positionsX, positionsY);
 		}
@@ -1386,7 +1391,17 @@ public class HeteroLegalizerOne
 															double areaYUpBoundHalf, String typeName)
 	{
 		int curNumberOfLegalSites = 0;
-		int curNbBlocksPerColumn = (int)Math.round(Math.floor(areaYUpBoundHalf) - Math.floor(areaYDownBoundHalf));
+		double yTop = areaYUpBoundHalf;
+		while(yTop > (architecture.getHeight() + 1.0))
+		{
+			yTop -= 1.0;
+		}
+		double yBottom = areaYDownBoundHalf;
+		while(yBottom < 0)
+		{
+			yBottom += 1.0;
+		}
+		int curNbBlocksPerColumn = (int)Math.round(yTop - yBottom);
 		for(int x = (int)Math.round(Math.ceil(areaXDownBoundHalf)); x <= (int)Math.round(Math.floor(areaXUpBoundHalf)); x++)
 		{
 			if(x >= 1 && x <= architecture.getWidth())

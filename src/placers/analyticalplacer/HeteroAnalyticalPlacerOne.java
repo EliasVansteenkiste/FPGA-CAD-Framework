@@ -84,7 +84,6 @@ public class HeteroAnalyticalPlacerOne
 		System.out.println("\tLinear cost = " + costLinearBefore);
 		
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
-		System.out.println();
 		
 		double[] linearIterationZeroX = new double[linearX.length];
 		double[] linearIterationZeroY = new double[linearY.length];
@@ -982,8 +981,8 @@ public class HeteroAnalyticalPlacerOne
 			for(HardBlock hb: hbVector)
 			{
 				indexMap.put(hb, index);
-				linearX[index] = maximalX * random.nextDouble();
-				linearY[index] = maximalY * random.nextDouble();
+				linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
+				linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
 				//System.out.printf("%s (%d): LOCATION = (%.3f;%.3f)\n", hb.name, index, linearX[index], linearY[index]);
 				index++;
 			}

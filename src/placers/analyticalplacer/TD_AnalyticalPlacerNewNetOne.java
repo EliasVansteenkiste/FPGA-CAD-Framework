@@ -62,7 +62,7 @@ public class TD_AnalyticalPlacerNewNetOne
 		initializeDataStructures();
 		
 		timingGraph.buildTimingGraph();
-		timingGraph.mapClbsToTimingGraph(circuit);
+		timingGraph.mapTopLevelPinsToTimingGraph(circuit);
 		
 		//Initial linear solves, should normally be done 5-7 times		
 		for(int i = 0; i < 15; i++)

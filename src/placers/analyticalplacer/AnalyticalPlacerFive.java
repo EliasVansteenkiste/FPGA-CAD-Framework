@@ -73,15 +73,18 @@ public class AnalyticalPlacerFive
 		}
 		
 		double costLinear = calculateTotalCost(linearX, linearY);
-		System.out.println("Linear cost before legalizing = " + costLinear);
+		System.out.println("Iteration 0:");
+		System.out.println("\tLinear cost = " + costLinear);
+
+//		System.out.println("Linear cost before legalizing = " + costLinear);
 		
 		//Initial legalization
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 		
-		for(int i = 0; i < linearX.length; i++)
-		{
-			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
-		}
+//		for(int i = 0; i < linearX.length; i++)
+//		{
+//			System.out.printf("%d: (%.2f-%.2f)\n", i, linearX[i], linearY[i]);
+//		}
 		
 //		CsvWriter csvWriter = new CsvWriter(2);
 //		csvWriter.addRow(new String[] {"Linear", "BestLegal"});
@@ -92,8 +95,10 @@ public class AnalyticalPlacerFive
 		{
 			nbIterations++;
 			solveLinear(false, (i+1)*ALPHA);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 			costLinear = calculateTotalCost(linearX, linearY);
+			System.out.println("Iteration " + (i + 1) + ":");
+			System.out.println("\tLinear cost = " + costLinear);
+			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
 //			csvWriter.addRow(new String[] {"" + costLinear, "" + costLegal});
 			if(costLinear / costLegal > 0.70)
