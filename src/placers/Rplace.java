@@ -292,7 +292,7 @@ public class Rplace
 			Site site = ISites.get(index);
 			site.block = input;
 			input.setSite(site);
-			index += 2;
+			index += 1;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
 				index = 1;
@@ -306,7 +306,7 @@ public class Rplace
 			Site site = OSites.get(index);
 			site.block = output;
 			output.setSite(site);
-			index += 2;
+			index += 1;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
 				index = 1;

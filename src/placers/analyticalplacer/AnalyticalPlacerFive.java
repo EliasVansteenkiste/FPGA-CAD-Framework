@@ -65,7 +65,7 @@ public class AnalyticalPlacerFive
 	{
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
-		
+				
 		//Initial linear solves, should normally be done 5-7 times		
 		for(int i = 0; i < 7; i++)
 		{
@@ -73,8 +73,7 @@ public class AnalyticalPlacerFive
 		}
 		
 		double costLinear = calculateTotalCost(linearX, linearY);
-		System.out.println("Iteration 0:");
-		System.out.println("\tLinear cost = " + costLinear);
+		System.out.println("Linear cost before first legalization = " + costLinear);
 
 //		System.out.println("Linear cost before legalizing = " + costLinear);
 		
@@ -90,14 +89,12 @@ public class AnalyticalPlacerFive
 //		csvWriter.addRow(new String[] {"Linear", "BestLegal"});
 		
 		//Iterative solves with pseudonets
-		int nbIterations = 0;
+//		int nbIterations = 0;
 		for(int i = 0; i < 30; i++)
 		{
-			nbIterations++;
+//			nbIterations++;
 			solveLinear(false, (i+1)*ALPHA);
 			costLinear = calculateTotalCost(linearX, linearY);
-			System.out.println("Iteration " + (i + 1) + ":");
-			System.out.println("\tLinear cost = " + costLinear);
 			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap);
 			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
 //			csvWriter.addRow(new String[] {"" + costLinear, "" + costLegal});
@@ -108,9 +105,9 @@ public class AnalyticalPlacerFive
 			//System.out.println("Linear cost: " + costLinear);
 		}
 		
-//		csvWriter.writeFile("convergence.csv");
-		
-		System.out.println("Nb of iterations: " + nbIterations);
+////		csvWriter.writeFile("convergence.csv");
+//		
+//		System.out.println("Nb of iterations: " + nbIterations);
 		
 //		for(int i = 0; i < linearX.length; i++)
 //		{
@@ -180,6 +177,12 @@ public class AnalyticalPlacerFive
 			int minYIndex = -1;
 			double maxY = -Double.MAX_VALUE;
 			int maxYIndex = -1;
+			
+			if(nbPins < 2)
+			{
+				continue;
+			}
+			
 			if(net.source.owner.type == BlockType.CLB)
 			{
 				int index = indexMap.get((Clb)net.source.owner);

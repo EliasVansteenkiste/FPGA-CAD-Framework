@@ -1172,7 +1172,7 @@ public class HeteroLegalizerOne
 	private void updateBestLegal(int[] legalX, int[] legalY, Collection<Net> nets, Map<Block, Integer> indexMap)
 	{
 		double newCost = calculateTotalCost(legalX, legalY, nets, indexMap);
-		System.out.println("\tNew legal cost = " + newCost);
+//		System.out.println("\tNew legal cost = " + newCost);
 		if (newCost < currentCost)
 		{
 			for (int i = 0; i < legalX.length; i++)
@@ -1182,7 +1182,7 @@ public class HeteroLegalizerOne
 			}
 			currentCost = newCost;
 		}
-		System.out.println("\tBest legal cost = " + currentCost);
+//		System.out.println("\tBest legal cost = " + currentCost);
 	}
 	
 	public double calculateBestLegalCost(Collection<Net> nets, Map<Block, Integer> indexMap)

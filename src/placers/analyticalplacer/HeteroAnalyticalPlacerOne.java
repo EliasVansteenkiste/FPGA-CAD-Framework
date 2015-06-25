@@ -80,50 +80,20 @@ public class HeteroAnalyticalPlacerOne
 		
 		//Initial legalization
 		double costLinearBefore = calculateTotalCost(linearX, linearY);
-		System.out.println("Iteration 0:");
-		System.out.println("\tLinear cost = " + costLinearBefore);
+		System.out.println("Linear cost before first legalization = " + costLinearBefore);
 		
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
-		
-		double[] linearIterationZeroX = new double[linearX.length];
-		double[] linearIterationZeroY = new double[linearY.length];
 		
 		for(int i = 0; i < 30; i++)
 		{
 			solveMode = (solveMode + 1) % (typeNames.length + 1);
-			//System.out.println("SolveMode = " + solveMode);
 			solveLinear(false, solveMode, (i+1)*ALPHA);
 			double costLinear = calculateTotalCost(linearX, linearY);
-			System.out.println("Iteration " + (i + 1) + ":");
-			System.out.println("\tLinear cost = " + costLinear);
 			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
 			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
 			if(costLinear / costLegal > 0.70)
 			{
 				break;
-			}
-			
-			if(i == 0)
-			{
-				for(int j = 0; j < linearIterationZeroX.length; j++)
-				{
-					linearIterationZeroX[j] = linearX[j];
-					linearIterationZeroY[j] = linearY[j];
-				}
-			}
-			if(i == 1)
-			{
-				for(int j = 0; j < linearX.length; j++)
-				{
-					if(linearX[j] == linearIterationZeroX[j])
-					{
-						//System.out.println("Block " + j + ": EQUAL");
-					}
-					else
-					{
-						//System.out.println("Block " + j + ": NOT EQUAL");
-					}
-				}
 			}
 		}
 		
@@ -342,6 +312,13 @@ public class HeteroAnalyticalPlacerOne
 					}
 				}
 			}
+			
+
+			
+			
+			
+			
+			
 			
 			//Add connection between min and max
 			if(!(minXIndex == -1 && maxXIndex == -1))
@@ -924,7 +901,7 @@ public class HeteroAnalyticalPlacerOne
 		}
 		return weight;
 	}
-
+	
 	private void initializeDataStructures()
 	{
 		int nbClbs = circuit.clbs.size();
@@ -950,8 +927,8 @@ public class HeteroAnalyticalPlacerOne
 		for(Clb clb: circuit.clbs.values())
 		{
 			indexMap.put(clb, index);
-			linearX[index] = maximalX * random.nextDouble();
-			linearY[index] = maximalY * random.nextDouble();
+			linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
+			linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
 //			if(clb.getBle().getLut() == null)
 //			{
 //				System.out.printf("%s (%d): LUT = none, FLIPFLOP = %s, LOCATION = (%.3f;%.3f)\n", clb.name, 
