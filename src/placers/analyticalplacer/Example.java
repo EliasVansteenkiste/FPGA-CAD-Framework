@@ -56,6 +56,74 @@ public class Example
 {
 	
 	//Heterogeneous
+	public static void main(String[] args)
+	{
+		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
+			    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+		if(isDebug)
+		{
+			System.out.println("Debugging");
+		}
+		else
+		{
+			System.out.println("Not debugging");
+		}
+		
+		//Wait for enter to start (necessary for easy profiling)
+//		System.out.println("Hit any key to continue...");
+//		try
+//		{
+//			System.in.read();
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.out.println("Something went wrong");
+//		}
+		
+//		BlifReader blifReader = new BlifReader();
+//		PrePackedCircuit prePackedCircuit;
+//		try
+//		{
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
+//			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.err.println("Couldn't read blif file!");
+//			return;
+//		}
+//		
+//		BlePacker blePacker = new BlePacker(prePackedCircuit);
+//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		
+//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+//		PackedCircuit packedCircuit = clbPacker.pack();
+//		
+//		System.out.println("Heterogeneous");
+		
+		//visualSA(prePackedCircuit, packedCircuit);
+		//visualTDSA(prePackedCircuit, packedCircuit);
+		//visualAnalytical(packedCircuit, prePackedCircuit);
+
+		//runWlVsTdSaBenchmarks();
+		//runTdSaBenchmarks();
+		runWldSaVsAnalyticalBenchmarks();
+	}
+	
+	//Homegeneous
 //	public static void main(String[] args)
 //	{
 //		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
@@ -84,22 +152,19 @@ public class Example
 //		PrePackedCircuit prePackedCircuit;
 //		try
 //		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mcml.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
 //			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
-//			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
 //		}
 //		catch(IOException ioe)
 //		{
@@ -117,105 +182,31 @@ public class Example
 //		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 //		PackedCircuit packedCircuit = clbPacker.pack();
 //		
-//		System.out.println("Heterogeneous");
-//		//System.out.println("Nb of CLBs: " + packedCircuit.clbs.values().size());
+//		System.out.println("Homogeneous");
 //		
 //		//printPackedCircuit(packedCircuit);
 //		
-//		//visualSA(prePackedCircuit, packedCircuit);
-//		//visualTDSA(prePackedCircuit, packedCircuit);
-//		
-//		//Just for testing, needs to be deleted when HeteroAnalyticalPlacerOne is working
-//		{
-//			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
-//			HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(architecture, packedCircuit, 1);
-//			placer.place();
-//			
-//			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-//			double totalCost = effcc.calculateTotalCost();
-//			System.out.println("Total cost: " + totalCost);
-//			
-//			boolean placmenentConsistent = packedCircuit.placementConsistencyCheck(architecture);
-//			if(placmenentConsistent)
-//			{
-//				System.out.println("Placement is consistent!");
-//			}
-//			else
-//			{
-//				System.out.println("Placement is not consistent!");
-//			}
-//			
-//			HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
-//			
-//			JFrame frame = new JFrame("Architecture");
-//			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//			frame.setSize(950,950);
-//			frame.add(panel);
-//			frame.pack();
-//			frame.setVisible(true);
-//		}
-//		
-//		//Just for testing, needs to be deleted when HeteroLegalizerOne is working
+//	
 ////		{
-////			PackedCircuit packedCircuit = new PackedCircuit();
-////			int nbClbs = 100;
-////			int nbHB1s = 12;
-////			int totalNbBlocks = nbClbs + nbHB1s;
-////			double[] linearX = new double[totalNbBlocks];
-////			double[] linearY = new double[totalNbBlocks];
-////			for(int i = 0; i < nbClbs; i++)
-////			{
-////				Clb clb = new Clb("clb_" + i, 1, 6);
-////				packedCircuit.clbs.put(clb.name, clb);
-////				int x = i % 10 + 1;
-////				if(x >= 6)
-////				{
-////					x++;
-////				}
-////				linearX[i] = x;
-////				linearY[i] = i / 10 + 1;
-////			}
-////			for(int i = 0; i < nbHB1s; i++)
-////			{
-////				Vector<String> outputNames = new Vector<>();
-////				Vector<String> inputNames = new Vector<>();
-////				for(int j = 0; j < 5; j++)
-////				{
-////					outputNames.add("hb1_" + i + "_out[" + j + "]");
-////					inputNames.add("hb1_" + i + "_in[" + j + "]") ;
-////				}
-////				HardBlock hb = new HardBlock("hb1_" + i, outputNames, inputNames, "multiply", false);
-////				packedCircuit.addHardBlock(hb);
-////				linearX[i + nbClbs] = 0.0;
-////				linearY[i + nbClbs] = 0.0;
-////			}
-////			String[] typeNames = new String[2];
-////			typeNames[0] = "CLB";
-////			typeNames[1] = "multiply";
-////			int[] typeStartIndices = new int[2];
-////			typeStartIndices[0] = 0;
-////			typeStartIndices[1] = nbClbs;
-////			HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
-////			HeteroLegalizerOne legalizer = new HeteroLegalizerOne(architecture, typeStartIndices, typeNames, totalNbBlocks);
-////			legalizer.legalize(linearX, linearY, 0);
-////			int[] bestLegalX = legalizer.getBestLegalX();
-////			int[] bestLegalY = legalizer.getBestLegalY();
-////			for(int i = 0; i < nbClbs; i++)
-////			{
-////				Clb clb = packedCircuit.clbs.get("clb_" + i);
-////				Site site = architecture.getSite(bestLegalX[i], bestLegalY[i], 0);
-////				clb.setSite(site);
-////				site.block = clb;
-////			}
-////			for(int i = 0; i < nbHB1s; i++)
-////			{
-////				HardBlock hb = packedCircuit.getHardBlocks().get(0).get(i);
-////				Site site = architecture.getSite(bestLegalX[i + nbClbs], bestLegalY[i + nbClbs], 0);
-////				hb.setSite(site);
-////				site.block = hb;
-////			}
+////			FourLutSanitized architecture = new FourLutSanitized(96, 96, 4);
+////			AnalyticalPlacerFive placer = new AnalyticalPlacerFive(architecture, packedCircuit, 3);
+////			placer.place();
 ////			
-////			HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
+////			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+////			double totalCost = effcc.calculateTotalCost();
+////			System.out.println("Total cost: " + totalCost);
+////			
+//////			boolean placmenentConsistent = packedCircuit.placementConsistencyCheck(architecture);
+//////			if(placmenentConsistent)
+//////			{
+//////				System.out.println("Placement is consistent!");
+//////			}
+//////			else
+//////			{
+//////				System.out.println("Placement is not consistent!");
+//////			}
+////			
+////			ArchitecturePanel panel = new ArchitecturePanel(890, architecture, true);
 ////			
 ////			JFrame frame = new JFrame("Architecture");
 ////			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -224,143 +215,46 @@ public class Example
 ////			frame.pack();
 ////			frame.setVisible(true);
 ////		}
+//	
+//	
+//		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
+//		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
+//		//System.out.println();
+//		//System.out.println("SA placed block locations");
+//		//printPlacedCircuit(packedCircuit);
 //		
+//		//System.out.println("\nANALYTICAL PLACEMENT:");
+//		//analyticalPlace(packedCircuit, prePackedCircuit);
+//		//printPlacedCircuit(packedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT TWO");
+//		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT THREE");
+//		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
+//		
+//		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
+//		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
+//		
+//		visualAnalytical(packedCircuit, prePackedCircuit);
+//		//visualTDAnalytical(packedCircuit, prePackedCircuit);
+//		
+//		//visualSA(prePackedCircuit, packedCircuit);
+//		//visualTDSA(prePackedCircuit, packedCircuit);
+//		
+//		//runAllPlacersBenchmarks();
 //		//runWlVsTdSaBenchmarks();
-//		//runTdSaBenchmarks();
+//		//runTDSaVsAnalyticalBenchmarks();
+//		
+//		//testEdgeMap(prePackedCircuit, packedCircuit);
+//		
+//		//visualLegalizerTest();
+//		
+//		//visualTDanalyticalTestCircuit();
+//		
+//		//testCostCalculator(packedCircuit);
+//		//testTimingCostCalculator(prePackedCircuit, packedCircuit);
 //	}
-	
-	//Homegeneous
-	public static void main(String[] args)
-	{
-		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
-			    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
-		if(isDebug)
-		{
-			System.out.println("Debugging");
-		}
-		else
-		{
-			System.out.println("Not debugging");
-		}
-		
-		//Wait for enter to start (necessary for easy profiling)
-//		System.out.println("Hit any key to continue...");
-//		try
-//		{
-//			System.in.read();
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.out.println("Something went wrong");
-//		}
-		
-		BlifReader blifReader = new BlifReader();
-		PrePackedCircuit prePackedCircuit;
-		try
-		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/i1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/C17.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbara.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex5.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/apex4.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/bbrtas.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s27.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/s38584.1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/Blif/6/ex5p.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
-		}
-		catch(IOException ioe)
-		{
-			System.err.println("Couldn't read blif file!");
-			return;
-		}
-		
-		//printUnpackedCircuit(prePackedCircuit);
-		
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		//printBlePackedCircuit(blePackedCircuit);
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
-		
-		System.out.println("Homogeneous");
-		
-		//printPackedCircuit(packedCircuit);
-		
-	
-//		{
-//			FourLutSanitized architecture = new FourLutSanitized(96, 96, 4);
-//			AnalyticalPlacerFive placer = new AnalyticalPlacerFive(architecture, packedCircuit, 3);
-//			placer.place();
-//			
-//			EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-//			double totalCost = effcc.calculateTotalCost();
-//			System.out.println("Total cost: " + totalCost);
-//			
-////			boolean placmenentConsistent = packedCircuit.placementConsistencyCheck(architecture);
-////			if(placmenentConsistent)
-////			{
-////				System.out.println("Placement is consistent!");
-////			}
-////			else
-////			{
-////				System.out.println("Placement is not consistent!");
-////			}
-//			
-//			ArchitecturePanel panel = new ArchitecturePanel(890, architecture, true);
-//			
-//			JFrame frame = new JFrame("Architecture");
-//			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//			frame.setSize(950,950);
-//			frame.add(panel);
-//			frame.pack();
-//			frame.setVisible(true);
-//		}
-	
-	
-		//System.out.println("SIMULATED ANNEALING PLACEMENT:");
-		//simulatedAnnealingPlace(packedCircuit, prePackedCircuit);
-		//System.out.println();
-		//System.out.println("SA placed block locations");
-		//printPlacedCircuit(packedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT:");
-		//analyticalPlace(packedCircuit, prePackedCircuit);
-		//printPlacedCircuit(packedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT TWO");
-		//analyticalPlaceTwo(packedCircuit, prePackedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT THREE");
-		//analyticalPlaceThree(packedCircuit, prePackedCircuit);
-		
-		//System.out.println("\nANALYTICAL PLACEMENT FOUR");
-		//analyticalPlaceFour(packedCircuit, prePackedCircuit, false);
-		
-		visualAnalytical(packedCircuit, prePackedCircuit);
-		//visualTDAnalytical(packedCircuit, prePackedCircuit);
-		
-		//visualSA(prePackedCircuit, packedCircuit);
-		//visualTDSA(prePackedCircuit, packedCircuit);
-		
-		//runAllPlacersBenchmarks();
-		//runWlVsTdSaBenchmarks();
-		//runTDSaVsAnalyticalBenchmarks();
-		
-		//testEdgeMap(prePackedCircuit, packedCircuit);
-		
-		//visualLegalizerTest();
-		
-		//visualTDanalyticalTestCircuit();
-		
-		//testCostCalculator(packedCircuit);
-		//testTimingCostCalculator(prePackedCircuit, packedCircuit);
-	}
 	
 	private static void visualTDanalyticalTestCircuit()
 	{
@@ -693,6 +587,108 @@ public class Example
 		}
 	}
 	
+	private static void runWldSaVsAnalyticalBenchmarks()
+	{
+		String toDoFileName = "HeteroBenchmarksToDo.txt";
+		String csvFileName = "HeteroBenchmarksWldSaVsAnalytical.csv";
+		String[] fileNamesToDo;
+		try
+		{
+			File toDoFile = new File(toDoFileName);
+			if(!toDoFile.exists())
+			{
+				System.out.println("No TODO file found\nAborting...");
+			}
+			FileReader fileReader = new FileReader(toDoFile.getAbsoluteFile());
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			ArrayList<String> rowsList = new ArrayList<>();
+			String curLine = bufferedReader.readLine();
+			int nbRows = 0;
+			while(curLine != null)
+			{
+				rowsList.add(curLine);
+				nbRows++;
+				curLine = bufferedReader.readLine();
+			}
+			bufferedReader.close();
+			fileNamesToDo = new String[nbRows];
+			rowsList.toArray(fileNamesToDo);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read TODO file: " + toDoFileName);
+			return;
+		}
+		
+		CsvWriter csvWriter;
+		CsvReader csvReader = new CsvReader();
+		boolean success = csvReader.readFile(csvFileName);
+		String[] alreadyDoneFiles;
+		if(success)
+		{
+			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+		}
+		else
+		{
+			csvWriter = new CsvWriter(13);
+			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", "Analytical time WLD_Analytical",
+					"SA time WLD_Analytical", "WL WLD_Analytical before anneal", "Max delay WLD_Analytical before anneal", "WL WLD_Analytical after anneal",
+					"Max delay WLD_Analytical after anneal", "Time WLD_SA", "WL WLD_SA", "Max delay WLD_SA"});
+			alreadyDoneFiles = null;
+		}
+		for(int i = 0; i < fileNamesToDo.length; i++)
+		{
+			if(fileNamesToDo[i].substring(fileNamesToDo[i].length() - 4).contains("blif"))
+			{
+				System.out.println("Processing benchmark: " + fileNamesToDo[i]);
+				String totalFilename = fileNamesToDo[i];
+				if(alreadyDone(totalFilename, alreadyDoneFiles))
+				{
+					System.out.println("Already done this benchmark!");
+				}
+				else
+				{
+					double[] wldAnalyticalResults = new double[6];
+					processWLDAnalyticalBenchmark(wldAnalyticalResults, totalFilename);
+					double wldAnalyticalAnalyticalTime = wldAnalyticalResults[0];
+					double wldAnalyticalSATime = wldAnalyticalResults[1];
+					double wldAnalyticalBeforeWL = wldAnalyticalResults[2];
+					double wldAnalyticalAfterWL = wldAnalyticalResults[3];
+					double wldAnalyticalBeforeMaxDelay = wldAnalyticalResults[4];
+					double wldAnalyticalAfterMaxDelay = wldAnalyticalResults[5];
+					
+					double[] wldSAResults = new double[6];
+					processWLDSABenchmark(wldSAResults, totalFilename);
+					double wldSATime = wldSAResults[0];
+					double wldSAWL = wldSAResults[1];
+					int nbClbs = (int)Math.round(wldSAResults[2]);
+					int nbInputs = (int)Math.round(wldSAResults[3]);
+					int nbOutputs = (int)Math.round(wldSAResults[4]);
+					double wldSAMaxDelay = wldSAResults[5];
+					
+					String wldAnalyticalAnalyticalTimeString = String.format("%.3f", wldAnalyticalAnalyticalTime);
+					String wldAnalyticalSATimeString = String.format("%.3f", wldAnalyticalSATime);
+					String wldAnalyticalBeforeWLString = String.format("%.3f", wldAnalyticalBeforeWL);
+					String wldAnalyticalAfterWLString = String.format("%.3f", wldAnalyticalAfterWL);
+					String wldAnalyticalBeforeMaxDelayString = String.format("%.3f", wldAnalyticalBeforeMaxDelay);
+					String wldAnalyticalAfterMaxDelayString = String.format("%.3f", wldAnalyticalAfterMaxDelay);
+					String nbClbsString = String.format("%d", nbClbs);
+					String nbInputsString = String.format("%d", nbInputs);
+					String nbOutputsString = String.format("%d", nbOutputs);
+					String wldSATimeString = String.format("%.3f", wldSATime);
+					String wldSAWLString = String.format("%.3f", wldSAWL);
+					String wldSAMaxDelayString = String.format("%.3f", wldSAMaxDelay);
+					
+					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, nbOutputsString, wldAnalyticalAnalyticalTimeString, 
+							wldAnalyticalSATimeString, wldAnalyticalBeforeWLString, wldAnalyticalBeforeMaxDelayString, wldAnalyticalAfterWLString, 
+							wldAnalyticalAfterMaxDelayString, wldSATimeString, wldSAWLString, wldSAMaxDelayString});
+				}
+			}
+			csvWriter.writeFile(csvFileName);
+		}
+	}
+	
 	private static void runTdSaBenchmarks()
 	{
 		String toDoFileName = "HeteroBenchmarksToDo.txt";
@@ -892,18 +888,13 @@ public class Example
 	
 	private static void visualAnalytical(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
-		int archSize = FourLutSanitized.calculateSquareArchDimensions(c);
-		int height = archSize;
-		int width = archSize;
-		int trackwidth = 4;
+		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(c);
 		
 		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
 				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
 		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		int legalizer = 3;
-		AnalyticalPlacerFive analyticalPlacer = new AnalyticalPlacerFive(a, c, legalizer);
-		//AnalyticalPlacerFour placer = new AnalyticalPlacerFour(a,c,bbncc);
+		int legalizer = 1;
+		HeteroAnalyticalPlacerOne analyticalPlacer = new HeteroAnalyticalPlacerOne(architecture, c, legalizer);
 		
 		long analyticalStartTime;
 		long analyticalEndTime;
@@ -919,11 +910,11 @@ public class Example
 		tgBefore.buildTimingGraph();
 		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
 		
-		//WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, c);
+		WLD_SAPlacer saPlacer= new WLD_SAPlacer(architecture, c);
 		
 		//SA phase
 		SAStartTime = System.nanoTime();
-		//saPlacer.lowTempAnneal(4.0);
+		saPlacer.lowTempAnneal(4.0);
 		SAEndTime = System.nanoTime();
 		
 		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
@@ -933,7 +924,15 @@ public class Example
 		System.out.printf("\tAnalytical placement time: %.3f s\n", AnalyticalTime);
 		System.out.printf("\tSimulated annealing refinement time: %.3f s\n", SATime);
 		
-		//c.placementCLBsConsistencyCheck(a);
+		boolean consistent = c.placementConsistencyCheck(architecture);
+		if(consistent)
+		{
+			System.out.println("Placement is consistent!");
+		}
+		else
+		{
+			System.out.println("Placement is NOT consistent!!!!");
+		}
 		EfficientCostCalculator effccAfter = new EfficientBoundingBoxNetCC(c);
 		System.out.println("Total cost after low temperature anneal: " + effccAfter.calculateTotalCost());
 		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
@@ -943,7 +942,7 @@ public class Example
 		System.out.println("Max delay before refinement: " + maxDelayBeforeRefinement);
 		System.out.println("Max delay after refinement: " + maxDelayAfterRefinement);
 		
-		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
 		
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -1118,14 +1117,10 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
-		int height = dimension;
-		int width = dimension;
-		int trackwidth = 4;
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		int legalizer = 3;
-		AnalyticalPlacerFive placer = new AnalyticalPlacerFive(a, packedCircuit, legalizer);
+		int legalizer = 1;
+		HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(a, packedCircuit, legalizer);
 		
 		long startTime;
 		long analyticalEndTime;

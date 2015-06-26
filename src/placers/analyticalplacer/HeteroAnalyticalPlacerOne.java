@@ -78,19 +78,31 @@ public class HeteroAnalyticalPlacerOne
 //			System.out.println("" + i + ": (" + linearX[i] + ";" + linearY[i] + ")");
 //		}
 		
-		//Initial legalization
-		double costLinearBefore = calculateTotalCost(linearX, linearY);
-		System.out.println("Linear cost before first legalization = " + costLinearBefore);
+		//double costLinearBefore = calculateTotalCost(linearX, linearY);
+		//System.out.println("Iteration 0:");
+		//System.out.println("\tLinear cost before first legalization = " + costLinearBefore);
 		
+		//Initial legalization
 		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
 		
+		//double costLegalBefore = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
+		//System.out.println("\tLegal cost: " + costLegalBefore);
+		
+		double pseudoWeightFactor = 0.0;
 		for(int i = 0; i < 30; i++)
 		{
+			//System.out.println("Iteration " + (i + 1) + ":");
 			solveMode = (solveMode + 1) % (typeNames.length + 1);
-			solveLinear(false, solveMode, (i+1)*ALPHA);
+			if(solveMode <= 1)
+			{
+				pseudoWeightFactor += ALPHA;
+			}
+			solveLinear(false, solveMode, pseudoWeightFactor);
 			double costLinear = calculateTotalCost(linearX, linearY);
+			//System.out.println("\tLinear cost: " + costLinear);
 			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
 			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
+			//System.out.println("\tBest legal cost: " + costLegal);
 			if(costLinear / costLegal > 0.70)
 			{
 				break;
