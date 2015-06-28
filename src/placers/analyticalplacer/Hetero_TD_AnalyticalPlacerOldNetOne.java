@@ -2,10 +2,8 @@ package placers.analyticalplacer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.Vector;
 
 import mathtools.CGSolver;
@@ -13,19 +11,22 @@ import mathtools.Crs;
 
 import placers.Rplace;
 
+import timinganalysis.TimingEdge;
+import timinganalysis.TimingGraph;
+
+import architecture.HeterogeneousArchitecture;
+import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
+import circuit.HardBlock;
 import circuit.Net;
 import circuit.PackedCircuit;
-import circuit.Block;
-import circuit.HardBlock;
 import circuit.Pin;
-import architecture.HeterogeneousArchitecture;
-import architecture.Site;
+import circuit.PrePackedCircuit;
 
-public class HeteroAnalyticalPlacerOne
+public class Hetero_TD_AnalyticalPlacerOldNetOne
 {
-
+	
 	private final double ALPHA = 0.3;
 	
 	private HeterogeneousArchitecture architecture;
@@ -35,36 +36,26 @@ public class HeteroAnalyticalPlacerOne
 	private String[] typeNames;
 	private double[] linearX;
 	private double[] linearY;
-	private HeteroLegalizerOne legalizer;
+	private Hetero_TD_LegalizerOne legalizer;
+	private TimingGraph timingGraph;
 
-	public HeteroAnalyticalPlacerOne(HeterogeneousArchitecture architecture, PackedCircuit circuit, int legalizer)
+	public Hetero_TD_AnalyticalPlacerOldNetOne(HeterogeneousArchitecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
-		switch(legalizer)
-		{
-			default:
-				this.legalizer = new HeteroLegalizerOne(architecture, typeStartIndices, typeNames, linearX.length);
-		}
-		
-//		System.out.println("\nInputs:");
-//		for(Input input: circuit.getInputs().values())
-//		{
-//			System.out.printf("%s: LOCATION = (%d;%d)\n", input.name, input.getSite().x, input.getSite().y);
-//		}
-		
-//		System.out.println("\nOutputs:");
-//		for(Output output: circuit.getOutputs().values())
-//		{
-//			System.out.printf("%s: LOCATION = (%d;%d)\n", output.name, output.getSite().x, output.getSite().y);
-//		}
+		this.timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.setCriticalityExponent(1.0);
+		this.legalizer = new Hetero_TD_LegalizerOne(architecture, typeStartIndices, typeNames, linearX.length, timingGraph, circuit);
 	}
-
+	
 	public void place()
 	{
 		int solveMode = 0; //0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
+		
+		timingGraph.buildTimingGraph();
+		timingGraph.mapNetsToEdges(circuit);
 		
 		//Initial linear solves, should normally be done 5-7 times		
 		for(int i = 0; i < 7; i++)
@@ -72,44 +63,20 @@ public class HeteroAnalyticalPlacerOne
 			solveLinear(true, solveMode, 0.0);
 		}
 		
-//		System.out.println("\nLinear solution after one iteration:");
-//		for(int i = 0; i < linearX.length; i++)
-//		{
-//			System.out.println("" + i + ": (" + linearX[i] + ";" + linearY[i] + ")");
-//		}
-		
-		//double costLinearBefore = calculateTotalCost(linearX, linearY);
-		//System.out.println("Iteration 0:");
-		//System.out.println("\tLinear cost before first legalization = " + costLinearBefore);
-		
 		//Initial legalization
-		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
-		
-		//double costLegalBefore = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
-		//System.out.println("\tLegal cost: " + costLegalBefore);
+		legalizer.legalize(linearX, linearY, indexMap, solveMode);
 		
 		double pseudoWeightFactor = 0.0;
 		for(int i = 0; i < 30; i++)
 		{
-			//System.out.println("Iteration " + (i + 1) + ":");
 			solveMode = (solveMode + 1) % (typeNames.length + 1);
 			if(solveMode <= 1)
 			{
 				pseudoWeightFactor += ALPHA;
 			}
 			solveLinear(false, solveMode, pseudoWeightFactor);
-			double costLinear = calculateTotalCost(linearX, linearY);
-			//System.out.println("\tLinear cost: " + costLinear);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode);
-			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
-			//System.out.println("\tBest legal cost: " + costLegal);
-			if(costLinear / costLegal > 0.70)
-			{
-				break;
-			}
+			legalizer.legalize(linearX, linearY, indexMap, solveMode);
 		}
-		
-		updateCircuit();
 	}
 	
 	/*
@@ -171,7 +138,7 @@ public class HeteroAnalyticalPlacerOne
 		}
 		
 		//Build the linear systems (x and y are solved separately)
-		for(Net net:circuit.getNets().values())
+		for(Net net: circuit.getNets().values())
 		{
 			ArrayList<Integer> netMovableBlockIndices = new ArrayList<>();
 			ArrayList<Double> fixedXPositions = new ArrayList<>();
@@ -180,6 +147,19 @@ public class HeteroAnalyticalPlacerOne
 			if(nbPins < 2)
 			{
 				continue;
+			}
+			double timingWeightFactor = 0.0;
+			ArrayList<TimingEdge> netEdges = timingGraph.getNetEdges(net);
+			if(netEdges != null)
+			{
+				for(TimingEdge edge: netEdges)
+				{
+					timingWeightFactor += edge.getCost();
+				}
+			}
+			else
+			{
+				timingWeightFactor = 1.0;
 			}
 			double minX = Double.MAX_VALUE;
 			int minXIndex = -1; //Index = -1 means fixed block
@@ -324,13 +304,6 @@ public class HeteroAnalyticalPlacerOne
 				}
 			}
 			
-
-			
-			
-			
-			
-			
-			
 			//Add connection between min and max
 			if(!(minXIndex == -1 && maxXIndex == -1))
 			{
@@ -340,6 +313,10 @@ public class HeteroAnalyticalPlacerOne
 					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
+				if(!firstSolve)
+				{
+					weight *= timingWeightFactor;
+				}
 				if(maxXIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -378,6 +355,10 @@ public class HeteroAnalyticalPlacerOne
 					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
+				if(!firstSolve)
+				{
+					weight *= timingWeightFactor;
+				}
 				if(maxYIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -420,6 +401,10 @@ public class HeteroAnalyticalPlacerOne
 						deltaMaxX = 0.005;
 					}
 					double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
+					if(!firstSolve)
+					{
+						weightMaxX *= timingWeightFactor;
+					}
 					if(maxXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -452,6 +437,10 @@ public class HeteroAnalyticalPlacerOne
 						deltaMinX = 0.005;
 					}
 					double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
+					if(!firstSolve)
+					{
+						weightMinX *= timingWeightFactor;
+					}
 					if(minXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -483,6 +472,10 @@ public class HeteroAnalyticalPlacerOne
 						deltaMaxY = 0.005;
 					}
 					double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
+					if(!firstSolve)
+					{
+						weightMaxY *= timingWeightFactor;
+					}
 					if(maxYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -514,6 +507,10 @@ public class HeteroAnalyticalPlacerOne
 						deltaMinY = 0.005;
 					}
 					double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
+					if(!firstSolve)
+					{
+						weightMinY *= timingWeightFactor;
+					}
 					if(minYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -554,6 +551,10 @@ public class HeteroAnalyticalPlacerOne
 							deltaMaxX = 0.005;
 						}
 						double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
+						if(!firstSolve)
+						{
+							weightMaxX *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(maxXIndex - startIndex, maxXIndex - startIndex, 
 															xMatrix.getElement(maxXIndex - startIndex, maxXIndex - startIndex) + weightMaxX);
@@ -575,6 +576,10 @@ public class HeteroAnalyticalPlacerOne
 							deltaMinX = 0.005;
 						}
 						double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
+						if(!firstSolve)
+						{
+							weightMinX *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(minXIndex - startIndex, minXIndex - startIndex, 
 															xMatrix.getElement(minXIndex - startIndex, minXIndex - startIndex) + weightMinX);
@@ -602,6 +607,10 @@ public class HeteroAnalyticalPlacerOne
 							deltaMaxY = 0.005;
 						}
 						double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
+						if(!firstSolve)
+						{
+							weightMaxY *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(maxYIndex - startIndex, maxYIndex - startIndex, 
 															yMatrix.getElement(maxYIndex - startIndex, maxYIndex - startIndex) + weightMaxY);
@@ -623,6 +632,10 @@ public class HeteroAnalyticalPlacerOne
 							deltaMinY = 0.005;
 						}
 						double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
+						if(!firstSolve)
+						{
+							weightMinY *= timingWeightFactor;
+						}
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(minYIndex - startIndex, minYIndex - startIndex, 
 															yMatrix.getElement(minYIndex - startIndex, minYIndex - startIndex) + weightMinY);
@@ -652,30 +665,6 @@ public class HeteroAnalyticalPlacerOne
 		//Solve y problem
 		CGSolver ySolver = new CGSolver(yMatrix, yVector);
 		double[] ySolution = ySolver.solve(epselon);
-		
-//		if(firstSolve)
-//		{
-//			System.out.println("\nX-matrix:");
-//			for(int i = 0; i < dimensions; i++)
-//			{
-//				System.out.printf("Row %d: ", i);
-//				for(int j = 0; j < dimensions; j++)
-//				{
-//					double value = xMatrix.getElement(i, j);
-//					if(value != 0.0)
-//					{
-//						System.out.printf("(col %d = %.3f) ", j, value);
-//					}
-//				}
-//				System.out.println();
-//			}
-//			
-//			System.out.println("\nxVector:");
-//			for(int i = 0; i < dimensions; i++)
-//			{
-//				System.out.printf("%d: %.3f\n", i, xVector[i]);
-//			}
-//		}
 		
 		//Save results
 		for(int i = 0; i < dimensions; i++)
@@ -735,184 +724,6 @@ public class HeteroAnalyticalPlacerOne
 		return isFixed;
 	}
 	
-	private void updateCircuit()
-	{
-		int[] bestLegalX = legalizer.getBestLegalX();
-		int[] bestLegalY = legalizer.getBestLegalY();
-		
-		//Clear all previous locations
-		int maximalX = architecture.getWidth();
-		int maximalY = architecture.getHeight();
-		for(int i = 1; i <= maximalX; i++)
-		{
-			for(int j = 1; j <= maximalY; j++)
-			{
-				if(architecture.getSite(i, j, 0).block != null)
-				{
-					architecture.getSite(i, j, 0).block.setSite(null);
-				}
-				architecture.getSite(i, j, 0).block = null;
-			}
-		}
-		
-		//Update locations
-		for(Clb clb:circuit.clbs.values())
-		{
-			int index = indexMap.get(clb);
-			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-			site.block = clb;
-			clb.setSite(site);
-		}
-		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
-		{
-			for(HardBlock hb: hbVector)
-			{
-				int index = indexMap.get(hb);
-				Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-				site.block = hb;
-				hb.setSite(site);
-			}
-		}
-	}
-	
-	private double calculateTotalCost(double[] xArray, double[] yArray)
-	{
-		double cost = 0.0;
-		for(Net net:circuit.nets.values())
-		{
-			double minX;
-			double maxX;
-			double minY;
-			double maxY;
-			Block sourceBlock = net.source.owner;
-			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
-			{
-				minX = sourceBlock.getSite().x;
-				maxX = sourceBlock.getSite().x;
-				minY = sourceBlock.getSite().y;
-				maxY = sourceBlock.getSite().y;
-			}
-			else
-			{
-				int index = indexMap.get(sourceBlock);
-				minX = xArray[index];
-				maxX = xArray[index];
-				minY = yArray[index];
-				maxY = yArray[index];
-			}
-			
-			for(Pin pin:net.sinks)
-			{
-				Block sinkOwner = pin.owner;
-				if(sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
-				{
-					Site sinkOwnerSite = sinkOwner.getSite();
-					if(sinkOwnerSite.x < minX)
-					{
-						minX = sinkOwnerSite.x;
-					}
-					if(sinkOwnerSite.x > maxX)
-					{
-						maxX = sinkOwnerSite.x;
-					}
-					if(sinkOwnerSite.y < minY)
-					{
-						minY = sinkOwnerSite.y;
-					}
-					if(sinkOwnerSite.y > maxY)
-					{
-						maxY = sinkOwnerSite.y;
-					}
-				}
-				else
-				{
-					int index = indexMap.get(sinkOwner);
-					if(xArray[index] < minX)
-					{
-						minX = xArray[index];
-					}
-					if(xArray[index] > maxX)
-					{
-						maxX = xArray[index];
-					}
-					if(yArray[index] < minY)
-					{
-						minY = yArray[index];
-					}
-					if(yArray[index] > maxY)
-					{
-						maxY = yArray[index];
-					}
-				}
-			}
-			Set<Block> blocks = new HashSet<>();
-			blocks.addAll(net.blocks());
-			double weight = getWeight(blocks.size());
-			cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
-			
-		}
-		return cost;
-	}
-	
-	private double getWeight(int size)
-	{
-		double weight = 0.0;
-		switch (size) {
-			case 1:  weight=1; break;
-			case 2:  weight=1; break;
-			case 3:  weight=1; break;
-			case 4:  weight=1.0828; break;
-			case 5:  weight=1.1536; break;
-			case 6:  weight=1.2206; break;
-			case 7:  weight=1.2823; break;
-			case 8:  weight=1.3385; break;
-			case 9:  weight=1.3991; break;
-			case 10: weight=1.4493; break;
-			case 11:
-			case 12:
-			case 13:
-			case 14:
-			case 15: weight=(size-10)*(1.6899-1.4493)/5+1.4493;break;				
-			case 16:
-			case 17:
-			case 18:
-			case 19:
-			case 20: weight=(size-15)*(1.8924-1.6899)/5+1.6899;break;
-			case 21:
-			case 22:
-			case 23:
-			case 24:
-			case 25: weight=(size-20)*(2.0743-1.8924)/5+1.8924;break;		
-			case 26:
-			case 27:
-			case 28:
-			case 29:
-			case 30: weight=(size-25)*(2.2334-2.0743)/5+2.0743;break;		
-			case 31:
-			case 32:
-			case 33:
-			case 34:
-			case 35: weight=(size-30)*(2.3895-2.2334)/5+2.2334;break;		
-			case 36:
-			case 37:
-			case 38:
-			case 39:
-			case 40: weight=(size-35)*(2.5356-2.3895)/5+2.3895;break;		
-			case 41:
-			case 42:
-			case 43:
-			case 44:
-			case 45: weight=(size-40)*(2.6625-2.5356)/5+2.5356;break;		
-			case 46:
-			case 47:
-			case 48:
-			case 49:
-			case 50: weight=(size-45)*(2.7933-2.6625)/5+2.6625;break;
-			default: weight=(size-50)*0.02616+2.7933;break;
-		}
-		return weight;
-	}
-	
 	private void initializeDataStructures()
 	{
 		int nbClbs = circuit.clbs.size();
@@ -934,34 +745,14 @@ public class HeteroAnalyticalPlacerOne
 		typeStartIndices[0] = 0;
 		typeNames[0] = "CLB";
 		int index = 0;
-//		System.out.println("\nCLBs:");
 		for(Clb clb: circuit.clbs.values())
 		{
 			indexMap.put(clb, index);
 			linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
 			linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
-//			if(clb.getBle().getLut() == null)
-//			{
-//				System.out.printf("%s (%d): LUT = none, FLIPFLOP = %s, LOCATION = (%.3f;%.3f)\n", clb.name, 
-//											index, clb.getBle().getFlipflop().name, linearX[index], linearY[index]);
-//			}
-//			else
-//			{
-//				if(clb.getBle().getFlipflop() == null)
-//				{
-//					System.out.printf("%s (%d): LUT = %s, FLIPFLOP = none, LOCATION = (%.3f;%.3f)\n", clb.name, 
-//							index, clb.getBle().getLut().name, linearX[index], linearY[index]);
-//				}
-//				else
-//				{
-//					System.out.printf("%s (%d): LUT = %s, FLIPFLOP = %s, LOCATION = (%.3f;%.3f)\n", clb.name, 
-//							index, clb.getBle().getLut().name, clb.getBle().getFlipflop().name, linearX[index], linearY[index]);
-//				}
-//			}
 			index++;
 		}
 		int hardBlockTypeIndex = 0;
-//		System.out.println("\nHardblocks:");
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
 		{
 			typeStartIndices[hardBlockTypeIndex + 1] = index;
@@ -971,11 +762,10 @@ public class HeteroAnalyticalPlacerOne
 				indexMap.put(hb, index);
 				linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
 				linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
-				//System.out.printf("%s (%d): LOCATION = (%.3f;%.3f)\n", hb.name, index, linearX[index], linearY[index]);
 				index++;
 			}
 			hardBlockTypeIndex++;
 		}
 	}
-
+	
 }

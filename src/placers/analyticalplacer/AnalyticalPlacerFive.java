@@ -169,6 +169,10 @@ public class AnalyticalPlacerFive
 			ArrayList<Double> fixedXPositions = new ArrayList<>();
 			ArrayList<Double> fixedYPositions = new ArrayList<>();
 			int nbPins = 1 + net.sinks.size();
+			if(nbPins < 2)
+			{
+				continue;
+			}
 			double minX = Double.MAX_VALUE;
 			int minXIndex = -1; //Index = -1 means fixed block
 			double maxX = -Double.MAX_VALUE;
@@ -177,11 +181,6 @@ public class AnalyticalPlacerFive
 			int minYIndex = -1;
 			double maxY = -Double.MAX_VALUE;
 			int maxYIndex = -1;
-			
-			if(nbPins < 2)
-			{
-				continue;
-			}
 			
 			if(net.source.owner.type == BlockType.CLB)
 			{

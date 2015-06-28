@@ -120,7 +120,7 @@ public class Example
 
 		//runWlVsTdSaBenchmarks();
 		//runTdSaBenchmarks();
-		runWldSaVsAnalyticalBenchmarks();
+		//runWldSaVsAnalyticalBenchmarks();
 	}
 	
 	//Homegeneous

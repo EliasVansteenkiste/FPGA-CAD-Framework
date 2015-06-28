@@ -6,50 +6,58 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 
+import timinganalysis.TimingGraph;
 import circuit.Block;
 import circuit.BlockType;
+import circuit.Clb;
+import circuit.HardBlock;
 import circuit.Net;
+import circuit.PackedCircuit;
 import circuit.Pin;
-
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 import architecture.SiteType;
 
-/*
- * Uses repetitive partitioning
- * Takes blocks in cluster when spreading
- * Legalizes completely: no overlap in anchor points
- * When reaching the FPGA boundaries: spread twice as fast in opposite direction
- */
-public class HeteroLegalizerOne
+public class Hetero_TD_LegalizerOne
 {
-
+	
 	private final double UTILIZATION_FACTOR = 0.9;
+	private static final double TRADE_OFF_FACTOR = 0.5;
 	
 	private int[] bestLegalX;
 	private int[] bestLegalY;
-	private double currentCost;
 	private HeterogeneousArchitecture architecture;
 	private int[] typeStartIndices;
-	private String[] typeNames;	
+	private String[] typeNames;
+	private TimingGraph timingGraph;
+	private PackedCircuit circuit;
+	private boolean firstDone;
+	private double previousMaxDelay;
+	private double previousBBCost;
 	
-	public HeteroLegalizerOne(HeterogeneousArchitecture architecture, int[] typeStartIndices, String[] typeNames, int nbMovableBlocks)
+	public Hetero_TD_LegalizerOne(HeterogeneousArchitecture architecture, int[] typeStartIndices, String[] typeNames, 
+														int nbMovableBlocks, TimingGraph timingGraph, PackedCircuit circuit)
 	{
 		this.bestLegalX = new int[nbMovableBlocks];
 		this.bestLegalY = new int[nbMovableBlocks];
-		this.currentCost = Double.MAX_VALUE;
 		this.architecture = architecture;
 		this.typeStartIndices = typeStartIndices;
 		this.typeNames = typeNames;
+		this.timingGraph = timingGraph;
+		this.circuit = circuit;
+		this.firstDone = false;
+		this.previousMaxDelay = Double.MAX_VALUE;
+		this.previousBBCost = Double.MAX_VALUE;
 	}
 	
 	/*
 	 * Legalize the linear solution and store it if it is the best one found so far
 	 * solveMode: 0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
 	 */
-	public void legalize(double[] linearX, double[] linearY, Collection<Net> nets, Map<Block,Integer> indexMap, int solveMode)
+	public void legalize(double[] linearX, double[] linearY, Map<Block,Integer> indexMap, int solveMode)
 	{
 		int[] semiLegalX = new int[bestLegalX.length];
 		int[] semiLegalY = new int[bestLegalY.length];
@@ -102,7 +110,7 @@ public class HeteroLegalizerOne
 		int[] legalY = new int[semiLegalY.length];
 		finalLegalization(semiLegalX, semiLegalY, legalX, legalY);
 		
-		updateBestLegal(legalX, legalY, nets, indexMap);
+		updateBestLegal(legalX, legalY, indexMap);
 	}
 	
 	/*
@@ -1131,8 +1139,107 @@ public class HeteroLegalizerOne
 		}
 	}
 	
-	private boolean isValidPosition(int currentX, int currentY, int minimalX, int maximalX, int minimalY, int maximalY,
-																					boolean[][] occupied, String typeName)
+	private void updateBestLegal(int[] legalX, int[] legalY, Map<Block, Integer> indexMap)
+	{
+		double newBBCost = calculateTotalBBCost(legalX, legalY, indexMap);
+		updateCircuit(legalX, legalY, indexMap);
+		timingGraph.updateDelays();
+		double newMaxDelay = timingGraph.calculateMaximalDelay();
+		if(firstDone)
+		{
+			double deltaCost = TRADE_OFF_FACTOR * ((newMaxDelay - previousMaxDelay) / previousMaxDelay)
+								+ (1 - TRADE_OFF_FACTOR) * ((newBBCost - previousBBCost) / previousBBCost);
+			if (deltaCost < 0)
+			{
+				//System.out.println("Improved: bb cost = " + newBBCost + ", critical path = " + timingGraph.calculateMaximalDelay());
+				for (int i = 0; i < legalX.length; i++)
+				{
+					bestLegalX[i] = legalX[i];
+					bestLegalY[i] = legalY[i];
+				}
+				previousBBCost = newBBCost;
+				previousMaxDelay = newMaxDelay;
+			}
+			else //revert timingGraph
+			{
+				updateCircuit(bestLegalX, bestLegalY, indexMap);
+				timingGraph.updateDelays();
+			}
+		}
+		else
+		{
+			for (int i = 0; i < legalX.length; i++)
+			{
+				bestLegalX[i] = legalX[i];
+				bestLegalY[i] = legalY[i];
+			}
+			previousBBCost = calculateTotalBBCost(legalX, legalY, indexMap);
+			updateCircuit(bestLegalX, bestLegalY, indexMap);
+			timingGraph.updateDelays();
+			previousMaxDelay = timingGraph.calculateMaximalDelay();
+			firstDone = true;
+		}
+	}
+	
+	public int[] getAnchorPointsX()
+	{
+		return bestLegalX;
+	}
+	
+	public int[] getAnchorPointsY()
+	{
+		return bestLegalY;
+	}
+	
+	public int[] getBestLegalX()
+	{
+		return bestLegalX;
+	}
+	
+	public int[] getBestLegalY()
+	{
+		return bestLegalY;
+	}
+	
+	private void updateCircuit(int[] xPositions, int[] yPositions, Map<Block,Integer> indexMap)
+	{
+		//Clear all previous locations
+		int maximalX = architecture.getWidth();
+		int maximalY = architecture.getHeight();
+		for(int i = 1; i <= maximalX; i++)
+		{
+			for(int j = 1; j <= maximalY; j++)
+			{
+				if(architecture.getSite(i, j, 0).block != null)
+				{
+					architecture.getSite(i, j, 0).block.setSite(null);
+				}
+				architecture.getSite(i, j, 0).block = null;
+			}
+		}
+		
+		//Update locations
+		for(Clb clb:circuit.clbs.values())
+		{
+			int index = indexMap.get(clb);
+			Site site = architecture.getSite(xPositions[index], yPositions[index], 0);
+			site.block = clb;
+			clb.setSite(site);
+		}
+		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
+		{
+			for(HardBlock hb: hbVector)
+			{
+				int index = indexMap.get(hb);
+				Site site = architecture.getSite(xPositions[index], yPositions[index], 0);
+				site.block = hb;
+				hb.setSite(site);
+			}
+		}
+	}
+	
+	private boolean isValidPosition(int currentX, int currentY, int minimalX, int maximalX, 
+												int minimalY, int maximalY, boolean[][] occupied, String typeName)
 	{
 		boolean toReturn;
 		if(currentX >= minimalX && currentX <= maximalX && currentY >= minimalY && currentY <= maximalY)
@@ -1169,50 +1276,10 @@ public class HeteroLegalizerOne
 		return toReturn;
 	}
 	
-	private void updateBestLegal(int[] legalX, int[] legalY, Collection<Net> nets, Map<Block, Integer> indexMap)
-	{
-		double newCost = calculateTotalCost(legalX, legalY, nets, indexMap);
-//		System.out.println("\tNew legal cost = " + newCost);
-		if (newCost < currentCost)
-		{
-			for (int i = 0; i < legalX.length; i++)
-			{
-				bestLegalX[i] = legalX[i];
-				bestLegalY[i] = legalY[i];
-			}
-			currentCost = newCost;
-		}
-//		System.out.println("\tBest legal cost = " + currentCost);
-	}
-	
-	public double calculateBestLegalCost(Collection<Net> nets, Map<Block, Integer> indexMap)
-	{
-		return calculateTotalCost(bestLegalX, bestLegalY, nets, indexMap);
-	}
-	
-	public int[] getBestLegalX()
-	{
-		return bestLegalX;
-	}
-	
-	public int[] getAnchorPointsX()
-	{
-		return bestLegalX;
-	}
-	
-	public int[] getBestLegalY()
-	{
-		return bestLegalY;
-	}
-	
-	public int[] getAnchorPointsY()
-	{
-		return bestLegalY;
-	}
-	
-	private double calculateTotalCost(int[] xArray, int[] yArray, Collection<Net> nets, Map<Block, Integer> indexMap)
+	private double calculateTotalBBCost(int[] xArray, int[] yArray, Map<Block, Integer> indexMap)
 	{
 		double cost = 0.0;
+		Collection<Net> nets = circuit.getNets().values();
 		for (Net net : nets)
 		{
 			int minX;
@@ -1387,8 +1454,8 @@ public class HeteroLegalizerOne
 		return weight;
 	}
 	
-	private double getUtilization(int nbBlocks, double areaXDownBoundHalf, double areaXUpBoundHalf, double areaYDownBoundHalf, 
-															double areaYUpBoundHalf, String typeName)
+	private double getUtilization(int nbBlocks, double areaXDownBoundHalf, double areaXUpBoundHalf, 
+										double areaYDownBoundHalf, double areaYUpBoundHalf, String typeName)
 	{
 		int curNumberOfLegalSites = 0;
 		double yTop = areaYUpBoundHalf;
