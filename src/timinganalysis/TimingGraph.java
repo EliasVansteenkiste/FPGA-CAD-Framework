@@ -687,7 +687,7 @@ public class TimingGraph
 //						}
 						for(TimingNode node: nodeList)
 						{
-							if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
+							if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || node.getType() == TimingNodeType.START_NODE)
 							{
 								sourceNode = node;
 								break;
@@ -851,6 +851,10 @@ public class TimingGraph
 		{
 			TimingNode sourceNode = clbPinMap.get(sourceTopLevelPin);
 			TimingNode sinkNode = clbPinMap.get(sinkTopLevelPin);
+			if(sourceNode == null)
+			{
+				System.out.println(sourceTopLevelPin.name + " is not in the clbPinMap");
+			}
 			for(TimingEdge edge: sourceNode.getOutputs())
 			{
 				if(edge.getOutput() == sinkNode)

@@ -146,6 +146,7 @@ public class TD_AnalyticalPlacerNewNetOne
 				sourceX = sourceOwner.getSite().x;
 				sourceY = sourceOwner.getSite().y;
 			}
+			
 			for(Pin sinkPin: net.sinks)
 			{
 				Block sinkOwner = sinkPin.owner;

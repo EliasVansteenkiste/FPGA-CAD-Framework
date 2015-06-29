@@ -17,7 +17,6 @@ import mathtools.CGSolver;
 import mathtools.Crs;
 
 import architecture.FourLutSanitized;
-import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 
@@ -80,43 +79,45 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
-//			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
-//		
-//		System.out.println("Heterogeneous");
+		BlifReader blifReader = new BlifReader();
+		PrePackedCircuit prePackedCircuit;
+		try
+		{
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
+			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
+			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		BlePacker blePacker = new BlePacker(prePackedCircuit);
+		BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+		PackedCircuit packedCircuit = clbPacker.pack();
+		
+		System.out.println("Heterogeneous");
 		
 		//visualSA(prePackedCircuit, packedCircuit);
 		//visualTDSA(prePackedCircuit, packedCircuit);
 		//visualAnalytical(packedCircuit, prePackedCircuit);
+		//visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
+		visualTDAnalyticalNewNet(packedCircuit, prePackedCircuit);
 
 		//runWlVsTdSaBenchmarks();
 		//runTdSaBenchmarks();
@@ -952,18 +953,13 @@ public class Example
 		frame.setVisible(true);
 	}
 	
-	private static void visualTDAnalytical(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	private static void visualTDAnalyticalOldNet(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
-		int archSize = FourLutSanitized.calculateSquareArchDimensions(c);
-		int height = archSize;
-		int width = archSize;
-		int trackwidth = 4;
-		
 		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
 				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
 		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		TD_AnalyticalPlacerNewNetOne tDAnalyticalPlacer = new TD_AnalyticalPlacerNewNetOne(a, c, prePackedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c);
+		Hetero_TD_AnalyticalPlacerOldNetOne tDAnalyticalPlacer = new Hetero_TD_AnalyticalPlacerOldNetOne(a, c, prePackedCircuit);
 		
 		long analyticalStartTime;
 		long analyticalEndTime;
@@ -991,7 +987,7 @@ public class Example
 		SAEndTime = System.nanoTime();
 		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
 		
-		//c.placementCLBsConsistencyCheck(a);
+		c.placementConsistencyCheck(a);
 		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(c);
 		double wlCostAfterRefinement = effccAfter.calculateTotalCost();
 		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
@@ -1006,7 +1002,65 @@ public class Example
 		System.out.println("\tMax delay after low temperature anneal: = " + maxDelayAfterRefinement);
 		System.out.printf("Total time necessary to place: %.3f s\n", AnalyticalTime + SATime);
 		
-		ArchitecturePanel panel = new ArchitecturePanel(890, a, false);
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(945,970);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
+	private static void visualTDAnalyticalNewNet(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
+				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
+		
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c);
+		Hetero_TD_AnalyticalPlacerNewNetOne tDAnalyticalPlacer = new Hetero_TD_AnalyticalPlacerNewNetOne(a, c, prePackedCircuit);
+		
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long SAStartTime;
+		long SAEndTime;
+		
+		//Analytical phase
+		analyticalStartTime = System.nanoTime();
+		tDAnalyticalPlacer.place();
+		analyticalEndTime = System.nanoTime();
+		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
+		
+		//c.placementCLBsConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(c);
+		double wlCostBeforeRefinement = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
+		
+		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, c, prePackedCircuit);
+		
+		//SA phase
+		SAStartTime = System.nanoTime();
+		tdSaPlacer.lowTempAnneal(4.0);
+		SAEndTime = System.nanoTime();
+		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
+		
+		c.placementConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(c);
+		double wlCostAfterRefinement = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfterRefinement = tgAfter.calculateMaximalDelay();
+		
+		System.out.printf("\nAnalytical placement time: %.3f s\n", AnalyticalTime);
+		System.out.println("\tWL cost before low temperature anneal: " + wlCostBeforeRefinement);
+		System.out.println("\tMax delay before low temperature anneal: = " + maxDelayBeforeRefinement);
+		System.out.printf("Simulated annealing refinement time: %.3f s\n", SATime);
+		System.out.println("\tWL cost after low temperature anneal: " + wlCostAfterRefinement);
+		System.out.println("\tMax delay after low temperature anneal: = " + maxDelayAfterRefinement);
+		System.out.printf("Total time necessary to place: %.3f s\n", AnalyticalTime + SATime);
+		
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
 		JFrame frame = new JFrame("Architecture");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(945,970);
@@ -1174,13 +1228,8 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
-		int height = dimension;
-		int width = dimension;
-		int trackwidth = 4;
-		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		TD_AnalyticalPlacerNewNetOne placer = new TD_AnalyticalPlacerNewNetOne(a, packedCircuit, prePackedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		Hetero_TD_AnalyticalPlacerNewNetOne placer = new Hetero_TD_AnalyticalPlacerNewNetOne(a, packedCircuit, prePackedCircuit);
 		
 		long analyticalStartTime;
 		long analyticalEndTime;
@@ -1234,13 +1283,8 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 	
-		int dimension = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
-		int height = dimension;
-		int width = dimension;
-		int trackwidth = 4;
-		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		TD_AnalyticalPlacerOldNetOne placer = new TD_AnalyticalPlacerOldNetOne(a, packedCircuit, prePackedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		Hetero_TD_AnalyticalPlacerOldNetOne placer = new Hetero_TD_AnalyticalPlacerOldNetOne(a, packedCircuit, prePackedCircuit);
 		
 		long analyticalStartTime;
 		long analyticalEndTime;
