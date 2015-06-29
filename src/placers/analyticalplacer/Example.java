@@ -79,49 +79,50 @@ public class Example
 //			System.out.println("Something went wrong");
 //		}
 		
-		BlifReader blifReader = new BlifReader();
-		PrePackedCircuit prePackedCircuit;
-		try
-		{
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
-			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
-			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
-			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-		}
-		catch(IOException ioe)
-		{
-			System.err.println("Couldn't read blif file!");
-			return;
-		}
-		
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
-		
-		System.out.println("Heterogeneous");
+//		BlifReader blifReader = new BlifReader();
+//		PrePackedCircuit prePackedCircuit;
+//		try
+//		{
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
+//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
+//			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+//		}
+//		catch(IOException ioe)
+//		{
+//			System.err.println("Couldn't read blif file!");
+//			return;
+//		}
+//		
+//		BlePacker blePacker = new BlePacker(prePackedCircuit);
+//		BlePackedCircuit blePackedCircuit = blePacker.pack();
+//		
+//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+//		PackedCircuit packedCircuit = clbPacker.pack();
+//		
+//		System.out.println("Heterogeneous");
 		
 		//visualSA(prePackedCircuit, packedCircuit);
 		//visualTDSA(prePackedCircuit, packedCircuit);
 		//visualAnalytical(packedCircuit, prePackedCircuit);
 		//visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
-		visualTDAnalyticalNewNet(packedCircuit, prePackedCircuit);
+		//visualTDAnalyticalNewNet(packedCircuit, prePackedCircuit);
 
 		//runWlVsTdSaBenchmarks();
 		//runTdSaBenchmarks();
 		//runWldSaVsAnalyticalBenchmarks();
+		runAllAnalyticalBenchmarks();
 	}
 	
 	//Homegeneous
@@ -452,6 +453,117 @@ public class Example
 							
 							tdSaTimeString, tdSAWLString, tdSAMaxDelayString, 
 							wldSATimeString, wldSAWLString, wldSAMaxDelayString});
+				}
+			}
+			csvWriter.writeFile(csvFileName);
+		}
+	}
+	
+	private static void runAllAnalyticalBenchmarks()
+	{
+		String toDoFileName = "HeteroBenchmarksToDo.txt";
+		String csvFileName = "HeteroAnalyticalAllBenchmarksNoRefinement.csv";
+		String[] fileNamesToDo;
+		try
+		{
+			File toDoFile = new File(toDoFileName);
+			if(!toDoFile.exists())
+			{
+				System.out.println("No TODO file found\nAborting...");
+			}
+			FileReader fileReader = new FileReader(toDoFile.getAbsoluteFile());
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			ArrayList<String> rowsList = new ArrayList<>();
+			String curLine = bufferedReader.readLine();
+			int nbRows = 0;
+			while(curLine != null)
+			{
+				rowsList.add(curLine);
+				nbRows++;
+				curLine = bufferedReader.readLine();
+			}
+			bufferedReader.close();
+			fileNamesToDo = new String[nbRows];
+			rowsList.toArray(fileNamesToDo);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read TODO file: " + toDoFileName);
+			return;
+		}
+		
+		CsvWriter csvWriter;
+		CsvReader csvReader = new CsvReader();
+		boolean success = csvReader.readFile(csvFileName);
+		String[] alreadyDoneFiles;
+		if(success)
+		{
+			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+		}
+		else
+		{
+			csvWriter = new CsvWriter(10);
+			csvWriter.addRow(new String[] {"Benchmark name",
+					
+					"Analytical time WLD_Analytical", "WL WLD_Analytical before anneal", "Max delay WLD_Analytical before anneal",
+					
+					"Analytical time TD_Analytical_New", "WL TD_Analytical_New before anneal", "Max delay TD_Analytical_New before anneal",
+					
+					"Analytical time TD_Analytical_Old", "WL TD_Analytical_Old before anneal", "Max delay TD_Analytical_Old before anneal"
+					});
+			alreadyDoneFiles = null;
+		}
+		for(int i = 0; i < fileNamesToDo.length; i++)
+		{
+			if(fileNamesToDo[i].substring(fileNamesToDo[i].length() - 4).contains("blif"))
+			{
+				System.out.println("Processing benchmark: " + fileNamesToDo[i]);
+				String totalFilename = fileNamesToDo[i];
+				if(alreadyDone(totalFilename, alreadyDoneFiles))
+				{
+					System.out.println("Already done this benchmark!");
+				}
+				else
+				{
+					double[] wldAnalyticalResults = new double[6];
+					processWLDAnalyticalBenchmark(wldAnalyticalResults, totalFilename);
+					double wldAnalyticalAnalyticalTime = wldAnalyticalResults[0];
+					double wldAnalyticalBeforeWL = wldAnalyticalResults[2];
+					double wldAnalyticalBeforeMaxDelay = wldAnalyticalResults[4];
+					
+					double[] tdAnalyticalNewResults = new double[6];
+					processTDAnalyticalBenchmark(tdAnalyticalNewResults, totalFilename);
+					double tdAnalyticalNewAnalyticalTime = tdAnalyticalNewResults[0];
+					double tdAnalyticalNewBeforeWL = tdAnalyticalNewResults[2];
+					double tdAnalyticalNewBeforeMaxDelay = tdAnalyticalNewResults[4];
+					
+					double[] tdAnalyticalOldResults = new double[6];
+					processTDAnalyticalOldNetModelBenchmark(tdAnalyticalOldResults, totalFilename);
+					double tdAnalyticalOldAnalyticalTime = tdAnalyticalOldResults[0];
+					double tdAnalyticalOldBeforeWL = tdAnalyticalOldResults[2];
+					double tdAnalyticalOldBeforeMaxDelay = tdAnalyticalOldResults[4];
+					
+					String tdAnalyticalNewAnalyticalTimeString = String.format("%.3f", tdAnalyticalNewAnalyticalTime);
+					String tdAnalyticalNewBeforeWLString = String.format("%.3f", tdAnalyticalNewBeforeWL);
+					String tdAnalyticalNewBeforeMaxDelayString = String.format("%.3f", tdAnalyticalNewBeforeMaxDelay);
+					
+					String tdAnalyticalOldAnalyticalTimeString = String.format("%.3f", tdAnalyticalOldAnalyticalTime);
+					String tdAnalyticalOldBeforeWLString = String.format("%.3f", tdAnalyticalOldBeforeWL);
+					String tdAnalyticalOldBeforeMaxDelayString = String.format("%.3f", tdAnalyticalOldBeforeMaxDelay);
+					
+					String wldAnalyticalAnalyticalTimeString = String.format("%.3f", wldAnalyticalAnalyticalTime);
+					String wldAnalyticalBeforeWLString = String.format("%.3f", wldAnalyticalBeforeWL);
+					String wldAnalyticalBeforeMaxDelayString = String.format("%.3f", wldAnalyticalBeforeMaxDelay);
+					
+					csvWriter.addRow(new String[] {totalFilename,
+							
+							tdAnalyticalNewAnalyticalTimeString, tdAnalyticalNewBeforeWLString, tdAnalyticalNewBeforeMaxDelayString, 
+							
+							tdAnalyticalOldAnalyticalTimeString, tdAnalyticalOldBeforeWLString, tdAnalyticalOldBeforeMaxDelayString,
+							
+							wldAnalyticalAnalyticalTimeString, wldAnalyticalBeforeWLString, wldAnalyticalBeforeMaxDelayString
+					});
 				}
 			}
 			csvWriter.writeFile(csvFileName);
@@ -1191,10 +1303,10 @@ public class Example
 		double maxDelayBefore = tgBefore.calculateMaximalDelay();
 		results[4] = maxDelayBefore;
 		
-		WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, packedCircuit);
+		//WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, packedCircuit);
 		
 		annealStartTime = System.nanoTime();
-		saPlacer.lowTempAnneal(4.0);
+		//saPlacer.lowTempAnneal(4.0);
 		endTime = System.nanoTime();
 		
 		results[0] = (double)(analyticalEndTime - startTime)/1000000000;
@@ -1246,10 +1358,10 @@ public class Example
 		tgBefore.buildTimingGraph();
 		results[4] = tgBefore.calculateMaximalDelay();
 		
-		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
+		//TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
 		saStartTime = System.nanoTime();
-		tdSaPlacer.lowTempAnneal(4.0);
+		//tdSaPlacer.lowTempAnneal(4.0);
 		saEndTime = System.nanoTime();
 		
 		results[0] = (double)(analyticalEndTime - analyticalStartTime)/1000000000;
@@ -1301,10 +1413,10 @@ public class Example
 		tgBefore.buildTimingGraph();
 		results[4] = tgBefore.calculateMaximalDelay();
 		
-		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
+		//TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
 		saStartTime = System.nanoTime();
-		tdSaPlacer.lowTempAnneal(4.0);
+		//tdSaPlacer.lowTempAnneal(4.0);
 		saEndTime = System.nanoTime();
 		
 		results[0] = (double)(analyticalEndTime - analyticalStartTime)/1000000000;
