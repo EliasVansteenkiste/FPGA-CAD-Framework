@@ -50,80 +50,107 @@ import circuit.Pin;
 import circuit.PrePackedCircuit;
 import circuit.BlePackedCircuit;
 import circuit.parser.blif.BlifReader;
+import circuit.parser.net.NetReader;
 
 public class Example 
 {
 	
-	//Heterogeneous
+	//New netlist reader
 	public static void main(String[] args)
 	{
 		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
-			    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
-		if(isDebug)
+	    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+	    if(isDebug)
+	    {
+	    	System.out.println("Debugging");
+	    }
+	    else
+	    {
+	    	System.out.println("Not debugging");
+	    }
+	    
+	    NetReader netReader = new NetReader();
+	    try
 		{
-			System.out.println("Debugging");
+			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
 		}
-		else
-		{
-			System.out.println("Not debugging");
-		}
-		
-		//Wait for enter to start (necessary for easy profiling)
-//		System.out.println("Hit any key to continue...");
-//		try
-//		{
-//			System.in.read();
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.out.println("Something went wrong");
-//		}
-		
-//		BlifReader blifReader = new BlifReader();
-//		PrePackedCircuit prePackedCircuit;
-//		try
-//		{
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
-//			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
-//			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
-//			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
-//		}
-//		catch(IOException ioe)
-//		{
-//			System.err.println("Couldn't read blif file!");
-//			return;
-//		}
-//		
-//		BlePacker blePacker = new BlePacker(prePackedCircuit);
-//		BlePackedCircuit blePackedCircuit = blePacker.pack();
-//		
-//		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-//		PackedCircuit packedCircuit = clbPacker.pack();
-//		
-//		System.out.println("Heterogeneous");
-		
-		//visualSA(prePackedCircuit, packedCircuit);
-		//visualTDSA(prePackedCircuit, packedCircuit);
-		//visualAnalytical(packedCircuit, prePackedCircuit);
-		//visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
-		//visualTDAnalyticalNewNet(packedCircuit, prePackedCircuit);
-
-		//runWlVsTdSaBenchmarks();
-		//runTdSaBenchmarks();
-		//runWldSaVsAnalyticalBenchmarks();
-		runAllAnalyticalBenchmarks();
+	    catch(IOException ioe)
+	    {
+	    	System.err.println("Couldn't read blif file!");
+	    	return;
+	    }
 	}
+	
+	//Heterogeneous
+//	public static void main(String[] args)
+//	{
+//		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
+//			    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+//		if(isDebug)
+//		{
+//			System.out.println("Debugging");
+//		}
+//		else
+//		{
+//			System.out.println("Not debugging");
+//		}
+//		
+//		//Wait for enter to start (necessary for easy profiling)
+////		System.out.println("Hit any key to continue...");
+////		try
+////		{
+////			System.in.read();
+////		}
+////		catch(IOException ioe)
+////		{
+////			System.out.println("Something went wrong");
+////		}
+//		
+////		BlifReader blifReader = new BlifReader();
+////		PrePackedCircuit prePackedCircuit;
+////		try
+////		{
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/ch_intrinsics.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq1.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/LU8PEEng.blif", 6);
+////			prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/or1200.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/diffeq2.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision3.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkSMAdapter4B.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/sha.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/raygentop.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkPktMerge.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/boundtop.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/blob_merge.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/stereovision0.blif", 6);
+////			//prePackedCircuit =  blifReader.readBlif("benchmarks/vtr_benchmarks_blif/mkDelayWorker32B.blif", 6);
+////			//prePackedCircuit = blifReader.readBlif("benchmarks/Blif/6/clma.blif", 6);
+////		}
+////		catch(IOException ioe)
+////		{
+////			System.err.println("Couldn't read blif file!");
+////			return;
+////		}
+////		
+////		BlePacker blePacker = new BlePacker(prePackedCircuit);
+////		BlePackedCircuit blePackedCircuit = blePacker.pack();
+////		
+////		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+////		PackedCircuit packedCircuit = clbPacker.pack();
+////		
+////		System.out.println("Heterogeneous");
+//		
+//		//visualSA(prePackedCircuit, packedCircuit);
+//		//visualTDSA(prePackedCircuit, packedCircuit);
+//		//visualAnalytical(packedCircuit, prePackedCircuit);
+//		//visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
+//		//visualTDAnalyticalNewNet(packedCircuit, prePackedCircuit);
+//
+//		//runWlVsTdSaBenchmarks();
+//		//runTdSaBenchmarks();
+//		//runWldSaVsAnalyticalBenchmarks();
+//		runAllAnalyticalBenchmarks();
+//	}
 	
 	//Homegeneous
 //	public static void main(String[] args)
