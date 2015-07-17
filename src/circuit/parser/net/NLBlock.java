@@ -6,13 +6,13 @@ public class NLBlock
 {
 
 	private String name;
-	private String instance;
+	private String instanceType;
 	private ArrayList<InnerNLBlock> innerBlocks;
 	
-	public NLBlock(String name, String instance)
+	public NLBlock(String name, String instanceType)
 	{
 		this.name = name;
-		this.instance = instance;
+		this.instanceType = instanceType;
 		this.innerBlocks = new ArrayList<>();
 	}
 	
@@ -23,7 +23,7 @@ public class NLBlock
 	
 	public String getInstance()
 	{
-		return instance;
+		return instanceType;
 	}
 	
 	public void addInnerBlock(String name, String instance)

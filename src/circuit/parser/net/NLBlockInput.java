@@ -3,9 +3,9 @@ package circuit.parser.net;
 public class NLBlockInput extends NLBlockIO
 {
 
-	private NLBlockOutput connectedTo;
+	private NLBlockInput connectedTo;
 	
-	public NLBlockInput(InnerNLBlock owner, NLBlockOutput connectedTo)
+	public NLBlockInput(InnerNLBlock owner, NLBlockInput connectedTo)
 	{
 		super(owner);
 		this.connectedTo = connectedTo;
