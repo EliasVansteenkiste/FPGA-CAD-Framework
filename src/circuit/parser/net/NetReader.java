@@ -146,14 +146,17 @@ public class NetReader
 		{
 			String line = reader.readLine().trim();
 			String[] lineParts = line.split(" +");
+			boolean processedLine = false;
 			
 			if(lineParts[0].equals("</block>"))
 			{
 				foundTheEnd = true;
+				processedLine = true;
 			}
 			
 			if(lineParts[0].equals("<inputs>"))
 			{
+				processedLine = true;
 				boolean foundInputsEnd = false;
 				boolean portOpen = false;
 				while(!foundInputsEnd)
@@ -207,6 +210,12 @@ public class NetReader
 									System.out.println("\tI found an input: " + internalLineParts[internalLineParts.length - 1]);
 								}
 							}
+							else
+							{
+								System.out.println("A line was not processed: " + internalLine);
+								processedLine = false;
+								break;
+							}
 						}
 					}
 				}
@@ -214,6 +223,7 @@ public class NetReader
 			
 			if(lineParts[0].equals("<outputs>"))
 			{
+				processedLine = true;
 				boolean foundOutputsEnd = false;
 				boolean portOpen = false;
 				while(!foundOutputsEnd)
@@ -267,9 +277,92 @@ public class NetReader
 									System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
 								}
 							}
+							else
+							{
+								System.out.println("A line was not processed: " + internalLine);
+								processedLine = false;
+								break;
+							}
 						}
 					}
 				}
+			}
+			
+			if(lineParts[0].equals("<clocks>"))
+			{
+				processedLine = true;
+				boolean foundClocksEnd = false;
+				while(!foundClocksEnd)
+				{
+					String internalLine = reader.readLine().trim();
+					String[] internalLineParts = internalLine.split(" +");
+					if(internalLineParts[0].equals("</clocks>"))
+					{
+						foundClocksEnd = true;
+					}
+					else
+					{
+						if(internalLineParts[0].equals("<port") && internalLineParts[internalLineParts.length - 1].equals("</port>"))
+						{
+							String firstClock = internalLineParts[1].substring(internalLineParts[1].indexOf('>') + 1);
+							System.out.println("\tI found a clock: " + firstClock);
+							for(int i = 2; i < internalLineParts.length - 1; i++)
+							{
+								System.out.println("\tI found a clock: " + internalLineParts[i]);
+							}
+						}
+						else
+						{
+							System.out.println("A line was not processed: " + internalLine);
+							processedLine = false;
+							break;
+						}
+					}
+				}
+			}
+			
+			if(lineParts[0].equals("<block"))
+			{
+				processedLine = true;
+				System.out.println("---FOUND A NEW SUBBLOCK---");
+				if(lineParts[1].substring(0, 4).equals("name"))
+				{
+					String name = lineParts[1].substring(6,lineParts[1].length() - 1);
+					System.out.println("\tThe name of the block is: " + name);
+				}
+				else
+				{
+					System.out.println("Error in block descrption!");
+					processedLine = false;
+					break;
+				}
+				if(lineParts[2].substring(0,8).equals("instance"))
+				{
+					String instance = lineParts[2].substring(10, lineParts[2].length() - 1);
+					int closingBraceIndex = instance.indexOf('[');
+					String instanceType = instance.substring(0,closingBraceIndex);
+					System.out.println("\tThe instance of the block is: " + instance + ", the instance type of the block is: " + instanceType);
+				}
+				else
+				{
+					System.out.println("Error in block descrption!");
+					processedLine = false;
+					break;
+				}
+				if(lineParts[lineParts.length - 1].substring(lineParts[lineParts.length - 1].length()-2).equals("/>"))
+				{
+					System.out.println("\tThis is an empty block!");
+				}
+				else
+				{
+					processBlockInternals(parentBlock, reader, false);
+				}
+			}
+			
+			if(!processedLine)
+			{
+				System.out.println("A line was not processed: " + line);
+				break;
 			}
 			
 		}
