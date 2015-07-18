@@ -9,8 +9,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import circuit.Ble;
+import circuit.Clb;
+import circuit.Flipflop;
+import circuit.Flipflop.InitVal;
+import circuit.Flipflop.Type;
 import circuit.HardBlock;
 import circuit.Input;
+import circuit.Lut;
 import circuit.Net;
 import circuit.Output;
 import circuit.PackedCircuit;
@@ -128,7 +134,7 @@ public class NetReader
 					success = processHardBlock(reader, name, instance, instanceType);
 					break;
 				case "clb":
-					success = processClb();
+					success = processClb(reader, name, instance, instanceType);
 					break;
 				default:
 					System.out.println("Unknown instance type: " + instanceType);
@@ -147,7 +153,7 @@ public class NetReader
 		ArrayList<String> outputs = new ArrayList<>();
 		instances.add(instance);
 		instanceTypes.add(instanceType);
-		boolean success = processBlockInternals(reader, instances, instanceTypes, inputs, outputs);
+		boolean success = processBlockInternals(reader, instance, instances, instanceTypes, inputs, outputs);
 		ArrayList<String> topLevelInputs = new ArrayList<>();
 		ArrayList<String> topLevelOutputs = new ArrayList<>();
 		processBlockIOs(instances, instanceTypes, inputs, outputs, topLevelInputs, topLevelOutputs);
@@ -214,7 +220,197 @@ public class NetReader
 		return success;
 	}
 	
-	private boolean processBlockInternals(BufferedReader reader, ArrayList<String> instances, ArrayList<String> instanceTypes, 
+	private boolean processClb(BufferedReader reader, String name, String instance, String instanceType) throws IOException
+	{
+		ArrayList<String> instances = new ArrayList<>();
+		ArrayList<String> instanceTypes = new ArrayList<>();
+		ArrayList<String> inputs = new ArrayList<>();
+		ArrayList<String> outputs = new ArrayList<>();
+		instances.add(instance);
+		instanceTypes.add(instanceType);
+		boolean success = processBlockInternals(reader, instance, instances, instanceTypes, inputs, outputs);
+		ArrayList<String> topLevelInputs = new ArrayList<>();
+		ArrayList<String> topLevelOutputs = new ArrayList<>();
+		processBlockIOs(instances, instanceTypes, inputs, outputs, topLevelInputs, topLevelOutputs);
+		boolean clbHasLut = false;
+		String lutName = "";
+		boolean clbHasFF = false;
+		String ffName = "";
+		for(String output:topLevelOutputs)
+		{
+			if(output.substring(output.length() - 3).equals("LUT"))
+			{
+				clbHasLut = true;
+				lutName = output.substring(0,output.length() - 3);
+			}
+			else
+			{
+				if(output.substring(output.length() - 2).equals("FF"))
+				{
+					clbHasFF = true;
+					ffName = output.substring(0, output.length() - 2);
+				}
+				else
+				{
+					System.out.println("Found an output that's not a LUT nor a FF: " + output);
+					return false;
+				}
+			}
+		}
+		if(clbHasLut && clbHasFF)//The clb has both a lut and a ff
+		{
+			Lut lut = new Lut(lutName, 1, 6);
+			Flipflop ff = new Flipflop(ffName, Type.RISING_EDGE, InitVal.UNKNOWN);
+			Ble ble = new Ble(ffName, 6, ff, lut, true);
+			Clb clb = new Clb(ffName, 1, 6, ble);
+			
+			prePackedCircuit.addLut(lut);
+			prePackedCircuit.addFlipflop(ff);
+			//Add lut input nets
+			for(int i = 0; i < topLevelInputs.size(); i++)
+			{
+				String input = topLevelInputs.get(i);
+				if(!prePackedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+				{
+					prePackedCircuit.getNets().put(input, new Net(input));
+				}
+				prePackedCircuit.getNets().get(input).addSink(lut.getInputs()[i]);
+			}
+			//Add ff output net
+			if(!prePackedCircuit.getNets().containsKey(ffName)) //net still needs to be added to the nets hashmap
+			{
+				prePackedCircuit.getNets().put(ffName, new Net(ffName));
+			}
+			prePackedCircuit.getNets().get(ffName).addSource(ff.getOutput());
+			//Add net between lut output and ff input
+			if(!prePackedCircuit.getNets().containsKey(lutName)) //net still needs to be added to the nets hashmap
+			{
+				prePackedCircuit.getNets().put(lutName, new Net(lutName));
+			}
+			prePackedCircuit.getNets().get(lutName).addSource(lut.getOutputs()[0]);
+			prePackedCircuit.getNets().get(lutName).addSink(ff.getInput());
+			
+			packedCircuit.clbs.put(clb.name, clb);
+			//Add clb input nets
+			for(int i = 0; i < topLevelInputs.size(); i++)
+			{
+				String input = topLevelInputs.get(i);
+				if(!packedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+				{
+					packedCircuit.getNets().put(input, new Net(input));
+				}
+				packedCircuit.getNets().get(input).addSink(clb.input[i]);
+			}
+			//Add clb output net
+			if(!packedCircuit.getNets().containsKey(ffName)) //net still needs to be added to the nets hashmap
+			{
+				packedCircuit.getNets().put(ffName, new Net(ffName));
+			}
+			packedCircuit.getNets().get(ffName).addSource(clb.output[0]);
+		}
+		else
+		{
+			if(clbHasLut)//The clb only has a lut
+			{
+				Lut lut = new Lut(lutName, 1, 6);
+				Ble ble = new Ble(lutName, 6, null, lut, false);
+				Clb clb = new Clb(lutName, 1, 6, ble);
+				
+				prePackedCircuit.addLut(lut);
+				//Add lut input nets
+				for(int i = 0; i < topLevelInputs.size(); i++)
+				{
+					String input = topLevelInputs.get(i);
+					if(!prePackedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+					{
+						prePackedCircuit.getNets().put(input, new Net(input));
+					}
+					prePackedCircuit.getNets().get(input).addSink(lut.getInputs()[i]);
+				}
+				//Add lut output net
+				if(!prePackedCircuit.getNets().containsKey(lutName)) //net still needs to be added to the nets hashmap
+				{
+					prePackedCircuit.getNets().put(lutName, new Net(lutName));
+				}
+				prePackedCircuit.getNets().get(lutName).addSource(lut.getOutputs()[0]);
+								
+				packedCircuit.clbs.put(clb.name, clb);
+				//Add clb input nets
+				for(int i = 0; i < topLevelInputs.size(); i++)
+				{
+					String input = topLevelInputs.get(i);
+					if(!packedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+					{
+						packedCircuit.getNets().put(input, new Net(input));
+					}
+					packedCircuit.getNets().get(input).addSink(clb.input[i]);
+				}
+				//Add clb output net
+				if(!packedCircuit.getNets().containsKey(lutName)) //net still needs to be added to the nets hashmap
+				{
+					packedCircuit.getNets().put(lutName, new Net(lutName));
+				}
+				packedCircuit.getNets().get(lutName).addSource(clb.output[0]);
+			}
+			else//The clb only has a ff
+			{
+				Flipflop ff = new Flipflop(ffName, Type.RISING_EDGE, InitVal.UNKNOWN);
+				Ble ble = new Ble(ffName, 6, ff, null, true);
+				Clb clb = new Clb(ffName, 1, 6, ble);
+				
+				prePackedCircuit.addFlipflop(ff);
+				//Add ff input net
+				if(topLevelInputs.size() == 1)
+				{
+					String input = topLevelInputs.get(0);
+					if(!prePackedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+					{
+						prePackedCircuit.getNets().put(input, new Net(input));
+					}
+					prePackedCircuit.getNets().get(input).addSink(ff.getInput());
+				}
+				else
+				{
+					System.out.println("Error: a clb only contains a ff but has more than one input");
+					return false;
+				}
+				//Add ff output net
+				if(!prePackedCircuit.getNets().containsKey(ffName)) //net still needs to be added to the nets hashmap
+				{
+					prePackedCircuit.getNets().put(ffName, new Net(ffName));
+				}
+				prePackedCircuit.getNets().get(ffName).addSource(ff.getOutput());
+				
+				packedCircuit.clbs.put(clb.name, clb);
+				//Add clb input net
+				String input = topLevelInputs.get(0);
+				if(!packedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+				{
+					packedCircuit.getNets().put(input, new Net(input));
+				}
+				packedCircuit.getNets().get(input).addSink(clb.input[0]);
+				//Add clb output net
+				if(!packedCircuit.getNets().containsKey(ffName)) //net still needs to be added to the nets hashmap
+				{
+					packedCircuit.getNets().put(ffName, new Net(ffName));
+				}
+				packedCircuit.getNets().get(ffName).addSource(clb.output[0]);
+			}
+		}
+		
+//		for(String input:topLevelInputs)
+//		{
+//			System.out.println("\t" + input + " is a top level input");
+//		}
+//		for(String output:topLevelOutputs)
+//		{
+//			System.out.println("\t" + output + " is a top level output");
+//		}
+		
+		return success;
+	}
+	
+	private boolean processBlockInternals(BufferedReader reader, String currentInstance, ArrayList<String> instances, ArrayList<String> instanceTypes, 
 																ArrayList<String> inputs, ArrayList<String>outputs) throws IOException
 	{
 		boolean success = true;
@@ -319,13 +515,41 @@ public class NetReader
 							if(!internalLineParts[i].equals("open"))
 							{
 								//System.out.println("\tI found an output: " + internalLineParts[i]);
-								outputs.add(internalLineParts[i]);
+								if(currentInstance.substring(0,3).equals("lut"))
+								{
+									outputs.add(internalLineParts[i] + "LUT");
+								}
+								else
+								{
+									if(currentInstance.substring(0,2).equals("ff"))
+									{
+										outputs.add(internalLineParts[i] + "FF");
+									}
+									else
+									{
+										outputs.add(internalLineParts[i]);
+									}
+								}
 							}
 						}
 						if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 						{
 							//System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
-							outputs.add(internalLineParts[internalLineParts.length - 1]);
+							if(currentInstance.substring(0,3).equals("lut"))
+							{
+								outputs.add(internalLineParts[internalLineParts.length - 1] + "LUT");
+							}
+							else
+							{
+								if(currentInstance.substring(0,2).equals("ff"))
+								{
+									outputs.add(internalLineParts[internalLineParts.length - 1] + "FF");
+								}
+								else
+								{
+									outputs.add(internalLineParts[internalLineParts.length - 1]);
+								}
+							}
 						}
 						else
 						{
@@ -347,21 +571,63 @@ public class NetReader
 								if(!firstOutput.equals("open"))
 								{
 									//System.out.println("\tI found an output: " + firstOutput);
-									outputs.add(firstOutput);
+									if(currentInstance.substring(0,3).equals("lut"))
+									{
+										outputs.add(firstOutput + "LUT");
+									}
+									else
+									{
+										if(currentInstance.substring(0,2).equals("ff"))
+										{
+											outputs.add(firstOutput + "FF");
+										}
+										else
+										{
+											outputs.add(firstOutput);
+										}
+									}
 								}
 								for(int i = 2; i < internalLineParts.length - 1; i++)
 								{
 									if(!internalLineParts[i].equals("open"))
 									{
 										//System.out.println("\tI found an output: " + internalLineParts[i]);
-										outputs.add(internalLineParts[i]);
+										if(currentInstance.substring(0,3).equals("lut"))
+										{
+											outputs.add(internalLineParts[i] + "LUT");
+										}
+										else
+										{
+											if(currentInstance.substring(0,2).equals("ff"))
+											{
+												outputs.add(internalLineParts[i] + "FF");
+											}
+											else
+											{
+												outputs.add(internalLineParts[i]);
+											}
+										}
 									}
 								}
 								if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 								{
 									portOpen = true;
 									//System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
-									outputs.add(internalLineParts[internalLineParts.length - 1]);
+									if(currentInstance.substring(0,3).equals("lut"))
+									{
+										outputs.add(internalLineParts[internalLineParts.length - 1] + "LUT");
+									}
+									else
+									{
+										if(currentInstance.substring(0,2).equals("ff"))
+										{
+											outputs.add(internalLineParts[internalLineParts.length - 1] + "FF");
+										}
+										else
+										{
+											outputs.add(internalLineParts[internalLineParts.length - 1]);
+										}
+									}
 								}
 							}
 							else
@@ -423,11 +689,12 @@ public class NetReader
 					processedLine = false;
 					break;
 				}
+				String instance = "";
 				if(lineParts[2].substring(0,8).equals("instance"))
 				{
 					String instancePlusTail = lineParts[2].substring(10);
 					int closingIndex = instancePlusTail.indexOf((char)34);
-					String instance = instancePlusTail.substring(0, closingIndex);
+					instance = instancePlusTail.substring(0, closingIndex);
 					instances.add(instance);
 					int closingBraceIndex = instance.indexOf('[');
 					String instanceType = instance.substring(0,closingBraceIndex);
@@ -457,7 +724,7 @@ public class NetReader
 				}
 				else
 				{
-					boolean internalSuccess = processBlockInternals(reader, instances, instanceTypes, inputs, outputs);
+					boolean internalSuccess = processBlockInternals(reader, instance, instances, instanceTypes, inputs, outputs);
 					if(!internalSuccess && success)
 					{
 						success = false;
@@ -493,8 +760,18 @@ public class NetReader
 			}
 			if(!foundIt)
 			{
-				//System.out.println("\t" + input + " is a top level input");
-				topLevelInputsToReturn.add(input);
+				for(String instance:instances)
+				{
+					if(instance.equals(firstInputPart))
+					{
+						foundIt = true;
+						break;
+					}
+				}
+				if(!foundIt)
+				{
+					topLevelInputsToReturn.add(input);
+				}
 			}
 		}
 		
@@ -512,17 +789,20 @@ public class NetReader
 			}
 			if(!foundIt)
 			{
-				//System.out.println("\t" + output + " is a top level output");
-				topLevelOutputsToReturn.add(output);
+				for(String instanceType:instanceTypes)
+				{
+					if(instanceType.equals(firstOutputPart))
+					{
+						foundIt = true;
+						break;
+					}
+				}
+				if(!foundIt)
+				{
+					topLevelOutputsToReturn.add(output);
+				}
 			}
 		}
-	}
-	
-	private boolean processClb() throws IOException
-	{
-		boolean success = false;
-		
-		return success;
 	}
 	
 	private boolean processFpgaInputs(BufferedReader reader, String trimmedLine) throws IOException
