@@ -6,7 +6,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Vector;
 
+import circuit.HardBlock;
+import circuit.Input;
+import circuit.Net;
+import circuit.Output;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
 
@@ -48,7 +54,7 @@ public class NetReader
 						}
 						break;
 					case "<inputs>": //This will only occur for FPGA inputs, not for block inputs
-						System.out.println("\n---INPUTS---");
+						//System.out.println("\n---INPUTS---");
 						success = processFpgaInputs(reader, trimmedLine);
 						if(!success)
 						{
@@ -57,7 +63,7 @@ public class NetReader
 						}
 						break;
 					case "<outputs>": //This will only occur for FPGA outputs, not for block outputs
-						System.out.println("\n---OUTPUTS---");
+						//System.out.println("\n---OUTPUTS---");
 						success = processFpgaOutputs(reader, trimmedLine);
 						if(!success)
 						{
@@ -97,26 +103,29 @@ public class NetReader
 		}
 		else //Process the complete block
 		{
-			System.out.println("\n---STARTED NEW BLOCK---");
+			//System.out.println("\n---STARTED NEW BLOCK---");
 			String[] lineParts = trimmedLine.split(" +");
 			String name = "";
 			if(lineParts[1].substring(0, 4).equals("name"))
 			{
 				name = lineParts[1].substring(6,lineParts[1].length() - 1);
-				System.out.println("\tThe name of the block is: " + name);
+				//System.out.println("\tThe name of the block is: " + name);
 			}
 			String instanceType = "";
+			String instance = "";
 			if(lineParts[2].substring(0,8).equals("instance"))
 			{
-				String instance = lineParts[2].substring(10, lineParts[2].length() - 1);
+				String instancePlusTail = lineParts[2].substring(10);
+				int closingIndex = instancePlusTail.indexOf((char)34);
+				instance = instancePlusTail.substring(0, closingIndex);
 				int closingBraceIndex = instance.indexOf('[');
 				instanceType = instance.substring(0,closingBraceIndex);
-				System.out.println("\tThe instance of the block is: " + instance + ", the instance type of the block is: " + instanceType);
+				//System.out.println("\tThe instance of the block is: " + instance + ", the instance type of the block is: " + instanceType);
 			}
 			switch(instanceType)
 			{
 				case "memory":
-					success = processHardBlock(reader, name, instanceType);
+					success = processHardBlock(reader, name, instance, instanceType);
 					break;
 				case "clb":
 					success = processClb();
@@ -130,17 +139,85 @@ public class NetReader
 		return success;
 	}
 	
-	private boolean processHardBlock(BufferedReader reader, String name, String instanceType) throws IOException
+	private boolean processHardBlock(BufferedReader reader, String name, String instance, String instanceType) throws IOException
 	{
-		boolean success = false;
-		OuterNLBlock outerBlock = new OuterNLBlock(name, instanceType);
-		processBlockInternals(outerBlock, reader, true);
+		ArrayList<String> instances = new ArrayList<>();
+		ArrayList<String> instanceTypes = new ArrayList<>();
+		ArrayList<String> inputs = new ArrayList<>();
+		ArrayList<String> outputs = new ArrayList<>();
+		instances.add(instance);
+		instanceTypes.add(instanceType);
+		boolean success = processBlockInternals(reader, instances, instanceTypes, inputs, outputs);
+		ArrayList<String> topLevelInputs = new ArrayList<>();
+		ArrayList<String> topLevelOutputs = new ArrayList<>();
+		processBlockIOs(instances, instanceTypes, inputs, outputs, topLevelInputs, topLevelOutputs);
+		boolean isClockEdge;
+		switch(instanceType)
+		{
+			case "memory":
+				isClockEdge = true;
+			default:
+				isClockEdge = false;
+		}
+		Vector<String> inputNames = new Vector<>();
+		for(int i = 0; i < topLevelInputs.size(); i++)
+		{
+			inputNames.add(instance + ".in[" + i + "]"); 
+		}
+		Vector<String> outputNames = new Vector<>();
+		for(int i = 0; i < topLevelOutputs.size(); i++)
+		{
+			outputNames.add(instance + ".out[" + i + "]");
+		}
+		HardBlock hardBlock = new HardBlock(name, outputNames, inputNames, instanceType, isClockEdge);
+		packedCircuit.addHardBlock(hardBlock);
+		for(int i = 0; i < topLevelInputs.size(); i++)
+		{
+			String input = topLevelInputs.get(i);
+			
+			if(!packedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+			{
+				packedCircuit.getNets().put(input, new Net(input));
+			}
+			packedCircuit.getNets().get(input).addSink(hardBlock.getInputs()[i]);
+			
+			if(!prePackedCircuit.getNets().containsKey(input)) //net still needs to be added to the nets hashmap
+			{
+				prePackedCircuit.getNets().put(input, new Net(input));
+			}
+			prePackedCircuit.getNets().get(input).addSink(hardBlock.getInputs()[i]);
+		}
+		for(int i = 0; i < topLevelOutputs.size(); i++)
+		{
+			String output = topLevelOutputs.get(i);
+			
+			if(!packedCircuit.getNets().containsKey(output)) //net still needs to be added to the nets hashmap
+			{
+				packedCircuit.getNets().put(output, new Net(output));
+			}
+			packedCircuit.getNets().get(output).addSource(hardBlock.getOutputs()[i]);
+			
+			if(!prePackedCircuit.getNets().containsKey(output)) //net still needs to be added to the nets hashmap
+			{
+				prePackedCircuit.getNets().put(output, new Net(output));
+			}
+			prePackedCircuit.getNets().get(output).addSource(hardBlock.getOutputs()[i]);
+		}
+//		for(String input:topLevelInputs)
+//		{
+//			System.out.println("\t" + input + " is a top level input");
+//		}
+//		for(String output:topLevelOutputs)
+//		{
+//			System.out.println("\t" + output + " is a top level output");
+//		}
 		return success;
 	}
 	
-	private boolean processBlockInternals(NLBlock parentBlock, BufferedReader reader, boolean isOuterBlock) throws IOException
+	private boolean processBlockInternals(BufferedReader reader, ArrayList<String> instances, ArrayList<String> instanceTypes, 
+																ArrayList<String> inputs, ArrayList<String>outputs) throws IOException
 	{
-		boolean success = false;
+		boolean success = true;
 		boolean foundTheEnd = false;
 		while(!foundTheEnd)
 		{
@@ -169,12 +246,14 @@ public class NetReader
 						{
 							if(!internalLineParts[i].equals("open"))
 							{
-								System.out.println("\tI found an input: " + internalLineParts[i]);
+								//System.out.println("\tI found an input: " + internalLineParts[i]);
+								inputs.add(internalLineParts[i]);
 							}
 						}
 						if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 						{
-							System.out.println("\tI found an input: " + internalLineParts[internalLineParts.length - 1]);
+							//System.out.println("\tI found an input: " + internalLineParts[internalLineParts.length - 1]);
+							inputs.add(internalLineParts[internalLineParts.length - 1]);
 						}
 						else
 						{
@@ -195,19 +274,22 @@ public class NetReader
 								String firstInput = internalLineParts[1].substring(closingBraceIndex + 1);
 								if(!firstInput.equals("open"))
 								{
-									System.out.println("\tI found an input: " + firstInput);
+									//System.out.println("\tI found an input: " + firstInput);
+									inputs.add(firstInput);
 								}
 								for(int i = 2; i < internalLineParts.length - 1; i++)
 								{
 									if(!internalLineParts[i].equals("open"))
 									{
-										System.out.println("\tI found an input: " + internalLineParts[i]);
+										//System.out.println("\tI found an input: " + internalLineParts[i]);
+										inputs.add(internalLineParts[i]);
 									}
 								}
 								if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 								{
 									portOpen = true;
-									System.out.println("\tI found an input: " + internalLineParts[internalLineParts.length - 1]);
+									//System.out.println("\tI found an input: " + internalLineParts[internalLineParts.length - 1]);
+									inputs.add(internalLineParts[internalLineParts.length - 1]);
 								}
 							}
 							else
@@ -236,12 +318,14 @@ public class NetReader
 						{
 							if(!internalLineParts[i].equals("open"))
 							{
-								System.out.println("\tI found an output: " + internalLineParts[i]);
+								//System.out.println("\tI found an output: " + internalLineParts[i]);
+								outputs.add(internalLineParts[i]);
 							}
 						}
 						if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 						{
-							System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
+							//System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
+							outputs.add(internalLineParts[internalLineParts.length - 1]);
 						}
 						else
 						{
@@ -262,19 +346,22 @@ public class NetReader
 								String firstOutput = internalLineParts[1].substring(closingBraceIndex + 1);
 								if(!firstOutput.equals("open"))
 								{
-									System.out.println("\tI found an output: " + firstOutput);
+									//System.out.println("\tI found an output: " + firstOutput);
+									outputs.add(firstOutput);
 								}
 								for(int i = 2; i < internalLineParts.length - 1; i++)
 								{
 									if(!internalLineParts[i].equals("open"))
 									{
-										System.out.println("\tI found an output: " + internalLineParts[i]);
+										//System.out.println("\tI found an output: " + internalLineParts[i]);
+										outputs.add(internalLineParts[i]);
 									}
 								}
 								if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 								{
 									portOpen = true;
-									System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
+									//System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
+									outputs.add(internalLineParts[internalLineParts.length - 1]);
 								}
 							}
 							else
@@ -305,10 +392,10 @@ public class NetReader
 						if(internalLineParts[0].equals("<port") && internalLineParts[internalLineParts.length - 1].equals("</port>"))
 						{
 							String firstClock = internalLineParts[1].substring(internalLineParts[1].indexOf('>') + 1);
-							System.out.println("\tI found a clock: " + firstClock);
+							//System.out.println("\tI found a clock: " + firstClock);
 							for(int i = 2; i < internalLineParts.length - 1; i++)
 							{
-								System.out.println("\tI found a clock: " + internalLineParts[i]);
+								//System.out.println("\tI found a clock: " + internalLineParts[i]);
 							}
 						}
 						else
@@ -324,11 +411,11 @@ public class NetReader
 			if(lineParts[0].equals("<block"))
 			{
 				processedLine = true;
-				System.out.println("---FOUND A NEW SUBBLOCK---");
+				//System.out.println("---FOUND A NEW SUBBLOCK---");
 				if(lineParts[1].substring(0, 4).equals("name"))
 				{
 					String name = lineParts[1].substring(6,lineParts[1].length() - 1);
-					System.out.println("\tThe name of the block is: " + name);
+					//System.out.println("\tThe name of the block is: " + name);
 				}
 				else
 				{
@@ -338,10 +425,25 @@ public class NetReader
 				}
 				if(lineParts[2].substring(0,8).equals("instance"))
 				{
-					String instance = lineParts[2].substring(10, lineParts[2].length() - 1);
+					String instancePlusTail = lineParts[2].substring(10);
+					int closingIndex = instancePlusTail.indexOf((char)34);
+					String instance = instancePlusTail.substring(0, closingIndex);
+					instances.add(instance);
 					int closingBraceIndex = instance.indexOf('[');
 					String instanceType = instance.substring(0,closingBraceIndex);
-					System.out.println("\tThe instance of the block is: " + instance + ", the instance type of the block is: " + instanceType);
+					boolean alreadyPresent = false;
+					for(String presentInstanceType:instanceTypes)
+					{
+						if(instanceType.equals(presentInstanceType))
+						{
+							alreadyPresent = true;
+						}
+					}
+					if(!alreadyPresent)
+					{
+						instanceTypes.add(instanceType);
+					}
+					//System.out.println("\tThe instance of the block is: " + instance + ", the instance type of the block is: " + instanceType);
 				}
 				else
 				{
@@ -351,11 +453,16 @@ public class NetReader
 				}
 				if(lineParts[lineParts.length - 1].substring(lineParts[lineParts.length - 1].length()-2).equals("/>"))
 				{
-					System.out.println("\tThis is an empty block!");
+					//System.out.println("\tThis is an empty block!");
 				}
 				else
 				{
-					processBlockInternals(parentBlock, reader, false);
+					boolean internalSuccess = processBlockInternals(reader, instances, instanceTypes, inputs, outputs);
+					if(!internalSuccess && success)
+					{
+						success = false;
+						System.out.println("Encountered a problem!");
+					}
 				}
 			}
 			
@@ -367,6 +474,48 @@ public class NetReader
 			
 		}
 		return success;
+	}
+	
+	private void processBlockIOs(ArrayList<String> instances, ArrayList<String> instanceTypes, ArrayList<String> inputs, 
+				ArrayList<String> outputs, ArrayList<String> topLevelInputsToReturn, ArrayList<String> topLevelOutputsToReturn)
+	{
+		for(String input:inputs)
+		{
+			String firstInputPart = input.split("\\.")[0];
+			boolean foundIt = false;
+			for(String instanceType:instanceTypes)
+			{
+				if(instanceType.equals(firstInputPart))
+				{
+					foundIt = true;
+					break;
+				}
+			}
+			if(!foundIt)
+			{
+				//System.out.println("\t" + input + " is a top level input");
+				topLevelInputsToReturn.add(input);
+			}
+		}
+		
+		for(String output:outputs)
+		{
+			String firstOutputPart = output.split("\\.")[0];
+			boolean foundIt = false;
+			for(String instance:instances)
+			{
+				if(instance.equals(firstOutputPart))
+				{
+					foundIt = true;
+					break;
+				}
+			}
+			if(!foundIt)
+			{
+				//System.out.println("\t" + output + " is a top level output");
+				topLevelOutputsToReturn.add(output);
+			}
+		}
 	}
 	
 	private boolean processClb() throws IOException
@@ -394,7 +543,22 @@ public class NetReader
 				{
 					if(!lineParts[i].equals("<inputs>"))
 					{
-						System.out.println(lineParts[i] + " is an FPGA input");
+						String inputName = lineParts[i];
+						//System.out.println(inputName + " is an FPGA input");
+						Input input = new Input(inputName);
+						packedCircuit.addInput(input);
+						
+						if(!packedCircuit.getNets().containsKey(input.name)) //net still needs to be added to the nets hashmap
+						{
+							packedCircuit.getNets().put(input.name, new Net(input.name));
+						}
+						packedCircuit.getNets().get(input.name).addSource(input.output);
+						
+						if(!prePackedCircuit.getNets().containsKey(input.name)) //net still needs to be added to the nets hashmap
+						{
+							prePackedCircuit.getNets().put(input.name, new Net(input.name));
+						}
+						prePackedCircuit.getNets().get(input.name).addSource(input.output);
 					}
 				}
 			}
@@ -421,7 +585,22 @@ public class NetReader
 				{
 					if(!lineParts[i].equals("<outputs>"))
 					{
-						System.out.println(lineParts[i] + " is an FPGA output");
+						String outputName = lineParts[i];
+						//System.out.println(outputName + " is an FPGA output");
+						Output output = new Output(outputName);
+						packedCircuit.addOutput(output);
+						
+						if(!packedCircuit.getNets().containsKey(output.name)) //net still needs to be added to the nets hashmap
+						{
+							packedCircuit.getNets().put(output.name, new Net(output.name));
+						}
+						packedCircuit.getNets().get(output.name).addSource(output.input);
+						
+						if(!prePackedCircuit.getNets().containsKey(output.name)) //net still needs to be added to the nets hashmap
+						{
+							prePackedCircuit.getNets().put(output.name, new Net(output.name));
+						}
+						prePackedCircuit.getNets().get(output.name).addSource(output.input);
 					}
 				}
 			}
