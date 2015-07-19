@@ -72,13 +72,92 @@ public class Example
 	    NetReader netReader = new NetReader();
 	    try
 		{
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
 			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
 		}
 	    catch(IOException ioe)
 	    {
 	    	System.err.println("Couldn't read blif file!");
 	    	return;
 	    }
+	    
+	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+	    
+	    System.out.println("Found " + packedCircuit.clbs.size() + " CLBs in the packed netlist");
+	    System.out.println("Found " + packedCircuit.inputs.size() + " inputs in the packed netlist");
+	    System.out.println("Found " + packedCircuit.outputs.size() + " outputs in the packed netlist");
+	    System.out.println("Found " + packedCircuit.nets.size() + " nets in the packed netlist:");
+	    
+	    int clbsOnlyLut = 0;
+	    int clbsOnlyFF = 0;
+	    int clbsBoth = 0;
+	    
+	    for(Clb clb: packedCircuit.clbs.values())
+	    {
+	    	if(clb.getBle().getLut() != null && clb.getBle().getFlipflop() != null)
+	    	{
+	    		clbsBoth++;
+	    	}
+	    	else
+	    	{
+	    		if(clb.getBle().getLut() != null)
+	    		{
+	    			clbsOnlyLut++;
+	    		}
+	    		else
+	    		{
+	    			if(clb.getBle().getFlipflop() != null)
+	    			{
+	    				clbsOnlyFF++;
+	    			}
+	    		}
+	    	}
+	    }
+	    
+	    System.out.println("CLB statistics: " + clbsOnlyLut + " of the clbs only have a LUT, "  + clbsOnlyFF + 
+	    															" only have a fliplop and " + clbsBoth + " have both");
+	    System.out.println("Found " + prePackedCircuit.getLuts().size() + " LUTs in the unpacked netlist");
+	    System.out.println("Found " + prePackedCircuit.getFlipflops().size() + " FFs in the unpacked netlist");
+	    System.out.println("Found " + prePackedCircuit.inputs.size() + " inputs in the unpacked netlist");
+	    System.out.println("Found " + prePackedCircuit.outputs.size() + " outputs in the unpacked netlist");
+	    System.out.println("Found " + prePackedCircuit.nets.size() + " nets in the unpacked netlist:");
+	    
+//	    for(Net net: packedCircuit.nets.values())
+//	    {
+//	    	System.out.print("\t" + net.name + ": ");
+//	    	if(net.source == null)
+//	    	{
+//	    		System.out.print("no source, ");
+//	    	}
+//	    	else
+//	    	{
+//	    		System.out.print("1 source, ");
+//	    	}
+//	    	switch(net.sinks.size())
+//	    	{
+//	    		case 0:
+//	    			System.out.println("no sinks");
+//	    			break;
+//	    		case 1:
+//	    			System.out.println("1 sink");
+//	    			break;
+//	    		default:
+//	    			System.out.println("" + net.sinks.size() + " sinks");
+//	    	}
+//	    }
 	}
 	
 	//Heterogeneous

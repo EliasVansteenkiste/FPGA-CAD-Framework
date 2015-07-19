@@ -97,6 +97,17 @@ public class NetReader
 				}
 			}
 		}
+		stripDummyNets();
+	}
+	
+	public PrePackedCircuit getPrePackedCircuit()
+	{
+		return prePackedCircuit;
+	}
+	
+	public PackedCircuit getPackedCircuit()
+	{
+		return packedCircuit;
 	}
 	
 	private boolean processOuterBlock(BufferedReader reader, String trimmedLine) throws IOException
@@ -135,6 +146,9 @@ public class NetReader
 					break;
 				case "clb":
 					success = processClb(reader, name, instance, instanceType);
+					break;
+				case "io":
+					success = processIo(reader,instance);
 					break;
 				default:
 					System.out.println("Unknown instance type: " + instanceType);
@@ -407,6 +421,16 @@ public class NetReader
 //			System.out.println("\t" + output + " is a top level output");
 //		}
 		
+		return success;
+	}
+	
+	private boolean processIo(BufferedReader reader, String instance) throws IOException
+	{
+		ArrayList<String> instances = new ArrayList<>();
+		ArrayList<String> instanceTypes = new ArrayList<>();
+		ArrayList<String> inputs = new ArrayList<>();
+		ArrayList<String> outputs = new ArrayList<>();
+		boolean success = processBlockInternals(reader, instance, instances, instanceTypes, inputs, outputs);
 		return success;
 	}
 	
@@ -866,6 +890,10 @@ public class NetReader
 					if(!lineParts[i].equals("<outputs>"))
 					{
 						String outputName = lineParts[i];
+						if(outputName.substring(0,4).equals("out:"))
+						{
+							outputName = outputName.substring(4);
+						}
 						//System.out.println(outputName + " is an FPGA output");
 						Output output = new Output(outputName);
 						packedCircuit.addOutput(output);
@@ -874,13 +902,13 @@ public class NetReader
 						{
 							packedCircuit.getNets().put(output.name, new Net(output.name));
 						}
-						packedCircuit.getNets().get(output.name).addSource(output.input);
+						packedCircuit.getNets().get(output.name).addSink(output.input);
 						
 						if(!prePackedCircuit.getNets().containsKey(output.name)) //net still needs to be added to the nets hashmap
 						{
 							prePackedCircuit.getNets().put(output.name, new Net(output.name));
 						}
-						prePackedCircuit.getNets().get(output.name).addSource(output.input);
+						prePackedCircuit.getNets().get(output.name).addSink(output.input);
 					}
 				}
 			}
@@ -907,6 +935,30 @@ public class NetReader
 			lineParts = reader.readLine().trim().split(" +");
 		}while(!finished);
 		return success;
+	}
+	
+	private void stripDummyNets()
+	{
+		ArrayList<String> netsToDelete = new ArrayList<>();
+		for(Net net: packedCircuit.nets.values())
+		{
+			if(net.source == null && net.sinks.size() == 1)
+			{
+				netsToDelete.add(net.name);
+			}
+			else
+			{
+				if(net.source != null && net.sinks.size() == 0 && !net.name.contains("clk"))
+				{
+					netsToDelete.add(net.name);
+				}
+			}
+		}
+		for(String netToDelete: netsToDelete)
+		{
+			packedCircuit.nets.remove(netToDelete);
+			prePackedCircuit.nets.remove(netToDelete);
+		}
 	}
 	
 }
