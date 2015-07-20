@@ -928,7 +928,7 @@ public class TimingGraph
 		}
 		int currentIndex = 0;
 		TimingNode currentNode = startNode;
-		if(currentNet.sinks.size() == 0) //Can happen with clock nets which are declared as an input in the blif file
+		if(currentNet == null || currentNet.sinks.size() == 0) //Can happen with clock nets which are declared as an input in the blif file
 		{
 			return;
 		}
@@ -1066,7 +1066,8 @@ public class TimingGraph
 					}
 				}
 			}
-			++currentIndex;
+			++currentIndex;			
+			
 			if(!(currentIndex < currentNet.sinks.size()))
 			{
 				while(!(currentIndex < currentNet.sinks.size()) && keepGoing)

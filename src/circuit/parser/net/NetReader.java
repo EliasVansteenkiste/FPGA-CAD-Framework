@@ -186,8 +186,10 @@ public class NetReader
 		{
 			case "memory":
 				isClockEdge = true;
+				break;
 			default:
 				isClockEdge = false;
+				break;
 		}
 		Vector<String> inputNames = new Vector<>();
 		for(int i = 0; i < topLevelInputs.size(); i++)

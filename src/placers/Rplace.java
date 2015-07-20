@@ -288,7 +288,8 @@ public class Rplace
 		ArrayList<Site> ISites = a.getISites();
 		for(Input input:c.inputs.values())
 		{
-			input.fixed = true;
+			//input.fixed = true;
+			input.fixed = false;
 			Site site = ISites.get(index);
 			site.block = input;
 			input.setSite(site);
@@ -302,7 +303,8 @@ public class Rplace
 		ArrayList<Site> OSites = a.getOSites();
 		for(Output output:c.outputs.values())
 		{
-			output.fixed = true;
+			//output.fixed = true;
+			output.fixed = false;
 			Site site = OSites.get(index);
 			site.block = output;
 			output.setSite(site);

@@ -90,10 +90,13 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 		if(swap.pl1.block != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(swap.pl1.block);
-			for(EfficientBoundingBoxData bbData: bbDataList)
+			if(bbDataList != null)
 			{
-				bbData.saveState();
-				totalDeltaCost += bbData.calculateDeltaCost(swap.pl1.block, swap.pl2);
+				for(EfficientBoundingBoxData bbData: bbDataList)
+				{
+					bbData.saveState();
+					totalDeltaCost += bbData.calculateDeltaCost(swap.pl1.block, swap.pl2);
+				}
 			}
 		}
 		
@@ -101,10 +104,13 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 		if(swap.pl2.block != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(swap.pl2.block);
-			for(EfficientBoundingBoxData bbData: bbDataList)
+			if(bbDataList != null)
 			{
-				bbData.saveState();
-				totalDeltaCost += bbData.calculateDeltaCost(swap.pl2.block, swap.pl1);
+				for(EfficientBoundingBoxData bbData: bbDataList)
+				{
+					bbData.saveState();
+					totalDeltaCost += bbData.calculateDeltaCost(swap.pl2.block, swap.pl1);
+				}
 			}
 		}
 		
@@ -124,17 +130,23 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 		if(toRevert[0] != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[0]);
-			for(EfficientBoundingBoxData bbData: bbDataList)
+			if(bbDataList != null)
 			{
-				bbData.revert();
+				for(EfficientBoundingBoxData bbData: bbDataList)
+				{
+					bbData.revert();
+				}
 			}
 		}
 		if(toRevert[1] != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[1]);
-			for(EfficientBoundingBoxData bbData: bbDataList)
+			if(bbDataList != null)
 			{
-				bbData.revert();
+				for(EfficientBoundingBoxData bbData: bbDataList)
+				{
+					bbData.revert();
+				}
 			}
 		}
 	}
@@ -144,17 +156,23 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 		if(toRevert[0] != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[0]);
-			for(EfficientBoundingBoxData bbData: bbDataList)
+			if(bbDataList != null)
 			{
-				bbData.pushThrough();
+				for(EfficientBoundingBoxData bbData: bbDataList)
+				{
+					bbData.pushThrough();
+				}
 			}
 		}
 		if(toRevert[1] != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[1]);
-			for(EfficientBoundingBoxData bbData: bbDataList)
+			if(bbDataList != null)
 			{
-				bbData.pushThrough();
+				for(EfficientBoundingBoxData bbData: bbDataList)
+				{
+					bbData.pushThrough();
+				}
 			}
 		}
 	}
