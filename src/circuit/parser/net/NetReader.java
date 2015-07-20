@@ -139,16 +139,26 @@ public class NetReader
 				instanceType = instance.substring(0,closingBraceIndex);
 				//System.out.println("\tThe instance of the block is: " + instance + ", the instance type of the block is: " + instanceType);
 			}
+			String mode = "";
+			if(lineParts.length >= 4 && lineParts[3].substring(0,4).equals("mode"))
+			{
+				String modePlusTail = lineParts[3].substring(6);
+				int closingIndex = modePlusTail.indexOf((char)34);
+				mode = modePlusTail.substring(0,closingIndex);
+			}
 			switch(instanceType)
 			{
 				case "memory":
+					success = processHardBlock(reader, name, instance, instanceType);
+					break;
+				case "mult_36":
 					success = processHardBlock(reader, name, instance, instanceType);
 					break;
 				case "clb":
 					success = processClb(reader, name, instance, instanceType);
 					break;
 				case "io":
-					success = processIo(reader,instance);
+					success = processIo(reader,name, instance, mode);
 					break;
 				default:
 					System.out.println("Unknown instance type: " + instanceType);
@@ -170,7 +180,7 @@ public class NetReader
 		boolean success = processBlockInternals(reader, instance, instances, instanceTypes, inputs, outputs);
 		ArrayList<String> topLevelInputs = new ArrayList<>();
 		ArrayList<String> topLevelOutputs = new ArrayList<>();
-		processBlockIOs(instances, instanceTypes, inputs, outputs, topLevelInputs, topLevelOutputs);
+		processBlockIOs(instances, instanceTypes, inputs, outputs, topLevelInputs, topLevelOutputs);		
 		boolean isClockEdge;
 		switch(instanceType)
 		{
@@ -424,13 +434,58 @@ public class NetReader
 		return success;
 	}
 	
-	private boolean processIo(BufferedReader reader, String instance) throws IOException
+	private boolean processIo(BufferedReader reader, String name, String instance, String mode) throws IOException
 	{
 		ArrayList<String> instances = new ArrayList<>();
 		ArrayList<String> instanceTypes = new ArrayList<>();
 		ArrayList<String> inputs = new ArrayList<>();
 		ArrayList<String> outputs = new ArrayList<>();
 		boolean success = processBlockInternals(reader, instance, instances, instanceTypes, inputs, outputs);
+		ArrayList<String> topLevelInputs = new ArrayList<>();
+		ArrayList<String> topLevelOutputs = new ArrayList<>();
+		processBlockIOs(instances, instanceTypes, inputs, outputs, topLevelInputs, topLevelOutputs);
+		if(mode.equals("inpad"))
+		{
+			//We don't have to do anything
+		}
+		else
+		{
+			if(mode.equals("outpad"))
+			{
+				String connectedNetName = topLevelInputs.get(0);
+				String blockName = name;
+				if(blockName.substring(0,4).equals("out:"))
+				{
+					blockName = blockName.substring(4);
+				}
+				if(!blockName.equals(connectedNetName))
+				{
+					packedCircuit.nets.remove(blockName);
+					prePackedCircuit.nets.remove(blockName);
+					Output output = packedCircuit.outputs.get(blockName);
+					
+					if(!packedCircuit.getNets().containsKey(connectedNetName)) //net still needs to be added to the nets hashmap
+					{
+						packedCircuit.getNets().put(connectedNetName, new Net(connectedNetName));
+					}
+					packedCircuit.getNets().get(connectedNetName).addSink(output.input);
+					
+					if(!prePackedCircuit.getNets().containsKey(connectedNetName)) //net still needs to be added to the nets hashmap
+					{
+						prePackedCircuit.getNets().put(connectedNetName, new Net(connectedNetName));
+					}
+					prePackedCircuit.getNets().get(connectedNetName).addSink(output.input);
+					
+					output.name = connectedNetName;
+					packedCircuit.outputs.remove(blockName);
+					packedCircuit.outputs.put(output.name, output);
+				}
+			}
+			else
+			{
+				System.out.println("Error: the mode of the io was not recognized!");
+			}
+		}
 		return success;
 	}
 	
@@ -473,7 +528,10 @@ public class NetReader
 						if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 						{
 							//System.out.println("\tI found an input: " + internalLineParts[internalLineParts.length - 1]);
-							inputs.add(internalLineParts[internalLineParts.length - 1]);
+							if(!internalLineParts[internalLineParts.length - 1].equals("open"))
+							{
+								inputs.add(internalLineParts[internalLineParts.length - 1]);
+							}
 						}
 						else
 						{
@@ -491,8 +549,12 @@ public class NetReader
 							if(internalLineParts[0].equals("<port"))
 							{
 								int closingBraceIndex = internalLineParts[1].indexOf('>');
-								String firstInput = internalLineParts[1].substring(closingBraceIndex + 1);
-								if(!firstInput.equals("open"))
+								String firstInput = "";
+								if(closingBraceIndex != internalLineParts[1].length() - 1)
+								{
+									firstInput = internalLineParts[1].substring(closingBraceIndex + 1);
+								}
+								if(!firstInput.equals("open") && !firstInput.equals(""))
 								{
 									//System.out.println("\tI found an input: " + firstInput);
 									inputs.add(firstInput);
@@ -509,7 +571,11 @@ public class NetReader
 								{
 									portOpen = true;
 									//System.out.println("\tI found an input: " + internalLineParts[internalLineParts.length - 1]);
-									inputs.add(internalLineParts[internalLineParts.length - 1]);
+									
+									if(internalLineParts.length != 2 && !internalLineParts[internalLineParts.length - 1].equals("open"))
+									{
+										inputs.add(internalLineParts[internalLineParts.length - 1]);
+									}
 								}
 							}
 							else
@@ -559,19 +625,22 @@ public class NetReader
 						if(!internalLineParts[internalLineParts.length - 1].equals("</port>"))
 						{
 							//System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
-							if(currentInstance.substring(0,3).equals("lut"))
+							if(!internalLineParts[internalLineParts.length - 1].equals("open"))
 							{
-								outputs.add(internalLineParts[internalLineParts.length - 1] + "LUT");
-							}
-							else
-							{
-								if(currentInstance.substring(0,2).equals("ff"))
+								if(currentInstance.substring(0,3).equals("lut"))
 								{
-									outputs.add(internalLineParts[internalLineParts.length - 1] + "FF");
+									outputs.add(internalLineParts[internalLineParts.length - 1] + "LUT");
 								}
 								else
 								{
-									outputs.add(internalLineParts[internalLineParts.length - 1]);
+									if(currentInstance.substring(0,2).equals("ff"))
+									{
+										outputs.add(internalLineParts[internalLineParts.length - 1] + "FF");
+									}
+									else
+									{
+										outputs.add(internalLineParts[internalLineParts.length - 1]);
+									}
 								}
 							}
 						}
@@ -637,19 +706,22 @@ public class NetReader
 								{
 									portOpen = true;
 									//System.out.println("\tI found an output: " + internalLineParts[internalLineParts.length - 1]);
-									if(currentInstance.substring(0,3).equals("lut"))
+									if(!internalLineParts[internalLineParts.length - 1].equals("open"))
 									{
-										outputs.add(internalLineParts[internalLineParts.length - 1] + "LUT");
-									}
-									else
-									{
-										if(currentInstance.substring(0,2).equals("ff"))
+										if(currentInstance.substring(0,3).equals("lut"))
 										{
-											outputs.add(internalLineParts[internalLineParts.length - 1] + "FF");
+											outputs.add(internalLineParts[internalLineParts.length - 1] + "LUT");
 										}
 										else
 										{
-											outputs.add(internalLineParts[internalLineParts.length - 1]);
+											if(currentInstance.substring(0,2).equals("ff"))
+											{
+												outputs.add(internalLineParts[internalLineParts.length - 1] + "FF");
+											}
+											else
+											{
+												outputs.add(internalLineParts[internalLineParts.length - 1]);
+											}
 										}
 									}
 								}
@@ -945,12 +1017,14 @@ public class NetReader
 			if(net.source == null && net.sinks.size() == 1)
 			{
 				netsToDelete.add(net.name);
+				System.out.println("Will strip " + net.name + " because of no source and 1 sink");
 			}
 			else
 			{
-				if(net.source != null && net.sinks.size() == 0 && !net.name.contains("clk"))
+				if(net.source != null && net.sinks.size() == 0)
 				{
 					netsToDelete.add(net.name);
+					System.out.println("Will strip " + net.name + " because of source but no sink");
 				}
 			}
 		}

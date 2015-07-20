@@ -72,8 +72,8 @@ public class Example
 	    NetReader netReader = new NetReader();
 	    try
 		{
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
 			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
@@ -85,7 +85,7 @@ public class Example
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
 		}
 	    catch(IOException ioe)
 	    {
@@ -100,6 +100,12 @@ public class Example
 	    System.out.println("Found " + packedCircuit.inputs.size() + " inputs in the packed netlist");
 	    System.out.println("Found " + packedCircuit.outputs.size() + " outputs in the packed netlist");
 	    System.out.println("Found " + packedCircuit.nets.size() + " nets in the packed netlist:");
+	    
+	    for(int i = 0; i < packedCircuit.getHardBlocks().size(); i++)
+	    {
+	    	System.out.println("Found " + packedCircuit.getHardBlocks().get(i).size() + " " + 
+	    					packedCircuit.getHardBlocks().get(i).get(0).getTypeName() + " blocks in the packed netlist");
+	    }
 	    
 	    int clbsOnlyLut = 0;
 	    int clbsOnlyFF = 0;
@@ -129,11 +135,36 @@ public class Example
 	    
 	    System.out.println("CLB statistics: " + clbsOnlyLut + " of the clbs only have a LUT, "  + clbsOnlyFF + 
 	    															" only have a fliplop and " + clbsBoth + " have both");
-	    System.out.println("Found " + prePackedCircuit.getLuts().size() + " LUTs in the unpacked netlist");
+	    
+	    for(Net net: packedCircuit.getNets().values())
+	    {
+	    	if(net.name.equals("open"))
+	    	{
+	    		System.out.println("Found an open net");
+	    	}
+	    	
+	    	if(net.source == null)
+	    	{
+	    		System.out.println("Found a net with no source: " + net.name + ", owner: " + net.sinks.get(0).owner.name);
+	    	}
+	    	
+	    	if(net.sinks.size() == 0)
+	    	{
+	    		System.out.println("Found a net with no sinks");
+	    	}
+	    }
+	    
+	    System.out.println("\nFound " + prePackedCircuit.getLuts().size() + " LUTs in the unpacked netlist");
 	    System.out.println("Found " + prePackedCircuit.getFlipflops().size() + " FFs in the unpacked netlist");
 	    System.out.println("Found " + prePackedCircuit.inputs.size() + " inputs in the unpacked netlist");
 	    System.out.println("Found " + prePackedCircuit.outputs.size() + " outputs in the unpacked netlist");
 	    System.out.println("Found " + prePackedCircuit.nets.size() + " nets in the unpacked netlist:");
+	    
+	    for(int i = 0; i < prePackedCircuit.getHardBlocks().size(); i++)
+	    {
+	    	System.out.println("Found " + prePackedCircuit.getHardBlocks().get(i).size() + " " + 
+	    					prePackedCircuit.getHardBlocks().get(i).get(0).getTypeName() + " blocks in the unpacked netlist");
+	    }
 	    
 //	    for(Net net: packedCircuit.nets.values())
 //	    {

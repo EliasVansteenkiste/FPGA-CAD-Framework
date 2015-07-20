@@ -52,7 +52,7 @@ public class Net extends Block{
 			source = output;
 			source.routingBlock = this;
 		}else{
-			System.out.println("Net "+source.name+" has  multiple sources!");
+			System.out.println("Net "+ this.name +" has multiple sources!");
 		}
 	}
 
