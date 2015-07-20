@@ -1,7 +1,9 @@
 package architecture;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
+import circuit.HardBlock;
 import circuit.PackedCircuit;
 
 public class HeterogeneousArchitecture extends Architecture
@@ -16,6 +18,104 @@ public class HeterogeneousArchitecture extends Architecture
 	private ArrayList<Site> ISites;
 	private ArrayList<Site> OSites;
 	
+//	/*
+//	 * A heterogeneousArchitecture is always fitted to a circuit
+//	 */
+//	public HeterogeneousArchitecture(PackedCircuit circuit)
+//	{
+//		int nbClbs = circuit.clbs.values().size();
+//		int nbInputs = circuit.getInputs().values().size();
+//		int nbOutputs = circuit.getOutputs().values().size();
+//		ISites = new ArrayList<>();
+//		OSites = new ArrayList<>();
+//		int[] nbHardBlocksPerType = new int[circuit.getHardBlocks().size()];
+//		hardBlockTypeNames = new String[nbHardBlocksPerType.length];
+//		for(int i = 0; i < nbHardBlocksPerType.length; i++)
+//		{
+//			nbHardBlocksPerType[i] = circuit.getHardBlocks().get(i).size();
+//			hardBlockTypeNames[i] = circuit.getHardBlocks().get(i).get(0).getTypeName();
+//		}
+//		
+//		//Create an x by x architecture which ensures that we can house all IO's and have enough CLB sites
+//		int maxIO;
+//		if(nbInputs > nbOutputs)
+//		{
+//			maxIO = nbInputs;
+//		}
+//		else
+//		{
+//			maxIO = nbOutputs;
+//		}
+//		int size1 = (maxIO + 3) / 4;
+//		int size2 = (int)Math.ceil(Math.sqrt(nbClbs * FILL_GRADE));
+//		int size;
+//		if(size1 > size2)
+//		{
+//			size = size1;
+//		}
+//		else
+//		{
+//			size = size2;
+//		}
+//		
+//		//Enlarge the square architecture to also be able to add sufficient hardblock columns
+//		int[] nbColumnsPerType = new int[nbHardBlocksPerType.length];
+//		int totalNbHardBlockColumns = 0;
+//		for(int i = 0; i < nbHardBlocksPerType.length; i++)
+//		{
+//			int nbBlocksLeft = nbHardBlocksPerType[i];
+//			while(nbBlocksLeft > 0)
+//			{
+//				size++;
+//				nbBlocksLeft -= size;
+//				nbColumnsPerType[i] = nbColumnsPerType[i] + 1;
+//				totalNbHardBlockColumns++;
+//			}
+//		}
+//		
+//		//Insert hard blocks in array
+//		width = size;
+//		height = size;
+//		siteArray = new Site[width+2][height+2][2];
+//		int deltaHardBlockColumns = size / (totalNbHardBlockColumns + 1);
+//		int leftToPlace = totalNbHardBlockColumns;
+//		int nextLeft = deltaHardBlockColumns;
+//		int nextRight = deltaHardBlockColumns * totalNbHardBlockColumns;
+//		while(leftToPlace > 0)
+//		{
+//			
+//			int leftMaxIndex = getMaxIndex(nbColumnsPerType);
+//			insertHardBlockColumn(nextLeft, hardBlockTypeNames[leftMaxIndex]);
+//			nbColumnsPerType[leftMaxIndex]--;
+//			leftToPlace--;
+//			if(nextLeft != nextRight)
+//			{
+//				int rightMaxIndex = getMaxIndex(nbColumnsPerType);
+//				insertHardBlockColumn(nextRight, hardBlockTypeNames[rightMaxIndex]);
+//				nbColumnsPerType[rightMaxIndex]--;
+//				leftToPlace--;
+//			}
+//			nextLeft += deltaHardBlockColumns;
+//			nextRight -= deltaHardBlockColumns;
+//		}
+//		
+//		//insert IO blocks and Clb blocks
+//		for(int x = 0; x < width+2; x++)
+//		{
+//			if(x == 0 || x == width+1)//This is an IO column
+//			{
+//				insertIOColumn(x);
+//			}
+//			else
+//			{
+//				if(!hardBlocksInThisColumn(x,deltaHardBlockColumns,totalNbHardBlockColumns))
+//				{
+//					insertClbColumn(x);
+//				}
+//			}
+//		}
+//	}
+	
 	/*
 	 * A heterogeneousArchitecture is always fitted to a circuit
 	 */
@@ -24,91 +124,79 @@ public class HeterogeneousArchitecture extends Architecture
 		int nbClbs = circuit.clbs.values().size();
 		int nbInputs = circuit.getInputs().values().size();
 		int nbOutputs = circuit.getOutputs().values().size();
-		ISites = new ArrayList<>();
-		OSites = new ArrayList<>();
-		int[] nbHardBlocksPerType = new int[circuit.getHardBlocks().size()];
-		hardBlockTypeNames = new String[nbHardBlocksPerType.length];
-		for(int i = 0; i < nbHardBlocksPerType.length; i++)
+		int nbMemories = 0;
+		int nbMult36 = 0;
+		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
 		{
-			nbHardBlocksPerType[i] = circuit.getHardBlocks().get(i).size();
-			hardBlockTypeNames[i] = circuit.getHardBlocks().get(i).get(0).getTypeName();
-		}
-		
-		//Create an x by x architecture which ensures that we can house all IO's and have enough CLB sites
-		int maxIO;
-		if(nbInputs > nbOutputs)
-		{
-			maxIO = nbInputs;
-		}
-		else
-		{
-			maxIO = nbOutputs;
-		}
-		int size1 = (maxIO + 3) / 4;
-		int size2 = (int)Math.ceil(Math.sqrt(nbClbs * FILL_GRADE));
-		int size;
-		if(size1 > size2)
-		{
-			size = size1;
-		}
-		else
-		{
-			size = size2;
-		}
-		
-		//Enlarge the square architecture to also be able to add sufficient hardblock columns
-		int[] nbColumnsPerType = new int[nbHardBlocksPerType.length];
-		int totalNbHardBlockColumns = 0;
-		for(int i = 0; i < nbHardBlocksPerType.length; i++)
-		{
-			int nbBlocksLeft = nbHardBlocksPerType[i];
-			while(nbBlocksLeft > 0)
+			if(hbVector.get(0).getTypeName().equals("memory"))
 			{
-				size++;
-				nbBlocksLeft -= size;
-				nbColumnsPerType[i] = nbColumnsPerType[i] + 1;
-				totalNbHardBlockColumns++;
-			}
-		}
-		
-		//Insert hard blocks in array
-		width = size;
-		height = size;
-		siteArray = new Site[width+2][height+2][2];
-		int deltaHardBlockColumns = size / (totalNbHardBlockColumns + 1);
-		int leftToPlace = totalNbHardBlockColumns;
-		int nextLeft = deltaHardBlockColumns;
-		int nextRight = deltaHardBlockColumns * totalNbHardBlockColumns;
-		while(leftToPlace > 0)
-		{
-			
-			int leftMaxIndex = getMaxIndex(nbColumnsPerType);
-			insertHardBlockColumn(nextLeft, hardBlockTypeNames[leftMaxIndex]);
-			nbColumnsPerType[leftMaxIndex]--;
-			leftToPlace--;
-			if(nextLeft != nextRight)
-			{
-				int rightMaxIndex = getMaxIndex(nbColumnsPerType);
-				insertHardBlockColumn(nextRight, hardBlockTypeNames[rightMaxIndex]);
-				nbColumnsPerType[rightMaxIndex]--;
-				leftToPlace--;
-			}
-			nextLeft += deltaHardBlockColumns;
-			nextRight -= deltaHardBlockColumns;
-		}
-		
-		//insert IO blocks and Clb blocks
-		for(int x = 0; x < width+2; x++)
-		{
-			if(x == 0 || x == width+1)//This is an IO column
-			{
-				insertIOColumn(x);
+				nbMemories = hbVector.size();
 			}
 			else
 			{
-				if(!hardBlocksInThisColumn(x,deltaHardBlockColumns,totalNbHardBlockColumns))
+				if(hbVector.get(0).getTypeName().equals("mult_36"))
 				{
-					insertClbColumn(x);
+					nbMult36 = hbVector.size();
+				}
+				else
+				{
+					System.err.println("Wrong type of hardblock in the circuit!");
+				}
+			}
+		}
+		ISites = new ArrayList<>();
+		OSites = new ArrayList<>();
+		hardBlockTypeNames = new String[2];
+		hardBlockTypeNames[0] = "memory";
+		hardBlockTypeNames[1] = "mult_36";
+		
+		//Create an x by x architecture which ensures that we can house all IOs, CLBs, memories and mult*36s
+		int x = 1;
+		int roomForInputs = x * 4;
+		int roomForOutputs = x * 4;
+		int roomForMemorieColumns = (x + 6) / 8;
+		int roomForMemories = roomForMemorieColumns * x;
+		int roomForMult36Columns = (x + 2) / 8;
+		int roomForMult36s = roomForMult36Columns * x;
+		int roomForClbs = (x - roomForMemorieColumns - roomForMult36Columns) * x;
+		while(roomForInputs < nbInputs || roomForOutputs < nbOutputs || roomForMemories < nbMemories || 
+																roomForMult36s < nbMult36 || roomForClbs < nbClbs)
+		{
+			x++;
+			roomForInputs = x * 4;
+			roomForOutputs = x * 4;
+			roomForMemorieColumns = (x + 6) / 8;
+			roomForMemories = roomForMemorieColumns * x;
+			roomForMult36Columns = (x + 2) / 8;
+			roomForMult36s = roomForMult36Columns * x;
+			roomForClbs = (x - roomForMemorieColumns - roomForMult36Columns) * x;
+		}
+		
+		width = x;
+		height = x;
+		siteArray = new Site[width+2][height+2][2];
+		for(int i = 0; i < width+2; i++)
+		{
+			if(i == 0 || i == width+1)
+			{
+				insertIOColumn(i);
+			}
+			else
+			{
+				if((i+6)%8 == 0)
+				{
+					insertHardBlockColumn(i, "memory");
+				}
+				else
+				{
+					if((i+2)%8 == 0)
+					{
+						insertHardBlockColumn(i, "mult_36");
+					}
+					else
+					{
+						insertClbColumn(i);
+					}
 				}
 			}
 		}
