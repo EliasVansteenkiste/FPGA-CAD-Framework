@@ -1068,6 +1068,16 @@ public class TimingGraph
 			}
 			++currentIndex;			
 			
+			
+			
+			if(currentNet == null)
+			{
+				System.out.println("This is the problem: startpin = " + startPin.owner.name + 
+									", current sink owner = " + currentSink.owner.name);
+			}
+			
+			
+			
 			if(!(currentIndex < currentNet.sinks.size()))
 			{
 				while(!(currentIndex < currentNet.sinks.size()) && keepGoing)

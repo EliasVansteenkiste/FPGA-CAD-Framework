@@ -234,6 +234,8 @@ public class NetReader
 				prePackedCircuit.getNets().put(output, new Net(output));
 			}
 			prePackedCircuit.getNets().get(output).addSource(hardBlock.getOutputs()[i]);
+			
+			hardBlock.addOutputNetName(hardBlock.getOutputs()[i], output);
 		}
 //		for(String input:topLevelInputs)
 //		{

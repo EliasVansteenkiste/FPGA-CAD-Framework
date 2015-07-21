@@ -72,11 +72,11 @@ public class Example
 	    NetReader netReader = new NetReader();
 	    try
 		{
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
 	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
@@ -97,6 +97,8 @@ public class Example
 	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	    
 	    visualSA(prePackedCircuit, packedCircuit);
+	    
+//	    runWldSaBenchmarksNet();
 	    
 	}
 	
@@ -848,6 +850,99 @@ public class Example
 		}
 	}
 	
+	private static void runWldSaBenchmarksNet()
+	{
+		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
+		String csvFileName = "HeteroBenchmarksWldSaVprStyle.csv";
+		String[] fileNamesToDo;
+		try
+		{
+			File toDoFile = new File(toDoFileName);
+			if(!toDoFile.exists())
+			{
+				System.out.println("No TODO file found\nAborting...");
+				return;
+			}
+			FileReader fileReader = new FileReader(toDoFile.getAbsoluteFile());
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			ArrayList<String> rowsList = new ArrayList<>();
+			String curLine = bufferedReader.readLine();
+			int nbRows = 0;
+			while(curLine != null)
+			{
+				rowsList.add(curLine);
+				nbRows++;
+				curLine = bufferedReader.readLine();
+			}
+			bufferedReader.close();
+			fileNamesToDo = new String[nbRows];
+			rowsList.toArray(fileNamesToDo);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read TODO file: " + toDoFileName);
+			return;
+		}
+		
+		CsvWriter csvWriter;
+		CsvReader csvReader = new CsvReader();
+		boolean success = csvReader.readFile(csvFileName);
+		String[] alreadyDoneFiles;
+		if(success)
+		{
+			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+		}
+		else
+		{
+			csvWriter = new CsvWriter(10);
+			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb memories", "Nb multipliers", "Nb of inputs", "Nb of outputs", 
+					"FPGA dimension", "WLD SA time", "WLD SA cost", "WLD SA max delay"});
+			alreadyDoneFiles = null;
+		}
+		
+		for(int i = 0; i < fileNamesToDo.length; i++)
+		{
+			if(fileNamesToDo[i].substring(fileNamesToDo[i].length() - 3).contains("net"))
+			{
+				System.out.println("Processing benchmark: " + fileNamesToDo[i]);
+				String totalFilename = fileNamesToDo[i];
+				if(alreadyDone(totalFilename, alreadyDoneFiles))
+				{
+					System.out.println("Already done this benchmark!");
+				}
+				else
+				{
+					double[] wldSAResults = new double[9];
+					processWLDSANetBenchmark(wldSAResults, totalFilename);
+					double tdSATime = wldSAResults[0];
+					double tdSACost = wldSAResults[1];
+					int nbClbs = (int)Math.round(wldSAResults[2]);
+					int nbInputs = (int)Math.round(wldSAResults[3]);
+					int nbOutputs = (int)Math.round(wldSAResults[4]);
+					double tdSAMaxDelay = wldSAResults[5];
+					int nbMemories = (int)Math.round(wldSAResults[6]);
+					int nbMultipliers = (int)Math.round(wldSAResults[7]);
+					int fpgaDimension = (int)Math.round(wldSAResults[8]);
+					
+					String nbClbsString = String.format("%d", nbClbs);
+					String nbInputsString = String.format("%d", nbInputs);
+					String nbOutputsString = String.format("%d", nbOutputs);
+					String tdSATimeString = String.format("%.3f", tdSATime);
+					String tdSACostString = String.format("%.3f", tdSACost);
+					String tdSAMaxDelayString = String.format("%.3f", tdSAMaxDelay);
+					String nbMemoriesString = String.format("%d", nbMemories);
+					String nbMultipliersString = String.format("%d", nbMultipliers);
+					String fpgaDimensionString = String.format("%d", fpgaDimension);
+					
+					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbMemoriesString, nbMultipliersString, nbInputsString, 
+													nbOutputsString, fpgaDimensionString, tdSATimeString, tdSACostString, tdSAMaxDelayString});
+				}
+			}
+			csvWriter.writeFile(csvFileName);
+		}
+	}
+	
 	private static void runTdSaBenchmarks()
 	{
 		String toDoFileName = "HeteroBenchmarksToDo.txt";
@@ -1522,6 +1617,69 @@ public class Example
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		results[5] = maxDelay;
+	}
+	
+	private static void processWLDSANetBenchmark(double[] results, String totalFilename)
+	{
+		NetReader netReader = new NetReader();
+		try
+		{
+			netReader.readNetlist(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+	
+		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+		PackedCircuit packedCircuit = netReader.getPackedCircuit();
+		
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		
+		//Random placement
+		Random rand = new Random(1);
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		
+		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
+		
+		Double placementEffort = 10.0;
+		
+		long startTime;
+		long endTime;
+		startTime = System.nanoTime();
+		placer.place(placementEffort);
+		endTime = System.nanoTime();
+		
+		results[0] = (double)(endTime - startTime)/1000000000;
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[1] = effcc.calculateTotalCost();
+		results[2] = packedCircuit.clbs.values().size();
+		results[3] = packedCircuit.getInputs().values().size();
+		results[4] = packedCircuit.getOutputs().values().size();
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		results[5] = maxDelay;
+		int nbMemories = 0;
+		int nbMultipliers = 0;
+		for(Vector<HardBlock> hbVector: packedCircuit.getHardBlocks())
+		{
+			if(hbVector.get(0).getTypeName().equals("memory"))
+			{
+				nbMemories = hbVector.size();
+			}
+			else
+			{
+				if(hbVector.get(0).getTypeName().equals("mult_36"))
+				{
+					nbMultipliers = hbVector.size();
+				}
+			}
+		}
+		results[6] = nbMemories;
+		results[7] = nbMultipliers;
+		results[8] = a.getWidth();
 	}
 	
 	private static void processTDSABenchmark(double[] results, String totalFilename)
