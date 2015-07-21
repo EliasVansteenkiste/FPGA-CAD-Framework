@@ -29,6 +29,7 @@ import placers.SAPlacer.EfficientCostCalculator;
 import placers.SAPlacer.Swap;
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
+import timinganalysis.DelayMatrixReader;
 import timinganalysis.TimingEdge;
 import timinganalysis.TimingGraph;
 import tools.CsvReader;
@@ -55,7 +56,7 @@ import circuit.parser.net.NetReader;
 public class Example 
 {
 	
-	//New netlist reader
+	//Delay matrix testing
 	public static void main(String[] args)
 	{
 		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
@@ -69,38 +70,66 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-	    NetReader netReader = new NetReader();
-	    try
-		{
-	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-		}
-	    catch(IOException ioe)
+	    double[][] delta_clb_to_clb = new double[29][29];
+	    
+	    DelayMatrixReader.readDelayMatrix(delta_clb_to_clb, "benchmarks/vtr_delay_matrices/29/delta_clb_to_clb.echo");
+	    
+	    for(int y = 0; y < 29; y++)
 	    {
-	    	System.err.println("Couldn't read blif file!");
-	    	return;
+	    	for(int x = 0; x < 29; x++)
+	    	{
+	    		System.out.printf("%9.2e ", delta_clb_to_clb[x][y]);
+	    	}
+	    	System.out.println();
 	    }
-	    
-	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
-	    
-	    visualSA(prePackedCircuit, packedCircuit);
-	    
-//	    runWldSaBenchmarksNet();
-	    
 	}
+	
+	//New netlist reader
+//	public static void main(String[] args)
+//	{
+//		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
+//	    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+//	    if(isDebug)
+//	    {
+//	    	System.out.println("Debugging");
+//	    }
+//	    else
+//	    {
+//	    	System.out.println("Not debugging");
+//	    }
+//	    
+//	    NetReader netReader = new NetReader();
+//	    try
+//		{
+//	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+//		}
+//	    catch(IOException ioe)
+//	    {
+//	    	System.err.println("Couldn't read blif file!");
+//	    	return;
+//	    }
+//	    
+//	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+//	    
+//	    visualSA(prePackedCircuit, packedCircuit);
+//	    
+////	    runWldSaBenchmarksNet();
+//	    
+//	}
 	
 	//Heterogeneous
 //	public static void main(String[] args)
