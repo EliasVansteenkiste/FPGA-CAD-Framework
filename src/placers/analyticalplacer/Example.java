@@ -99,40 +99,85 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-//	    NetReader netReader = new NetReader();
-//	    try
-//		{
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-//			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);packedCircuit
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-//		}
-//	    catch(IOException ioe)
-//	    {
-//	    	System.err.println("Couldn't read blif file!");
-//	    	return;
-//	    }
-//	    
-//	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
-//	    
-//	    //visualSA(prePackedCircuit, packedCircuit);
-//	    //visualTDSA(prePackedCircuit, packedCircuit);
+	    NetReader netReader = new NetReader();
+	    try
+		{
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);packedCircuit
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+			
+			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
+		}
+	    catch(IOException ioe)
+	    {
+	    	System.err.println("Couldn't read blif file!");
+	    	return;
+	    }
+	    
+	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+	    
+	    HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
+	    Rplace.placeCLBsandFixedIOs(packedCircuit, arch, new Random(), netReader.getPackedIOs());
+	    WLD_SAPlacer placer = new WLD_SAPlacer(arch, packedCircuit);
+	    placer.placePackedIO(10.0);
+	    
+	    for(ArrayList<Block> blockVector: netReader.getPackedIOs())
+	    {
+	    	System.out.print("PackedIO input = ");
+	    	if(blockVector.get(0) != null)
+	    	{
+	    		Block block = blockVector.get(0);
+	    		System.out.print(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
+	    	}
+	    	else
+	    	{
+	    		System.out.print("null");
+	    	}
+	    	System.out.print(", output = ");
+	    	if(blockVector.get(1) != null)
+	    	{
+	    		Block block = blockVector.get(1);
+	    		System.out.println(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
+	    	}
+	    	else
+	    	{
+	    		System.out.println("null");
+	    	}
+	    }
+	    
+	    EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+	    double totalCost = effcc.calculateTotalCost();
+	    System.out.println("Total cost = " + totalCost);
+	    
+	    boolean consistent = packedCircuit.placementConsistencyCheck(arch);
+	    if(consistent)
+	    {
+	    	System.out.println("The placement is consistent!");
+	    }
+	    else
+	    {
+	    	System.out.println("The placement is not consistent!");
+	    }
+	    
+	    //visualSA(prePackedCircuit, packedCircuit);
+	    //visualTDSA(prePackedCircuit, packedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
 	    
 //	    runWldSaBenchmarksNet();
-	    runTdSaBenchmarksNet();
+//	    runTdSaBenchmarksNet();
 	    
 	}
 	
