@@ -29,8 +29,11 @@ import circuit.PrePackedCircuit;
 public class TimingGraph
 {
 
-	private static final double MHD_DELAY = 0.5;
-	private static final double LUT_DELAY = 1.0;
+	//private static final double MHD_DELAY = 0.5;
+	//private static final double LUT_DELAY = 1.0;
+	
+	private static final double MHD_DELAY = 0.005;
+	private static final double LUT_DELAY = 0.01;
 	
 	private PrePackedCircuit circuit;
 	private List<TimingNode> startNodes;
@@ -1283,9 +1286,10 @@ public class TimingGraph
 				ArrayList<TimingNode> nodeList = blockMap.get(block);
 				for(TimingNode node: nodeList)
 				{
-					toReturn += node.getPin().name + "(" + node.getTRequired() + ") ";
+					toReturn += node.getPin().name + "(" + node.getTRequired() + ") --" + node.getOutputs().get(0).getDelay() + 
+							"--> " + node.getOutputs().get(0).getOutput().getPin().name + "(" + 
+							node.getOutputs().get(0).getOutput().getTRequired() + ")\n";
 				}
-				toReturn += "\n";
 			}
 		}
 		return toReturn;

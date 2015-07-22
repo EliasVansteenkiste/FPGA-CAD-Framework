@@ -17,6 +17,7 @@ import mathtools.CGSolver;
 import mathtools.Crs;
 
 import architecture.FourLutSanitized;
+import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 
@@ -56,35 +57,7 @@ import circuit.parser.net.NetReader;
 public class Example 
 {
 	
-	//Delay matrix testing
-	public static void main(String[] args)
-	{
-		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
-	    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
-	    if(isDebug)
-	    {
-	    	System.out.println("Debugging");
-	    }
-	    else
-	    {
-	    	System.out.println("Not debugging");
-	    }
-	    
-	    double[][] delta_clb_to_clb = new double[29][29];
-	    
-	    DelayMatrixReader.readDelayMatrix(delta_clb_to_clb, "benchmarks/vtr_delay_matrices/29/delta_clb_to_clb.echo");
-	    
-	    for(int y = 0; y < 29; y++)
-	    {
-	    	for(int x = 0; x < 29; x++)
-	    	{
-	    		System.out.printf("%9.2e ", delta_clb_to_clb[x][y]);
-	    	}
-	    	System.out.println();
-	    }
-	}
-	
-	//New netlist reader
+//	//Delay matrix testing
 //	public static void main(String[] args)
 //	{
 //		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
@@ -98,21 +71,49 @@ public class Example
 //	    	System.out.println("Not debugging");
 //	    }
 //	    
+//	    double[][] delta_clb_to_clb = new double[29][29];
+//	    
+//	    DelayMatrixReader.readDelayMatrix(delta_clb_to_clb, "benchmarks/vtr_delay_matrices/29/delta_clb_to_clb.echo");
+//	    
+//	    for(int y = 0; y < 29; y++)
+//	    {
+//	    	for(int x = 0; x < 29; x++)
+//	    	{
+//	    		System.out.printf("%9.2e ", delta_clb_to_clb[x][y]);
+//	    	}
+//	    	System.out.println();
+//	    }
+//	}
+	
+	//New netlist reader
+	public static void main(String[] args)
+	{
+		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
+	    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+	    if(isDebug)
+	    {
+	    	System.out.println("Debugging");
+	    }
+	    else
+	    {
+	    	System.out.println("Not debugging");
+	    }
+	    
 //	    NetReader netReader = new NetReader();
 //	    try
 //		{
-//	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
 //	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+//			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);packedCircuit
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
 //			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
 //		}
@@ -125,11 +126,15 @@ public class Example
 //	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 //	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
 //	    
-//	    visualSA(prePackedCircuit, packedCircuit);
-//	    
-////	    runWldSaBenchmarksNet();
-//	    
-//	}
+//	    //visualSA(prePackedCircuit, packedCircuit);
+//	    //visualTDSA(prePackedCircuit, packedCircuit);
+	    
+//	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
+	    
+//	    runWldSaBenchmarksNet();
+	    runTdSaBenchmarksNet();
+	    
+	}
 	
 	//Heterogeneous
 //	public static void main(String[] args)
@@ -882,7 +887,7 @@ public class Example
 	private static void runWldSaBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksWldSaVprStyle.csv";
+		String csvFileName = "HeteroBenchmarksWldSa.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -966,6 +971,93 @@ public class Example
 					
 					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbMemoriesString, nbMultipliersString, nbInputsString, 
 													nbOutputsString, fpgaDimensionString, tdSATimeString, tdSACostString, tdSAMaxDelayString});
+				}
+			}
+			csvWriter.writeFile(csvFileName);
+		}
+	}
+	
+	private static void runTdSaBenchmarksNet()
+	{
+		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
+		String csvFileName = "HeteroBenchmarksTdSa.csv";
+		String[] fileNamesToDo;
+		try
+		{
+			File toDoFile = new File(toDoFileName);
+			if(!toDoFile.exists())
+			{
+				System.out.println("No TODO file found\nAborting...");
+				return;
+			}
+			FileReader fileReader = new FileReader(toDoFile.getAbsoluteFile());
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			ArrayList<String> rowsList = new ArrayList<>();
+			String curLine = bufferedReader.readLine();
+			int nbRows = 0;
+			while(curLine != null)
+			{
+				rowsList.add(curLine);
+				nbRows++;
+				curLine = bufferedReader.readLine();
+			}
+			bufferedReader.close();
+			fileNamesToDo = new String[nbRows];
+			rowsList.toArray(fileNamesToDo);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read TODO file: " + toDoFileName);
+			return;
+		}
+		
+		CsvWriter csvWriter;
+		CsvReader csvReader = new CsvReader();
+		boolean success = csvReader.readFile(csvFileName);
+		String[] alreadyDoneFiles;
+		if(success)
+		{
+			csvWriter = new CsvWriter(csvReader.getData(), csvReader.getNbColumns());
+			alreadyDoneFiles = csvReader.getColumn(0, 1, csvReader.getNbRows() - 1);
+		}
+		else
+		{
+			csvWriter = new CsvWriter(7);
+			csvWriter.addRow(new String[] {"Benchmark name", "Nb Clbs", "Nb of inputs", "Nb of outputs", 
+															"WLD SA time", "WLD SA cost", "WLD SA max delay"});
+			alreadyDoneFiles = null;
+		}
+		
+		for(int i = 0; i < fileNamesToDo.length; i++)
+		{
+			if(fileNamesToDo[i].substring(fileNamesToDo[i].length() - 3).contains("net"))
+			{
+				System.out.println("Processing benchmark: " + fileNamesToDo[i]);
+				String totalFilename = fileNamesToDo[i];
+				if(alreadyDone(totalFilename, alreadyDoneFiles))
+				{
+					System.out.println("Already done this benchmark!");
+				}
+				else
+				{
+					double[] wldSAResults = new double[6];
+					processTDSANetBenchmark(wldSAResults, totalFilename);
+					double tdSATime = wldSAResults[0];
+					double tdSACost = wldSAResults[1];
+					int nbClbs = (int)Math.round(wldSAResults[2]);
+					int nbInputs = (int)Math.round(wldSAResults[3]);
+					int nbOutputs = (int)Math.round(wldSAResults[4]);
+					double tdSAMaxDelay = wldSAResults[5];
+					
+					String nbClbsString = String.format("%d", nbClbs);
+					String nbInputsString = String.format("%d", nbInputs);
+					String nbOutputsString = String.format("%d", nbOutputs);
+					String tdSATimeString = String.format("%.3f", tdSATime);
+					String tdSACostString = String.format("%.3f", tdSACost);
+					String tdSAMaxDelayString = String.format("%.3f", tdSAMaxDelay);
+					
+					csvWriter.addRow(new String[] {totalFilename, nbClbsString, nbInputsString, 
+													nbOutputsString, tdSATimeString, tdSACostString, tdSAMaxDelayString});
 				}
 			}
 			csvWriter.writeFile(csvFileName);
@@ -1381,6 +1473,7 @@ public class Example
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.println("Maximum delay: " + maxDelay);
+		System.out.println("Total timing cost: " + timingGraph.calculateTotalCost());
 		
 		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
 		
@@ -1422,6 +1515,7 @@ public class Example
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.println("Maximum delay: " + maxDelay);
+		System.out.println("Total timing cost: " + timingGraph.calculateTotalCost());
 		
 		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
 		
@@ -1759,6 +1853,50 @@ public class Example
 		results[5] = maxDelay;
 	}
 	
+	private static void processTDSANetBenchmark(double[] results, String totalFilename)
+	{
+		NetReader netReader = new NetReader();
+		try
+		{
+			netReader.readNetlist(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+	
+		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+		PackedCircuit packedCircuit = netReader.getPackedCircuit();
+		
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		
+		//Random placement
+		Random rand = new Random(1);
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		
+		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
+		
+		Double placementEffort = 10.0;
+		
+		long startTime;
+		long endTime;
+		startTime = System.nanoTime();
+		placer.place(placementEffort);
+		endTime = System.nanoTime();
+		
+		results[0] = (double)(endTime - startTime)/1000000000;
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[1] = effcc.calculateTotalCost();
+		results[2] = packedCircuit.clbs.values().size();
+		results[3] = packedCircuit.getInputs().values().size();
+		results[4] = packedCircuit.getOutputs().values().size();
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		results[5] = maxDelay;
+	}
+	
 	private static void visualLegalizerTest()
 	{
 		int height = 30;
@@ -1907,12 +2045,8 @@ public class Example
 	
 	private static void testTimingCostCalculator(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		int height = 30;
-		int width = 30;
-		int trackwidth = 4;
-		
-		FourLutSanitized a = new FourLutSanitized(width,height,trackwidth);
-		Random rand = new Random(1);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		Random rand = new Random();
 		
 		//Random placement
 		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
@@ -1929,12 +2063,36 @@ public class Example
 		packedCircuit.vBlocks = new Vector<Block>();
 		packedCircuit.vBlocks.addAll(packedCircuit.clbs.values());
 		
+		boolean alreadyDone = false;
+		
 		for(int i = 0; i < 10000; i++)
 		{
 			Swap swap=new Swap();
 			Block b = packedCircuit.vBlocks.elementAt(rand.nextInt(packedCircuit.vBlocks.size()));
 			swap.pl1 = b.getSite();
-			swap.pl2 = a.randomSite(15, swap.pl1);
+			
+			if(b.type == BlockType.CLB)
+			{
+				swap.pl2 = a.randomClbSite(15, swap.pl1);
+			}
+			else
+			{
+				if(b.type == BlockType.HARDBLOCK_CLOCKED || b.type == BlockType.HARDBLOCK_UNCLOCKED)
+				{
+					swap.pl2 = a.randomHardBlockSite(15, (HardBlockSite)swap.pl1);
+				}
+				else
+				{
+					continue;
+				}
+			}
+			
+			if(!alreadyDone)
+			{
+				//System.out.println(tcc.getBlockNodesString(swap.pl1.block.name));
+				System.out.println(tcc.getBlockNodesString("top^MULTIPLY~45[0]"));
+				alreadyDone = true;
+			}
 			
 			double deltaCost = tcc.calculateDeltaCost(swap);
 			if(deltaCost < 0)

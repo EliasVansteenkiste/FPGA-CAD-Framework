@@ -241,7 +241,8 @@ public class EfficientBoundingBoxData
 	
 	private void setWeightandSize() {
 		int size = blocks.length;
-		switch (size) {
+		switch (size) 
+		{
 			case 1:  weight=1; break;
 			case 2:  weight=1; break;
 			case 3:  weight=1; break;
@@ -294,6 +295,7 @@ public class EfficientBoundingBoxData
 			case 50: weight=(size-45)*(2.7933-2.6625)/5+2.6625;break;
 			default: weight=(size-50)*0.02616+2.7933;break;
 		}
+		weight *= 0.01;
 	}
 	
 }

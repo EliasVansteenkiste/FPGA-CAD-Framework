@@ -10,7 +10,7 @@ import circuit.PrePackedCircuit;
 public class TD_SAPlacer extends SAPlacer
 {
 	
-	private static final double TRADE_OFF_FACTOR = 0.0;
+	private static final double TRADE_OFF_FACTOR = 0.5;
 	private static final double TD_PLACE_EXP_FIRST = 1.0;
 	private static final double TD_PLACE_EXP_LAST = 8.0;
 	private static final int NB_ITERATIONS_BEFORE_RECALCULATE = 100000;
