@@ -99,34 +99,34 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-//	    NetReader netReader = new NetReader();
-//	    try
-//		{
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-//			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);packedCircuit
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-//			
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
-//		}
-//	    catch(IOException ioe)
-//	    {
-//	    	System.err.println("Couldn't read blif file!");
-//	    	return;
-//	    }
-//	    
-//	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+	    NetReader netReader = new NetReader();
+	    try
+		{
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);packedCircuit
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+			
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
+		}
+	    catch(IOException ioe)
+	    {
+	    	System.err.println("Couldn't read blif file!");
+	    	return;
+	    }
+	    
+	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	    
 //	    HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
 //	    Rplace.placeCLBsandFixedIOs(packedCircuit, arch, new Random(), netReader.getPackedIOs());
@@ -176,11 +176,12 @@ public class Example
 	    //visualAnalytical(packedCircuit, prePackedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
+	    testTimingGraphNewAnalyticalFunctions(prePackedCircuit, packedCircuit);
 	    
 //	    runWldSaBenchmarksNet();
 //	    runTdSaBenchmarksNet();
 //	    runWldSaBenchmarksPackedIO();
-	    runWldAnalyticalBenchmarksNet();
+//	    runWldAnalyticalBenchmarksNet();
 	    
 	}
 	
@@ -2465,6 +2466,68 @@ public class Example
 		
 		System.out.println("Swapped cost = " + totalCost + ", new cost = " + newCost);
 		System.out.println("Old maximum delay = " + maxDelay + ", new maximal delay = " + newMaxDelay);
+	}
+	
+	private static void testTimingGraphNewAnalyticalFunctions(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
+	{
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		Random rand = new Random();
+		
+		//Random placement
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		
+//		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+//		effcc.checkBbDataMap(packedCircuit);
+		
+		TimingGraph tcc = new TimingGraph(prePackedCircuit);
+		tcc.buildTimingGraph();		
+		tcc.mapTopLevelPinsToTimingGraph(packedCircuit);
+		tcc.setCriticalityExponent(1.0);
+		tcc.recalculateAllSlacksCriticalities();
+		
+		packedCircuit.fillVector();
+		Vector<Block> blockVector = packedCircuit.vBlocks; //Vector that contains all blocks (CLBs, IOs, HBs)
+		int size = blockVector.size();
+		Random myRand = new Random();
+		for(int i = 0; i < 100; i++)
+		{
+			Block randBlock = blockVector.get(myRand.nextInt(size));
+			Pin sourcePin = null;
+			Pin sinkPin = null;
+			if(randBlock.type == BlockType.CLB)
+			{
+				Clb randClb = (Clb)randBlock;
+				sourcePin = randClb.output[0];
+				Net net = packedCircuit.getNets().get(randClb.name);
+				sinkPin = net.sinks.get(myRand.nextInt(net.sinks.size()));
+			}
+			else
+			{
+				if(randBlock.type == BlockType.INPUT)
+				{
+					Input randInput = (Input)randBlock;
+					sourcePin = randInput.output;
+					Net net = packedCircuit.getNets().get(randInput.name);
+					sinkPin = net.sinks.get(myRand.nextInt(net.sinks.size()));
+				}
+				else
+				{
+					if(randBlock.type == BlockType.HARDBLOCK_CLOCKED || randBlock.type == BlockType.HARDBLOCK_UNCLOCKED)
+					{
+						HardBlock randHb = (HardBlock)randBlock;
+						int randInt = myRand.nextInt(randHb.getOutputs().length);
+						sourcePin = randHb.getOutputs()[randInt];
+						Net net = packedCircuit.getNets().get(randHb.getOutputNetName(randInt));
+						sinkPin = net.sinks.get(myRand.nextInt(net.sinks.size()));
+					}
+				}
+			}
+			if(sourcePin != null && sinkPin != null)
+			{
+				double criticalityWithExponent = tcc.getConnectionCriticalityWithExponent(sourcePin, sinkPin);
+				System.out.println(criticalityWithExponent);
+			}
+		}
 	}
 	
 	private static void testEdgeMap(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)

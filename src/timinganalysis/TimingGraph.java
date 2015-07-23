@@ -76,15 +76,6 @@ public class TimingGraph
 			processStartPin(flipflop.getOutput());
 		}
 		
-		//Build all trees starting from a lut which has no inputs
-		for(Lut lut: circuit.getLuts().values())
-		{
-			if(lut.getIsSourceLut())
-			{
-				processStartPin(lut.getOutputs()[0]);
-			}
-		}
-		
 		//Build all trees starting from a hardBlock which is clocked
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
 		{
@@ -684,10 +675,10 @@ public class TimingGraph
 					else
 					{
 						ArrayList<TimingNode> nodeList = blockMap.get(ble.getLut());
-//						if(nodeList == null) //Should only occur for special, unimportant cases
-//						{
-//							continue;
-//						}
+						if(nodeList == null) //Only occurs for constant generator CLBs
+						{
+							continue;
+						}
 						for(TimingNode node: nodeList)
 						{
 							if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || node.getType() == TimingNodeType.START_NODE)
@@ -856,7 +847,8 @@ public class TimingGraph
 			TimingNode sinkNode = clbPinMap.get(sinkTopLevelPin);
 			if(sourceNode == null)
 			{
-				System.out.println(sourceTopLevelPin.name + " is not in the clbPinMap");
+//				System.out.println(sourceTopLevelPin.name + " is not in the clbPinMap");
+				return Math.pow(0.2, criticalityExponent);
 			}
 			for(TimingEdge edge: sourceNode.getOutputs())
 			{
@@ -1293,6 +1285,24 @@ public class TimingGraph
 			}
 		}
 		return toReturn;
+	}
+	
+	public void checkBlockMap()
+	{
+		for(Lut lut: circuit.getLuts().values())
+		{
+			if(blockMap.get(lut) == null)
+			{
+				System.out.println("Lut " + lut.name + " is not present in the block map");
+			}
+		}
+		for(Flipflop ff: circuit.getFlipflops().values())
+		{
+			if(blockMap.get(ff) == null)
+			{
+				System.out.println("FF " + ff.name + " is not present in the block map");
+			}
+		}
 	}
 	
 	@Override

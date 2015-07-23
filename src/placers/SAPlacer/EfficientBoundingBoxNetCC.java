@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import circuit.Block;
+import circuit.Clb;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
@@ -176,5 +177,36 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 			}
 		}
 	}
+	
+//	public void checkBbDataMap(PackedCircuit circuit)
+//	{
+//		for(Clb clb: circuit.clbs.values())
+//		{
+//			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(clb);
+//			if(bbDataList == null || bbDataList.size() == 0)
+//			{
+//				System.out.println("Not ok for " + clb.name);
+//			}
+//			else
+//			{
+//				for(EfficientBoundingBoxData data: bbDataList)
+//				{
+//					if(data.getNetCost() <= 0.02)
+//					{
+//						System.out.println("It is zero");
+//					}
+//				}
+//			}
+//			
+//			if(clb.name.equals("top^memory_controller_out~11"))
+//			{
+//				System.out.println("Found the clb");
+//				for(EfficientBoundingBoxData data: bbDataList)
+//				{
+//					System.out.println(data.getNetCost());
+//				}
+//			}
+//		}
+//	}
 	
 }
