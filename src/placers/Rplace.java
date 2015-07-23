@@ -317,109 +317,109 @@ public class Rplace
 		}
 	}
 	
-	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand, ArrayList<ArrayList<Block>> packedIOs)
-	{
-		//Initialize data structures
-		ArrayList<Site> clbSites = new ArrayList<>();
-		ArrayList<ArrayList<Site>> hardBlockSites = new ArrayList<>();
-		ArrayList<String> hardBlockTypes = new ArrayList<>();
-		for(int x = 1; x < a.getWidth() + 1; x++)
-		{
-			for(int y = 1; y < a.getHeight() + 1; y++)
-			{
-				Site s = a.getSite(x, y, 0);
-				s.block = null;
-				if(s.type == SiteType.CLB)
-				{
-					clbSites.add(s);
-				}
-				else //Must be a hardBlock
-				{
-					String typeName = ((HardBlockSite)s).getTypeName();
-					int curIndex = 0;
-					boolean found = false;
-					for(String name: hardBlockTypes)
-					{
-						if(name.contains(typeName))
-						{
-							hardBlockSites.get(curIndex).add(s);
-							found = true;
-							break;
-						}
-						curIndex++;
-					}
-					if(!found)
-					{
-						hardBlockTypes.add(typeName);
-						ArrayList <Site> newList = new ArrayList<>();
-						newList.add(s);
-						hardBlockSites.add(newList);
-					}
-				}
-			}
-		}
-		
-		//Random place CLBs
-		for(Clb clb: c.clbs.values())
-		{
-			int randomIndex = rand.nextInt(clbSites.size());
-			Site site = (Site)clbSites.get(randomIndex);
-			clbSites.remove(randomIndex);
-			site.block = clb;
-			clb.setSite(site);
-		}
-				
-		//Random place hardBlocks
-		for(Vector<HardBlock> hbVector: c.getHardBlocks())
-		{
-			String curTypeName = hbVector.get(0).getTypeName();
-			int curIndex = 0;
-			for(String name: hardBlockTypes)
-			{
-				if(name.contains(curTypeName))
-				{
-					break;
-				}
-				curIndex++;
-			}
-			for(HardBlock hardBlock: hbVector)
-			{
-				int randomIndex = rand.nextInt(hardBlockSites.get(curIndex).size());
-				Site site = (Site)hardBlockSites.get(curIndex).get(randomIndex);
-				hardBlockSites.get(curIndex).remove(randomIndex);
-				site.block = hardBlock;
-				hardBlock.setSite(site);
-			}
-		}
-		
-		//Deterministic place IOs
-		int index = 0;
-		ArrayList<Site> ISites = a.getISites();
-		ArrayList<Site> OSites = a.getOSites();
-		for(ArrayList<Block> tuple: packedIOs)
-		{
-			Input input = (Input)tuple.get(0);
-			Output output = (Output)tuple.get(1);
-			if(input != null)
-			{
-				input.fixed = false;
-				Site site = ISites.get(index);
-				site.block = input;
-				input.setSite(site);
-			}
-			if(output != null)
-			{
-				output.fixed = false;
-				Site site = OSites.get(index);
-				site.block = output;
-				output.setSite(site);
-			}
-			index += 1;
-			if(index >= a.getHeight()*2 + a.getWidth()*2)
-			{
-				index = 1;
-			}
-		}
-	}
+//	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand, ArrayList<ArrayList<Block>> packedIOs)
+//	{
+//		//Initialize data structures
+//		ArrayList<Site> clbSites = new ArrayList<>();
+//		ArrayList<ArrayList<Site>> hardBlockSites = new ArrayList<>();
+//		ArrayList<String> hardBlockTypes = new ArrayList<>();
+//		for(int x = 1; x < a.getWidth() + 1; x++)
+//		{
+//			for(int y = 1; y < a.getHeight() + 1; y++)
+//			{
+//				Site s = a.getSite(x, y, 0);
+//				s.block = null;
+//				if(s.type == SiteType.CLB)
+//				{
+//					clbSites.add(s);
+//				}
+//				else //Must be a hardBlock
+//				{
+//					String typeName = ((HardBlockSite)s).getTypeName();
+//					int curIndex = 0;
+//					boolean found = false;
+//					for(String name: hardBlockTypes)
+//					{
+//						if(name.contains(typeName))
+//						{
+//							hardBlockSites.get(curIndex).add(s);
+//							found = true;
+//							break;
+//						}
+//						curIndex++;
+//					}
+//					if(!found)
+//					{
+//						hardBlockTypes.add(typeName);
+//						ArrayList <Site> newList = new ArrayList<>();
+//						newList.add(s);
+//						hardBlockSites.add(newList);
+//					}
+//				}
+//			}
+//		}
+//		
+//		//Random place CLBs
+//		for(Clb clb: c.clbs.values())
+//		{
+//			int randomIndex = rand.nextInt(clbSites.size());
+//			Site site = (Site)clbSites.get(randomIndex);
+//			clbSites.remove(randomIndex);
+//			site.block = clb;
+//			clb.setSite(site);
+//		}
+//				
+//		//Random place hardBlocks
+//		for(Vector<HardBlock> hbVector: c.getHardBlocks())
+//		{
+//			String curTypeName = hbVector.get(0).getTypeName();
+//			int curIndex = 0;
+//			for(String name: hardBlockTypes)
+//			{
+//				if(name.contains(curTypeName))
+//				{
+//					break;
+//				}
+//				curIndex++;
+//			}
+//			for(HardBlock hardBlock: hbVector)
+//			{
+//				int randomIndex = rand.nextInt(hardBlockSites.get(curIndex).size());
+//				Site site = (Site)hardBlockSites.get(curIndex).get(randomIndex);
+//				hardBlockSites.get(curIndex).remove(randomIndex);
+//				site.block = hardBlock;
+//				hardBlock.setSite(site);
+//			}
+//		}
+//		
+//		//Deterministic place IOs
+//		int index = 0;
+//		ArrayList<Site> ISites = a.getISites();
+//		ArrayList<Site> OSites = a.getOSites();
+//		for(ArrayList<Block> tuple: packedIOs)
+//		{
+//			Input input = (Input)tuple.get(0);
+//			Output output = (Output)tuple.get(1);
+//			if(input != null)
+//			{
+//				input.fixed = false;
+//				Site site = ISites.get(index);
+//				site.block = input;
+//				input.setSite(site);
+//			}
+//			if(output != null)
+//			{
+//				output.fixed = false;
+//				Site site = OSites.get(index);
+//				site.block = output;
+//				output.setSite(site);
+//			}
+//			index += 1;
+//			if(index >= a.getHeight()*2 + a.getWidth()*2)
+//			{
+//				index = 1;
+//			}
+//		}
+//	}
 	
 }

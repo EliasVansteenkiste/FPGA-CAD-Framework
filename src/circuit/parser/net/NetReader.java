@@ -496,61 +496,62 @@ public class NetReader
 			}
 			else
 			{
-				if(mode.equals("io"))
-				{
-					Output output = null;
-					if(topLevelInputs.size() > 0)
-					{
-						String connectedNetName = topLevelInputs.get(0);
-						String blockName = name;
-						if(blockName.substring(0,4).equals("out:"))
-						{
-							blockName = blockName.substring(4);
-						}
-						if(!blockName.equals(connectedNetName))
-						{
-							packedCircuit.nets.remove(blockName);
-							prePackedCircuit.nets.remove(blockName);
-							output = packedCircuit.outputs.get(blockName);
-							
-							if(!packedCircuit.getNets().containsKey(connectedNetName)) //net still needs to be added to the nets hashmap
-							{
-								packedCircuit.getNets().put(connectedNetName, new Net(connectedNetName));
-							}
-							packedCircuit.getNets().get(connectedNetName).addSink(output.input);
-							
-							if(!prePackedCircuit.getNets().containsKey(connectedNetName)) //net still needs to be added to the nets hashmap
-							{
-								prePackedCircuit.getNets().put(connectedNetName, new Net(connectedNetName));
-							}
-							prePackedCircuit.getNets().get(connectedNetName).addSink(output.input);
-							
-							output.name = connectedNetName;
-							packedCircuit.outputs.remove(blockName);
-							packedCircuit.outputs.put(output.name, output);
-						}
-						else
-						{
-							output = packedCircuit.outputs.get(blockName);
-						}
-					}
-					
-					Input input = null;
-					if(topLevelOutputs.size() > 0)
-					{
-						String inputName = topLevelOutputs.get(0);
-						input = packedCircuit.inputs.get(inputName);
-					}
-					
-					ArrayList<Block> tuple = new ArrayList<>();
-					tuple.add(input);
-					tuple.add(output);
-					packedIOs.add(tuple);
-				}
-				else
-				{
-					System.out.println("Error: the mode of the io was not recognized!");
-				}
+//				if(mode.equals("io"))
+//				{
+//					Output output = null;
+//					if(topLevelInputs.size() > 0)
+//					{
+//						String connectedNetName = topLevelInputs.get(0);
+//						String blockName = name;
+//						if(blockName.substring(0,4).equals("out:"))
+//						{
+//							blockName = blockName.substring(4);
+//						}
+//						if(!blockName.equals(connectedNetName))
+//						{
+//							packedCircuit.nets.remove(blockName);
+//							prePackedCircuit.nets.remove(blockName);
+//							output = packedCircuit.outputs.get(blockName);
+//							
+//							if(!packedCircuit.getNets().containsKey(connectedNetName)) //net still needs to be added to the nets hashmap
+//							{
+//								packedCircuit.getNets().put(connectedNetName, new Net(connectedNetName));
+//							}
+//							packedCircuit.getNets().get(connectedNetName).addSink(output.input);
+//							
+//							if(!prePackedCircuit.getNets().containsKey(connectedNetName)) //net still needs to be added to the nets hashmap
+//							{
+//								prePackedCircuit.getNets().put(connectedNetName, new Net(connectedNetName));
+//							}
+//							prePackedCircuit.getNets().get(connectedNetName).addSink(output.input);
+//							
+//							output.name = connectedNetName;
+//							packedCircuit.outputs.remove(blockName);
+//							packedCircuit.outputs.put(output.name, output);
+//						}
+//						else
+//						{
+//							output = packedCircuit.outputs.get(blockName);
+//						}
+//					}
+//					
+//					Input input = null;
+//					if(topLevelOutputs.size() > 0)
+//					{
+//						String inputName = topLevelOutputs.get(0);
+//						input = packedCircuit.inputs.get(inputName);
+//					}
+//					
+//					ArrayList<Block> tuple = new ArrayList<>();
+//					tuple.add(input);
+//					tuple.add(output);
+//					packedIOs.add(tuple);
+//				}
+//				else
+//				{
+//					System.out.println("Error: the mode of the io was not recognized!");
+//				}
+				System.out.println("Error: the mode of the io was not recognized!");
 			}
 		}
 		return success;
