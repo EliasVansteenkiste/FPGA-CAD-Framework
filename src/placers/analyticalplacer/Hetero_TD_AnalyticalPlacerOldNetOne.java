@@ -157,7 +157,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 					timingWeightFactor += edge.getCost();
 				}
 			}
-			else
+			else //Net is sourced by a constant generator
 			{
 				timingWeightFactor = 1.0;
 			}

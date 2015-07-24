@@ -845,11 +845,12 @@ public class TimingGraph
 		{
 			TimingNode sourceNode = clbPinMap.get(sourceTopLevelPin);
 			TimingNode sinkNode = clbPinMap.get(sinkTopLevelPin);
-			if(sourceNode == null)
+			if(sourceNode == null) //This occurs for constant generators
 			{
 //				System.out.println(sourceTopLevelPin.name + " is not in the clbPinMap");
 				return Math.pow(0.2, criticalityExponent);
 			}
+			//System.out.print("source = " + sourceNode.getPin().name + ", sink = " + sinkNode.getPin().name + " ");
 			for(TimingEdge edge: sourceNode.getOutputs())
 			{
 				if(edge.getOutput() == sinkNode)
