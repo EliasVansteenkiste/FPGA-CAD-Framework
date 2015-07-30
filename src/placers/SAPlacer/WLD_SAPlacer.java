@@ -228,6 +228,59 @@ public class WLD_SAPlacer extends SAPlacer
 		}
 	}
 	
+	public void lowTempAnnealParametrized(double innerNum, double tempDivisionFactor, double maxValueDivisionFactor)
+	{
+		calculator.recalculateFromScratch();
+		rand = new Random(1);
+		int biggestDistance = getBiggestDistance();
+		int maxValue = (int)Math.floor(biggestDistance / maxValueDivisionFactor);
+		if(maxValue < 1)
+		{
+			maxValue = 1;
+		}
+		Rlimd = maxValue;
+		int Rlim = initialRlim();
+		double T = calculateInitialTemperatureLowDivided(tempDivisionFactor);
+		int movesPerTemperature = (int) (innerNum*Math.pow(circuit.numBlocks(),4.0/3.0));
+		
+		while (T > 0.005 * calculator.calculateAverageNetCost()) {
+			int alphaAbs = 0;
+			for (int i = 0; i < movesPerTemperature; i++) {
+				Swap swap;
+				swap = findSwap(Rlim);
+      			
+				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+				{
+					double deltaCost = calculator.calculateDeltaCost(swap);
+					
+					if(deltaCost <= 0)
+					{
+						swap.apply();
+						alphaAbs+=1;
+						calculator.pushThrough();
+					}
+					else
+					{
+						if(rand.nextDouble() < Math.exp(-deltaCost/T))
+						{
+							swap.apply();
+							alphaAbs+=1;
+							calculator.pushThrough();
+						}
+						else
+						{
+							calculator.revert();
+						}
+					}
+				}
+			}
+
+			double alpha = (double) alphaAbs / movesPerTemperature;
+			Rlim = updateRlimLimited(alpha, maxValue);
+			T = updateTemperature(T,alpha);
+		}
+	}
+	
 	private double calculateInitialTemperature()
 	{
 		double	somDeltaKost=0;
@@ -362,6 +415,44 @@ public class WLD_SAPlacer extends SAPlacer
 			System.out.println("Trouble");
 			T = 1.0;
 		}
+		
+		return T;
+	}
+	
+	private double calculateInitialTemperatureLowDivided(double divisionFactor)
+	{
+		double sumNegDeltaCost = 0.0;
+		int numNegDeltaCost = 0;
+		double quadraticSumNegDeltaCost = 0.0;
+		for (int i = 0; i < circuit.numBlocks(); i++)
+		{
+			Swap swap = findSwapInCircuit();
+			double deltaCost = calculator.calculateDeltaCost(swap);
+			
+			//Swap
+			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			{
+				swap.apply();
+				calculator.pushThrough();
+			}
+			else
+			{
+				calculator.revert();
+			}
+
+			if(deltaCost <= 0)
+			{
+				sumNegDeltaCost -= deltaCost;
+				quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
+				numNegDeltaCost++;
+			}
+		}
+		
+		double somNegKwadraten = quadraticSumNegDeltaCost;
+		double negKwadraatSom = Math.pow(sumNegDeltaCost, 2);
+		double stdafwijkingNegDeltaKost = Math.sqrt(somNegKwadraten/numNegDeltaCost - negKwadraatSom/(numNegDeltaCost*numNegDeltaCost));
+		
+		double T = (2 * stdafwijkingNegDeltaKost) / divisionFactor;
 		
 		return T;
 	}

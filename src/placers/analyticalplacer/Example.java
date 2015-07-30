@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
@@ -186,8 +187,12 @@ public class Example
 //	    runWldSaBenchmarksPackedIO();
 //	    runWldAnalyticalBenchmarksNet();
 //	    runTdAnalyticalNewNetBenchmarksNet();
-	    runTdAnalyticalOldNetBenchmarksNet();
-	    
+//	    runTdAnalyticalOldNetBenchmarksNet();
+//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/stereovision3.net");
+//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/diffeq1.net");
+//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/diffeq2.net");
+//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net");
+	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/sha.net");
 	}
 	
 	//Heterogeneous
@@ -430,6 +435,137 @@ public class Example
 		frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
+	}
+	
+	private static void runSAParameterSweep(String fileName)
+	{
+		double[] maxValueDivisionFactor = {2, 3, 4.5, 6.75, 10.125, 15, 20};
+		double[] tempDivisionFactor = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
+		double[] innerNum = {1, 2, 4, 6, 8, 10};
+		
+		String resultsFileName = fileName.substring(fileName.lastIndexOf('/') + 1, fileName.lastIndexOf('.')) + "_SA_parameterSweep.csv";
+		System.out.println("Processing file: " + resultsFileName);
+		
+		CsvWriter writer = new CsvWriter(6);
+		writer.addRow(new String[] {"maxValueDivisionFactor", "tempDivisionFactor", "innerNum", "WL cost", "maxDelay", "Anneal time"});
+		
+		Map<String,Integer> inputXPositions = new HashMap<>();
+		Map<String,Integer> inputYPositions = new HashMap<>();
+		Map<String,Integer> outputXPositions = new HashMap<>();
+		Map<String,Integer> outputYPositions = new HashMap<>();
+		Map<String,Integer> clbXPositions = new HashMap<>();
+		Map<String,Integer> clbYPositions = new HashMap<>();
+		Map<String,Integer> hbXPositions = new HashMap<>();
+		Map<String,Integer> hbYPositions = new HashMap<>();
+		{
+			NetReader netReader = new NetReader();
+			try
+			{
+				netReader.readNetlist(fileName, 6);
+			}
+			catch(IOException ioe)
+			{
+				System.err.println("Couldn't read blif file!");
+				return;
+			}
+			
+			PackedCircuit packedCircuit = netReader.getPackedCircuit();
+			
+			HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+			
+			int legalizer = 1;
+			HeteroAnalyticalPlacerOne analyticalPlacer = new HeteroAnalyticalPlacerOne(a, packedCircuit, legalizer);
+			analyticalPlacer.place();
+			
+			for(Input input: packedCircuit.inputs.values())
+			{
+				inputXPositions.put(input.name, input.getSite().x);
+				inputYPositions.put(input.name, input.getSite().y);
+			}
+			for(Output output: packedCircuit.outputs.values())
+			{
+				outputXPositions.put(output.name, output.getSite().x);
+				outputYPositions.put(output.name, output.getSite().y);
+			}
+			for(Clb clb: packedCircuit.clbs.values())
+			{
+				clbXPositions.put(clb.name, clb.getSite().x);
+				clbYPositions.put(clb.name, clb.getSite().y);
+			}
+			for(Vector<HardBlock> hbVector: packedCircuit.getHardBlocks())
+			{
+				for(HardBlock hb: hbVector)
+				{
+					hbXPositions.put(hb.name, hb.getSite().x);
+					hbYPositions.put(hb.name, hb.getSite().y);
+				}
+			}
+		}
+		
+		for(int i = 0; i < maxValueDivisionFactor.length; i++)
+		{
+			for(int j = 0; j < tempDivisionFactor.length; j++)
+			{
+				for(int k = 0; k < innerNum.length; k++)
+				{
+					double currentMaxValueDivisionFactor = maxValueDivisionFactor[i];
+					double currentTempDivisionFactor = tempDivisionFactor[j];
+					double currentInnerNum = innerNum[k];
+					
+					System.out.printf("maxValueDivisionFactor = %.2f, tempDivisionFactor = %.2f, innerNum = %.2f\n", 
+												currentMaxValueDivisionFactor, currentTempDivisionFactor, currentInnerNum);
+					
+					NetReader netReader = new NetReader();
+					try
+					{
+						netReader.readNetlist(fileName, 6);
+					}
+					catch(IOException ioe)
+					{
+						System.err.println("Couldn't read blif file!");
+						return;
+					}
+					
+					PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+					PackedCircuit packedCircuit = netReader.getPackedCircuit();
+					
+					HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+					
+					boolean success = packedCircuit.place(inputXPositions, inputYPositions, outputXPositions, outputYPositions, 
+																		clbXPositions, clbYPositions, hbXPositions, hbYPositions, a);
+					
+					if(!success)
+					{
+						System.err.println("Recovering the placement from the analytical stage failed!");
+						return;
+					}
+					
+					WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, packedCircuit);
+					
+					long annealStartTime = System.nanoTime();
+					saPlacer.lowTempAnnealParametrized(currentInnerNum, currentTempDivisionFactor, currentMaxValueDivisionFactor);
+					long annealEndTime = System.nanoTime();
+					
+					EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+					double wl = effcc.calculateTotalCost();
+					TimingGraph tgcc = new TimingGraph(prePackedCircuit);
+					tgcc.buildTimingGraph();
+					double maxDelay = tgcc.calculateMaximalDelay();
+					double annealTime = (double)(annealEndTime - annealStartTime) / 1000000000.0;
+					
+					String currentMaxValueDivisionFactorString = String.format("%.3f", currentMaxValueDivisionFactor);
+					String currentTempDivisionFactorString = String.format("%.3f", currentTempDivisionFactor);
+					String currentInnerNumString = String.format("%.3f", currentInnerNum);
+					String wlString = String.format("%.4f", wl);
+					String maxDelayString = String.format("%.4f", maxDelay);
+					String annealTimeString = String.format("%.3f", annealTime);
+					
+					writer.addRow(new String[] {currentMaxValueDivisionFactorString, currentTempDivisionFactorString, 
+													currentInnerNumString, wlString, maxDelayString, annealTimeString});
+					writer.writeFile(resultsFileName);
+				}
+			}
+		}
 	}
 	
 	private static void runAllPlacersBenchmarks()

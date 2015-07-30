@@ -56,6 +56,49 @@ public class PackedCircuit extends Circuit{
 		}
 	}
 	
+	public boolean place(Map<String,Integer> inputXPositions, Map<String,Integer> inputYPositions, Map<String,Integer> outputXPositions,
+		Map<String,Integer> outputYPositions, Map<String,Integer> clbXPositions, Map<String,Integer> clbYPositions, 
+		Map<String,Integer> hbXPositions, Map<String,Integer> hbYPositions, HeterogeneousArchitecture arch)
+	{
+		for(Input input: inputs.values())
+		{
+			int x = inputXPositions.get(input.name);
+			int y = inputYPositions.get(input.name);
+			Site site = arch.getSite(x, y, 0);
+			input.setSite(site);
+			site.block = input;
+		}
+		for(Output output: outputs.values())
+		{
+			int x = outputXPositions.get(output.name);
+			int y = outputYPositions.get(output.name);
+			Site site = arch.getSite(x, y, 1);
+			output.setSite(site);
+			site.block = output;
+		}
+		for(Clb clb: clbs.values())
+		{
+			int x = clbXPositions.get(clb.name);
+			int y = clbYPositions.get(clb.name);
+			Site site = arch.getSite(x, y, 0);
+			clb.setSite(site);
+			site.block = clb;
+		}
+		for(Vector<HardBlock> hbVector: hardBlocks)
+		{
+			for(HardBlock hb: hbVector)
+			{
+				int x = hbXPositions.get(hb.name);
+				int y = hbYPositions.get(hb.name);
+				Site site = arch.getSite(x, y, 0);
+				hb.setSite(site);
+				site.block = hb;
+			}
+		}
+		boolean success = placementConsistencyCheck(arch);
+		return success;
+	}
+	
 	public void dumpPlacement(String file) throws FileNotFoundException {
 		PrintStream stream = new PrintStream(new FileOutputStream(file));
 		

@@ -140,6 +140,20 @@ public abstract class SAPlacer
 		return  (int) Math.round(Rlimd);
 	}
 	
+	protected int updateRlimLimited(double alpha, int maxValue)
+	{
+		Rlimd = Rlimd * (1 - 0.44 + alpha);
+		if(Rlimd > maxValue)
+		{
+			Rlimd = maxValue;
+		}
+		if(Rlimd < 1)
+		{
+			Rlimd = 1;
+		}
+		return (int) Math.round(Rlimd);
+	}
+	
 	protected int getBiggestDistance()
 	{
 		Collection<Clb> clbs = circuit.clbs.values();
