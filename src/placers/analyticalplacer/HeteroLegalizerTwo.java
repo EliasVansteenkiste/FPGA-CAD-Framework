@@ -135,7 +135,8 @@ public class HeteroLegalizerTwo
 				}
 				else
 				{
-					//subTypeLegalize(typeStartIndices[i], bestLegalX.length, linearX, linearY, typeNames[i], semiLegalX, semiLegalY);
+					subTypePartiallyLegalize(typeStartIndices[i], bestLegalX.length, linearX, linearY, typeNames[i], 
+															tempPartiallyLegalX, tempPartiallyLegalY, maxUtilization);
 				}
 			}
 		}
@@ -143,8 +144,8 @@ public class HeteroLegalizerTwo
 		{
 			if(solveMode != typeNames.length)
 			{
-				//subTypeLegalize(typeStartIndices[solveMode - 1], typeStartIndices[solveMode], linearX, linearY, 
-				//												typeNames[solveMode - 1], semiLegalX, semiLegalY);
+				subTypePartiallyLegalize(typeStartIndices[solveMode - 1], typeStartIndices[solveMode], linearX, linearY, 
+										typeNames[solveMode - 1], tempPartiallyLegalX, tempPartiallyLegalY, maxUtilization);
 				for(int i = 0; i < typeStartIndices[solveMode - 1]; i++)
 				{
 					tempPartiallyLegalX[i] = partialLegalX[i];
@@ -158,8 +159,8 @@ public class HeteroLegalizerTwo
 			}
 			else
 			{
-				//subTypeLegalize(typeStartIndices[solveMode - 1], bestLegalX.length, linearX, linearY, 
-				//												typeNames[solveMode - 1], semiLegalX, semiLegalY);
+				subTypePartiallyLegalize(typeStartIndices[solveMode - 1], bestLegalX.length, linearX, linearY, 
+							typeNames[solveMode - 1], tempPartiallyLegalX, tempPartiallyLegalY, maxUtilization);
 				for(int i = 0; i < typeStartIndices[solveMode - 1]; i++)
 				{
 					tempPartiallyLegalX[i] = partialLegalX[i];
@@ -167,6 +168,16 @@ public class HeteroLegalizerTwo
 				}
 			}
 		}
+		
+		
+		
+		//Print it
+		for(int i = 0; i < tempPartiallyLegalX.length; i++)
+		{
+			System.out.printf("Block %d: X = %d, Y = %d\n", i, tempPartiallyLegalX[i], tempPartiallyLegalY[i]);
+		}
+		
+		
 	}
 	
 	/*

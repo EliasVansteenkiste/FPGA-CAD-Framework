@@ -100,34 +100,34 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-//	    NetReader netReader = new NetReader();
-//	    try
-//		{
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-//			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);packedCircuit
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-//			
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
-//		}
-//	    catch(IOException ioe)
-//	    {
-//	    	System.err.println("Couldn't read blif file!");
-//	    	return;
-//	    }
-//	    
-//	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+	    NetReader netReader = new NetReader();
+	    try
+		{
+	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);packedCircuit
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+			
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
+		}
+	    catch(IOException ioe)
+	    {
+	    	System.err.println("Couldn't read blif file!");
+	    	return;
+	    }
+	    
+	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	    
 //	    HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
 //	    Rplace.placeCLBsandFixedIOs(packedCircuit, arch, new Random(), netReader.getPackedIOs());
@@ -181,6 +181,7 @@ public class Example
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
 //	    testTimingGraphNewAnalyticalFunctions(prePackedCircuit, packedCircuit);
 //	    testTimingGraphOldAnalyticalFunctions(prePackedCircuit, packedCircuit);
+	    testHeteroLegalizerTwo(packedCircuit);
 	    
 //	    runWldSaBenchmarksNet();
 //	    runTdSaBenchmarksNet();
@@ -192,7 +193,7 @@ public class Example
 //	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/diffeq1.net");
 //	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/diffeq2.net");
 //	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net");
-	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/sha.net");
+//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/sha.net");
 	}
 	
 	//Heterogeneous
@@ -2715,6 +2716,35 @@ public class Example
 		frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
+	}
+	
+	private static void testHeteroLegalizerTwo(PackedCircuit packedCircuit)
+	{
+		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
+		
+		int[] typeStartIndices = new int[] {0};
+		String[] typeNames = new String[] {"CLB"};
+		int nbMovableBlocks = 15;
+		double[] linearX = new double[nbMovableBlocks];
+		double[] linearY = new double[nbMovableBlocks];
+		linearX[0] = 5.60; linearY[0] = 5.60;
+		linearX[1] = 5.80; linearY[1] = 5.60;
+		linearX[2] = 6.20; linearY[2] = 5.60;
+		linearX[3] = 6.40; linearY[3] = 5.60;
+		linearX[4] = 5.60; linearY[4] = 5.80;
+		linearX[5] = 5.80; linearY[5] = 5.80;
+		linearX[6] = 6.20; linearY[6] = 5.80;
+		linearX[7] = 6.40; linearY[7] = 5.80;
+		linearX[8] = 5.60; linearY[8] = 6.20;
+		linearX[9] = 5.80; linearY[9] = 6.20;
+		linearX[10] = 6.20; linearY[10] = 6.20;
+		linearX[11] = 6.40; linearY[11] = 6.20;
+		linearX[12] = 5.60; linearY[12] = 6.40;
+		linearX[13] = 5.80; linearY[13] = 6.40;
+		linearX[14] = 6.20; linearY[14] = 6.40;
+		
+		HeteroLegalizerTwo legalizer = new HeteroLegalizerTwo(arch, typeStartIndices, typeNames, nbMovableBlocks);
+		legalizer.legalize(linearX, linearY, null, null, 0, 0.9);
 	}
 	
 	private static void testCostCalculator(PackedCircuit c)
