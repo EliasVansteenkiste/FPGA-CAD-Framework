@@ -175,7 +175,59 @@ public class HeteroAnalyticalPlacerNewNetTwo
 				}
 			}
 			
+			//Find bounding box
+			double minX = sourceX;
+			double maxX = sourceX;
+			double minY = sourceY;
+			double maxY = sourceY;
+			for(Pin sinkPin: net.sinks)
+			{
+				double sinkX;
+				double sinkY;
+				if(!isFixedPin(sinkPin, solveMode))
+				{
+					int sinkIndex = indexMap.get(sinkPin.owner);
+					sinkX = linearX[sinkIndex];
+					sinkY = linearY[sinkIndex];
+				}
+				else
+				{
+					if(sinkPin.owner.type == BlockType.INPUT || sinkPin.owner.type == BlockType.OUTPUT)
+					{
+						sinkX = sinkPin.owner.getSite().x;
+						sinkY = sinkPin.owner.getSite().y;
+					}
+					else
+					{
+						int sinkIndex = indexMap.get(sinkPin.owner);
+						sinkX = legalizer.getBestLegalX()[sinkIndex];
+						sinkY = legalizer.getBestLegalY()[sinkIndex];
+					}
+				}
+				
+				if(sinkX > maxX)
+				{
+					maxX = sinkX;
+				}
+				if(sinkX < minX)
+				{
+					minX = sinkX;
+				}
+				if(sinkY > maxY)
+				{
+					maxY = sinkY;
+				}
+				if(sinkY < minY)
+				{
+					minY = sinkY;
+				}
+			}
+			
 			//Process net sink pins
+			boolean doneMaxX = false;
+			boolean doneMinX = false;
+			boolean doneMaxY = false;
+			boolean doneMinY = false;
 			for(Pin sinkPin: net.sinks)
 			{
 				Block sinkOwner = sinkPin.owner;
@@ -206,26 +258,55 @@ public class HeteroAnalyticalPlacerNewNetTwo
 				}
 				if(!(isSourceFixed && isSinkFixed)) //Not both fixed
 				{
+					//Calculate weight
 					double deltaX = Math.abs(sinkX - sourceX);
 					if(deltaX < 0.001)
 					{
 						deltaX = 0.001;
 					}
-					double weightX = (double)2/((nbPins - 1)*deltaX);
+					double weightX;
+					if(sinkX == minX && !doneMinX) //Don't have to square it
+					{
+						weightX = (double)2/deltaX;
+						doneMinX = true;
+					}
+					else
+					{
+						if(sinkX == maxX && !doneMaxX) //Don't have to square it
+						{
+							weightX = (double)2/deltaX;
+							doneMaxX = true;
+						}
+						else //Have to square it
+						{
+							weightX = (double)2/(deltaX*deltaX);
+						}
+					}
 					double deltaY = Math.abs(sinkY - sourceY);
 					if(deltaY < 0.001)
 					{
 						deltaY = 0.001;
 					}
-					double weightY = (double)2/((nbPins - 1)*deltaY);
-					if(!firstSolve) //Include timing factor
+					double weightY;
+					if(sinkY == minY && !doneMinY)
 					{
-						//Search for connection in timing graph
-						double criticality = timingGraph.getConnectionCriticalityWithExponent(net.source, sinkPin);
-						weightX *= criticality;
-						weightY *= criticality;
+						weightY = (double)2/deltaY;
+						doneMinY = true;
+					}
+					else
+					{
+						if(sinkY == maxY && !doneMaxY)
+						{
+							weightY = (double)2/deltaY;
+							doneMaxY = true;
+						}
+						else
+						{
+							weightY = (double)2/(deltaY*deltaY);
+						}
 					}
 					
+					//Add to linear system
 					if(isSourceFixed) //Source is fixed, sink is free
 					{
 						int sinkIndex = indexMap.get(sinkOwner);
