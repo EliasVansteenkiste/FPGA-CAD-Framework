@@ -51,8 +51,9 @@ public class HeteroAnalyticalPlacerTwo
 	public void place()
 	{
 		int solveMode = 0; //0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
-		double[] maxUtilizationLegalizerArray = new double[] {4.0,3.0,2.0,1.5,0.9};
+		//double[] maxUtilizationLegalizerArray = new double[] {4.0,3.0,2.0,1.5,0.9};
 		//double[] maxUtilizationLegalizerArray = new double[] {4.5,3.0,2.0,1.35,0.9};
+		double[] maxUtilizationLegalizerArray = new double[] {0.9}; //No partial overlap solves...
 		double maxUtilizationLegalizer = maxUtilizationLegalizerArray[0];
 		
 		//Initial linear solves, should normally be done 5-7 times		

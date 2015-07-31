@@ -108,13 +108,13 @@ public class Example
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
 			
