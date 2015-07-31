@@ -27,7 +27,7 @@ import architecture.SiteType;
 public class HeteroLegalizerTwo
 {
 	
-	private final double UTILIZATION_FACTOR = 0.9;
+	private static final double UTILIZATION_FACTOR = 0.9;
 	
 	private int[] bestLegalX;
 	private int[] bestLegalY;
@@ -37,6 +37,8 @@ public class HeteroLegalizerTwo
 	private HeterogeneousArchitecture architecture;
 	private int[] typeStartIndices;
 	private String[] typeNames;
+	boolean lastMaxUtilizationSmallerThanOne;
+	boolean firstOneDone;
 	
 	public HeteroLegalizerTwo(HeterogeneousArchitecture architecture, int[] typeStartIndices, String[] typeNames, int nbMovableBlocks)
 	{
@@ -48,6 +50,8 @@ public class HeteroLegalizerTwo
 		this.architecture = architecture;
 		this.typeStartIndices = typeStartIndices;
 		this.typeNames = typeNames;
+		this.lastMaxUtilizationSmallerThanOne = false;
+		this.firstOneDone = false;
 	}
 	
 	/*
@@ -60,9 +64,24 @@ public class HeteroLegalizerTwo
 	{
 		//completeLegalize(linearX, linearY, nets, indexMap, solveMode);
 		
-		partiallyLegalize(linearX, linearY, nets, indexMap, solveMode, maxUtilization);
+		if(!firstOneDone)
+		{
+			firstOneDone = true;
+			completeLegalize(linearX, linearY, nets, indexMap, solveMode);
+		}
 		
-		//updateBestLegal(legalX, legalY, nets, indexMap);
+		if(maxUtilization > 1.0)
+		{
+			System.out.printf("Partial legalization with maximal utilization = %.2f\n", maxUtilization);
+			partiallyLegalize(linearX, linearY, nets, indexMap, solveMode, maxUtilization);
+			lastMaxUtilizationSmallerThanOne = false;
+		}
+		else
+		{
+			System.out.println("Complete legalization");
+			completeLegalize(linearX, linearY, nets, indexMap, solveMode);
+			lastMaxUtilizationSmallerThanOne = true;
+		}
 	}
 	
 	private void completeLegalize(double[] linearX, double[] linearY, Collection<Net> nets, Map<Block,Integer> indexMap, int solveMode)
@@ -117,6 +136,8 @@ public class HeteroLegalizerTwo
 		int[] legalX = new int[semiLegalX.length];
 		int[] legalY = new int[semiLegalY.length];
 		finalLegalization(semiLegalX, semiLegalY, legalX, legalY);
+		
+		updateBestLegal(legalX, legalY, nets, indexMap);
 	}
 	
 	private void partiallyLegalize(double[] linearX, double[] linearY, Collection<Net> nets, Map<Block,Integer> indexMap, 
@@ -169,13 +190,17 @@ public class HeteroLegalizerTwo
 			}
 		}
 		
-		
-		
-		//Print it
 		for(int i = 0; i < tempPartiallyLegalX.length; i++)
 		{
-			System.out.printf("Block %d: X = %d, Y = %d\n", i, tempPartiallyLegalX[i], tempPartiallyLegalY[i]);
+			partialLegalX[i] = tempPartiallyLegalX[i];
+			partialLegalY[i] = tempPartiallyLegalY[i];
 		}
+		
+		//Print it
+//		for(int i = 0; i < tempPartiallyLegalX.length; i++)
+//		{
+//			System.out.printf("Block %d: X = %d, Y = %d\n", i, tempPartiallyLegalX[i], tempPartiallyLegalY[i]);
+//		}
 		
 		
 	}
@@ -2142,6 +2167,45 @@ public class HeteroLegalizerTwo
 			currentCost = newCost;
 		}
 //		System.out.println("\tBest legal cost = " + currentCost);
+	}
+	
+	public int[] getAnchorPointsX()
+	{
+		if(!lastMaxUtilizationSmallerThanOne) //The last time we legalized we did not ask for a complete legalization
+		{
+			return partialLegalX;
+		}
+		else
+		{
+			return bestLegalX;
+		}
+	}
+	
+	public int[] getAnchorPointsY()
+	{
+		if(!lastMaxUtilizationSmallerThanOne) //The last time we legalized we did not ask for a complete legalization
+		{
+			return partialLegalY;
+		}
+		else
+		{
+			return bestLegalY;
+		}
+	}
+	
+	public int[] getBestLegalX()
+	{
+		return bestLegalX;
+	}
+	
+	public int[] getBestLegalY()
+	{
+		return bestLegalY;
+	}
+	
+	public double calculateBestLegalCost(Collection<Net> nets, Map<Block, Integer> indexMap)
+	{
+		return calculateTotalCost(bestLegalX, bestLegalY, nets, indexMap);
 	}
 	
 	private double calculateTotalCost(int[] xArray, int[] yArray, Collection<Net> nets, Map<Block, Integer> indexMap)

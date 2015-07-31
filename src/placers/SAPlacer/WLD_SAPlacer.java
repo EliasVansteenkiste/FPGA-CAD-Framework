@@ -432,19 +432,22 @@ public class WLD_SAPlacer extends SAPlacer
 			//Swap
 			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 			{
-				swap.apply();
-				calculator.pushThrough();
+				if(deltaCost <= 0)
+				{
+					swap.apply();
+					calculator.pushThrough();
+					sumNegDeltaCost -= deltaCost;
+					quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
+					numNegDeltaCost++;
+				}
+				else
+				{
+					calculator.revert();
+				}
 			}
 			else
 			{
 				calculator.revert();
-			}
-
-			if(deltaCost <= 0)
-			{
-				sumNegDeltaCost -= deltaCost;
-				quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
-				numNegDeltaCost++;
 			}
 		}
 		
