@@ -169,6 +169,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 			int minYIndex = -1;
 			double maxY = -Double.MAX_VALUE;
 			int maxYIndex = -1;
+			double Qn = getWeight(net.sinks.size() + 1);
 			
 			//Search bounding box boundaries
 			//Handle net source pin
@@ -317,6 +318,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 				{
 					weight *= timingWeightFactor;
 				}
+				//weight *= Qn;
 				if(maxXIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -359,6 +361,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 				{
 					weight *= timingWeightFactor;
 				}
+				//weight *= Qn;
 				if(maxYIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -405,6 +408,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 					{
 						weightMaxX *= timingWeightFactor;
 					}
+					//weightMaxX *= Qn;
 					if(maxXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -441,6 +445,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 					{
 						weightMinX *= timingWeightFactor;
 					}
+					//weightMinX *= Qn;
 					if(minXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -476,6 +481,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 					{
 						weightMaxY *= timingWeightFactor;
 					}
+					//weightMaxY *= Qn;
 					if(maxYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -511,6 +517,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 					{
 						weightMinY *= timingWeightFactor;
 					}
+					//weightMinY *= Qn;
 					if(minYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -555,6 +562,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 						{
 							weightMaxX *= timingWeightFactor;
 						}
+						//weightMaxX *= Qn;
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(maxXIndex - startIndex, maxXIndex - startIndex, 
 															xMatrix.getElement(maxXIndex - startIndex, maxXIndex - startIndex) + weightMaxX);
@@ -580,6 +588,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 						{
 							weightMinX *= timingWeightFactor;
 						}
+						//weightMinX *= Qn;
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(minXIndex - startIndex, minXIndex - startIndex, 
 															xMatrix.getElement(minXIndex - startIndex, minXIndex - startIndex) + weightMinX);
@@ -611,6 +620,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 						{
 							weightMaxY *= timingWeightFactor;
 						}
+						//weightMaxY *= Qn;
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(maxYIndex - startIndex, maxYIndex - startIndex, 
 															yMatrix.getElement(maxYIndex - startIndex, maxYIndex - startIndex) + weightMaxY);
@@ -636,6 +646,7 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 						{
 							weightMinY *= timingWeightFactor;
 						}
+						//weightMinY *= Qn;
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(minYIndex - startIndex, minYIndex - startIndex, 
 															yMatrix.getElement(minYIndex - startIndex, minYIndex - startIndex) + weightMinY);
@@ -722,6 +733,65 @@ public class Hetero_TD_AnalyticalPlacerOldNetOne
 			}
 		}
 		return isFixed;
+	}
+	
+	private double getWeight(int size)
+	{
+		double weight = 0.0;
+		switch (size) {
+			case 1:  weight=1; break;
+			case 2:  weight=1; break;
+			case 3:  weight=1; break;
+			case 4:  weight=1.0828; break;
+			case 5:  weight=1.1536; break;
+			case 6:  weight=1.2206; break;
+			case 7:  weight=1.2823; break;
+			case 8:  weight=1.3385; break;
+			case 9:  weight=1.3991; break;
+			case 10: weight=1.4493; break;
+			case 11:
+			case 12:
+			case 13:
+			case 14:
+			case 15: weight=(size-10)*(1.6899-1.4493)/5+1.4493;break;				
+			case 16:
+			case 17:
+			case 18:
+			case 19:
+			case 20: weight=(size-15)*(1.8924-1.6899)/5+1.6899;break;
+			case 21:
+			case 22:
+			case 23:
+			case 24:
+			case 25: weight=(size-20)*(2.0743-1.8924)/5+1.8924;break;		
+			case 26:
+			case 27:
+			case 28:
+			case 29:
+			case 30: weight=(size-25)*(2.2334-2.0743)/5+2.0743;break;		
+			case 31:
+			case 32:
+			case 33:
+			case 34:
+			case 35: weight=(size-30)*(2.3895-2.2334)/5+2.2334;break;		
+			case 36:
+			case 37:
+			case 38:
+			case 39:
+			case 40: weight=(size-35)*(2.5356-2.3895)/5+2.3895;break;		
+			case 41:
+			case 42:
+			case 43:
+			case 44:
+			case 45: weight=(size-40)*(2.6625-2.5356)/5+2.5356;break;		
+			case 46:
+			case 47:
+			case 48:
+			case 49:
+			case 50: weight=(size-45)*(2.7933-2.6625)/5+2.6625;break;
+			default: weight=(size-50)*0.02616+2.7933;break;
+		}
+		return weight;
 	}
 	
 	private void initializeDataStructures()

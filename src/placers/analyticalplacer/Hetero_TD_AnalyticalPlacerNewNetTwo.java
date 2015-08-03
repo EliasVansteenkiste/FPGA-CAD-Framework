@@ -11,6 +11,7 @@ import mathtools.CGSolver;
 import mathtools.Crs;
 
 import placers.Rplace;
+import timinganalysis.TimingGraph;
 
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
@@ -21,11 +22,13 @@ import circuit.HardBlock;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
+import circuit.PrePackedCircuit;
 
-public class HeteroAnalyticalPlacerNewNetTwo
+public class Hetero_TD_AnalyticalPlacerNewNetTwo
 {
 
 	private final double ALPHA = 0.3;
+	private final double TG_CRITICALITY_EXPONENT = 1.0;
 	
 	private HeterogeneousArchitecture architecture;
 	private PackedCircuit circuit;
@@ -34,24 +37,26 @@ public class HeteroAnalyticalPlacerNewNetTwo
 	private String[] typeNames;
 	private double[] linearX;
 	private double[] linearY;
-	private HeteroLegalizerTwo legalizer;
+	private Hetero_TD_LegalizerOne legalizer;
+	private TimingGraph timingGraph;
 	
-	public HeteroAnalyticalPlacerNewNetTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit)
+	public Hetero_TD_AnalyticalPlacerNewNetTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
-		this.legalizer = new HeteroLegalizerTwo(architecture, typeStartIndices, typeNames, linearX.length);
+		this.timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.setCriticalityExponent(TG_CRITICALITY_EXPONENT);
+		this.legalizer = new Hetero_TD_LegalizerOne(architecture, typeStartIndices, typeNames, linearX.length, timingGraph, circuit);
 	}
 	
 	public void place()
 	{
 		int solveMode = 0; //0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
-		double[] maxUtilizationLegalizerArray = new double[] {4.0,3.0,2.0,1.5,0.9};
-		//double[] maxUtilizationLegalizerArray = new double[] {4.5,3.0,2.0,1.35,0.9};
-		//double[] maxUtilizationLegalizerArray = new double[] {0.9}; //No partial overlap solves...
-		double maxUtilizationLegalizer = maxUtilizationLegalizerArray[0];
+
+		timingGraph.buildTimingGraph();
+		timingGraph.mapTopLevelPinsToTimingGraph(circuit);
 		
 		//Initial linear solves, should normally be done 5-7 times		
 		for(int i = 0; i < 7; i++)
@@ -60,7 +65,7 @@ public class HeteroAnalyticalPlacerNewNetTwo
 		}
 		
 		//Initial legalization
-		legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode, maxUtilizationLegalizer);
+		legalizer.legalize(linearX, linearY, indexMap, solveMode);
 		
 		double pseudoWeightFactor = 0.0;
 		for(int i = 0; i < 30; i++)
@@ -69,20 +74,16 @@ public class HeteroAnalyticalPlacerNewNetTwo
 			if(solveMode <= 1)
 			{
 				pseudoWeightFactor += ALPHA;
-				int index = Math.min((int)Math.round(pseudoWeightFactor / ALPHA), maxUtilizationLegalizerArray.length - 1);
-				maxUtilizationLegalizer = maxUtilizationLegalizerArray[index];
 			}
 			solveLinear(false, solveMode, pseudoWeightFactor);
 			double costLinear = calculateTotalCost(linearX, linearY);
-			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode, maxUtilizationLegalizer);
-			double costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
-			if(costLinear / costLegal > 0.70)
+			legalizer.legalize(linearX, linearY, indexMap, solveMode);
+			double costLegal = legalizer.calculateTotalBBCost(legalizer.getBestLegalX(), legalizer.getBestLegalY(), indexMap);
+			if(costLinear / costLegal > 0.85)
 			{
 				break;
 			}
 		}
-		
-		updateCircuit();
 	}
 	
 	private void solveLinear(boolean firstSolve, int solveMode, double pseudoWeightFactor)
@@ -314,6 +315,14 @@ public class HeteroAnalyticalPlacerNewNetTwo
 					
 					//weightX *= Qn;
 					//weightY *= Qn;
+					
+					if(!firstSolve)
+					{
+						//Search for connection in timing graph
+						double criticality = timingGraph.getConnectionCriticalityWithExponent(net.source, sinkPin);
+						weightX *= criticality;
+						weightY *= criticality;
+					}
 					
 					//Add to linear system
 					if(isSourceFixed) //Source is fixed, sink is free

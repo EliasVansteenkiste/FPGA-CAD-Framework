@@ -1276,7 +1276,7 @@ public class Hetero_TD_LegalizerOne
 		return toReturn;
 	}
 	
-	private double calculateTotalBBCost(int[] xArray, int[] yArray, Map<Block, Integer> indexMap)
+	public double calculateTotalBBCost(int[] xArray, int[] yArray, Map<Block, Integer> indexMap)
 	{
 		double cost = 0.0;
 		Collection<Net> nets = circuit.getNets().values();
