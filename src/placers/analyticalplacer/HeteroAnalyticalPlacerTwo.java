@@ -670,6 +670,25 @@ public class HeteroAnalyticalPlacerTwo
 		CGSolver ySolver = new CGSolver(yMatrix, yVector);
 		double[] ySolution = ySolver.solve(epselon);
 		
+		if(firstSolve)
+		{
+			System.out.println("Memory usage of xMatrix (doubles): " + xMatrix.getMemoryUsageDouble());
+			System.out.println("Memory usage of xMatrix (floats): " + xMatrix.getMemoryUsageFloat());
+			System.out.println("Memory usage of yMatrix (doubles): " + yMatrix.getMemoryUsageDouble());
+			System.out.println("Memory usage of yMatrix (floats): " + yMatrix.getMemoryUsageFloat());
+				
+			//Wait for enter to start (necessary for easy profiling)
+			System.out.println("Hit any key to continue...");
+			try
+			{
+				System.in.read();
+			}
+			catch(Exception ioe)
+			{
+				System.out.println("Something went wrong");
+			}
+		}
+		
 		//Save results
 		for(int i = 0; i < dimensions; i++)
 		{

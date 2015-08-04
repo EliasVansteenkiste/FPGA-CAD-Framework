@@ -104,7 +104,7 @@ public class Example
 	    try
 		{
 	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
@@ -117,6 +117,8 @@ public class Example
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
+	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
 			
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
 		}
@@ -176,10 +178,10 @@ public class Example
 	    //visualTDSA(prePackedCircuit, packedCircuit);
 	    //visualAnalytical(packedCircuit, prePackedCircuit);
 	    //visualAnalyticalTwo(packedCircuit, prePackedCircuit, true);
-	    //visualNewNetAnalyticalTwo(packedCircuit, prePackedCircuit);
+	    visualNewNetAnalyticalTwo(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalNewNet(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalNewNetTwo(packedCircuit, prePackedCircuit);
-	    visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
+	    //visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
 //	    testTimingGraphNewAnalyticalFunctions(prePackedCircuit, packedCircuit);

@@ -136,4 +136,34 @@ public class Crs
 		return true;
 	}
 	
+	public int getMemoryUsageDouble()
+	{
+		int doubleMemory = 0;
+		for(ArrayList<Double> dbVector: values)
+		{
+			doubleMemory += dbVector.size() * 8;
+		}
+		int intMemory = 0;
+		for(ArrayList<Integer> intVector: col_ind)
+		{
+			intMemory += intVector.size() * 4;
+		}
+		return doubleMemory + intMemory;
+	}
+	
+	public int getMemoryUsageFloat()
+	{
+		int floatMemory = 0;
+		for(ArrayList<Double> dbVector: values)
+		{
+			floatMemory += dbVector.size() * 4;
+		}
+		int intMemory = 0;
+		for(ArrayList<Integer> intVector: col_ind)
+		{
+			intMemory += intVector.size() * 4;
+		}
+		return floatMemory + intMemory;
+	}
+	
 }

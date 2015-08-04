@@ -29,6 +29,16 @@ public class WLD_SAPlacer extends SAPlacer
 		System.out.println("Initial temperature: " + T);
 		System.out.println("Moves per temperature: " + movesPerTemperature);
 		
+		System.out.println("Hit any key to continue...");
+		try
+		{
+			System.in.read();
+		}
+		catch(Exception ioe)
+		{
+			System.out.println("Something went wrong");
+		}
+		
 		//Do placement
 		while (T > 0.005*calculator.calculateAverageNetCost())
 		{

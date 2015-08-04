@@ -373,6 +373,25 @@ public class HeteroAnalyticalPlacerNewNetTwo
 			System.err.println("ERROR: Y-Matrix is assymmetrical: there must be a bug in the code!");
 		}
 		
+		if(firstSolve)
+		{
+			System.out.println("Memory usage of xMatrix (doubles): " + xMatrix.getMemoryUsageDouble());
+			System.out.println("Memory usage of xMatrix (floats): " + xMatrix.getMemoryUsageFloat());
+			System.out.println("Memory usage of yMatrix (doubles): " + yMatrix.getMemoryUsageDouble());
+			System.out.println("Memory usage of yMatrix (floats): " + yMatrix.getMemoryUsageFloat());
+				
+			//Wait for enter to start (necessary for easy profiling)
+			System.out.println("Hit any key to continue...");
+			try
+			{
+				System.in.read();
+			}
+			catch(Exception ioe)
+			{
+				System.out.println("Something went wrong");
+			}
+		}
+		
 		double epselon = 0.0001;
 		//Solve x problem
 		CGSolver xSolver = new CGSolver(xMatrix, xVector);
