@@ -3,7 +3,6 @@ package placers.SAPlacer;
 import java.util.Random;
 
 import architecture.HeterogeneousArchitecture;
-import architecture.SiteType;
 import circuit.PackedCircuit;
 
 public class WLD_SAPlacer extends SAPlacer
@@ -28,16 +27,6 @@ public class WLD_SAPlacer extends SAPlacer
 		//Print SA parameters
 		System.out.println("Initial temperature: " + T);
 		System.out.println("Moves per temperature: " + movesPerTemperature);
-		
-		System.out.println("Hit any key to continue...");
-		try
-		{
-			System.in.read();
-		}
-		catch(Exception ioe)
-		{
-			System.out.println("Something went wrong");
-		}
 		
 		//Do placement
 		while (T > 0.005*calculator.calculateAverageNetCost())
@@ -189,16 +178,15 @@ public class WLD_SAPlacer extends SAPlacer
 		calculator.recalculateFromScratch();
 		rand= new Random(1);
 		int biggestDistance = getBiggestDistance();
-		Rlimd = biggestDistance / 3;
-		if(Rlimd == 0)
+		int maxValue = (int)Math.floor(biggestDistance / 3.0);
+		if(maxValue < 1)
 		{
-			Rlimd = 1;
+			maxValue = 1;
 		}
+		Rlimd = maxValue;
 		int Rlim = initialRlim();
 		double T = calculateInitialTemperatureLow();
-		System.out.println("Initial temperature: "+T);
 		int movesPerTemperature=(int) (innerNum*Math.pow(circuit.numBlocks(),4.0/3.0));
-		System.out.println("Moves per temperature: "+movesPerTemperature);
 		
 		while (T>0.005*calculator.calculateAverageNetCost()) {
 			int alphaAbs=0;
@@ -233,7 +221,7 @@ public class WLD_SAPlacer extends SAPlacer
 			}
 
 			double alpha = (double)alphaAbs/movesPerTemperature;
-			Rlim = updateRlim(alpha);
+			Rlim = updateRlimLimited(alpha, maxValue);
 			T=updateTemperature(T,alpha);
 		}
 	}
@@ -397,26 +385,28 @@ public class WLD_SAPlacer extends SAPlacer
 			//Swap
 			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
 			{
-				swap.apply();
-				calculator.pushThrough();
+				if(deltaCost <= 0)
+				{
+					swap.apply();
+					calculator.pushThrough();
+					sumNegDeltaCost -= deltaCost;
+					quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
+					numNegDeltaCost++;
+				}
+				else
+				{
+					calculator.revert();
+				}
 			}
 			else
 			{
 				calculator.revert();
-			}
-
-			if(deltaCost <= 0)
-			{
-				sumNegDeltaCost -= deltaCost;
-				quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
-				numNegDeltaCost++;
 			}
 		}
 		
 		double somNegKwadraten = quadraticSumNegDeltaCost;
 		double negKwadraatSom = Math.pow(sumNegDeltaCost, 2);
 		double stdafwijkingNegDeltaKost = Math.sqrt(somNegKwadraten/numNegDeltaCost - negKwadraatSom/(numNegDeltaCost*numNegDeltaCost));
-		System.out.println("Negative standard deviation: " + stdafwijkingNegDeltaKost);
 		
 		double T = 2*stdafwijkingNegDeltaKost;
 		

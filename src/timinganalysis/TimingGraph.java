@@ -838,6 +838,11 @@ public class TimingGraph
 		return edgeMap.get(net);
 	}
 	
+	public ArrayList<TimingNode> getBlockNodes(Block block)
+	{
+		return blockMap.get(block);
+	}
+	
 	public double getConnectionCriticalityWithExponent(Pin sourceTopLevelPin, Pin sinkTopLevelPin)
 	{
 		double criticalityWithExponent = -1.0;
@@ -1323,6 +1328,97 @@ public class TimingGraph
 			toReturn += "\n";
 		}
 		return toReturn;
+	}
+	
+	private ArrayList<ArrayList<TimingEdge>> edgeList;
+	
+	public void mapAnalyticalPlacerIndicesToEdges(Map<Block,Integer> indexMap, PackedCircuit circuit)
+	{
+		edgeList = new ArrayList<ArrayList<TimingEdge>>();
+		
+		for(int i = 0; i < indexMap.size(); i++)
+		{
+			edgeList.add(null);
+		}
+		
+		
+		
+		for(Clb clb: circuit.clbs.values())
+		{
+			int index = indexMap.get(clb);
+			Lut lut = clb.getBle().getLut();
+			Flipflop ff = clb.getBle().getFlipflop();
+			
+			if(lut == null) //only a flipflop in the game
+			{
+				ArrayList<TimingEdge> edges = new ArrayList<>();
+				ArrayList<TimingNode> nodeList = blockMap.get(ff);
+				for(TimingNode node: nodeList)
+				{
+					if(node.getType() == TimingNodeType.START_NODE)
+					{
+						edges.addAll(node.getOutputs());
+					}
+					else //Must be an end node
+					{
+						edges.addAll(node.getInputs());
+					}
+				}
+				edgeList.set(index, edges);
+			}
+			else
+			{
+				if(ff == null) //only a lut in the game
+				{
+					ArrayList<TimingEdge> edges = new ArrayList<>();
+					ArrayList<TimingNode> nodeList = blockMap.get(lut);
+					for(TimingNode node: nodeList)
+					{
+						if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || node.getType() == TimingNodeType.START_NODE)
+						{
+							edges.addAll(node.getOutputs());
+						}
+						else //Must be an internal sink node or end node
+						{
+							edges.addAll(node.getInputs());
+						}
+					}
+					edgeList.set(index, edges);
+				}
+				else //both are in the game
+				{
+					ArrayList<TimingEdge> edges = new ArrayList<>();
+					
+					ArrayList<TimingNode> lutNodeList = blockMap.get(lut);
+					if(lutNodeList != null)
+					{
+						for(TimingNode node: lutNodeList)
+						{
+							if(node.getType() == TimingNodeType.INTERNAL_SINK_NODE || node.getType() == TimingNodeType.END_NODE)
+							{
+								edges.addAll(node.getInputs());
+							}
+						}
+					}
+					ArrayList<TimingNode> ffNodeList = blockMap.get(ff);
+					for(TimingNode node: ffNodeList)
+					{
+						if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || node.getType() == TimingNodeType.START_NODE)
+						{
+							edges.addAll(node.getOutputs());
+						}
+					}
+					
+					edgeList.set(index, edges);
+				}
+			}
+			
+		}
+	}
+	
+	public ArrayList<TimingEdge> getIndexEdges(int index)
+	{
+		return edgeList.get(index);
 	}
 	
 }

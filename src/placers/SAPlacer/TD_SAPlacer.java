@@ -113,11 +113,12 @@ public class TD_SAPlacer extends SAPlacer
 		calculator.recalculateFromScratch();
 		rand = new Random(1);
 		int biggestDistance = getBiggestDistance();
-		Rlimd = biggestDistance / 3;
-		if(Rlimd == 0)
+		int maxValue = (int)Math.floor(biggestDistance / 3.0);
+		if(maxValue < 1)
 		{
-			Rlimd = 1;
+			maxValue = 1;
 		}
+		Rlimd = maxValue;
 		int Rlim = initialRlim();
 		double firstRlim = Rlimd;
 		double criticalityExponent = updateCriticalityExponent(firstRlim);
@@ -182,7 +183,7 @@ public class TD_SAPlacer extends SAPlacer
 				}
 			}
 			double alpha = (double)alphaAbs/movesPerTemperature;
-			Rlim = updateRlim(alpha);
+			Rlim = updateRlimLimited(alpha, maxValue);
 			T=updateTemperature(T,alpha);
 			criticalityExponent = updateCriticalityExponent(firstRlim);
 		}
@@ -254,14 +255,20 @@ public class TD_SAPlacer extends SAPlacer
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
 				double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
 						+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
-				swap.apply();
-				calculator.pushThrough();
-				timingGraph.pushThrough();
-				if(deltaCost < 0)
+				
+				if(deltaCost <= 0)
 				{
+					swap.apply();
+					calculator.pushThrough();
+					timingGraph.pushThrough();
 					sumNegDeltaCost -= deltaCost;
 					quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
 					numNegDeltaCost++;
+				}
+				else
+				{
+					calculator.revert();
+					timingGraph.revert();
 				}
 			}
 			else

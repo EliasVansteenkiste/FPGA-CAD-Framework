@@ -104,7 +104,7 @@ public class Example
 	    try
 		{
 	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
@@ -118,7 +118,7 @@ public class Example
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
 	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
-	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
 			
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
 		}
@@ -178,15 +178,18 @@ public class Example
 	    //visualTDSA(prePackedCircuit, packedCircuit);
 	    //visualAnalytical(packedCircuit, prePackedCircuit);
 	    //visualAnalyticalTwo(packedCircuit, prePackedCircuit, true);
-	    visualNewNetAnalyticalTwo(packedCircuit, prePackedCircuit);
+	    //visualNewNetAnalyticalTwo(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalNewNet(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalNewNetTwo(packedCircuit, prePackedCircuit);
+	    //visualTDAnalyticalNewNetThree(packedCircuit, prePackedCircuit);
+	    visualTDAnalyticalNewNetFour(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
 //	    testTimingGraphNewAnalyticalFunctions(prePackedCircuit, packedCircuit);
 //	    testTimingGraphOldAnalyticalFunctions(prePackedCircuit, packedCircuit);
 //	    testHeteroLegalizerTwo(packedCircuit);
+//	    testVisualization();
 	    
 //	    runWldSaBenchmarksNet();
 //	    runTdSaBenchmarksNet();
@@ -1083,7 +1086,7 @@ public class Example
 	private static void runWldAnalyticalBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksWldAnalytical.csv";
+		String csvFileName = "HeteroBenchmarksWldAnalyticalTwoNoOverlap.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -1124,10 +1127,10 @@ public class Example
 		}
 		else
 		{
-			csvWriter = new CsvWriter(7);
+			csvWriter = new CsvWriter(8);
 			csvWriter.addRow(new String[] {"Benchmark name", "Analytical time WLD_Analytical", "SA time WLD_Analytical", 
 					"WL WLD_Analytical before anneal", "Max delay WLD_Analytical before anneal", "WL WLD_Analytical after anneal",
-					"Max delay WLD_Analytical after anneal"});
+					"Max delay WLD_Analytical after anneal", "Memory usage"});
 			alreadyDoneFiles = null;
 		}
 		for(int i = 0; i < fileNamesToDo.length; i++)
@@ -1142,7 +1145,7 @@ public class Example
 				}
 				else
 				{
-					double[] wldAnalyticalResults = new double[6];
+					double[] wldAnalyticalResults = new double[7];
 					processWLDAnalyticalNetBenchmark(wldAnalyticalResults, totalFilename);
 					double wldAnalyticalAnalyticalTime = wldAnalyticalResults[0];
 					double wldAnalyticalSATime = wldAnalyticalResults[1];
@@ -1150,6 +1153,7 @@ public class Example
 					double wldAnalyticalAfterWL = wldAnalyticalResults[3];
 					double wldAnalyticalBeforeMaxDelay = wldAnalyticalResults[4];
 					double wldAnalyticalAfterMaxDelay = wldAnalyticalResults[5];
+					int memoryUsage = (int)Math.round(wldAnalyticalResults[6]);
 					
 					String wldAnalyticalAnalyticalTimeString = String.format("%.3f", wldAnalyticalAnalyticalTime);
 					String wldAnalyticalSATimeString = String.format("%.3f", wldAnalyticalSATime);
@@ -1157,10 +1161,11 @@ public class Example
 					String wldAnalyticalAfterWLString = String.format("%.3f", wldAnalyticalAfterWL);
 					String wldAnalyticalBeforeMaxDelayString = String.format("%.3f", wldAnalyticalBeforeMaxDelay);
 					String wldAnalyticalAfterMaxDelayString = String.format("%.3f", wldAnalyticalAfterMaxDelay);
+					String memoryUsageString = String.format("%d", memoryUsage);
 					
 					csvWriter.addRow(new String[] {totalFilename, wldAnalyticalAnalyticalTimeString, 
 							wldAnalyticalSATimeString, wldAnalyticalBeforeWLString, wldAnalyticalBeforeMaxDelayString, wldAnalyticalAfterWLString, 
-							wldAnalyticalAfterMaxDelayString});
+							wldAnalyticalAfterMaxDelayString, memoryUsageString});
 				}
 			}
 			csvWriter.writeFile(csvFileName);
@@ -1170,7 +1175,7 @@ public class Example
 	private static void runTdAnalyticalNewNetBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksTDAnalyticalNewNet.csv";
+		String csvFileName = "HeteroBenchmarksTDAnalyticalNewNetTwo.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -2256,6 +2261,122 @@ public class Example
 		frame.setVisible(true);
 	}
 	
+	private static void visualTDAnalyticalNewNetThree(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
+				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
+		
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c);
+		Hetero_TD_AnalyticalPlacerNewNetThree tDAnalyticalPlacer = new Hetero_TD_AnalyticalPlacerNewNetThree(a, c, prePackedCircuit);
+		
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long SAStartTime;
+		long SAEndTime;
+		
+		//Analytical phase
+		analyticalStartTime = System.nanoTime();
+		tDAnalyticalPlacer.place();
+		analyticalEndTime = System.nanoTime();
+		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
+		
+		//c.placementCLBsConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(c);
+		double wlCostBeforeRefinement = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
+		
+		//TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, c, prePackedCircuit);
+		
+		//SA phase
+		SAStartTime = System.nanoTime();
+		//tdSaPlacer.lowTempAnneal(4.0);
+		SAEndTime = System.nanoTime();
+		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
+		
+		c.placementConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(c);
+		double wlCostAfterRefinement = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfterRefinement = tgAfter.calculateMaximalDelay();
+		
+		System.out.printf("\nAnalytical placement time: %.3f s\n", AnalyticalTime);
+		System.out.println("\tWL cost before low temperature anneal: " + wlCostBeforeRefinement);
+		System.out.println("\tMax delay before low temperature anneal: = " + maxDelayBeforeRefinement);
+		System.out.printf("Simulated annealing refinement time: %.3f s\n", SATime);
+		System.out.println("\tWL cost after low temperature anneal: " + wlCostAfterRefinement);
+		System.out.println("\tMax delay after low temperature anneal: = " + maxDelayAfterRefinement);
+		System.out.printf("Total time necessary to place: %.3f s\n", AnalyticalTime + SATime);
+		
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(945,970);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
+	private static void visualTDAnalyticalNewNetFour(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
+				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
+		
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c);
+		Hetero_TD_AnalyticalPlacerNewNetFour tDAnalyticalPlacer = new Hetero_TD_AnalyticalPlacerNewNetFour(a, c, prePackedCircuit);
+		
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long SAStartTime;
+		long SAEndTime;
+		
+		//Analytical phase
+		analyticalStartTime = System.nanoTime();
+		tDAnalyticalPlacer.place();
+		analyticalEndTime = System.nanoTime();
+		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
+		
+		//c.placementCLBsConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(c);
+		double wlCostBeforeRefinement = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
+		
+		//TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, c, prePackedCircuit);
+		
+		//SA phase
+		SAStartTime = System.nanoTime();
+		//tdSaPlacer.lowTempAnneal(4.0);
+		SAEndTime = System.nanoTime();
+		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
+		
+		c.placementConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(c);
+		double wlCostAfterRefinement = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfterRefinement = tgAfter.calculateMaximalDelay();
+		
+		System.out.printf("\nAnalytical placement time: %.3f s\n", AnalyticalTime);
+		System.out.println("\tWL cost before low temperature anneal: " + wlCostBeforeRefinement);
+		System.out.println("\tMax delay before low temperature anneal: = " + maxDelayBeforeRefinement);
+		System.out.printf("Simulated annealing refinement time: %.3f s\n", SATime);
+		System.out.println("\tWL cost after low temperature anneal: " + wlCostAfterRefinement);
+		System.out.println("\tMax delay after low temperature anneal: = " + maxDelayAfterRefinement);
+		System.out.printf("Total time necessary to place: %.3f s\n", AnalyticalTime + SATime);
+		
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(945,970);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
 	private static void visualTDSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
 		Double placementEffort = 10.0;
@@ -2415,15 +2536,14 @@ public class Example
 	
 		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
-		int legalizer = 1;
-		HeteroAnalyticalPlacerOne placer = new HeteroAnalyticalPlacerOne(a, packedCircuit, legalizer);
+		HeteroAnalyticalPlacerTwo placer = new HeteroAnalyticalPlacerTwo(a, packedCircuit, true);
 		
 		long startTime;
 		long analyticalEndTime;
 		long annealStartTime;
 		long endTime;
 		startTime = System.nanoTime();
-		placer.place();
+		int memoryUsage = placer.place();
 		analyticalEndTime = System.nanoTime();
 		
 		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(packedCircuit);
@@ -2448,6 +2568,7 @@ public class Example
 		tgAfter.buildTimingGraph();
 		double maxDelayAfter = tgAfter.calculateMaximalDelay();
 		results[5] = maxDelayAfter;
+		results[6] = memoryUsage;
 	}
 	
 	private static void processTDAnalyticalBenchmark(double[] results, String totalFilename)
@@ -2522,7 +2643,7 @@ public class Example
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	
 		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
-		Hetero_TD_AnalyticalPlacerNewNetOne placer = new Hetero_TD_AnalyticalPlacerNewNetOne(a, packedCircuit, prePackedCircuit);
+		Hetero_TD_AnalyticalPlacerNewNetTwo placer = new Hetero_TD_AnalyticalPlacerNewNetTwo(a, packedCircuit, prePackedCircuit);
 		
 		long analyticalStartTime;
 		long analyticalEndTime;
@@ -2946,6 +3067,35 @@ public class Example
 		
 		HeteroLegalizerTwo legalizer = new HeteroLegalizerTwo(arch, typeStartIndices, typeNames, nbMovableBlocks);
 		legalizer.legalize(linearX, linearY, null, null, 0, 0.9);
+	}
+	
+	private static void testVisualization()
+	{
+		PackedCircuit circuit = new PackedCircuit();
+		for(int i = 0; i < 80; i++)
+		{
+			circuit.clbs.put("Nb" + i, new Clb("Nb" + i, 1, 6));
+		}
+		Vector<String> memInputs = new Vector<>();
+		memInputs.add("input1");
+		Vector<String> memOutputs = new Vector<>();
+		memOutputs.add("output1");
+		Vector<String> multInputs = new Vector<>();
+		multInputs.add("input1");
+		Vector<String> multOutputs = new Vector<>();
+		multOutputs.add("output1");
+		circuit.addHardBlock(new HardBlock("Nb10001", memInputs, memOutputs, "memory", true));
+		circuit.addHardBlock(new HardBlock("Nb10002", multInputs, multOutputs, "multiply", true));
+		
+		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(circuit);
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, arch);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(950,950);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
 	}
 	
 	private static void testCostCalculator(PackedCircuit c)

@@ -114,10 +114,10 @@ public class NetReader
 		return packedCircuit;
 	}
 	
-	public ArrayList<ArrayList<Block>> getPackedIOs()
-	{
-		return packedIOs;
-	}
+//	public ArrayList<ArrayList<Block>> getPackedIOs()
+//	{
+//		return packedIOs;
+//	}
 	
 	private boolean processOuterBlock(BufferedReader reader, String trimmedLine) throws IOException
 	{

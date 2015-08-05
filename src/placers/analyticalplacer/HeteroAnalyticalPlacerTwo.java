@@ -38,6 +38,9 @@ public class HeteroAnalyticalPlacerTwo
 	private HeteroLegalizerTwo legalizer;
 	private boolean addQn;
 	
+	private boolean doneMemoryUse;
+	private int totalMatrixBytes;
+	
 	public HeteroAnalyticalPlacerTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit, boolean addQn)
 	{
 		this.architecture = architecture;
@@ -46,14 +49,16 @@ public class HeteroAnalyticalPlacerTwo
 		initializeDataStructures();
 		this.legalizer = new HeteroLegalizerTwo(architecture, typeStartIndices, typeNames, linearX.length);
 		this.addQn = addQn;
+		this.doneMemoryUse = false;
+		this.totalMatrixBytes = 0;
 	}
 	
-	public void place()
+	public int place()
 	{
 		int solveMode = 0; //0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
-		double[] maxUtilizationLegalizerArray = new double[] {4.0,3.0,2.0,1.5,0.9};
+		//double[] maxUtilizationLegalizerArray = new double[] {4.0,3.0,2.0,1.5,0.9};
 		//double[] maxUtilizationLegalizerArray = new double[] {4.5,3.0,2.0,1.35,0.9};
-		//double[] maxUtilizationLegalizerArray = new double[] {0.9}; //No partial overlap solves...
+		double[] maxUtilizationLegalizerArray = new double[] {0.9}; //No partial overlap solves...
 		double maxUtilizationLegalizer = maxUtilizationLegalizerArray[0];
 		
 		//Initial linear solves, should normally be done 5-7 times		
@@ -86,6 +91,8 @@ public class HeteroAnalyticalPlacerTwo
 		}
 		
 		updateCircuit();
+		
+		return totalMatrixBytes;
 	}
 	
 	/*
@@ -670,23 +677,29 @@ public class HeteroAnalyticalPlacerTwo
 		CGSolver ySolver = new CGSolver(yMatrix, yVector);
 		double[] ySolution = ySolver.solve(epselon);
 		
-		if(firstSolve)
+//		if(firstSolve)
+//		{
+//			System.out.println("Memory usage of xMatrix (doubles): " + xMatrix.getMemoryUsageDouble());
+//			System.out.println("Memory usage of xMatrix (floats): " + xMatrix.getMemoryUsageFloat());
+//			System.out.println("Memory usage of yMatrix (doubles): " + yMatrix.getMemoryUsageDouble());
+//			System.out.println("Memory usage of yMatrix (floats): " + yMatrix.getMemoryUsageFloat());
+//				
+//			//Wait for enter to start (necessary for easy profiling)
+//			System.out.println("Hit any key to continue...");
+//			try
+//			{
+//				System.in.read();
+//			}
+//			catch(Exception ioe)
+//			{
+//				System.out.println("Something went wrong");
+//			}
+//		}
+		
+		if(!doneMemoryUse)
 		{
-			System.out.println("Memory usage of xMatrix (doubles): " + xMatrix.getMemoryUsageDouble());
-			System.out.println("Memory usage of xMatrix (floats): " + xMatrix.getMemoryUsageFloat());
-			System.out.println("Memory usage of yMatrix (doubles): " + yMatrix.getMemoryUsageDouble());
-			System.out.println("Memory usage of yMatrix (floats): " + yMatrix.getMemoryUsageFloat());
-				
-			//Wait for enter to start (necessary for easy profiling)
-			System.out.println("Hit any key to continue...");
-			try
-			{
-				System.in.read();
-			}
-			catch(Exception ioe)
-			{
-				System.out.println("Something went wrong");
-			}
+			doneMemoryUse = true;
+			totalMatrixBytes = xMatrix.getMemoryUsageDouble() + yMatrix.getMemoryUsageDouble();
 		}
 		
 		//Save results
