@@ -25,7 +25,7 @@ public class Hetero_TD_LegalizerOne
 {
 	
 	private final double UTILIZATION_FACTOR = 0.9;
-	private static final double TRADE_OFF_FACTOR = 0.5;
+	private static final double TRADE_OFF_FACTOR = 0.8;
 	
 	private int[] bestLegalX;
 	private int[] bestLegalY;

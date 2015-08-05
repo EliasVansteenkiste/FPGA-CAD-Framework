@@ -183,7 +183,8 @@ public class Example
 	    //visualTDAnalyticalNewNetTwo(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalNewNetThree(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalNewNetFour(packedCircuit, prePackedCircuit);
-	    visualTDAnalyticalCombinedNetOne(packedCircuit, prePackedCircuit);
+	    //visualTDAnalyticalCombinedNetOne(packedCircuit, prePackedCircuit);
+	    visualTDAnalyticalCombinedNetTwo(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
@@ -2385,6 +2386,64 @@ public class Example
 		
 		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c);
 		Hetero_TD_AnalyticalPlacerCombinedNetOne tDAnalyticalPlacer = new Hetero_TD_AnalyticalPlacerCombinedNetOne(a, c, prePackedCircuit);
+		
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long SAStartTime;
+		long SAEndTime;
+		
+		//Analytical phase
+		analyticalStartTime = System.nanoTime();
+		tDAnalyticalPlacer.place();
+		analyticalEndTime = System.nanoTime();
+		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
+		
+		//c.placementCLBsConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(c);
+		double wlCostBeforeRefinement = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
+		
+		//TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, c, prePackedCircuit);
+		
+		//SA phase
+		SAStartTime = System.nanoTime();
+		//tdSaPlacer.lowTempAnneal(4.0);
+		SAEndTime = System.nanoTime();
+		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
+		
+		c.placementConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(c);
+		double wlCostAfterRefinement = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfterRefinement = tgAfter.calculateMaximalDelay();
+		
+		System.out.printf("\nAnalytical placement time: %.3f s\n", AnalyticalTime);
+		System.out.println("\tWL cost before low temperature anneal: " + wlCostBeforeRefinement);
+		System.out.println("\tMax delay before low temperature anneal: = " + maxDelayBeforeRefinement);
+		System.out.printf("Simulated annealing refinement time: %.3f s\n", SATime);
+		System.out.println("\tWL cost after low temperature anneal: " + wlCostAfterRefinement);
+		System.out.println("\tMax delay after low temperature anneal: = " + maxDelayAfterRefinement);
+		System.out.printf("Total time necessary to place: %.3f s\n", AnalyticalTime + SATime);
+		
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(945,970);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
+	private static void visualTDAnalyticalCombinedNetTwo(PackedCircuit c, PrePackedCircuit prePackedCircuit)
+	{
+		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
+				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
+		
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c);
+		Hetero_TD_AnalyticalPlacerCombinedNetTwo tDAnalyticalPlacer = new Hetero_TD_AnalyticalPlacerCombinedNetTwo(a, c, prePackedCircuit);
 		
 		long analyticalStartTime;
 		long analyticalEndTime;
