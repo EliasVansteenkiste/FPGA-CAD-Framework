@@ -158,7 +158,15 @@ public class Hetero_TD_AnalyticalPlacerNewNetThree
 					totalEdges++;
 					totalCriticality += edge.getCriticality();
 				}
-				double avgCriticality = totalCriticality / (double)totalEdges;
+				double avgCriticality;
+				if(totalEdges > 0)
+				{
+					avgCriticality = totalCriticality / (double)totalEdges;
+				}
+				else
+				{
+					avgCriticality = 0.5;
+				}
 				
 				double deltaX = Math.abs(anchorPointsX[i + startIndex] - linearX[i + startIndex]);
 				if(deltaX < 0.005)

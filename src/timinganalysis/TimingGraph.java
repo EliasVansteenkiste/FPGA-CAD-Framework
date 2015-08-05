@@ -1341,8 +1341,6 @@ public class TimingGraph
 			edgeList.add(null);
 		}
 		
-		
-		
 		for(Clb clb: circuit.clbs.values())
 		{
 			int index = indexMap.get(clb);
@@ -1372,15 +1370,18 @@ public class TimingGraph
 				{
 					ArrayList<TimingEdge> edges = new ArrayList<>();
 					ArrayList<TimingNode> nodeList = blockMap.get(lut);
-					for(TimingNode node: nodeList)
+					if(nodeList != null)
 					{
-						if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || node.getType() == TimingNodeType.START_NODE)
+						for(TimingNode node: nodeList)
 						{
-							edges.addAll(node.getOutputs());
-						}
-						else //Must be an internal sink node or end node
-						{
-							edges.addAll(node.getInputs());
+							if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || node.getType() == TimingNodeType.START_NODE)
+							{
+								edges.addAll(node.getOutputs());
+							}
+							else //Must be an internal sink node or end node
+							{
+								edges.addAll(node.getInputs());
+							}
 						}
 					}
 					edgeList.set(index, edges);
@@ -1412,8 +1413,30 @@ public class TimingGraph
 					edgeList.set(index, edges);
 				}
 			}
-			
 		}
+		
+		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
+		{
+			for(HardBlock hb: hbVector)
+			{
+				int index = indexMap.get(hb);
+				ArrayList<TimingEdge> edges = new ArrayList<>();
+				ArrayList<TimingNode> hbNodeList = blockMap.get(hb);
+				for(TimingNode node: hbNodeList)
+				{
+					if(node.getType() == TimingNodeType.INTERNAL_SOURCE_NODE || node.getType() == TimingNodeType.START_NODE)
+					{
+						edges.addAll(node.getOutputs());
+					}
+					else //Must be an internal sink node or end node
+					{
+						edges.addAll(node.getInputs());
+					}
+				}
+				edgeList.set(index, edges);
+			}
+		}
+		
 	}
 	
 	public ArrayList<TimingEdge> getIndexEdges(int index)
