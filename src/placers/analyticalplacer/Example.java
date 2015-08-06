@@ -100,36 +100,36 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-	    NetReader netReader = new NetReader();
-	    try
-		{
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
-			
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
-		}
-	    catch(IOException ioe)
-	    {
-	    	System.err.println("Couldn't read blif file!");
-	    	return;
-	    }
-	    
-	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+//	    NetReader netReader = new NetReader();
+//	    try
+//		{
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+//	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
+//			
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
+//		}
+//	    catch(IOException ioe)
+//	    {
+//	    	System.err.println("Couldn't read blif file!");
+//	    	return;
+//	    }
+//	    
+//	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	    
 //	    HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
 //	    Rplace.placeCLBsandFixedIOs(packedCircuit, arch, new Random(), netReader.getPackedIOs());
@@ -185,7 +185,7 @@ public class Example
 	    //visualTDAnalyticalNewNetFour(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalCombinedNetOne(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalCombinedNetTwo(packedCircuit, prePackedCircuit);
-	    visualTDAnalyticalCombinedNetThree(packedCircuit, prePackedCircuit);
+	    //visualTDAnalyticalCombinedNetThree(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalOldNet(packedCircuit, prePackedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
@@ -199,6 +199,7 @@ public class Example
 //	    runWldSaBenchmarksPackedIO();
 //	    runWldAnalyticalBenchmarksNet();
 //	    runTdAnalyticalNewNetBenchmarksNet();
+	    runTdAnalyticalCombinedNetBenchmarksNet();
 //	    runTdAnalyticalOldNetBenchmarksNet();
 //	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/stereovision3.net");
 //	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/diffeq1.net");
@@ -1265,7 +1266,7 @@ public class Example
 	private static void runTdAnalyticalCombinedNetBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksTDAnalyticalCombinedNet.csv";
+		String csvFileName = "HeteroBenchmarksTDAnalyticalCombinedNet2.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -1306,10 +1307,10 @@ public class Example
 		}
 		else
 		{
-			csvWriter = new CsvWriter(7);
+			csvWriter = new CsvWriter(8);
 			csvWriter.addRow(new String[] {"Benchmark name", "Analytical time TD_Analytical_CombinedNet", "SA time TD_Analytical_CombinedNet", 
 					"WL TD_Analytical_CombinedNet before anneal", "Max delay TD_Analytical_CombinedNet before anneal", 
-					"WL TD_Analytical_CombinedNet after anneal", "Max delay TD_Analytical_CombinedNet after anneal"});
+					"WL TD_Analytical_CombinedNet after anneal", "Max delay TD_Analytical_CombinedNet after anneal", "Memory usage"});
 			alreadyDoneFiles = null;
 		}
 		for(int i = 0; i < fileNamesToDo.length; i++)
@@ -1324,7 +1325,7 @@ public class Example
 				}
 				else
 				{
-					double[] tdAnalyticalResults = new double[6];
+					double[] tdAnalyticalResults = new double[7];
 					processTDAnalyticalCombinedNetNetBenchmark(tdAnalyticalResults, totalFilename);
 					double tdAnalyticalAnalyticalTime = tdAnalyticalResults[0];
 					double tdAnalyticalSATime = tdAnalyticalResults[1];
@@ -1332,6 +1333,7 @@ public class Example
 					double tdAnalyticalAfterWL = tdAnalyticalResults[3];
 					double tdAnalyticalBeforeMaxDelay = tdAnalyticalResults[4];
 					double tdAnalyticalAfterMaxDelay = tdAnalyticalResults[5];
+					int memoryUsage = (int)Math.round(tdAnalyticalResults[6]);
 					
 					String tdAnalyticalAnalyticalTimeString = String.format("%.3f", tdAnalyticalAnalyticalTime);
 					String tdAnalyticalSATimeString = String.format("%.3f", tdAnalyticalSATime);
@@ -1339,10 +1341,11 @@ public class Example
 					String tdAnalyticalAfterWLString = String.format("%.3f", tdAnalyticalAfterWL);
 					String tdAnalyticalBeforeMaxDelayString = String.format("%.3f", tdAnalyticalBeforeMaxDelay);
 					String tdAnalyticalAfterMaxDelayString = String.format("%.3f", tdAnalyticalAfterMaxDelay);
+					String memoryUsageString = String.format("%d", memoryUsage);
 					
 					csvWriter.addRow(new String[] {totalFilename, tdAnalyticalAnalyticalTimeString, 
 							tdAnalyticalSATimeString, tdAnalyticalBeforeWLString, tdAnalyticalBeforeMaxDelayString, tdAnalyticalAfterWLString, 
-							tdAnalyticalAfterMaxDelayString});
+							tdAnalyticalAfterMaxDelayString, memoryUsageString});
 				}
 			}
 			csvWriter.writeFile(csvFileName);
@@ -2939,6 +2942,59 @@ public class Example
 		tgAfter.buildTimingGraph();
 		double maxDelayAfter = tgAfter.calculateMaximalDelay();
 		results[5] = maxDelayAfter;
+	}
+	
+	private static void processTDAnalyticalCombinedNetNetBenchmark(double[] results, String totalFilename)
+	{
+		NetReader netReader = new NetReader();
+		try
+		{
+			netReader.readNetlist(totalFilename, 6);
+		}
+		catch(IOException ioe)
+		{
+			System.err.println("Couldn't read blif file!");
+			return;
+		}
+		
+		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+		PackedCircuit packedCircuit = netReader.getPackedCircuit();
+	
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		Hetero_TD_AnalyticalPlacerCombinedNetThree placer = new Hetero_TD_AnalyticalPlacerCombinedNetThree(a, packedCircuit, prePackedCircuit);
+		
+		long analyticalStartTime;
+		long analyticalEndTime;
+		long saStartTime;
+		long saEndTime;
+		
+		analyticalStartTime = System.nanoTime();
+		int maxMemoryUsage = placer.place();
+		analyticalEndTime = System.nanoTime();
+		
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[2] = effccBefore.calculateTotalCost();
+		TimingGraph tgBefore = new TimingGraph(prePackedCircuit);
+		tgBefore.buildTimingGraph();
+		results[4] = tgBefore.calculateMaximalDelay();
+		
+		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
+		
+		saStartTime = System.nanoTime();
+		tdSaPlacer.lowTempAnneal(4.0);
+		saEndTime = System.nanoTime();
+		
+		results[0] = (double)(analyticalEndTime - analyticalStartTime)/1000000000;
+		results[1] = (double)(saEndTime - saStartTime)/1000000000;
+		
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(packedCircuit);
+		results[3] = effccAfter.calculateTotalCost();
+		TimingGraph tgAfter = new TimingGraph(prePackedCircuit);
+		tgAfter.buildTimingGraph();
+		double maxDelayAfter = tgAfter.calculateMaximalDelay();
+		results[5] = maxDelayAfter;
+		
+		results[6] = maxMemoryUsage;
 	}
 	
 	private static void processTDAnalyticalOldNetModelBenchmark(double[] results, String totalFilename)

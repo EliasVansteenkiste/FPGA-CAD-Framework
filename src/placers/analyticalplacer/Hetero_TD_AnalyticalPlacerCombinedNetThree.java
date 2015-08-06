@@ -41,6 +41,8 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 	private Hetero_TD_LegalizerOne legalizer;
 	private TimingGraph timingGraph;
 	
+	private int maxMemoryUse;
+	
 	public Hetero_TD_AnalyticalPlacerCombinedNetThree(HeterogeneousArchitecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
 		this.architecture = architecture;
@@ -52,7 +54,7 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 		this.legalizer = new Hetero_TD_LegalizerOne(architecture, typeStartIndices, typeNames, linearX.length, timingGraph, circuit);
 	}
 	
-	public void place()
+	public int place()
 	{
 		System.out.println("Placement algorithm: Hetero_TD_AnalyticalPlacerCombinedNetThree");
 		
@@ -88,6 +90,8 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 				break;
 			}
 		}
+		
+		return maxMemoryUse;
 	}
 	
 	private void solveLinear(boolean firstSolve, int solveMode, double pseudoWeightFactor)
@@ -189,6 +193,12 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 		//Solve y problem
 		CGSolver ySolver = new CGSolver(yMatrix, yVector);
 		double[] ySolution = ySolver.solve(epselon);
+		
+		int currentMemoryUse = xMatrix.getMemoryUsageDouble() + yMatrix.getMemoryUsageDouble();
+		if(currentMemoryUse > maxMemoryUse)
+		{
+			maxMemoryUse = currentMemoryUse;
+		}
 		
 		//Save results
 		for(int i = 0; i < dimensions; i++)
