@@ -8,8 +8,8 @@ import circuit.PackedCircuit;
 import circuit.Net;
 import circuit.Connection;
 
-import architecture.FourLutSanitized;
-import architecture.RouteNode;
+import architecture.old.FourLutSanitized;
+import architecture.old.RouteNode;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

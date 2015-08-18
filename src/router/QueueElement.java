@@ -1,6 +1,6 @@
 package router;
 
-import architecture.RouteNode;
+import architecture.old.RouteNode;
 
 public class QueueElement implements Comparable {
 	RouteNode node;

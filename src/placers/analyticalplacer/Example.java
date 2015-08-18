@@ -17,20 +17,31 @@ import javax.swing.JFrame;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import architecture.FourLutSanitized;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
+import architecture.old.FourLutSanitized;
 
 import packers.BlePacker;
 import packers.ClbPacker;
-import placers.BoundingBoxNetCC;
 import placers.Rplace;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import placers.SAPlacer.EfficientCostCalculator;
 import placers.SAPlacer.Swap;
 import placers.SAPlacer.TD_SAPlacer;
+import placers.SAPlacer.WLD_GreedyRefiner;
 import placers.SAPlacer.WLD_SAPlacer;
+import placers.analyticalplacer.old.HeteroAnalyticalPlacerNewNetTwo;
+import placers.analyticalplacer.old.Hetero_TD_AnalyticalPlacerCombinedNetOne;
+import placers.analyticalplacer.old.Hetero_TD_AnalyticalPlacerCombinedNetTwo;
+import placers.analyticalplacer.old.Hetero_TD_AnalyticalPlacerNewNetFour;
+import placers.analyticalplacer.old.Hetero_TD_AnalyticalPlacerNewNetOne;
+import placers.analyticalplacer.old.Hetero_TD_AnalyticalPlacerNewNetThree;
+import placers.analyticalplacer.old.Hetero_TD_AnalyticalPlacerNewNetTwo;
+import placers.analyticalplacer.old.Hetero_TD_AnalyticalPlacerOldNetOne;
+import placers.analyticalplacer.old.LegalizerOne;
+import placers.analyticalplacer.old.TD_AnalyticalPlacerNewNetOne;
+import placers.old.BoundingBoxNetCC;
 import timinganalysis.DelayMatrixReader;
 import timinganalysis.TimingEdge;
 import timinganalysis.TimingGraph;
@@ -193,19 +204,14 @@ public class Example
 //	    testTimingGraphOldAnalyticalFunctions(prePackedCircuit, packedCircuit);
 //	    testHeteroLegalizerTwo(packedCircuit);
 //	    testVisualization();
+//	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
 	    
 //	    runWldSaBenchmarksNet();
 //	    runTdSaBenchmarksNet();
-//	    runWldSaBenchmarksPackedIO();
 //	    runWldAnalyticalBenchmarksNet();
 //	    runTdAnalyticalNewNetBenchmarksNet();
 	    runTdAnalyticalCombinedNetBenchmarksNet();
 //	    runTdAnalyticalOldNetBenchmarksNet();
-//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/stereovision3.net");
-//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/diffeq1.net");
-//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/diffeq2.net");
-//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net");
-//	    runSAParameterSweep("benchmarks/vtr_benchmarks_netlist/sha.net");
 	}
 	
 	//Heterogeneous
@@ -1090,7 +1096,7 @@ public class Example
 	private static void runWldAnalyticalBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksWldAnalyticalTwoNoOverlap.csv";
+		String csvFileName = "HeteroBenchmarksWldAPGradualLowEffort.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -1266,7 +1272,7 @@ public class Example
 	private static void runTdAnalyticalCombinedNetBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksTDAnalyticalCombinedNet2.csv";
+		String csvFileName = "HeteroBenchmarksTDAnalyticalCombinedNetLE2.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -1442,7 +1448,7 @@ public class Example
 	private static void runWldSaBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksWldSa.csv";
+		String csvFileName = "HeteroBenchmarksWldSaLowEffort.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -1691,7 +1697,7 @@ public class Example
 	private static void runTdSaBenchmarksNet()
 	{
 		String toDoFileName = "HeteroBenchmarksNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksTdSa.csv";
+		String csvFileName = "HeteroBenchmarksTdSaLowEffort.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -2067,11 +2073,13 @@ public class Example
 		tgBefore.buildTimingGraph();
 		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
 		
-		//WLD_SAPlacer saPlacer= new WLD_SAPlacer(architecture, c);
+		WLD_SAPlacer saPlacer= new WLD_SAPlacer(architecture, c);
+		//WLD_GreedyRefiner refiner = new WLD_GreedyRefiner(architecture, c);
 		
 		//SA phase
 		SAStartTime = System.nanoTime();
-		//saPlacer.lowTempAnneal(4.0);
+		saPlacer.lowTempAnneal(1.0);
+		//refiner.refine();
 		SAEndTime = System.nanoTime();
 		
 		double AnalyticalTime = (double)(analyticalEndTime - analyticalStartTime) / 1000000000.0;
@@ -2612,11 +2620,11 @@ public class Example
 		tgBefore.buildTimingGraph();
 		double maxDelayBeforeRefinement = tgBefore.calculateMaximalDelay();
 		
-		//TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, c, prePackedCircuit);
+		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, c, prePackedCircuit);
 		
 		//SA phase
 		SAStartTime = System.nanoTime();
-		//tdSaPlacer.lowTempAnneal(4.0);
+		tdSaPlacer.lowTempAnneal(1.0);
 		SAEndTime = System.nanoTime();
 		double SATime = (double)(SAEndTime - SAStartTime) / 1000000000.0;
 		
@@ -2646,7 +2654,7 @@ public class Example
 	
 	private static void visualTDSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		Double placementEffort = 10.0;
+		Double placementEffort = 1.0;
 		
 		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
@@ -2688,7 +2696,7 @@ public class Example
 	
 	private static void visualSA(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		Double placementEffort = 10.0;
+		Double placementEffort = 1.0;
 		
 		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
@@ -2823,7 +2831,7 @@ public class Example
 		WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, packedCircuit);
 		
 		annealStartTime = System.nanoTime();
-		saPlacer.lowTempAnneal(4.0);
+		saPlacer.lowTempAnneal(1.0);
 		endTime = System.nanoTime();
 		
 		results[0] = (double)(analyticalEndTime - startTime)/1000000000;
@@ -2981,7 +2989,7 @@ public class Example
 		TD_SAPlacer tdSaPlacer = new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
 		saStartTime = System.nanoTime();
-		tdSaPlacer.lowTempAnneal(4.0);
+		tdSaPlacer.lowTempAnneal(1.0);
 		saEndTime = System.nanoTime();
 		
 		results[0] = (double)(analyticalEndTime - analyticalStartTime)/1000000000;
@@ -3175,7 +3183,7 @@ public class Example
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
-		Double placementEffort = 10.0;
+		Double placementEffort = 1.0;
 		
 		long startTime;
 		long endTime;
@@ -3286,7 +3294,7 @@ public class Example
 		
 		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
-		Double placementEffort = 10.0;
+		Double placementEffort = 1.0;
 		
 		long startTime;
 		long endTime;
@@ -3532,6 +3540,8 @@ public class Example
 		
 		boolean alreadyDone = false;
 		
+		double totalDeltaCostAccepted = 0.0;
+		
 		for(int i = 0; i < 10000; i++)
 		{
 			Swap swap=new Swap();
@@ -3554,17 +3564,11 @@ public class Example
 				}
 			}
 			
-			if(!alreadyDone)
-			{
-				//System.out.println(tcc.getBlockNodesString(swap.pl1.block.name));
-				System.out.println(tcc.getBlockNodesString("top^MULTIPLY~45[0]"));
-				alreadyDone = true;
-			}
-			
 			double deltaCost = tcc.calculateDeltaCost(swap);
 			if(deltaCost < 0)
 			{
 				swap.apply();
+				totalDeltaCostAccepted += deltaCost;
 				tcc.pushThrough();
 			}
 			else
@@ -3573,6 +3577,7 @@ public class Example
 			}
 		}
 		
+		double endCostBeforeRecalculating = tcc.calculateTotalCost();
 		tcc.recalculateAllSlacksCriticalities();
 		double totalCost = tcc.calculateTotalCost();
 		double maxDelay = tcc.calculateMaximalDelay();
@@ -3583,6 +3588,7 @@ public class Example
 		double newMaxDelay = newTimingGraph.calculateMaximalDelay();
 		
 		System.out.println("Swapped cost = " + totalCost + ", new cost = " + newCost);
+		System.out.println("Registered delta cost = " + totalDeltaCostAccepted + ", end cost before recalculating = " + endCostBeforeRecalculating);
 		System.out.println("Old maximum delay = " + maxDelay + ", new maximal delay = " + newMaxDelay);
 	}
 	

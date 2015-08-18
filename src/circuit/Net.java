@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import architecture.RouteNode;
+import architecture.old.RouteNode;
 
 public class Net extends Block{
 

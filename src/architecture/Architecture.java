@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.Vector;
 
+import architecture.old.RouteNode;
+
 public class Architecture {
 	
 	protected Random rand;

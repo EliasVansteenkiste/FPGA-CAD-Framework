@@ -13,11 +13,11 @@ import circuit.Clb;
 import circuit.Input;
 import circuit.Output;
 
-import architecture.FourLutSanitized;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 import architecture.SiteType;
+import architecture.old.FourLutSanitized;
 
 public class Rplace
 {

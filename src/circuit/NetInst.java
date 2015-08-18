@@ -2,7 +2,8 @@ package circuit;
 
 import java.util.HashSet;
 import java.util.Set;
-import architecture.RouteNode;
+
+import architecture.old.RouteNode;
 
 public class NetInst {
 	public Net net;

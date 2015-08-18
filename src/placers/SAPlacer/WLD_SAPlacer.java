@@ -16,6 +16,8 @@ public class WLD_SAPlacer extends SAPlacer
 	@Override
 	public void place(double inner_num)
 	{
+		System.out.println("Effort level: " + inner_num);
+		
 		//Initialize SA parameters
 		calculator.recalculateFromScratch();
 		rand = new Random(1);
@@ -27,6 +29,8 @@ public class WLD_SAPlacer extends SAPlacer
 		//Print SA parameters
 		System.out.println("Initial temperature: " + T);
 		System.out.println("Moves per temperature: " + movesPerTemperature);
+		
+		int tNumber = 0;
 		
 		//Do placement
 		while (T > 0.005*calculator.calculateAverageNetCost())
@@ -62,7 +66,10 @@ public class WLD_SAPlacer extends SAPlacer
 
 			double alpha = (double)alphaAbs/movesPerTemperature;
 			Rlim = updateRlim(alpha);
-			T=updateTemperature(T,alpha);		
+			T=updateTemperature(T,alpha);
+			
+			System.out.println("Temperature " + tNumber +" = " + T + ", cost = " + calculator.calculateTotalCost() + ", Rlim = " + Rlim);
+			tNumber++;
 		}
 		
 		System.out.println("Last temp: " + T);
@@ -178,15 +185,18 @@ public class WLD_SAPlacer extends SAPlacer
 		calculator.recalculateFromScratch();
 		rand= new Random(1);
 		int biggestDistance = getBiggestDistance();
-		int maxValue = (int)Math.floor(biggestDistance / 3.0);
+		//int maxValue = (int)Math.floor(biggestDistance / 3.0);
+		int maxValue = (int)Math.floor(biggestDistance / 16.0);
 		if(maxValue < 1)
 		{
 			maxValue = 1;
 		}
 		Rlimd = maxValue;
 		int Rlim = initialRlim();
-		double T = calculateInitialTemperatureLow();
+		double T = calculateInitialTemperatureLow(Rlim);
 		int movesPerTemperature=(int) (innerNum*Math.pow(circuit.numBlocks(),4.0/3.0));
+		
+		System.out.println("Initial temp = " + T + ", initial Rlim = " + Rlim);
 		
 		while (T>0.005*calculator.calculateAverageNetCost()) {
 			int alphaAbs=0;
@@ -372,14 +382,15 @@ public class WLD_SAPlacer extends SAPlacer
 //		return T;
 //	}
 	
-	private double calculateInitialTemperatureLow()
+	private double calculateInitialTemperatureLow(int Rlim)
 	{
 		double sumNegDeltaCost = 0.0;
 		int numNegDeltaCost = 0;
 		double quadraticSumNegDeltaCost = 0.0;
 		for (int i = 0; i < circuit.numBlocks(); i++)
 		{
-			Swap swap = findSwapInCircuit();
+			//Swap swap = findSwapInCircuit();
+			Swap swap = findSwap(Rlim);
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap

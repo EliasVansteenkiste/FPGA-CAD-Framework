@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.PriorityQueue;
 
 import architecture.Architecture;
-import architecture.RouteNode;
+import architecture.old.RouteNode;
 import circuit.PackedCircuit;
 import circuit.Net;
 import circuit.Pin;

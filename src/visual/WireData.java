@@ -4,7 +4,7 @@ package visual;
 //import java.awt.Graphics;
 import java.awt.*;
 
-import architecture.RouteNode;
+import architecture.old.RouteNode;
 
 public class WireData extends RouteNodeData {
 

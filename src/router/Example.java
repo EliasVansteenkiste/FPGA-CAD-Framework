@@ -5,12 +5,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
-import placers.BoundingBoxNetCC;
-import placers.PlacementManipulatorIOCLB;
 import placers.Rplace;
-import placers.Vplace;
+import placers.old.BoundingBoxNetCC;
+import placers.old.PlacementManipulatorIOCLB;
+import placers.old.Vplace;
 
-import architecture.FourLutSanitized;
+import architecture.old.FourLutSanitized;
 import circuit.PackedCircuit;
 import circuit.parser.netlist.ParseException;
 import circuit.parser.netlist.Readnetlist;
