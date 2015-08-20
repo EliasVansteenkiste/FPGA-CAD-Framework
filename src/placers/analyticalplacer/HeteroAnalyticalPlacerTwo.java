@@ -95,6 +95,119 @@ public class HeteroAnalyticalPlacerTwo
 		return totalMatrixBytes;
 	}
 	
+	public int place(HashMap<String,String> dictionary)
+	{
+		//startingStage = 0 ==> start with initial solves (no anchors)
+		//startingStage = 1 ==> start from existing placement that is incorporated in the packedCircuit passed with the constructor
+		int startingStage = 0; //Default	
+		if(dictionary.get("starting_stage") != null)
+		{
+			startingStage = Integer.parseInt(dictionary.get("starting_stage"));
+			if(startingStage < 0 || startingStage > 1) //startingStage can only be 0 or 1
+			{
+				startingStage = 0;
+			}
+		}
+		
+		//initialize maxUtilizationSequence used by the legalizer
+		double[] maxUtilizationSequenceArray = new double[] {0.9}; //Default
+		if(dictionary.get("max_utilization_sequence") != null)
+		{
+			String maxUtilizationSequenceString = dictionary.get("max_utilization_sequence");
+			String[] maxUtilizationSequenceStringArray = maxUtilizationSequenceString.split(";");
+			maxUtilizationSequenceArray = new double[maxUtilizationSequenceStringArray.length];
+			int i = 0;
+			for(String maxUtilization: maxUtilizationSequenceStringArray)
+			{
+				maxUtilizationSequenceArray[i] = Double.parseDouble(maxUtilization);
+				i++;
+			}
+		}
+		
+		//The first anchorWeight factor that will be used in the main solve loop
+		double startingAnchorWeight = 0.3; //Default
+		if(dictionary.get("starting_anchor_weight") != null)
+		{
+			startingAnchorWeight = Double.parseDouble(dictionary.get("starting_anchor_weight"));
+		}
+		
+		//The amount with whom the anchorWeight factor will be increased each iteration
+		double anchorWeightIncrease = 0.3; //Default
+		if(dictionary.get("anchor_weight_increase") != null)
+		{
+			anchorWeightIncrease = Double.parseDouble("anchor_weight_increase");
+		}
+		
+		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
+		double stopRatioLinearLegal = 0.8; //Default
+		if(dictionary.get("stop_ratio_linear_legal") != null)
+		{
+			stopRatioLinearLegal = Double.parseDouble(dictionary.get("stop_ratio_linear_legal"));
+		}
+		
+		int maxMemoryUse = placementOuterLoop(startingStage, maxUtilizationSequenceArray, 
+							startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal);
+		
+		return maxMemoryUse;
+	}
+	
+	private int placementOuterLoop(int startingStage, double[] maxUtilizationSequence, 
+			double startingAnchorWeight, double anchorWeightIncrease, double stopRatioLinearLegal)
+	{
+		double pseudoWeightFactor;
+		double maxUtilizationLegalizer;
+		int itNumber;
+		if(startingStage == 0)
+		{
+			initializeArraysRandom();
+			
+			int solveMode = 0;
+			for(int i = 0; i < 7; i++) //Initial linear solves, should normally be done 5-7 times
+			{
+				solveLinear(true, solveMode, 0.0);
+			}
+			//Initial legalization
+			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode, maxUtilizationSequence[0]);
+			
+			pseudoWeightFactor = anchorWeightIncrease;
+			maxUtilizationLegalizer = maxUtilizationSequence[1];
+			itNumber = 1;
+		}
+		else //startingStage == 1
+		{
+			initializeArraysInitialPlacement();
+			legalizer.initializeArrays(linearX, linearY, circuit.nets.values(), indexMap);
+			pseudoWeightFactor = startingAnchorWeight;
+			maxUtilizationLegalizer = maxUtilizationSequence[0];
+			itNumber = 0;
+		}
+		
+		int solveMode = 0;
+		double costLinear;
+		double costLegal;
+		do
+		{
+			solveMode = (solveMode + 1) % (typeNames.length + 1);
+			if(solveMode <= 1)
+			{
+				pseudoWeightFactor += anchorWeightIncrease;
+				int index = Math.min(itNumber, maxUtilizationSequence.length - 1);
+				itNumber++;
+				maxUtilizationLegalizer = maxUtilizationSequence[index];
+			}
+			solveLinear(false, solveMode, pseudoWeightFactor);
+			costLinear = calculateTotalCost(linearX, linearY);
+			legalizer.legalize(linearX, linearY, circuit.getNets().values(), indexMap, solveMode, maxUtilizationLegalizer);
+			costLegal = legalizer.calculateBestLegalCost(circuit.getNets().values(), indexMap);
+			//System.out.println("Linear cost iteration " + i + ": " + costLinear);
+			//System.out.println("Legal cost iteration " + i + ": " + costLegal);
+		}while(costLinear / costLegal > stopRatioLinearLegal);
+		
+		updateCircuit();
+		
+		return totalMatrixBytes;
+	}
+	
 	/*
 	 * Build and solve the linear system ==> recalculates linearX and linearY
 	 * If it is the first time we solve the linear system ==> don't take pseudonets into account
@@ -908,6 +1021,47 @@ public class HeteroAnalyticalPlacerTwo
 		return weight;
 	}
 	
+	private void initializeArraysRandom()
+	{
+		int maximalX = architecture.getWidth();
+		int maximalY = architecture.getHeight();
+		Random random = new Random();
+		for(Clb clb: circuit.clbs.values())
+		{
+			int index = indexMap.get(clb);
+			linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
+			linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
+		}
+		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
+		{
+			for(HardBlock hb: hbVector)
+			{
+				int index = indexMap.get(hb);
+				linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
+				linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
+			}
+		}
+	}
+	
+	private void initializeArraysInitialPlacement()
+	{
+		for(Clb clb: circuit.clbs.values())
+		{
+			int index = indexMap.get(clb);
+			linearX[index] = clb.getSite().x;
+			linearY[index] = clb.getSite().y;
+		}
+		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
+		{
+			for(HardBlock hb: hbVector)
+			{
+				int index = indexMap.get(hb);
+				linearX[index] = hb.getSite().x;
+				linearY[index] = hb.getSite().y;
+			}
+		}
+	}
+	
 	private void initializeDataStructures()
 	{
 		int nbClbs = circuit.clbs.size();
@@ -923,17 +1077,13 @@ public class HeteroAnalyticalPlacerTwo
 		typeNames = new String[nbHardBlockTypes + 1];
 		linearX = new double[dimensions];
 		linearY = new double[dimensions];
-		int maximalX = architecture.getWidth();
-		int maximalY = architecture.getHeight();
-		Random random = new Random();
+		
 		typeStartIndices[0] = 0;
 		typeNames[0] = "CLB";
 		int index = 0;
 		for(Clb clb: circuit.clbs.values())
 		{
 			indexMap.put(clb, index);
-			linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
-			linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
 			index++;
 		}
 		int hardBlockTypeIndex = 0;
@@ -944,8 +1094,6 @@ public class HeteroAnalyticalPlacerTwo
 			for(HardBlock hb: hbVector)
 			{
 				indexMap.put(hb, index);
-				linearX[index] = 1 + (maximalX - 1) * random.nextDouble();
-				linearY[index] = 1 + (maximalY - 1) * random.nextDouble();
 				index++;
 			}
 			hardBlockTypeIndex++;
