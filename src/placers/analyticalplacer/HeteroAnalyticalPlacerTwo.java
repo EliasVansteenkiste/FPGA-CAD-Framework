@@ -36,19 +36,17 @@ public class HeteroAnalyticalPlacerTwo
 	private double[] linearX;
 	private double[] linearY;
 	private HeteroLegalizerTwo legalizer;
-	private boolean addQn;
 	
 	private boolean doneMemoryUse;
 	private int totalMatrixBytes;
 	
-	public HeteroAnalyticalPlacerTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit, boolean addQn)
+	public HeteroAnalyticalPlacerTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		this.legalizer = new HeteroLegalizerTwo(architecture, typeStartIndices, typeNames, linearX.length);
-		this.addQn = addQn;
 		this.doneMemoryUse = false;
 		this.totalMatrixBytes = 0;
 	}
@@ -326,10 +324,7 @@ public class HeteroAnalyticalPlacerTwo
 					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
-				if(addQn)
-				{
-					weight *= Qn;
-				}
+				weight *= Qn;
 				if(maxXIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -368,10 +363,7 @@ public class HeteroAnalyticalPlacerTwo
 					delta = 0.005;
 				}
 				double weight = ((double)2/(nbPins-1)) * (1/delta);
-				if(addQn)
-				{
-					weight *= Qn;
-				}
+				weight *= Qn;
 				if(maxYIndex == -1)
 				{
 					//maxX fixed but minX not
@@ -414,10 +406,7 @@ public class HeteroAnalyticalPlacerTwo
 						deltaMaxX = 0.005;
 					}
 					double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
-					if(addQn)
-					{
-						weightMaxX *= Qn;
-					}
+					weightMaxX *= Qn;
 					if(maxXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -450,10 +439,7 @@ public class HeteroAnalyticalPlacerTwo
 						deltaMinX = 0.005;
 					}
 					double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
-					if(addQn)
-					{
-						weightMinX *= Qn;
-					}
+					weightMinX *= Qn;
 					if(minXIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -485,10 +471,7 @@ public class HeteroAnalyticalPlacerTwo
 						deltaMaxY = 0.005;
 					}
 					double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
-					if(addQn)
-					{
-						weightMaxY *= Qn;
-					}
+					weightMaxY *= Qn;
 					if(maxYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -520,10 +503,7 @@ public class HeteroAnalyticalPlacerTwo
 						deltaMinY = 0.005;
 					}
 					double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
-					if(addQn)
-					{
-						weightMinY *= Qn;
-					}
+					weightMinY *= Qn;
 					if(minYIndex == -1) //maxX is a fixed block
 					{
 						//Connection between fixed and non fixed block
@@ -564,10 +544,7 @@ public class HeteroAnalyticalPlacerTwo
 							deltaMaxX = 0.005;
 						}
 						double weightMaxX = ((double)2/(nbPins-1)) * (1/deltaMaxX);
-						if(addQn)
-						{
-							weightMaxX *= Qn;
-						}
+						weightMaxX *= Qn;
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(maxXIndex - startIndex, maxXIndex - startIndex, 
 															xMatrix.getElement(maxXIndex - startIndex, maxXIndex - startIndex) + weightMaxX);
@@ -589,10 +566,7 @@ public class HeteroAnalyticalPlacerTwo
 							deltaMinX = 0.005;
 						}
 						double weightMinX = ((double)2/(nbPins-1)) * (1/deltaMinX);
-						if(addQn)
-						{
-							weightMinX *= Qn;
-						}
+						weightMinX *= Qn;
 						//Connection between fixed and non fixed block
 						xMatrix.setElement(minXIndex - startIndex, minXIndex - startIndex, 
 															xMatrix.getElement(minXIndex - startIndex, minXIndex - startIndex) + weightMinX);
@@ -620,10 +594,7 @@ public class HeteroAnalyticalPlacerTwo
 							deltaMaxY = 0.005;
 						}
 						double weightMaxY = ((double)2/(nbPins-1)) * (1/deltaMaxY);
-						if(addQn)
-						{
-							weightMaxY *= Qn;
-						}
+						weightMaxY *= Qn;
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(maxYIndex - startIndex, maxYIndex - startIndex, 
 															yMatrix.getElement(maxYIndex - startIndex, maxYIndex - startIndex) + weightMaxY);
@@ -645,10 +616,7 @@ public class HeteroAnalyticalPlacerTwo
 							deltaMinY = 0.005;
 						}
 						double weightMinY = ((double)2/(nbPins-1)) * (1/deltaMinY);
-						if(addQn)
-						{
-							weightMinY *= Qn;
-						}
+						weightMinY *= Qn;
 						//Connection between fixed and non fixed block
 						yMatrix.setElement(minYIndex - startIndex, minYIndex - startIndex, 
 															yMatrix.getElement(minYIndex - startIndex, minYIndex - startIndex) + weightMinY);
