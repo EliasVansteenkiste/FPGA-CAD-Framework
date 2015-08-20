@@ -1,4 +1,4 @@
-package placers.analyticalplacer;
+package placers.analyticalplacer.old;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,6 +12,7 @@ import mathtools.CGSolver;
 import mathtools.Crs;
 
 import placers.Rplace;
+import placers.analyticalplacer.HeteroLegalizerOne;
 
 import circuit.BlockType;
 import circuit.Clb;
