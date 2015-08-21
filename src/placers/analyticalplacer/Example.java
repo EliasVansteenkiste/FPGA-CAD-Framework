@@ -99,36 +99,36 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-//	    NetReader netReader = new NetReader();
-//	    try
-//		{
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-//	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
-//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
-//			
-//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
-//		}
-//	    catch(IOException ioe)
-//	    {
-//	    	System.err.println("Couldn't read blif file!");
-//	    	return;
-//	    }
-//	    
-//	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+	    NetReader netReader = new NetReader();
+	    try
+		{
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
+			
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
+		}
+	    catch(IOException ioe)
+	    {
+	    	System.err.println("Couldn't read blif file!");
+	    	return;
+	    }
+	    
+	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	    
 //	    HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
 //	    Rplace.placeCLBsandFixedIOs(packedCircuit, arch, new Random(), netReader.getPackedIOs());
@@ -175,7 +175,7 @@ public class Example
 	    
 	    //visualSA(prePackedCircuit, packedCircuit);
 	    //visualTDSA(prePackedCircuit, packedCircuit);
-	    //visualAnalyticalTwo(packedCircuit, prePackedCircuit, true);
+	    visualAnalyticalTwo(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalCombinedNetThree(packedCircuit, prePackedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
@@ -189,7 +189,7 @@ public class Example
 //	    runTdSaBenchmarksNet();
 //	    runWldAnalyticalBenchmarksNet();
 //	    runTdAnalyticalNewNetBenchmarksNet();
-	    runTdAnalyticalCombinedNetBenchmarksNet();
+//	    runTdAnalyticalCombinedNetBenchmarksNet();
 //	    runTdAnalyticalOldNetBenchmarksNet();
 	}
 	

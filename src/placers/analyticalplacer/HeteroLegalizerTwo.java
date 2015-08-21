@@ -230,7 +230,7 @@ public class HeteroLegalizerTwo
 			List<Double> positionsY = new ArrayList<>();
 			
 			//Find a starting point for the cluster
-			int firstIndex = todo.get(0);
+			int firstIndex = todo.get(todo.size() - 1);
 			areaXUpBoundHalf = (double) Math.round(linearX[firstIndex]) + 0.5;
 			areaXDownBoundHalf = (double) Math.round(linearX[firstIndex]) - 0.5;
 			areaYUpBoundHalf = (double) Math.round(linearY[firstIndex]) + 0.5;
@@ -238,8 +238,8 @@ public class HeteroLegalizerTwo
 			indices.add(firstIndex);
 			positionsX.add(linearX[firstIndex]);
 			positionsY.add(linearY[firstIndex]);
-			todo.remove(0);
-			for (int i = 0; i < todo.size(); i++)
+			todo.remove(todo.size() - 1);
+			for (int i = todo.size() - 1; i >= 0; i--)
 			{
 				int currentIndex = todo.get(i);
 				if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -249,7 +249,6 @@ public class HeteroLegalizerTwo
 					positionsX.add(linearX[currentIndex]);
 					positionsY.add(linearY[currentIndex]);
 					todo.remove(i);
-					i--;
 				}
 			}
 			
@@ -290,7 +289,7 @@ public class HeteroLegalizerTwo
 				{
 					areaXUpBoundHalf += 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -300,7 +299,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -333,7 +331,7 @@ public class HeteroLegalizerTwo
 				{
 					areaYDownBoundHalf -= 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -343,7 +341,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -376,7 +373,7 @@ public class HeteroLegalizerTwo
 				{
 					areaXDownBoundHalf -= 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -386,7 +383,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -419,7 +415,7 @@ public class HeteroLegalizerTwo
 				{
 					areaYUpBoundHalf += 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -429,7 +425,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -500,7 +495,7 @@ public class HeteroLegalizerTwo
 						areaXUpBoundHalf += 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -510,7 +505,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					} 
@@ -521,7 +515,7 @@ public class HeteroLegalizerTwo
 							areaXDownBoundHalf -= 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -531,7 +525,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						}
@@ -543,7 +536,7 @@ public class HeteroLegalizerTwo
 						areaYDownBoundHalf -= 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -553,7 +546,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					}
@@ -564,7 +556,7 @@ public class HeteroLegalizerTwo
 							areaYUpBoundHalf += 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -574,7 +566,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						}
@@ -586,7 +577,7 @@ public class HeteroLegalizerTwo
 						areaXDownBoundHalf -= 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -596,7 +587,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					}
@@ -607,7 +597,7 @@ public class HeteroLegalizerTwo
 							areaXUpBoundHalf += 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -617,7 +607,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						} 
@@ -629,7 +618,7 @@ public class HeteroLegalizerTwo
 						areaYUpBoundHalf += 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -639,7 +628,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					}
@@ -650,7 +638,7 @@ public class HeteroLegalizerTwo
 							areaYDownBoundHalf -= 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -660,7 +648,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						}
@@ -857,7 +844,7 @@ public class HeteroLegalizerTwo
 			List<Double> positionsY = new ArrayList<>();
 			
 			//Find a starting point for the cluster
-			int firstIndex = todo.get(0);
+			int firstIndex = todo.get(todo.size() - 1);
 			areaXUpBoundHalf = (double) Math.round(linearX[firstIndex]) + 0.5;
 			areaXDownBoundHalf = (double) Math.round(linearX[firstIndex]) - 0.5;
 			areaYUpBoundHalf = (double) Math.round(linearY[firstIndex]) + 0.5;
@@ -865,8 +852,8 @@ public class HeteroLegalizerTwo
 			indices.add(firstIndex);
 			positionsX.add(linearX[firstIndex]);
 			positionsY.add(linearY[firstIndex]);
-			todo.remove(0);
-			for (int i = 0; i < todo.size(); i++)
+			todo.remove(todo.size() - 1);
+			for (int i = todo.size() - 1; i >= 0; i--)
 			{
 				int currentIndex = todo.get(i);
 				if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -876,7 +863,6 @@ public class HeteroLegalizerTwo
 					positionsX.add(linearX[currentIndex]);
 					positionsY.add(linearY[currentIndex]);
 					todo.remove(i);
-					i--;
 				}
 			}
 			
@@ -917,7 +903,7 @@ public class HeteroLegalizerTwo
 				{
 					areaXUpBoundHalf += 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -927,7 +913,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -960,7 +945,7 @@ public class HeteroLegalizerTwo
 				{
 					areaYDownBoundHalf -= 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -970,7 +955,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -1003,7 +987,7 @@ public class HeteroLegalizerTwo
 				{
 					areaXDownBoundHalf -= 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1013,7 +997,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -1046,7 +1029,7 @@ public class HeteroLegalizerTwo
 				{
 					areaYUpBoundHalf += 1.0;
 					expanded = true;
-					for (int i = 0; i < todo.size(); i++)
+					for (int i = todo.size() - 1; i >= 0; i--)
 					{
 						int currentIndex = todo.get(i);
 						if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1056,7 +1039,6 @@ public class HeteroLegalizerTwo
 							positionsX.add(linearX[currentIndex]);
 							positionsY.add(linearY[currentIndex]);
 							todo.remove(i);
-							i--;
 						}
 					}
 				}
@@ -1128,7 +1110,7 @@ public class HeteroLegalizerTwo
 						areaXUpBoundHalf += 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1138,7 +1120,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					} 
@@ -1149,7 +1130,7 @@ public class HeteroLegalizerTwo
 							areaXDownBoundHalf -= 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1159,7 +1140,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						}
@@ -1171,7 +1151,7 @@ public class HeteroLegalizerTwo
 						areaYDownBoundHalf -= 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1181,7 +1161,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					}
@@ -1192,7 +1171,7 @@ public class HeteroLegalizerTwo
 							areaYUpBoundHalf += 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1202,7 +1181,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						}
@@ -1214,7 +1192,7 @@ public class HeteroLegalizerTwo
 						areaXDownBoundHalf -= 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1224,7 +1202,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					}
@@ -1235,7 +1212,7 @@ public class HeteroLegalizerTwo
 							areaXUpBoundHalf += 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1245,7 +1222,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						} 
@@ -1257,7 +1233,7 @@ public class HeteroLegalizerTwo
 						areaYUpBoundHalf += 1.0;
 
 						// Add blocks which are not in the cluster yet
-						for (int i = 0; i < todo.size(); i++)
+						for (int i = todo.size() - 1; i >= 0; i--)
 						{
 							int currentIndex = todo.get(i);
 							if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1267,7 +1243,6 @@ public class HeteroLegalizerTwo
 								positionsX.add(linearX[currentIndex]);
 								positionsY.add(linearY[currentIndex]);
 								todo.remove(i);
-								i--;
 							}
 						}
 					}
@@ -1278,7 +1253,7 @@ public class HeteroLegalizerTwo
 							areaYDownBoundHalf -= 1.0;
 
 							// Add blocks which are not in the cluster yet
-							for (int i = 0; i < todo.size(); i++)
+							for (int i = todo.size() - 1; i >= 0; i--)
 							{
 								int currentIndex = todo.get(i);
 								if (linearX[currentIndex] >= areaXDownBoundHalf && linearX[currentIndex] < areaXUpBoundHalf
@@ -1288,7 +1263,6 @@ public class HeteroLegalizerTwo
 									positionsX.add(linearX[currentIndex]);
 									positionsY.add(linearY[currentIndex]);
 									todo.remove(i);
-									i--;
 								}
 							}
 						}
