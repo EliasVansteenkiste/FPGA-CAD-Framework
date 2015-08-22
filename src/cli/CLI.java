@@ -90,6 +90,7 @@ public class CLI {
 			
 		case "TDSA":
 			error("Placer not yet implemented: " + options.placer);
+			System.exit(1);
 			
 		default:
 			error("Placer type not recognized: " + options.placer);
