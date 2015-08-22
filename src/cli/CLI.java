@@ -18,6 +18,7 @@ import circuit.BlePackedCircuit;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
 import circuit.parser.blif.BlifReader;
+import circuit.parser.net.NetReader;
 import cli.Options;
 
 
@@ -25,68 +26,61 @@ public class CLI {
 	
 	public static void main(String[] args) {
 		
+		// The Options class can parse the command line options
 		Options options = new Options();
 		options.parseArguments(args);
 		
 		
-		// Read the blif file
-		BlifReader blifReader = new BlifReader();
+		// Read the net file
+		NetReader netReader = new NetReader();
 		PrePackedCircuit prePackedCircuit = null;
 		
 		try {
-			prePackedCircuit = blifReader.readBlif(options.blifFile.toString(), 6);
+			netReader.readNetlist(options.netFile.toString(), 6);
 		} catch(IOException e) {
-			error("Failed to read blif file");
+			error("Failed to read net file");
 		}
 		
+		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 		
-		// Pack the circuit
-		BlePacker blePacker = new BlePacker(prePackedCircuit);
-		BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-		PackedCircuit packedCircuit = clbPacker.pack();
 		
 		
 		// Set the architecture
 		// Currently only the heterogeneous architecture is supported
 		Architecture architecture = null; // Needed to suppress "variable may not be initialized" errors
 		switch(options.architecture) {
-		
-		case "heterogeneous":
-			architecture = new HeterogeneousArchitecture(packedCircuit);
-			break;
-		
-		default:
-			error("Architecture type not recognized: " + options.architecture);
+			case "heterogeneous":
+				architecture = new HeterogeneousArchitecture(packedCircuit);
+				break;
+			
+			default:
+				error("Architecture type not recognized: " + options.architecture);
 		}
+		
 		
 		
 		// Place the circuit
 		Placer placer = null; // Needed to suppress "variable may not be initialized" errors
 		switch(options.placer) {
+			case "MDP":
+				if(!architecture.getClass().equals(HeterogeneousArchitecture.class)) {
+					error("MDP currently only supports the architecture \"heterogeneous\"");
+				}
+				
+				placer = new MDPBasedPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
+				break;
 			
-		case "MDP":
-			if(!architecture.getClass().equals(HeterogeneousArchitecture.class)) {
-				error("MDP currently only supports the architecture \"heterogeneous\"");
-			}
-			
-			placer = new MDPBasedPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
-			break;
-		
-		case "analytical":
-			
-		case "random":
-			
-		case "SA":
-			
-		case "TDSA":
-			error("Placer not yet implemented: " + options.placer);
-			System.exit(1);
-			
-		default:
-			error("Placer type not recognized: " + options.placer);
-			System.exit(1);
+			case "analytical":
+				
+			case "random":
+				
+			case "SA":
+				
+			case "TDSA":
+				error("Placer not yet implemented: " + options.placer);
+				
+			default:
+				error("Placer type not recognized: " + options.placer);
 		}
 		
 		long timeStartPlace = System.nanoTime();

@@ -31,7 +31,7 @@ public class Options {
 	
 	
 	public String circuitName;
-	public File inputFolder, outputFolder, blifFile, placeFile;
+	public File inputFolder, outputFolder, netFile, placeFile;
 	
 	
 	private CmdLineParser parser;
@@ -89,36 +89,36 @@ public class Options {
 		
 		
 		
-		// Set the blif file
+		// Set the net file
 		
-		// If the given circuit is a blif file
-		if(this.circuit.length() > 5 && this.circuit.substring(this.circuit.length() - 5).equals(".blif")) {
+		// If the given circuit is a net file
+		if(this.circuit.length() > 4 && this.circuit.substring(this.circuit.length() - 4).equals(".net")) {
 			if(this.inputPath != null) {
-				this.blifFile = new File(this.inputFolder, this.circuit);
+				this.netFile = new File(this.inputFolder, this.circuit);
 			} else {
-				this.blifFile = new File(this.circuit);
+				this.netFile = new File(this.circuit);
 			}
 			
 		// Else: the given circuit is just the circuit name
 		} else {
-			this.blifFile = new File(this.inputFolder, this.circuit + ".blif");
+			this.netFile = new File(this.inputFolder, this.circuit + ".net");
 		}
 		
 		
-		// Test if the input blif file exists and is not a directory
-		if(!this.blifFile.exists()) {
-			System.err.println("Input blif file not found: " + this.blifFile);
+		// Test if the input net file exists and is not a directory
+		if(!this.netFile.exists()) {
+			System.err.println("Input net file not found: " + this.netFile);
 			System.exit(1);
-		} else if(this.blifFile.isDirectory()) {
-			System.err.println("Input blif file is a directory:" + this.blifFile);
+		} else if(this.netFile.isDirectory()) {
+			System.err.println("Input net file is a directory:" + this.netFile);
 			System.exit(1);
 		}
 		
 		
 		
 		// Set the circuit name
-		String fileName = this.blifFile.getName();
-		this.circuitName = fileName.substring(0, fileName.length() - 5);
+		String fileName = this.netFile.getName();
+		this.circuitName = fileName.substring(0, fileName.length() - 4);
 		
 		
 		// Set the placement file location
