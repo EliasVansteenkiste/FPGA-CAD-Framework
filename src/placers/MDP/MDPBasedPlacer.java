@@ -11,15 +11,17 @@ public class MDPBasedPlacer extends Placer {
 	private Architecture architecture;
 	private PackedCircuit circuit;
 
+
 	public MDPBasedPlacer(FourLutSanitized architecture, PackedCircuit circuit) {
 		this.architecture = architecture;
 		this.circuit = circuit;
 	}
-	
-	
+
+
 	@Override
 	public void place() {
-		
+		/* options: welke keys? */
+
 		// Do a global placement using analytical placement
 		int legalizer = 3;
 		AnalyticalPlacerFive globalPlacer = new AnalyticalPlacerFive((FourLutSanitized) architecture, circuit, legalizer);
