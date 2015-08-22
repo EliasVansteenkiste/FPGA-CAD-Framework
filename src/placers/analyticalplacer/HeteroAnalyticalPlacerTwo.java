@@ -215,7 +215,7 @@ public class HeteroAnalyticalPlacerTwo
 			costLegal = legalizer.calculateBestLegalCost(nets, indexMap);
 			//System.out.println("Linear cost iteration " + i + ": " + costLinear);
 			//System.out.println("Legal cost iteration " + i + ": " + costLegal);
-		}while(costLinear / costLegal > stopRatioLinearLegal);
+		}while(costLinear / costLegal < stopRatioLinearLegal);
 		
 		updateCircuit();
 		
