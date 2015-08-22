@@ -19,7 +19,6 @@ public class Options {
 	@Option(name="-o", aliases="--output", metaVar="FOLDER", usage="output folder, defaults to the folder of the input file")
 	public String outputPath;
 	
-	
 	@Option(name="--architecture", metaVar="NAME", usage="the architecture on which the circuit is placed; supported values: heterogeneous, 4LUT")
 	public String architecture = "heterogeneous";
 	

@@ -12,7 +12,6 @@ import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import timinganalysis.TimingGraph;
 
 import architecture.Architecture;
-import architecture.FourLutSanitized;
 import architecture.HeterogeneousArchitecture;
 
 import circuit.BlePackedCircuit;
@@ -54,13 +53,6 @@ public class CLI {
 		Architecture architecture = null; // Needed to suppress "variable may not be initialized" errors
 		switch(options.architecture) {
 		
-		case "4LUT":
-		case "4lut":
-			int archSize = FourLutSanitized.calculateSquareArchDimensions(packedCircuit);
-			int trackwidth = 4;
-			architecture = new FourLutSanitized(archSize, archSize, trackwidth);
-			break;
-		
 		case "heterogeneous":
 			architecture = new HeterogeneousArchitecture(packedCircuit);
 			break;
@@ -75,11 +67,11 @@ public class CLI {
 		switch(options.placer) {
 			
 		case "MDP":
-			if(!architecture.getClass().equals(FourLutSanitized.class)) {
-				error("MDP doesn't support the architecture \"heterogeneous\" (yet)");
+			if(!architecture.getClass().equals(HeterogeneousArchitecture.class)) {
+				error("MDP currently only supports the architecture \"heterogeneous\"");
 			}
 			
-			placer = new MDPBasedPlacer((FourLutSanitized) architecture, packedCircuit);
+			placer = new MDPBasedPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
 			break;
 		
 		case "analytical":
