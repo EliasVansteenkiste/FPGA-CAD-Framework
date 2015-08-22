@@ -4,20 +4,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import packers.BlePacker;
-import packers.ClbPacker;
 import placers.Placer;
 import placers.MDP.MDPBasedPlacer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import placers.sa_ap.SA_APPlacer;
 import timinganalysis.TimingGraph;
 
 import architecture.Architecture;
 import architecture.HeterogeneousArchitecture;
 
-import circuit.BlePackedCircuit;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
-import circuit.parser.blif.BlifReader;
 import circuit.parser.net.NetReader;
 import cli.Options;
 
@@ -62,6 +59,8 @@ public class CLI {
 		// Place the circuit
 		Placer placer = null; // Needed to suppress "variable may not be initialized" errors
 		switch(options.placer) {
+			
+			case "mdp":
 			case "MDP":
 				if(!architecture.getClass().equals(HeterogeneousArchitecture.class)) {
 					error("MDP currently only supports the architecture \"heterogeneous\", got \"" + options.architecture + "\"");
@@ -70,6 +69,12 @@ public class CLI {
 				placer = new MDPBasedPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
 				break;
 			
+			
+			case "sa+ap":
+			case "SA+AP":
+				placer = new SA_APPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
+				break;
+				
 			case "analytical":
 				
 			case "random":
