@@ -15,7 +15,7 @@ public abstract class Placer {
 	
 	/**
 	 * Place the circuit that was given in the constructor.
-	 * @param options	A hasmap containing the options for the placer. The accepted options are different for each placer.
+	 * @param options	A hashmap containing the options for the placer. The accepted options are different for each placer.
 	 */
 	public abstract void place(HashMap<String, Object> options);
 	

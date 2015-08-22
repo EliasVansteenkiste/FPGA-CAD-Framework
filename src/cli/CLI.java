@@ -33,14 +33,14 @@ public class CLI {
 		
 		// Read the net file
 		NetReader netReader = new NetReader();
-		PrePackedCircuit prePackedCircuit = null;
 		
 		try {
 			netReader.readNetlist(options.netFile.toString(), 6);
 		} catch(IOException e) {
-			error("Failed to read net file");
+			error("Failed to read net file: " + options.netFile.toString());
 		}
 		
+		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 		
 		
@@ -64,7 +64,7 @@ public class CLI {
 		switch(options.placer) {
 			case "MDP":
 				if(!architecture.getClass().equals(HeterogeneousArchitecture.class)) {
-					error("MDP currently only supports the architecture \"heterogeneous\"");
+					error("MDP currently only supports the architecture \"heterogeneous\", got \"" + options.architecture + "\"");
 				}
 				
 				placer = new MDPBasedPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
