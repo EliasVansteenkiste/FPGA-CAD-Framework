@@ -2,3 +2,5 @@ bin
 .project
 .classpath
 dependencies
+
+**/__pycache__
