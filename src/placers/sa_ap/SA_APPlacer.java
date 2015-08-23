@@ -25,18 +25,24 @@ public class SA_APPlacer extends Placer {
 	
 	public void place(HashMap<String, Object> options) {
 		
-		// Place the circuit with SA (low effort)
+		// Initialize with random placement
 		Random rand = new Random(1);
 		Rplace.placeCLBsandFixedIOs(circuit, architecture, rand);
 		
+		// Print WL and timing characteristics before placement
+		this.printStatistics("before placement");
+		
+		
+		
+		// Place the circuit with SA (low effort)
 		WLD_SAPlacer saPlacer = new WLD_SAPlacer(this.architecture, this.circuit);
 		this.startTimer();
-		//saPlacer.place(1);
+		saPlacer.place(1);
 		this.stopTimer();
 		
-		
 		// Print WL and timing characteristics
-		this.printStatistics("SA");
+		this.printStatistics("after SA");
+		
 		
 		
 		// Place the circuit with Arno's analytical placer
@@ -48,8 +54,8 @@ public class SA_APPlacer extends Placer {
 		apPlacer.place(apOptions);
 		this.stopTimer();
 		
-		// Print WL and timing characteristics (again)
-		this.printStatistics("AP");
+		// Print WL and timing characteristics
+		this.printStatistics("after AP");
 		
 	}
 	

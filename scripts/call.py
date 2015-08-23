@@ -18,7 +18,6 @@ def placer(options):
             command += ['--' + argument, options[argument]]
 
     # Call the placer
-    os.chdir('..')
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # Return output

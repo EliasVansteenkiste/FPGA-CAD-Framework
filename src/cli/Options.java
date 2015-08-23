@@ -69,7 +69,7 @@ public class Options {
 		
 		// Test if the input folder exists
 		if(!this.inputFolder.exists()) {
-			System.err.println("Input folder not found: " + this.inputFolder);
+			this.error("Input folder not found: " + this.inputFolder);
 		}
 		
 		
@@ -128,11 +128,11 @@ public class Options {
 	
 	
 	
-	public void printUsage() {
+	private void printUsage() {
 		this.printUsage(System.out);
 	}
 	
-	public void printUsage(PrintStream stream) {
+	private void printUsage(PrintStream stream) {
 		
 		stream.println("Usage: java cli [options] circuit");
 		
@@ -140,5 +140,11 @@ public class Options {
 		parser.printUsage(stream);
 		
 		stream.println();
+	}
+	
+	
+	private void error(String message) {
+		System.err.println(message);
+		System.exit(1);
 	}
 }
