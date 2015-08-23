@@ -31,7 +31,7 @@ public class SA_APPlacer extends Placer {
 		
 		WLD_SAPlacer saPlacer = new WLD_SAPlacer(this.architecture, this.circuit);
 		this.startTimer();
-		saPlacer.place(1);
+		//saPlacer.place(1);
 		this.stopTimer();
 		
 		
@@ -49,6 +49,7 @@ public class SA_APPlacer extends Placer {
 		this.stopTimer();
 		
 		// Print WL and timing characteristics (again)
+		this.printStatistics("AP");
 		
 	}
 	
