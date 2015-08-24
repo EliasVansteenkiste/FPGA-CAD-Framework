@@ -20,7 +20,7 @@ public class MDPBasedPlacer extends Placer {
 	}
 	
 	@Override
-	public void place(HashMap<String, Object> options) {
+	public void place(HashMap<String, String> options) {
 		/* options: welke keys? */
 
 		// Do a global placement using analytical placement

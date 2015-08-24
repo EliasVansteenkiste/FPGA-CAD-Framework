@@ -2,6 +2,7 @@ package cli;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.util.HashMap;
 
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -22,12 +23,18 @@ public class Options {
 	@Option(name="--architecture", metaVar="NAME", usage="the architecture on which the circuit is placed; supported values: heterogeneous, 4LUT")
 	public String architecture = "heterogeneous";
 	
-	@Option(name="--placer", metaVar="NAME", usage="the placer that should be used; supported values: random, SA, TDSA, AP, MDP")
+	@Option(name="--placer", metaVar="NAME", usage="the placer that should be used; supported values: random, SA, TDSA, AP, MDP, CA")
 	public String placer = "SA";
+	
+	@Option(name="--options", metaVar="OPTIONS", usage="a comma separated list of placer options and optionally their values")
+	private String optionsString = "";
+	public HashMap<String, String> options = new HashMap<String, String>();
+	
 	
 	
 	@Option(name="-h", aliases="--help", usage="show this help list", help=true)
 	public boolean showHelp = false;
+	
 	
 	
 	public String circuitName;
@@ -124,6 +131,21 @@ public class Options {
 		// Set the placement file location
 		this.placeFile = new File(outputFolder, circuitName + ".place");
 		
+		
+		// Parse the extra options
+		String[] optionsSplitted = optionsString.split(",");
+		for(int i = 0; i < optionsSplitted.length; i++) {
+			String option = optionsSplitted[i].trim();
+			int firstSpace = option.indexOf(' ');
+			
+			if(firstSpace == -1) {
+				options.put(option, "");
+			} else {
+				String optionKey = option.substring(0, firstSpace);
+				String optionValue = option.substring(firstSpace + 1); 
+				options.put(optionKey, optionValue);
+			}
+		}
 	}
 	
 	

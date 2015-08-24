@@ -10,13 +10,13 @@ public abstract class Placer {
 	 * Equivalent to calling place() with an empty HashMap as parameter.
 	 */
 	public void place() {
-		this.place(new HashMap<String, Object>());
+		this.place(new HashMap<String, String>());
 	}
 	
 	/**
 	 * Place the circuit that was given in the constructor.
 	 * @param options	A hashmap containing the options for the placer. The accepted options are different for each placer.
 	 */
-	public abstract void place(HashMap<String, Object> options);
+	public abstract void place(HashMap<String, String> options);
 	
 }

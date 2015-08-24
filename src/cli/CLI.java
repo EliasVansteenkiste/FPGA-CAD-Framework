@@ -7,7 +7,7 @@ import java.io.IOException;
 import placers.Placer;
 import placers.MDP.MDPBasedPlacer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
-import placers.sa_ap.SA_APPlacer;
+import placers.cascaded.CascadedPlacer;
 import timinganalysis.TimingGraph;
 
 import architecture.Architecture;
@@ -70,9 +70,8 @@ public class CLI {
 				break;
 			
 			
-			case "sa+ap":
-			case "SA+AP":
-				placer = new SA_APPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
+			case "cascade":
+				placer = new CascadedPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
 				break;
 				
 			case "analytical":
@@ -89,7 +88,7 @@ public class CLI {
 		}
 		
 		long timeStartPlace = System.nanoTime();
-		placer.place();
+		placer.place(options.options);
 		long timeStopPlace = System.nanoTime();
 		
 		
