@@ -49,7 +49,6 @@ public class HeteroAnalyticalPlacerTwo
 		this.circuit = circuit;
 		this.nets = circuit.nets.values();
 		this.clbs = circuit.clbs.values();
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		this.legalizer = new HeteroLegalizerTwo(architecture, typeStartIndices, typeNames, linearX.length);
 		this.doneMemoryUse = false;
@@ -64,11 +63,16 @@ public class HeteroAnalyticalPlacerTwo
 		//double[] maxUtilizationLegalizerArray = new double[] {0.9}; //No partial overlap solves...
 		double maxUtilizationLegalizer = maxUtilizationLegalizerArray[0];
 		
+		Rplace.placeFixedIOs(circuit, architecture);
+		
 		//Initial linear solves, should normally be done 5-7 times		
 		for(int i = 0; i < 7; i++)
 		{
 			solveLinear(true, solveMode, 0.0);
 		}
+		
+		double initialLinearCost = calculateTotalCost(linearX, linearY);
+		System.out.println("Linear cost after initial solves:" + initialLinearCost);
 		
 		//Initial legalization
 		double totalLegalizeTime = 0.0;
@@ -169,10 +173,10 @@ public class HeteroAnalyticalPlacerTwo
 			double startingAnchorWeight, double anchorWeightIncrease, double stopRatioLinearLegal)
 	{
 		double pseudoWeightFactor;
-		double maxUtilizationLegalizer;
 		int itNumber;
 		if(startingStage == 0)
 		{
+			Rplace.placeFixedIOs(circuit, architecture);
 			initializeArraysRandom();
 			
 			int solveMode = 0;
@@ -184,7 +188,6 @@ public class HeteroAnalyticalPlacerTwo
 			legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationSequence[0]);
 			
 			pseudoWeightFactor = anchorWeightIncrease;
-			maxUtilizationLegalizer = maxUtilizationSequence[1];
 			itNumber = 1;
 		}
 		else //startingStage == 1
@@ -192,7 +195,6 @@ public class HeteroAnalyticalPlacerTwo
 			initializeArraysInitialPlacement();
 			legalizer.initializeArrays(linearX, linearY, nets, indexMap);
 			pseudoWeightFactor = startingAnchorWeight;
-			maxUtilizationLegalizer = maxUtilizationSequence[0];
 			itNumber = 0;
 		}
 		
@@ -201,20 +203,25 @@ public class HeteroAnalyticalPlacerTwo
 		double costLegal;
 		do
 		{
+			System.out.println("Iteration " + (itNumber + 1) + ": pseudoWeightFactor = " + pseudoWeightFactor + 
+					", solveMode = " + solveMode);
+			int index = Math.min(itNumber, maxUtilizationSequence.length - 1);
+			double maxUtilizationLegalizer = maxUtilizationSequence[index];
+			for(int i = 0; i < 3; i++)
+			{
+				solveLinear(false, solveMode, pseudoWeightFactor);
+			}
+			costLinear = calculateTotalCost(linearX, linearY);
+			legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationLegalizer);
+			costLegal = legalizer.calculateBestLegalCost(nets, indexMap);
+			System.out.println("Linear cost iteration " + itNumber + ": " + costLinear);
+			System.out.println("Legal cost iteration " + itNumber + ": " + costLegal);
 			solveMode = (solveMode + 1) % (typeNames.length + 1);
 			if(solveMode <= 1)
 			{
 				pseudoWeightFactor += anchorWeightIncrease;
-				int index = Math.min(itNumber, maxUtilizationSequence.length - 1);
 				itNumber++;
-				maxUtilizationLegalizer = maxUtilizationSequence[index];
 			}
-			solveLinear(false, solveMode, pseudoWeightFactor);
-			costLinear = calculateTotalCost(linearX, linearY);
-			legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationLegalizer);
-			costLegal = legalizer.calculateBestLegalCost(nets, indexMap);
-			//System.out.println("Linear cost iteration " + i + ": " + costLinear);
-			//System.out.println("Legal cost iteration " + i + ": " + costLegal);
 		}while(costLinear / costLegal < stopRatioLinearLegal);
 		
 		updateCircuit();

@@ -2130,6 +2130,7 @@ public class HeteroLegalizerTwo
 	private void updateBestLegal(int[] legalX, int[] legalY, Collection<Net> nets, Map<Block, Integer> indexMap)
 	{
 		double newCost = calculateTotalCost(legalX, legalY, nets, indexMap);
+		//System.out.println("New cost: " + newCost);
 		if (newCost < currentCost)
 		{
 			for (int i = 0; i < legalX.length; i++)
@@ -2151,6 +2152,7 @@ public class HeteroLegalizerTwo
 			bestLegalY[i] = (int)Math.round(linearY[i]);
 		}
 		currentCost = calculateTotalCost(bestLegalX, bestLegalY, nets, indexMap);
+		//System.out.println("Current cost initialized on: " + currentCost);
 	}
 	
 	public int[] getAnchorPointsX()

@@ -317,6 +317,41 @@ public class Rplace
 		}
 	}
 	
+	public static void placeFixedIOs(PackedCircuit c, HeterogeneousArchitecture a)
+	{
+		//Deterministic place IOs
+		int index = 0;
+		ArrayList<Site> ISites = a.getISites();
+		for(Input input:c.inputs.values())
+		{
+			input.fixed = true;
+			//input.fixed = false;
+			Site site = ISites.get(index);
+			site.block = input;
+			input.setSite(site);
+			index += 1;
+			if(index >= a.getHeight()*2 + a.getWidth()*2)
+			{
+				index = 1;
+			}
+		}
+		index = 0;
+		ArrayList<Site> OSites = a.getOSites();
+		for(Output output:c.outputs.values())
+		{
+			output.fixed = true;
+			//output.fixed = false;
+			Site site = OSites.get(index);
+			site.block = output;
+			output.setSite(site);
+			index += 1;
+			if(index >= a.getHeight()*2 + a.getWidth()*2)
+			{
+				index = 1;
+			}
+		}
+	}
+	
 //	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand, ArrayList<ArrayList<Block>> packedIOs)
 //	{
 //		//Initialize data structures
