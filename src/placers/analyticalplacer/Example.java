@@ -104,8 +104,8 @@ public class Example
 		{
 	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
 	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
@@ -175,8 +175,10 @@ public class Example
 	    
 	    //visualSA(prePackedCircuit, packedCircuit);
 	    //visualTDSA(prePackedCircuit, packedCircuit);
-	    visualAnalyticalTwo(packedCircuit, prePackedCircuit);
+	    //visualAnalyticalTwo(packedCircuit, prePackedCircuit);
 	    //visualTDAnalyticalCombinedNetThree(packedCircuit, prePackedCircuit);
+	    
+	    testSA_AP(packedCircuit);
 	    
 //	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
 //	    testTimingGraphNewAnalyticalFunctions(prePackedCircuit, packedCircuit);
@@ -1625,6 +1627,42 @@ public class Example
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		results[5] = maxDelay;
+	}
+	
+	private static void testSA_AP(PackedCircuit circuit)
+	{
+		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(circuit);
+		
+		Random rand = new Random(1);
+		Rplace.placeCLBsandFixedIOs(circuit, architecture, rand);
+		
+		// Place the circuit with SA (low effort)
+		WLD_SAPlacer saPlacer = new WLD_SAPlacer(architecture, circuit);
+		saPlacer.place(1);
+		
+		EfficientBoundingBoxNetCC effccBefore = new EfficientBoundingBoxNetCC(circuit);
+		double totalCostBefore = effccBefore.calculateTotalCost();
+		System.out.println("Cost after SA: " + totalCostBefore);
+		
+		// Place the circuit with Arno's analytical placer
+		HashMap<String, String> apOptions = new HashMap<String, String>();
+		apOptions.put("starting_stage", "1");
+		
+		HeteroAnalyticalPlacerTwo apPlacer = new HeteroAnalyticalPlacerTwo(architecture, circuit);
+		apPlacer.place(apOptions);
+		
+		EfficientBoundingBoxNetCC effccAfter = new EfficientBoundingBoxNetCC(circuit);
+		double totalCostAfter = effccAfter.calculateTotalCost();
+		System.out.println("Cost after AP: " + totalCostAfter);
+		
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, architecture);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(950,950);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
 	}
 	
 	private static void testHeteroLegalizerTwo(PackedCircuit packedCircuit)
