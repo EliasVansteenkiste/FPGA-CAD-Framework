@@ -735,32 +735,32 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 			}
 		}
 		
-		//Check
-		if(sourceOwner.type == BlockType.CLB)
-		{
-			Clb sourceOwnerClb = (Clb)sourceOwner;
-			if(sourceOwnerClb.getBle().getFlipflop() != null)
-			{
-				if(sourceOwnerClb.getBle().getFlipflop() != edge.getInput().getPin().owner)
-				{
-					System.out.println("Trouble");
-				}
-			}
-			else
-			{
-				if(sourceOwnerClb.getBle().getLut() != edge.getInput().getPin().owner)
-				{
-					System.out.println("Trouble");
-				}
-			}
-		}
-		else
-		{
-			if(sourceOwner != edge.getInput().getPin().owner)
-			{
-				System.out.println("Trouble 1");
-			}
-		}
+//		//Check
+//		if(sourceOwner.type == BlockType.CLB)
+//		{
+//			Clb sourceOwnerClb = (Clb)sourceOwner;
+//			if(sourceOwnerClb.getBle().getFlipflop() != null)
+//			{
+//				if(sourceOwnerClb.getBle().getFlipflop() != edge.getInput().getPin().owner)
+//				{
+//					System.out.println("Trouble");
+//				}
+//			}
+//			else
+//			{
+//				if(sourceOwnerClb.getBle().getLut() != edge.getInput().getPin().owner)
+//				{
+//					System.out.println("Trouble");
+//				}
+//			}
+//		}
+//		else
+//		{
+//			if(sourceOwner != edge.getInput().getPin().owner)
+//			{
+//				System.out.println("Trouble 1");
+//			}
+//		}
 		
 		//Search for the sink block and get its position
 		Pin sinkPin = null;

@@ -53,6 +53,7 @@ import circuit.PrePackedCircuit;
 import circuit.BlePackedCircuit;
 import circuit.parser.blif.BlifReader;
 import circuit.parser.net.NetReader;
+import circuit.parser.net.NetReaderTwo;
 
 public class Example 
 {
@@ -85,7 +86,7 @@ public class Example
 //	    }
 //	}
 	
-	//New netlist reader
+	//Clustered netlist reader
 	public static void main(String[] args)
 	{
 		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
@@ -99,101 +100,155 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-	    NetReader netReader = new NetReader();
+	    NetReaderTwo netReader = new NetReaderTwo();
 	    try
 		{
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
-			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
+	    	netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision3.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/blob_merge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/boundtop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/ch_intrinsics.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/diffeq1.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/diffeq2.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkDelayWorker32B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkPktMerge.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkSMAdapter4B.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/or1200.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/raygentop.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/sha.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision0.net", 6);
+			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/bgm.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mcml.net", 6);
+	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision2.net", 6);
 			
 			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
 		}
 	    catch(IOException ioe)
 	    {
-	    	System.err.println("Couldn't read blif file!");
+	    	System.err.println("Couldn't read netlist file!");
 	    	return;
 	    }
 	    
-	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	    
-//	    HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
-//	    Rplace.placeCLBsandFixedIOs(packedCircuit, arch, new Random(), netReader.getPackedIOs());
-//	    WLD_SAPlacer placer = new WLD_SAPlacer(arch, packedCircuit);
-//	    placer.placePackedIO(10.0);
-//	    
-//	    for(ArrayList<Block> blockVector: netReader.getPackedIOs())
+	    System.out.println("-----------CIRCUIT STATISTICS-----------");
+	    System.out.println("Number of inputs: " + packedCircuit.inputs.size());
+	    System.out.println("Number of outputs: " + packedCircuit.outputs.size());
+	    System.out.println("Number of CLBs: " + packedCircuit.clbs.size());
+	    System.out.println("Number of nets: " + packedCircuit.nets.size());
+	    
+	    visualSA(packedCircuit);
+	    //visualAnalyticalTwo(packedCircuit, prePackedCircuit);
+	}
+	
+	//New netlist reader
+//	public static void main(String[] args)
+//	{
+//		boolean isDebug = java.lang.management.ManagementFactory.getRuntimeMXBean().
+//	    getInputArguments().toString().indexOf("-agentlib:jdwp") > 0;
+//	    if(isDebug)
 //	    {
-//	    	System.out.print("PackedIO input = ");
-//	    	if(blockVector.get(0) != null)
-//	    	{
-//	    		Block block = blockVector.get(0);
-//	    		System.out.print(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
-//	    	}
-//	    	else
-//	    	{
-//	    		System.out.print("null");
-//	    	}
-//	    	System.out.print(", output = ");
-//	    	if(blockVector.get(1) != null)
-//	    	{
-//	    		Block block = blockVector.get(1);
-//	    		System.out.println(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
-//	    	}
-//	    	else
-//	    	{
-//	    		System.out.println("null");
-//	    	}
-//	    }
-//	    
-//	    EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-//	    double totalCost = effcc.calculateTotalCost();
-//	    System.out.println("Total cost = " + totalCost);
-//	    
-//	    boolean consistent = packedCircuit.placementConsistencyCheck(arch);
-//	    if(consistent)
-//	    {
-//	    	System.out.println("The placement is consistent!");
+//	    	System.out.println("Debugging");
 //	    }
 //	    else
 //	    {
-//	    	System.out.println("The placement is not consistent!");
+//	    	System.out.println("Not debugging");
 //	    }
-	    
-	    //visualSA(prePackedCircuit, packedCircuit);
-	    //visualTDSA(prePackedCircuit, packedCircuit);
-	    //visualAnalyticalTwo(packedCircuit, prePackedCircuit);
-	    //visualTDAnalyticalCombinedNetThree(packedCircuit, prePackedCircuit);
-	    
-	    testSA_AP(packedCircuit);
-	    
-//	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
-//	    testTimingGraphNewAnalyticalFunctions(prePackedCircuit, packedCircuit);
-//	    testTimingGraphOldAnalyticalFunctions(prePackedCircuit, packedCircuit);
-//	    testHeteroLegalizerTwo(packedCircuit);
-//	    testVisualization();
-//	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
-	    
-//	    runWldSaBenchmarksNet();
-//	    runTdSaBenchmarksNet();
-//	    runWldAnalyticalBenchmarksNet();
-//	    runTdAnalyticalNewNetBenchmarksNet();
-//	    runTdAnalyticalCombinedNetBenchmarksNet();
-//	    runTdAnalyticalOldNetBenchmarksNet();
-	}
+//	    
+//	    NetReader netReader = new NetReader();
+//	    try
+//		{
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision3.net", 6);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/blob_merge.net", 6);
+//			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/boundtop.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/ch_intrinsics.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq1.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/diffeq2.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkDelayWorker32B.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkPktMerge.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mkSMAdapter4B.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/or1200.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/raygentop.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/sha.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision0.net", 6);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/bgm.net", 6);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/mcml.net", 6);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist/stereovision2.net", 6);
+//			
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6);
+//		}
+//	    catch(IOException ioe)
+//	    {
+//	    	System.err.println("Couldn't read blif file!");
+//	    	return;
+//	    }
+//	    
+//	    PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
+//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+//	    
+////	    HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
+////	    Rplace.placeCLBsandFixedIOs(packedCircuit, arch, new Random(), netReader.getPackedIOs());
+////	    WLD_SAPlacer placer = new WLD_SAPlacer(arch, packedCircuit);
+////	    placer.placePackedIO(10.0);
+////	    
+////	    for(ArrayList<Block> blockVector: netReader.getPackedIOs())
+////	    {
+////	    	System.out.print("PackedIO input = ");
+////	    	if(blockVector.get(0) != null)
+////	    	{
+////	    		Block block = blockVector.get(0);
+////	    		System.out.print(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
+////	    	}
+////	    	else
+////	    	{
+////	    		System.out.print("null");
+////	    	}
+////	    	System.out.print(", output = ");
+////	    	if(blockVector.get(1) != null)
+////	    	{
+////	    		Block block = blockVector.get(1);
+////	    		System.out.println(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
+////	    	}
+////	    	else
+////	    	{
+////	    		System.out.println("null");
+////	    	}
+////	    }
+////	    
+////	    EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+////	    double totalCost = effcc.calculateTotalCost();
+////	    System.out.println("Total cost = " + totalCost);
+////	    
+////	    boolean consistent = packedCircuit.placementConsistencyCheck(arch);
+////	    if(consistent)
+////	    {
+////	    	System.out.println("The placement is consistent!");
+////	    }
+////	    else
+////	    {
+////	    	System.out.println("The placement is not consistent!");
+////	    }
+//	    
+//	    //visualSA(prePackedCircuit, packedCircuit);
+//	    //visualTDSA(prePackedCircuit, packedCircuit);
+//	    //visualAnalyticalTwo(packedCircuit, prePackedCircuit);
+//	    //visualTDAnalyticalCombinedNetThree(packedCircuit, prePackedCircuit);
+//	    
+//	    testSA_AP(packedCircuit);
+//	    
+////	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
+////	    testTimingGraphNewAnalyticalFunctions(prePackedCircuit, packedCircuit);
+////	    testTimingGraphOldAnalyticalFunctions(prePackedCircuit, packedCircuit);
+////	    testHeteroLegalizerTwo(packedCircuit);
+////	    testVisualization();
+////	    testTimingCostCalculator(prePackedCircuit, packedCircuit);
+//	    
+////	    runWldSaBenchmarksNet();
+////	    runTdSaBenchmarksNet();
+////	    runWldAnalyticalBenchmarksNet();
+////	    runTdAnalyticalNewNetBenchmarksNet();
+////	    runTdAnalyticalCombinedNetBenchmarksNet();
+////	    runTdAnalyticalOldNetBenchmarksNet();
+//	}
 	
 	//Heterogeneous
 //	public static void main(String[] args)
@@ -1320,6 +1375,52 @@ public class Example
 		frame.setVisible(true);
 	}
 	
+	private static void visualSA(PackedCircuit packedCircuit)
+	{
+		Double placementEffort = 1.0;
+		
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		
+		//Random placement
+		Random rand = new Random(1);
+		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		//packedCircuit.placementCLBsConsistencyCheck(a);
+		
+		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
+		
+		long startTime;
+		long endTime;
+		
+		startTime = System.nanoTime();
+		placer.place(placementEffort);
+		endTime = System.nanoTime();
+		
+		System.out.printf("Time necessary to place: %.3f s\n", (double)(endTime - startTime)/1000000000);
+		
+		//packedCircuit.placementCLBsConsistencyCheck(a);
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		System.out.println("Total cost SA placement: " + effcc.calculateTotalCost());
+		
+		boolean consistent = packedCircuit.placementConsistencyCheck(a);
+		if(consistent)
+		{
+			System.out.println("Placement is consistent.");
+		}
+		else
+		{
+			System.out.println("Placement is NOT consistent!!!!!!!!!!!!!");
+		}
+		
+		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, a);
+		
+		JFrame frame = new JFrame("Architecture");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(950,950);
+		frame.add(panel);
+		frame.pack();
+		frame.setVisible(true);
+	}
+	
 	private static void processWLDAnalyticalNetBenchmark(double[] results, String totalFilename)
 	{
 		NetReader netReader = new NetReader();
@@ -1699,7 +1800,7 @@ public class Example
 		PackedCircuit circuit = new PackedCircuit();
 		for(int i = 0; i < 80; i++)
 		{
-			circuit.clbs.put("Nb" + i, new Clb("Nb" + i, 1, 6));
+			circuit.clbs.put("Nb" + i, new Clb("Nb" + i, 1, 6, 1));
 		}
 		Vector<String> memInputs = new Vector<>();
 		memInputs.add("input1");
@@ -1962,13 +2063,13 @@ public class Example
 		circuit.inputs.put(input3.name, input3);
 		Output output7 = new Output("output_7");
 		circuit.outputs.put(output7.name, output7);
-		Clb clba = new Clb("clb_a", 1, 6);
+		Clb clba = new Clb("clb_a", 1, 6, 1);
 		circuit.clbs.put(clba.name, clba);
-		Clb clbb = new Clb("clb_b", 1, 6);
+		Clb clbb = new Clb("clb_b", 1, 6, 1);
 		circuit.clbs.put(clbb.name, clbb);
-		Clb clbc = new Clb("clb_c", 1, 6);
+		Clb clbc = new Clb("clb_c", 1, 6, 1);
 		circuit.clbs.put(clbc.name, clbc);
-		Clb clbd = new Clb("clb_d", 1, 6);
+		Clb clbd = new Clb("clb_d", 1, 6, 1);
 		circuit.clbs.put(clbd.name, clbd);
 		
 		Net net1 = new Net(input3.name);
@@ -2021,25 +2122,29 @@ public class Example
 		//Block a
 		Lut luta = new Lut("lut_a", 1, 6);
 		Ble blea = new Ble("ble_a", 6, null, luta, false);
-		Clb clba = new Clb("clb_a", 1, 6, blea);
+		Clb clba = new Clb("clb_a", 1, 6, 1);
+		clba.addBle(blea);
 		prePackedCircuit.getLuts().put(luta.name, luta);
 		packedCircuit.clbs.put(clba.name, clba);
 		//Block b
 		Lut lutb = new Lut("lut_b", 1, 6);
 		Ble bleb = new Ble("ble_b", 6, null, lutb, false);
-		Clb clbb = new Clb("clb_b", 1, 6, bleb);
+		Clb clbb = new Clb("clb_b", 1, 6, 1);
+		clbb.addBle(bleb);
 		prePackedCircuit.getLuts().put(lutb.name, lutb);
 		packedCircuit.clbs.put(clbb.name, clbb);
 		//Block c
 		Lut lutc = new Lut("lut_c", 1, 6);
 		Ble blec = new Ble("ble_c", 6, null, lutc, false);
-		Clb clbc = new Clb("clb_c", 1, 6, blec);
+		Clb clbc = new Clb("clb_c", 1, 6, 1);
+		clbc.addBle(blec);
 		prePackedCircuit.getLuts().put(lutc.name, lutc);
 		packedCircuit.clbs.put(clbc.name, clbc);
 		//Block d
 		Lut lutd = new Lut("lut_d", 1, 6);
 		Ble bled = new Ble("ble_d", 6, null, lutd, false);
-		Clb clbd = new Clb("clb_d", 1, 6, bled);
+		Clb clbd = new Clb("clb_d", 1, 6, 1);
+		clbd.addBle(bled);
 		prePackedCircuit.getLuts().put(lutd.name, lutd);
 		packedCircuit.clbs.put(clbd.name, clbd);
 		

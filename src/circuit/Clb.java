@@ -8,17 +8,13 @@ import architecture.Site;
  */
 public class Clb extends Block {
 	public Pin[] output;
-	int nro;
 	public Pin[] input;
-	int nri;
 	public Pin clock;
-	private Ble ble;
+	private Ble[] bles;
 	
-	public Clb(String name, int nro, int nri) {
+	public Clb(String name, int nro, int nri, int nrBle) {
 		super(name, BlockType.CLB);
-		this.nro = nro;
-		this.nri = nri;
-		this.ble = null;
+		this.bles = new Ble[nrBle];
 		
 		output = new Pin[nro];
 		for (int i=0; i<nro; i++) {
@@ -34,25 +30,43 @@ public class Clb extends Block {
 
 	}
 	
-	public Clb(String name, int nro, int nri, Ble ble)
+	public Ble getBle(int index)
 	{
-		this(name, nro, nri);
-		this.ble = ble;
+		return this.bles[index];
 	}
-
+	
 	public Ble getBle()
 	{
-		return this.ble;
+		return this.bles[0];
+	}
+	
+	public boolean addBle(Ble ble)
+	{
+		boolean success = false;
+		for(int i = 0; i < bles.length; i++)
+		{
+			if(bles[i] == null)
+			{
+				bles[i] = ble;
+				success = true;
+				break;
+			}
+		}
+		return success;
 	}
 	
 	@Override
 	public void setSite(Site site) //Pushes site through to embedded BLE
 	{
 		super.setSite(site);
-		if(this.ble != null)
+		for(int i = 0; i < bles.length; i++)
 		{
-			this.ble.setSite(site);
+			if(bles[i] != null)
+			{
+				bles[i].setSite(site);
+			}
 		}
+		
 	}
 		
 }

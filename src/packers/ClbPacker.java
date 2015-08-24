@@ -31,7 +31,8 @@ public class ClbPacker
 		
 		for(Ble ble:beforeClbPacking.getBles().values())
 		{
-			Clb clb = new Clb(ble.name, 1, nbClbInputs, ble);
+			Clb clb = new Clb(ble.name, 1, nbClbInputs, 1);
+			clb.addBle(ble);
 			afterClbPacking.clbs.put(clb.name, clb);
 		}
 		
@@ -69,9 +70,9 @@ public class ClbPacker
 				if(sink.owner.type == BlockType.BLE)
 				{
 					int index = -1; //Will throw exception when pin is not found
-					for(int i = 0; i < afterClbPacking.clbs.get(sink.owner.name).getBle().getNbInputs(); i++)
+					for(int i = 0; i < afterClbPacking.clbs.get(sink.owner.name).getBle(0).getNbInputs(); i++)
 					{
-						Pin input = afterClbPacking.clbs.get(sink.owner.name).getBle().getInputs()[i];
+						Pin input = afterClbPacking.clbs.get(sink.owner.name).getBle(0).getInputs()[i];
 						if(input.name == sink.name)
 						{
 							index = i;

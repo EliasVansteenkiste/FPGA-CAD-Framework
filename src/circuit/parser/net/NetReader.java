@@ -34,11 +34,11 @@ public class NetReader
 	private PackedCircuit packedCircuit;
 	private boolean insideTopBlock;
 	
-	private ArrayList<ArrayList<Block>> packedIOs;
+//	private ArrayList<ArrayList<Block>> packedIOs;
 	
 	public void readNetlist(String fileName, int nbLutInputs) throws IOException
 	{
-		packedIOs = new ArrayList<>();
+//		packedIOs = new ArrayList<>();
 		int lastIndexSlash = fileName.lastIndexOf('/');
 		prePackedCircuit = new PrePackedCircuit(nbLutInputs, fileName.substring(lastIndexSlash + 1));
 		packedCircuit = new PackedCircuit(prePackedCircuit.getOutputs(), prePackedCircuit.getInputs(), prePackedCircuit.getHardBlocks());
@@ -299,7 +299,8 @@ public class NetReader
 			Lut lut = new Lut(lutName, 1, 6);
 			Flipflop ff = new Flipflop(ffName, Type.RISING_EDGE, InitVal.UNKNOWN);
 			Ble ble = new Ble(ffName, 6, ff, lut, true);
-			Clb clb = new Clb(ffName, 1, 6, ble);
+			Clb clb = new Clb(ffName, 1, 6, 1);
+			clb.addBle(ble);
 			
 			prePackedCircuit.addLut(lut);
 			prePackedCircuit.addFlipflop(ff);
@@ -351,7 +352,8 @@ public class NetReader
 			{
 				Lut lut = new Lut(lutName, 1, 6);
 				Ble ble = new Ble(lutName, 6, null, lut, false);
-				Clb clb = new Clb(lutName, 1, 6, ble);
+				Clb clb = new Clb(lutName, 1, 6, 1);
+				clb.addBle(ble);
 				
 				prePackedCircuit.addLut(lut);
 				//Add lut input nets
@@ -393,7 +395,8 @@ public class NetReader
 			{
 				Flipflop ff = new Flipflop(ffName, Type.RISING_EDGE, InitVal.UNKNOWN);
 				Ble ble = new Ble(ffName, 6, ff, null, true);
-				Clb clb = new Clb(ffName, 1, 6, ble);
+				Clb clb = new Clb(ffName, 1, 6, 1);
+				clb.addBle(ble);
 				
 				prePackedCircuit.addFlipflop(ff);
 				//Add ff input net
