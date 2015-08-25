@@ -23,13 +23,13 @@ import architecture.Site;
 
 import packers.BlePacker;
 import packers.ClbPacker;
-import placers.Rplace;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import placers.SAPlacer.EfficientCostCalculator;
 import placers.SAPlacer.Swap;
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_GreedyRefiner;
 import placers.SAPlacer.WLD_SAPlacer;
+import placers.random.RandomPlacer;
 import timinganalysis.DelayMatrixReader;
 import timinganalysis.TimingEdge;
 import timinganalysis.TimingGraph;
@@ -1299,7 +1299,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		//packedCircuit.placementCLBsConsistencyCheck(a);
 		
 		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
@@ -1341,7 +1341,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		//packedCircuit.placementCLBsConsistencyCheck(a);
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
@@ -1383,7 +1383,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		//packedCircuit.placementCLBsConsistencyCheck(a);
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
@@ -1551,7 +1551,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
@@ -1595,7 +1595,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
@@ -1662,7 +1662,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		
 		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
@@ -1706,7 +1706,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		
 		TD_SAPlacer placer= new TD_SAPlacer(a, packedCircuit, prePackedCircuit);
 		
@@ -1735,7 +1735,7 @@ public class Example
 		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(circuit);
 		
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, rand);
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, rand);
 		
 		// Place the circuit with SA (low effort)
 		WLD_SAPlacer saPlacer = new WLD_SAPlacer(architecture, circuit);
@@ -1830,7 +1830,7 @@ public class Example
 		Random rand = new Random();
 		
 		//Random placement
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		
 		TimingGraph tcc = new TimingGraph(prePackedCircuit);
 		tcc.buildTimingGraph();
@@ -1902,7 +1902,7 @@ public class Example
 		Random rand = new Random();
 		
 		//Random placement
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		
 //		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 //		effcc.checkBbDataMap(packedCircuit);
@@ -1980,7 +1980,7 @@ public class Example
 	{
 		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
 		Random rand = new Random();
-		Rplace.placeCLBsandFixedIOs(packedCircuit, arch, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, arch, rand);
 		
 		TimingGraph tcc = new TimingGraph(prePackedCircuit);
 		tcc.buildTimingGraph();
@@ -2019,7 +2019,7 @@ public class Example
 	{
 		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
 		
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, new Random(1));
 		
 		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();

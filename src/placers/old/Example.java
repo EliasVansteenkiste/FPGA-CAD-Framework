@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
-import placers.Rplace;
+import placers.random.RandomPlacer;
 
 import architecture.FourLutSanitized;
 import circuit.PackedCircuit;
@@ -48,7 +48,7 @@ public class Example {
 		BoundingBoxNetCC bbncc = new BoundingBoxNetCC(c);
 
 		//Random placement
-		Rplace.placeCLBsandIOs(c, a, rand);
+		RandomPlacer.placeCLBsandIOs(c, a, rand);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total Cost random placement: "+bbncc.calculateTotalCost());
 		

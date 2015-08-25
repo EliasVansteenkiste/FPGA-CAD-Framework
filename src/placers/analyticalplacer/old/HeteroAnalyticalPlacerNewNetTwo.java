@@ -10,8 +10,8 @@ import java.util.Vector;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import placers.Rplace;
 import placers.analyticalplacer.HeteroLegalizerTwo;
+import placers.random.RandomPlacer;
 
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
@@ -41,7 +41,7 @@ public class HeteroAnalyticalPlacerNewNetTwo
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		this.legalizer = new HeteroLegalizerTwo(architecture, typeStartIndices, typeNames, linearX.length);
 	}

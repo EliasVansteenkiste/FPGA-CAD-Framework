@@ -9,8 +9,8 @@ import java.util.Vector;
 
 import mathtools.CGSolver;
 import mathtools.Crs;
-import placers.Rplace;
 import placers.analyticalplacer.Hetero_TD_LegalizerOne;
+import placers.random.RandomPlacer;
 import timinganalysis.TimingGraph;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
@@ -43,7 +43,7 @@ public class Hetero_TD_AnalyticalPlacerNewNetFour
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		this.timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.setCriticalityExponent(TG_CRITICALITY_EXPONENT);

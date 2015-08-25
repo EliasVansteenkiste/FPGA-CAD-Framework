@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.Random;
 
 import placers.Placer;
-import placers.Rplace;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import placers.random.RandomPlacer;
 import timinganalysis.TimingGraph;
 
 import architecture.Architecture;
@@ -68,7 +68,7 @@ public class CLI {
 		// If a random initialization is required: do it
 		if(options.random) {
 			Random rand = new Random(1);
-			Rplace.placeCLBsandFixedIOs(packedCircuit, (FourLutSanitized) architecture, rand);
+			RandomPlacer.placeCLBsandFixedIOs(packedCircuit, (FourLutSanitized) architecture, rand);
 		}
 		
 		

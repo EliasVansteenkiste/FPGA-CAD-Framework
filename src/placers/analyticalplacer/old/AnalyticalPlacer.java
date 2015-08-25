@@ -8,11 +8,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import placers.Rplace;
 import placers.SAPlacer.Swap;
 import placers.old.CostCalculator;
 import placers.old.PlacementManipulator;
 import placers.old.PlacementManipulatorIOCLB;
+import placers.random.RandomPlacer;
 
 import mathtools.CGSolver;
 import mathtools.Crs;
@@ -137,7 +137,7 @@ public class AnalyticalPlacer
 	
 	public void place()
 	{
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		
 //		for(Clb clb:circuit.clbs.values())
