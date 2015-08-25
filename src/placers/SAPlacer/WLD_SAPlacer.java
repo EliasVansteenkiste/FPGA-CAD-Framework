@@ -68,7 +68,7 @@ public class WLD_SAPlacer extends SAPlacer
 			Rlim = updateRlim(alpha);
 			T=updateTemperature(T,alpha);
 			
-			System.out.println("Temperature " + tNumber +" = " + T + ", cost = " + calculator.calculateTotalCost() + ", Rlim = " + Rlim);
+			//System.out.println("Temperature " + tNumber +" = " + T + ", cost = " + calculator.calculateTotalCost() + ", Rlim = " + Rlim);
 			tNumber++;
 		}
 		

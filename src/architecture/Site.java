@@ -1,6 +1,5 @@
 package architecture;
 
-import architecture.old.RouteNode;
 import circuit.Block;
 
 public class Site {
@@ -10,8 +9,6 @@ public class Site {
 	public SiteType type;
 	public Block block;
 	private String naam;
-	public RouteNode source;
-	public RouteNode sink;
 	
 	public Site(int x, int y, int n, SiteType t, String naam)
 	{

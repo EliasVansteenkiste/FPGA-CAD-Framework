@@ -207,10 +207,7 @@ public class HeteroAnalyticalPlacerTwo
 					", solveMode = " + solveMode);
 			int index = Math.min(itNumber, maxUtilizationSequence.length - 1);
 			double maxUtilizationLegalizer = maxUtilizationSequence[index];
-			for(int i = 0; i < 3; i++)
-			{
-				solveLinear(false, solveMode, pseudoWeightFactor);
-			}
+			solveLinear(false, solveMode, pseudoWeightFactor);
 			costLinear = calculateTotalCost(linearX, linearY);
 			legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationLegalizer);
 			costLegal = legalizer.calculateBestLegalCost(nets, indexMap);
