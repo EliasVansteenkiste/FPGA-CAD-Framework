@@ -2,7 +2,10 @@ package cli;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -10,8 +13,19 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
 public class Options {
-	@Argument(metaVar="circuit", usage="input circuit, can be the circuit name of the location of a blif file")
+	
+	@Option(name="-c", aliases="--circuit", metaVar="NAME", required=true, usage="input circuit, can be the circuit name or the location of a net file")
 	public String circuit;
+	
+	@Option(name="-p", aliases="--placer", metaVar="NAME", required=true, usage="the placer that should be used; can be multi-valued using a comma separated list")
+	private String placersString;
+	
+	@Option(name="-r", aliases="--random", usage="perform a random placement as initialization")
+	public boolean random;
+	
+	@Option(name="-a", aliases="--architecture", metaVar="NAME", usage="the architecture on which the circuit is placed; supported values: heterogeneous, 4LUT")
+	public String architecture = "heterogeneous";
+	
 	
 	
 	@Option(name="-i", aliases="--input", metaVar="FOLDER", usage="input folder")
@@ -20,15 +34,11 @@ public class Options {
 	@Option(name="-o", aliases="--output", metaVar="FOLDER", usage="output folder, defaults to the folder of the input file")
 	public String outputPath;
 	
-	@Option(name="--architecture", metaVar="NAME", usage="the architecture on which the circuit is placed; supported values: heterogeneous, 4LUT")
-	public String architecture = "heterogeneous";
 	
-	@Option(name="--placer", metaVar="NAME", usage="the placer that should be used; supported values: random, SA, TDSA, AP, MDP, CA")
-	public String placer = "SA";
 	
-	@Option(name="--options", metaVar="OPTIONS", usage="a comma separated list of placer options and optionally their values")
-	private String optionsString = "";
-	public HashMap<String, String> options = new HashMap<String, String>();
+	@Argument(multiValued=true)
+	private List<String> arguments = new ArrayList<String>();
+	public LinkedHashMap<String, HashMap<String, String>> placers;
 	
 	
 	
@@ -132,19 +142,63 @@ public class Options {
 		this.placeFile = new File(outputFolder, circuitName + ".place");
 		
 		
-		// Parse the extra options
-		String[] optionsSplitted = optionsString.split(",");
-		for(int i = 0; i < optionsSplitted.length; i++) {
-			String option = optionsSplitted[i].trim();
-			int firstSpace = option.indexOf(' ');
+		
+		// Parse the extra placer options
+		String[] placerNames = placersString.split(",");
+		int numPlacers = placerNames.length;
+		ArrayList<HashMap<String, String>> placerOptions = new ArrayList<HashMap<String, String>>();
+		
+		
+		
+		// For each placer: create an options HashMap
+		for(int i = 0; i < numPlacers; i++) {
+			placerOptions.add(new HashMap<String, String>());
+		}
+		
+		// Loop through all the given options except "placers"
+		for(String option : arguments) {
 			
-			if(firstSpace == -1) {
-				options.put(option, "");
+			int splitPos = option.indexOf('=');
+			String optionKey;
+			String[] optionValues;
+			if(splitPos == -1) {
+				optionKey = option;
+				optionValues = new String[1];
+				optionValues[0] = "";
+
 			} else {
-				String optionKey = option.substring(0, firstSpace);
-				String optionValue = option.substring(firstSpace + 1); 
-				options.put(optionKey, optionValue);
+				optionKey = option.substring(0, splitPos);
+				optionValues = option.substring(splitPos + 1).split(","); 
 			}
+			
+			
+			// If there is no separate value for each placer
+			if(optionValues.length == 1) {
+				for(int i = 0; i < numPlacers; i++) {
+					placerOptions.get(i).put(optionKey, optionValues[0]);
+				}
+			
+			// If there is a separate value for each placer
+			} else {
+				for(int i = 0; i < numPlacers; i++) {
+					String optionValue = null;
+					
+					try {
+						optionValue = optionValues[i];
+					} catch(IndexOutOfBoundsException e) {
+						System.err.println("Option " + optionKey + " doesn't have a value for each placer: " + option);
+						e.printStackTrace();
+						System.exit(1);
+					}
+					
+					placerOptions.get(i).put(optionKey, optionValue);
+				}
+			}
+		}
+		
+		this.placers = new LinkedHashMap<String, HashMap<String, String>>();
+		for(int i = 0; i < numPlacers; i++) {
+			placers.put(placerNames[i], placerOptions.get(i));
 		}
 	}
 	

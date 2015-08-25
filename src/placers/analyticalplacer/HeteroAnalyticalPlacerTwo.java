@@ -12,6 +12,7 @@ import java.util.Vector;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
+import placers.Placer;
 import placers.Rplace;
 
 import architecture.HeterogeneousArchitecture;
@@ -24,7 +25,7 @@ import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
 
-public class HeteroAnalyticalPlacerTwo
+public class HeteroAnalyticalPlacerTwo extends Placer
 {
 
 	private final double ALPHA = 0.3;
