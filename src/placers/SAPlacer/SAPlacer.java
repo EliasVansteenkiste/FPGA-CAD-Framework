@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Vector;
 
+import architecture.Architecture;
 import architecture.HeterogeneousArchitecture;
 import architecture.HardBlockSite;
 import circuit.Block;
@@ -21,10 +22,10 @@ public abstract class SAPlacer
 	protected double Rlimd;
 	protected EfficientCostCalculator calculator;
 	protected PackedCircuit circuit;
-	protected HeterogeneousArchitecture architecture;
+	protected Architecture architecture;
 	protected Random rand;
 	
-	public SAPlacer(HeterogeneousArchitecture architecture, PackedCircuit circuit)
+	public SAPlacer(Architecture architecture, PackedCircuit circuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;

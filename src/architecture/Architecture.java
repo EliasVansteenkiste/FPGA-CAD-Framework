@@ -54,6 +54,9 @@ public abstract class Architecture {
 	}
 	
 	public abstract Site randomClbSite(int Rlim, Site pl1);
+	public abstract Site randomHardBlockSite(int Rlim, HardBlockSite pl1);
+	public abstract Site randomISite(int Rlim, Site pl1);
+	public abstract Site randomOSite(int Rlim, Site pl1);
 	
 	
 	public Collection<RouteNode> getRouteNodes()

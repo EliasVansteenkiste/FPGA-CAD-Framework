@@ -3,7 +3,7 @@ package placers.SAPlacer;
 import java.util.Random;
 
 import timinganalysis.TimingGraph;
-import architecture.HeterogeneousArchitecture;
+import architecture.Architecture;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
 
@@ -19,7 +19,7 @@ public class TD_SAPlacer extends SAPlacer
 	private double previousBBCost;
 	private double previousTDCost;
 
-	public TD_SAPlacer(HeterogeneousArchitecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
+	public TD_SAPlacer(Architecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
 	{
 		super(architecture, circuit);
 		this.timingGraph = new TimingGraph(prePackedCircuit);

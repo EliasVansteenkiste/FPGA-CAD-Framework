@@ -12,8 +12,8 @@ import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import timinganalysis.TimingGraph;
 
 import architecture.Architecture;
+import architecture.FourLutSanitized;
 import architecture.HeterogeneousArchitecture;
-import architecture.old.FourLutSanitized;
 
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
@@ -51,11 +51,8 @@ public class CLI {
 		Architecture architecture = null; // Needed to suppress "variable may not be initialized" errors
 		switch(options.architecture) {
 			case "4lut":
-				int numCLBs = packedCircuit.clbs.size();
-				int dimension = (int) Math.ceil(Math.sqrt(numCLBs) * 1.2);
-				
-				// The parameters for this architecture are just a wild guess
-				architecture = new FourLutSanitized(dimension, dimension, 10);
+			case "4LUT":
+				architecture = new FourLutSanitized(packedCircuit);
 				break;
 				
 			case "heterogeneous":

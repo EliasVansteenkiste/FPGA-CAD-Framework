@@ -11,7 +11,7 @@ import placers.Rplace;
 
 import timinganalysis.TimingGraph;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;

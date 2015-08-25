@@ -26,8 +26,8 @@ import circuit.PackedCircuit;
 import circuit.Net;
 import circuit.Pin;
 
+import architecture.FourLutSanitized;
 import architecture.Site;
-import architecture.old.FourLutSanitized;
 
 public class AnalyticalPlacer 
 {

@@ -7,8 +7,8 @@ import java.util.Vector;
 
 import placers.SAPlacer.Swap;
 
+import architecture.FourLutSanitized;
 import architecture.Site;
-import architecture.old.FourLutSanitized;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Input;

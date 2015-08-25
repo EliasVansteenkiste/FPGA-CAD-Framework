@@ -4,9 +4,9 @@ import java.io.PrintStream;
 import java.util.Collection;
 
 import architecture.ClbSite;
+import architecture.FourLutSanitized;
 import architecture.IoSite;
 import architecture.Site;
-import architecture.old.FourLutSanitized;
 import architecture.old.RouteNode;
 
 public class SvgGenerator {

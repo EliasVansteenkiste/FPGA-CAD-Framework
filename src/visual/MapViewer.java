@@ -8,7 +8,7 @@ import circuit.PackedCircuit;
 import circuit.Net;
 import circuit.Connection;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import architecture.old.RouteNode;
 
 import java.awt.BorderLayout;

@@ -7,7 +7,7 @@ import java.util.Random;
 
 import placers.Rplace;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import circuit.PackedCircuit;
 import circuit.parser.netlist.ParseException;
 import circuit.parser.netlist.Readnetlist;

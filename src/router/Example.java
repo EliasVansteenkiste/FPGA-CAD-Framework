@@ -10,7 +10,7 @@ import placers.old.BoundingBoxNetCC;
 import placers.old.PlacementManipulatorIOCLB;
 import placers.old.Vplace;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import circuit.PackedCircuit;
 import circuit.parser.netlist.ParseException;
 import circuit.parser.netlist.Readnetlist;

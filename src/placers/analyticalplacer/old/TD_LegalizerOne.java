@@ -9,8 +9,8 @@ import java.util.Set;
 
 import timinganalysis.TimingGraph;
 
+import architecture.FourLutSanitized;
 import architecture.Site;
-import architecture.old.FourLutSanitized;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;

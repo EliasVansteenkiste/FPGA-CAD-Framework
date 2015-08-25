@@ -14,11 +14,11 @@ import java.util.Vector;
 
 import placement.parser.PlaatsingUnit;
 import placement.parser.Placement;
+import architecture.FourLutSanitized;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 import architecture.SiteType;
-import architecture.old.FourLutSanitized;
 import architecture.old.RouteNode;
 
 public class PackedCircuit extends Circuit{

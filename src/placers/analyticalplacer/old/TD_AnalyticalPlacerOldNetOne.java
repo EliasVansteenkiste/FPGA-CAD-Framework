@@ -12,7 +12,7 @@ import placers.Rplace;
 import timinganalysis.TimingEdge;
 import timinganalysis.TimingGraph;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import circuit.BlockType;
 import circuit.Clb;
 import circuit.Net;

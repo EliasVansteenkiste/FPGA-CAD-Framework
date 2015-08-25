@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import placement.parser.Placement;
 import placement.parser.Readplaatsing;
 import placers.Rplace;
