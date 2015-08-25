@@ -1,10 +1,13 @@
 package placers.MDP;
 
+import java.util.HashMap;
+
+import placers.Placer;
 import circuit.PackedCircuit;
 import architecture.Architecture;
 import architecture.HeterogeneousArchitecture;
 
-public class MDPPlacer {
+public class MDPPlacer extends Placer {
 	
 	private Architecture architecture;
 	private PackedCircuit circuit;
@@ -14,7 +17,7 @@ public class MDPPlacer {
 		this.circuit = circuit;
 	}
 	
-	public void place() {
-		
+	public int place(HashMap<String, String> options) {
+		return 0;
 	}
 }

@@ -5,10 +5,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import placement.parser.Placement;
 import placement.parser.Readplaatsing;
-import placers.Rplace;
+import placers.random.RandomPlacer;
 
 import circuit.PackedCircuit;
 import circuit.parser.netlist.ParseException;
@@ -61,7 +61,7 @@ public class ExampleComparisonVPR {
 		pm.PlacementCLBsConsistencyCheck();
 		
 		//Random placement
-		Rplace.placeCLBsandIOs(c, a, rand);
+		RandomPlacer.placeCLBsandIOs(c, a, rand);
 		pm.PlacementCLBsConsistencyCheck();
 		System.out.println("Total Cost random placement: "+bbncc.calculateTotalCost());
 		

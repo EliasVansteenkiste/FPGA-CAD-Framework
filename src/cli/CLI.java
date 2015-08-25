@@ -3,26 +3,27 @@ package cli;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Random;
 
-import packers.BlePacker;
-import packers.ClbPacker;
 import placers.Placer;
-import placers.MDP.MDPBasedPlacer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import placers.random.RandomPlacer;
 import timinganalysis.TimingGraph;
 
 import architecture.Architecture;
+import architecture.FourLutSanitized;
 import architecture.HeterogeneousArchitecture;
 
-import circuit.BlePackedCircuit;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
-import circuit.parser.blif.BlifReader;
 import circuit.parser.net.NetReader;
 import cli.Options;
 
 
 public class CLI {
+	
+	private static long timerBegin, timerEnd;
 	
 	public static void main(String[] args) {
 		
@@ -33,14 +34,14 @@ public class CLI {
 		
 		// Read the net file
 		NetReader netReader = new NetReader();
-		PrePackedCircuit prePackedCircuit = null;
 		
 		try {
 			netReader.readNetlist(options.netFile.toString(), 6);
 		} catch(IOException e) {
-			error("Failed to read net file");
+			error("Failed to read net file: " + options.netFile.toString());
 		}
 		
+		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 		
 		
@@ -49,6 +50,11 @@ public class CLI {
 		// Currently only the heterogeneous architecture is supported
 		Architecture architecture = null; // Needed to suppress "variable may not be initialized" errors
 		switch(options.architecture) {
+			case "4lut":
+			case "4LUT":
+				architecture = new FourLutSanitized(packedCircuit);
+				break;
+				
 			case "heterogeneous":
 				architecture = new HeterogeneousArchitecture(packedCircuit);
 				break;
@@ -59,50 +65,27 @@ public class CLI {
 		
 		
 		
-		// Place the circuit
-		Placer placer = null; // Needed to suppress "variable may not be initialized" errors
-		switch(options.placer) {
-			case "MDP":
-				if(!architecture.getClass().equals(HeterogeneousArchitecture.class)) {
-					error("MDP currently only supports the architecture \"heterogeneous\"");
-				}
-				
-				placer = new MDPBasedPlacer((HeterogeneousArchitecture) architecture, packedCircuit);
-				break;
-			
-			case "analytical":
-				
-			case "random":
-				
-			case "SA":
-				
-			case "TDSA":
-				error("Placer not yet implemented: " + options.placer);
-				
-			default:
-				error("Placer type not recognized: " + options.placer);
+		// If a random initialization is required: do it
+		if(options.random) {
+			Random rand = new Random(1);
+			RandomPlacer.placeCLBsandFixedIOs(packedCircuit, (FourLutSanitized) architecture, rand);
 		}
 		
-		long timeStartPlace = System.nanoTime();
-		placer.place();
-		long timeStopPlace = System.nanoTime();
 		
-		
-		
-		// Analyze the circuit and print statistics
-		System.out.println();
-		double placeTime = (timeStopPlace - timeStartPlace) * 1e-12;
-		System.out.format("%15s: %fs\n", "Place time", placeTime);
-		
-		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-		double totalCost = effcc.calculateTotalCost();
-		System.out.format("%15s: %f\n", "Total cost", totalCost);
-		
-		// TODO: why does this only work with a pre-packed circuit?
-		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
-		timingGraph.buildTimingGraph();
-		double maxDelay = timingGraph.calculateMaximalDelay();
-		System.out.format("%15s: %f\n", "Max delay", maxDelay);
+		// Loop through the placers
+		for(String placerName : options.placers.keySet()) {
+			System.out.println("Placing with " + placerName + "...");
+			
+			HashMap<String, String> placerOptions = options.placers.get(placerName);
+			
+			// Create the placer and place the circuit
+			CLI.startTimer();
+			Placer placer = Placer.newPlacer(placerName, architecture, packedCircuit);
+			placer.place(options.placers.get(placerName));
+			CLI.stopTimer();
+			
+			CLI.printStatistics(placerName, prePackedCircuit, packedCircuit);
+		}
 		
 		
 		
@@ -112,6 +95,32 @@ public class CLI {
 		} catch (FileNotFoundException e) {
 			error("Place file not found: " + options.placeFile);
 		}
+	}
+	
+	private static void startTimer() {
+		CLI.timerBegin = System.nanoTime();
+	}
+	private static void stopTimer() {
+		CLI.timerEnd = System.nanoTime();
+	}
+	private static double getTimer() {
+		return (CLI.timerEnd - CLI.timerBegin) * 1e-12;
+	}
+	
+	private static void printStatistics(String prefix, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit) {
+		
+		System.out.println();
+		double placeTime = CLI.getTimer();
+		System.out.format("%s %15s: %fs\n", prefix, "place time", placeTime);
+		
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		double totalCost = effcc.calculateTotalCost();
+		System.out.format("%s %15s: %f\n", prefix, "total cost", totalCost);
+		
+		TimingGraph timingGraph = new TimingGraph(prePackedCircuit);
+		timingGraph.buildTimingGraph();
+		double maxDelay = timingGraph.calculateMaximalDelay();
+		System.out.format("%s %15s: %f\n", prefix, "max delay", maxDelay);
 	}
 	
 	

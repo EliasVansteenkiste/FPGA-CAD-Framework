@@ -2,13 +2,13 @@ package placers.SAPlacer;
 
 import java.util.Random;
 
-import architecture.HeterogeneousArchitecture;
+import architecture.Architecture;
 import circuit.PackedCircuit;
 
 public class WLD_SAPlacer extends SAPlacer
 {
 
-	public WLD_SAPlacer(HeterogeneousArchitecture architecture, PackedCircuit circuit)
+	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit)
 	{
 		super(architecture, circuit);
 	}
@@ -75,109 +75,7 @@ public class WLD_SAPlacer extends SAPlacer
 		System.out.println("Last temp: " + T);
 	}
 	
-//	public void placePackedIO(double inner_num)
-//	{
-//		//Initialize SA parameters
-//		calculator.recalculateFromScratch();
-//		rand = new Random(1);
-//		Rlimd = Math.max(architecture.getWidth(),architecture.getHeight());
-//		int Rlim = initialRlim();
-//		double T = calculateInitialTemperaturePackedIO();
-//		int movesPerTemperature = (int) (inner_num*Math.pow(circuit.numBlocks(),4.0/3.0));
-//		
-//		//Print SA parameters
-//		System.out.println("Initial temperature: " + T);
-//		System.out.println("Moves per temperature: " + movesPerTemperature);
-//		
-//		//Do placement
-//		while (T > 0.005*calculator.calculateAverageNetCost())
-//		{
-//			int alphaAbs=0;
-//			for (int i =0; i<movesPerTemperature;i++) 
-//			{
-//				Swap swap = findSwap(Rlim);
-//				if(swap.pl1.type != SiteType.IO)
-//				{
-//					if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
-//					{
-//						double deltaCost = calculator.calculateDeltaCost(swap);
-//						if(deltaCost<=0)
-//						{
-//							swap.apply();
-//							alphaAbs+=1;
-//							calculator.pushThrough();
-//						}
-//						else
-//						{
-//							if(rand.nextDouble()<Math.exp(-deltaCost/T))
-//							{
-//								swap.apply();
-//								alphaAbs+=1;
-//								calculator.pushThrough();
-//							}
-//							else
-//							{
-//								calculator.revert();
-//							}
-//						}
-//					}
-//				}
-//				else //We are swapping IOs: swap'em both
-//				{
-//					int n = swap.pl1.n;
-//					Swap swap2;
-//					if(n == 0)
-//					{
-//						swap2 = new Swap();
-//						swap2.pl1 = architecture.getSite(swap.pl1.x, swap.pl1.y, 1);
-//						swap2.pl2 = architecture.getSite(swap.pl2.x, swap.pl2.y, 1);
-//					}
-//					else
-//					{
-//						swap2 = new Swap();
-//						swap2.pl1 = architecture.getSite(swap.pl1.x, swap.pl1.y, 0);
-//						swap2.pl2 = architecture.getSite(swap.pl2.x, swap.pl2.y, 0);
-//					}
-//					double deltaCost1 = calculator.calculateDeltaCost(swap);
-//					calculator.revert();
-//					double deltaCost2 = calculator.calculateDeltaCost(swap2);
-//					calculator.revert();
-//					double deltaCost = deltaCost1 + deltaCost2;
-//					
-//					if(deltaCost<=0)
-//					{
-//						calculator.calculateDeltaCost(swap);
-//						calculator.pushThrough();
-//						calculator.calculateDeltaCost(swap2);
-//						calculator.pushThrough();
-//						swap.apply();
-//						swap2.apply();
-//						alphaAbs+=1;
-//						
-//					}
-//					else
-//					{
-//						if(rand.nextDouble()<Math.exp(-deltaCost/T))
-//						{
-//							calculator.calculateDeltaCost(swap);
-//							calculator.pushThrough();
-//							calculator.calculateDeltaCost(swap2);
-//							calculator.pushThrough();
-//							swap.apply();
-//							swap2.apply();
-//							alphaAbs+=1;
-//						}
-//					}
-//				}
-//			}
-//
-//			double alpha = (double)alphaAbs/movesPerTemperature;
-//			Rlim = updateRlim(alpha);
-//			T=updateTemperature(T,alpha);		
-//		}
-//		
-//		System.out.println("Last temp: " + T);
-//	}
+
 	
 	@Override
 	public void lowTempAnneal(double innerNum)
@@ -322,65 +220,7 @@ public class WLD_SAPlacer extends SAPlacer
 		return T;
 	}
 	
-//	private double calculateInitialTemperaturePackedIO()
-//	{
-//		double	somDeltaKost=0;
-//		double 	kwadratischeSomDeltaKost=0;
-//		for (int i = 0; i < circuit.numBlocks(); i++) 
-//		{
-//			int maxFPGAdimension = Math.max(architecture.getWidth(), architecture.getHeight());
-//			
-//			Swap swap = findSwap(maxFPGAdimension);	
-//			
-//			double deltaCost;
-//			if(swap.pl1.type != SiteType.IO)
-//			{
-//				deltaCost = calculator.calculateDeltaCost(swap);
-//				//Swap
-//				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
-//				{
-//					swap.apply();
-//					calculator.pushThrough();
-//				}
-//				else
-//				{
-//					calculator.revert();
-//				}
-//			}
-//			else //swapping IOs
-//			{
-//				int n = swap.pl1.n;
-//				Swap swap2;
-//				if(n == 0)
-//				{
-//					swap2 = new Swap();
-//					swap2.pl1 = architecture.getSite(swap.pl1.x, swap.pl1.y, 1);
-//					swap2.pl2 = architecture.getSite(swap.pl2.x, swap.pl2.y, 1);
-//				}
-//				else
-//				{
-//					swap2 = new Swap();
-//					swap2.pl1 = architecture.getSite(swap.pl1.x, swap.pl1.y, 0);
-//					swap2.pl2 = architecture.getSite(swap.pl2.x, swap.pl2.y, 0);
-//				}
-//				double deltaCost1 = calculator.calculateDeltaCost(swap);
-//				calculator.pushThrough();
-//				double deltaCost2 = calculator.calculateDeltaCost(swap2);
-//				calculator.pushThrough();
-//				deltaCost = deltaCost1 + deltaCost2;
-//			}
-//			
-//			somDeltaKost+=deltaCost;
-//			kwadratischeSomDeltaKost+=Math.pow(deltaCost,2);
-//		}
-//		double somKwadraten = kwadratischeSomDeltaKost;
-//		double kwadraatSom = Math.pow(somDeltaKost,2);
-//		double nbElements = circuit.numBlocks();
-//		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
-//		double T=20*stdafwijkingDeltaKost;
-//		
-//		return T;
-//	}
+
 	
 	private double calculateInitialTemperatureLow(int Rlim)
 	{

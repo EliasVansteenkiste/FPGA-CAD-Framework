@@ -12,9 +12,9 @@ import java.util.Map;
 import javax.swing.JPanel;
 
 import architecture.ClbSite;
+import architecture.FourLutSanitized;
 import architecture.IoSite;
 import architecture.Site;
-import architecture.old.FourLutSanitized;
 import architecture.old.RouteNode;
 import circuit.Block;
 import circuit.Net;

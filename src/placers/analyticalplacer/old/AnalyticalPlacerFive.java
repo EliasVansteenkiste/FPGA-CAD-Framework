@@ -10,10 +10,10 @@ import java.util.Set;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import placers.Rplace;
+import placers.random.RandomPlacer;
 
+import architecture.FourLutSanitized;
 import architecture.Site;
-import architecture.old.FourLutSanitized;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
@@ -63,7 +63,7 @@ public class AnalyticalPlacerFive
 	
 	public void place()
 	{
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 				
 		//Initial linear solves, should normally be done 5-7 times		

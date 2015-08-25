@@ -11,9 +11,6 @@ public class HeterogeneousArchitecture extends Architecture
 	
 	private static final double FILL_GRADE = 1.20;
 	
-	private int width;
-	private int height;
-	private Site[][][] siteArray;
 	private String[] hardBlockTypeNames;
 	private ArrayList<Site> ISites;
 	private ArrayList<Site> OSites;
@@ -116,106 +113,7 @@ public class HeterogeneousArchitecture extends Architecture
 		}
 	}
 	
-//	/*
-//	 * A heterogeneousArchitecture is always fitted to a circuit
-//	 */
-//	public HeterogeneousArchitecture(PackedCircuit circuit)
-//	{
-//		int nbClbs = circuit.clbs.values().size();
-//		int nbInputs = circuit.getInputs().values().size();
-//		int nbOutputs = circuit.getOutputs().values().size();
-//		int nbMemories = 0;
-//		int nbMult36 = 0;
-//		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
-//		{
-//			if(hbVector.get(0).getTypeName().equals("memory"))
-//			{
-//				nbMemories = hbVector.size();
-//			}
-//			else
-//			{
-//				if(hbVector.get(0).getTypeName().equals("mult_36"))
-//				{
-//					nbMult36 = hbVector.size();
-//				}
-//				else
-//				{
-//					System.err.println("Wrong type of hardblock in the circuit!");
-//				}
-//			}
-//		}
-//		ISites = new ArrayList<>();
-//		OSites = new ArrayList<>();
-//		hardBlockTypeNames = new String[2];
-//		hardBlockTypeNames[0] = "memory";
-//		hardBlockTypeNames[1] = "mult_36";
-//		
-//		//Create an x by x architecture which ensures that we can house all IOs, CLBs, memories and mult*36s
-//		int x = 1;
-//		int roomForInputs = x * 4;
-//		int roomForOutputs = x * 4;
-//		int roomForMemorieColumns = (x + 6) / 8;
-//		int roomForMemories = roomForMemorieColumns * x;
-//		int roomForMult36Columns = (x + 2) / 8;
-//		int roomForMult36s = roomForMult36Columns * x;
-//		int roomForClbs = (x - roomForMemorieColumns - roomForMult36Columns) * x;
-//		while(roomForInputs < nbInputs || roomForOutputs < nbOutputs || roomForMemories < nbMemories || 
-//																roomForMult36s < nbMult36 || roomForClbs < nbClbs)
-//		{
-//			x++;
-//			roomForInputs = x * 4;
-//			roomForOutputs = x * 4;
-//			roomForMemorieColumns = (x + 6) / 8;
-//			roomForMemories = roomForMemorieColumns * x;
-//			roomForMult36Columns = (x + 2) / 8;
-//			roomForMult36s = roomForMult36Columns * x;
-//			roomForClbs = (x - roomForMemorieColumns - roomForMult36Columns) * x;
-//		}
-//		
-//		width = x;
-//		height = x;
-//		siteArray = new Site[width+2][height+2][2];
-//		for(int i = 0; i < width+2; i++)
-//		{
-//			if(i == 0 || i == width+1)
-//			{
-//				insertIOColumn(i);
-//			}
-//			else
-//			{
-//				if((i+6)%8 == 0)
-//				{
-//					insertHardBlockColumn(i, "memory");
-//				}
-//				else
-//				{
-//					if((i+2)%8 == 0)
-//					{
-//						insertHardBlockColumn(i, "mult_36");
-//					}
-//					else
-//					{
-//						insertClbColumn(i);
-//					}
-//				}
-//			}
-//		}
-//	}
 	
-	public int getWidth()
-	{
-		return width;
-	}
-	
-	public int getHeight()
-	{
-		return height;
-	}
-	
-	public Site getSite(int x, int y, int n)
-	{
-		return siteArray[x][y][n];
-	}
 	
 	public String[] getHardBlockTypeNames()
 	{
@@ -231,6 +129,8 @@ public class HeterogeneousArchitecture extends Architecture
 	{
 		return OSites;
 	}
+	
+	
 	
 	public Site randomClbSite(int Rlim, Site pl1)
 	{
@@ -352,6 +252,8 @@ public class HeterogeneousArchitecture extends Architecture
 		return pl2;
 	}
 	
+	
+	
 	private void insertClbColumn(int x)
 	{
 		putIoSite(x,0,0);
@@ -385,6 +287,8 @@ public class HeterogeneousArchitecture extends Architecture
 		putIoSite(x,height+1,1);
 	}
 	
+	
+	
 	private void putIoSite(int x, int y, int n)
 	{
 		IoSite site = new IoSite("Site_"+x+"_"+y+"_"+n, x, y,n);
@@ -399,11 +303,7 @@ public class HeterogeneousArchitecture extends Architecture
 		}
 	}
 	
-	private void addSite(Site site, int x, int y, int n)
-	{
-		siteArray[x][y][n] = site;
-		siteVector.add(site);
-	}
+	
 	
 	private boolean hardBlocksInThisColumn(int x, int delta, int total)
 	{

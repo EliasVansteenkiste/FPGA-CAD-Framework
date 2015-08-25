@@ -7,11 +7,11 @@ import java.util.Random;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import placers.Rplace;
+import placers.random.RandomPlacer;
 
 import timinganalysis.TimingGraph;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
@@ -58,7 +58,7 @@ public class TD_AnalyticalPlacerNewNetOne
 	
 	public void place()
 	{
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		
 		timingGraph.buildTimingGraph();

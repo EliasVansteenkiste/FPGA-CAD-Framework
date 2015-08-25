@@ -2,6 +2,7 @@ package placers.SAPlacer;
 
 import java.util.Random;
 
+import architecture.Architecture;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import circuit.Block;
@@ -13,10 +14,10 @@ public class WLD_GreedyRefiner
 
 	private EfficientCostCalculator calculator;
 	protected PackedCircuit circuit;
-	protected HeterogeneousArchitecture architecture;
+	protected Architecture architecture;
 	protected Random rand;
 	
-	public WLD_GreedyRefiner(HeterogeneousArchitecture architecture, PackedCircuit circuit)
+	public WLD_GreedyRefiner(Architecture architecture, PackedCircuit circuit)
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;

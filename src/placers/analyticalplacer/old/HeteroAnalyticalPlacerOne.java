@@ -11,8 +11,8 @@ import java.util.Vector;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import placers.Rplace;
 import placers.analyticalplacer.HeteroLegalizerOne;
+import placers.random.RandomPlacer;
 
 import circuit.BlockType;
 import circuit.Clb;
@@ -42,7 +42,7 @@ public class HeteroAnalyticalPlacerOne
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		switch(legalizer)
 		{

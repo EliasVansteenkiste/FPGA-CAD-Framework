@@ -7,7 +7,7 @@ import java.util.Random;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import placers.SAPlacer.Swap;
 
-import architecture.old.FourLutSanitized;
+import architecture.FourLutSanitized;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;

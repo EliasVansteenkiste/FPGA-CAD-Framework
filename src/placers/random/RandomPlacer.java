@@ -1,4 +1,4 @@
-package placers;
+package placers.random;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -13,13 +13,13 @@ import circuit.Clb;
 import circuit.Input;
 import circuit.Output;
 
+import architecture.FourLutSanitized;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 import architecture.SiteType;
-import architecture.old.FourLutSanitized;
 
-public class Rplace
+public class RandomPlacer
 {
 
 	public static void place(PackedCircuit c, FourLutSanitized a)

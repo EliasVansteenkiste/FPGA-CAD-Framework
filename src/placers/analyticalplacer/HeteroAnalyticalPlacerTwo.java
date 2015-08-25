@@ -12,7 +12,8 @@ import java.util.Vector;
 import mathtools.CGSolver;
 import mathtools.Crs;
 
-import placers.Rplace;
+import placers.Placer;
+import placers.random.RandomPlacer;
 
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
@@ -24,7 +25,7 @@ import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
 
-public class HeteroAnalyticalPlacerTwo
+public class HeteroAnalyticalPlacerTwo extends Placer
 {
 
 	private final double ALPHA = 0.3;
@@ -63,7 +64,7 @@ public class HeteroAnalyticalPlacerTwo
 		//double[] maxUtilizationLegalizerArray = new double[] {0.9}; //No partial overlap solves...
 		double maxUtilizationLegalizer = maxUtilizationLegalizerArray[0];
 		
-		Rplace.placeFixedIOs(circuit, architecture);
+		RandomPlacer.placeFixedIOs(circuit, architecture);
 		
 		//Initial linear solves, should normally be done 5-7 times		
 		for(int i = 0; i < 7; i++)
@@ -176,7 +177,7 @@ public class HeteroAnalyticalPlacerTwo
 		int itNumber;
 		if(startingStage == 0)
 		{
-			Rplace.placeFixedIOs(circuit, architecture);
+			RandomPlacer.placeFixedIOs(circuit, architecture);
 			initializeArraysRandom();
 			
 			int solveMode = 0;

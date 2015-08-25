@@ -10,7 +10,7 @@ import java.util.Vector;
 
 import mathtools.CGSolver;
 import mathtools.Crs;
-import placers.Rplace;
+import placers.random.RandomPlacer;
 import timinganalysis.TimingEdge;
 import timinganalysis.TimingGraph;
 import architecture.HeterogeneousArchitecture;
@@ -47,7 +47,7 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 	{
 		this.architecture = architecture;
 		this.circuit = circuit;
-		Rplace.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
+		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, new Random(1));
 		initializeDataStructures();
 		this.timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.setCriticalityExponent(TG_CRITICALITY_EXPONENT);
