@@ -45,61 +45,8 @@ public class PackedCircuit extends Circuit{
 		return inputs.size()+outputs.size()+clbs.size();
 	}
 
-	public void place(Placement p, FourLutSanitized a) {
-		for(Iterator<PlaatsingUnit> i=p.plaatsingsmap.values().iterator();i.hasNext();) {
-			PlaatsingUnit pu=i.next();
-			Block b=getBlock(pu.naam);
-			Site s = a.getSite(pu.x, pu.y, pu.n);
-			b.setSite(s);
-			b.getSite().block = b;
-			b.fixed=true;
-		}
-	}
-	
-	public boolean place(Map<String,Integer> inputXPositions, Map<String,Integer> inputYPositions, Map<String,Integer> outputXPositions,
-		Map<String,Integer> outputYPositions, Map<String,Integer> clbXPositions, Map<String,Integer> clbYPositions, 
-		Map<String,Integer> hbXPositions, Map<String,Integer> hbYPositions, HeterogeneousArchitecture arch)
+	public void dumpPlacement(String file) throws FileNotFoundException
 	{
-		for(Input input: inputs.values())
-		{
-			int x = inputXPositions.get(input.name);
-			int y = inputYPositions.get(input.name);
-			Site site = arch.getSite(x, y, 0);
-			input.setSite(site);
-			site.block = input;
-		}
-		for(Output output: outputs.values())
-		{
-			int x = outputXPositions.get(output.name);
-			int y = outputYPositions.get(output.name);
-			Site site = arch.getSite(x, y, 1);
-			output.setSite(site);
-			site.block = output;
-		}
-		for(Clb clb: clbs.values())
-		{
-			int x = clbXPositions.get(clb.name);
-			int y = clbYPositions.get(clb.name);
-			Site site = arch.getSite(x, y, 0);
-			clb.setSite(site);
-			site.block = clb;
-		}
-		for(Vector<HardBlock> hbVector: hardBlocks)
-		{
-			for(HardBlock hb: hbVector)
-			{
-				int x = hbXPositions.get(hb.name);
-				int y = hbYPositions.get(hb.name);
-				Site site = arch.getSite(x, y, 0);
-				hb.setSite(site);
-				site.block = hb;
-			}
-		}
-		boolean success = placementConsistencyCheck(arch);
-		return success;
-	}
-	
-	public void dumpPlacement(String file) throws FileNotFoundException {
 		PrintStream stream = new PrintStream(new FileOutputStream(file));
 		
 		stream.println("Netlist file: na.net	Architecture file: na.arch");
@@ -108,34 +55,18 @@ public class PackedCircuit extends Circuit{
 		stream.println("#block name	x	y	subblk	block number");
 		stream.println("#----------	--	--	------	------------");
 				
-		for(Block blok:inputs.values()) {
-			stream.println(blok.name+"	"+blok.getSite().x+"	"+blok.getSite().y+"	"+blok.getSite().n);
+		for(Block blok:inputs.values())
+		{
+			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
 		}
 		for(Block blok:clbs.values()) {
-			stream.println(blok.name+"	"+blok.getSite().x+"	"+blok.getSite().y+"	"+blok.getSite().n);
+			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
 		}
 		for(Block blok:outputs.values()) {
-			stream.println(blok.name+"	"+blok.getSite().x+"	"+blok.getSite().y+"	"+blok.getSite().n);
+			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
 		}
 		stream.close();
 	}
-	
-	/*
-	 * Doesn't work at the moment
-	 * Breaks the circuit!!!!!!!!!!!!!!!!!
-	 * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	 */
-//	public void placementCLBsConsistencyCheck(FourLutSanitized a){
-//		for(Site s:a.siteMap.values()){
-//			if(s.block!=null&&s.block.type==BlockType.CLB){
-//				if(clbs.remove(s.block.name)==null){
-//					System.out.println("Placement consistency check failed! clb:"+s.block.name+", site:"+s);
-//					return;
-//				}
-//			}
-//		}
-//		System.out.println("Placement consistency check passed!");
-//	}
 	
 	/*
 	 * Checks if all blocks have been placed in appropriate positions, 
@@ -170,6 +101,14 @@ public class PackedCircuit extends Circuit{
 		Collection<Site> nonIOSites = architecture.getSites();
 		for(Site site: nonIOSites)
 		{
+			
+			
+			
+			
+			
+			
+			
+			
 			if(site.block != null && site.block.getSite() == site)
 			{
 				if(site.block.type == BlockType.CLB && site.type == SiteType.CLB)
@@ -267,14 +206,6 @@ public class PackedCircuit extends Circuit{
 		for(Net net:this.nets.values()){
 			net.routeNodes.clear();
 		}
-	}
-	
-	private Block getBlock(String naam) {
-		Block result=null;
-		result=clbs.get(naam);
-		if (result == null) result=inputs.get(naam);
-		if (result == null) result=outputs.get(naam);
-		return result;
 	}
 
 }

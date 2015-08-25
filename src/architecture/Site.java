@@ -1,34 +1,37 @@
 package architecture;
 
-import circuit.Block;
-
 public class Site {
-	public int x;
-	public int y;
-	public int n;
-	public SiteType type;
-	public Block block;
-	private String naam;
+	private int x;
+	private int y;
+	private SiteType type;
 	
-	public Site(int x, int y, int n, SiteType t, String naam)
+	public Site(int x, int y, SiteType type)
 	{
 		super();	
 		this.x=x;
 		this.y=y;
-		this.n=n;
-		this.type=t;
-		this.naam=naam;
+		this.type=type;
 	}
 	
-	double afstand(Site p)
+	public SiteType getType()
 	{
-		return Math.abs(x-p.x)+Math.abs(y-p.y);
+		return type;
 	}
-
+	
+	public int getX()
+	{
+		return x;
+	}
+	
+	public int getY()
+	{
+		return y;
+	}
+	
 	@Override
 	public String toString()
 	{
-		return naam;
+		return "Site_" + x + "_" + y;
 	}
 	
 }

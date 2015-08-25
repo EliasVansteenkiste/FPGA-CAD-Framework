@@ -1,30 +1,23 @@
 package architecture;
 
-import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Random;
 import java.util.Vector;
-
-import architecture.old.RouteNode;
 
 public abstract class Architecture {
 	
 	protected Random rand;
 	protected Vector<Site> siteVector;
-	protected Vector<RouteNode> routeNodeVector;
-	
-	protected Site[][][] siteArray;
-	
-	protected int width, height;
+	protected Site[][] siteArray;
+	protected int width;
+	protected int height;
 	
 	public Architecture()
 	{
 		super();
 		rand= new Random();
 		siteVector = new Vector<>();
-		routeNodeVector = new Vector<>();
 	}
-	
 	
 	public int getWidth()
 	{
@@ -36,52 +29,28 @@ public abstract class Architecture {
 		return height;
 	}
 	
-	
-	
 	public Collection<Site> getSites()
 	{
 		return siteVector;
 	}
-	public Site getSite(int x, int y, int n)
+	
+	public Site getSite(int x, int y)
 	{
-		return siteArray[x][y][n];
+		return siteArray[x][y];
 	}
 	
-	protected void addSite(Site site, int x, int y, int n)
+	protected void addSite(Site site, int x, int y)
 	{
-		siteArray[x][y][n] = site;
+		siteArray[x][y] = site;
 		siteVector.add(site);
 	}
 	
 	public abstract Site randomClbSite(int Rlim, Site pl1);
 	public abstract Site randomHardBlockSite(int Rlim, HardBlockSite pl1);
-	public abstract Site randomISite(int Rlim, Site pl1);
-	public abstract Site randomOSite(int Rlim, Site pl1);
-	
-	
-	public Collection<RouteNode> getRouteNodes()
-	{
-		return routeNodeVector;
-	}
+	public abstract Site randomIOSite(int Rlim, Site pl1);
 	
 	public void setRand(Random rand)
 	{
 		this.rand = rand;
-	}
-	
-	
-	
-	public void printRoutingGraph(PrintStream stream)
-	{
-		for(RouteNode node : routeNodeVector)
-		{
-			stream.println("Node "+node.name);
-			for(RouteNode child : node.children)
-			{
-				stream.print(child.name+ " ");
-			}
-			stream.println();
-			stream.println();
-		}
 	}
 }

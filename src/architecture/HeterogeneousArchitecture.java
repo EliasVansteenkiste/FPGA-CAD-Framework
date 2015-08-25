@@ -1,9 +1,7 @@
 package architecture;
 
 import java.util.ArrayList;
-import java.util.Vector;
 
-import circuit.HardBlock;
 import circuit.PackedCircuit;
 
 public class HeterogeneousArchitecture extends Architecture
@@ -12,19 +10,19 @@ public class HeterogeneousArchitecture extends Architecture
 	private static final double FILL_GRADE = 1.20;
 	
 	private String[] hardBlockTypeNames;
-	private ArrayList<Site> ISites;
-	private ArrayList<Site> OSites;
+	private ArrayList<Site> IOSites;
+	private int IOSiteCapacity;
 	
 	/*
 	 * A heterogeneousArchitecture is always fitted to a circuit
 	 */
-	public HeterogeneousArchitecture(PackedCircuit circuit)
+	public HeterogeneousArchitecture(PackedCircuit circuit, int IOSiteCapacity)
 	{
+		this.IOSiteCapacity = IOSiteCapacity;
 		int nbClbs = circuit.clbs.values().size();
 		int nbInputs = circuit.getInputs().values().size();
 		int nbOutputs = circuit.getOutputs().values().size();
-		ISites = new ArrayList<>();
-		OSites = new ArrayList<>();
+		IOSites = new ArrayList<>();
 		int[] nbHardBlocksPerType = new int[circuit.getHardBlocks().size()];
 		hardBlockTypeNames = new String[nbHardBlocksPerType.length];
 		for(int i = 0; i < nbHardBlocksPerType.length; i++)
@@ -34,16 +32,9 @@ public class HeterogeneousArchitecture extends Architecture
 		}
 		
 		//Create an x by x architecture which ensures that we can house all IO's and have enough CLB sites
-		int maxIO;
-		if(nbInputs > nbOutputs)
-		{
-			maxIO = nbInputs;
-		}
-		else
-		{
-			maxIO = nbOutputs;
-		}
-		int size1 = (maxIO + 3) / 4;
+
+		int nbIOSites = (int)Math.ceil((double)(nbInputs + nbOutputs) / IOSiteCapacity);
+		int size1 = (int)Math.ceil((double)nbIOSites / 4);
 		int size2 = (int)Math.ceil(Math.sqrt(nbClbs * FILL_GRADE));
 		int size;
 		if(size1 > size2)
@@ -73,7 +64,7 @@ public class HeterogeneousArchitecture extends Architecture
 		//Insert hard blocks in array
 		width = size;
 		height = size;
-		siteArray = new Site[width+2][height+2][2];
+		siteArray = new Site[width+2][height+2];
 		int deltaHardBlockColumns = size / (totalNbHardBlockColumns + 1);
 		int leftToPlace = totalNbHardBlockColumns;
 		int nextLeft = deltaHardBlockColumns;
@@ -120,37 +111,30 @@ public class HeterogeneousArchitecture extends Architecture
 		return hardBlockTypeNames;
 	}
 	
-	public ArrayList<Site> getISites()
+	public ArrayList<Site> getIOSites()
 	{
-		return ISites;
+		return IOSites;
 	}
-	
-	public ArrayList<Site> getOSites()
-	{
-		return OSites;
-	}
-	
-	
 	
 	public Site randomClbSite(int Rlim, Site pl1)
 	{
 		Site pl2;
-		int minX = pl1.x - Rlim;
+		int minX = pl1.getX() - Rlim;
 		if(minX < 1)
 		{
 			minX = 1;
 		}
-		int maxX = pl1.x + Rlim;
+		int maxX = pl1.getX() + Rlim;
 		if(maxX > width)
 		{
 			maxX = width;
 		}
-		int minY = pl1.y - Rlim;
+		int minY = pl1.getY() - Rlim;
 		if(minY < 1)
 		{
 			minY = 1;
 		}
-		int maxY = pl1.y + Rlim;
+		int maxY = pl1.getY() + Rlim;
 		if(maxY > height)
 		{
 			maxY = height;
@@ -159,8 +143,8 @@ public class HeterogeneousArchitecture extends Architecture
 		{
 			int x_to = rand.nextInt(maxX - minX + 1) + minX;
 			int y_to = rand.nextInt(maxY - minY + 1) + minY;
-			pl2 = siteArray[x_to][y_to][0];
-			if(pl2.type == SiteType.HARDBLOCK)
+			pl2 = siteArray[x_to][y_to];
+			if(pl2.getType() == SiteType.HARDBLOCK)
 			{
 				pl2 = null;
 			}
@@ -172,31 +156,31 @@ public class HeterogeneousArchitecture extends Architecture
 	{
 		String typeName = pl1.getTypeName();
 		Site pl2 = null;
-		int minX = pl1.x - Rlim;
+		int minX = pl1.getX() - Rlim;
 		if(minX < 1)
 		{
 			minX = 1;
 		}
-		int maxX = pl1.x + Rlim;
+		int maxX = pl1.getX() + Rlim;
 		if(maxX > width)
 		{
 			maxX = width;
 		}
-		int minY = pl1.y - Rlim;
+		int minY = pl1.getY() - Rlim;
 		if(minY < 1)
 		{
 			minY = 1;
 		}
-		int maxY = pl1.y + Rlim;
+		int maxY = pl1.getY() + Rlim;
 		if(maxY > height)
 		{
 			maxY = height;
 		}
-		while((siteArray[minX][1][0]).type != SiteType.HARDBLOCK)
+		while((siteArray[minX][1]).getType() != SiteType.HARDBLOCK)
 		{
 			minX++;
 		}
-		while((siteArray[maxX][1][0]).type != SiteType.HARDBLOCK)
+		while((siteArray[maxX][1]).getType() != SiteType.HARDBLOCK)
 		{
 			maxX--;
 		}
@@ -204,8 +188,8 @@ public class HeterogeneousArchitecture extends Architecture
 		{
 			int x_to = rand.nextInt(maxX - minX + 1) + minX;
 			int y_to = rand.nextInt(maxY - minY + 1) + minY;
-			pl2 = siteArray[x_to][y_to][0];
-			if(pl2.type == SiteType.HARDBLOCK)
+			pl2 = siteArray[x_to][y_to];
+			if(pl2.getType() == SiteType.HARDBLOCK)
 			{
 				if(!((HardBlockSite)pl2).getTypeName().contains(typeName))
 				{
@@ -220,90 +204,56 @@ public class HeterogeneousArchitecture extends Architecture
 		return pl2;
 	}
 	
-	public Site randomISite(int Rlim, Site pl1)
+	public Site randomIOSite(int Rlim, Site pl1)
 	{
 		Site pl2 = null;
 		int manhattanDistance = -1;
 		do
 		{
-			pl2 = ISites.get(rand.nextInt(ISites.size()));
+			pl2 = IOSites.get(rand.nextInt(IOSites.size()));
 			if(pl2 == null)
 			{
 				System.out.println("woops");
 			}
-			manhattanDistance = Math.abs(pl1.x - pl2.x) + Math.abs(pl1.y - pl2.y);
+			manhattanDistance = Math.abs(pl1.getX() - pl2.getX()) + Math.abs(pl1.getY() - pl2.getY());
 		}while(pl1 == pl2 || manhattanDistance > Rlim);
 		return pl2;
 	}
-	
-	public Site randomOSite(int Rlim, Site pl1)
-	{
-		Site pl2 = null;
-		int manhattanDistance = -1;
-		do
-		{
-			pl2 = OSites.get(rand.nextInt(OSites.size()));
-			if(pl2 == null)
-			{
-				System.out.println("woops");
-			}
-			manhattanDistance = Math.abs(pl1.x - pl2.x) + Math.abs(pl1.y - pl2.y);
-		}while(pl1 == pl2 || manhattanDistance > Rlim);
-		return pl2;
-	}
-	
-	
 	
 	private void insertClbColumn(int x)
 	{
-		putIoSite(x,0,0);
-		putIoSite(x,0,1);
+		putIoSite(x,0);
 		for(int y = 1; y < height + 1; y++)
 		{
-			addSite(new ClbSite("Site_"+x+"_"+y+"_"+0, x,y, 0), x, y, 0);
+			addSite(new ClbSite(x,y), x, y);
 		}
-		putIoSite(x,height+1,0);
-		putIoSite(x,height+1,1);
+		putIoSite(x,height+1);
 	}
 	
 	private void insertIOColumn(int x)
 	{
 		for(int y = 1; y < height + 1; y++)
 		{
-			putIoSite(x,y,0);
-			putIoSite(x,y,1);
+			putIoSite(x,y);
 		}
 	}
 	
 	private void insertHardBlockColumn(int x, String typeName)
 	{
-		putIoSite(x,0,0);
-		putIoSite(x,0,1);
+		putIoSite(x,0);
 		for(int y = 1; y < height + 1; y++)
 		{
-			addSite(new HardBlockSite("Site_"+x+"_"+y+"_"+0, x, y, 0, typeName), x, y, 0);
+			addSite(new HardBlockSite(x, y, typeName), x, y);
 		}
-		putIoSite(x,height+1,0);
-		putIoSite(x,height+1,1);
+		putIoSite(x,height+1);
 	}
 	
-	
-	
-	private void putIoSite(int x, int y, int n)
+	private void putIoSite(int x, int y)
 	{
-		IoSite site = new IoSite("Site_"+x+"_"+y+"_"+n, x, y,n);
-		addSite(site, x, y, n);
-		if(n == 0)
-		{
-			ISites.add(site);
-		}
-		else
-		{
-			OSites.add(site);
-		}
+		IoSite site = new IoSite(x, y, IOSiteCapacity);
+		addSite(site, x, y);
+		IOSites.add(site);
 	}
-	
-	
 	
 	private boolean hardBlocksInThisColumn(int x, int delta, int total)
 	{
