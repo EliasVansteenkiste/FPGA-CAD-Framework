@@ -12,13 +12,22 @@ import circuit.PackedCircuit;
 public class FourLutSanitized extends Architecture
 {
 
-	private int width;
-	private int height;
+	private static final double FILL_GRADE = 1.20;
 	private int channelWidth;
-	private Site[][][] siteArray;
 	private Vector<Site> Isites; 
 	private Vector<Site> Osites;
-
+	
+	
+	
+	public FourLutSanitized(PackedCircuit circuit) {
+		// TODO: what is a good channelWidth?
+		this(FourLutSanitized.calculateSquareArchDimensions(circuit), 10);
+	}
+	
+	public FourLutSanitized(int dimension, int channelWidth) {
+		this(dimension, dimension, channelWidth);
+	}
+	
 	public FourLutSanitized(int width, int height, int channelWidth)
 	{
 		super();
@@ -185,7 +194,16 @@ public class FourLutSanitized extends Architecture
 		return x;
 	}
 
-	public Site randomSite(int Rlim, Site pl1)
+	
+	
+	public int getChannelWidth()
+	{
+		return channelWidth;
+	}
+	
+	
+	
+	public Site randomClbSite(int Rlim, Site pl1)
 	{
 		Site pl2;
 		do
@@ -233,10 +251,7 @@ public class FourLutSanitized extends Architecture
 		return pl2;
 	}
 
-	public Site getSite(int x, int y, int n)
-	{
-		return siteArray[x][y][n];
-	}
+	
 
 	public Site getISite(int index)
 	{
@@ -248,26 +263,7 @@ public class FourLutSanitized extends Architecture
 		return Osites.get(index);
 	}
 	
-	public int getChannelWidth()
-	{
-		return channelWidth;
-	}
 	
-	public int getHeight()
-	{
-		return height;
-	}
-	
-	public int getWidth()
-	{
-		return width;
-	}
-	
-	private void addSite(Site site, int x, int y, int n)
-	{
-		siteArray[x][y][n]= site;
-		siteVector.add(site);
-	}
 	
 	private void putIoSite(int x,int y, int n, Vector<RouteNode> channel)
 	{

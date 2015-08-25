@@ -7,11 +7,15 @@ import java.util.Vector;
 
 import architecture.old.RouteNode;
 
-public class Architecture {
+public abstract class Architecture {
 	
 	protected Random rand;
 	protected Vector<Site> siteVector;
 	protected Vector<RouteNode> routeNodeVector;
+	
+	protected Site[][][] siteArray;
+	
+	protected int width, height;
 	
 	public Architecture()
 	{
@@ -20,6 +24,49 @@ public class Architecture {
 		siteVector = new Vector<>();
 		routeNodeVector = new Vector<>();
 	}
+	
+	
+	public int getWidth()
+	{
+		return width;
+	}
+	
+	public int getHeight()
+	{
+		return height;
+	}
+	
+	
+	
+	public Collection<Site> getSites()
+	{
+		return siteVector;
+	}
+	public Site getSite(int x, int y, int n)
+	{
+		return siteArray[x][y][n];
+	}
+	
+	protected void addSite(Site site, int x, int y, int n)
+	{
+		siteArray[x][y][n] = site;
+		siteVector.add(site);
+	}
+	
+	public abstract Site randomClbSite(int Rlim, Site pl1);
+	
+	
+	public Collection<RouteNode> getRouteNodes()
+	{
+		return routeNodeVector;
+	}
+	
+	public void setRand(Random rand)
+	{
+		this.rand = rand;
+	}
+	
+	
 	
 	public void printRoutingGraph(PrintStream stream)
 	{
@@ -34,20 +81,4 @@ public class Architecture {
 			stream.println();
 		}
 	}
-	
-	public Collection<Site> getSites()
-	{
-		return siteVector;
-	}
-	
-	public Collection<RouteNode> getRouteNodes()
-	{
-		return routeNodeVector;
-	}
-	
-	public void setRand(Random rand)
-	{
-		this.rand = rand;
-	}
-
 }
