@@ -271,40 +271,12 @@ public class FourLutSanitized extends Architecture
 	{
 		IoSite site = new IoSite("Site_"+x+"_"+y+"_"+n, x, y,n);
 		addSite(site, x, y, n);
-		addRouteNodes(site);
-		RouteNode.connect(site.opin, channel);
-		RouteNode.connect(channel, site.ipin);
 	}
 	
 	private void putClbSite(int x,int y, int n, Vector<RouteNode> opinChan, Vector<RouteNode> ipin0Chan, Vector<RouteNode> ipin1Chan, Vector<RouteNode> ipin2Chan, Vector<RouteNode> ipin3Chan)
 	{
 		ClbSite site = new ClbSite("Site_"+x+"_"+y+"_"+n, x,y, n);
 		addSite(site, x, y, n);
-		addRouteNodes(site);
-		RouteNode.connect(site.opin, opinChan);
-		RouteNode.connect(ipin0Chan, site.ipin.get(0));
-		RouteNode.connect(ipin1Chan, site.ipin.get(1));
-		RouteNode.connect(ipin2Chan, site.ipin.get(2));
-		RouteNode.connect(ipin3Chan, site.ipin.get(3));
-	}
-	
-	private void addRouteNodes(ClbSite site)
-	{
-		routeNodeVector.add(site.source);
-		routeNodeVector.add(site.opin);
-		routeNodeVector.add(site.sink);
-		for(RouteNode ipin:site.ipin)
-		{
-			routeNodeVector.add(ipin);			
-		}
-	}
-
-	private void addRouteNodes(IoSite site)
-	{
-		routeNodeVector.add(site.source);
-		routeNodeVector.add(site.opin);
-		routeNodeVector.add(site.sink);
-		routeNodeVector.add(site.ipin);
 	}
 
 }

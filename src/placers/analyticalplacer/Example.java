@@ -1935,7 +1935,7 @@ public class Example
 		
 		//Random placement
 		Random rand = new Random(1);
-		Rplace.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
