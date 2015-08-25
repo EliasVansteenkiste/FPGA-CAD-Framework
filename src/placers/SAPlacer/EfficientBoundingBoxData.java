@@ -58,8 +58,8 @@ public class EfficientBoundingBoxData
 	public double calculateDeltaCost(Block block, Site newSite)
 	{
 		double originalBB = boundingBox;
-		if((block.getSite().x == min_x && nb_min_x == 1 && newSite.x > min_x) || (block.getSite().x == max_x && nb_max_x == 1 && newSite.x < max_x) || 
-					(block.getSite().y == min_y && nb_min_y == 1 && newSite.y > min_y) || (block.getSite().y == max_y && nb_max_y == 1 && newSite.y < max_y))
+		if((block.getSite().getX() == min_x && nb_min_x == 1 && newSite.getX() > min_x) || (block.getSite().getX() == max_x && nb_max_x == 1 && newSite.getX() < max_x) || 
+					(block.getSite().getY() == min_y && nb_min_y == 1 && newSite.getY() > min_y) || (block.getSite().getY() == max_y && nb_max_y == 1 && newSite.getY() < max_y))
 		{
 			Site originalSite = block.getSite();
 			block.setSite(newSite);
@@ -68,66 +68,66 @@ public class EfficientBoundingBoxData
 		}
 		else
 		{
-			if(newSite.x < min_x)
+			if(newSite.getX() < min_x)
 			{
-				min_x = newSite.x;
+				min_x = newSite.getX();
 				nb_min_x = 1;
 			}
 			else
 			{
-				if(newSite.x == min_x && block.getSite().x != min_x)
+				if(newSite.getX() == min_x && block.getSite().getX() != min_x)
 				{
 					nb_min_x++;
 				}
-				else if(newSite.x > min_x && block.getSite().x == min_x)
+				else if(newSite.getX() > min_x && block.getSite().getX() == min_x)
 				{
 					nb_min_x--;
 				}
 			}
-			if(newSite.x > max_x)
+			if(newSite.getX() > max_x)
 			{
-				max_x = newSite.x;
+				max_x = newSite.getX();
 				nb_max_x = 1;
 			}
 			else
 			{
-				if(newSite.x == max_x && block.getSite().x != max_x)
+				if(newSite.getX() == max_x && block.getSite().getX() != max_x)
 				{
 					nb_max_x++;
 				}
-				else if(newSite.x < max_x && block.getSite().x == max_x)
+				else if(newSite.getX() < max_x && block.getSite().getX() == max_x)
 				{
 					nb_max_x--;
 				}
 			}
-			if(newSite.y < min_y)
+			if(newSite.getY() < min_y)
 			{
-				min_y = newSite.y;
+				min_y = newSite.getY();
 				nb_min_y = 1;
 			}
 			else
 			{
-				if(newSite.y == min_y && block.getSite().y != min_y)
+				if(newSite.getY() == min_y && block.getSite().getY() != min_y)
 				{
 					nb_min_y++;
 				}
-				else if(newSite.y > min_y && block.getSite().y == min_y)
+				else if(newSite.getY() > min_y && block.getSite().getY() == min_y)
 				{
 					nb_min_y--;
 				}
 			}
-			if(newSite.y > max_y)
+			if(newSite.getY() > max_y)
 			{
-				max_y = newSite.y;
+				max_y = newSite.getY();
 				nb_max_y = 1;
 			}
 			else
 			{
-				if(newSite.y == max_y && block.getSite().y != max_y)
+				if(newSite.getY() == max_y && block.getSite().getY() != max_y)
 				{
 					nb_max_y++;
 				}
-				else if(newSite.y < max_y && block.getSite().y == max_y)
+				else if(newSite.getY() < max_y && block.getSite().getY() == max_y)
 				{
 					nb_max_y--;
 				}
@@ -187,50 +187,50 @@ public class EfficientBoundingBoxData
 		max_y = -1;
 		for(int i = 0; i < blocks.length; i++)
 		{
-			if(blocks[i].getSite().x < min_x)
+			if(blocks[i].getSite().getX() < min_x)
 			{
-				min_x = blocks[i].getSite().x;
+				min_x = blocks[i].getSite().getX();
 				nb_min_x = 1;
 			}
 			else
 			{
-				if(blocks[i].getSite().x == min_x)
+				if(blocks[i].getSite().getX() == min_x)
 				{
 					nb_min_x++;
 				}
 			}
-			if(blocks[i].getSite().x > max_x)
+			if(blocks[i].getSite().getX() > max_x)
 			{
-				max_x = blocks[i].getSite().x;
+				max_x = blocks[i].getSite().getX();
 				nb_max_x = 1;
 			}
 			else
 			{
-				if(blocks[i].getSite().x == max_x)
+				if(blocks[i].getSite().getX() == max_x)
 				{
 					nb_max_x++;
 				}
 			}
-			if(blocks[i].getSite().y < min_y)
+			if(blocks[i].getSite().getY() < min_y)
 			{
-				min_y = blocks[i].getSite().y;
+				min_y = blocks[i].getSite().getY();
 				nb_min_y = 1;
 			}
 			else
 			{
-				if(blocks[i].getSite().y == min_y)
+				if(blocks[i].getSite().getY() == min_y)
 				{
 					nb_min_y++;
 				}
 			}
-			if(blocks[i].getSite().y > max_y)
+			if(blocks[i].getSite().getY() > max_y)
 			{
-				max_y = blocks[i].getSite().y;
+				max_y = blocks[i].getSite().getY();
 				nb_max_y = 1;
 			}
 			else
 			{
-				if(blocks[i].getSite().y == max_y)
+				if(blocks[i].getSite().getY() == max_y)
 				{
 					nb_max_y++;
 				}

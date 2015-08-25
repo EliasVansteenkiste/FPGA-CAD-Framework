@@ -6,17 +6,14 @@ import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
-
-import placement.parser.PlaatsingUnit;
-import placement.parser.Placement;
-import architecture.FourLutSanitized;
+import architecture.ClbSite;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
+import architecture.IoSite;
 import architecture.Site;
 import architecture.SiteType;
 import architecture.old.RouteNode;
@@ -98,35 +95,30 @@ public class PackedCircuit extends Circuit{
 		}
 		
 		//Loop over all sites in the architecture and see if we find every block of the circuit at a valid site in the architecture
-		Collection<Site> nonIOSites = architecture.getSites();
-		for(Site site: nonIOSites)
+		Collection<Site> sites = architecture.getSites();
+		for(Site site: sites)
 		{
-			
-			
-			
-			
-			
-			
-			
-			
-			if(site.block != null && site.block.getSite() == site)
+			if(site.getType() == SiteType.CLB)
 			{
-				if(site.block.type == BlockType.CLB && site.type == SiteType.CLB)
+				ClbSite clbSite = (ClbSite)site;
+				if(clbSite.getClb() != null && clbSite.getClb().getSite() == clbSite)
 				{
-					if(blockMap.remove(site.block.name + "_CLB") == null)
+					if(blockMap.remove(clbSite.getClb().name + "_CLB") == null)
 					{
 						success = false;
 					}
 				}
-				else
+			}
+			else
+			{
+				if(site.getType() == SiteType.HARDBLOCK)
 				{
-					if((site.block.type == BlockType.HARDBLOCK_CLOCKED || site.block.type == BlockType.HARDBLOCK_UNCLOCKED) && 
-							site.type == SiteType.HARDBLOCK)
+					HardBlockSite hbSite = (HardBlockSite)site;
+					if(hbSite.getHardBlock() != null && hbSite.getHardBlock().getSite() == hbSite)
 					{
-						//Check if hardBlock typename equals hardBlockSite typename
-						if(((HardBlock)site.block).getTypeName().equals(((HardBlockSite)site).getTypeName()))
+						if(hbSite.getHardBlock().getTypeName().equals(hbSite.getTypeName()))
 						{
-							if(blockMap.remove(site.block.name + "_HB") == null)
+							if(blockMap.remove(hbSite.getHardBlock().name + "_HB") == null)
 							{
 								success = false;
 							}
@@ -135,32 +127,42 @@ public class PackedCircuit extends Circuit{
 				}
 			}
 		}
-		for(Site iSite: architecture.getISites())
+		
+		for(IoSite ioSite: architecture.getIOSites())
 		{
-			if(iSite.block != null && iSite.block.getSite() == iSite)
+			for(int i = 0; i < ioSite.getCapacity(); i++)
 			{
-				if(iSite.block.type == BlockType.INPUT)
+				if(ioSite.getIO(i) != null)
 				{
-					if(blockMap.remove(iSite.block.name + "_INPUT") == null)
+					if(ioSite.getIO(i).type == BlockType.INPUT)
 					{
-						success = false;
+						Input input = (Input)ioSite.getIO(i);
+						if(input.getSite() == ioSite)
+						{
+							if(blockMap.remove(input.name + "_INPUT") == null)
+							{
+								success = false;
+							}
+						}
 					}
-				}
-			}	
-		}
-		for(Site oSite: architecture.getOSites())
-		{
-			if(oSite.block != null && oSite.block.getSite() == oSite)
-			{
-				if(oSite.block.type == BlockType.OUTPUT)
-				{
-					if(blockMap.remove(oSite.block.name + "_OUTPUT") == null)
+					else
 					{
-						success = false;
+						if(ioSite.getIO(i).type == BlockType.OUTPUT)
+						{
+							Output output = (Output)ioSite.getIO(i);
+							if(output.getSite() == ioSite)
+							{
+								if(blockMap.remove(output.name + "_OUTPUT") == null)
+								{
+									success = false;
+								}
+							}
+						}
 					}
 				}
 			}
 		}
+		
 		if(blockMap.size() != 0)
 		{
 			success = false;

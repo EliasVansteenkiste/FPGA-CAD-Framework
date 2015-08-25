@@ -257,8 +257,8 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 			double yPosition;
 			if(net.source.owner.type == BlockType.INPUT || net.source.owner.type == BlockType.OUTPUT) //IOs are always fixed
 			{
-				xPosition = net.source.owner.getSite().x;
-				yPosition = net.source.owner.getSite().y;
+				xPosition = net.source.owner.getSite().getX();
+				yPosition = net.source.owner.getSite().getY();
 			}
 			else //This is a movable block which is not moved in this iteration
 			{
@@ -324,8 +324,8 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 				double yPosition;
 				if(sinkPin.owner.type == BlockType.INPUT || sinkPin.owner.type == BlockType.OUTPUT) //IOs are always fixed
 				{
-					xPosition = sinkPin.owner.getSite().x;
-					yPosition = sinkPin.owner.getSite().y;
+					xPosition = sinkPin.owner.getSite().getX();
+					yPosition = sinkPin.owner.getSite().getY();
 				}
 				else //This is a movable block which is not moved in this iteration
 				{
@@ -724,8 +724,8 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 		{
 			if(sourceOwner.type == BlockType.INPUT || sourceOwner.type == BlockType.OUTPUT)
 			{
-				sourceX = sourceOwner.getSite().x;
-				sourceY = sourceOwner.getSite().y;
+				sourceX = sourceOwner.getSite().getX();
+				sourceY = sourceOwner.getSite().getY();
 			}
 			else //Must be a hard block
 			{
@@ -821,8 +821,8 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 					sinkOwner = sinkPin.owner;
 					if(sink.owner.type == BlockType.INPUT || sink.owner.type == BlockType.OUTPUT)
 					{
-						sinkX = sink.owner.getSite().x;
-						sinkY = sink.owner.getSite().y;
+						sinkX = sink.owner.getSite().getX();
+						sinkY = sink.owner.getSite().getY();
 					}
 					else //Must be a hard block
 					{
@@ -979,10 +979,10 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 			Block sourceBlock = net.source.owner;
 			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
 			{
-				minX = sourceBlock.getSite().x;
-				maxX = sourceBlock.getSite().x;
-				minY = sourceBlock.getSite().y;
-				maxY = sourceBlock.getSite().y;
+				minX = sourceBlock.getSite().getX();
+				maxX = sourceBlock.getSite().getX();
+				minY = sourceBlock.getSite().getY();
+				maxY = sourceBlock.getSite().getY();
 			}
 			else
 			{
@@ -999,21 +999,21 @@ public class Hetero_TD_AnalyticalPlacerCombinedNetThree
 				if(sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
 				{
 					Site sinkOwnerSite = sinkOwner.getSite();
-					if(sinkOwnerSite.x < minX)
+					if(sinkOwnerSite.getX() < minX)
 					{
-						minX = sinkOwnerSite.x;
+						minX = sinkOwnerSite.getX();
 					}
-					if(sinkOwnerSite.x > maxX)
+					if(sinkOwnerSite.getX() > maxX)
 					{
-						maxX = sinkOwnerSite.x;
+						maxX = sinkOwnerSite.getX();
 					}
-					if(sinkOwnerSite.y < minY)
+					if(sinkOwnerSite.getY() < minY)
 					{
-						minY = sinkOwnerSite.y;
+						minY = sinkOwnerSite.getY();
 					}
-					if(sinkOwnerSite.y > maxY)
+					if(sinkOwnerSite.getY() > maxY)
 					{
-						maxY = sinkOwnerSite.y;
+						maxY = sinkOwnerSite.getY();
 					}
 				}
 				else

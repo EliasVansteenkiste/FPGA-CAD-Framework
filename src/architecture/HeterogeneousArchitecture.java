@@ -10,7 +10,7 @@ public class HeterogeneousArchitecture extends Architecture
 	private static final double FILL_GRADE = 1.20;
 	
 	private String[] hardBlockTypeNames;
-	private ArrayList<Site> IOSites;
+	private ArrayList<IoSite> IOSites;
 	private int IOSiteCapacity;
 	
 	/*
@@ -111,7 +111,7 @@ public class HeterogeneousArchitecture extends Architecture
 		return hardBlockTypeNames;
 	}
 	
-	public ArrayList<Site> getIOSites()
+	public ArrayList<IoSite> getIOSites()
 	{
 		return IOSites;
 	}

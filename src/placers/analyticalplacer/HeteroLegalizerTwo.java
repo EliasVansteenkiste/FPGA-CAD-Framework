@@ -450,10 +450,10 @@ public class HeteroLegalizerTwo
 				{
 					y--;
 				}
-				Site site = architecture.getSite(x, y, 0);
+				Site site = architecture.getSite(x, y);
 				if(typeName.equals("CLB"))
 				{
-					if(site.type == SiteType.CLB)
+					if(site.getType() == SiteType.CLB)
 					{
 						int index = indices.get(0);
 						tempPartiallyLegalX[index] = x;
@@ -463,7 +463,7 @@ public class HeteroLegalizerTwo
 				}
 				else
 				{
-					if(site.type == SiteType.HARDBLOCK)
+					if(site.getType() == SiteType.HARDBLOCK)
 					{
 						if(((HardBlockSite)site).getTypeName().equals(typeName))
 						{
@@ -704,10 +704,10 @@ public class HeteroLegalizerTwo
 			boolean alreadyRunning = false;
 			for(int x = areaXDownBound; x < areaXUpBound; x++)
 			{
-				Site site = architecture.getSite(x, 1, 0);
+				Site site = architecture.getSite(x, 1);
 				if(typeName.equals("CLB"))
 				{
-					if(site.type == SiteType.CLB)
+					if(site.getType() == SiteType.CLB)
 					{
 						if(!alreadyRunning)
 						{
@@ -726,7 +726,7 @@ public class HeteroLegalizerTwo
 				}
 				else //We are working with hardBlocks
 				{
-					if(site.type == SiteType.HARDBLOCK)
+					if(site.getType() == SiteType.HARDBLOCK)
 					{
 						if(((HardBlockSite)site).getTypeName().equals(typeName))
 						{
@@ -1065,10 +1065,10 @@ public class HeteroLegalizerTwo
 				{
 					y--;
 				}
-				Site site = architecture.getSite(x, y, 0);
+				Site site = architecture.getSite(x, y);
 				if(typeName.equals("CLB"))
 				{
-					if(site.type == SiteType.CLB)
+					if(site.getType() == SiteType.CLB)
 					{
 						int index = indices.get(0);
 						semiLegalX[index] = x;
@@ -1078,7 +1078,7 @@ public class HeteroLegalizerTwo
 				}
 				else
 				{
-					if(site.type == SiteType.HARDBLOCK)
+					if(site.getType() == SiteType.HARDBLOCK)
 					{
 						if(((HardBlockSite)site).getTypeName().equals(typeName))
 						{
@@ -1319,10 +1319,10 @@ public class HeteroLegalizerTwo
 			boolean alreadyRunning = false;
 			for(int x = areaXDownBound; x < areaXUpBound; x++)
 			{
-				Site site = architecture.getSite(x, 1, 0);
+				Site site = architecture.getSite(x, 1);
 				if(typeName.equals("CLB"))
 				{
-					if(site.type == SiteType.CLB)
+					if(site.getType() == SiteType.CLB)
 					{
 						if(!alreadyRunning)
 						{
@@ -1341,7 +1341,7 @@ public class HeteroLegalizerTwo
 				}
 				else //We are working with hardBlocks
 				{
-					if(site.type == SiteType.HARDBLOCK)
+					if(site.getType() == SiteType.HARDBLOCK)
 					{
 						if(((HardBlockSite)site).getTypeName().equals(typeName))
 						{
@@ -2099,8 +2099,8 @@ public class HeteroLegalizerTwo
 		boolean toReturn;
 		if (currentX >= minimalX && currentX <= maximalX && currentY >= minimalY && currentY <= maximalY)
 		{
-			Site site = architecture.getSite(currentX, currentY, 0);
-			if (site.type == SiteType.CLB)
+			Site site = architecture.getSite(currentX, currentY);
+			if (site.getType() == SiteType.CLB)
 			{
 				if (typeName.equals("CLB") && !occupied[currentY - minimalY][currentX - minimalX])
 				{
@@ -2206,10 +2206,10 @@ public class HeteroLegalizerTwo
 			Block sourceBlock = net.source.owner;
 			if (sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
 			{
-				minX = sourceBlock.getSite().x;
-				maxX = sourceBlock.getSite().x;
-				minY = sourceBlock.getSite().y;
-				maxY = sourceBlock.getSite().y;
+				minX = sourceBlock.getSite().getX();
+				maxX = sourceBlock.getSite().getX();
+				minY = sourceBlock.getSite().getY();
+				maxY = sourceBlock.getSite().getY();
 			}
 			else
 			{
@@ -2226,21 +2226,21 @@ public class HeteroLegalizerTwo
 				if (sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
 				{
 					Site sinkOwnerSite = sinkOwner.getSite();
-					if (sinkOwnerSite.x < minX)
+					if (sinkOwnerSite.getX() < minX)
 					{
-						minX = sinkOwnerSite.x;
+						minX = sinkOwnerSite.getX();
 					}
-					if (sinkOwnerSite.x > maxX)
+					if (sinkOwnerSite.getX() > maxX)
 					{
-						maxX = sinkOwnerSite.x;
+						maxX = sinkOwnerSite.getX();
 					}
-					if (sinkOwnerSite.y < minY)
+					if (sinkOwnerSite.getY() < minY)
 					{
-						minY = sinkOwnerSite.y;
+						minY = sinkOwnerSite.getY();
 					}
-					if (sinkOwnerSite.y > maxY)
+					if (sinkOwnerSite.getY() > maxY)
 					{
-						maxY = sinkOwnerSite.y;
+						maxY = sinkOwnerSite.getY();
 					}
 				}
 				else
@@ -2391,16 +2391,16 @@ public class HeteroLegalizerTwo
 			{
 				if (typeName.equals("CLB"))
 				{
-					if (architecture.getSite(x, 1, 0).type == SiteType.CLB)
+					if (architecture.getSite(x, 1).getType() == SiteType.CLB)
 					{
 						curNumberOfLegalSites += curNbBlocksPerColumn;
 					}
 				} else
 				// We are working with hardBlocks
 				{
-					if (architecture.getSite(x, 1, 0).type == SiteType.HARDBLOCK)
+					if (architecture.getSite(x, 1).getType() == SiteType.HARDBLOCK)
 					{
-						HardBlockSite hbSite = (HardBlockSite) architecture.getSite(x, 1, 0);
+						HardBlockSite hbSite = (HardBlockSite) architecture.getSite(x, 1);
 						if (hbSite.getTypeName().equals(typeName))
 						{
 							curNumberOfLegalSites += curNbBlocksPerColumn;

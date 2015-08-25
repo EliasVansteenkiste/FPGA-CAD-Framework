@@ -15,8 +15,11 @@ import mathtools.Crs;
 import placers.Placer;
 import placers.random.RandomPlacer;
 
+import architecture.ClbSite;
+import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
+import architecture.SiteType;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
@@ -339,8 +342,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 				double yPosition;
 				if(net.source.owner.type == BlockType.INPUT || net.source.owner.type == BlockType.OUTPUT) //IOs are always fixed
 				{
-					xPosition = net.source.owner.getSite().x;
-					yPosition = net.source.owner.getSite().y;
+					xPosition = net.source.owner.getSite().getX();
+					yPosition = net.source.owner.getSite().getY();
 				}
 				else //This is a movable block which is not moved in this iteration
 				{
@@ -406,8 +409,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 					double yPosition;
 					if(sinkPin.owner.type == BlockType.INPUT || sinkPin.owner.type == BlockType.OUTPUT) //IOs are always fixed
 					{
-						xPosition = sinkPin.owner.getSite().x;
-						yPosition = sinkPin.owner.getSite().y;
+						xPosition = sinkPin.owner.getSite().getX();
+						yPosition = sinkPin.owner.getSite().getY();
 					}
 					else //This is a movable block which is not moved in this iteration
 					{
@@ -874,11 +877,25 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		{
 			for(int j = 1; j <= maximalY; j++)
 			{
-				if(architecture.getSite(i, j, 0).block != null)
+				Site site = architecture.getSite(i, j);
+				if(site.getType() == SiteType.CLB)
 				{
-					architecture.getSite(i, j, 0).block.setSite(null);
+					ClbSite clbSite = (ClbSite)site;
+					if(clbSite.getClb() != null)
+					{
+						clbSite.getClb().setSite(null);
+					}
+					clbSite.setClb(null);
 				}
-				architecture.getSite(i, j, 0).block = null;
+				else //Must be a hardBlockSite
+				{
+					HardBlockSite hbSite = (HardBlockSite)site;
+					if(hbSite.getHardBlock() != null)
+					{
+						hbSite.getHardBlock().setSite(null);
+					}
+					hbSite.setHardBlock(null);
+				}
 			}
 		}
 		
@@ -886,8 +903,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		for(Clb clb: clbs)
 		{
 			int index = indexMap.get(clb);
-			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-			site.block = clb;
+			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index]);
+			((ClbSite)site).setClb(clb);
 			clb.setSite(site);
 		}
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
@@ -895,8 +912,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 			for(HardBlock hb: hbVector)
 			{
 				int index = indexMap.get(hb);
-				Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-				site.block = hb;
+				Site site = architecture.getSite(bestLegalX[index], bestLegalY[index]);
+				((HardBlockSite)site).setHardBlock(hb);;
 				hb.setSite(site);
 			}
 		}
@@ -914,10 +931,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 			Block sourceBlock = net.source.owner;
 			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
 			{
-				minX = sourceBlock.getSite().x;
-				maxX = sourceBlock.getSite().x;
-				minY = sourceBlock.getSite().y;
-				maxY = sourceBlock.getSite().y;
+				minX = sourceBlock.getSite().getX();
+				maxX = sourceBlock.getSite().getX();
+				minY = sourceBlock.getSite().getY();
+				maxY = sourceBlock.getSite().getY();
 			}
 			else
 			{
@@ -934,21 +951,21 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 				if(sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
 				{
 					Site sinkOwnerSite = sinkOwner.getSite();
-					if(sinkOwnerSite.x < minX)
+					if(sinkOwnerSite.getX() < minX)
 					{
-						minX = sinkOwnerSite.x;
+						minX = sinkOwnerSite.getX();
 					}
-					if(sinkOwnerSite.x > maxX)
+					if(sinkOwnerSite.getX() > maxX)
 					{
-						maxX = sinkOwnerSite.x;
+						maxX = sinkOwnerSite.getX();
 					}
-					if(sinkOwnerSite.y < minY)
+					if(sinkOwnerSite.getY() < minY)
 					{
-						minY = sinkOwnerSite.y;
+						minY = sinkOwnerSite.getY();
 					}
-					if(sinkOwnerSite.y > maxY)
+					if(sinkOwnerSite.getY() > maxY)
 					{
-						maxY = sinkOwnerSite.y;
+						maxY = sinkOwnerSite.getY();
 					}
 				}
 				else
@@ -1067,16 +1084,16 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		for(Clb clb: clbs)
 		{
 			int index = indexMap.get(clb);
-			linearX[index] = clb.getSite().x;
-			linearY[index] = clb.getSite().y;
+			linearX[index] = clb.getSite().getX();
+			linearY[index] = clb.getSite().getY();
 		}
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
 		{
 			for(HardBlock hb: hbVector)
 			{
 				int index = indexMap.get(hb);
-				linearX[index] = hb.getSite().x;
-				linearY[index] = hb.getSite().y;
+				linearX[index] = hb.getSite().getX();
+				linearY[index] = hb.getSite().getY();
 			}
 		}
 	}

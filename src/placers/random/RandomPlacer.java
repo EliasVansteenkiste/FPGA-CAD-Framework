@@ -6,7 +6,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Vector;
 
-import circuit.Block;
 import circuit.HardBlock;
 import circuit.PackedCircuit;
 import circuit.Clb;
@@ -18,11 +17,13 @@ import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 import architecture.SiteType;
+import architecture.ClbSite;
+import architecture.IoSite;
 
 public class RandomPlacer
 {
 
-	public static void place(PackedCircuit c, FourLutSanitized a)
+	public static void placeCLBs(PackedCircuit c, FourLutSanitized a)
 	{
 		Random rand= new Random();
 		Set<Site> temp = new HashSet<Site>();
@@ -30,8 +31,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y,0);
-				s.block = null;
+				Site s = a.getSite(x,y);
+				((ClbSite)s).setClb(null);
 				temp.add(s);				
 			}
 		}
@@ -41,7 +42,7 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				site.block = (Clb) b;
+				((ClbSite)site).setClb(b);
 				b.setSite(site);
 			}	
 		}
@@ -54,8 +55,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y,0);
-				s.block = null;
+				Site s = a.getSite(x,y);
+				((ClbSite)s).setClb(null);
 				temp.add(s);				
 			}
 		}
@@ -65,7 +66,7 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				site.block = (Clb) b;
+				((ClbSite)site).setClb(b);
 				b.setSite(site);
 			}	
 		}
@@ -80,8 +81,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y,0);
-				s.block = null;
+				Site s = a.getSite(x,y);
+				((ClbSite)s).setClb(null);
 				temp.add(s);				
 			}
 		}
@@ -91,67 +92,81 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				site.block = (Clb) b;
+				((ClbSite)site).setClb(b);
 				b.setSite(site);
 			}	
 		}
+		
 		//Random Place IOs
-		Set<Site> tempInputs = new HashSet<Site>();
+		//Clear all existing placements
+		Set<IoSite> tempIOs = new HashSet<IoSite>();
 		for (int x=1;x<a.getWidth()+1;x++)
 		{
-			Site s = a.getSite(x,0,0);
-			s.block = null;
-			tempInputs.add(s);
-			Site t = a.getSite(x,a.getHeight()+1,0);
-			t.block = null;
-			tempInputs.add(t);
+			IoSite s = (IoSite)(a.getSite(x,0));
+			for(int i = 0; i < s.getCapacity(); i++)
+			{
+				s.setIO(i, null);
+			}
+			tempIOs.add(s);
+			IoSite t = (IoSite)(a.getSite(x,a.getHeight()+1));
+			for(int i = 0; i < t.getCapacity(); i++)
+			{
+				t.setIO(i, null);
+			}
+			tempIOs.add(t);
 		}
 		for (int y=1;y<a.getHeight()+1;y++)
 		{
-			Site s = a.getSite(0,y,0);
-			s.block = null;
-			tempInputs.add(s);
-			Site t = a.getSite(a.getWidth()+1,y,0);
-			t.block = null;
-			tempInputs.add(t);
+			IoSite s = (IoSite)(a.getSite(0,y));
+			for(int i = 0; i < s.getCapacity(); i++)
+			{
+				s.setIO(i, null);
+			}
+			tempIOs.add(s);
+			IoSite t = (IoSite)(a.getSite(a.getWidth()+1,y));
+			for(int i = 0; i < t.getCapacity(); i++)
+			{
+				t.setIO(i, null);
+			}
+			tempIOs.add(t);
 		}
-		Set<Site> tempOutputs = new HashSet<Site>();
-		for (int x=1;x<a.getWidth()+1;x++)
-		{
-			Site s = a.getSite(x,0,1);
-			s.block = null;
-			tempOutputs.add(s);
-			Site t = a.getSite(x,a.getHeight()+1,1);
-			t.block = null;
-			tempOutputs.add(t);
-		}
-		for (int y=1;y<a.getHeight()+1;y++)
-		{
-			Site s = a.getSite(0,y,1);
-			s.block = null;
-			tempOutputs.add(s);
-			Site t = a.getSite(a.getWidth()+1,y,1);
-			t.block = null;
-			tempOutputs.add(t);
-		}
+		//Place all inputs and outputs
 		for(Input in:c.inputs.values())
 		{
 			if (in instanceof Input)
 			{
-				Site site=(Site) tempInputs.toArray()[rand.nextInt(tempInputs.size())];
-				tempInputs.remove(site);
-				site.block = (Input) in;
-				in.setSite(site);
+				IoSite site=(IoSite) tempIOs.toArray()[rand.nextInt(tempIOs.size())];
+				for(int i = 0; i < site.getCapacity(); i++)
+				{
+					if(site.getIO(i) == null)
+					{
+						site.setIO(i,in);
+						in.setSite(site);
+						if(i == site.getCapacity() - 1) //If the IoSite is full ==> delete it from the available set of IoSites
+						{
+							tempIOs.remove(site);
+						}
+					}
+				}
 			}	
 		}
 		for(Output out:c.outputs.values())
 		{
 			if (out instanceof Output)
 			{
-				Site site=(Site) tempOutputs.toArray()[rand.nextInt(tempOutputs.size())];
-				tempOutputs.remove(site);
-				site.block = (Output) out;
-				out.setSite(site);
+				IoSite site=(IoSite) tempIOs.toArray()[rand.nextInt(tempIOs.size())];
+				for(int i = 0; i < site.getCapacity(); i++)
+				{
+					if(site.getIO(i) == null)
+					{
+						site.setIO(i,out);
+						out.setSite(site);
+						if(i == site.getCapacity() - 1) //If the IoSite is full ==> delete it from the available set of IoSites
+						{
+							tempIOs.remove(site);
+						}
+					}
+				}
 			}	
 		}
 	}
@@ -164,8 +179,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y,0);
-				s.block = null;
+				Site s = a.getSite(x,y);
+				((ClbSite)s).setClb(null);
 				temp.add(s);				
 			}
 		}
@@ -175,7 +190,7 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				site.block = (Clb) b;
+				((ClbSite)site).setClb(b);
 				b.setSite(site);
 			}	
 		}
@@ -185,26 +200,38 @@ public class RandomPlacer
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
-			Site site = a.getISite(index);
-			site.block = input;
+			IoSite site = a.getIOSite(index);
+			for(int i = 0; i < site.getCapacity(); i++)
+			{
+				if(site.getIO(i) == null)
+				{
+					site.setIO(i,input);
+				}
+			}
 			input.setSite(site);
 			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = index - (a.getHeight()*2 + a.getWidth()*2);
 			}
 		}
 		index = 0;
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
-			Site site = a.getOSite(index);
-			site.block = output;
+			IoSite site = a.getIOSite(index);
+			for(int i = 0; i < site.getCapacity(); i++)
+			{
+				if(site.getIO(i) == null)
+				{
+					site.setIO(i,output);
+				}
+			}
 			output.setSite(site);
 			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = index - (a.getHeight()*2 + a.getWidth()*2);
 			}
 		}
 	}
@@ -212,21 +239,22 @@ public class RandomPlacer
 	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand)
 	{
 		//Initialize data structures
-		ArrayList<Site> clbSites = new ArrayList<>();
-		ArrayList<ArrayList<Site>> hardBlockSites = new ArrayList<>();
+		ArrayList<ClbSite> clbSites = new ArrayList<>();
+		ArrayList<ArrayList<HardBlockSite>> hardBlockSites = new ArrayList<>();
 		ArrayList<String> hardBlockTypes = new ArrayList<>();
 		for(int x = 1; x < a.getWidth() + 1; x++)
 		{
 			for(int y = 1; y < a.getHeight() + 1; y++)
 			{
-				Site s = a.getSite(x, y, 0);
-				s.block = null;
-				if(s.type == SiteType.CLB)
+				Site s = a.getSite(x, y);
+				if(s.getType() == SiteType.CLB)
 				{
-					clbSites.add(s);
+					((ClbSite)s).setClb(null);
+					clbSites.add((ClbSite)s);
 				}
 				else //Must be a hardBlock
 				{
+					((HardBlockSite)s).setHardBlock(null);
 					String typeName = ((HardBlockSite)s).getTypeName();
 					int curIndex = 0;
 					boolean found = false;
@@ -234,7 +262,7 @@ public class RandomPlacer
 					{
 						if(name.contains(typeName))
 						{
-							hardBlockSites.get(curIndex).add(s);
+							hardBlockSites.get(curIndex).add((HardBlockSite)s);
 							found = true;
 							break;
 						}
@@ -243,8 +271,8 @@ public class RandomPlacer
 					if(!found)
 					{
 						hardBlockTypes.add(typeName);
-						ArrayList <Site> newList = new ArrayList<>();
-						newList.add(s);
+						ArrayList <HardBlockSite> newList = new ArrayList<>();
+						newList.add((HardBlockSite)s);
 						hardBlockSites.add(newList);
 					}
 				}
@@ -255,9 +283,9 @@ public class RandomPlacer
 		for(Clb clb: c.clbs.values())
 		{
 			int randomIndex = rand.nextInt(clbSites.size());
-			Site site = (Site)clbSites.get(randomIndex);
+			ClbSite site = clbSites.get(randomIndex);
 			clbSites.remove(randomIndex);
-			site.block = clb;
+			site.setClb(clb);
 			clb.setSite(site);
 		}
 				
@@ -277,42 +305,54 @@ public class RandomPlacer
 			for(HardBlock hardBlock: hbVector)
 			{
 				int randomIndex = rand.nextInt(hardBlockSites.get(curIndex).size());
-				Site site = (Site)hardBlockSites.get(curIndex).get(randomIndex);
+				HardBlockSite site = hardBlockSites.get(curIndex).get(randomIndex);
 				hardBlockSites.get(curIndex).remove(randomIndex);
-				site.block = hardBlock;
+				site.setHardBlock(hardBlock);
 				hardBlock.setSite(site);
 			}
 		}
 		
 		//Deterministic place IOs
 		int index = 0;
-		ArrayList<Site> ISites = a.getISites();
+		ArrayList<IoSite> IOSites = a.getIOSites();
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
 			//input.fixed = false;
-			Site site = ISites.get(index);
-			site.block = input;
+			IoSite site = IOSites.get(index);
+			for(int i = 0; i < site.getCapacity(); i++)
+			{
+				if(site.getIO(i) == null)
+				{
+					site.setIO(i,input);
+				}
+			}
+			
 			input.setSite(site);
 			index += 1;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = index - (a.getHeight()*2 + a.getWidth()*2);
 			}
 		}
 		index = 0;
-		ArrayList<Site> OSites = a.getOSites();
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
 			//output.fixed = false;
-			Site site = OSites.get(index);
-			site.block = output;
+			IoSite site = IOSites.get(index);
+			for(int i = 0; i < site.getCapacity(); i++)
+			{
+				if(site.getIO(i) == null)
+				{
+					site.setIO(i, output);
+				}
+			}
 			output.setSite(site);
 			index += 1;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = index - (a.getHeight()*2 + a.getWidth()*2);
 			}
 		}
 	}
@@ -321,33 +361,44 @@ public class RandomPlacer
 	{
 		//Deterministic place IOs
 		int index = 0;
-		ArrayList<Site> ISites = a.getISites();
+		ArrayList<IoSite> IOSites = a.getIOSites();
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
 			//input.fixed = false;
-			Site site = ISites.get(index);
-			site.block = input;
+			IoSite site = IOSites.get(index);
+			for(int i = 0; i < site.getCapacity(); i++)
+			{
+				if(site.getIO(i) == null)
+				{
+					site.setIO(i,input);
+				}
+			}
 			input.setSite(site);
 			index += 1;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = index - (a.getHeight()*2 + a.getWidth()*2);
 			}
 		}
 		index = 0;
-		ArrayList<Site> OSites = a.getOSites();
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
 			//output.fixed = false;
-			Site site = OSites.get(index);
-			site.block = output;
+			IoSite site = IOSites.get(index);
+			for(int i = 0; i < site.getCapacity(); i++)
+			{
+				if(site.getIO(i) == null)
+				{
+					site.setIO(i,output);
+				}
+			}
 			output.setSite(site);
 			index += 1;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = index - (a.getHeight()*2 + a.getWidth()*2);
 			}
 		}
 	}

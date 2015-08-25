@@ -52,11 +52,11 @@ public class CLI {
 		switch(options.architecture) {
 			case "4lut":
 			case "4LUT":
-				architecture = new FourLutSanitized(packedCircuit);
+				architecture = new FourLutSanitized(packedCircuit, 8);
 				break;
 				
 			case "heterogeneous":
-				architecture = new HeterogeneousArchitecture(packedCircuit);
+				architecture = new HeterogeneousArchitecture(packedCircuit, 8);
 				break;
 			
 			default:

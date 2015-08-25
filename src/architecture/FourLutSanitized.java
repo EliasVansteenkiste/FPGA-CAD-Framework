@@ -7,7 +7,7 @@ import circuit.PackedCircuit;
 public class FourLutSanitized extends Architecture
 {
 
-	private Vector<Site> IOSites;
+	private Vector<IoSite> IOSites;
 	private int IOSiteCapacity;
 	
 	private static final double FILL_GRADE = 1.20;
@@ -113,7 +113,7 @@ public class FourLutSanitized extends Architecture
 		return pl2;
 	}
 	
-	public Site getIOSite(int index)
+	public IoSite getIOSite(int index)
 	{
 		return IOSites.get(index);
 	}

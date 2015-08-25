@@ -20,6 +20,7 @@ import mathtools.Crs;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
+import architecture.ClbSite;
 
 import packers.BlePacker;
 import packers.ClbPacker;
@@ -198,7 +199,7 @@ public class Example
 ////	    	if(blockVector.get(0) != null)
 ////	    	{
 ////	    		Block block = blockVector.get(0);
-////	    		System.out.print(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
+////	    		System.out.print(block.name + "(" + block.getSite().getX() + "," + block.getSite().getY() + "," + block.getSite().n + ")");
 ////	    	}
 ////	    	else
 ////	    	{
@@ -208,7 +209,7 @@ public class Example
 ////	    	if(blockVector.get(1) != null)
 ////	    	{
 ////	    		Block block = blockVector.get(1);
-////	    		System.out.println(block.name + "(" + block.getSite().x + "," + block.getSite().y + "," + block.getSite().n + ")");
+////	    		System.out.println(block.name + "(" + block.getSite().getX() + "," + block.getSite().getY() + "," + block.getSite().n + ")");
 ////	    	}
 ////	    	else
 ////	    	{
@@ -322,136 +323,6 @@ public class Example
 //		//runWldSaVsAnalyticalBenchmarks();
 //		runAllAnalyticalBenchmarks();
 //	}
-	
-	private static void runSAParameterSweep(String fileName)
-	{
-		double[] maxValueDivisionFactor = {2, 3, 4.5, 6.75, 10.125, 15, 20};
-		double[] tempDivisionFactor = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
-		double[] innerNum = {1, 2, 4, 6, 8, 10};
-		
-		String resultsFileName = fileName.substring(fileName.lastIndexOf('/') + 1, fileName.lastIndexOf('.')) + "_SA_parameterSweep.csv";
-		System.out.println("Processing file: " + resultsFileName);
-		
-		CsvWriter writer = new CsvWriter(6);
-		writer.addRow(new String[] {"maxValueDivisionFactor", "tempDivisionFactor", "innerNum", "WL cost", "maxDelay", "Anneal time"});
-		
-		Map<String,Integer> inputXPositions = new HashMap<>();
-		Map<String,Integer> inputYPositions = new HashMap<>();
-		Map<String,Integer> outputXPositions = new HashMap<>();
-		Map<String,Integer> outputYPositions = new HashMap<>();
-		Map<String,Integer> clbXPositions = new HashMap<>();
-		Map<String,Integer> clbYPositions = new HashMap<>();
-		Map<String,Integer> hbXPositions = new HashMap<>();
-		Map<String,Integer> hbYPositions = new HashMap<>();
-		{
-			NetReader netReader = new NetReader();
-			try
-			{
-				netReader.readNetlist(fileName, 6);
-			}
-			catch(IOException ioe)
-			{
-				System.err.println("Couldn't read blif file!");
-				return;
-			}
-			
-			PackedCircuit packedCircuit = netReader.getPackedCircuit();
-			
-			HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
-			
-			HeteroAnalyticalPlacerTwo analyticalPlacer = new HeteroAnalyticalPlacerTwo(a, packedCircuit);
-			analyticalPlacer.place();
-			
-			for(Input input: packedCircuit.inputs.values())
-			{
-				inputXPositions.put(input.name, input.getSite().x);
-				inputYPositions.put(input.name, input.getSite().y);
-			}
-			for(Output output: packedCircuit.outputs.values())
-			{
-				outputXPositions.put(output.name, output.getSite().x);
-				outputYPositions.put(output.name, output.getSite().y);
-			}
-			for(Clb clb: packedCircuit.clbs.values())
-			{
-				clbXPositions.put(clb.name, clb.getSite().x);
-				clbYPositions.put(clb.name, clb.getSite().y);
-			}
-			for(Vector<HardBlock> hbVector: packedCircuit.getHardBlocks())
-			{
-				for(HardBlock hb: hbVector)
-				{
-					hbXPositions.put(hb.name, hb.getSite().x);
-					hbYPositions.put(hb.name, hb.getSite().y);
-				}
-			}
-		}
-		
-		for(int i = 0; i < maxValueDivisionFactor.length; i++)
-		{
-			for(int j = 0; j < tempDivisionFactor.length; j++)
-			{
-				for(int k = 0; k < innerNum.length; k++)
-				{
-					double currentMaxValueDivisionFactor = maxValueDivisionFactor[i];
-					double currentTempDivisionFactor = tempDivisionFactor[j];
-					double currentInnerNum = innerNum[k];
-					
-					System.out.printf("maxValueDivisionFactor = %.2f, tempDivisionFactor = %.2f, innerNum = %.2f\n", 
-												currentMaxValueDivisionFactor, currentTempDivisionFactor, currentInnerNum);
-					
-					NetReader netReader = new NetReader();
-					try
-					{
-						netReader.readNetlist(fileName, 6);
-					}
-					catch(IOException ioe)
-					{
-						System.err.println("Couldn't read blif file!");
-						return;
-					}
-					
-					PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-					PackedCircuit packedCircuit = netReader.getPackedCircuit();
-					
-					HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
-					
-					boolean success = packedCircuit.place(inputXPositions, inputYPositions, outputXPositions, outputYPositions, 
-																		clbXPositions, clbYPositions, hbXPositions, hbYPositions, a);
-					
-					if(!success)
-					{
-						System.err.println("Recovering the placement from the analytical stage failed!");
-						return;
-					}
-					
-					WLD_SAPlacer saPlacer= new WLD_SAPlacer(a, packedCircuit);
-					
-					long annealStartTime = System.nanoTime();
-					saPlacer.lowTempAnnealParametrized(currentInnerNum, currentTempDivisionFactor, currentMaxValueDivisionFactor);
-					long annealEndTime = System.nanoTime();
-					
-					EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
-					double wl = effcc.calculateTotalCost();
-					TimingGraph tgcc = new TimingGraph(prePackedCircuit);
-					tgcc.buildTimingGraph();
-					double maxDelay = tgcc.calculateMaximalDelay();
-					double annealTime = (double)(annealEndTime - annealStartTime) / 1000000000.0;
-					
-					String currentMaxValueDivisionFactorString = String.format("%.3f", currentMaxValueDivisionFactor);
-					String currentTempDivisionFactorString = String.format("%.3f", currentTempDivisionFactor);
-					String currentInnerNumString = String.format("%.3f", currentInnerNum);
-					String wlString = String.format("%.4f", wl);
-					String maxDelayString = String.format("%.4f", maxDelay);
-					String annealTimeString = String.format("%.3f", annealTime);
-					
-					writer.addRow(new String[] {currentMaxValueDivisionFactorString, currentTempDivisionFactorString, 
-													currentInnerNumString, wlString, maxDelayString, annealTimeString});
-					writer.writeFile(resultsFileName);
-				}
-			}
-		}
-	}
 	
 	private static void runWldAnalyticalBenchmarksNet()
 	{
@@ -1340,7 +1211,7 @@ public class Example
 	
 	private static void visualAnalyticalTwo(PackedCircuit c, PrePackedCircuit prePackedCircuit)
 	{
-		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(c);
+		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(c, 8);
 		
 		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
 				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
@@ -1411,7 +1282,7 @@ public class Example
 	
 	private static void visualAnalyticalTwo(PackedCircuit c)
 	{
-		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(c);
+		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(c, 8);
 		
 		HeteroAnalyticalPlacerTwo analyticalPlacer = new HeteroAnalyticalPlacerTwo(architecture, c);
 		
@@ -1472,7 +1343,7 @@ public class Example
 		System.out.println(prePackedCircuit.getName() + ": LUTs: " + prePackedCircuit.getLuts().values().size() + ", FFs: " + prePackedCircuit.getFlipflops().values().size() 
 				+ ", inputs: " + prePackedCircuit.getInputs().values().size() + ", outputs: " + prePackedCircuit.getOutputs().values().size());
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(c, 8);
 		Hetero_TD_AnalyticalPlacerCombinedNetThree tDAnalyticalPlacer = new Hetero_TD_AnalyticalPlacerCombinedNetThree(a, c, prePackedCircuit);
 		
 		long analyticalStartTime;
@@ -1529,7 +1400,7 @@ public class Example
 	{
 		Double placementEffort = 1.0;
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -1571,7 +1442,7 @@ public class Example
 	{
 		Double placementEffort = 1.0;
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -1613,7 +1484,7 @@ public class Example
 	{
 		Double placementEffort = 1.0;
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -1671,7 +1542,7 @@ public class Example
 		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		HeteroAnalyticalPlacerTwo placer = new HeteroAnalyticalPlacerTwo(a, packedCircuit);
 		
@@ -1723,7 +1594,7 @@ public class Example
 		
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		HeteroAnalyticalPlacerTwo placer = new HeteroAnalyticalPlacerTwo(a, packedCircuit);
 		
@@ -1768,7 +1639,7 @@ public class Example
 		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 	
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		Hetero_TD_AnalyticalPlacerCombinedNetThree placer = new Hetero_TD_AnalyticalPlacerCombinedNetThree(a, packedCircuit, prePackedCircuit);
 		
 		long analyticalStartTime;
@@ -1825,7 +1696,7 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -1869,7 +1740,7 @@ public class Example
 		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -1931,7 +1802,7 @@ public class Example
 	
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -1994,7 +1865,7 @@ public class Example
 		ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
 		PackedCircuit packedCircuit = clbPacker.pack();
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -2038,7 +1909,7 @@ public class Example
 		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
 		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 		
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		//Random placement
 		Random rand = new Random(1);
@@ -2068,7 +1939,7 @@ public class Example
 	
 	private static void testSA_AP(PackedCircuit circuit)
 	{
-		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(circuit);
+		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(circuit, 8);
 		
 		Random rand = new Random(1);
 		RandomPlacer.placeCLBsandFixedIOs(circuit, architecture, rand);
@@ -2104,7 +1975,7 @@ public class Example
 	
 	private static void testHeteroLegalizerTwo(PackedCircuit packedCircuit)
 	{
-		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		int[] typeStartIndices = new int[] {0};
 		String[] typeNames = new String[] {"CLB"};
@@ -2149,7 +2020,7 @@ public class Example
 		circuit.addHardBlock(new HardBlock("Nb10001", memInputs, memOutputs, "memory", true));
 		circuit.addHardBlock(new HardBlock("Nb10002", multInputs, multOutputs, "multiply", true));
 		
-		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(circuit);
+		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(circuit, 8);
 		HeteroArchitecturePanel panel = new HeteroArchitecturePanel(890, arch);
 		
 		JFrame frame = new JFrame("Architecture");
@@ -2162,7 +2033,7 @@ public class Example
 	
 	private static void testTimingCostCalculator(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		Random rand = new Random();
 		
 		//Random placement
@@ -2234,7 +2105,7 @@ public class Example
 	
 	private static void testTimingGraphNewAnalyticalFunctions(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		Random rand = new Random();
 		
 		//Random placement
@@ -2314,7 +2185,7 @@ public class Example
 	
 	private static void testTimingGraphOldAnalyticalFunctions(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture arch = new HeterogeneousArchitecture(packedCircuit, 8);
 		Random rand = new Random();
 		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, arch, rand);
 		
@@ -2353,7 +2224,7 @@ public class Example
 	
 	private static void testEdgeMap(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)
 	{
-		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit);
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
 		
 		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, new Random(1));
 		
@@ -2545,19 +2416,19 @@ public class Example
 		packedNet5.sinks.add(output7.input);
 		packedCircuit.getNets().put(packedNet5.name, packedNet5);
 		
-		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit);
-		architecture.getISites().get(4).block = input3;
-		input3.setSite(architecture.getISites().get(4));
-		architecture.getOSites().get(12).block = output7;
-		output7.setSite(architecture.getOSites().get(12));
-		architecture.getSite(1, 4, 0).block = clba;
-		clba.setSite(architecture.getSite(1, 4, 0));
-		architecture.getSite(1, 5, 0).block = clbb;
-		clbb.setSite(architecture.getSite(1, 5, 0));
-		architecture.getSite(1, 6, 0).block = clbc;
-		clbc.setSite(architecture.getSite(1, 6, 0));
-		architecture.getSite(1, 8, 0).block = clbd;
-		clbd.setSite(architecture.getSite(1, 8, 0));
+		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit, 8);
+		architecture.getIOSites().get(4).setIO(0, input3);
+		input3.setSite(architecture.getIOSites().get(4));
+		architecture.getIOSites().get(12).setIO(0, output7);
+		output7.setSite(architecture.getIOSites().get(12));
+		((ClbSite)(architecture.getSite(1, 4))).setClb(clba);		
+		clba.setSite(architecture.getSite(1, 4));
+		((ClbSite)(architecture.getSite(1, 5))).setClb(clbb);
+		clbb.setSite(architecture.getSite(1, 5));
+		((ClbSite)(architecture.getSite(1, 6))).setClb(clbc);
+		clbc.setSite(architecture.getSite(1, 6));
+		((ClbSite)(architecture.getSite(1, 8))).setClb(clbd);
+		clbd.setSite(architecture.getSite(1, 8));
 		
 		return architecture;
 	}
@@ -2567,17 +2438,17 @@ public class Example
 		System.out.println("INPUTS:");
 		for(Input input:packedCircuit.inputs.values())
 		{
-			System.out.println(input.name + ": (" + input.getSite().x + "," + input.getSite().y + "," + input.getSite().n + ")");
+			System.out.println(input.name + ": (" + input.getSite().getX() + "," + input.getSite().getY());
 		}
 		System.out.println("\nOUTPUTS:");
 		for(Output output:packedCircuit.outputs.values())
 		{
-			System.out.println(output.name + ": (" + output.getSite().x + "," + output.getSite().y + "," +  output.getSite().n + ")");
+			System.out.println(output.name + ": (" + output.getSite().getX() + "," + output.getSite().getY());
 		}
 		System.out.println("\nCLBs:");
 		for(Clb clb:packedCircuit.clbs.values())
 		{
-			System.out.println(clb.name + ": (" + clb.getSite().x + "," + clb.getSite().y + ")");
+			System.out.println(clb.name + ": (" + clb.getSite().getX() + "," + clb.getSite().getY() + ")");
 		}
 	}
 	
