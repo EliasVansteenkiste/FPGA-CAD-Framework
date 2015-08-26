@@ -30,8 +30,6 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 
 	private final double ALPHA = 0.3;
 	
-	private HeterogeneousArchitecture architecture;
-	private PackedCircuit circuit;
 	private Map<Block, Integer> indexMap; // Maps a block (CLB or hardblock) to its integer index
 	private int[] typeStartIndices;
 	private String[] typeNames;
@@ -44,10 +42,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 	private boolean doneMemoryUse;
 	private int totalMatrixBytes;
 	
-	public HeteroAnalyticalPlacerTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit)
+	public HeteroAnalyticalPlacerTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit, HashMap<String, String> options)
 	{
-		this.architecture = architecture;
-		this.circuit = circuit;
+		super(architecture, circuit, options);
+		
 		this.nets = circuit.nets.values();
 		this.clbs = circuit.clbs.values();
 		initializeDataStructures();
@@ -56,7 +54,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		this.totalMatrixBytes = 0;
 	}
 	
-	public int place()
+	/*public int place()
 	{
 		int solveMode = 0; //0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
 		double[] maxUtilizationLegalizerArray = new double[] {4.0,3.0,2.0,1.5,0.9};
@@ -112,16 +110,16 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		updateCircuit();
 		
 		return totalMatrixBytes;
-	}
+	}*/
 	
-	public int place(HashMap<String,String> dictionary)
+	public void place()
 	{
 		//startingStage = 0 ==> start with initial solves (no anchors)
 		//startingStage = 1 ==> start from existing placement that is incorporated in the packedCircuit passed with the constructor
 		int startingStage = 0; //Default	
-		if(dictionary.get("starting_stage") != null)
+		if(options.get("starting_stage") != null)
 		{
-			startingStage = Integer.parseInt(dictionary.get("starting_stage"));
+			startingStage = Integer.parseInt(options.get("starting_stage"));
 			if(startingStage < 0 || startingStage > 1) //startingStage can only be 0 or 1
 			{
 				startingStage = 0;
@@ -130,9 +128,9 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		
 		//initialize maxUtilizationSequence used by the legalizer
 		double[] maxUtilizationSequenceArray = new double[] {0.9}; //Default
-		if(dictionary.get("max_utilization_sequence") != null)
+		if(options.get("max_utilization_sequence") != null)
 		{
-			String maxUtilizationSequenceString = dictionary.get("max_utilization_sequence");
+			String maxUtilizationSequenceString = options.get("max_utilization_sequence");
 			String[] maxUtilizationSequenceStringArray = maxUtilizationSequenceString.split(";");
 			maxUtilizationSequenceArray = new double[maxUtilizationSequenceStringArray.length];
 			int i = 0;
@@ -145,29 +143,30 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		
 		//The first anchorWeight factor that will be used in the main solve loop
 		double startingAnchorWeight = 0.3; //Default
-		if(dictionary.get("starting_anchor_weight") != null)
+		if(options.get("starting_anchor_weight") != null)
 		{
-			startingAnchorWeight = Double.parseDouble(dictionary.get("starting_anchor_weight"));
+			startingAnchorWeight = Double.parseDouble(options.get("starting_anchor_weight"));
 		}
 		
 		//The amount with whom the anchorWeight factor will be increased each iteration
 		double anchorWeightIncrease = 0.3; //Default
-		if(dictionary.get("anchor_weight_increase") != null)
+		if(options.get("anchor_weight_increase") != null)
 		{
 			anchorWeightIncrease = Double.parseDouble("anchor_weight_increase");
 		}
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
 		double stopRatioLinearLegal = 0.8; //Default
-		if(dictionary.get("stop_ratio_linear_legal") != null)
+		if(options.get("stop_ratio_linear_legal") != null)
 		{
-			stopRatioLinearLegal = Double.parseDouble(dictionary.get("stop_ratio_linear_legal"));
+			stopRatioLinearLegal = Double.parseDouble(options.get("stop_ratio_linear_legal"));
 		}
 		
 		int maxMemoryUse = placementOuterLoop(startingStage, maxUtilizationSequenceArray, 
 							startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal);
 		
-		return maxMemoryUse;
+		// TODO (Arno+Seppe): should these functions return a value?
+		//return maxMemoryUse;
 	}
 	
 	private int placementOuterLoop(int startingStage, double[] maxUtilizationSequence, 

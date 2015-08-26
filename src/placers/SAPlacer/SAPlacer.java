@@ -1,9 +1,12 @@
 package placers.SAPlacer;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Vector;
+
+import placers.Placer;
 
 import architecture.Architecture;
 import architecture.HeterogeneousArchitecture;
@@ -16,24 +19,23 @@ import circuit.Input;
 import circuit.Output;
 import circuit.PackedCircuit;
 
-public abstract class SAPlacer
+public abstract class SAPlacer extends Placer
 {
+	
+	static {
+		defaultOptions.put("inner_num", "1");
+	}
 	
 	protected double Rlimd;
 	protected EfficientCostCalculator calculator;
-	protected PackedCircuit circuit;
-	protected Architecture architecture;
 	protected Random rand;
 	
-	public SAPlacer(Architecture architecture, PackedCircuit circuit)
+	public SAPlacer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
 	{
-		this.architecture = architecture;
-		this.circuit = circuit;
+		super(architecture, circuit, options);
 		this.calculator = new EfficientBoundingBoxNetCC(circuit);
 		circuit.fillVector();
 	}
-	
-	public abstract void place(double inner_num);
 	
 	public abstract void lowTempAnneal(double innerNum);
 	

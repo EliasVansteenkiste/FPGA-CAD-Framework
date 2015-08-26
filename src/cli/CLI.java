@@ -69,7 +69,7 @@ public class CLI {
 		// If a random initialization is required: do it
 		if(options.random) {
 			Random rand = new Random(1);
-			RandomPlacer.placeCLBsandFixedIOs(packedCircuit, (FourLutSanitized) architecture, rand);
+			RandomPlacer.placeCLBsandFixedIOs(packedCircuit, architecture, rand);
 		}
 		
 		

@@ -1,5 +1,6 @@
 package placers.SAPlacer;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import architecture.Architecture;
@@ -8,14 +9,15 @@ import circuit.PackedCircuit;
 public class WLD_SAPlacer extends SAPlacer
 {
 
-	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit)
+	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
 	{
-		super(architecture, circuit);
+		super(architecture, circuit, options);
 	}
 	
 	@Override
-	public void place(double inner_num)
+	public void place()
 	{
+		double inner_num = Double.parseDouble(options.get("inner_num"));
 		System.out.println("Effort level: " + inner_num);
 		
 		//Initialize SA parameters

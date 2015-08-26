@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import placers.MDP.MDPPlacer;
+import placers.SAPlacer.WLD_SAPlacer;
 import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
 
 import architecture.Architecture;
@@ -15,6 +16,11 @@ public abstract class Placer {
 	
 	protected static HashMap<String, String> defaultOptions;
 	protected static ArrayList<String> requiredOptions;
+	
+	static {
+		defaultOptions = new HashMap<String, String>();
+		requiredOptions = new ArrayList<String>();
+	}
 	
 	protected Architecture architecture;
 	protected PackedCircuit circuit;
@@ -44,9 +50,13 @@ public abstract class Placer {
 	public static Placer newPlacer(String type, Architecture architecture, PackedCircuit circuit, HashMap<String, String> options) {
 		switch(type) {
 		
+		case "SA":
+		case "sa":
+			return new WLD_SAPlacer(architecture, circuit, options);
+		
 		case "AP":
 		case "ap":
-			return new HeteroAnalyticalPlacerTwo((HeterogeneousArchitecture) architecture, circuit);
+			return new HeteroAnalyticalPlacerTwo((HeterogeneousArchitecture) architecture, circuit, options);
 			
 		case "MDP":
 		case "mdp":
