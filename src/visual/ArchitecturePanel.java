@@ -13,7 +13,6 @@ import javax.swing.JPanel;
 
 import architecture.ClbSite;
 import architecture.FourLutSanitized;
-import architecture.IoSite;
 import architecture.Site;
 import architecture.old.RouteNode;
 import circuit.Block;
@@ -157,7 +156,8 @@ public class ArchitecturePanel extends JPanel implements MouseMotionListener
 		{
 			switch (site.type)
 			{
-			case IO:
+			case I:
+			case O:
 				if (site.x == 0)
 				{
 					if (site.n == 0)

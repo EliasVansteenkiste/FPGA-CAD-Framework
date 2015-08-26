@@ -14,6 +14,7 @@ import java.util.Vector;
 
 import placement.parser.PlaatsingUnit;
 import placement.parser.Placement;
+import architecture.Architecture;
 import architecture.FourLutSanitized;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
@@ -58,7 +59,7 @@ public class PackedCircuit extends Circuit{
 	
 	public boolean place(Map<String,Integer> inputXPositions, Map<String,Integer> inputYPositions, Map<String,Integer> outputXPositions,
 		Map<String,Integer> outputYPositions, Map<String,Integer> clbXPositions, Map<String,Integer> clbYPositions, 
-		Map<String,Integer> hbXPositions, Map<String,Integer> hbYPositions, HeterogeneousArchitecture arch)
+		Map<String,Integer> hbXPositions, Map<String,Integer> hbYPositions, Architecture arch)
 	{
 		for(Input input: inputs.values())
 		{
@@ -141,8 +142,9 @@ public class PackedCircuit extends Circuit{
 	 * Checks if all blocks have been placed in appropriate positions, 
 	 * and if no blocks have gone lost during the placement process
 	 */
-	public boolean placementConsistencyCheck(HeterogeneousArchitecture architecture)
+	public boolean placementConsistencyCheck(Architecture arch)
 	{
+		//TODO (Arno): make sure this works again
 		boolean success = true;
 		//Fill blockMap with all blocks in the circuit (IOs, CLBs and all sorts of hardBlocks)
 		Map<String,Block> blockMap = new HashMap<>();
@@ -167,7 +169,7 @@ public class PackedCircuit extends Circuit{
 		}
 		
 		//Loop over all sites in the architecture and see if we find every block of the circuit at a valid site in the architecture
-		Collection<Site> nonIOSites = architecture.getSites();
+		Vector<Site> nonIOSites = arch.getSites(SiteType.CLB, SiteType.HARDBLOCK);
 		for(Site site: nonIOSites)
 		{
 			if(site.block != null && site.block.getSite() == site)
@@ -196,7 +198,8 @@ public class PackedCircuit extends Circuit{
 				}
 			}
 		}
-		for(Site iSite: architecture.getISites())
+		
+		for(Site iSite: arch.getSites(SiteType.I))
 		{
 			if(iSite.block != null && iSite.block.getSite() == iSite)
 			{
@@ -209,7 +212,7 @@ public class PackedCircuit extends Circuit{
 				}
 			}	
 		}
-		for(Site oSite: architecture.getOSites())
+		for(Site oSite: arch.getSites(SiteType.O))
 		{
 			if(oSite.block != null && oSite.block.getSite() == oSite)
 			{

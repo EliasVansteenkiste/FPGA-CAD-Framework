@@ -2,18 +2,22 @@ package architecture;
 
 import java.io.PrintStream;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
+
+import circuit.Block;
 
 import architecture.old.RouteNode;
 
 public abstract class Architecture {
 	
 	protected Random rand;
-	protected Vector<Site> siteVector;
-	protected Vector<RouteNode> routeNodeVector;
 	
 	protected Site[][][] siteArray;
+	
+	protected HashMap<SiteType, Vector<Site>> siteVectors;
+	protected Vector<RouteNode> routeNodeVector;
 	
 	protected int width, height;
 	
@@ -21,8 +25,12 @@ public abstract class Architecture {
 	{
 		super();
 		rand= new Random();
-		siteVector = new Vector<>();
 		routeNodeVector = new Vector<>();
+		
+		siteVectors = new HashMap<SiteType, Vector<Site>>();
+		for(SiteType siteType : SiteType.values()) {
+			siteVectors.put(siteType, new Vector<Site>());
+		}
 	}
 	
 	
@@ -38,10 +46,19 @@ public abstract class Architecture {
 	
 	
 	
-	public Collection<Site> getSites()
+	public Vector<Site> getSites(SiteType type)
 	{
-		return siteVector;
+		return siteVectors.get(type);
 	}
+	public Vector<Site> getSites(SiteType... types)
+	{
+		Vector<Site> sites = new Vector<Site>();
+		for(SiteType type : types) {
+			sites.addAll(getSites(type));
+		}
+		return sites;
+	}
+	
 	public Site getSite(int x, int y, int n)
 	{
 		return siteArray[x][y][n];
@@ -50,8 +67,19 @@ public abstract class Architecture {
 	protected void addSite(Site site, int x, int y, int n)
 	{
 		siteArray[x][y][n] = site;
-		siteVector.add(site);
+		siteVectors.get(site.type).add(site);
 	}
+	
+	
+	public Block placeBlock(int x, int y, int n, Block block) {
+		Site site = this.getSite(x, y, n);
+		return this.placeBlock(site, block);
+	}
+	public Block placeBlock(Site site, Block block) {
+		block.setSite(site);
+		return site.setBlock(block);
+	}
+	
 	
 	public abstract Site randomClbSite(int Rlim, Site pl1);
 	public abstract Site randomHardBlockSite(int Rlim, HardBlockSite pl1);

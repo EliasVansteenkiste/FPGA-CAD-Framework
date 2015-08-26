@@ -12,8 +12,6 @@ public class FourLutSanitized extends Architecture
 
 	private static final double FILL_GRADE = 1.20;
 	private int channelWidth;
-	private Vector<Site> Isites; 
-	private Vector<Site> Osites;
 	
 	
 	
@@ -113,19 +111,19 @@ public class FourLutSanitized extends Architecture
 		//Generating the IO blocks
 		for(y=1; y<height+1; y++)
 		{
-			for(n=0; n<2; n++)
-			{
-				putIoSite(0, y, n, verticalChannels[0][y]);
-				putIoSite(width+1, y, n, verticalChannels[width][y]);
-			}
+			putISite(0, y, 0, verticalChannels[0][y]);
+			putISite(width+1, y, 0, verticalChannels[width][y]);
+			
+			putOSite(0, y, 1, verticalChannels[0][y]);
+			putOSite(width+1, y, 1, verticalChannels[width][y]);
 		}
 		for(x=1; x<width+1; x++)
 		{
-			for(n=0; n<2; n++)
-			{
-				putIoSite(x, 0, n, horizontalChannels[x][0]);
-				putIoSite(x, height+1, n, horizontalChannels[x][height]);
-			}
+			putISite(x, 0, 0, horizontalChannels[x][0]);
+			putISite(x, height+1, 0, horizontalChannels[x][height]);
+			
+			putOSite(x, 0, 1, horizontalChannels[x][0]);
+			putOSite(x, height+1, 1, horizontalChannels[x][height]);
 		}
 		
 		//Generate CLBs
@@ -135,32 +133,6 @@ public class FourLutSanitized extends Architecture
 			{
 				putClbSite(x,y,0,horizontalChannels[x][y-1],horizontalChannels[x][y],verticalChannels[x][y],horizontalChannels[x][y-1],verticalChannels[x-1][y]);
 			}
-		}
-		
-		//Generate Isites set
-		Isites = new Vector<Site>();
-		for(y=1; y<height+1; y++)
-		{
-			Isites.add(siteArray[0][y][0]);
-			Isites.add(siteArray[width+1][y][0]);
-		}
-		for(x=1; x<width+1; x++)
-		{
-			Isites.add(siteArray[x][0][0]);
-			Isites.add(siteArray[x][height+1][0]);
-		}
-		
-		//Generate Osites set
-		Osites = new Vector<Site>();
-		for(y=1; y<height+1; y++)
-		{
-			Osites.add(siteArray[0][y][1]);
-			Osites.add(siteArray[width+1][y][1]);
-		}
-		for(x=1; x<width+1; x++)
-		{
-			Osites.add(siteArray[x][0][1]);
-			Osites.add(siteArray[x][height+1][1]);
 		}
 	}
 	
@@ -231,7 +203,8 @@ public class FourLutSanitized extends Architecture
 		Site pl2 = null;
 		int manhattanDistance = -1;
 		do{
-			pl2 = Isites.elementAt(rand.nextInt(Isites.size()));
+			Vector<Site> ISites = this.getSites(SiteType.I);
+			pl2 = ISites.elementAt(rand.nextInt(ISites.size()));
 			if(pl2==null)
 				System.out.println("woops");
 			manhattanDistance = Math.abs(pl1.x-pl2.x)+Math.abs(pl1.y-pl2.y);
@@ -245,35 +218,31 @@ public class FourLutSanitized extends Architecture
 		int manhattanDistance = -1;
 		do
 		{
-			pl2 = Osites.elementAt(rand.nextInt(Isites.size()));
+			Vector<Site> OSites = this.getSites(SiteType.O);
+			pl2 = OSites.elementAt(rand.nextInt(OSites.size()));
 			if(pl2==null)
 				System.out.println("woops");
 			manhattanDistance = Math.abs(pl1.x-pl2.x)+Math.abs(pl1.y-pl2.y);
 		}while (pl1==pl2||manhattanDistance>Rlim);
 		return pl2;
 	}
-
 	
-
-	public Site getISite(int index)
+	
+	
+	private void putISite(int x,int y, int n, Vector<RouteNode> channel)
 	{
-		return Isites.get(index);
+		ISite site = new ISite("Site_"+x+"_"+y+"_"+n, x, y,n);
+		addSite(site, x, y, n);
+		addRouteNodes(site);
+		RouteNode.connect(channel, site.ipin);
 	}
 	
-	public Site getOSite(int index)
+	private void putOSite(int x,int y, int n, Vector<RouteNode> channel)
 	{
-		return Osites.get(index);
-	}
-	
-	
-	
-	private void putIoSite(int x,int y, int n, Vector<RouteNode> channel)
-	{
-		IoSite site = new IoSite("Site_"+x+"_"+y+"_"+n, x, y,n);
+		OSite site = new OSite("Site_"+x+"_"+y+"_"+n, x, y, n);
 		addSite(site, x, y, n);
 		addRouteNodes(site);
 		RouteNode.connect(site.opin, channel);
-		RouteNode.connect(channel, site.ipin);
 	}
 	
 	private void putClbSite(int x,int y, int n, Vector<RouteNode> opinChan, Vector<RouteNode> ipin0Chan, Vector<RouteNode> ipin1Chan, Vector<RouteNode> ipin2Chan, Vector<RouteNode> ipin3Chan)
@@ -299,12 +268,16 @@ public class FourLutSanitized extends Architecture
 		}
 	}
 
-	private void addRouteNodes(IoSite site)
+	private void addRouteNodes(ISite site)
+	{
+		routeNodeVector.add(site.sink);
+		routeNodeVector.add(site.ipin);
+	}
+	
+	private void addRouteNodes(OSite site)
 	{
 		routeNodeVector.add(site.source);
 		routeNodeVector.add(site.opin);
-		routeNodeVector.add(site.sink);
-		routeNodeVector.add(site.ipin);
 	}
 
 }

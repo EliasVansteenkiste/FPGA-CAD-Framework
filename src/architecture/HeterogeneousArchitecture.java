@@ -12,8 +12,6 @@ public class HeterogeneousArchitecture extends Architecture
 	private static final double FILL_GRADE = 1.20;
 	
 	private String[] hardBlockTypeNames;
-	private ArrayList<Site> ISites;
-	private ArrayList<Site> OSites;
 	
 	/*
 	 * A heterogeneousArchitecture is always fitted to a circuit
@@ -23,8 +21,7 @@ public class HeterogeneousArchitecture extends Architecture
 		int nbClbs = circuit.clbs.values().size();
 		int nbInputs = circuit.getInputs().values().size();
 		int nbOutputs = circuit.getOutputs().values().size();
-		ISites = new ArrayList<>();
-		OSites = new ArrayList<>();
+		
 		int[] nbHardBlocksPerType = new int[circuit.getHardBlocks().size()];
 		hardBlockTypeNames = new String[nbHardBlocksPerType.length];
 		for(int i = 0; i < nbHardBlocksPerType.length; i++)
@@ -118,16 +115,6 @@ public class HeterogeneousArchitecture extends Architecture
 	public String[] getHardBlockTypeNames()
 	{
 		return hardBlockTypeNames;
-	}
-	
-	public ArrayList<Site> getISites()
-	{
-		return ISites;
-	}
-	
-	public ArrayList<Site> getOSites()
-	{
-		return OSites;
 	}
 	
 	
@@ -226,6 +213,7 @@ public class HeterogeneousArchitecture extends Architecture
 		int manhattanDistance = -1;
 		do
 		{
+			Vector<Site> ISites = this.getSites(SiteType.I);
 			pl2 = ISites.get(rand.nextInt(ISites.size()));
 			if(pl2 == null)
 			{
@@ -242,6 +230,7 @@ public class HeterogeneousArchitecture extends Architecture
 		int manhattanDistance = -1;
 		do
 		{
+			Vector<Site> OSites = this.getSites(SiteType.O);
 			pl2 = OSites.get(rand.nextInt(OSites.size()));
 			if(pl2 == null)
 			{
@@ -256,51 +245,49 @@ public class HeterogeneousArchitecture extends Architecture
 	
 	private void insertClbColumn(int x)
 	{
-		putIoSite(x,0,0);
-		putIoSite(x,0,1);
+		putISite(x,0,0);
+		putOSite(x,0,1);
 		for(int y = 1; y < height + 1; y++)
 		{
 			addSite(new ClbSite("Site_"+x+"_"+y+"_"+0, x,y, 0), x, y, 0);
 		}
-		putIoSite(x,height+1,0);
-		putIoSite(x,height+1,1);
+		putISite(x,height+1,0);
+		putOSite(x,height+1,1);
 	}
 	
 	private void insertIOColumn(int x)
 	{
 		for(int y = 1; y < height + 1; y++)
 		{
-			putIoSite(x,y,0);
-			putIoSite(x,y,1);
+			putISite(x,y,0);
+			putOSite(x,y,1);
 		}
 	}
 	
 	private void insertHardBlockColumn(int x, String typeName)
 	{
-		putIoSite(x,0,0);
-		putIoSite(x,0,1);
+		putISite(x,0,0);
+		putOSite(x,0,1);
 		for(int y = 1; y < height + 1; y++)
 		{
 			addSite(new HardBlockSite("Site_"+x+"_"+y+"_"+0, x, y, 0, typeName), x, y, 0);
 		}
-		putIoSite(x,height+1,0);
-		putIoSite(x,height+1,1);
+		putISite(x,height+1,0);
+		putOSite(x,height+1,1);
 	}
 	
 	
 	
-	private void putIoSite(int x, int y, int n)
+	private void putISite(int x, int y, int n)
 	{
-		IoSite site = new IoSite("Site_"+x+"_"+y+"_"+n, x, y,n);
+		ISite site = new ISite("Site_"+x+"_"+y+"_"+n, x, y, n);
 		addSite(site, x, y, n);
-		if(n == 0)
-		{
-			ISites.add(site);
-		}
-		else
-		{
-			OSites.add(site);
-		}
+	}
+	
+	private void putOSite(int x, int y, int n)
+	{
+		OSite site = new OSite("Site_"+x+"_"+y+"_"+n, x, y, n);
+		addSite(site, x, y, n);
 	}
 	
 	

@@ -23,6 +23,15 @@ public class Site {
 		this.naam=naam;
 	}
 	
+	public Block setBlock(Block block) {
+		Block oldBlock = this.block;
+		this.block = block;
+		return oldBlock;
+	}
+	public Block getBlock() {
+		return this.block;
+	}
+	
 	double afstand(Site p)
 	{
 		return Math.abs(x-p.x)+Math.abs(y-p.y);

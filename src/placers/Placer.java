@@ -7,28 +7,41 @@ import placers.MDP.MDPPlacer;
 import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
 
 import architecture.Architecture;
+import architecture.FourLutSanitized;
 import architecture.HeterogeneousArchitecture;
 import circuit.PackedCircuit;
 
 public abstract class Placer {
 	
-	/**
-	 * Place the circuit with all default options.
-	 * Equivalent to calling place() with an empty HashMap as parameter.
-	 */
-	public int place() {
-		return this.place(new HashMap<String, String>());
+	protected static HashMap<String, String> defaultOptions;
+	protected static ArrayList<String> requiredOptions;
+	
+	protected Architecture architecture;
+	protected PackedCircuit circuit;
+	protected HashMap<String, String> options;
+	
+	protected Placer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options) {
+		this.architecture = architecture;
+		this.circuit = circuit;
+		this.options = options;
+		
+		this.parseOptions();
 	}
 	
-	/**
-	 * Place the circuit that was given in the constructor.
-	 * @param options	A hashmap containing the options for the placer. The accepted options are different for each placer.
-	 */
-	public abstract int place(HashMap<String, String> options);
+	protected void parseOptions() {
+		for(String option : defaultOptions.keySet()) {
+			if(!this.options.containsKey(option)) {
+				this.options.put(option,  defaultOptions.get(option));
+			}
+		}
+	}
+	
+	
+	public abstract void place();
 	
 	
 	
-	public static Placer newPlacer(String type, Architecture architecture, PackedCircuit circuit) {
+	public static Placer newPlacer(String type, Architecture architecture, PackedCircuit circuit, HashMap<String, String> options) {
 		switch(type) {
 		
 		case "AP":
@@ -37,7 +50,7 @@ public abstract class Placer {
 			
 		case "MDP":
 		case "mdp":
-			return new MDPPlacer((HeterogeneousArchitecture) architecture, circuit);
+			return new MDPPlacer((FourLutSanitized) architecture, circuit, options);
 			
 		default:
 			System.err.println("Unknown placer type: " + type);

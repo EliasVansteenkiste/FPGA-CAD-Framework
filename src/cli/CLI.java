@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import placers.Placer;
@@ -80,8 +81,8 @@ public class CLI {
 			
 			// Create the placer and place the circuit
 			CLI.startTimer();
-			Placer placer = Placer.newPlacer(placerName, architecture, packedCircuit);
-			placer.place(options.placers.get(placerName));
+			Placer placer = Placer.newPlacer(placerName, architecture, packedCircuit, placerOptions);
+			placer.place();
 			CLI.stopTimer();
 			
 			CLI.printStatistics(placerName, prePackedCircuit, packedCircuit);

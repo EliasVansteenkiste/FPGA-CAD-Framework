@@ -185,7 +185,7 @@ public class RandomPlacer
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
-			Site site = a.getISite(index);
+			Site site = a.getSites(SiteType.I).get(index);
 			site.block = input;
 			input.setSite(site);
 			index += 2;
@@ -198,7 +198,7 @@ public class RandomPlacer
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
-			Site site = a.getOSite(index);
+			Site site = a.getSites(SiteType.O).get(index);
 			site.block = output;
 			output.setSite(site);
 			index += 2;
@@ -286,7 +286,7 @@ public class RandomPlacer
 		
 		//Deterministic place IOs
 		int index = 0;
-		ArrayList<Site> ISites = a.getISites();
+		Vector<Site> ISites = a.getSites(SiteType.I);
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
@@ -301,7 +301,7 @@ public class RandomPlacer
 			}
 		}
 		index = 0;
-		ArrayList<Site> OSites = a.getOSites();
+		Vector<Site> OSites = a.getSites(SiteType.O);
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
@@ -321,7 +321,7 @@ public class RandomPlacer
 	{
 		//Deterministic place IOs
 		int index = 0;
-		ArrayList<Site> ISites = a.getISites();
+		Vector<Site> ISites = a.getSites(SiteType.I);
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
@@ -336,7 +336,7 @@ public class RandomPlacer
 			}
 		}
 		index = 0;
-		ArrayList<Site> OSites = a.getOSites();
+		Vector<Site> OSites = a.getSites(SiteType.O);
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;

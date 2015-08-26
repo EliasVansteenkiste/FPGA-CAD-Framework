@@ -2,5 +2,5 @@ package architecture;
 
 public enum SiteType
 {
-	IO, CLB, HARDBLOCK
+	I, O, CLB, HARDBLOCK
 }
