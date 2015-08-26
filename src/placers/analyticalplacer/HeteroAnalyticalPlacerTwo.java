@@ -15,6 +15,7 @@ import mathtools.Crs;
 import placers.Placer;
 import placers.random.RandomPlacer;
 
+import architecture.Architecture;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
 import circuit.Block;
@@ -42,7 +43,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 	private boolean doneMemoryUse;
 	private int totalMatrixBytes;
 	
-	public HeteroAnalyticalPlacerTwo(HeterogeneousArchitecture architecture, PackedCircuit circuit, HashMap<String, String> options)
+	public HeteroAnalyticalPlacerTwo(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
 	{
 		super(architecture, circuit, options);
 		

@@ -11,6 +11,7 @@ import circuit.Block;
 import circuit.BlockType;
 import circuit.Net;
 import circuit.Pin;
+import architecture.Architecture;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
@@ -34,13 +35,13 @@ public class HeteroLegalizerTwo
 	private int[] partialLegalX;
 	private int[] partialLegalY;
 	private double currentCost;
-	private HeterogeneousArchitecture architecture;
+	private Architecture architecture;
 	private int[] typeStartIndices;
 	private String[] typeNames;
 	boolean lastMaxUtilizationSmallerThanOne;
 	boolean firstOneDone;
 	
-	public HeteroLegalizerTwo(HeterogeneousArchitecture architecture, int[] typeStartIndices, String[] typeNames, int nbMovableBlocks)
+	public HeteroLegalizerTwo(Architecture architecture, int[] typeStartIndices, String[] typeNames, int nbMovableBlocks)
 	{
 		this.bestLegalX = new int[nbMovableBlocks];
 		this.bestLegalY = new int[nbMovableBlocks];

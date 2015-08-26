@@ -1,5 +1,6 @@
 package placers.SAPlacer;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import timinganalysis.TimingGraph;
@@ -10,6 +11,10 @@ import circuit.PrePackedCircuit;
 public class TD_SAPlacer extends SAPlacer
 {
 	
+	static {
+		defaultOptions.put("inner_num", "1");
+	}
+	
 	private static final double TRADE_OFF_FACTOR = 0.5;
 	private static final double TD_PLACE_EXP_FIRST = 1.0;
 	private static final double TD_PLACE_EXP_LAST = 8.0;
@@ -19,16 +24,17 @@ public class TD_SAPlacer extends SAPlacer
 	private double previousBBCost;
 	private double previousTDCost;
 
-	public TD_SAPlacer(Architecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit)
+	public TD_SAPlacer(Architecture architecture, PackedCircuit circuit, PrePackedCircuit prePackedCircuit, HashMap<String, String> options)
 	{
-		super(architecture, circuit);
+		super(architecture, circuit, options);
 		this.timingGraph = new TimingGraph(prePackedCircuit);
 		timingGraph.buildTimingGraph();
 	}
 	
 	@Override
-	public void place(double inner_num)
+	public void place()
 	{
+		double inner_num = Double.parseDouble(options.get("inner_num"));
 		System.out.println("Effort level: " + inner_num);
 		
 		//Initialize SA parameters
