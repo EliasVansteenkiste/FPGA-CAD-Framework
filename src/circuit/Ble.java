@@ -30,6 +30,11 @@ public class Ble extends Block
 		this.flipflop = flipflop;
 		this.lut = lut;
 	}
+	
+	@Override
+	public int maxNets() {
+		return this.inputs.length + 1;
+	}
 
 	public Pin getOutput() {
 		return output;
