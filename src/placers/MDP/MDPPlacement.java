@@ -29,7 +29,8 @@ public class MDPPlacement {
 		this.height = architecture.getHeight();
 		this.n = architecture.getN();
 		
-		this.blocks = new MDPBlock[this.width][this.height][this.n];
+		// + 2 is for 2 rows and 2 colums of IO blocks
+		this.blocks = new MDPBlock[this.width + 2][this.height + 2][this.n];
 		
 		this.loadBlocks();
 	}

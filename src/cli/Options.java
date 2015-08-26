@@ -17,6 +17,9 @@ public class Options {
 	@Option(name="-c", aliases="--circuit", metaVar="NAME", required=true, usage="input circuit, can be the circuit name or the location of a net file")
 	public String circuit;
 	
+	@Option(name="--pack", usage="start from a blif file and pack the circuit before placing")
+	public boolean pack;
+	
 	@Option(name="-p", aliases="--placer", metaVar="NAME", required=true, usage="the placer that should be used; can be multi-valued using a comma separated list")
 	private String placersString;
 	
@@ -48,7 +51,7 @@ public class Options {
 	
 	
 	public String circuitName;
-	public File inputFolder, outputFolder, netFile, placeFile;
+	public File inputFolder, outputFolder, blifFile, netFile, placeFile;
 	
 	
 	private CmdLineParser parser;
@@ -105,41 +108,62 @@ public class Options {
 		
 		
 		
+		// Get the input file
+		String inputExtension;
+		if(this.pack) {
+			inputExtension = ".blif";
+		} else {
+			inputExtension = ".net";
+		}
 		
-		// Set the net file
 		
-		// If the given circuit is a net file
-		if(this.circuit.length() > 4 && this.circuit.substring(this.circuit.length() - 4).equals(".net")) {
+		// If the given circuit is a file matching the input extension
+		File inputFile;
+		if(this.circuit.length() > inputExtension.length() && this.circuit.substring(this.circuit.length() - inputExtension.length()).equals(inputExtension)) {
 			if(this.inputPath != null) {
-				this.netFile = new File(this.inputFolder, this.circuit);
+				inputFile = new File(this.inputFolder, this.circuit);
 			} else {
-				this.netFile = new File(this.circuit);
+				inputFile = new File(this.circuit);
 			}
 			
 		// Else: the given circuit is just the circuit name
 		} else {
-			this.netFile = new File(this.inputFolder, this.circuit + ".net");
+			inputFile = new File(this.inputFolder, this.circuit + inputExtension);
 		}
 		
-		
-		// Test if the input net file exists and is not a directory
-		if(!this.netFile.exists()) {
-			this.error("Input net file not found: " + this.netFile);
+		// Test if the input file exists and is not a directory
+		if(!inputFile.exists()) {
+			this.error("Input file not found: " + inputFile);
 			
-		} else if(this.netFile.isDirectory()) {
-			this.error("Input net file is a directory:" + this.netFile);
+		} else if(inputFile.isDirectory()) {
+			this.error("Input file is a directory:" + inputFile);
 		}
+		
+		
+		// Set the blif or net file
+		if(pack) {
+			this.blifFile = inputFile;
+		
+		} else {
+			this.netFile = inputFile;
+		}
+		
+		
+		
 		
 		
 		
 		// Set the circuit name
-		String fileName = this.netFile.getName();
-		this.circuitName = fileName.substring(0, fileName.length() - 4);
+		String fileName = inputFile.getName();
+		this.circuitName = fileName.substring(0, fileName.length() - inputExtension.length());
 		
 		
 		// Set the placement file location
 		this.placeFile = new File(outputFolder, circuitName + ".place");
 		
+		
+		// Set the architecture
+		this.architecture = this.architecture.toLowerCase();
 		
 		
 		// Parse the extra placer options
@@ -154,7 +178,8 @@ public class Options {
 			placerOptions.add(new HashMap<String, String>());
 		}
 		
-		// Loop through all the given options except "placers"
+		
+		// Loop through all the extra placer options
 		for(String option : arguments) {
 			
 			int splitPos = option.indexOf('=');

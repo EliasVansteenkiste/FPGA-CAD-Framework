@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import packers.BlePacker;
+import packers.ClbPacker;
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import placers.random.RandomPlacer;
@@ -16,8 +18,10 @@ import architecture.Architecture;
 import architecture.FourLutSanitized;
 import architecture.HeterogeneousArchitecture;
 
+import circuit.BlePackedCircuit;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
+import circuit.parser.blif.BlifReader;
 import circuit.parser.net.NetReader;
 import cli.Options;
 
@@ -33,35 +37,50 @@ public class CLI {
 		options.parseArguments(args);
 		
 		
-		// Read the net file
-		NetReader netReader = new NetReader();
+		// Get the circuit
+		PrePackedCircuit prePackedCircuit = null;
+		PackedCircuit packedCircuit = null;
 		
-		try {
-			netReader.readNetlist(options.netFile.toString(), 6);
-		} catch(IOException e) {
-			error("Failed to read net file: " + options.netFile.toString());
+		// Get the number of lut inputs (depends on used architecture)
+		int nbLutInputs = Architecture.getNbLutInputs(options.architecture);
+		
+		// If the circuit should be packed: read the blif file
+		if(options.pack) {
+			BlifReader blifReader = new BlifReader();
+			
+			try {
+				prePackedCircuit = blifReader.readBlif(options.blifFile.toString(), nbLutInputs);
+			} catch(IOException e) {
+				error("Failed to read blif file: " + options.blifFile.toString());
+			}
+			
+			BlePacker blePacker = new BlePacker(prePackedCircuit);
+			BlePackedCircuit blePackedCircuit = blePacker.pack();
+		
+			ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
+			packedCircuit = clbPacker.pack();
+			
+		
+		// Else: read the net file 
+		} else {
+			NetReader netReader = new NetReader();
+			
+			try {
+				netReader.readNetlist(options.netFile.toString(), nbLutInputs);
+			} catch(IOException e) {
+				error("Failed to read net file: " + options.netFile.toString());
+			}
+			
+			prePackedCircuit = netReader.getPrePackedCircuit();
+			packedCircuit = netReader.getPackedCircuit();
 		}
-		
-		PrePackedCircuit prePackedCircuit = netReader.getPrePackedCircuit();
-		PackedCircuit packedCircuit = netReader.getPackedCircuit();
 		
 		
 		
 		// Set the architecture
-		// Currently only the heterogeneous architecture is supported
-		Architecture architecture = null; // Needed to suppress "variable may not be initialized" errors
-		switch(options.architecture) {
-			case "4lut":
-			case "4LUT":
-				architecture = new FourLutSanitized(packedCircuit);
-				break;
-				
-			case "heterogeneous":
-				architecture = new HeterogeneousArchitecture(packedCircuit);
-				break;
-			
-			default:
-				error("Architecture type not recognized: " + options.architecture);
+		Architecture architecture = Architecture.newArchitecture(options.architecture, packedCircuit);
+		if(architecture == null) {
+			error("Architecture type not recognized: " + options.architecture);
 		}
 		
 		
@@ -105,14 +124,14 @@ public class CLI {
 		CLI.timerEnd = System.nanoTime();
 	}
 	private static double getTimer() {
-		return (CLI.timerEnd - CLI.timerBegin) * 1e-12;
+		return (CLI.timerEnd - CLI.timerBegin) * 1e-9;
 	}
 	
 	private static void printStatistics(String prefix, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit) {
 		
 		System.out.println();
 		double placeTime = CLI.getTimer();
-		System.out.format("%s %15s: %fs\n", prefix, "place time", placeTime);
+		System.out.format("%s %15s: %f s\n", prefix, "place time", placeTime);
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		double totalCost = effcc.calculateTotalCost();

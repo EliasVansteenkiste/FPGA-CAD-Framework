@@ -12,6 +12,6 @@ public class MDPNet {
 	
 	public MDPNet(Net originalNet, Collection<MDPBlock> blocks) {
 		this.originalNet = originalNet;
-		this.blocks = (MDPBlock[]) blocks.toArray(); 
+		this.blocks = blocks.toArray(new MDPBlock[blocks.size()]);
 	}
 }

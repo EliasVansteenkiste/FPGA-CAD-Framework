@@ -6,7 +6,10 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
 
+import placers.Placer;
+
 import circuit.Block;
+import circuit.PackedCircuit;
 
 
 public abstract class Architecture {
@@ -30,6 +33,28 @@ public abstract class Architecture {
 		for(SiteType siteType : SiteType.values()) {
 			siteVectors.put(siteType, new Vector<Site>());
 		}
+	}
+	
+	public static int getNbLutInputs(String type) {
+		switch(type) {
+			case "4lut":
+				return 6;
+			case "heterogeneous":
+				return 6;
+		}
+	
+		return 0;
+	}
+	
+	public static Architecture newArchitecture(String type, PackedCircuit circuit) {
+		switch(type) {
+			case "4lut":
+				return new FourLutSanitized(circuit);
+			case "heterogeneous":
+				return new HeterogeneousArchitecture(circuit);
+		}
+		
+		return null;
 	}
 	
 	
