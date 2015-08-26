@@ -161,6 +161,10 @@ public class PackedCircuit extends Circuit{
 		if(blockMap.size() != 0)
 		{
 			success = false;
+			for(String key: blockMap.keySet())
+			{
+				System.out.println(key);
+			}
 		}
 		return success;
 	}

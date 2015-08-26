@@ -24,9 +24,16 @@ public class HardBlockSite extends Site
 	@Override
 	public void setBlock(Block hardBlock)
 	{
-		if(((HardBlock)hardBlock).getTypeName().equals(typeName))
+		if(hardBlock != null)
 		{
-			this.hardBlock = (HardBlock)hardBlock;
+			if(((HardBlock)hardBlock).getTypeName().equals(typeName))
+			{
+				this.hardBlock = (HardBlock)hardBlock;
+			}
+		}
+		else
+		{
+			this.hardBlock = null;
 		}
 	}
 	

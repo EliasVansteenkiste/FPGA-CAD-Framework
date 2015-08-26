@@ -136,8 +136,11 @@ public class Example
 	    System.out.println("Number of CLBs: " + packedCircuit.clbs.size());
 	    System.out.println("Number of nets: " + packedCircuit.nets.size());
 	    
-	    visualSA(packedCircuit);
+	    //visualSA(packedCircuit);
 	    //visualAnalyticalTwo(packedCircuit);
+	    
+	    //testCostCalculator(packedCircuit);
+	    testEqualIOPlacement();
 	    
 	    //runWldSaBenchmarksClusteredNet();
 	    //runWldAnalyticalBenchmarksClusteredNet();
@@ -2029,6 +2032,150 @@ public class Example
 		frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
+	}
+	
+	private static void testCostCalculator(PackedCircuit packedCircuit)
+	{
+		HeterogeneousArchitecture a = new HeterogeneousArchitecture(packedCircuit, 8);
+		Random rand = new Random();
+		
+		RandomPlacer.placeCLBsandFixedIOs(packedCircuit, a, rand);
+		
+		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
+		double originalCost = effcc.calculateTotalCost();
+		System.out.println("Original cost = " + originalCost);
+		
+		packedCircuit.vBlocks = new Vector<Block>();
+		packedCircuit.vBlocks.addAll(packedCircuit.clbs.values());
+		for(Vector<HardBlock> hbVector: packedCircuit.getHardBlocks())
+		{
+			packedCircuit.vBlocks.addAll(hbVector);
+		}
+		
+		double totalDeltaCostAccepted = 0.0;
+		for(int i = 0; i < 1000; i++)
+		{
+			Swap swap=new Swap();
+			Block b = packedCircuit.vBlocks.elementAt(rand.nextInt(packedCircuit.vBlocks.size()));
+			swap.pl1 = b.getSite();
+			
+			if(b.type == BlockType.CLB)
+			{
+				swap.pl2 = a.randomClbSite(15, swap.pl1);
+			}
+			else
+			{
+				if(b.type == BlockType.HARDBLOCK_CLOCKED || b.type == BlockType.HARDBLOCK_UNCLOCKED)
+				{
+					swap.pl2 = a.randomHardBlockSite(15, (HardBlockSite)swap.pl1);
+				}
+				else
+				{
+					continue;
+				}
+			}
+			
+			double deltaCost = effcc.calculateDeltaCost(swap);
+			if(deltaCost < 0)
+			{
+				swap.apply();
+				totalDeltaCostAccepted += deltaCost;
+				effcc.pushThrough();
+			}
+			else
+			{
+				effcc.revert();
+			}
+		}
+		
+		double costAfterSwapping = effcc.calculateTotalCost();
+		System.out.println("Cost after swapping = " + costAfterSwapping);
+		System.out.println("Total delta cost of accepted moves = " + totalDeltaCostAccepted);
+		System.out.println("" + originalCost + " - " + (-totalDeltaCostAccepted) + " = " + (originalCost + totalDeltaCostAccepted));
+		
+		EfficientBoundingBoxNetCC effccRecalculate = new EfficientBoundingBoxNetCC(packedCircuit);
+		double costRecalculated = effccRecalculate.calculateTotalCost();
+		System.out.println("Recalculated cost = " + costRecalculated);
+	}
+	
+	private static void testEqualIOPlacement()
+	{
+		HashMap<String, Integer> inputXPositions1 = new HashMap<>();
+		HashMap<String, Integer> inputYPositions1 = new HashMap<>();
+		HashMap<String, Integer> outputXPositions1 = new HashMap<>();
+		HashMap<String, Integer> outputYPositions1 = new HashMap<>();
+		{
+			NetReaderTwo netReader = new NetReaderTwo();
+		    try
+			{
+				netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/or1200.net", 6, 8);
+			}
+		    catch(IOException ioe)
+		    {
+		    	System.err.println("Couldn't read netlist file!");
+		    	return;
+		    }
+		    
+		    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+		    
+		    visualSA(packedCircuit);
+		    
+		    for(Input input: packedCircuit.inputs.values())
+		    {
+		    	inputXPositions1.put(input.name, input.getSite().getX());
+		    	inputYPositions1.put(input.name, input.getSite().getY());
+		    }
+		    for(Output output: packedCircuit.outputs.values())
+		    {
+		    	outputXPositions1.put(output.name, output.getSite().getX());
+		    	outputYPositions1.put(output.name, output.getSite().getY());
+		    }
+		}
+	    
+		boolean success = true;
+		{
+			NetReaderTwo netReader = new NetReaderTwo();
+		    try
+			{
+				netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/or1200.net", 6, 8);
+			}
+		    catch(IOException ioe)
+		    {
+		    	System.err.println("Couldn't read netlist file!");
+		    	return;
+		    }
+		    
+		    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+			
+			visualAnalyticalTwo(packedCircuit);
+			
+			for(Input input: packedCircuit.inputs.values())
+		    {
+		    	if(input.getSite().getX() != inputXPositions1.get(input.name) || 
+		    					input.getSite().getY() != inputYPositions1.get(input.name))
+		    	{
+		    		success = false;
+		    	}
+		    }
+		    for(Output output: packedCircuit.outputs.values())
+		    {
+		    	if(output.getSite().getX() != outputXPositions1.get(output.name) || 
+		    					output.getSite().getY() != outputYPositions1.get(output.name))
+		    	{
+		    		success = false;
+		    	}
+		    }
+		}
+		
+		if(!success)
+		{
+			System.out.println("Not the same IO placement!");
+		}
+		else
+		{
+			System.out.println("The same IO placement!");
+		}
+		
 	}
 	
 	private static void testTimingCostCalculator(PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit)

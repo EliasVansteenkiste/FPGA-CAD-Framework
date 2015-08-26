@@ -27,26 +27,7 @@ public class RandomPlacer
 	public static void placeCLBs(PackedCircuit c, FourLutSanitized a)
 	{
 		Random rand= new Random();
-		Set<Site> temp = new HashSet<Site>();
-		for (int x=1;x<a.getWidth()+1;x++)
-		{
-			for (int y=1;y<a.getHeight()+1;y++)
-			{
-				Site s = a.getSite(x,y,0);
-				s.setBlock(null);
-				temp.add(s);				
-			}
-		}
-		for(Clb b:c.clbs.values())
-		{
-			if (b instanceof Clb)
-			{
-				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
-				temp.remove(site);
-				site.setBlock(b);
-				b.setSite(site);
-			}	
-		}
+		placeCLBs(c, a, rand);
 	}
 	
 	public static void placeCLBs(PackedCircuit c, FourLutSanitized a, Random rand)
@@ -73,32 +54,8 @@ public class RandomPlacer
 		}
 	}
 	
-	
-	public static void placeCLBsandIOs(PackedCircuit c, FourLutSanitized a, Random rand)
+	public static void placeRandomIOs(PackedCircuit c, FourLutSanitized a, Random rand)
 	{
-		//Random place CLBs
-		Set<Site> temp = new HashSet<Site>();
-		for (int x=1;x<a.getWidth()+1;x++)
-		{
-			for (int y=1;y<a.getHeight()+1;y++)
-			{
-				Site s = a.getSite(x,y,0);
-				s.setBlock(null);
-				temp.add(s);				
-			}
-		}
-		for(Clb b:c.clbs.values())
-		{
-			if (b instanceof Clb)
-			{
-				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
-				temp.remove(site);
-				site.setBlock(b);
-				b.setSite(site);
-			}	
-		}
-		
-		//Random Place IOs
 		//Clear all existing placements
 		Set<IoSite> tempIOs = new HashSet<IoSite>();
 		for (int x=1;x<a.getWidth()+1;x++)
@@ -158,31 +115,8 @@ public class RandomPlacer
 		}
 	}
 	
-	public static void placeCLBsandFixedIOs(PackedCircuit c, FourLutSanitized a, Random rand)
+	public static void placeDeterministicIOs(PackedCircuit c, FourLutSanitized a)
 	{
-		//Random place CLBs
-		Set<Site> temp = new HashSet<Site>();
-		for (int x=1;x<a.getWidth()+1;x++)
-		{
-			for (int y=1;y<a.getHeight()+1;y++)
-			{
-				Site s = a.getSite(x,y,0);
-				s.setBlock(null);
-				temp.add(s);				
-			}
-		}
-		for(Clb b:c.clbs.values())
-		{
-			if (b instanceof Clb)
-			{
-				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
-				temp.remove(site);
-				site.setBlock(b);
-				b.setSite(site);
-			}	
-		}
-
-		//Deterministic place IOs
 		int index = 0;
 		for(Input input:c.inputs.values())
 		{
@@ -190,10 +124,10 @@ public class RandomPlacer
 			IoSite site = a.getIOSite(index);
 			site.setBlock(input);
 			input.setSite(site);
-			index += 2;
+			index += 8;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = (index % 8) + 1;
 			}
 		}
 		for(Output output:c.outputs.values())
@@ -202,15 +136,33 @@ public class RandomPlacer
 			IoSite site = a.getIOSite(index);
 			site.setBlock(output);
 			output.setSite(site);
-			index += 2;
+			index += 8;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = 1;
+				index = (index % 8) + 1;
 			}
 		}
 	}
 	
-	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand)
+	public static void placeCLBsandIOs(PackedCircuit c, FourLutSanitized a, Random rand)
+	{
+		//Random place CLBs
+		placeCLBs(c, a, rand);
+		
+		//Random Place IOs
+		placeRandomIOs(c, a, rand);
+	}
+	
+	public static void placeCLBsandFixedIOs(PackedCircuit c, FourLutSanitized a, Random rand)
+	{
+		//Random place CLBs
+		placeCLBs(c, a, rand);
+
+		//Deterministic place IOs
+		placeDeterministicIOs(c, a);
+	}
+	
+	public static void placeClbsAndHbs(PackedCircuit c, HeterogeneousArchitecture a, Random rand)
 	{
 		//Initialize data structures
 		ArrayList<ClbSite> clbSites = new ArrayList<>();
@@ -285,36 +237,6 @@ public class RandomPlacer
 				hardBlock.setSite(site);
 			}
 		}
-		
-		//Deterministic place IOs
-		int index = 0;
-		ArrayList<IoSite> IOSites = a.getIOSites();
-		for(Input input:c.inputs.values())
-		{
-			input.fixed = true;
-			//input.fixed = false;
-			IoSite site = IOSites.get(index);
-			site.setBlock(input);
-			input.setSite(site);
-			index += 2;
-			if(index >= a.getHeight()*2 + a.getWidth()*2)
-			{
-				index = 1;
-			}
-		}
-		for(Output output:c.outputs.values())
-		{
-			output.fixed = true;
-			//output.fixed = false;
-			IoSite site = IOSites.get(index);
-			site.setBlock(output);
-			output.setSite(site);
-			index += 2;
-			if(index >= a.getHeight()*2 + a.getWidth()*2)
-			{
-				index = 1;
-			}
-		}
 	}
 	
 	public static void placeFixedIOs(PackedCircuit c, HeterogeneousArchitecture a)
@@ -322,6 +244,7 @@ public class RandomPlacer
 		//Deterministic place IOs
 		int index = 0;
 		ArrayList<IoSite> IOSites = a.getIOSites();
+		int nbSites = IOSites.size();
 		for(Input input:c.inputs.values())
 		{
 			input.fixed = true;
@@ -329,10 +252,10 @@ public class RandomPlacer
 			IoSite site = IOSites.get(index);
 			site.setBlock(input);
 			input.setSite(site);
-			index += 2;
-			if(index >= a.getHeight()*2 + a.getWidth()*2)
+			index += 8;
+			if(index >= nbSites)
 			{
-				index = 1;
+				index = (index % 8) + 1;
 			}
 		}
 		for(Output output:c.outputs.values())
@@ -342,12 +265,21 @@ public class RandomPlacer
 			IoSite site = IOSites.get(index);
 			site.setBlock(output);
 			output.setSite(site);
-			index += 2;
-			if(index >= a.getHeight()*2 + a.getWidth()*2)
+			index += 8;
+			if(index >= nbSites)
 			{
-				index = 1;
+				index = (index % 8) + 1;
 			}
 		}
+	}
+	
+	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand)
+	{
+		//Random place CLBs and HBs
+		placeClbsAndHbs(c, a, rand);
+		
+		//Deterministic place IOs
+		placeFixedIOs(c, a);
 	}
 	
 //	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand, ArrayList<ArrayList<Block>> packedIOs)
