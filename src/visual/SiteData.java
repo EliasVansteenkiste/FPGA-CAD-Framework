@@ -42,7 +42,7 @@ public class SiteData {
 		int width;
 		int hight;
 
-		if (site.block != null)
+		if (site.getBlock() != null)
 		{
 			g.setColor(occupiedColor);
 		}
