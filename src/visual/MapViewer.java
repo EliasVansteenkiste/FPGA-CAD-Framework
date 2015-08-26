@@ -9,7 +9,7 @@ import circuit.Net;
 import circuit.Connection;
 
 import architecture.FourLutSanitized;
-import architecture.old.RouteNode;
+import architecture.RouteNode;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

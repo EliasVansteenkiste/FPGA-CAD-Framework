@@ -22,6 +22,11 @@ public class Flipflop extends Block
 		input = new Pin(name + "_FFin", PinType.SINK, this);
 		clock = new Pin(name + "_clock", PinType.SINK, this);
 	}
+	
+	@Override
+	public int maxNets() {
+		return 2;
+	}
 
 	public Pin getOutput() {
 		return output;

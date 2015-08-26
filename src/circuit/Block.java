@@ -2,7 +2,7 @@ package circuit;
 
 import architecture.Site;
 
-public class Block {
+public abstract class Block {
 	public String name;
 	public BlockType type;
 	
@@ -14,6 +14,8 @@ public class Block {
 		this.name = name;
 		this.type = type;
 	}
+	
+	public abstract int maxNets();
 
 	@Override
 	public String toString() {

@@ -37,6 +37,11 @@ public class HardBlock extends Block
 		}
 	}
 	
+	@Override
+	public int maxNets() {
+		return inputs.length + outputs.length;
+	}
+	
 	public Pin[] getInputs()
 	{
 		return inputs;

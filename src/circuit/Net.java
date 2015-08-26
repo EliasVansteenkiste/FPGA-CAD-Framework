@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import architecture.old.RouteNode;
+import architecture.RouteNode;
 
 public class Net extends Block{
 
@@ -36,6 +36,11 @@ public class Net extends Block{
 		super(name, BlockType.NET);
 		sinks = new Vector<Pin>();
 		routeNodes = new HashSet<RouteNode>();
+	}
+	
+	@Override
+	public int maxNets() {
+		return -1;
 	}
 
 	public Collection<Block> blocks() {

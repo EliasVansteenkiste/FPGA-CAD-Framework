@@ -100,7 +100,7 @@ public class Options {
 		
 		// Test if the output folder exists
 		if(!this.outputFolder.exists()) {
-			System.err.println("Output folder not found: " + this.outputFolder);
+			this.error("Output folder not found: " + this.outputFolder);
 		}
 		
 		
@@ -124,11 +124,10 @@ public class Options {
 		
 		// Test if the input net file exists and is not a directory
 		if(!this.netFile.exists()) {
-			System.err.println("Input net file not found: " + this.netFile);
-			System.exit(1);
+			this.error("Input net file not found: " + this.netFile);
+			
 		} else if(this.netFile.isDirectory()) {
-			System.err.println("Input net file is a directory:" + this.netFile);
-			System.exit(1);
+			this.error("Input net file is a directory:" + this.netFile);
 		}
 		
 		

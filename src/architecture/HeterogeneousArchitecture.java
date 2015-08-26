@@ -70,7 +70,9 @@ public class HeterogeneousArchitecture extends Architecture
 		//Insert hard blocks in array
 		width = size;
 		height = size;
-		siteArray = new Site[width+2][height+2][2];
+		n = 2;
+		
+		siteArray = new Site[width+2][height+2][n];
 		int deltaHardBlockColumns = size / (totalNbHardBlockColumns + 1);
 		int leftToPlace = totalNbHardBlockColumns;
 		int nextLeft = deltaHardBlockColumns;

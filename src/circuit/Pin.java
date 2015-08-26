@@ -1,5 +1,5 @@
 package circuit;
-import architecture.old.RouteNode;
+import architecture.RouteNode;
 
 
 public class Pin {

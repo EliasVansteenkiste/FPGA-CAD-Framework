@@ -18,9 +18,9 @@ import architecture.Architecture;
 import architecture.FourLutSanitized;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
+import architecture.RouteNode;
 import architecture.Site;
 import architecture.SiteType;
-import architecture.old.RouteNode;
 
 public class PackedCircuit extends Circuit{
 
@@ -43,7 +43,11 @@ public class PackedCircuit extends Circuit{
 
 	public int numBlocks()
 	{
-		return inputs.size()+outputs.size()+clbs.size();
+		return inputs.size() + outputs.size() + clbs.size() + hardBlocks.size();
+	}
+	
+	public Map<String, Clb> getClbs() {
+		return clbs;
 	}
 
 	public void place(Placement p, FourLutSanitized a) {

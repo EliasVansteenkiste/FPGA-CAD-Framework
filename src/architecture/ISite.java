@@ -1,7 +1,5 @@
 package architecture;
 
-import architecture.old.RouteNode;
-import architecture.old.RouteNodeType;
 
 public class ISite extends Site {
 

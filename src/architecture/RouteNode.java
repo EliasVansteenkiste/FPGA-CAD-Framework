@@ -1,10 +1,9 @@
-package architecture.old;
+package architecture;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import architecture.Site;
 
 public class RouteNode {
 	public String name;

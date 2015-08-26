@@ -28,6 +28,11 @@ public class Lut extends Block
 		}
 	}
 	
+	@Override
+	public int maxNets() {
+		return inputs.length + outputs.length;
+	}
+	
 	public Lut(String name, int nbOutputs, int nbInputs, boolean isSourceLut)
 	{
 		super(name, BlockType.LUT);

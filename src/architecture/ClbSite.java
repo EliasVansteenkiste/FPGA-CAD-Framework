@@ -2,8 +2,6 @@ package architecture;
 
 import java.util.Vector;
 
-import architecture.old.RouteNode;
-import architecture.old.RouteNodeType;
 
 public class ClbSite extends Site {
 

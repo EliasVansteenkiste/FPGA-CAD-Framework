@@ -2,7 +2,7 @@ package visual;
 
 import java.awt.Graphics;
 
-import architecture.old.RouteNode;
+import architecture.RouteNode;
 
 public class NodeData extends RouteNodeData {
 

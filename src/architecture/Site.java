@@ -1,6 +1,5 @@
 package architecture;
 
-import architecture.old.RouteNode;
 import circuit.Block;
 
 public class Site {

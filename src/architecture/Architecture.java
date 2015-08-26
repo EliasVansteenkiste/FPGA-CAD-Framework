@@ -8,7 +8,6 @@ import java.util.Vector;
 
 import circuit.Block;
 
-import architecture.old.RouteNode;
 
 public abstract class Architecture {
 	
@@ -19,7 +18,7 @@ public abstract class Architecture {
 	protected HashMap<SiteType, Vector<Site>> siteVectors;
 	protected Vector<RouteNode> routeNodeVector;
 	
-	protected int width, height;
+	protected int width, height, n;
 	
 	public Architecture()
 	{
@@ -42,6 +41,10 @@ public abstract class Architecture {
 	public int getHeight()
 	{
 		return height;
+	}
+	
+	public int getN() {
+		return n;
 	}
 	
 	

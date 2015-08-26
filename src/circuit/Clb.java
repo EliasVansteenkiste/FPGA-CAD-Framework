@@ -27,7 +27,11 @@ public class Clb extends Block {
 		}
 		
 		clock=new Pin(name+"_clock", PinType.SINK, this);
-
+	}
+	
+	@Override
+	public int maxNets() {
+		return this.input.length + this.output.length;
 	}
 	
 	public Ble getBle(int index)

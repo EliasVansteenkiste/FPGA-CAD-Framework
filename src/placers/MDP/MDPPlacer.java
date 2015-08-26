@@ -7,7 +7,10 @@ import java.util.Vector;
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import circuit.Block;
+import circuit.Clb;
+import circuit.Input;
 import circuit.PackedCircuit;
+import circuit.Pin;
 import architecture.Architecture;
 import architecture.FourLutSanitized;
 import architecture.HeterogeneousArchitecture;
@@ -21,6 +24,8 @@ public class MDPPlacer extends Placer {
 	}
 	
 	private int width, height;
+	private MDPPlacement placement;
+	
 	
 	public MDPPlacer(FourLutSanitized architecture, PackedCircuit circuit, HashMap<String, String> options) {
 		super(architecture, circuit, options);
@@ -28,21 +33,10 @@ public class MDPPlacer extends Placer {
 		this.width = architecture.getWidth();
 		this.height = architecture.getHeight();
 		
-		this.getBlocksAndNets();
+		this.placement = new MDPPlacement(architecture, circuit);
 	}
 	
-	private void getBlocksAndNets() {
-		Vector<Site> sites = architecture.getSites(SiteType.CLB);
-		for(Site site : sites) {
-			
-			Block block = site.getBlock();
-			if(block == null) {
-				continue;
-			}
-			
-			
-		}
-	}
+	
 	
 	public void place() {
 		

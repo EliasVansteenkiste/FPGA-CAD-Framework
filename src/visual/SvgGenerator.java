@@ -6,8 +6,8 @@ import java.util.Collection;
 import architecture.ClbSite;
 import architecture.FourLutSanitized;
 import architecture.IoSite;
+import architecture.RouteNode;
 import architecture.Site;
-import architecture.old.RouteNode;
 
 public class SvgGenerator {
 	static int clbWidth = 100;

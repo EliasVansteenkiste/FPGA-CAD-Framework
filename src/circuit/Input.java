@@ -7,4 +7,9 @@ public class Input extends Block {
 		super(name, BlockType.INPUT);
 		output = new Pin(name+"_INPUTout", PinType.SOURCE,this);
 	}
+	
+	@Override
+	public int maxNets() {
+		return 1;
+	}
 }

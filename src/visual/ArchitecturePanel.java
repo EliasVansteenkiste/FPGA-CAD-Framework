@@ -13,8 +13,8 @@ import javax.swing.JPanel;
 
 import architecture.ClbSite;
 import architecture.FourLutSanitized;
+import architecture.RouteNode;
 import architecture.Site;
-import architecture.old.RouteNode;
 import circuit.Block;
 import circuit.Net;
 import circuit.Connection;

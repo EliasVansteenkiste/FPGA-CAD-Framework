@@ -3,7 +3,7 @@ package visual;
 import java.awt.Color;
 import java.awt.Graphics;
 
-import architecture.old.RouteNode;
+import architecture.RouteNode;
 
 public abstract class RouteNodeData {
 	protected static double nodeWidth = 0.15;

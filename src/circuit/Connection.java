@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import architecture.old.RouteNode;
+import architecture.RouteNode;
 
 
 public class Connection {

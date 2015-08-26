@@ -2,8 +2,6 @@ package architecture;
 
 import java.util.Vector;
 
-import architecture.old.RouteNode;
-import architecture.old.RouteNodeType;
 
 import circuit.PackedCircuit;
 
@@ -29,11 +27,12 @@ public class FourLutSanitized extends Architecture
 		super();
 		this.width = width;
 		this.height = height;
+		this.n = 2;
 		this.channelWidth = channelWidth;
 		
 		int x, y, n;
 		
-		siteArray = new Site[width+2][height+2][2];
+		siteArray = new Site[width+2][height+2][this.n];
 		
 		//Generate routing wires
 		@SuppressWarnings("unchecked")
