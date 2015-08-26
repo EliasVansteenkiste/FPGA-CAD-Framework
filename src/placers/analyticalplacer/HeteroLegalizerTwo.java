@@ -450,7 +450,7 @@ public class HeteroLegalizerTwo
 				{
 					y--;
 				}
-				Site site = architecture.getSite(x, y);
+				Site site = architecture.getSite(x, y, 0);
 				if(typeName.equals("CLB"))
 				{
 					if(site.getType() == SiteType.CLB)
@@ -704,7 +704,7 @@ public class HeteroLegalizerTwo
 			boolean alreadyRunning = false;
 			for(int x = areaXDownBound; x < areaXUpBound; x++)
 			{
-				Site site = architecture.getSite(x, 1);
+				Site site = architecture.getSite(x, 1, 0);
 				if(typeName.equals("CLB"))
 				{
 					if(site.getType() == SiteType.CLB)
@@ -1065,7 +1065,7 @@ public class HeteroLegalizerTwo
 				{
 					y--;
 				}
-				Site site = architecture.getSite(x, y);
+				Site site = architecture.getSite(x, y, 0);
 				if(typeName.equals("CLB"))
 				{
 					if(site.getType() == SiteType.CLB)
@@ -1319,7 +1319,7 @@ public class HeteroLegalizerTwo
 			boolean alreadyRunning = false;
 			for(int x = areaXDownBound; x < areaXUpBound; x++)
 			{
-				Site site = architecture.getSite(x, 1);
+				Site site = architecture.getSite(x, 1, 0);
 				if(typeName.equals("CLB"))
 				{
 					if(site.getType() == SiteType.CLB)
@@ -2099,7 +2099,7 @@ public class HeteroLegalizerTwo
 		boolean toReturn;
 		if (currentX >= minimalX && currentX <= maximalX && currentY >= minimalY && currentY <= maximalY)
 		{
-			Site site = architecture.getSite(currentX, currentY);
+			Site site = architecture.getSite(currentX, currentY, 0);
 			if (site.getType() == SiteType.CLB)
 			{
 				if (typeName.equals("CLB") && !occupied[currentY - minimalY][currentX - minimalX])
@@ -2391,16 +2391,16 @@ public class HeteroLegalizerTwo
 			{
 				if (typeName.equals("CLB"))
 				{
-					if (architecture.getSite(x, 1).getType() == SiteType.CLB)
+					if (architecture.getSite(x, 1, 0).getType() == SiteType.CLB)
 					{
 						curNumberOfLegalSites += curNbBlocksPerColumn;
 					}
 				} else
 				// We are working with hardBlocks
 				{
-					if (architecture.getSite(x, 1).getType() == SiteType.HARDBLOCK)
+					if (architecture.getSite(x, 1, 0).getType() == SiteType.HARDBLOCK)
 					{
-						HardBlockSite hbSite = (HardBlockSite) architecture.getSite(x, 1);
+						HardBlockSite hbSite = (HardBlockSite) architecture.getSite(x, 1, 0);
 						if (hbSite.getTypeName().equals(typeName))
 						{
 							curNumberOfLegalSites += curNbBlocksPerColumn;

@@ -61,7 +61,8 @@ public class TD_SAPlacer extends SAPlacer
 			for (int i =0; i<movesPerTemperature;i++) 
 			{
 				Swap swap = findSwap(Rlim);
-				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+				if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+												(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 				{
 					double deltaBBCost = calculator.calculateDeltaCost(swap);
 					double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
@@ -148,7 +149,8 @@ public class TD_SAPlacer extends SAPlacer
 			for (int i =0; i<movesPerTemperature;i++) 
 			{
 				Swap swap = findSwap(Rlim);
-				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+				if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+							(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 				{
 					double deltaBBCost = calculator.calculateDeltaCost(swap);
 					double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
@@ -205,7 +207,8 @@ public class TD_SAPlacer extends SAPlacer
 			Swap swap = findSwap(maxFPGAdimension);			
 			
 			//Swap
-			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+								(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 			{
 				double deltaBBCost = calculator.calculateDeltaCost(swap);
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
@@ -253,7 +256,8 @@ public class TD_SAPlacer extends SAPlacer
 			Swap swap = findSwap(Rlim);
 
 			//Swap
-			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+									(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 			{
 				double deltaBBCost = calculator.calculateDeltaCost(swap);
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);

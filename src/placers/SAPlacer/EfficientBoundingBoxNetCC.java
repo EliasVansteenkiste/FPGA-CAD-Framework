@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import circuit.Block;
-import circuit.Clb;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
@@ -87,8 +86,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 	{
 		double totalDeltaCost = 0.0;
 		
-		if(swap.pl1.type == )
-		toRevert[0] = swap.pl1.block;
+		toRevert[0] = swap.pl1.getBlock();
 		if(toRevert[0] != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[0]);
@@ -102,7 +100,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 			}
 		}
 		
-		toRevert[1] = swap.pl2.block;
+		toRevert[1] = swap.pl2.getBlock();
 		if(toRevert[1] != null)
 		{
 			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[1]);

@@ -39,7 +39,8 @@ public class WLD_SAPlacer extends SAPlacer
 			for (int i =0; i<movesPerTemperature;i++) 
 			{
 				Swap swap = findSwap(Rlim);
-				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+				if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+									(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 				{
 					double deltaCost = calculator.calculateDeltaCost(swap);
 					if(deltaCost<=0)
@@ -102,7 +103,8 @@ public class WLD_SAPlacer extends SAPlacer
 				Swap swap;
 				swap = findSwap(Rlim);
       			
-				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+				if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+												(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 				{
 					double deltaCost = calculator.calculateDeltaCost(swap);
 					
@@ -155,7 +157,8 @@ public class WLD_SAPlacer extends SAPlacer
 				Swap swap;
 				swap = findSwap(Rlim);
       			
-				if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+				if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+											(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 				{
 					double deltaCost = calculator.calculateDeltaCost(swap);
 					
@@ -198,7 +201,8 @@ public class WLD_SAPlacer extends SAPlacer
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap
-			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+										(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 			{
 				swap.apply();
 				calculator.pushThrough();
@@ -234,7 +238,8 @@ public class WLD_SAPlacer extends SAPlacer
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap
-			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+											(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 			{
 				if(deltaCost <= 0)
 				{
@@ -281,7 +286,8 @@ public class WLD_SAPlacer extends SAPlacer
 			double deltaCost = calculator.calculateDeltaCost(swap);
 			
 			//Swap
-			if((swap.pl1.block == null || (!swap.pl1.block.fixed)) && (swap.pl2.block == null || (!swap.pl2.block.fixed)))
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+								(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 			{
 				if(deltaCost <= 0)
 				{

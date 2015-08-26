@@ -1,5 +1,6 @@
 package architecture;
 
+import circuit.Block;
 import circuit.Clb;
 
 public class ClbSite extends Site
@@ -7,18 +8,20 @@ public class ClbSite extends Site
 
 	private Clb clb;
 	
-	public ClbSite(int x, int y)
+	public ClbSite(int z, GridTile tyle)
 	{
-		super(x, y, SiteType.CLB);
+		super(z, tyle);
 		clb = null;
 	}
 	
-	public void setClb(Clb clb)
+	@Override
+	public void setBlock(Block clb)
 	{
-		this.clb = clb;
+		this.clb = (Clb)clb;
 	}
 	
-	public Clb getClb()
+	@Override
+	public Block getBlock()
 	{
 		return clb;
 	}

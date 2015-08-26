@@ -1,37 +1,52 @@
 package architecture;
 
-public class Site {
-	private int x;
-	private int y;
-	private SiteType type;
+import circuit.Block;
+
+public abstract class Site
+{
 	
-	public Site(int x, int y, SiteType type)
+	private int z;
+	private GridTile tile;
+	
+	public Site(int z, GridTile tyle)
 	{
-		super();	
-		this.x=x;
-		this.y=y;
-		this.type=type;
+		this.z = z;
+		this.tile = tyle;
 	}
 	
-	public SiteType getType()
+	public GridTile getTyle()
 	{
-		return type;
+		return tile;
 	}
 	
 	public int getX()
 	{
-		return x;
+		return tile.getX();
 	}
 	
 	public int getY()
 	{
-		return y;
+		return tile.getY();
 	}
+	
+	public int getZ()
+	{
+		return z;
+	}
+	
+	public SiteType getType()
+	{
+		return tile.getType();
+	}
+	
+	public abstract void setBlock(Block block);
+	
+	public abstract Block getBlock();
 	
 	@Override
 	public String toString()
 	{
-		return "Site_" + x + "_" + y;
+		return "Site_" + tile.getX() + "_" + tile.getY() + "_" + z;
 	}
 	
 }

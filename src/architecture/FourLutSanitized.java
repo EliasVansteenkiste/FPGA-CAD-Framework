@@ -29,7 +29,7 @@ public class FourLutSanitized extends Architecture
 		this.IOSiteCapacity = IOSiteCapacity;
 		this.IOSites = new Vector<>();
 		
-		siteArray = new Site[width+2][height+2];
+		tileArray = new GridTile[width+2][height+2];
 				
 		//Generating the IO blocks
 		for(int y = 1; y < height+1; y++)
@@ -91,7 +91,7 @@ public class FourLutSanitized extends Architecture
 				y_to+=height;
 			if(y_to>= height+1)
 				y_to-=height;
-			pl2=siteArray[x_to][y_to];
+			pl2=tileArray[x_to][y_to].getSite(0);
 		}while(pl1==pl2);
 		return pl2;
 	}
@@ -120,15 +120,18 @@ public class FourLutSanitized extends Architecture
 	
 	private void putIoSite(int x, int y)
 	{
-		IoSite site = new IoSite(x, y, IOSiteCapacity);
-		addSite(site, x, y);
-		IOSites.add(site);
+		GridTile IOTile = GridTile.constructIOGridTile(x, y, IOSiteCapacity);
+		addTile(IOTile);
+		for(int i = 0; i < IOSiteCapacity; i++)
+		{
+			IOSites.add((IoSite)IOTile.getSite(i));
+		}
 	}
 	
 	private void putClbSite(int x,int y)
 	{
-		ClbSite site = new ClbSite(x, y);
-		addSite(site, x, y);
+		GridTile clbTile = GridTile.constructClbGridTile(x, y);
+		addTile(clbTile);
 	}
 
 }

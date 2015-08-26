@@ -2417,18 +2417,18 @@ public class Example
 		packedCircuit.getNets().put(packedNet5.name, packedNet5);
 		
 		HeterogeneousArchitecture architecture = new HeterogeneousArchitecture(packedCircuit, 8);
-		architecture.getIOSites().get(4).setIO(0, input3);
+		architecture.getIOSites().get(4).setBlock(input3);
 		input3.setSite(architecture.getIOSites().get(4));
-		architecture.getIOSites().get(12).setIO(0, output7);
+		architecture.getIOSites().get(12).setBlock(output7);
 		output7.setSite(architecture.getIOSites().get(12));
-		((ClbSite)(architecture.getSite(1, 4))).setClb(clba);		
-		clba.setSite(architecture.getSite(1, 4));
-		((ClbSite)(architecture.getSite(1, 5))).setClb(clbb);
-		clbb.setSite(architecture.getSite(1, 5));
-		((ClbSite)(architecture.getSite(1, 6))).setClb(clbc);
-		clbc.setSite(architecture.getSite(1, 6));
-		((ClbSite)(architecture.getSite(1, 8))).setClb(clbd);
-		clbd.setSite(architecture.getSite(1, 8));
+		((ClbSite)(architecture.getSite(1, 4, 0))).setBlock(clba);		
+		clba.setSite(architecture.getSite(1, 4, 0));
+		((ClbSite)(architecture.getSite(1, 5, 0))).setBlock(clbb);
+		clbb.setSite(architecture.getSite(1, 5, 0));
+		((ClbSite)(architecture.getSite(1, 6, 0))).setBlock(clbc);
+		clbc.setSite(architecture.getSite(1, 6, 0));
+		((ClbSite)(architecture.getSite(1, 8, 0))).setBlock(clbd);
+		clbd.setSite(architecture.getSite(1, 8, 0));
 		
 		return architecture;
 	}

@@ -1,5 +1,6 @@
 package architecture;
 
+import circuit.Block;
 import circuit.HardBlock;
 
 public class HardBlockSite extends Site
@@ -8,9 +9,9 @@ public class HardBlockSite extends Site
 	private String typeName;
 	private HardBlock hardBlock;
 	
-	public HardBlockSite(int x, int y, String typeName)
+	public HardBlockSite(String typeName, int z, GridTile tyle)
 	{
-		super(x, y, SiteType.HARDBLOCK);
+		super(z, tyle);
 		this.typeName = typeName;
 		hardBlock = null;
 	}
@@ -20,15 +21,17 @@ public class HardBlockSite extends Site
 		return typeName;
 	}
 	
-	public void setHardBlock(HardBlock hardBlock)
+	@Override
+	public void setBlock(Block hardBlock)
 	{
-		if(hardBlock.getTypeName().equals(typeName))
+		if(((HardBlock)hardBlock).getTypeName().equals(typeName))
 		{
-			this.hardBlock = hardBlock;
+			this.hardBlock = (HardBlock)hardBlock;
 		}
 	}
 	
-	public HardBlock getHardBlock()
+	@Override
+	public Block getBlock()
 	{
 		return hardBlock;
 	}

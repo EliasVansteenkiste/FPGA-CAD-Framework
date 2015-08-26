@@ -13,6 +13,7 @@ import circuit.Input;
 import circuit.Output;
 
 import architecture.FourLutSanitized;
+import architecture.GridTile;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
@@ -31,8 +32,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y);
-				((ClbSite)s).setClb(null);
+				Site s = a.getSite(x,y,0);
+				s.setBlock(null);
 				temp.add(s);				
 			}
 		}
@@ -42,7 +43,7 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				((ClbSite)site).setClb(b);
+				site.setBlock(b);
 				b.setSite(site);
 			}	
 		}
@@ -55,8 +56,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y);
-				((ClbSite)s).setClb(null);
+				Site s = a.getSite(x,y,0);
+				s.setBlock(null);
 				temp.add(s);				
 			}
 		}
@@ -66,7 +67,7 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				((ClbSite)site).setClb(b);
+				site.setBlock(b);
 				b.setSite(site);
 			}	
 		}
@@ -81,8 +82,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y);
-				((ClbSite)s).setClb(null);
+				Site s = a.getSite(x,y,0);
+				s.setBlock(null);
 				temp.add(s);				
 			}
 		}
@@ -92,7 +93,7 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				((ClbSite)site).setClb(b);
+				site.setBlock(b);
 				b.setSite(site);
 			}	
 		}
@@ -102,33 +103,37 @@ public class RandomPlacer
 		Set<IoSite> tempIOs = new HashSet<IoSite>();
 		for (int x=1;x<a.getWidth()+1;x++)
 		{
-			IoSite s = (IoSite)(a.getSite(x,0));
-			for(int i = 0; i < s.getCapacity(); i++)
+			GridTile ioTile1 = a.getTile(x, 0);
+			for(int i = 0; i < ioTile1.getCapacity(); i++)
 			{
-				s.setIO(i, null);
+				IoSite s = (IoSite)(ioTile1.getSite(i));
+				s.setBlock(null);
+				tempIOs.add(s);
 			}
-			tempIOs.add(s);
-			IoSite t = (IoSite)(a.getSite(x,a.getHeight()+1));
-			for(int i = 0; i < t.getCapacity(); i++)
+			GridTile ioTile2 = a.getTile(x,a.getHeight()+1);
+			for(int i = 0; i < ioTile2.getCapacity(); i++)
 			{
-				t.setIO(i, null);
+				IoSite t = (IoSite)(ioTile2.getSite(i));
+				t.setBlock(null);
+				tempIOs.add(t);
 			}
-			tempIOs.add(t);
 		}
 		for (int y=1;y<a.getHeight()+1;y++)
 		{
-			IoSite s = (IoSite)(a.getSite(0,y));
-			for(int i = 0; i < s.getCapacity(); i++)
+			GridTile ioTile1 = a.getTile(0,y);
+			for(int i = 0; i < ioTile1.getCapacity(); i++)
 			{
-				s.setIO(i, null);
+				IoSite s = (IoSite)(ioTile1.getSite(i));
+				s.setBlock(null);
+				tempIOs.add(s);
 			}
-			tempIOs.add(s);
-			IoSite t = (IoSite)(a.getSite(a.getWidth()+1,y));
-			for(int i = 0; i < t.getCapacity(); i++)
+			GridTile ioTile2 = a.getTile(a.getWidth()+1,y);
+			for(int i = 0; i < ioTile2.getCapacity(); i++)
 			{
-				t.setIO(i, null);
+				IoSite t = (IoSite)(ioTile2.getSite(i));
+				t.setBlock(null);
+				tempIOs.add(t);
 			}
-			tempIOs.add(t);
 		}
 		//Place all inputs and outputs
 		for(Input in:c.inputs.values())
@@ -136,18 +141,9 @@ public class RandomPlacer
 			if (in instanceof Input)
 			{
 				IoSite site=(IoSite) tempIOs.toArray()[rand.nextInt(tempIOs.size())];
-				for(int i = 0; i < site.getCapacity(); i++)
-				{
-					if(site.getIO(i) == null)
-					{
-						site.setIO(i,in);
-						in.setSite(site);
-						if(i == site.getCapacity() - 1) //If the IoSite is full ==> delete it from the available set of IoSites
-						{
-							tempIOs.remove(site);
-						}
-					}
-				}
+				site.setBlock(in);
+				in.setSite(site);
+				tempIOs.remove(site);
 			}	
 		}
 		for(Output out:c.outputs.values())
@@ -155,18 +151,9 @@ public class RandomPlacer
 			if (out instanceof Output)
 			{
 				IoSite site=(IoSite) tempIOs.toArray()[rand.nextInt(tempIOs.size())];
-				for(int i = 0; i < site.getCapacity(); i++)
-				{
-					if(site.getIO(i) == null)
-					{
-						site.setIO(i,out);
-						out.setSite(site);
-						if(i == site.getCapacity() - 1) //If the IoSite is full ==> delete it from the available set of IoSites
-						{
-							tempIOs.remove(site);
-						}
-					}
-				}
+				site.setBlock(out);
+				out.setSite(site);
+				tempIOs.remove(site);
 			}	
 		}
 	}
@@ -179,8 +166,8 @@ public class RandomPlacer
 		{
 			for (int y=1;y<a.getHeight()+1;y++)
 			{
-				Site s = a.getSite(x,y);
-				((ClbSite)s).setClb(null);
+				Site s = a.getSite(x,y,0);
+				s.setBlock(null);
 				temp.add(s);				
 			}
 		}
@@ -190,7 +177,7 @@ public class RandomPlacer
 			{
 				Site site=(Site) temp.toArray()[rand.nextInt(temp.size())];
 				temp.remove(site);
-				((ClbSite)site).setClb(b);
+				site.setBlock(b);
 				b.setSite(site);
 			}	
 		}
@@ -201,37 +188,24 @@ public class RandomPlacer
 		{
 			input.fixed = true;
 			IoSite site = a.getIOSite(index);
-			for(int i = 0; i < site.getCapacity(); i++)
-			{
-				if(site.getIO(i) == null)
-				{
-					site.setIO(i,input);
-				}
-			}
+			site.setBlock(input);
 			input.setSite(site);
 			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = index - (a.getHeight()*2 + a.getWidth()*2);
+				index = 1;
 			}
 		}
-		index = 0;
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
 			IoSite site = a.getIOSite(index);
-			for(int i = 0; i < site.getCapacity(); i++)
-			{
-				if(site.getIO(i) == null)
-				{
-					site.setIO(i,output);
-				}
-			}
+			site.setBlock(output);
 			output.setSite(site);
 			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = index - (a.getHeight()*2 + a.getWidth()*2);
+				index = 1;
 			}
 		}
 	}
@@ -246,15 +220,15 @@ public class RandomPlacer
 		{
 			for(int y = 1; y < a.getHeight() + 1; y++)
 			{
-				Site s = a.getSite(x, y);
+				Site s = a.getSite(x, y, 0);
 				if(s.getType() == SiteType.CLB)
 				{
-					((ClbSite)s).setClb(null);
+					s.setBlock(null);
 					clbSites.add((ClbSite)s);
 				}
 				else //Must be a hardBlock
 				{
-					((HardBlockSite)s).setHardBlock(null);
+					s.setBlock(null);
 					String typeName = ((HardBlockSite)s).getTypeName();
 					int curIndex = 0;
 					boolean found = false;
@@ -285,7 +259,7 @@ public class RandomPlacer
 			int randomIndex = rand.nextInt(clbSites.size());
 			ClbSite site = clbSites.get(randomIndex);
 			clbSites.remove(randomIndex);
-			site.setClb(clb);
+			site.setBlock(clb);
 			clb.setSite(site);
 		}
 				
@@ -307,7 +281,7 @@ public class RandomPlacer
 				int randomIndex = rand.nextInt(hardBlockSites.get(curIndex).size());
 				HardBlockSite site = hardBlockSites.get(curIndex).get(randomIndex);
 				hardBlockSites.get(curIndex).remove(randomIndex);
-				site.setHardBlock(hardBlock);
+				site.setBlock(hardBlock);
 				hardBlock.setSite(site);
 			}
 		}
@@ -320,39 +294,25 @@ public class RandomPlacer
 			input.fixed = true;
 			//input.fixed = false;
 			IoSite site = IOSites.get(index);
-			for(int i = 0; i < site.getCapacity(); i++)
-			{
-				if(site.getIO(i) == null)
-				{
-					site.setIO(i,input);
-				}
-			}
-			
+			site.setBlock(input);
 			input.setSite(site);
-			index += 1;
+			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = index - (a.getHeight()*2 + a.getWidth()*2);
+				index = 1;
 			}
 		}
-		index = 0;
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
 			//output.fixed = false;
 			IoSite site = IOSites.get(index);
-			for(int i = 0; i < site.getCapacity(); i++)
-			{
-				if(site.getIO(i) == null)
-				{
-					site.setIO(i, output);
-				}
-			}
+			site.setBlock(output);
 			output.setSite(site);
-			index += 1;
+			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = index - (a.getHeight()*2 + a.getWidth()*2);
+				index = 1;
 			}
 		}
 	}
@@ -367,38 +327,25 @@ public class RandomPlacer
 			input.fixed = true;
 			//input.fixed = false;
 			IoSite site = IOSites.get(index);
-			for(int i = 0; i < site.getCapacity(); i++)
-			{
-				if(site.getIO(i) == null)
-				{
-					site.setIO(i,input);
-				}
-			}
+			site.setBlock(input);
 			input.setSite(site);
-			index += 1;
+			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = index - (a.getHeight()*2 + a.getWidth()*2);
+				index = 1;
 			}
 		}
-		index = 0;
 		for(Output output:c.outputs.values())
 		{
 			output.fixed = true;
 			//output.fixed = false;
 			IoSite site = IOSites.get(index);
-			for(int i = 0; i < site.getCapacity(); i++)
-			{
-				if(site.getIO(i) == null)
-				{
-					site.setIO(i,output);
-				}
-			}
+			site.setBlock(output);
 			output.setSite(site);
-			index += 1;
+			index += 2;
 			if(index >= a.getHeight()*2 + a.getWidth()*2)
 			{
-				index = index - (a.getHeight()*2 + a.getWidth()*2);
+				index = 1;
 			}
 		}
 	}

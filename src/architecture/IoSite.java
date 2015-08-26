@@ -5,34 +5,27 @@ import circuit.BlockType;
 
 public class IoSite extends Site {
 
-	private Block[] ios;
+	private Block io;
 	
-	public IoSite(int x, int y, int capacity)
+	public IoSite(int z, GridTile tyle)
 	{
-		super(x, y, SiteType.IO);
-		ios = new Block[capacity];
-		for(int i = 0; i < ios.length; i++)
-		{
-			ios[i] = null;
-		}
+		super(z,tyle);
+		io = null;
 	}
 	
-	public void setIO(int n, Block block)
+	@Override
+	public void setBlock(Block block)
 	{
 		if(block.type == BlockType.INPUT || block.type == BlockType.OUTPUT)
 		{
-			ios[n] = block;
+			io = block;
 		}
 	}
 	
-	public Block getIO(int n)
+	@Override
+	public Block getBlock()
 	{
-		return ios[n];
-	}
-	
-	public int getCapacity()
-	{
-		return ios.length;
+		return io;
 	}
 
 }

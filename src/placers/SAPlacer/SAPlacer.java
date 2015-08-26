@@ -6,7 +6,6 @@ import java.util.Random;
 import java.util.Vector;
 
 import architecture.Architecture;
-import architecture.HeterogeneousArchitecture;
 import architecture.HardBlockSite;
 import circuit.Block;
 import circuit.BlockType;
@@ -50,13 +49,9 @@ public abstract class SAPlacer
 		{
 			swap.pl2 = architecture.randomHardBlockSite(Rlim, (HardBlockSite)swap.pl1);
 		}
-		else if(b.type == BlockType.INPUT)
+		else if(b.type == BlockType.INPUT || b.type == BlockType.OUTPUT)
 		{
-			swap.pl2 = architecture.randomISite(Rlim, swap.pl1);
-		}
-		else if(b.type == BlockType.OUTPUT)
-		{
-			swap.pl2 = architecture.randomOSite(Rlim, swap.pl1);
+			swap.pl2 = architecture.randomIOSite(Rlim, swap.pl1);
 		}
 		return swap;
 	}
@@ -166,8 +161,8 @@ public abstract class SAPlacer
 		while(clbIterator.hasNext())
 		{
 			Clb curClb = clbIterator.next();
-			int curX = curClb.getSite().x;
-			int curY = curClb.getSite().y;
+			int curX = curClb.getSite().getX();
+			int curY = curClb.getSite().getY();
 			if(curX > maxX)
 			{
 				maxX = curX;

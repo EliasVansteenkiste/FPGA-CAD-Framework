@@ -1,14 +1,13 @@
 package architecture;
 
-import java.util.Collection;
 import java.util.Random;
 import java.util.Vector;
 
 public abstract class Architecture {
 	
 	protected Random rand;
-	protected Vector<Site> siteVector;
-	protected Site[][] siteArray;
+	protected GridTile[][] tileArray;
+	private Vector<Site> siteVector;
 	protected int width;
 	protected int height;
 	
@@ -29,20 +28,28 @@ public abstract class Architecture {
 		return height;
 	}
 	
-	public Collection<Site> getSites()
+	public Site getSite(int x, int y, int z)
+	{
+		return tileArray[x][y].getSite(z);
+	}
+	
+	public GridTile getTile(int x, int y)
+	{
+		return tileArray[x][y];
+	}
+	
+	protected void addTile(GridTile tile)
+	{
+		tileArray[tile.getX()][tile.getY()] = tile;
+		for(int i = 0; i < tile.getCapacity(); i++)
+		{
+			siteVector.add(tile.getSite(i));
+		}
+	}
+	
+	public Vector<Site> getSites()
 	{
 		return siteVector;
-	}
-	
-	public Site getSite(int x, int y)
-	{
-		return siteArray[x][y];
-	}
-	
-	protected void addSite(Site site, int x, int y)
-	{
-		siteArray[x][y] = site;
-		siteVector.add(site);
 	}
 	
 	public abstract Site randomClbSite(int Rlim, Site pl1);

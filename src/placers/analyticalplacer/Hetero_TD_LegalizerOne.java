@@ -16,7 +16,6 @@ import circuit.HardBlock;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
-import architecture.ClbSite;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
@@ -365,7 +364,7 @@ public class Hetero_TD_LegalizerOne
 				{
 					y--;
 				}
-				Site site = architecture.getSite(x, y);
+				Site site = architecture.getSite(x, y, 0);
 				if(typeName.equals("CLB"))
 				{
 					if(site.getType() == SiteType.CLB)
@@ -627,7 +626,7 @@ public class Hetero_TD_LegalizerOne
 			boolean alreadyRunning = false;
 			for(int x = areaXDownBound; x < areaXUpBound; x++)
 			{
-				Site site = architecture.getSite(x, 1);
+				Site site = architecture.getSite(x, 1, 0);
 				if(typeName.equals("CLB"))
 				{
 					if(site.getType() == SiteType.CLB)
@@ -1211,25 +1210,12 @@ public class Hetero_TD_LegalizerOne
 		{
 			for(int j = 1; j <= maximalY; j++)
 			{
-				Site site = architecture.getSite(i, j);
-				if(site.getType() == SiteType.CLB)
+				Site site = architecture.getSite(i, j, 0);
+				if(site.getBlock() != null)
 				{
-					ClbSite clbSite = (ClbSite)site;
-					if(clbSite.getClb() != null)
-					{
-						clbSite.getClb().setSite(null);
-					}
-					clbSite.setClb(null);
+					site.getBlock().setSite(null);
 				}
-				else //Must be a hardBlockSite
-				{
-					HardBlockSite hbSite = (HardBlockSite)site;
-					if(hbSite.getHardBlock() != null)
-					{
-						hbSite.getHardBlock().setSite(null);
-					}
-					hbSite.setHardBlock(null);
-				}
+				site.setBlock(null);
 			}
 		}
 		
@@ -1237,8 +1223,8 @@ public class Hetero_TD_LegalizerOne
 		for(Clb clb:circuit.clbs.values())
 		{
 			int index = indexMap.get(clb);
-			Site site = architecture.getSite(xPositions[index], yPositions[index]);
-			((ClbSite)site).setClb(clb);
+			Site site = architecture.getSite(xPositions[index], yPositions[index], 0);
+			site.setBlock(clb);
 			clb.setSite(site);
 		}
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
@@ -1246,8 +1232,8 @@ public class Hetero_TD_LegalizerOne
 			for(HardBlock hb: hbVector)
 			{
 				int index = indexMap.get(hb);
-				Site site = architecture.getSite(xPositions[index], yPositions[index]);
-				((HardBlockSite)site).setHardBlock(hb);
+				Site site = architecture.getSite(xPositions[index], yPositions[index], 0);
+				site.setBlock(hb);
 				hb.setSite(site);
 			}
 		}
@@ -1259,7 +1245,7 @@ public class Hetero_TD_LegalizerOne
 		boolean toReturn;
 		if(currentX >= minimalX && currentX <= maximalX && currentY >= minimalY && currentY <= maximalY)
 		{
-			Site site = architecture.getSite(currentX, currentY);
+			Site site = architecture.getSite(currentX, currentY, 0);
 			if(site.getType() == SiteType.CLB)
 			{
 				if(typeName.equals("CLB") && !occupied[currentY - minimalY][currentX - minimalX])
@@ -1490,16 +1476,16 @@ public class Hetero_TD_LegalizerOne
 			{
 				if(typeName.equals("CLB"))
 				{
-					if(architecture.getSite(x, 1).getType() == SiteType.CLB)
+					if(architecture.getSite(x, 1, 0).getType() == SiteType.CLB)
 					{
 						curNumberOfLegalSites += curNbBlocksPerColumn;
 					}
 				}
 				else //We are working with hardBlocks
 				{
-					if(architecture.getSite(x, 1).getType() == SiteType.HARDBLOCK)
+					if(architecture.getSite(x, 1, 0).getType() == SiteType.HARDBLOCK)
 					{
-						HardBlockSite hbSite = (HardBlockSite)architecture.getSite(x, 1);
+						HardBlockSite hbSite = (HardBlockSite)architecture.getSite(x, 1, 0);
 						if(hbSite.getTypeName().equals(typeName))
 						{
 							curNumberOfLegalSites += curNbBlocksPerColumn;

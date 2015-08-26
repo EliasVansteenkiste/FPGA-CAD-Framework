@@ -15,11 +15,8 @@ import mathtools.Crs;
 import placers.Placer;
 import placers.random.RandomPlacer;
 
-import architecture.ClbSite;
-import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.Site;
-import architecture.SiteType;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.Clb;
@@ -877,25 +874,12 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		{
 			for(int j = 1; j <= maximalY; j++)
 			{
-				Site site = architecture.getSite(i, j);
-				if(site.getType() == SiteType.CLB)
+				Site site = architecture.getSite(i, j, 0);
+				if(site.getBlock() != null)
 				{
-					ClbSite clbSite = (ClbSite)site;
-					if(clbSite.getClb() != null)
-					{
-						clbSite.getClb().setSite(null);
-					}
-					clbSite.setClb(null);
+					site.getBlock().setSite(null);
 				}
-				else //Must be a hardBlockSite
-				{
-					HardBlockSite hbSite = (HardBlockSite)site;
-					if(hbSite.getHardBlock() != null)
-					{
-						hbSite.getHardBlock().setSite(null);
-					}
-					hbSite.setHardBlock(null);
-				}
+				site.setBlock(null);
 			}
 		}
 		
@@ -903,8 +887,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		for(Clb clb: clbs)
 		{
 			int index = indexMap.get(clb);
-			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index]);
-			((ClbSite)site).setClb(clb);
+			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
+			site.setBlock(clb);
 			clb.setSite(site);
 		}
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
@@ -912,8 +896,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 			for(HardBlock hb: hbVector)
 			{
 				int index = indexMap.get(hb);
-				Site site = architecture.getSite(bestLegalX[index], bestLegalY[index]);
-				((HardBlockSite)site).setHardBlock(hb);;
+				Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
+				site.setBlock(hb);;
 				hb.setSite(site);
 			}
 		}

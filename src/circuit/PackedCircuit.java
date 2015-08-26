@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
-import architecture.ClbSite;
 import architecture.HardBlockSite;
 import architecture.HeterogeneousArchitecture;
 import architecture.IoSite;
@@ -100,10 +99,9 @@ public class PackedCircuit extends Circuit{
 		{
 			if(site.getType() == SiteType.CLB)
 			{
-				ClbSite clbSite = (ClbSite)site;
-				if(clbSite.getClb() != null && clbSite.getClb().getSite() == clbSite)
+				if(site.getBlock() != null && site.getBlock().getSite() == site)
 				{
-					if(blockMap.remove(clbSite.getClb().name + "_CLB") == null)
+					if(blockMap.remove(site.getBlock().name + "_CLB") == null)
 					{
 						success = false;
 					}
@@ -114,11 +112,11 @@ public class PackedCircuit extends Circuit{
 				if(site.getType() == SiteType.HARDBLOCK)
 				{
 					HardBlockSite hbSite = (HardBlockSite)site;
-					if(hbSite.getHardBlock() != null && hbSite.getHardBlock().getSite() == hbSite)
+					if(hbSite.getBlock() != null && hbSite.getBlock().getSite() == hbSite)
 					{
-						if(hbSite.getHardBlock().getTypeName().equals(hbSite.getTypeName()))
+						if(((HardBlock)hbSite.getBlock()).getTypeName().equals(hbSite.getTypeName()))
 						{
-							if(blockMap.remove(hbSite.getHardBlock().name + "_HB") == null)
+							if(blockMap.remove(hbSite.getBlock().name + "_HB") == null)
 							{
 								success = false;
 							}
@@ -130,32 +128,29 @@ public class PackedCircuit extends Circuit{
 		
 		for(IoSite ioSite: architecture.getIOSites())
 		{
-			for(int i = 0; i < ioSite.getCapacity(); i++)
+			if(ioSite.getBlock() != null)
 			{
-				if(ioSite.getIO(i) != null)
+				if(ioSite.getBlock().type == BlockType.INPUT)
 				{
-					if(ioSite.getIO(i).type == BlockType.INPUT)
+					Input input = (Input)ioSite.getBlock();
+					if(input.getSite() == ioSite)
 					{
-						Input input = (Input)ioSite.getIO(i);
-						if(input.getSite() == ioSite)
+						if(blockMap.remove(input.name + "_INPUT") == null)
 						{
-							if(blockMap.remove(input.name + "_INPUT") == null)
-							{
-								success = false;
-							}
+							success = false;
 						}
 					}
-					else
+				}
+				else
+				{
+					if(ioSite.getBlock().type == BlockType.OUTPUT)
 					{
-						if(ioSite.getIO(i).type == BlockType.OUTPUT)
+						Output output = (Output)ioSite.getBlock();
+						if(output.getSite() == ioSite)
 						{
-							Output output = (Output)ioSite.getIO(i);
-							if(output.getSite() == ioSite)
+							if(blockMap.remove(output.name + "_OUTPUT") == null)
 							{
-								if(blockMap.remove(output.name + "_OUTPUT") == null)
-								{
-									success = false;
-								}
+								success = false;
 							}
 						}
 					}

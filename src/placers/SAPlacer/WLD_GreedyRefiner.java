@@ -4,7 +4,6 @@ import java.util.Random;
 
 import architecture.Architecture;
 import architecture.HardBlockSite;
-import architecture.HeterogeneousArchitecture;
 import circuit.Block;
 import circuit.BlockType;
 import circuit.PackedCircuit;

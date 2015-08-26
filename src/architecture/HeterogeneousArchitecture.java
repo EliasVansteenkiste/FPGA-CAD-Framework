@@ -11,14 +11,14 @@ public class HeterogeneousArchitecture extends Architecture
 	
 	private String[] hardBlockTypeNames;
 	private ArrayList<IoSite> IOSites;
-	private int IOSiteCapacity;
+	private int IOTileCapacity;
 	
 	/*
 	 * A heterogeneousArchitecture is always fitted to a circuit
 	 */
-	public HeterogeneousArchitecture(PackedCircuit circuit, int IOSiteCapacity)
+	public HeterogeneousArchitecture(PackedCircuit circuit, int IOTileCapacity)
 	{
-		this.IOSiteCapacity = IOSiteCapacity;
+		this.IOTileCapacity = IOTileCapacity;
 		int nbClbs = circuit.clbs.values().size();
 		int nbInputs = circuit.getInputs().values().size();
 		int nbOutputs = circuit.getOutputs().values().size();
@@ -33,8 +33,8 @@ public class HeterogeneousArchitecture extends Architecture
 		
 		//Create an x by x architecture which ensures that we can house all IO's and have enough CLB sites
 
-		int nbIOSites = (int)Math.ceil((double)(nbInputs + nbOutputs) / IOSiteCapacity);
-		int size1 = (int)Math.ceil((double)nbIOSites / 4);
+		int nbIOTiles = (int)Math.ceil((double)(nbInputs + nbOutputs) / IOTileCapacity);
+		int size1 = (int)Math.ceil((double)nbIOTiles / 4);
 		int size2 = (int)Math.ceil(Math.sqrt(nbClbs * FILL_GRADE));
 		int size;
 		if(size1 > size2)
@@ -64,7 +64,7 @@ public class HeterogeneousArchitecture extends Architecture
 		//Insert hard blocks in array
 		width = size;
 		height = size;
-		siteArray = new Site[width+2][height+2];
+		tileArray = new GridTile[width+2][height+2];
 		int deltaHardBlockColumns = size / (totalNbHardBlockColumns + 1);
 		int leftToPlace = totalNbHardBlockColumns;
 		int nextLeft = deltaHardBlockColumns;
@@ -143,7 +143,7 @@ public class HeterogeneousArchitecture extends Architecture
 		{
 			int x_to = rand.nextInt(maxX - minX + 1) + minX;
 			int y_to = rand.nextInt(maxY - minY + 1) + minY;
-			pl2 = siteArray[x_to][y_to];
+			pl2 = tileArray[x_to][y_to].getSite(0);
 			if(pl2.getType() == SiteType.HARDBLOCK)
 			{
 				pl2 = null;
@@ -176,11 +176,11 @@ public class HeterogeneousArchitecture extends Architecture
 		{
 			maxY = height;
 		}
-		while((siteArray[minX][1]).getType() != SiteType.HARDBLOCK)
+		while((tileArray[minX][1]).getType() != SiteType.HARDBLOCK)
 		{
 			minX++;
 		}
-		while((siteArray[maxX][1]).getType() != SiteType.HARDBLOCK)
+		while((tileArray[maxX][1]).getType() != SiteType.HARDBLOCK)
 		{
 			maxX--;
 		}
@@ -188,7 +188,7 @@ public class HeterogeneousArchitecture extends Architecture
 		{
 			int x_to = rand.nextInt(maxX - minX + 1) + minX;
 			int y_to = rand.nextInt(maxY - minY + 1) + minY;
-			pl2 = siteArray[x_to][y_to];
+			pl2 = tileArray[x_to][y_to].getSite(0);
 			if(pl2.getType() == SiteType.HARDBLOCK)
 			{
 				if(!((HardBlockSite)pl2).getTypeName().contains(typeName))
@@ -211,48 +211,49 @@ public class HeterogeneousArchitecture extends Architecture
 		do
 		{
 			pl2 = IOSites.get(rand.nextInt(IOSites.size()));
-			if(pl2 == null)
-			{
-				System.out.println("woops");
-			}
 			manhattanDistance = Math.abs(pl1.getX() - pl2.getX()) + Math.abs(pl1.getY() - pl2.getY());
-		}while(pl1 == pl2 || manhattanDistance > Rlim);
+		}while(pl1 == pl2 || manhattanDistance > Rlim || manhattanDistance == 0);
 		return pl2;
 	}
 	
 	private void insertClbColumn(int x)
 	{
-		putIoSite(x,0);
+		putIoTile(x,0);
 		for(int y = 1; y < height + 1; y++)
 		{
-			addSite(new ClbSite(x,y), x, y);
+			GridTile clbTile = GridTile.constructClbGridTile(x, y);
+			addTile(clbTile);
 		}
-		putIoSite(x,height+1);
+		putIoTile(x,height+1);
 	}
 	
 	private void insertIOColumn(int x)
 	{
 		for(int y = 1; y < height + 1; y++)
 		{
-			putIoSite(x,y);
+			putIoTile(x,y);
 		}
 	}
 	
 	private void insertHardBlockColumn(int x, String typeName)
 	{
-		putIoSite(x,0);
+		putIoTile(x,0);
 		for(int y = 1; y < height + 1; y++)
 		{
-			addSite(new HardBlockSite(x, y, typeName), x, y);
+			GridTile hbTile = GridTile.constructHardBlockGridTile(x, y, typeName);
+			addTile(hbTile);
 		}
-		putIoSite(x,height+1);
+		putIoTile(x,height+1);
 	}
 	
-	private void putIoSite(int x, int y)
+	private void putIoTile(int x, int y)
 	{
-		IoSite site = new IoSite(x, y, IOSiteCapacity);
-		addSite(site, x, y);
-		IOSites.add(site);
+		GridTile ioTile = GridTile.constructIOGridTile(x, y, IOTileCapacity);
+		addTile(ioTile);
+		for(int i = 0; i < IOTileCapacity; i++)
+		{
+			IOSites.add((IoSite)ioTile.getSite(i));
+		}
 	}
 	
 	private boolean hardBlocksInThisColumn(int x, int delta, int total)
