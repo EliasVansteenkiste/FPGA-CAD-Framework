@@ -1,5 +1,6 @@
 package placers.SAPlacer;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import architecture.Architecture;
@@ -11,6 +12,18 @@ public class WLD_SAPlacer extends SAPlacer
 	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit)
 	{
 		super(architecture, circuit);
+	}
+	
+	public void place(HashMap<String, String> options)
+	{
+		//Effort level: affects the number of swaps per temperature
+		double inner_num = 1.0; //Default = Low effort
+		if(options.get("inner_num") != null)
+		{
+			inner_num = Double.parseDouble(options.get("inner_num"));
+		}
+		
+		place(inner_num);
 	}
 	
 	@Override

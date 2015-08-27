@@ -1,5 +1,6 @@
 package placers.SAPlacer;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import timinganalysis.TimingGraph;
@@ -9,11 +10,6 @@ import circuit.PrePackedCircuit;
 
 public class TD_SAPlacer extends SAPlacer
 {
-	
-	private static final double TRADE_OFF_FACTOR = 0.5;
-	private static final double TD_PLACE_EXP_FIRST = 1.0;
-	private static final double TD_PLACE_EXP_LAST = 8.0;
-	private static final int NB_ITERATIONS_BEFORE_RECALCULATE = 100000;
 	
 	private TimingGraph timingGraph;
 	private double previousBBCost;
@@ -26,23 +22,73 @@ public class TD_SAPlacer extends SAPlacer
 		timingGraph.buildTimingGraph();
 	}
 	
+	public void place(HashMap<String, String> options)
+	{
+		//Effort level: affects the number of swaps per temperature
+		double inner_num = 1.0; //Default = Low effort
+		if(options.get("inner_num") != null)
+		{
+			inner_num = Double.parseDouble(options.get("inner_num"));
+		}
+		
+		//Timing trade off factor: 0.0 = wire-length-driven
+		double tradeOffFactor = 0.5;
+		if(options.get("trade_off_factor") != null)
+		{
+			tradeOffFactor = Double.parseDouble(options.get("trade_off_factor"));
+		}
+		
+		//Starting criticality exponent
+		double tdPlaceExpFirst = 1.0;
+		if(options.get("crit_exp_first") != null)
+		{
+			tdPlaceExpFirst = Double.parseDouble(options.get("crit_exp_first"));
+		}
+		
+		//Final criticality exponent
+		double tdPlaceExpLast = 1.0;
+		if(options.get("crit_exp_last") != null)
+		{
+			tdPlaceExpLast = Double.parseDouble(options.get("crit_exp_last"));
+		}
+		
+		int nbIterationsBeforeRecalculate = 100000;
+		if(options.get("nb_iterations_before_recalculate") != null)
+		{
+			nbIterationsBeforeRecalculate = Integer.parseInt(options.get("nb_iterations_before_recalculate"));
+		}
+		
+		placeLoop(inner_num, tradeOffFactor, tdPlaceExpFirst, tdPlaceExpLast, nbIterationsBeforeRecalculate);
+	}
+	
 	@Override
 	public void place(double inner_num)
 	{
 		System.out.println("Effort level: " + inner_num);
 		
+		double tradeOffFactor = 0.5;
+		double tdPlaceExpFirst = 1.0;
+		double tdPlaceExpLast = 8.0;
+		int nbIterationsBeforeRecalculate = 100000;
+		
+		placeLoop(inner_num, tradeOffFactor, tdPlaceExpFirst, tdPlaceExpLast, nbIterationsBeforeRecalculate);
+	}
+	
+	private void placeLoop(double inner_num, double tradeOffFactor, double tdPlaceExpFirst, 
+										double tdPlaceExpLast, int nbIterationsBeforeRecalculate)
+	{
 		//Initialize SA parameters
 		calculator.recalculateFromScratch();
 		rand = new Random(1);
 		Rlimd = Math.max(architecture.getWidth(),architecture.getHeight());
 		int Rlim = initialRlim();
 		double firstRlim = Rlimd;
-		double criticalityExponent = updateCriticalityExponent(firstRlim);
+		double criticalityExponent = updateCriticalityExponent(firstRlim, tdPlaceExpFirst, tdPlaceExpLast);
 		timingGraph.setCriticalityExponent(criticalityExponent);
 		timingGraph.recalculateAllSlacksCriticalities();
 		previousBBCost = calculator.calculateTotalCost();
 		previousTDCost = timingGraph.calculateTotalCost();
-		double T = calculateInitialTemperature();
+		double T = calculateInitialTemperature(tradeOffFactor, nbIterationsBeforeRecalculate);
 		int movesPerTemperature = (int) (inner_num*Math.pow(circuit.numBlocks(),4.0/3.0));
 
 		//Print SA parameters
@@ -56,7 +102,7 @@ public class TD_SAPlacer extends SAPlacer
 			previousBBCost = calculator.calculateTotalCost();
 			previousTDCost = timingGraph.calculateTotalCost();
 			
-			int iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+			int iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
 			int alphaAbs=0;
 			for (int i =0; i<movesPerTemperature;i++) 
 			{
@@ -67,8 +113,8 @@ public class TD_SAPlacer extends SAPlacer
 					double deltaBBCost = calculator.calculateDeltaCost(swap);
 					double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
 					
-					double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
-										+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+					double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / previousBBCost
+										+ (tradeOffFactor * deltaTimingCost) / previousTDCost;
 					//double deltaCost = deltaBBCost;
 					
 					if(deltaCost<=0)
@@ -99,19 +145,24 @@ public class TD_SAPlacer extends SAPlacer
 				{
 					previousBBCost = calculator.calculateTotalCost();
 					previousTDCost = timingGraph.calculateTotalCost();
-					iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+					iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
 				}
 			}
 			double alpha = (double)alphaAbs/movesPerTemperature;
 			Rlim = updateRlim(alpha);
 			T=updateTemperature(T,alpha);
-			criticalityExponent = updateCriticalityExponent(firstRlim);
+			criticalityExponent = updateCriticalityExponent(firstRlim, tdPlaceExpFirst, tdPlaceExpLast);
 		}
 	}
 	
 	@Override
 	public void lowTempAnneal(double innerNum)
 	{
+		double tradeOffFactor = 0.5;
+		double tdPlaceExpFirst = 1.0;
+		double tdPlaceExpLast = 8.0;
+		int nbIterationsBeforeRecalculate = 100000;
+		
 		//Initialize SA parameters
 		calculator.recalculateFromScratch();
 		rand = new Random(1);
@@ -125,12 +176,12 @@ public class TD_SAPlacer extends SAPlacer
 		Rlimd = maxValue;
 		int Rlim = initialRlim();
 		double firstRlim = Rlimd;
-		double criticalityExponent = updateCriticalityExponent(firstRlim);
+		double criticalityExponent = updateCriticalityExponent(firstRlim, tdPlaceExpFirst, tdPlaceExpLast);
 		timingGraph.setCriticalityExponent(criticalityExponent);
 		timingGraph.recalculateAllSlacksCriticalities();
 		previousBBCost = calculator.calculateTotalCost();
 		previousTDCost = timingGraph.calculateTotalCost();
-		double T = calculateInitialTemperatureLow(Rlim);
+		double T = calculateInitialTemperatureLow(Rlim, tradeOffFactor);
 		int movesPerTemperature = (int) (innerNum*Math.pow(circuit.numBlocks(),4.0/3.0));
 		
 		//Print SA parameters
@@ -144,7 +195,7 @@ public class TD_SAPlacer extends SAPlacer
 			previousBBCost = calculator.calculateTotalCost();
 			previousTDCost = timingGraph.calculateTotalCost();
 			
-			int iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+			int iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
 			int alphaAbs=0;
 			for (int i =0; i<movesPerTemperature;i++) 
 			{
@@ -154,8 +205,8 @@ public class TD_SAPlacer extends SAPlacer
 				{
 					double deltaBBCost = calculator.calculateDeltaCost(swap);
 					double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-					double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
-										+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+					double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / previousBBCost
+										+ (tradeOffFactor * deltaTimingCost) / previousTDCost;
 					if(deltaCost<=0)
 					{
 						swap.apply();
@@ -184,22 +235,22 @@ public class TD_SAPlacer extends SAPlacer
 				{
 					previousBBCost = calculator.calculateTotalCost();
 					previousTDCost = timingGraph.calculateTotalCost();
-					iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+					iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
 				}
 			}
 			double alpha = (double)alphaAbs/movesPerTemperature;
 			Rlim = updateRlimLimited(alpha, maxValue);
 			T=updateTemperature(T,alpha);
-			criticalityExponent = updateCriticalityExponent(firstRlim);
+			criticalityExponent = updateCriticalityExponent(firstRlim, tdPlaceExpFirst, tdPlaceExpLast);
 		}
 	}
 	
-	private double calculateInitialTemperature()
+	private double calculateInitialTemperature(double tradeOffFactor, int nbIterationsBeforeRecalculate)
 	{
 		double	somDeltaKost=0;
 		double 	kwadratischeSomDeltaKost=0;
 		
-		int iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+		int iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
 		
 		for (int i = 0; i < circuit.numBlocks(); i++) 
 		{
@@ -212,8 +263,8 @@ public class TD_SAPlacer extends SAPlacer
 			{
 				double deltaBBCost = calculator.calculateDeltaCost(swap);
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-				double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
-									+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+				double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / previousBBCost
+									+ (tradeOffFactor * deltaTimingCost) / previousTDCost;
 				//double deltaCost = deltaBBCost;
 				
 				swap.apply();
@@ -233,7 +284,7 @@ public class TD_SAPlacer extends SAPlacer
 			{
 				previousBBCost = calculator.calculateTotalCost();
 				previousTDCost = timingGraph.calculateTotalCost();
-				iterationsToGoBeforeRecalculate = NB_ITERATIONS_BEFORE_RECALCULATE;
+				iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
 			}
 		}
 		double somKwadraten = kwadratischeSomDeltaKost;
@@ -245,7 +296,7 @@ public class TD_SAPlacer extends SAPlacer
 		return T;
 	}
 	
-	private double calculateInitialTemperatureLow(int Rlim)
+	private double calculateInitialTemperatureLow(int Rlim, double tradeOffFactor)
 	{
 		double sumNegDeltaCost = 0.0;
 		int numNegDeltaCost = 0;
@@ -261,8 +312,8 @@ public class TD_SAPlacer extends SAPlacer
 			{
 				double deltaBBCost = calculator.calculateDeltaCost(swap);
 				double deltaTimingCost = timingGraph.calculateDeltaCost(swap);
-				double deltaCost = ((1 - TRADE_OFF_FACTOR) * deltaBBCost) / previousBBCost
-						+ (TRADE_OFF_FACTOR * deltaTimingCost) / previousTDCost;
+				double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / previousBBCost
+						+ (tradeOffFactor * deltaTimingCost) / previousTDCost;
 				
 				if(deltaCost <= 0)
 				{
@@ -302,11 +353,11 @@ public class TD_SAPlacer extends SAPlacer
 		return T;
 	}
 	
-	private double updateCriticalityExponent(double firstRlim)
+	private double updateCriticalityExponent(double firstRlim, double tdPlaceExpFirst, double tdPlaceExpLast)
 	{
 		double finalRlim = 1.0;
 		double inverseDeltaRlim = 1 / (firstRlim - finalRlim);
-		return (1 - (Rlimd - finalRlim) * inverseDeltaRlim) * (TD_PLACE_EXP_LAST - TD_PLACE_EXP_FIRST) + TD_PLACE_EXP_FIRST;
+		return (1 - (Rlimd - finalRlim) * inverseDeltaRlim) * (tdPlaceExpLast - tdPlaceExpFirst) + tdPlaceExpFirst;
 	}
 	
 }
