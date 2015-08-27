@@ -101,49 +101,49 @@ public class Example
 	    	System.out.println("Not debugging");
 	    }
 	    
-	    NetReaderTwo netReader = new NetReaderTwo();
-	    try
-		{
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision3.net", 6, 8);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/blob_merge.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/boundtop.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/ch_intrinsics.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/diffeq1.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/diffeq2.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkDelayWorker32B.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkPktMerge.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkSMAdapter4B.net", 6, 8);
-			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/or1200.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/raygentop.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/sha.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision0.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/bgm.net", 6, 8);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mcml.net", 6, 8);
-	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision2.net", 6, 8);
-			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6, 8);
-		}
-	    catch(IOException ioe)
-	    {
-	    	System.err.println("Couldn't read netlist file!");
-	    	return;
-	    }
-	    
-	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
-	    
-	    System.out.println("-----------CIRCUIT STATISTICS-----------");
-	    System.out.println("Number of inputs: " + packedCircuit.inputs.size());
-	    System.out.println("Number of outputs: " + packedCircuit.outputs.size());
-	    System.out.println("Number of CLBs: " + packedCircuit.clbs.size());
-	    System.out.println("Number of nets: " + packedCircuit.nets.size());
+//	    NetReaderTwo netReader = new NetReaderTwo();
+//	    try
+//		{
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision3.net", 6, 8);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/blob_merge.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/boundtop.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/ch_intrinsics.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/diffeq1.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/diffeq2.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkDelayWorker32B.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkPktMerge.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mkSMAdapter4B.net", 6, 8);
+//			netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/or1200.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/raygentop.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/sha.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision0.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/bgm.net", 6, 8);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/mcml.net", 6, 8);
+//	    	//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_clustered/stereovision2.net", 6, 8);
+//			//netReader.readNetlist("benchmarks/vtr_benchmarks_netlist_packedIO/ch_intrinsics.net", 6, 8);
+//		}
+//	    catch(IOException ioe)
+//	    {
+//	    	System.err.println("Couldn't read netlist file!");
+//	    	return;
+//	    }
+//	    
+//	    PackedCircuit packedCircuit = netReader.getPackedCircuit();
+//	    
+//	    System.out.println("-----------CIRCUIT STATISTICS-----------");
+//	    System.out.println("Number of inputs: " + packedCircuit.inputs.size());
+//	    System.out.println("Number of outputs: " + packedCircuit.outputs.size());
+//	    System.out.println("Number of CLBs: " + packedCircuit.clbs.size());
+//	    System.out.println("Number of nets: " + packedCircuit.nets.size());
 	    
 	    //visualSA(packedCircuit);
 	    //visualAnalyticalTwo(packedCircuit);
 	    
 	    //testCostCalculator(packedCircuit);
-	    testEqualIOPlacement();
+	    //testEqualIOPlacement();
 	    
 	    //runWldSaBenchmarksClusteredNet();
-	    //runWldAnalyticalBenchmarksClusteredNet();
+	    runWldAnalyticalBenchmarksClusteredNet();
 	}
 	
 	//New netlist reader
@@ -419,7 +419,7 @@ public class Example
 	private static void runWldAnalyticalBenchmarksClusteredNet()
 	{
 		String toDoFileName = "HeteroBenchmarksClusteredNetToDo.txt";
-		String csvFileName = "WLD_AP_GR_CLUSTERED_LE.csv";
+		String csvFileName = "WLD_AP_GR_CLUSTERED_LE_IMPROVED.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -684,7 +684,7 @@ public class Example
 	private static void runWldSaBenchmarksClusteredNet()
 	{
 		String toDoFileName = "HeteroBenchmarksClusteredNetToDo.txt";
-		String csvFileName = "HeteroBenchmarksWldSaClusteredHE.csv";
+		String csvFileName = "HeteroBenchmarksWldSaClusteredLEImproved.csv";
 		String[] fileNamesToDo;
 		try
 		{
@@ -1813,7 +1813,7 @@ public class Example
 		
 		WLD_SAPlacer placer= new WLD_SAPlacer(a, packedCircuit);
 		
-		Double placementEffort = 10.0;
+		Double placementEffort = 1.0;
 		
 		long startTime;
 		long endTime;

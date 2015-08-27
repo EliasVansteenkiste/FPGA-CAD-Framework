@@ -39,7 +39,10 @@ public abstract class SAPlacer
 	protected Swap findSwap(int Rlim)
 	{
 		Swap swap=new Swap();
-		Block b = circuit.vBlocks.elementAt(rand.nextInt(circuit.vBlocks.size()));
+		Block b;
+		do{
+			b = circuit.vBlocks.elementAt(rand.nextInt(circuit.vBlocks.size()));
+		}while(b.fixed);
 		swap.pl1 = b.getSite();
 		if(b.type==BlockType.CLB)
 		{

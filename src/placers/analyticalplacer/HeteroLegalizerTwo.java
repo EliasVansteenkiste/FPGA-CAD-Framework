@@ -72,13 +72,13 @@ public class HeteroLegalizerTwo
 		
 		if(maxUtilization > 1.0)
 		{
-			System.out.printf("Partial legalization with maximal utilization = %.2f\n", maxUtilization);
+			//System.out.printf("Partial legalization with maximal utilization = %.2f\n", maxUtilization);
 			partiallyLegalize(linearX, linearY, nets, indexMap, solveMode, maxUtilization);
 			lastMaxUtilizationSmallerThanOne = false;
 		}
 		else
 		{
-			System.out.println("Complete legalization");
+			//System.out.println("Complete legalization");
 			completeLegalize(linearX, linearY, nets, indexMap, solveMode);
 			lastMaxUtilizationSmallerThanOne = true;
 		}
