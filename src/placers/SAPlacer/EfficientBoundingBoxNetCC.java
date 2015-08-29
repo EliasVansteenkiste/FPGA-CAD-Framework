@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import circuit.Block;
-import circuit.Clb;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
@@ -87,30 +86,30 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 	{
 		double totalDeltaCost = 0.0;
 		
-		toRevert[0] = swap.pl1.block;
-		if(swap.pl1.block != null)
+		toRevert[0] = swap.pl1.getBlock();
+		if(toRevert[0] != null)
 		{
-			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(swap.pl1.block);
+			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[0]);
 			if(bbDataList != null)
 			{
 				for(EfficientBoundingBoxData bbData: bbDataList)
 				{
 					bbData.saveState();
-					totalDeltaCost += bbData.calculateDeltaCost(swap.pl1.block, swap.pl2);
+					totalDeltaCost += bbData.calculateDeltaCost(toRevert[0], swap.pl2);
 				}
 			}
 		}
 		
-		toRevert[1] = swap.pl2.block;
-		if(swap.pl2.block != null)
+		toRevert[1] = swap.pl2.getBlock();
+		if(toRevert[1] != null)
 		{
-			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(swap.pl2.block);
+			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(toRevert[1]);
 			if(bbDataList != null)
 			{
 				for(EfficientBoundingBoxData bbData: bbDataList)
 				{
 					bbData.saveState();
-					totalDeltaCost += bbData.calculateDeltaCost(swap.pl2.block, swap.pl1);
+					totalDeltaCost += bbData.calculateDeltaCost(toRevert[1], swap.pl1);
 				}
 			}
 		}

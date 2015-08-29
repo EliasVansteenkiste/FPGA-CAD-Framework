@@ -2,44 +2,65 @@ package architecture;
 
 import circuit.Block;
 
-public class Site {
-	public int x;
-	public int y;
-	public int n;
-	public SiteType type;
-	public Block block;
-	private String naam;
-	public RouteNode source;
-	public RouteNode sink;
+public abstract class Site
+{
 	
-	public Site(int x, int y, int n, SiteType t, String naam)
+	private int z;
+	private GridTile tile;
+	private Block block = null;
+	
+	public Site(int z, GridTile tile)
 	{
-		super();	
-		this.x=x;
-		this.y=y;
-		this.n=n;
-		this.type=t;
-		this.naam=naam;
+		this.z = z;
+		this.tile = tile;
 	}
 	
+
+	
+	public Block getBlock() {
+		return this.block;
+	}
 	public Block setBlock(Block block) {
 		Block oldBlock = this.block;
 		this.block = block;
 		return oldBlock;
 	}
-	public Block getBlock() {
-		return this.block;
+	
+	
+	public GridTile getTile() {
+		return this.tile;
+	}
+	public GridTile setTile(GridTile tile) {
+		GridTile oldTile = this.tile;
+		this.tile = tile;
+		return oldTile;
 	}
 	
-	double afstand(Site p)
+	public int getX()
 	{
-		return Math.abs(x-p.x)+Math.abs(y-p.y);
+		return tile.getX();
 	}
-
+	
+	public int getY()
+	{
+		return tile.getY();
+	}
+	
+	public int getZ()
+	{
+		return z;
+	}
+	
+	public SiteType getType()
+	{
+		return tile.getType();
+	}
+	
+	
 	@Override
 	public String toString()
 	{
-		return naam;
+		return "Site_" + tile.getX() + "_" + tile.getY() + "_" + z;
 	}
 	
 }

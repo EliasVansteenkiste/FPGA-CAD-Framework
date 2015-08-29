@@ -78,7 +78,8 @@ public class CLI {
 		
 		
 		// Set the architecture
-		Architecture architecture = Architecture.newArchitecture(options.architecture, packedCircuit);
+		// TODO: IOSiteCapacity flexible
+		Architecture architecture = Architecture.newArchitecture(options.architecture, packedCircuit, 2);
 		if(architecture == null) {
 			error("Architecture type not recognized: " + options.architecture);
 		}

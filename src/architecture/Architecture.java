@@ -1,38 +1,30 @@
 package architecture;
 
-import java.io.PrintStream;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Random;
-import java.util.Vector;
-
-import placers.Placer;
 
 import circuit.Block;
 import circuit.PackedCircuit;
 
-
 public abstract class Architecture {
 	
-	protected Random rand;
+	protected Random rand = new Random();
 	
-	protected Site[][][] siteArray;
+	protected GridTile[][] tileArray;
+	private ArrayList<Site> siteVector = new ArrayList<>();
+	protected ArrayList<IoSite> IOSites = new ArrayList<>();
 	
-	protected HashMap<SiteType, Vector<Site>> siteVectors;
-	protected Vector<RouteNode> routeNodeVector;
+	protected int width, height;
+	protected int IOSiteCapacity;
 	
-	protected int width, height, n;
-	
-	public Architecture()
-	{
-		super();
-		rand= new Random();
-		routeNodeVector = new Vector<>();
+	protected Architecture() {
 		
-		siteVectors = new HashMap<SiteType, Vector<Site>>();
-		for(SiteType siteType : SiteType.values()) {
-			siteVectors.put(siteType, new Vector<Site>());
-		}
+	}
+	
+	public Architecture(int width, int height, int IOSiteCapacity) {
+		this.width = width;
+		this.height = height;
+		this.IOSiteCapacity = IOSiteCapacity;
 	}
 	
 	public static int getNbLutInputs(String type) {
@@ -46,17 +38,16 @@ public abstract class Architecture {
 		return 0;
 	}
 	
-	public static Architecture newArchitecture(String type, PackedCircuit circuit) {
+	public static Architecture newArchitecture(String type, PackedCircuit circuit, int IOSiteCapacity) {
 		switch(type) {
 			case "4lut":
-				return new FourLutSanitized(circuit);
+				return new FourLutSanitized(circuit, IOSiteCapacity);
 			case "heterogeneous":
-				return new HeterogeneousArchitecture(circuit);
+				return new HeterogeneousArchitecture(circuit, IOSiteCapacity);
 		}
 		
 		return null;
 	}
-	
 	
 	public int getWidth()
 	{
@@ -68,76 +59,75 @@ public abstract class Architecture {
 		return height;
 	}
 	
-	public int getN() {
-		return n;
+	
+	public ArrayList<Site> getSites()
+	{
+		return siteVector;
 	}
 	
-	
-	
-	public Vector<Site> getSites(SiteType type)
+	public Site getSite(int x, int y, int z)
 	{
-		return siteVectors.get(type);
+		return tileArray[x][y].getSite(z);
 	}
-	public Vector<Site> getSites(SiteType... types)
+	
+	public GridTile getTile(int x, int y)
 	{
-		Vector<Site> sites = new Vector<Site>();
-		for(SiteType type : types) {
-			sites.addAll(getSites(type));
+		return tileArray[x][y];
+	}
+	
+	protected void addTile(GridTile tile)
+	{
+		tileArray[tile.getX()][tile.getY()] = tile;
+		for(int i = 0; i < tile.getCapacity(); i++)
+		{
+			siteVector.add(tile.getSite(i));
 		}
-		return sites;
 	}
 	
-	public Site getSite(int x, int y, int n)
+	
+	public ArrayList<IoSite> getIOSites() {
+		return IOSites;
+	}
+	
+	public IoSite getIOSite(int index) {
+		return IOSites.get(index);
+	}
+	
+	protected int getNumIOSites() {
+		return IOSites.size();
+	}
+	
+	protected void putIoSite(int x, int y)
 	{
-		return siteArray[x][y][n];
+		GridTile IOTile = GridTile.constructIOGridTile(x, y, IOSiteCapacity);
+		addTile(IOTile);
+		for(int i = 0; i < IOSiteCapacity; i++)
+		{
+			IOSites.add((IoSite)IOTile.getSite(i));
+		}
 	}
 	
-	protected void addSite(Site site, int x, int y, int n)
-	{
-		siteArray[x][y][n] = site;
-		siteVectors.get(site.type).add(site);
-	}
+
 	
 	
-	public Block placeBlock(int x, int y, int n, Block block) {
-		Site site = this.getSite(x, y, n);
+	public Block placeBlock(int x, int y, int z, Block block) {
+		Site site = this.getSite(x, y, z);
 		return this.placeBlock(site, block);
 	}
 	public Block placeBlock(Site site, Block block) {
 		block.setSite(site);
 		return site.setBlock(block);
 	}
+
+	
 	
 	
 	public abstract Site randomClbSite(int Rlim, Site pl1);
 	public abstract Site randomHardBlockSite(int Rlim, HardBlockSite pl1);
-	public abstract Site randomISite(int Rlim, Site pl1);
-	public abstract Site randomOSite(int Rlim, Site pl1);
-	
-	
-	public Collection<RouteNode> getRouteNodes()
-	{
-		return routeNodeVector;
-	}
+	public abstract Site randomIOSite(int Rlim, Site pl1);
 	
 	public void setRand(Random rand)
 	{
 		this.rand = rand;
-	}
-	
-	
-	
-	public void printRoutingGraph(PrintStream stream)
-	{
-		for(RouteNode node : routeNodeVector)
-		{
-			stream.println("Node "+node.name);
-			for(RouteNode child : node.children)
-			{
-				stream.print(child.name+ " ");
-			}
-			stream.println();
-			stream.println();
-		}
 	}
 }

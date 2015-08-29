@@ -43,6 +43,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 	private boolean doneMemoryUse;
 	private int totalMatrixBytes;
 	
+	public HeteroAnalyticalPlacerTwo(Architecture architecture, PackedCircuit circuit) {
+		this(architecture, circuit, new HashMap<String, String>());
+	}
+	
 	public HeteroAnalyticalPlacerTwo(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
 	{
 		super(architecture, circuit, options);
@@ -55,63 +59,6 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		this.totalMatrixBytes = 0;
 	}
 	
-	/*public int place()
-	{
-		int solveMode = 0; //0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
-		double[] maxUtilizationLegalizerArray = new double[] {4.0,3.0,2.0,1.5,0.9};
-		//double[] maxUtilizationLegalizerArray = new double[] {4.5,3.0,2.0,1.35,0.9};
-		//double[] maxUtilizationLegalizerArray = new double[] {0.9}; //No partial overlap solves...
-		double maxUtilizationLegalizer = maxUtilizationLegalizerArray[0];
-		
-		RandomPlacer.placeFixedIOs(circuit, architecture);
-		
-		//Initial linear solves, should normally be done 5-7 times		
-		for(int i = 0; i < 7; i++)
-		{
-			solveLinear(true, solveMode, 0.0);
-		}
-		
-		double initialLinearCost = calculateTotalCost(linearX, linearY);
-		System.out.println("Linear cost after initial solves:" + initialLinearCost);
-		
-		//Initial legalization
-		double totalLegalizeTime = 0.0;
-		long legalizeStartTime = System.nanoTime();
-		legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationLegalizer);
-		long legalizeStopTime = System.nanoTime();
-		totalLegalizeTime += (double)(legalizeStopTime - legalizeStartTime) / 1000000000.0;
-		
-		double pseudoWeightFactor = 0.0;
-		for(int i = 0; i < 30; i++)
-		{
-			solveMode = (solveMode + 1) % (typeNames.length + 1);
-			if(solveMode <= 1)
-			{
-				pseudoWeightFactor += ALPHA;
-				int index = Math.min((int)Math.round(pseudoWeightFactor / ALPHA), maxUtilizationLegalizerArray.length - 1);
-				maxUtilizationLegalizer = maxUtilizationLegalizerArray[index];
-			}
-			solveLinear(false, solveMode, pseudoWeightFactor);
-			double costLinear = calculateTotalCost(linearX, linearY);
-			legalizeStartTime = System.nanoTime();
-			legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationLegalizer);
-			legalizeStopTime = System.nanoTime();
-			totalLegalizeTime += (double)(legalizeStopTime - legalizeStartTime) / 1000000000.0;
-			double costLegal = legalizer.calculateBestLegalCost(nets, indexMap);
-			//System.out.println("Linear cost iteration " + i + ": " + costLinear);
-			//System.out.println("Legal cost iteration " + i + ": " + costLegal);
-			if(costLinear / costLegal > 0.80)
-			{
-				break;
-			}
-		}
-		
-		System.out.printf("Total time spent in legalization = %.2f\n", totalLegalizeTime);
-		
-		updateCircuit();
-		
-		return totalMatrixBytes;
-	}*/
 	
 	public void place()
 	{
@@ -208,10 +155,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 					", solveMode = " + solveMode);
 			int index = Math.min(itNumber, maxUtilizationSequence.length - 1);
 			double maxUtilizationLegalizer = maxUtilizationSequence[index];
-			for(int i = 0; i < 3; i++)
-			{
-				solveLinear(false, solveMode, pseudoWeightFactor);
-			}
+			solveLinear(false, solveMode, pseudoWeightFactor);
 			costLinear = calculateTotalCost(linearX, linearY);
 			legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationLegalizer);
 			costLegal = legalizer.calculateBestLegalCost(nets, indexMap);
@@ -342,8 +286,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 				double yPosition;
 				if(net.source.owner.type == BlockType.INPUT || net.source.owner.type == BlockType.OUTPUT) //IOs are always fixed
 				{
-					xPosition = net.source.owner.getSite().x;
-					yPosition = net.source.owner.getSite().y;
+					xPosition = net.source.owner.getSite().getX();
+					yPosition = net.source.owner.getSite().getY();
 				}
 				else //This is a movable block which is not moved in this iteration
 				{
@@ -409,8 +353,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 					double yPosition;
 					if(sinkPin.owner.type == BlockType.INPUT || sinkPin.owner.type == BlockType.OUTPUT) //IOs are always fixed
 					{
-						xPosition = sinkPin.owner.getSite().x;
-						yPosition = sinkPin.owner.getSite().y;
+						xPosition = sinkPin.owner.getSite().getX();
+						yPosition = sinkPin.owner.getSite().getY();
 					}
 					else //This is a movable block which is not moved in this iteration
 					{
@@ -877,11 +821,12 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		{
 			for(int j = 1; j <= maximalY; j++)
 			{
-				if(architecture.getSite(i, j, 0).block != null)
+				Site site = architecture.getSite(i, j, 0);
+				if(site.getBlock() != null)
 				{
-					architecture.getSite(i, j, 0).block.setSite(null);
+					site.getBlock().setSite(null);
 				}
-				architecture.getSite(i, j, 0).block = null;
+				site.setBlock(null);
 			}
 		}
 		
@@ -890,7 +835,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		{
 			int index = indexMap.get(clb);
 			Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-			site.block = clb;
+			site.setBlock(clb);
 			clb.setSite(site);
 		}
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
@@ -899,7 +844,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 			{
 				int index = indexMap.get(hb);
 				Site site = architecture.getSite(bestLegalX[index], bestLegalY[index], 0);
-				site.block = hb;
+				site.setBlock(hb);;
 				hb.setSite(site);
 			}
 		}
@@ -917,10 +862,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 			Block sourceBlock = net.source.owner;
 			if(sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
 			{
-				minX = sourceBlock.getSite().x;
-				maxX = sourceBlock.getSite().x;
-				minY = sourceBlock.getSite().y;
-				maxY = sourceBlock.getSite().y;
+				minX = sourceBlock.getSite().getX();
+				maxX = sourceBlock.getSite().getX();
+				minY = sourceBlock.getSite().getY();
+				maxY = sourceBlock.getSite().getY();
 			}
 			else
 			{
@@ -937,21 +882,21 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 				if(sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
 				{
 					Site sinkOwnerSite = sinkOwner.getSite();
-					if(sinkOwnerSite.x < minX)
+					if(sinkOwnerSite.getX() < minX)
 					{
-						minX = sinkOwnerSite.x;
+						minX = sinkOwnerSite.getX();
 					}
-					if(sinkOwnerSite.x > maxX)
+					if(sinkOwnerSite.getX() > maxX)
 					{
-						maxX = sinkOwnerSite.x;
+						maxX = sinkOwnerSite.getX();
 					}
-					if(sinkOwnerSite.y < minY)
+					if(sinkOwnerSite.getY() < minY)
 					{
-						minY = sinkOwnerSite.y;
+						minY = sinkOwnerSite.getY();
 					}
-					if(sinkOwnerSite.y > maxY)
+					if(sinkOwnerSite.getY() > maxY)
 					{
-						maxY = sinkOwnerSite.y;
+						maxY = sinkOwnerSite.getY();
 					}
 				}
 				else
@@ -1070,16 +1015,16 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		for(Clb clb: clbs)
 		{
 			int index = indexMap.get(clb);
-			linearX[index] = clb.getSite().x;
-			linearY[index] = clb.getSite().y;
+			linearX[index] = clb.getSite().getX();
+			linearY[index] = clb.getSite().getY();
 		}
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
 		{
 			for(HardBlock hb: hbVector)
 			{
 				int index = indexMap.get(hb);
-				linearX[index] = hb.getSite().x;
-				linearY[index] = hb.getSite().y;
+				linearX[index] = hb.getSite().getX();
+				linearY[index] = hb.getSite().getY();
 			}
 		}
 	}

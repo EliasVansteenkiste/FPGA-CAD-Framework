@@ -367,7 +367,7 @@ public class Hetero_TD_LegalizerOne
 				Site site = architecture.getSite(x, y, 0);
 				if(typeName.equals("CLB"))
 				{
-					if(site.type == SiteType.CLB)
+					if(site.getType() == SiteType.CLB)
 					{
 						int index = indices.get(0);
 						semiLegalX[index] = x;
@@ -377,7 +377,7 @@ public class Hetero_TD_LegalizerOne
 				}
 				else
 				{
-					if(site.type == SiteType.HARDBLOCK)
+					if(site.getType() == SiteType.HARDBLOCK)
 					{
 						if(((HardBlockSite)site).getTypeName().equals(typeName))
 						{
@@ -629,7 +629,7 @@ public class Hetero_TD_LegalizerOne
 				Site site = architecture.getSite(x, 1, 0);
 				if(typeName.equals("CLB"))
 				{
-					if(site.type == SiteType.CLB)
+					if(site.getType() == SiteType.CLB)
 					{
 						if(!alreadyRunning)
 						{
@@ -648,7 +648,7 @@ public class Hetero_TD_LegalizerOne
 				}
 				else //We are working with hardBlocks
 				{
-					if(site.type == SiteType.HARDBLOCK)
+					if(site.getType() == SiteType.HARDBLOCK)
 					{
 						if(((HardBlockSite)site).getTypeName().equals(typeName))
 						{
@@ -1210,11 +1210,12 @@ public class Hetero_TD_LegalizerOne
 		{
 			for(int j = 1; j <= maximalY; j++)
 			{
-				if(architecture.getSite(i, j, 0).block != null)
+				Site site = architecture.getSite(i, j, 0);
+				if(site.getBlock() != null)
 				{
-					architecture.getSite(i, j, 0).block.setSite(null);
+					site.getBlock().setSite(null);
 				}
-				architecture.getSite(i, j, 0).block = null;
+				site.setBlock(null);
 			}
 		}
 		
@@ -1223,7 +1224,7 @@ public class Hetero_TD_LegalizerOne
 		{
 			int index = indexMap.get(clb);
 			Site site = architecture.getSite(xPositions[index], yPositions[index], 0);
-			site.block = clb;
+			site.setBlock(clb);
 			clb.setSite(site);
 		}
 		for(Vector<HardBlock> hbVector: circuit.getHardBlocks())
@@ -1232,7 +1233,7 @@ public class Hetero_TD_LegalizerOne
 			{
 				int index = indexMap.get(hb);
 				Site site = architecture.getSite(xPositions[index], yPositions[index], 0);
-				site.block = hb;
+				site.setBlock(hb);
 				hb.setSite(site);
 			}
 		}
@@ -1245,7 +1246,7 @@ public class Hetero_TD_LegalizerOne
 		if(currentX >= minimalX && currentX <= maximalX && currentY >= minimalY && currentY <= maximalY)
 		{
 			Site site = architecture.getSite(currentX, currentY, 0);
-			if(site.type == SiteType.CLB)
+			if(site.getType() == SiteType.CLB)
 			{
 				if(typeName.equals("CLB") && !occupied[currentY - minimalY][currentX - minimalX])
 				{
@@ -1289,10 +1290,10 @@ public class Hetero_TD_LegalizerOne
 			Block sourceBlock = net.source.owner;
 			if (sourceBlock.type == BlockType.INPUT || sourceBlock.type == BlockType.OUTPUT)
 			{
-				minX = sourceBlock.getSite().x;
-				maxX = sourceBlock.getSite().x;
-				minY = sourceBlock.getSite().y;
-				maxY = sourceBlock.getSite().y;
+				minX = sourceBlock.getSite().getX();
+				maxX = sourceBlock.getSite().getX();
+				minY = sourceBlock.getSite().getY();
+				maxY = sourceBlock.getSite().getY();
 			}
 			else
 			{
@@ -1309,21 +1310,21 @@ public class Hetero_TD_LegalizerOne
 				if (sinkOwner.type == BlockType.INPUT || sinkOwner.type == BlockType.OUTPUT)
 				{
 					Site sinkOwnerSite = sinkOwner.getSite();
-					if (sinkOwnerSite.x < minX)
+					if (sinkOwnerSite.getX() < minX)
 					{
-						minX = sinkOwnerSite.x;
+						minX = sinkOwnerSite.getX();
 					}
-					if (sinkOwnerSite.x > maxX)
+					if (sinkOwnerSite.getX() > maxX)
 					{
-						maxX = sinkOwnerSite.x;
+						maxX = sinkOwnerSite.getX();
 					}
-					if (sinkOwnerSite.y < minY)
+					if (sinkOwnerSite.getY() < minY)
 					{
-						minY = sinkOwnerSite.y;
+						minY = sinkOwnerSite.getY();
 					}
-					if (sinkOwnerSite.y > maxY)
+					if (sinkOwnerSite.getY() > maxY)
 					{
-						maxY = sinkOwnerSite.y;
+						maxY = sinkOwnerSite.getY();
 					}
 				}
 				else
@@ -1475,14 +1476,14 @@ public class Hetero_TD_LegalizerOne
 			{
 				if(typeName.equals("CLB"))
 				{
-					if(architecture.getSite(x, 1, 0).type == SiteType.CLB)
+					if(architecture.getSite(x, 1, 0).getType() == SiteType.CLB)
 					{
 						curNumberOfLegalSites += curNbBlocksPerColumn;
 					}
 				}
 				else //We are working with hardBlocks
 				{
-					if(architecture.getSite(x, 1, 0).type == SiteType.HARDBLOCK)
+					if(architecture.getSite(x, 1, 0).getType() == SiteType.HARDBLOCK)
 					{
 						HardBlockSite hbSite = (HardBlockSite)architecture.getSite(x, 1, 0);
 						if(hbSite.getTypeName().equals(typeName))

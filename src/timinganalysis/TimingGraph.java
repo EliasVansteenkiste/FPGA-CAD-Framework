@@ -111,12 +111,12 @@ public class TimingGraph
 	public double calculateDeltaCost(Swap swap)
 	{
 		double deltaCost = 0.0;
-		if(swap.pl1.block != null && swap.pl2.block != null)
+		if(swap.pl1.getBlock() != null && swap.pl2.getBlock() != null)
 		{
-			if(swap.pl1.type == SiteType.CLB)
+			if(swap.pl1.getType() == SiteType.CLB)
 			{
-				Block block1 = swap.pl1.block;
-				Block block2 = swap.pl2.block;
+				Block block1 = swap.pl1.getBlock();
+				Block block2 = swap.pl2.getBlock();
 				Lut lut1 = ((Clb)block1).getBle().getLut();
 				Lut lut2 = ((Clb)block2).getBle().getLut();
 				Flipflop ff1 = ((Clb)block1).getBle().getFlipflop();
@@ -140,8 +140,8 @@ public class TimingGraph
 						Block owner = connectedEdge.getOutput().getPin().owner;
 						if(owner != ff2 && owner != lut2 && owner != lut1)
 						{
-							int mhd = Math.abs(owner.getSite().x - swap.pl2.x) 
-									+ Math.abs(owner.getSite().y - swap.pl2.y);
+							int mhd = Math.abs(owner.getSite().getX() - swap.pl2.getX()) 
+									+ Math.abs(owner.getSite().getY() - swap.pl2.getY());
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
@@ -167,8 +167,8 @@ public class TimingGraph
 							Block owner = connectedEdge.getOutput().getPin().owner;
 							if(owner != ff2 && owner != lut2) //No need to check for ff1 as this is null
 							{
-								int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
-										+ Math.abs(owner.getSite().y - swap.pl2.y);
+								int mhd = Math.abs(owner.getSite().getX() - swap.pl2.getX())
+										+ Math.abs(owner.getSite().getY() - swap.pl2.getY());
 								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 								affectedEdgeList.add(connectedEdge);
 							}
@@ -194,8 +194,8 @@ public class TimingGraph
 								Block owner = connectedEdge.getInput().getPin().owner;
 								if(owner != ff2 && owner != lut2 && owner != ff1)
 								{
-									int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
-											+ Math.abs(owner.getSite().y - swap.pl2.y);
+									int mhd = Math.abs(owner.getSite().getX() - swap.pl2.getX())
+											+ Math.abs(owner.getSite().getY() - swap.pl2.getY());
 									deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 									affectedEdgeList.add(connectedEdge);
 								}
@@ -219,8 +219,8 @@ public class TimingGraph
 							Block owner = connectedEdge.getInput().getPin().owner;
 							if(owner != ff2 && owner != lut2) //No need to check for lut1 as this is null
 							{
-								int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
-										+ Math.abs(owner.getSite().y - swap.pl2.y);
+								int mhd = Math.abs(owner.getSite().getX() - swap.pl2.getX())
+										+ Math.abs(owner.getSite().getY() - swap.pl2.getY());
 								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 								affectedEdgeList.add(connectedEdge);
 							}
@@ -247,8 +247,8 @@ public class TimingGraph
 						Block owner = connectedEdge.getOutput().getPin().owner;
 						if(owner != ff1 && owner != lut1 && owner != lut2)
 						{
-							int mhd = Math.abs(owner.getSite().x - swap.pl1.x) 
-									+ Math.abs(owner.getSite().y - swap.pl1.y);
+							int mhd = Math.abs(owner.getSite().getX() - swap.pl1.getX()) 
+									+ Math.abs(owner.getSite().getY() - swap.pl1.getY());
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
@@ -274,8 +274,8 @@ public class TimingGraph
 							Block owner = connectedEdge.getOutput().getPin().owner;
 							if(owner != ff1 && owner != lut1) //No need to check for ff2 as this is null
 							{
-								int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
-										+ Math.abs(owner.getSite().y - swap.pl1.y);
+								int mhd = Math.abs(owner.getSite().getX() - swap.pl1.getX())
+										+ Math.abs(owner.getSite().getY() - swap.pl1.getY());
 								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 								affectedEdgeList.add(connectedEdge);
 							}
@@ -301,8 +301,8 @@ public class TimingGraph
 								Block owner = connectedEdge.getInput().getPin().owner;
 								if(owner != ff1 && owner != lut1 && owner != ff2)
 								{
-									int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
-											+ Math.abs(owner.getSite().y - swap.pl1.y);
+									int mhd = Math.abs(owner.getSite().getX() - swap.pl1.getX())
+											+ Math.abs(owner.getSite().getY() - swap.pl1.getY());
 									deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 									affectedEdgeList.add(connectedEdge);
 								}
@@ -326,8 +326,8 @@ public class TimingGraph
 							Block owner = connectedEdge.getInput().getPin().owner;
 							if(owner != ff1 && owner != lut1) //No need to check for lut2 as this is null
 							{
-								int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
-										+ Math.abs(owner.getSite().y - swap.pl1.y);
+								int mhd = Math.abs(owner.getSite().getX() - swap.pl1.getX())
+										+ Math.abs(owner.getSite().getY() - swap.pl1.getY());
 								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 								affectedEdgeList.add(connectedEdge);
 							}
@@ -335,10 +335,10 @@ public class TimingGraph
 					}
 				}
 			}
-			else if(swap.pl1.type == SiteType.HARDBLOCK)
+			else if(swap.pl1.getType() == SiteType.HARDBLOCK)
 			{
-				HardBlock hb1 = (HardBlock)swap.pl1.block;
-				HardBlock hb2 = (HardBlock)swap.pl2.block;
+				HardBlock hb1 = (HardBlock)swap.pl1.getBlock();
+				HardBlock hb2 = (HardBlock)swap.pl2.getBlock();
 				
 				//Process first hardBlock (inputs and outputs)
 				ArrayList<TimingNode> hb1NodeList = blockMap.get(hb1);
@@ -352,8 +352,8 @@ public class TimingGraph
 							Block owner = connectedEdge.getOutput().getPin().owner;
 							if(owner != hb2)
 							{
-								int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
-										+ Math.abs(owner.getSite().y - swap.pl2.y);
+								int mhd = Math.abs(owner.getSite().getX() - swap.pl2.getX())
+										+ Math.abs(owner.getSite().getY() - swap.pl2.getY());
 								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 								affectedEdgeList.add(connectedEdge);
 							}
@@ -369,8 +369,8 @@ public class TimingGraph
 						Block owner = connectedEdge.getInput().getPin().owner;
 						if(owner != hb2)
 						{
-							int mhd = Math.abs(owner.getSite().x - swap.pl2.x)
-									+ Math.abs(owner.getSite().y - swap.pl2.y);
+							int mhd = Math.abs(owner.getSite().getX() - swap.pl2.getX())
+									+ Math.abs(owner.getSite().getY() - swap.pl2.getY());
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
@@ -389,8 +389,8 @@ public class TimingGraph
 							Block owner = connectedEdge.getOutput().getPin().owner;
 							if(owner != hb1)
 							{
-								int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
-										+ Math.abs(owner.getSite().y - swap.pl1.y);
+								int mhd = Math.abs(owner.getSite().getX() - swap.pl1.getX())
+										+ Math.abs(owner.getSite().getY() - swap.pl1.getY());
 								deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 								affectedEdgeList.add(connectedEdge);
 							}
@@ -406,8 +406,8 @@ public class TimingGraph
 						Block owner = connectedEdge.getInput().getPin().owner;
 						if(owner != hb1)
 						{
-							int mhd = Math.abs(owner.getSite().x - swap.pl1.x)
-									+ Math.abs(owner.getSite().y - swap.pl1.y);
+							int mhd = Math.abs(owner.getSite().getX() - swap.pl1.getX())
+									+ Math.abs(owner.getSite().getY() - swap.pl1.getY());
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
@@ -417,30 +417,30 @@ public class TimingGraph
 		}
 		else
 		{
-			if(swap.pl1.type == SiteType.CLB)
+			if(swap.pl1.getType() == SiteType.CLB)
 			{
 				Lut lut = null;
 				Flipflop ff = null;
 				int newX = 0;
 				int newY = 0;
-				if(swap.pl1.block != null)
+				if(swap.pl1.getBlock() != null)
 				{
-					if(swap.pl1.block.type == BlockType.CLB)
+					if(swap.pl1.getBlock().type == BlockType.CLB)
 					{
-						lut = ((Clb)swap.pl1.block).getBle().getLut();
-						ff = ((Clb)swap.pl1.block).getBle().getFlipflop();
-						newX = swap.pl2.x;
-						newY = swap.pl2.y;
+						lut = ((Clb)swap.pl1.getBlock()).getBle().getLut();
+						ff = ((Clb)swap.pl1.getBlock()).getBle().getFlipflop();
+						newX = swap.pl2.getX();
+						newY = swap.pl2.getY();
 					}
 				}
 				else
 				{
-					if(swap.pl2.block.type == BlockType.CLB)
+					if(swap.pl2.getBlock().type == BlockType.CLB)
 					{
-						lut = ((Clb)swap.pl2.block).getBle().getLut();
-						ff = ((Clb)swap.pl2.block).getBle().getFlipflop();
-						newX = swap.pl1.x;
-						newY = swap.pl1.y;
+						lut = ((Clb)swap.pl2.getBlock()).getBle().getLut();
+						ff = ((Clb)swap.pl2.getBlock()).getBle().getFlipflop();
+						newX = swap.pl1.getX();
+						newY = swap.pl1.getY();
 					}
 				}
 				//Process source net of clb
@@ -461,8 +461,8 @@ public class TimingGraph
 						Block owner = connectedEdge.getOutput().getPin().owner;
 						if(owner != lut)
 						{
-							int mhd = Math.abs(owner.getSite().x - newX) 
-									+ Math.abs(owner.getSite().y - newY);
+							int mhd = Math.abs(owner.getSite().getX() - newX) 
+									+ Math.abs(owner.getSite().getY() - newY);
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
@@ -488,8 +488,8 @@ public class TimingGraph
 						{
 							Block owner = connectedEdge.getOutput().getPin().owner;
 							//No need to check for ff as this is null
-							int mhd = Math.abs(owner.getSite().x - newX)
-									+ Math.abs(owner.getSite().y - newY);
+							int mhd = Math.abs(owner.getSite().getX() - newX)
+									+ Math.abs(owner.getSite().getY() - newY);
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
@@ -514,8 +514,8 @@ public class TimingGraph
 								Block owner = connectedEdge.getInput().getPin().owner;
 								if(owner != ff)
 								{
-									int mhd = Math.abs(owner.getSite().x - newX)
-											+ Math.abs(owner.getSite().y - newY);
+									int mhd = Math.abs(owner.getSite().getX() - newX)
+											+ Math.abs(owner.getSite().getY() - newY);
 									deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 									affectedEdgeList.add(connectedEdge);
 								}
@@ -538,30 +538,30 @@ public class TimingGraph
 							TimingEdge connectedEdge = node.getInputs().get(0);
 							Block owner = connectedEdge.getInput().getPin().owner;
 							//No need to check for lut as this is null
-							int mhd = Math.abs(owner.getSite().x - newX)
-									+ Math.abs(owner.getSite().y - newY);
+							int mhd = Math.abs(owner.getSite().getX() - newX)
+									+ Math.abs(owner.getSite().getY() - newY);
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
 					}
 				}
 			}
-			else if(swap.pl1.type == SiteType.HARDBLOCK)
+			else if(swap.pl1.getType() == SiteType.HARDBLOCK)
 			{
 				HardBlock hb;
 				int newX;
 				int newY;
-				if(swap.pl1.block != null)
+				if(swap.pl1.getBlock() != null)
 				{
-					hb = (HardBlock)swap.pl1.block;
-					newX = swap.pl2.x;
-					newY = swap.pl2.y;
+					hb = (HardBlock)swap.pl1.getBlock();
+					newX = swap.pl2.getX();
+					newY = swap.pl2.getY();
 				}
 				else
 				{
-					hb = (HardBlock)swap.pl2.block;
-					newX = swap.pl1.x;
-					newY = swap.pl1.y;
+					hb = (HardBlock)swap.pl2.getBlock();
+					newX = swap.pl1.getX();
+					newY = swap.pl1.getY();
 				}
 				
 				//Process hardBlock (inputs and outputs)
@@ -574,8 +574,8 @@ public class TimingGraph
 						for(TimingEdge connectedEdge: node.getOutputs())
 						{
 							Block owner = connectedEdge.getOutput().getPin().owner;
-							int mhd = Math.abs(owner.getSite().x - newX)
-									+ Math.abs(owner.getSite().y - newY);
+							int mhd = Math.abs(owner.getSite().getX() - newX)
+									+ Math.abs(owner.getSite().getY() - newY);
 							deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 							affectedEdgeList.add(connectedEdge);
 						}
@@ -588,8 +588,8 @@ public class TimingGraph
 						}
 						TimingEdge connectedEdge = node.getInputs().get(0);
 						Block owner = connectedEdge.getInput().getPin().owner;
-						int mhd = Math.abs(owner.getSite().x - newX)
-								+ Math.abs(owner.getSite().y - newY);
+						int mhd = Math.abs(owner.getSite().getX() - newX)
+								+ Math.abs(owner.getSite().getY() - newY);
 						deltaCost += connectedEdge.calculateDeltaCost(MHD_DELAY * mhd);
 						affectedEdgeList.add(connectedEdge);
 					}
@@ -886,8 +886,8 @@ public class TimingGraph
 			Block edgeOutputOwner = edge.getOutput().getPin().owner;
 			if(edgeInput.getType() == TimingNodeType.START_NODE || edgeInput.getType() == TimingNodeType.INTERNAL_SOURCE_NODE)
 			{
-				int mhd = Math.abs(edgeInputOwner.getSite().x - edgeOutputOwner.getSite().x)
-						+ Math.abs(edgeInputOwner.getSite().y - edgeOutputOwner.getSite().y);
+				int mhd = Math.abs(edgeInputOwner.getSite().getX() - edgeOutputOwner.getSite().getX())
+						+ Math.abs(edgeInputOwner.getSite().getY() - edgeOutputOwner.getSite().getY());
 				edge.setDelay(MHD_DELAY * mhd);
 			}
 		}
@@ -937,8 +937,8 @@ public class TimingGraph
 		while(keepGoing)
 		{
 			Pin currentSink = currentNet.sinks.get(currentIndex);
-			int mhd = Math.abs(currentNode.getPin().owner.getSite().x - currentSink.owner.getSite().x) 
-					+ Math.abs(currentNode.getPin().owner.getSite().y - currentSink.owner.getSite().y);
+			int mhd = Math.abs(currentNode.getPin().owner.getSite().getX() - currentSink.owner.getSite().getX()) 
+					+ Math.abs(currentNode.getPin().owner.getSite().getY() - currentSink.owner.getSite().getY());
 			if(currentSink.owner.type == BlockType.FLIPFLOP || currentSink.owner.type == BlockType.OUTPUT || 
 																		currentSink.owner.type == BlockType.HARDBLOCK_CLOCKED)
 			{

@@ -113,8 +113,8 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 			if(siteX >= 1 && siteX <= heteroArchitecture.getWidth() && siteY >= 1 && siteY <= heteroArchitecture.getHeight())
 			{
 				Site site = heteroArchitecture.getSite(siteX, siteY, 0);
-				Block block = site.block;
-				if(site.type == architecture.SiteType.CLB)
+				Block block = site.getBlock();
+				if(site.getType() == architecture.SiteType.CLB)
 				{
 					if(block != null)
 					{
@@ -154,7 +154,7 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 		siteData = new HashMap<Site, SiteData>();
 		for (Site site : heteroArchitecture.getSites())
 		{
-			switch(site.type)
+			switch(site.getType())
 			{
 				case CLB:
 					siteData.put(site, new SiteData(site,COLOR_ORDER_UNOCCUPIED[3],COLOR_ORDER_OCCUPIED[3]));
@@ -194,78 +194,78 @@ public class HeteroArchitecturePanel extends JPanel implements MouseMotionListen
 		// Drawing the sites
 		for (Site site : heteroArchitecture.getSites())
 		{
-			switch (site.type)
+			switch (site.getType())
 			{
 				case IO:
-					if (site.x == 0)
+					if (site.getX() == 0)
 					{
-						if (site.n == 0)
+						if (site.getZ() == 0)
 						{
-							double x = site.x * tileWidth + CLB_WIDTH / 2.0;
-							double y = site.y * tileWidth + IO_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + CLB_WIDTH / 2.0;
+							double y = site.getY() * tileWidth + IO_WIDTH / 2.0;
 							drawLeftIoSite(x, y, site);
 						}
 						else
 						{
-							double x = site.x * tileWidth + CLB_WIDTH / 2.0;
-							double y = site.y * tileWidth + CLB_WIDTH - IO_WIDTH + IO_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + CLB_WIDTH / 2.0;
+							double y = site.getY() * tileWidth + CLB_WIDTH - IO_WIDTH + IO_WIDTH / 2.0;
 							drawLeftIoSite(x, y, site);
 						}
 					}
-					if (site.x == heteroArchitecture.getWidth() + 1)
+					if (site.getX() == heteroArchitecture.getWidth() + 1)
 					{
-						if (site.n == 0)
+						if (site.getZ() == 0)
 						{
-							double x = site.x * tileWidth + CLB_WIDTH / 2.0;
-							double y = site.y * tileWidth + IO_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + CLB_WIDTH / 2.0;
+							double y = site.getY() * tileWidth + IO_WIDTH / 2.0;
 							drawRightIoSite(x, y, site);
 						}
 						else
 						{
-							double x = site.x * tileWidth + CLB_WIDTH / 2.0;
-							double y = site.y * tileWidth + CLB_WIDTH - IO_WIDTH + IO_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + CLB_WIDTH / 2.0;
+							double y = site.getY() * tileWidth + CLB_WIDTH - IO_WIDTH + IO_WIDTH / 2.0;
 							drawRightIoSite(x, y, site);
 						}
 					}
-					if (site.y == 0)
+					if (site.getY() == 0)
 					{
-						if (site.n == 0)
+						if (site.getZ() == 0)
 						{
-							double x = site.x * tileWidth + IO_WIDTH / 2.0;
-							double y = site.y * tileWidth + CLB_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + IO_WIDTH / 2.0;
+							double y = site.getY() * tileWidth + CLB_WIDTH / 2.0;
 							drawUpIoSite(x, y, site);
 						}
 						else
 						{
-							double x = site.x * tileWidth + IO_WIDTH / 2.0 + CLB_WIDTH - IO_WIDTH;
-							double y = site.y * tileWidth + CLB_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + IO_WIDTH / 2.0 + CLB_WIDTH - IO_WIDTH;
+							double y = site.getY() * tileWidth + CLB_WIDTH / 2.0;
 							drawUpIoSite(x, y, site);
 						}
 					}
-					if (site.y == heteroArchitecture.getHeight() + 1)
+					if (site.getY() == heteroArchitecture.getHeight() + 1)
 					{
-						if (site.n == 0)
+						if (site.getZ() == 0)
 						{
-							double x = site.x * tileWidth + IO_WIDTH / 2.0;
-							double y = site.y * tileWidth + CLB_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + IO_WIDTH / 2.0;
+							double y = site.getY() * tileWidth + CLB_WIDTH / 2.0;
 							drawDownIoSite(x, y, site);
 						}
 						else
 						{
-							double x = site.x * tileWidth + IO_WIDTH / 2.0 + CLB_WIDTH - IO_WIDTH;
-							double y = site.y * tileWidth + CLB_WIDTH / 2.0;
+							double x = site.getX() * tileWidth + IO_WIDTH / 2.0 + CLB_WIDTH - IO_WIDTH;
+							double y = site.getY() * tileWidth + CLB_WIDTH / 2.0;
 							drawDownIoSite(x, y, site);
 						}
 					}
 					break;
 				case CLB:
-					double xclb = site.x * tileWidth + CLB_WIDTH / 2.0;
-					double yclb = site.y * tileWidth + CLB_WIDTH / 2.0;
+					double xclb = site.getX() * tileWidth + CLB_WIDTH / 2.0;
+					double yclb = site.getY() * tileWidth + CLB_WIDTH / 2.0;
 					drawClbSite(xclb, yclb, site);
 					break;
 				case HARDBLOCK:
-					double xhb = site.x * tileWidth + CLB_WIDTH / 2.0;
-					double yhb = site.y * tileWidth + CLB_WIDTH / 2.0;
+					double xhb = site.getX() * tileWidth + CLB_WIDTH / 2.0;
+					double yhb = site.getY() * tileWidth + CLB_WIDTH / 2.0;
 					drawHardBlockSite(xhb, yhb, site);
 					break;
 				default:

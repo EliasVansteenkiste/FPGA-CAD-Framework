@@ -11,6 +11,7 @@ import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
 import architecture.Architecture;
+import architecture.GridTile;
 import architecture.Site;
 
 public class MDPPlacement {
@@ -18,8 +19,8 @@ public class MDPPlacement {
 	private Architecture architecture;
 	private PackedCircuit circuit;
 	
-	private int width, height, n;
-	private MDPBlock[][][] blocks;
+	private int width, height;
+	private MDPBlock[][] blocks;
 	
 	private MDPBlockComparatorInterval comparatorInterval = new MDPBlockComparatorInterval();
 	
@@ -30,10 +31,9 @@ public class MDPPlacement {
 		
 		this.width = architecture.getWidth();
 		this.height = architecture.getHeight();
-		this.n = architecture.getN();
 		
 		// + 2 is for 2 rows and 2 colums of IO blocks
-		this.blocks = new MDPBlock[this.width + 2][this.height + 2][this.n];
+		this.blocks = new MDPBlock[this.width + 2][this.height + 2];
 		
 		this.loadBlocks();
 	}
@@ -94,7 +94,7 @@ public class MDPPlacement {
 		
 		} else {
 			for(int i = 0; i < length + 2; i++) {
-				slice[i] = blocks[i][sliceIndex][0];
+				slice[i] = blocks[i][sliceIndex];
 			}
 		}
 		
@@ -124,16 +124,15 @@ public class MDPPlacement {
 	
 	
 	private MDPBlock getMDPBlock(Block block) {
-		Site site = block.getSite();
-		int x = site.x;
-		int y = site.y;
-		int n = site.n;
+		GridTile tile = block.getSite().getTile();
+		int x = tile.getX();
+		int y = tile.getY();
 		
-		if(this.blocks[x][y][n] == null) {
-			this.blocks[x][y][n] = new MDPBlock(block);
+		if(this.blocks[x][y] == null) {
+			this.blocks[x][y] = new MDPBlock(block);
 		}
 		
-		return this.blocks[x][y][n];
+		return this.blocks[x][y];
 	}
 	
 	

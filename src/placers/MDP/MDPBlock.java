@@ -14,7 +14,7 @@ public class MDPBlock {
 	
 	public MDPBlock(Block originalBlock) {
 		this.originalBlock = originalBlock;
-		this.coor = new MDPPoint(originalBlock.getSite().x, originalBlock.getSite().y);
+		this.coor = new MDPPoint(originalBlock.getSite().getTile().getX(), originalBlock.getSite().getTile().getY());
 		
 		int maxNets = originalBlock.maxNets();
 		this.nets = new MDPNet[maxNets];
