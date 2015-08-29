@@ -37,7 +37,6 @@ public class MDPPlacer extends Placer {
 	}
 	
 	
-	
 	public void place() {
 		
 		double totalCost = this.calculateTotalCost();
@@ -65,24 +64,13 @@ public class MDPPlacer extends Placer {
 	private void reorderCells(Axis axis) {
 		int size;
 		if(axis == Axis.X) {
-			size = this.architecture.getHeight();
+			size = this.placement.getHeight();
 		} else {
-			size = this.architecture.getWidth();
+			size = this.placement.getWidth();
 		}
 		
-		for(int slice = 0; slice < size; slice++) {
-			reorderCellsInSlice(axis, slice);
+		for(int slice = 1; slice <= size; slice++) {
+			this.placement.reorderSlice(axis, slice);
 		}
-	}
-	
-	private void reorderCellsInSlice(Axis axis, int slice) {
-		int size;
-		if(axis == Axis.X) {
-			size = this.architecture.getWidth();
-		} else {
-			size = this.architecture.getHeight();
-		}
-		
-		
 	}
 }
