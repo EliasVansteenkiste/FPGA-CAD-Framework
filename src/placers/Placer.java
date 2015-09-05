@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import placers.MDP.MDPPlacer;
+import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
 import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
 
@@ -11,6 +12,7 @@ import architecture.Architecture;
 import architecture.FourLutSanitized;
 import architecture.HeterogeneousArchitecture;
 import circuit.PackedCircuit;
+import circuit.PrePackedCircuit;
 
 public abstract class Placer {
 	
@@ -47,20 +49,20 @@ public abstract class Placer {
 	
 	
 	
-	public static Placer newPlacer(String type, Architecture architecture, PackedCircuit circuit, HashMap<String, String> options) {
+	public static Placer newPlacer(String type, Architecture architecture, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit, HashMap<String, String> options) {
 		switch(type) {
 		
 		case "SA":
 		case "sa":
-			return new WLD_SAPlacer(architecture, circuit, options);
+			return new TD_SAPlacer(architecture, packedCircuit, prePackedCircuit, options);
 		
 		case "AP":
 		case "ap":
-			return new HeteroAnalyticalPlacerTwo((HeterogeneousArchitecture) architecture, circuit, options);
+			return new HeteroAnalyticalPlacerTwo(architecture, packedCircuit, options);
 			
 		case "MDP":
 		case "mdp":
-			return new MDPPlacer((FourLutSanitized) architecture, circuit, options);
+			return new MDPPlacer((FourLutSanitized) architecture, packedCircuit, options);
 			
 		default:
 			System.err.println("Unknown placer type: " + type);

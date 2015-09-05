@@ -33,7 +33,7 @@ public class MDPPlacement {
 		this.height = architecture.getHeight();
 		
 		// + 2 is for 2 rows and 2 colums of IO blocks
-		this.blocks = new MDPBlock[this.width + 2][this.height + 2];
+		this.blocks = new MDPBlock[this.height + 2][this.width + 2];
 		
 		this.loadBlocks();
 	}
@@ -45,29 +45,43 @@ public class MDPPlacement {
 	public int getHeight() {
 		return this.height;
 	}
+	public int getSize(Axis axis) {
+		if(axis == Axis.X) {
+			return this.getWidth();
+		} else {
+			return this.getHeight();
+		}
+	}
 	
 	
 	public void reorderSlice(Axis axis, int sliceIndex) {
-		MDPBlock[] slice = getSlice(axis, sliceIndex);
+		MDPBlock[] slice = this.getSlice(axis, sliceIndex);
+		slice[0] = null;
+		slice[slice.length-1] = null;
 		
-		for(int i = 0; i < slice.length; i++) {
-			slice[i].calculateOptimalInterval(axis);
+		int blocksInSlice = 0;
+		for(int i = 1; i < slice.length - 1; i++) {
+			if(slice[i] != null) {
+				slice[i].calculateOptimalInterval(axis);
+				blocksInSlice++;
+			}
 		}
 		
 		Arrays.sort(slice, comparatorInterval);
 		
 		
 		ArrayList<MDPBlock> unmatchedBlocks = new ArrayList<MDPBlock>();
-		boolean[] occupiedSlots = new boolean[slice.length];
+		MDPBlock[] newSlice = new MDPBlock[slice.length];
 		
-		for(int blockIndex = 0; blockIndex < slice.length; blockIndex++) {
+		
+		// Interval bipartite matching
+		for(int blockIndex = 0; blockIndex < blocksInSlice; blockIndex++) {
 			MDPBlock block = slice[blockIndex];
 			boolean matched = false;
 			
 			for(int slotIndex = block.optimalInterval[0]; slotIndex <= block.optimalInterval[1]; slotIndex++) {
-				if(!occupiedSlots[slotIndex]) {
-					occupiedSlots[slotIndex] = true;
-					block.coor.set(axis, slotIndex);
+				if(newSlice[slotIndex] == null) {
+					newSlice[slotIndex] = block;
 					matched = true;
 					break;
 				}
@@ -77,15 +91,44 @@ public class MDPPlacement {
 				unmatchedBlocks.add(block);
 			}
 		}
+		
+		// Min-cost bipartite matching
+		// Currently only rippling
+		for(MDPBlock block : unmatchedBlocks) {
+			int left = block.optimalInterval[0];
+			int right = block.optimalInterval[1];
+			int step = 0, direction = 0, startPosition = 0, endPosition = 0;
+			
+			while(direction == 0) {
+				step += 1;
+				if(left - step >= 1 && newSlice[left - step] == null) {
+					direction = 1;
+					startPosition = left - step;
+					endPosition = left;
+				} else if(right + step < slice.length - 1 && newSlice[right + step] == null) {
+					direction = -1;
+					startPosition = right + step;
+					endPosition = right;
+				}
+			}
+			
+			for(int position = startPosition; position != endPosition; position += direction) {
+				newSlice[position] = newSlice[position + direction];
+			}
+			newSlice[endPosition] = block;
+		}
+		
+		
+		for(int i = 1; i < newSlice.length - 1; i++) {
+			if(newSlice[i] != null) {
+				this.moveBlock(newSlice[i], axis, i);
+			}
+		}
 	}
 	
+	
 	private MDPBlock[] getSlice(Axis axis, int sliceIndex) {
-		int length;
-		if(axis == Axis.X) {
-			length = this.getWidth() + 2;
-		} else {
-			length = this.getHeight() + 2;
-		}
+		int length = this.getSize(axis) + 2;
 		
 		MDPBlock[] slice = new MDPBlock[length];
 		
@@ -93,18 +136,25 @@ public class MDPPlacement {
 			System.arraycopy(blocks[sliceIndex], 0, slice, 0, length);
 		
 		} else {
-			for(int i = 0; i < length + 2; i++) {
+			for(int i = 0; i < length; i++) {
 				slice[i] = blocks[i][sliceIndex];
 			}
 		}
 		
 		return slice;
 	}
+
 	
+	private void moveBlock(MDPBlock block, Axis axis, int position) {
+		block.move(axis, position);
+		this.blocks[block.coor.y][block.coor.x] = block;
+	}
 	
 	private void loadBlocks() {
-		
 		for(Net originalNet : this.circuit.getNets().values()) {
+			if(originalNet.name.equals("pi81")) {
+				System.out.println("ok");
+			}
 			ArrayList<MDPBlock> blocks = new ArrayList<>();
 			
 			blocks.add(this.getMDPBlock(originalNet.source.owner));
@@ -122,19 +172,30 @@ public class MDPPlacement {
 		}
 	}
 	
+	public void updateBlocks() {
+		for(int y = 1; y < this.height - 1; y++) {
+			for(int x = 1; x < this.width - 1; x++) {
+				if(this.blocks[y][x] != null) {
+					Block block = this.blocks[y][x].getOriginalBlock();
+					Site site = this.architecture.getSite(x, y, 0);
+					
+					block.setSite(site);
+					site.setBlock(block);
+				}
+			}
+		}
+	}
+	
 	
 	private MDPBlock getMDPBlock(Block block) {
 		GridTile tile = block.getSite().getTile();
 		int x = tile.getX();
 		int y = tile.getY();
 		
-		if(this.blocks[x][y] == null) {
-			this.blocks[x][y] = new MDPBlock(block);
+		if(this.blocks[y][x] == null) {
+			this.blocks[y][x] = new MDPBlock(block);
 		}
 		
-		return this.blocks[x][y];
+		return this.blocks[y][x];
 	}
-	
-	
-	
 }

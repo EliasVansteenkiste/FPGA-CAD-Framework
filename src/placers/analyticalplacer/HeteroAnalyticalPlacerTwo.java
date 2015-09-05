@@ -43,6 +43,24 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 	private boolean doneMemoryUse;
 	private int totalMatrixBytes;
 	
+	static {
+		//startingStage = 0 ==> start with initial solves (no anchors)
+		//startingStage = 1 ==> start from existing placement that is incorporated in the packedCircuit passed with the constructor
+		defaultOptions.put("starting_stage", "0");
+		
+		//initialize maxUtilizationSequence used by the legalizer
+		defaultOptions.put("max_utilization_sequence", "0.9");
+		
+		//The first anchorWeight factor that will be used in the main solve loop
+		defaultOptions.put("starting_anchor_weight", "0.3");
+		
+		//The amount with which the anchorWeight factor will be increased each iteration
+		defaultOptions.put("anchor_weight_increase", "0.3");
+		
+		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
+		defaultOptions.put("stop_ratio_linear_legal", "0.8");
+	}
+	
 	public HeteroAnalyticalPlacerTwo(Architecture architecture, PackedCircuit circuit) {
 		this(architecture, circuit, new HashMap<String, String>());
 	}
@@ -62,53 +80,22 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 	
 	public void place()
 	{
-		//startingStage = 0 ==> start with initial solves (no anchors)
-		//startingStage = 1 ==> start from existing placement that is incorporated in the packedCircuit passed with the constructor
-		int startingStage = 0; //Default	
-		if(options.get("starting_stage") != null)
-		{
-			startingStage = Integer.parseInt(options.get("starting_stage"));
-			if(startingStage < 0 || startingStage > 1) //startingStage can only be 0 or 1
-			{
-				startingStage = 0;
-			}
+		
+		int startingStage = Integer.parseInt(options.get("starting_stage"));
+		startingStage = Math.min(1, Math.max(0, startingStage)); //startingStage can only be 0 or 1
+		
+		
+		String maxUtilizationSequenceString = options.get("max_utilization_sequence");
+		String[] maxUtilizationSequenceStringArray = maxUtilizationSequenceString.split(",");
+		double[] maxUtilizationSequenceArray = new double[maxUtilizationSequenceStringArray.length];
+		for(int i = 0; i < maxUtilizationSequenceStringArray.length; i++) {
+			maxUtilizationSequenceArray[i] = Double.parseDouble(maxUtilizationSequenceStringArray[i]);
 		}
 		
-		//initialize maxUtilizationSequence used by the legalizer
-		double[] maxUtilizationSequenceArray = new double[] {0.9}; //Default
-		if(options.get("max_utilization_sequence") != null)
-		{
-			String maxUtilizationSequenceString = options.get("max_utilization_sequence");
-			String[] maxUtilizationSequenceStringArray = maxUtilizationSequenceString.split(";");
-			maxUtilizationSequenceArray = new double[maxUtilizationSequenceStringArray.length];
-			int i = 0;
-			for(String maxUtilization: maxUtilizationSequenceStringArray)
-			{
-				maxUtilizationSequenceArray[i] = Double.parseDouble(maxUtilization);
-				i++;
-			}
-		}
+		double startingAnchorWeight = Double.parseDouble(options.get("starting_anchor_weight"));
+		double anchorWeightIncrease = Double.parseDouble(options.get("anchor_weight_increase"));
+		double stopRatioLinearLegal = Double.parseDouble(options.get("stop_ratio_linear_legal"));
 		
-		//The first anchorWeight factor that will be used in the main solve loop
-		double startingAnchorWeight = 0.3; //Default
-		if(options.get("starting_anchor_weight") != null)
-		{
-			startingAnchorWeight = Double.parseDouble(options.get("starting_anchor_weight"));
-		}
-		
-		//The amount with whom the anchorWeight factor will be increased each iteration
-		double anchorWeightIncrease = 0.3; //Default
-		if(options.get("anchor_weight_increase") != null)
-		{
-			anchorWeightIncrease = Double.parseDouble("anchor_weight_increase");
-		}
-		
-		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
-		double stopRatioLinearLegal = 0.8; //Default
-		if(options.get("stop_ratio_linear_legal") != null)
-		{
-			stopRatioLinearLegal = Double.parseDouble(options.get("stop_ratio_linear_legal"));
-		}
 		
 		int maxMemoryUse = placementOuterLoop(startingStage, maxUtilizationSequenceArray, 
 							startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal);
@@ -153,21 +140,26 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		{
 			System.out.println("Iteration " + (itNumber + 1) + ": pseudoWeightFactor = " + pseudoWeightFactor + 
 					", solveMode = " + solveMode);
+			
 			int index = Math.min(itNumber, maxUtilizationSequence.length - 1);
 			double maxUtilizationLegalizer = maxUtilizationSequence[index];
+			
 			solveLinear(false, solveMode, pseudoWeightFactor);
 			costLinear = calculateTotalCost(linearX, linearY);
+			
 			legalizer.legalize(linearX, linearY, nets, indexMap, solveMode, maxUtilizationLegalizer);
 			costLegal = legalizer.calculateBestLegalCost(nets, indexMap);
+			
 			System.out.println("Linear cost iteration " + itNumber + ": " + costLinear);
 			System.out.println("Legal cost iteration " + itNumber + ": " + costLegal);
+			
 			solveMode = (solveMode + 1) % (typeNames.length + 1);
 			if(solveMode <= 1)
 			{
 				pseudoWeightFactor += anchorWeightIncrease;
 				itNumber++;
 			}
-		}while(costLinear / costLegal < stopRatioLinearLegal);
+		} while(costLinear / costLegal < stopRatioLinearLegal);
 		
 		updateCircuit();
 		

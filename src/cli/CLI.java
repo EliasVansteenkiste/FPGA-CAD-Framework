@@ -79,7 +79,7 @@ public class CLI {
 		
 		// Set the architecture
 		// TODO: IOSiteCapacity flexible
-		Architecture architecture = Architecture.newArchitecture(options.architecture, packedCircuit, 2);
+		Architecture architecture = Architecture.newArchitecture(options.architecture, packedCircuit, 1);
 		if(architecture == null) {
 			error("Architecture type not recognized: " + options.architecture);
 		}
@@ -93,6 +93,8 @@ public class CLI {
 		}
 		
 		
+		CLI.printStatistics("initial", prePackedCircuit, packedCircuit, false);
+		
 		// Loop through the placers
 		for(String placerName : options.placers.keySet()) {
 			System.out.println("Placing with " + placerName + "...");
@@ -101,7 +103,7 @@ public class CLI {
 			
 			// Create the placer and place the circuit
 			CLI.startTimer();
-			Placer placer = Placer.newPlacer(placerName, architecture, packedCircuit, placerOptions);
+			Placer placer = Placer.newPlacer(placerName, architecture, prePackedCircuit, packedCircuit, placerOptions);
 			placer.place();
 			CLI.stopTimer();
 			
@@ -129,10 +131,17 @@ public class CLI {
 	}
 	
 	private static void printStatistics(String prefix, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit) {
+		CLI.printStatistics(prefix, prePackedCircuit, packedCircuit, true);
+	}
+	
+	private static void printStatistics(String prefix, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit, boolean printTime) {
 		
 		System.out.println();
-		double placeTime = CLI.getTimer();
-		System.out.format("%s %15s: %f s\n", prefix, "place time", placeTime);
+		
+		if(printTime) {	
+			double placeTime = CLI.getTimer();
+			System.out.format("%s %15s: %f s\n", prefix, "place time", placeTime);
+		}
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(packedCircuit);
 		double totalCost = effcc.calculateTotalCost();
@@ -142,6 +151,8 @@ public class CLI {
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.format("%s %15s: %f\n", prefix, "max delay", maxDelay);
+		
+		System.out.println();
 	}
 	
 	

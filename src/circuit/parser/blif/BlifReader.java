@@ -58,7 +58,10 @@ public class BlifReader
 								processInputs(command);
 								break;
 							case ".outputs":
-								processOutputs(command);
+								// Disabled by Seppe:
+								// I don't think nets should be added for outputs (or at least not
+								// in the way they are added now)
+								//processOutputs(command);
 								break;
 							case ".names":
 								boolean succes = processNames(command, nbLutInputs);
@@ -120,6 +123,9 @@ public class BlifReader
 			circuit.addOutput(output);
 			if(!circuit.getNets().containsKey(output.name)) //net still needs to be added to the nets hashmap
 			{
+				if(output.name.equals("p__cmx0ad_21")) {
+					break;
+				}
 				circuit.getNets().put(output.name, new Net(output.name));
 			}
 			circuit.getNets().get(output.name).addSink(output.input);

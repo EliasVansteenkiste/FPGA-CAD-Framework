@@ -6,8 +6,7 @@ import re
 import csv
 
 #circuits = 'LU32PEEng LU8PEEng bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
-circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
-
+circuits = 'blob_merge boundtop ch_intrinsics diffeq1 diffeq2 mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
 
 
 circuit_list = circuits.split(' ')
@@ -20,14 +19,21 @@ os.chdir('..')
 
 for circuit in circuit_list:
     options = {
-        'input': '../../benchmarks/k6_N1_90nm_heterogeneous',
-        'circuit': circuit,
-        'placer': 'SA+AP',
+        '--input': '../../benchmarks/k6_N1_90nm_heterogeneous',
+        '--circuit': circuit,
+        '--architecture': '4lut',
+        '--placer': 'SA;AP',
+        '--pack': '',
+        '--random': '',
+    }
+
+    placer_options = {
+        'starting_stage': '0;1',
     }
 
     # Call the java placer
     print('Placing {0}'.format(circuit))
-    out, err = call.placer(options)
+    out, err = call.placer(options, placer_options)
 
     # If there is an error: print it and exit
     if err:
@@ -35,10 +41,11 @@ for circuit in circuit_list:
         print(err)
         sys.exit(1)
 
-    regex = re.compile(r'after SA\s+total cost:\s+(?P<SA>[0-9.]+).*after AP\s+total cost:\s+(?P<AP>[0-9.]+)', re.DOTALL)
+    regex = re.compile(r'SA\s+total cost:\s+(?P<SA>[0-9.]+).*AP\s+total cost:\s+(?P<AP>[0-9.]+)', re.DOTALL)
     match = regex.search(out)
 
     SA = match.group('SA')
     AP = match.group('AP')
 
     csv_file.writerow([circuit, SA, AP])
+    print([circuit, SA, AP])

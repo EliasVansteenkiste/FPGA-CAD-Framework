@@ -4,6 +4,10 @@ import java.awt.Point;
 
 public class MDPPoint extends Point {
 	
+	public MDPPoint() {
+		super(0, 0);
+	}
+	
 	public MDPPoint(int x, int y) {
 		super(x, y);
 	}

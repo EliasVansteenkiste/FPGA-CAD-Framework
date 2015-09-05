@@ -165,6 +165,29 @@ public class RandomPlacer
 		placeDeterministicIOs(c, a);
 	}
 	
+	public static void placeCLBsandFixedIOs(PackedCircuit c, Architecture a, Random rand)
+	{
+		if(a instanceof FourLutSanitized) {
+			FourLutSanitized arch = (FourLutSanitized) a;
+			
+			//Random place CLBs
+			placeCLBs(c, arch, rand);
+
+			//Deterministic place IOs
+			placeDeterministicIOs(c, arch);
+			
+			
+		} else if(a instanceof HeterogeneousArchitecture) {
+			HeterogeneousArchitecture arch = (HeterogeneousArchitecture) a;
+			
+			//Random place CLBs and HBs
+			placeClbsAndHbs(c, arch, rand);
+			
+			//Deterministic place IOs
+			placeFixedIOs(c, arch);
+		}
+	}
+	
 	public static void placeClbsAndHbs(PackedCircuit c, HeterogeneousArchitecture a, Random rand)
 	{
 		//Initialize data structures
@@ -276,12 +299,5 @@ public class RandomPlacer
 		}
 	}
 	
-	public static void placeCLBsandFixedIOs(PackedCircuit c, HeterogeneousArchitecture a, Random rand)
-	{
-		//Random place CLBs and HBs
-		placeClbsAndHbs(c, a, rand);
-		
-		//Deterministic place IOs
-		placeFixedIOs(c, a);
-	}
+	
 }

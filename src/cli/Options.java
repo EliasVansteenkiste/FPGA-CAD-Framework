@@ -167,7 +167,7 @@ public class Options {
 		
 		
 		// Parse the extra placer options
-		String[] placerNames = placersString.split(",");
+		String[] placerNames = placersString.split(";");
 		int numPlacers = placerNames.length;
 		ArrayList<HashMap<String, String>> placerOptions = new ArrayList<HashMap<String, String>>();
 		
@@ -192,7 +192,7 @@ public class Options {
 
 			} else {
 				optionKey = option.substring(0, splitPos);
-				optionValues = option.substring(splitPos + 1).split(","); 
+				optionValues = option.substring(splitPos + 1).split(";"); 
 			}
 			
 			

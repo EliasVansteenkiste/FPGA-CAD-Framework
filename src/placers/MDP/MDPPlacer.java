@@ -20,7 +20,7 @@ import architecture.SiteType;
 public class MDPPlacer extends Placer {
 	
 	static {
-		MDPPlacer.defaultOptions.put("stopRatio", "1.2");
+		MDPPlacer.defaultOptions.put("stopRatio", "1.001");
 	}
 	
 	private int width, height;
@@ -49,9 +49,11 @@ public class MDPPlacer extends Placer {
 			this.reorderCells(Axis.X);
 			this.reorderCells(Axis.Y);
 			
+			placement.updateBlocks();
 			prevTotalCost = totalCost;
 			totalCost = this.calculateTotalCost();
-		} while(prevTotalCost / totalCost > stopRatio);
+			System.out.println(prevTotalCost + ", " + totalCost);
+		} while(prevTotalCost / totalCost > stopRatio || true);
 	}
 	
 	
@@ -62,12 +64,7 @@ public class MDPPlacer extends Placer {
 	
 	
 	private void reorderCells(Axis axis) {
-		int size;
-		if(axis == Axis.X) {
-			size = this.placement.getHeight();
-		} else {
-			size = this.placement.getWidth();
-		}
+		int size = this.placement.getSize(axis);
 		
 		for(int slice = 1; slice <= size; slice++) {
 			this.placement.reorderSlice(axis, slice);

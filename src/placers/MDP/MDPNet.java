@@ -11,7 +11,7 @@ import circuit.Block;
 
 public class MDPNet {
 	
-	private Net originalNet;
+	Net originalNet;
 	private ArrayList<MDPBlock> blocks;
 	private MDPPoint[] bounds = new MDPPoint[2];
 	
@@ -23,61 +23,61 @@ public class MDPNet {
 		this.originalNet = originalNet;
 		this.blocks = blocks;
 		
+		this.bounds[0] = new MDPPoint();
+		this.bounds[1] = new MDPPoint();
 		this.updateBounds();
 	}
 	
-	public void updateBounds() {
-		this.updateBounds(Axis.X);
-		this.updateBounds(Axis.Y);
+	
+	
+	
+	private void updateBounds() {
+		updateBounds(Axis.X);
+		updateBounds(Axis.Y);
 	}
 	
-	public void updateBounds(Axis axis) {
+	private void updateBounds(Axis axis) {
 		this.updateMin(axis);
 		this.updateMax(axis);
 	}
 	
-	public void updateMin(Axis axis) {
+	private void updateMin(Axis axis) {
+		this.bounds[0].set(axis, getMin(axis));
+	}
+	private void updateMax(Axis axis) {
+		this.bounds[1].set(axis, getMax(axis));
+	}
+	
+	public int getMin(Axis axis) {
 		if(axis == Axis.X) {
-			updateMinX();
+			return Collections.min(this.blocks, comparatorX).coor.x;
 		} else {
-			updateMinY();
+			return Collections.min(this.blocks, comparatorY).coor.y;
+		}
+	}
+	public int getMax(Axis axis) {
+		if(axis == Axis.X) {
+			return Collections.max(this.blocks, comparatorX).coor.x;
+		} else {
+			return Collections.max(this.blocks, comparatorY).coor.y;
 		}
 	}
 	
-	public void updateMax(Axis axis) {
-		if(axis == Axis.X) {
-			updateMaxX();
-		} else {
-			updateMaxY();
-		}
-	}
-	
-	public void updateMinX() {
-		this.bounds[0].x = Collections.min(this.blocks, comparatorX).coor.x;
-	}
-	
-	public void updateMaxX() {
-		this.bounds[1].x = Collections.max(this.blocks, comparatorX).coor.x;
-	}
-	
-	public void updateMinY() {
-		this.bounds[0].y = Collections.min(this.blocks, comparatorY).coor.y;
-	}
-	
-	public void updateMaxY() {
-		this.bounds[1].y = Collections.max(this.blocks, comparatorY).coor.y;
-	}
 	
 	
-	
-	public void updateBounds(Axis axis, int oldPosition) {
+	public void updateBounds(Axis axis, int oldPosition, int newPosition) {
 		if(oldPosition == this.bounds[0].get(axis)) {
 			this.updateMin(axis);
 		} else if(oldPosition == this.bounds[1].get(axis)) {
 			this.updateMax(axis);
 		}
+		
+		if(newPosition < this.bounds[0].get(axis)) {
+			this.bounds[0].set(axis, newPosition);
+		} else if(newPosition > this.bounds[1].get(axis)) {
+			this.bounds[1].set(axis, newPosition);
+		}
 	}
-	
 	
 	public int[] getBounds(Axis axis) {
 		int[] bounds = {this.bounds[0].get(axis), this.bounds[1].get(axis)};
@@ -98,11 +98,25 @@ public class MDPNet {
 		int position = block.coor.get(axis);
 		
 		if(position == bounds[0]) {
-			bounds[0] = (int) Math.floor(this.getCenter(axis));
+			int center = (int) Math.floor(this.getCenter(axis));
+			
+			block.coor.set(axis, center);
+			bounds[0] = getMin(axis);
+			block.coor.set(axis, position);
+			
 		} else if(position == bounds[1]) {
-			bounds[1] = (int) Math.ceil(this.getCenter(axis));
+			int center = (int) Math.ceil(this.getCenter(axis));
+			
+			block.coor.set(axis, center);
+			bounds[1] = getMax(axis);
+			block.coor.set(axis, position);
 		}
 		
 		return bounds;
+	}
+	
+	
+	public String toString() {
+		return this.originalNet.toString();
 	}
 }
