@@ -54,7 +54,7 @@ public abstract class Placer {
 		
 		case "SA":
 		case "sa":
-			return new TD_SAPlacer(architecture, packedCircuit, prePackedCircuit, options);
+			return new WLD_SAPlacer(architecture, packedCircuit, options);
 		
 		case "AP":
 		case "ap":
