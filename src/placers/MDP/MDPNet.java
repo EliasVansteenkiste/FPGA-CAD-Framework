@@ -66,7 +66,7 @@ public class MDPNet {
 	
 	
 	public void updateBounds(Axis axis, int oldPosition, int newPosition) {
-		if(oldPosition == this.bounds[0].get(axis)) {
+		/*if(oldPosition == this.bounds[0].get(axis)) {
 			this.updateMin(axis);
 		} else if(oldPosition == this.bounds[1].get(axis)) {
 			this.updateMax(axis);
@@ -76,7 +76,9 @@ public class MDPNet {
 			this.bounds[0].set(axis, newPosition);
 		} else if(newPosition > this.bounds[1].get(axis)) {
 			this.bounds[1].set(axis, newPosition);
-		}
+		}*/
+		
+		this.updateBounds(axis);
 	}
 	
 	public int[] getBounds(Axis axis) {

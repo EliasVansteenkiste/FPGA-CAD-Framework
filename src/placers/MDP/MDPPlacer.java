@@ -1,21 +1,10 @@
 package placers.MDP;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Vector;
-
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
-import circuit.Block;
-import circuit.Clb;
-import circuit.Input;
 import circuit.PackedCircuit;
-import circuit.Pin;
-import architecture.Architecture;
 import architecture.FourLutSanitized;
-import architecture.HeterogeneousArchitecture;
-import architecture.Site;
-import architecture.SiteType;
 
 public class MDPPlacer extends Placer {
 	
@@ -23,15 +12,11 @@ public class MDPPlacer extends Placer {
 		MDPPlacer.defaultOptions.put("stopRatio", "1.001");
 	}
 	
-	private int width, height;
 	private MDPPlacement placement;
 	
 	
 	public MDPPlacer(FourLutSanitized architecture, PackedCircuit circuit, HashMap<String, String> options) {
 		super(architecture, circuit, options);
-		
-		this.width = architecture.getWidth();
-		this.height = architecture.getHeight();
 		
 		this.placement = new MDPPlacement(architecture, circuit);
 	}
@@ -49,7 +34,7 @@ public class MDPPlacer extends Placer {
 			this.reorderCells(Axis.X);
 			this.reorderCells(Axis.Y);
 			
-			placement.updateBlocks();
+			this.placement.updateOriginalBlocks();
 			prevTotalCost = totalCost;
 			totalCost = this.calculateTotalCost();
 			System.out.println(prevTotalCost + ", " + totalCost);

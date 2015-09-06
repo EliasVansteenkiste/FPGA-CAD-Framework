@@ -1,17 +1,22 @@
 package placers.MDP;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 import mathtools.QuickSelect;
 import circuit.Block;
 
 public class MDPBlock {
 	
-	private Block originalBlock;
+	public Block originalBlock;
 	private MDPNet[] nets;
 	private int numNets = 0;
 	private int maxNets;
 	
 	public MDPPoint coor;
 	public int[] optimalInterval = new int[2];
+	public int optimalPosition;
 	
 	
 	public MDPBlock(Block originalBlock) {
@@ -40,27 +45,19 @@ public class MDPBlock {
 	public void calculateOptimalInterval(Axis axis) {
 		
 		int[] tmpBounds = new int[2];
-		int[] minBounds = new int[numNets];
-		int[] maxBounds = new int[numNets];
+		int[] allBounds = new int[this.numNets * 2];
 		
 		
-		for(int i = 0; i < numNets; i++) {
-			tmpBounds = nets[i].getExBounds(axis, this);
-			minBounds[i] = tmpBounds[0];
-			maxBounds[i] = tmpBounds[1];
+		for(int i = 0; i < this.numNets; i++) {
+			tmpBounds = this.nets[i].getExBounds(axis, this);
+			System.arraycopy(tmpBounds, 0, allBounds, 2*i, 2);
 		}
 		
-		if(this.numNets == 1) {
-			this.optimalInterval[0] = minBounds[0];
-			this.optimalInterval[1] = maxBounds[0];
-		} else {
-			this.optimalInterval[0] = QuickSelect.select(minBounds, minBounds.length / 2);
-			this.optimalInterval[1] = QuickSelect.select(maxBounds, (int) Math.ceil(maxBounds.length / 2.));
-		}
-		if(this.optimalInterval[1] < this.optimalInterval[0]) {
-			System.out.println("ok");
-		}
+		Arrays.sort(allBounds);
+		this.optimalInterval[0] = allBounds[this.numNets - 1];
+		this.optimalInterval[1] = allBounds[this.numNets];
 	}
+	
 	
 	public String toString() {
 		return this.originalBlock.toString();

@@ -2,6 +2,12 @@ package placers.MDP;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.Vector;
 
 import circuit.Block;
@@ -67,12 +73,11 @@ public class MDPPlacement {
 			}
 		}
 		
-		Arrays.sort(slice, comparatorInterval);
+		Arrays.sort(slice, this.comparatorInterval);
 		
 		
 		ArrayList<MDPBlock> unmatchedBlocks = new ArrayList<MDPBlock>();
 		MDPBlock[] newSlice = new MDPBlock[slice.length];
-		
 		
 		// Interval bipartite matching
 		for(int blockIndex = 0; blockIndex < blocksInSlice; blockIndex++) {
@@ -82,6 +87,7 @@ public class MDPPlacement {
 			for(int slotIndex = block.optimalInterval[0]; slotIndex <= block.optimalInterval[1]; slotIndex++) {
 				if(newSlice[slotIndex] == null) {
 					newSlice[slotIndex] = block;
+					block.optimalPosition = slotIndex;
 					matched = true;
 					break;
 				}
@@ -92,8 +98,29 @@ public class MDPPlacement {
 			}
 		}
 		
-		// Min-cost bipartite matching
-		// Currently only rippling
+		// Construct Min-cost graphs
+		LinkedList<int[]> partitions = this.getMinCostPartitions(unmatchedBlocks, newSlice);
+		
+		
+		for(int i = 1; i < newSlice.length - 1; i++) {
+			if(newSlice[i] != null) {
+				this.moveBlock(newSlice[i], axis, i);
+			}
+		}
+	}
+	
+	
+	private LinkedList<int[]> getMinCostPartitions(List<MDPBlock> unmatchedBlocks, MDPBlock[] newSlice) {
+		LinkedList<int[]> partitions = new LinkedList<int[]>();
+		
+		if(unmatchedBlocks.size() == 0) {
+			return partitions;
+		}
+		
+		// Match all the unmatched blocks to a position.
+		// In the process: get an ordered list of minimal partitions each containing
+		// exactly one previously unmatched block. Partitions are allowed to overlap
+		// (for now).
 		for(MDPBlock block : unmatchedBlocks) {
 			int left = block.optimalInterval[0];
 			int right = block.optimalInterval[1];
@@ -105,7 +132,7 @@ public class MDPPlacement {
 					direction = 1;
 					startPosition = left - step;
 					endPosition = left;
-				} else if(right + step < slice.length - 1 && newSlice[right + step] == null) {
+				} else if(right + step < newSlice.length - 1 && newSlice[right + step] == null) {
 					direction = -1;
 					startPosition = right + step;
 					endPosition = right;
@@ -115,15 +142,49 @@ public class MDPPlacement {
 			for(int position = startPosition; position != endPosition; position += direction) {
 				newSlice[position] = newSlice[position + direction];
 			}
+			
 			newSlice[endPosition] = block;
+			block.optimalPosition = endPosition;
+			
+			
+			// Get the partition containing this unmatched block.
+			int[] partition = {1, newSlice.length - 1};
+			if(direction == 1) {
+				partition[0] = Math.max(partition[0], Math.min(left - 2, startPosition));
+				partition[1] = Math.min(partition[1], left + 2);
+			} else {
+				partition[0] = Math.max(partition[0], right - 2);
+				partition[1] = Math.min(partition[1], Math.max(right + 2, endPosition));
+			}
+			
+			partitions.add(partition);
 		}
 		
 		
-		for(int i = 1; i < newSlice.length - 1; i++) {
-			if(newSlice[i] != null) {
-				this.moveBlock(newSlice[i], axis, i);
+		// Sort the partitions based on their smallest bound
+		Collections.sort(partitions, new Comparator<int[]>() {
+			public int compare(int[] p1, int[] p2) {
+				return p1[0] - p2[0];
+			}
+		});
+		
+		
+		// Merge overlapping partitions
+		ListIterator<int[]> li = partitions.listIterator();
+		int[] previousPartition = li.next();
+		
+		while(li.hasNext()) {
+			int[] partition = li.next();
+			
+			if(partition[0] < previousPartition[1]) {
+				previousPartition[1] = partition[1];
+				li.remove();
+			} else {
+				previousPartition = partition;
 			}
 		}
+		
+		return partitions;
 	}
 	
 	
@@ -152,9 +213,6 @@ public class MDPPlacement {
 	
 	private void loadBlocks() {
 		for(Net originalNet : this.circuit.getNets().values()) {
-			if(originalNet.name.equals("pi81")) {
-				System.out.println("ok");
-			}
 			ArrayList<MDPBlock> blocks = new ArrayList<>();
 			
 			blocks.add(this.getMDPBlock(originalNet.source.owner));
@@ -172,7 +230,7 @@ public class MDPPlacement {
 		}
 	}
 	
-	public void updateBlocks() {
+	public void updateOriginalBlocks() {
 		for(int y = 1; y < this.height - 1; y++) {
 			for(int x = 1; x < this.width - 1; x++) {
 				if(this.blocks[y][x] != null) {
@@ -192,8 +250,11 @@ public class MDPPlacement {
 		int x = tile.getX();
 		int y = tile.getY();
 		
+		//TODO: allow multiple IO blocks on one tile
 		if(this.blocks[y][x] == null) {
 			this.blocks[y][x] = new MDPBlock(block);
+		} else if(this.blocks[y][x].originalBlock != block) {
+			System.out.println("ok");
 		}
 		
 		return this.blocks[y][x];
