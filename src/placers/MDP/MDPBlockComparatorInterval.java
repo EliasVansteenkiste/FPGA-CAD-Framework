@@ -15,9 +15,9 @@ public class MDPBlockComparatorInterval implements Comparator<MDPBlock> {
 			return -1;
 		}
 		
-		int c = Integer.compare(b1.optimalInterval[1], b2.optimalInterval[1]);
+		int c = Integer.compare(b1.getOptimalInterval()[1], b2.getOptimalInterval()[1]);
 		if(c == 0) {
-			return -Integer.compare(b1.optimalInterval[0], b2.optimalInterval[0]);
+			return -Integer.compare(b1.getOptimalInterval()[0], b2.getOptimalInterval()[0]);
 		} else {
 			return c;
 		}

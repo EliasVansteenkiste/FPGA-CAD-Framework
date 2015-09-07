@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import placers.MDP.MDPPlacer;
-import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
 import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
 
 import architecture.Architecture;
 import architecture.FourLutSanitized;
-import architecture.HeterogeneousArchitecture;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
 

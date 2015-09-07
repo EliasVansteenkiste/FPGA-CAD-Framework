@@ -1,10 +1,8 @@
 package cli;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import packers.BlePacker;
@@ -15,9 +13,6 @@ import placers.random.RandomPlacer;
 import timinganalysis.TimingGraph;
 
 import architecture.Architecture;
-import architecture.FourLutSanitized;
-import architecture.HeterogeneousArchitecture;
-
 import circuit.BlePackedCircuit;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;

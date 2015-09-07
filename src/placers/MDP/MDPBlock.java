@@ -1,10 +1,6 @@
 package placers.MDP;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
-import mathtools.QuickSelect;
 import circuit.Block;
 
 public class MDPBlock {
@@ -15,7 +11,8 @@ public class MDPBlock {
 	private int maxNets;
 	
 	public MDPPoint coor;
-	public int[] optimalInterval = new int[2];
+	private int[] exBounds;
+	private int[] optimalInterval = new int[2];
 	public int optimalPosition;
 	
 	
@@ -32,7 +29,7 @@ public class MDPBlock {
 		this.numNets += 1;
 	}
 	
-	public void move(Axis axis, int position) {
+	public void setCoor(Axis axis, int position) {
 		int oldPosition = this.coor.get(axis);
 		this.coor.set(axis, position);
 		
@@ -42,20 +39,64 @@ public class MDPBlock {
 		}
 	}
 	
-	public void calculateOptimalInterval(Axis axis) {
-		
+	private void calculateExBounds(Axis axis) {
+		if(this.exBounds == null) {
+			this.exBounds = new int[this.numNets * 2];
+		}
 		int[] tmpBounds = new int[2];
-		int[] allBounds = new int[this.numNets * 2];
-		
-		
 		for(int i = 0; i < this.numNets; i++) {
 			tmpBounds = this.nets[i].getExBounds(axis, this);
-			System.arraycopy(tmpBounds, 0, allBounds, 2*i, 2);
+			System.arraycopy(tmpBounds, 0, this.exBounds, 2*i, 2);
+		}
+	}
+	
+	public void calculateOptimalInterval(Axis axis) {
+		
+		this.calculateExBounds(axis);
+		
+		Arrays.sort(this.exBounds);
+		this.optimalInterval[0] = this.exBounds[this.numNets - 1];
+		this.optimalInterval[1] = this.exBounds[this.numNets];
+	}
+	
+	
+	public int[] getOptimalInterval() {
+		return this.optimalInterval;
+	}
+	
+	
+	public double[] getCostInPartition(int[] partition) {
+		int left = partition[0];
+		int right = partition[1];
+		int partitionSize = right - left + 1;
+		
+		
+		double[] costs = new double[partitionSize];
+		
+		for(int direction = -1; direction <= 1; direction += 2) {
+			int endIndex, boundIndex, endBoundIndex, cost = 0;
+			if(direction == -1) {
+				endIndex = left - 1;
+				boundIndex = this.numNets - 1; 
+				endBoundIndex = -1;
+			} else {
+				endIndex = right + 1;
+				boundIndex = this.numNets;
+				endBoundIndex = this.numNets * 2;
+			}
+			
+			for(int index = this.optimalPosition; index != endIndex; index += direction) {
+				costs[index - left] = cost;
+				
+				while(boundIndex != endBoundIndex && this.exBounds[boundIndex] == index) {
+					cost += 1;
+					boundIndex += direction;
+				}
+			}
 		}
 		
-		Arrays.sort(allBounds);
-		this.optimalInterval[0] = allBounds[this.numNets - 1];
-		this.optimalInterval[1] = allBounds[this.numNets];
+		
+		return costs;
 	}
 	
 	

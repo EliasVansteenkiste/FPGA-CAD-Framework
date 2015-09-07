@@ -7,12 +7,9 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
-import java.util.Vector;
 
+import mathtools.HungarianAlgorithm;
 import circuit.Block;
-import circuit.Clb;
-import circuit.Input;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
@@ -63,7 +60,7 @@ public class MDPPlacement {
 	public void reorderSlice(Axis axis, int sliceIndex) {
 		MDPBlock[] slice = this.getSlice(axis, sliceIndex);
 		slice[0] = null;
-		slice[slice.length-1] = null;
+		slice[slice.length-1] = null; 
 		
 		int blocksInSlice = 0;
 		for(int i = 1; i < slice.length - 1; i++) {
@@ -83,8 +80,9 @@ public class MDPPlacement {
 		for(int blockIndex = 0; blockIndex < blocksInSlice; blockIndex++) {
 			MDPBlock block = slice[blockIndex];
 			boolean matched = false;
+			int[] optimalInterval = block.getOptimalInterval();
 			
-			for(int slotIndex = block.optimalInterval[0]; slotIndex <= block.optimalInterval[1]; slotIndex++) {
+			for(int slotIndex = optimalInterval[0]; slotIndex <= optimalInterval[1]; slotIndex++) {
 				if(newSlice[slotIndex] == null) {
 					newSlice[slotIndex] = block;
 					block.optimalPosition = slotIndex;
@@ -99,9 +97,65 @@ public class MDPPlacement {
 		}
 		
 		// Construct Min-cost graphs
-		LinkedList<int[]> partitions = this.getMinCostPartitions(unmatchedBlocks, newSlice);
+		LinkedList<int[]> partitions = this.matchUnmatchedBlocks(unmatchedBlocks, newSlice);
 		
 		
+		// Optimize each partition separately
+		for(int[] partition : partitions) {
+			int left = partition[0];
+			int right = partition[1];
+			int partitionSize = right - left + 1;
+			
+			
+			// Construct the min-cost graph as a dense matrix: costEdges
+			double[][] costEdges = new double[partitionSize][partitionSize];
+			MDPBlock[] blocksInPartition = new MDPBlock[partitionSize];
+			int numBlocksInPartition = 0;
+			
+			for(int i = left; i < right; i++) {
+				MDPBlock block = newSlice[i];
+				if(block != null) {
+					blocksInPartition[numBlocksInPartition] = block;
+					numBlocksInPartition++;
+					
+					if(block.optimalPosition < left) {
+						System.out.println(left + "," + right + "," + block.optimalPosition);
+					}
+					
+					double[] costInPartition = block.getCostInPartition(partition);
+					System.arraycopy(costInPartition, 0, costEdges[i - left], 0, partitionSize);
+				}
+			}
+			
+			double[][] shortCostEdges = new double[numBlocksInPartition][partitionSize];
+			for(int i = 0; i < numBlocksInPartition; i++) {
+				System.arraycopy(costEdges[i], 0, shortCostEdges[i], 0, partitionSize);
+			}
+			
+			
+			//TODO: remove unused rows from coestEdges
+			
+			//TODO: Remove edges to simplify the problem
+			
+			// Solve the min-cost bipartite problem
+			HungarianAlgorithm solver = new HungarianAlgorithm(costEdges);
+			int[] solution = solver.execute();
+			
+			// Update the positions of the blocks in the partition
+			for(int i = left; i <= right; i++) {
+				newSlice[i] = null;
+			}
+			for(int i = 0; i < numBlocksInPartition; i++) {
+				newSlice[left + solution[i]] = blocksInPartition[i];
+			}
+		}
+		
+		
+		
+		
+		
+		
+		// Update the block positions in the slice
 		for(int i = 1; i < newSlice.length - 1; i++) {
 			if(newSlice[i] != null) {
 				this.moveBlock(newSlice[i], axis, i);
@@ -110,7 +164,7 @@ public class MDPPlacement {
 	}
 	
 	
-	private LinkedList<int[]> getMinCostPartitions(List<MDPBlock> unmatchedBlocks, MDPBlock[] newSlice) {
+	private LinkedList<int[]> matchUnmatchedBlocks(List<MDPBlock> unmatchedBlocks, MDPBlock[] newSlice) {
 		LinkedList<int[]> partitions = new LinkedList<int[]>();
 		
 		if(unmatchedBlocks.size() == 0) {
@@ -122,9 +176,12 @@ public class MDPPlacement {
 		// exactly one previously unmatched block. Partitions are allowed to overlap
 		// (for now).
 		for(MDPBlock block : unmatchedBlocks) {
-			int left = block.optimalInterval[0];
-			int right = block.optimalInterval[1];
 			int step = 0, direction = 0, startPosition = 0, endPosition = 0;
+			
+			int[] optimalInterval = block.getOptimalInterval();
+			int left = optimalInterval[0];
+			int right = optimalInterval[1];
+			
 			
 			while(direction == 0) {
 				step += 1;
@@ -154,7 +211,7 @@ public class MDPPlacement {
 				partition[1] = Math.min(partition[1], left + 2);
 			} else {
 				partition[0] = Math.max(partition[0], right - 2);
-				partition[1] = Math.min(partition[1], Math.max(right + 2, endPosition));
+				partition[1] = Math.min(partition[1], Math.max(right + 2, startPosition));
 			}
 			
 			partitions.add(partition);
@@ -176,8 +233,8 @@ public class MDPPlacement {
 		while(li.hasNext()) {
 			int[] partition = li.next();
 			
-			if(partition[0] < previousPartition[1]) {
-				previousPartition[1] = partition[1];
+			if(partition[0] <= previousPartition[1]) {
+				previousPartition[1] = Math.max(previousPartition[1], partition[1]);
 				li.remove();
 			} else {
 				previousPartition = partition;
@@ -194,11 +251,11 @@ public class MDPPlacement {
 		MDPBlock[] slice = new MDPBlock[length];
 		
 		if(axis == Axis.X) {
-			System.arraycopy(blocks[sliceIndex], 0, slice, 0, length);
+			System.arraycopy(this.blocks[sliceIndex], 0, slice, 0, length);
 		
 		} else {
 			for(int i = 0; i < length; i++) {
-				slice[i] = blocks[i][sliceIndex];
+				slice[i] = this.blocks[i][sliceIndex];
 			}
 		}
 		
@@ -207,7 +264,8 @@ public class MDPPlacement {
 
 	
 	private void moveBlock(MDPBlock block, Axis axis, int position) {
-		block.move(axis, position);
+		this.blocks[block.coor.y][block.coor.x] = null;
+		block.setCoor(axis, position);
 		this.blocks[block.coor.y][block.coor.x] = block;
 	}
 	

@@ -1,13 +1,8 @@
 package placers.MDP;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-
 import circuit.Net;
-import circuit.Block;
 
 public class MDPNet {
 	
@@ -50,16 +45,16 @@ public class MDPNet {
 	
 	public int getMin(Axis axis) {
 		if(axis == Axis.X) {
-			return Collections.min(this.blocks, comparatorX).coor.x;
+			return Collections.min(this.blocks, this.comparatorX).coor.x;
 		} else {
-			return Collections.min(this.blocks, comparatorY).coor.y;
+			return Collections.min(this.blocks, this.comparatorY).coor.y;
 		}
 	}
 	public int getMax(Axis axis) {
 		if(axis == Axis.X) {
-			return Collections.max(this.blocks, comparatorX).coor.x;
+			return Collections.max(this.blocks, this.comparatorX).coor.x;
 		} else {
-			return Collections.max(this.blocks, comparatorY).coor.y;
+			return Collections.max(this.blocks, this.comparatorY).coor.y;
 		}
 	}
 	

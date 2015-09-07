@@ -9,7 +9,7 @@ import architecture.FourLutSanitized;
 public class MDPPlacer extends Placer {
 	
 	static {
-		MDPPlacer.defaultOptions.put("stopRatio", "1.001");
+		MDPPlacer.defaultOptions.put("stopRatio", "1.0");
 	}
 	
 	private MDPPlacement placement;
@@ -29,6 +29,7 @@ public class MDPPlacer extends Placer {
 		
 		double stopRatio = Double.parseDouble(this.options.get("stopRatio"));
 		
+		int iteration = 0;
 		
 		do {
 			this.reorderCells(Axis.X);
@@ -37,8 +38,11 @@ public class MDPPlacer extends Placer {
 			this.placement.updateOriginalBlocks();
 			prevTotalCost = totalCost;
 			totalCost = this.calculateTotalCost();
-			System.out.println(prevTotalCost + ", " + totalCost);
-		} while(prevTotalCost / totalCost > stopRatio || true);
+			
+			iteration++;
+			System.out.format("Iteration %d: %f\n", iteration, totalCost);
+			
+		} while(prevTotalCost / totalCost > stopRatio || iteration <= 5);
 	}
 	
 	
