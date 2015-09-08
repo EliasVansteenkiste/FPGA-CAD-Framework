@@ -49,34 +49,28 @@ public abstract class Architecture {
 		return null;
 	}
 	
-	public int getWidth()
-	{
+	public int getWidth() {
 		return width;
 	}
 	
-	public int getHeight()
-	{
+	public int getHeight() {
 		return height;
 	}
 	
 	
-	public ArrayList<Site> getSites()
-	{
+	public ArrayList<Site> getSites() {
 		return siteVector;
 	}
 	
-	public Site getSite(int x, int y, int z)
-	{
+	public Site getSite(int x, int y, int z) {
 		return tileArray[x][y].getSite(z);
 	}
 	
-	public GridTile getTile(int x, int y)
-	{
+	public GridTile getTile(int x, int y) {
 		return tileArray[x][y];
 	}
 	
-	protected void addTile(GridTile tile)
-	{
+	protected void addTile(GridTile tile) {
 		tileArray[tile.getX()][tile.getY()] = tile;
 		for(int i = 0; i < tile.getCapacity(); i++)
 		{
