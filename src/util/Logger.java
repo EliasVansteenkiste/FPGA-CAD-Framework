@@ -39,7 +39,8 @@ public class Logger {
 		try {
 			writers[stream.ordinal()] = new BufferedWriter(new FileWriter(filename));
 		} catch (IOException exception) {
-			raise("Could not open log file: " + filename, exception);
+			System.err.println("Could not open log file: " + filename);
+			System.exit(1);
 		}
 	}
 	
@@ -54,18 +55,33 @@ public class Logger {
 		
 		switch(location) {
 		case STDOUT:
+			System.out.println(message);
 			break;
 		
 		case STDERR:
+			System.err.println(message);
 			break;
 			
 		case FILE:
+			try {
+				writers[stream.ordinal()].write(message + "\n");
+			} catch (IOException exception) {
+				System.err.println("Could not write to file: " + filenames[stream.ordinal()]);
+				System.exit(1);
+			}
 			break;
 		}
 	}
 	
 	
 	
+	
+	public static void raise(String message) {
+		raise(message, true);
+	}
+	public static void raise(String message, boolean exit) {
+		raise(message, new Exception());
+	}
 	public static void raise(String message, Exception exception) {
 		raise(message, exception, true);
 	}
