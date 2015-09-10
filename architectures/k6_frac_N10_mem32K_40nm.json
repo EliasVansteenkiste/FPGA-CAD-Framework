@@ -1,0 +1,670 @@
+{
+    "io": {
+        "global": true,
+        "leaf": false,
+        "height": 1,
+        "ports": {
+            "input": {
+                "outpad": 1
+            },
+            "output": {
+                "inpad": 1,
+            }
+        },
+        "modes": {
+            "inpad": {
+                "children": {
+                    "inpad": 1
+                }
+            },
+            "outpad": {
+                "children": {
+                    "outpad": 1
+                }
+            }
+        }
+    },
+
+    "inpad": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "outpad": 1
+            },
+            "output": {}
+        },
+        "children": {},
+    },
+
+    "outpad": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {},
+            "output": {
+                "inpad": 1
+            }
+        },
+        "children": {},
+    },
+
+    "clb": {
+        "global": true,
+        "leaf": false,
+        "height": 1,
+        "ports": {
+            "input": {
+                "I": 40
+            },
+            "output": {
+                "O": 20,
+            }
+        },
+        "children": {
+            "fle": 10
+        }
+    },
+
+    "fle": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "in": 6
+            },
+            "output": {
+                "out": 2,
+            }
+        },
+        "modes": {
+            "n2_lut5": {
+                "children": {
+                    "lut5inter": 1
+                }
+            },
+            "n1_lut6": {
+                "children": {
+                    "ble6": 1
+                }
+            }
+        }
+    },
+
+    "lut5inter": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "in": 5
+            },
+            "output": {
+                "out": 2,
+            }
+        },
+        "children": {
+            "ble5": 2
+        }
+    },
+
+    "ble6": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "in": 6
+            },
+            "output": {
+                "out": 1,
+            }
+        },
+        "children": {
+            "lut6": 1,
+            "ff": 1
+        }
+    },
+
+    "ble5": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "in": 5
+            },
+            "output": {
+                "out": 1,
+            }
+        },
+        "children": {
+            "lut5": 1,
+            "ff": 1
+        }
+    },
+
+    "lut6": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "in": 6
+            },
+            "output": {
+                "out": 1,
+            }
+        },
+        "children": {
+            "lut": 1
+        }
+    },
+
+    "lut5": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "in": 5
+            },
+            "output": {
+                "out": 1,
+            }
+        },
+        "children": {
+            "lut": 1
+        }
+    },
+
+    "lut": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "in": 6
+            },
+            "output": {
+                "out": 1,
+            }
+        },
+        "children": {}
+    },
+
+    "ff": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "D": 1
+            },
+            "output": {
+                "Q": 1,
+            }
+        },
+        "children": {}
+    },
+
+    "mult_36": {
+        "global": true,
+        "leaf": false,
+        "height": 4,
+        "ports": {
+            "input": {
+                "a": 36,
+                "b": 36
+            },
+            "output": {
+                "out": 72,
+            }
+        },
+        "modes": {
+            "two_divisible_mult_18x18": {
+                "children": {
+                    "divisible_mult_18x18": 2
+                }
+            },
+            "mult_36x36": {
+                "children": {
+                    "mult_36x36_slice": 1
+                }
+            }
+        }
+    },
+
+    "divisible_mult_18x18": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "a": 18,
+                "b": 18
+            },
+            "output": {
+                "out": 36,
+            }
+        },
+        "modes": {
+            "two_mult_9x9": {
+                "children": {
+                    "mult_9x9_slice": 2
+                }
+            },
+            "mult_18x18": {
+                "children": {
+                    "mult_18x18_slice": 1
+                }
+            }
+        }
+    },
+
+    "mult_36x36_slice": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "A_cfg": 36,
+                "B_cfg": 36
+            },
+            "output": {
+                "OUT_cfg": 72,
+            }
+        },
+        "children": {
+            "mult_36x36": 1
+        }
+    },
+
+    "mult_18x18_slice": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "A_cfg": 18,
+                "B_cfg": 18
+            },
+            "output": {
+                "OUT_cfg": 36,
+            }
+        },
+        "children": {
+            "mult_18x18": 1
+        }
+    },
+
+    "mult_9x9_slice": {
+        "global": false,
+        "leaf": false,
+        "ports": {
+            "input": {
+                "A_cfg": 9,
+                "B_cfg": 9
+            },
+            "output": {
+                "OUT_cfg": 18,
+            }
+        },
+        "children": {
+            "mult_9x9": 1
+        }
+    },
+
+    "mult_36x36": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "a": 36,
+                "b": 36
+            },
+            "output": {
+                "out": 72,
+            }
+        },
+        "children": {}
+    },
+
+    "mult_18x18": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "a": 18,
+                "b": 18
+            },
+            "output": {
+                "out": 36,
+            }
+        },
+        "children": {}
+    },
+
+    "mult_9x9": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "a": 9,
+                "b": 9
+            },
+            "output": {
+                "out": 18,
+            }
+        },
+        "children": {}
+    },
+
+    "memory": {
+        "global": true,
+        "leaf": false,
+        "height": 4,
+        "ports": {
+            "input": {
+                "addr1": 15,
+                "addr2": 15,
+                "data": 64,
+                "we1": 1,
+                "we2": 1,
+            },
+            "output": {
+                "out": 64,
+            }
+        },
+        "modes": {
+            "mem_512x64_sp": {
+                "children": {
+                    "mem_512x64_sp": 1
+                }
+            },
+            "mem_1024x32_sp": {
+                "children": {
+                    "mem_1024x32_sp": 1
+                }
+            },
+            "mem_2048x16_sp": {
+                "children": {
+                    "mem_2048x16_sp": 1
+                }
+            },
+            "mem_4096x8_sp": {
+                "children": {
+                    "mem_4096x8_sp": 1
+                }
+            },
+            "mem_8192x4_sp": {
+                "children": {
+                    "mem_8192x4_sp": 1
+                }
+            },
+            "mem_16384x2_sp": {
+                "children": {
+                    "mem_16384x2_sp": 1
+                }
+            },
+            "mem_32768x1_sp": {
+                "children": {
+                    "mem_32768x1_sp": 1
+                }
+            },
+            "mem_1024x32_dp": {
+                "children": {
+                    "mem_1024x32_dp": 1
+                }
+            },
+            "mem_2048x16_dp": {
+                "children": {
+                    "mem_2048x16_dp": 1
+                }
+            },
+            "mem_2048x8_dp": {
+                "children": {
+                    "mem_2048x8_dp": 1
+                }
+            },
+            "mem_8192x4_dp": {
+                "children": {
+                    "mem_8192x4_dp": 1
+                }
+            },
+            "mem_16384x2_dp": {
+                "children": {
+                    "mem_16384x2_dp": 1
+                }
+            },
+            "mem_32768x1_dp": {
+                "children": {
+                    "mem_32768x1_dp": 1
+                }
+            },
+        }
+    },
+
+    "mem_512x64_sp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr": 9,
+                "data": 64,
+                "we": 1
+            },
+            "output": {
+                "out": 64,
+            }
+        },
+        "children": {}
+    },
+
+    "mem_1024x32_sp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr": 10,
+                "data": 32,
+                "we": 1
+            },
+            "output": {
+                "out": 32,
+            }
+        },
+        "children": {}
+    },
+
+    "mem_2048x16_sp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr": 11,
+                "data": 16,
+                "we": 1
+            },
+            "output": {
+                "out": 16,
+            }
+        },
+        "children": {}
+    },
+
+    "mem_4096x8_sp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr": 12,
+                "data": 8,
+                "we": 1
+            },
+            "output": {
+                "out": 8,
+            }
+        },
+        "children": {}
+    },
+
+    "mem_8192x4_sp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr": 13,
+                "data": 4,
+                "we": 1
+            },
+            "output": {
+                "out": 4,
+            }
+        },
+        "children": {}
+    },
+
+    "mem_16384x2_sp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr": 14,
+                "data": 2,
+                "we": 1
+            },
+            "output": {
+                "out": 2,
+            }
+        },
+        "children": {}
+    },
+
+    "mem_32768x1_sp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr": 15,
+                "data": 1,
+                "we": 1
+            },
+            "output": {
+                "out": 1,
+            }
+        },
+        "children": {}
+    },
+
+    "mem_1024x32_dp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr1": 10,
+                "addr2": 10,
+                "data1": 32,
+                "data2": 32,
+                "we1": 1,
+                "we2": 1
+            },
+            "output": {
+                "out1": 32,
+                "out2": 32
+            }
+        },
+        "children": {}
+    },
+
+    "mem_2048x16_dp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr1": 11,
+                "addr2": 11,
+                "data1": 16,
+                "data2": 16,
+                "we1": 1,
+                "we2": 1
+            },
+            "output": {
+                "out1": 16,
+                "out2": 16
+            }
+        },
+        "children": {}
+    },
+
+
+    "mem_2048x8_dp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr1": 12,
+                "addr2": 12,
+                "data1": 8,
+                "data2": 8,
+                "we1": 1,
+                "we2": 1
+            },
+            "output": {
+                "out1": 8,
+                "out2": 8
+            }
+        },
+        "children": {}
+    },
+
+    "mem_8192x4_dp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr1": 13,
+                "addr2": 13,
+                "data1": 4,
+                "data2": 4,
+                "we1": 1,
+                "we2": 1
+            },
+            "output": {
+                "out1": 4,
+                "out2": 4
+            }
+        },
+        "children": {}
+    },
+
+    "mem_16384x2_dp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr1": 14,
+                "addr2": 14,
+                "data1": 2,
+                "data2": 2,
+                "we1": 1,
+                "we2": 1
+            },
+            "output": {
+                "out1": 2,
+                "out2": 2
+            }
+        },
+        "children": {}
+    },
+
+    "mem_32768x1_dp": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr1": 15,
+                "addr2": 15,
+                "data1": 1,
+                "data2": 1,
+                "we1": 1,
+                "we2": 1
+            },
+            "output": {
+                "out1": 1,
+                "out2": 1
+            }
+        },
+        "children": {}
+    },
+}

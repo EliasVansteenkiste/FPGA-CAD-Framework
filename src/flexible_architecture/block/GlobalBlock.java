@@ -19,4 +19,8 @@ public class GlobalBlock extends AbstractBlock {
 	public void setSite(AbstractSite site) {
 		this.site = site;
 	}
+	
+	public AbstractBlock getParent() {
+		return null;
+	}
 }

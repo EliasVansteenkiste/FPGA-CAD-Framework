@@ -12,9 +12,9 @@ public class Circuit {
 	private FlexibleArchitecture architecture;
 	
 	
-	public Circuit(String filename) {
+	public Circuit(FlexibleArchitecture architecture, String filename) {
 		this.netparser = new NetParser(filename);
-		this.architecture = new FlexibleArchitecture();
+		this.architecture = architecture;
 	}
 	
 	public void build() {

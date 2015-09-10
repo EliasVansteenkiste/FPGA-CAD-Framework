@@ -14,6 +14,11 @@ public class Net extends AbstractNet {
 		this.sinks = new ArrayList<AbstractBlock>();
 	}
 	
+	public Net(DirectNet net) {
+		super(net.getSource());
+		this.addSink(net.getSink());
+	}
+	
 	public List<AbstractBlock> getSinks() {
 		return this.sinks;
 	}

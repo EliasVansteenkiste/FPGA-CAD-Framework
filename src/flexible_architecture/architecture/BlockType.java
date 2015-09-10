@@ -1,54 +1,119 @@
 package flexible_architecture.architecture;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import util.Logger;
 
 public class BlockType {
-	//IO("io", true, 1, 1),
-	//CLB("clb", true, );
 	
-	//, CLB, MULT_36, MEMORY, FLE, LUT5_INTER, BLE6, BLE5, LUT6, LUT5, FF;
+	private static List<String> id = new ArrayList<String>();
+	private static List<String> name = new ArrayList<String>();
+	private static List<String> mode = new ArrayList<String>();
 	
-	private static String[] type = {"io", "clb", "mult_36", "memory", "fle", "lut5_inter", "ble6", "ble5", "lut6", "lut5", "ff"};
-	private static boolean[] isGlobal = {true, true, true, true, false, false, false, false, false, false};
-	private static int[] maxChildren = {1, 10, 0, 0, 2, 2, 2, 2, 0, 0, 0};
-	private static int[] height = {1, 1, 4, 6};
+	private static List<Boolean> isGlobal = new ArrayList<Boolean>();
+	private static List<Boolean> isLeaf = new ArrayList<Boolean>();
+	private static List<Integer> height = new ArrayList<Integer>();
+	
+	private static List<Map<String, Integer>> children = new ArrayList<Map<String, Integer>>();
+	private static List<Map<String, Integer>> inputs = new ArrayList<Map<String, Integer>>();
+	private static List<Map<String, Integer>> outputs = new ArrayList<Map<String, Integer>>();
+	
 	
 	private static HashMap<String, Integer> typeIndex;
-	static {
-		for(int i = 0; i < type.length; i++) {
-			typeIndex.put(type[i], i);
-		}
-	}
+	
 	
 	
 	private int index;
 	
-	public BlockType(String type) {
+	
+	
+	private static String getId(String name, String mode) {
+		return name + "<" + mode + ">";
+	}
+	
+	public static void addType(String name, boolean isGlobal, boolean isLeaf, int height, HashMap<String, Integer> inputs, HashMap<String, Integer> outputs, HashMap<String, Integer> children) {
+		addType(name, "", isGlobal, isLeaf, height, inputs, outputs, children);
+	}
+	public static void addType(String name, String mode, boolean isGlobal, boolean isLeaf, int height, HashMap<String, Integer> inputs, HashMap<String, Integer> outputs, HashMap<String, Integer> children) {
+		String id = BlockType.getId(name, mode);
+		
+		BlockType.id.add(id);
+		BlockType.name.add(name);
+		BlockType.mode.add(mode);
+		
+		BlockType.isGlobal.add(isGlobal);
+		BlockType.isLeaf.add(isLeaf);
+		BlockType.height.add(height);
+		
+		BlockType.children.add(children);
+		BlockType.inputs.add(inputs);
+		BlockType.outputs.add(outputs);
+		
+		BlockType.typeIndex.put(id, BlockType.id.size());
+	}
+	
+	
+	
+	
+	public BlockType(String type, String mode) {
+		String id = BlockType.getId(type, mode);
 		if(!typeIndex.containsKey(type)) {
-			Logger.raise("Invalid block type: " + type);
+			Logger.raise("Invalid block type: " + id);
 		}
 		
-		int index = typeIndex.get(type);
+		this.index = typeIndex.get(type);
 	}
 	
 	
-	public String getType() {
-		return type[this.index];
+	public String getName() {
+		return id.get(this.index);
 	}
 	public boolean isGlobal() {
-		return isGlobal[this.index];
+		return isGlobal.get(this.index);
 	}
-	public int getMaxChildren() {
-		return maxChildren[this.index];
+	public boolean isLeaf() {
+		return isLeaf.get(this.index);
 	}
 	public int getHeight() {
-		return height[this.index];
+		return height.get(this.index);
+	}
+	
+	public Map<String, Integer> getChildren() {
+		return children.get(this.index);
+	}
+	
+	
+	public Map<String, Integer> getPorts(PortType type) {
+		switch(type) {
+		case INPUT:
+			return this.getInputs();
+			
+		case OUTPUT:
+			return this.getOutputs();
+		
+		default:
+			Logger.raise("Unknown port type: " + type);
+			return null;
+		}
+	}
+	public Map<String, Integer> getInputs() {
+		return inputs.get(this.index);
+	}
+	public Map<String, Integer> getOutputs() {
+		return outputs.get(this.index);
+	}
+	
+	
+	
+	public boolean equals(BlockType otherBlockType) {
+		return this.index == otherBlockType.index;
 	}
 	
 	public String toString() {
-		return this.getType();
+		return this.getName();
 	}
 }
