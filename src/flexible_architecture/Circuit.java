@@ -17,7 +17,7 @@ public class Circuit {
 		this.architecture = architecture;
 	}
 	
-	public void build() {
+	public void parse() {
 		this.blocks = netparser.parse();
 	}
 }

@@ -19,6 +19,8 @@ import circuit.PrePackedCircuit;
 import circuit.parser.blif.BlifReader;
 import circuit.parser.net.NetReader;
 import cli.Options;
+import flexible_architecture.Circuit;
+import flexible_architecture.architecture.FlexibleArchitecture;
 
 
 public class CLI {
@@ -31,64 +33,24 @@ public class CLI {
 		Options options = new Options();
 		options.parseArguments(args);
 		
+		FlexibleArchitecture architecture = new FlexibleArchitecture(options.architecture);
+		architecture.parse();
 		
-		// Get the circuit
-		PrePackedCircuit prePackedCircuit = null;
-		PackedCircuit packedCircuit = null;
-		
-		// Get the number of lut inputs (depends on used architecture)
-		int nbLutInputs = Architecture.getNbLutInputs(options.architecture);
-		
-		// If the circuit should be packed: read the blif file
-		if(options.pack) {
-			BlifReader blifReader = new BlifReader();
-			
-			try {
-				prePackedCircuit = blifReader.readBlif(options.blifFile.toString(), nbLutInputs);
-			} catch(IOException e) {
-				error("Failed to read blif file: " + options.blifFile.toString());
-			}
-			
-			BlePacker blePacker = new BlePacker(prePackedCircuit);
-			BlePackedCircuit blePackedCircuit = blePacker.pack();
-		
-			ClbPacker clbPacker = new ClbPacker(blePackedCircuit);
-			packedCircuit = clbPacker.pack();
-			
-		
-		// Else: read the net file 
-		} else {
-			NetReader netReader = new NetReader();
-			
-			try {
-				netReader.readNetlist(options.netFile.toString(), nbLutInputs);
-			} catch(IOException e) {
-				error("Failed to read net file: " + options.netFile.toString());
-			}
-			
-			prePackedCircuit = netReader.getPrePackedCircuit();
-			packedCircuit = netReader.getPackedCircuit();
-		}
+		Circuit circuit = new Circuit(architecture, options.netFile.toString());
+		circuit.parse();
 		
 		
-		
-		// Set the architecture
-		// TODO: IOSiteCapacity flexible
-		Architecture architecture = Architecture.newArchitecture(options.architecture, packedCircuit, 1);
-		if(architecture == null) {
-			error("Architecture type not recognized: " + options.architecture);
-		}
 		
 		
 		
 		// If a random initialization is required: do it
-		if(options.random) {
+		/*if(options.random) {
 			Random rand = new Random(1);
 			RandomPlacer.placeCLBsandFixedIOs(packedCircuit, architecture, rand);
-		}
+		}*/
 		
 		
-		CLI.printStatistics("initial", prePackedCircuit, packedCircuit, false);
+		//CLI.printStatistics("initial", prePackedCircuit, packedCircuit, false);
 		
 		// Loop through the placers
 		for(String placerName : options.placers.keySet()) {
@@ -98,21 +60,21 @@ public class CLI {
 			
 			// Create the placer and place the circuit
 			CLI.startTimer();
-			Placer placer = Placer.newPlacer(placerName, architecture, prePackedCircuit, packedCircuit, placerOptions);
-			placer.place();
+			//Placer placer = Placer.newPlacer(placerName, architecture, prePackedCircuit, packedCircuit, placerOptions);
+			//placer.place();
 			CLI.stopTimer();
 			
-			CLI.printStatistics(placerName, prePackedCircuit, packedCircuit);
+			//CLI.printStatistics(placerName, prePackedCircuit, packedCircuit);
 		}
 		
 		
 		
 		// Print out the place file
-		try {
+		/*try {
 			packedCircuit.dumpPlacement(options.placeFile.toString());
 		} catch (FileNotFoundException e) {
 			error("Place file not found: " + options.placeFile);
-		}
+		}*/
 	}
 	
 	private static void startTimer() {

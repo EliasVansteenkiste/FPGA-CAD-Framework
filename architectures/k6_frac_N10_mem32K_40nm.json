@@ -3,6 +3,7 @@
         "global": true,
         "leaf": false,
         "height": 1,
+        "capacity": 8,
         "ports": {
             "input": {
                 "outpad": 1
@@ -29,10 +30,10 @@
         "global": false,
         "leaf": true,
         "ports": {
-            "input": {
-                "outpad": 1
-            },
-            "output": {}
+            "input": {},
+            "output": {
+                "inpad": 1
+            }
         },
         "children": {},
     },
@@ -41,10 +42,10 @@
         "global": false,
         "leaf": true,
         "ports": {
-            "input": {},
-            "output": {
-                "inpad": 1
-            }
+            "input": {
+                "outpad": 1
+            },
+            "output": {}
         },
         "children": {},
     },
@@ -152,8 +153,15 @@
                 "out": 1,
             }
         },
-        "children": {
-            "lut": 1
+        "modes": {
+            "lut6": {
+                "children": {
+                    "lut": 1
+                }
+            },
+            "wire": {
+                "children": {}
+            }
         }
     },
 
@@ -168,8 +176,15 @@
                 "out": 1,
             }
         },
-        "children": {
-            "lut": 1
+        "modes": {
+            "lut5": {
+                "children": {
+                    "lut": 1
+                }
+            },
+            "wire": {
+                "children": {}
+            }
         }
     },
 

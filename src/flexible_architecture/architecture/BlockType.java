@@ -22,8 +22,9 @@ public class BlockType {
 	private static List<Map<String, Integer>> inputs = new ArrayList<Map<String, Integer>>();
 	private static List<Map<String, Integer>> outputs = new ArrayList<Map<String, Integer>>();
 	
+	private static int ioCapacity;
 	
-	private static HashMap<String, Integer> typeIndex;
+	private static Map<String, Integer> typeIndex = new HashMap<String, Integer>();
 	
 	
 	
@@ -32,14 +33,23 @@ public class BlockType {
 	
 	
 	private static String getId(String name, String mode) {
-		return name + "<" + mode + ">";
+		if(mode == null) {
+			return name + "<>";
+		} else {
+			return name + "<" + mode + ">";
+		}
 	}
 	
-	public static void addType(String name, boolean isGlobal, boolean isLeaf, int height, HashMap<String, Integer> inputs, HashMap<String, Integer> outputs, HashMap<String, Integer> children) {
-		addType(name, "", isGlobal, isLeaf, height, inputs, outputs, children);
+	public static void setIoCapacity(int capacity) {
+		BlockType.ioCapacity = capacity;
 	}
-	public static void addType(String name, String mode, boolean isGlobal, boolean isLeaf, int height, HashMap<String, Integer> inputs, HashMap<String, Integer> outputs, HashMap<String, Integer> children) {
+	
+	
+	public static void addType(String name, String mode, boolean isGlobal, boolean isLeaf, int height, Map<String, Integer> inputs, Map<String, Integer> outputs, Map<String, Integer> children) {
 		String id = BlockType.getId(name, mode);
+		int index = BlockType.id.size();
+		
+		BlockType.typeIndex.put(id, index);
 		
 		BlockType.id.add(id);
 		BlockType.name.add(name);
@@ -52,8 +62,6 @@ public class BlockType {
 		BlockType.children.add(children);
 		BlockType.inputs.add(inputs);
 		BlockType.outputs.add(outputs);
-		
-		BlockType.typeIndex.put(id, BlockType.id.size());
 	}
 	
 	
@@ -61,16 +69,23 @@ public class BlockType {
 	
 	public BlockType(String type, String mode) {
 		String id = BlockType.getId(type, mode);
-		if(!typeIndex.containsKey(type)) {
+		
+		if(!typeIndex.containsKey(id)) {
 			Logger.raise("Invalid block type: " + id);
 		}
 		
-		this.index = typeIndex.get(type);
+		this.index = typeIndex.get(id);
 	}
 	
 	
-	public String getName() {
+	public String getId() {
 		return id.get(this.index);
+	}
+	public String getName() {
+		return name.get(this.index);
+	}
+	public String getMode() {
+		return mode.get(this.index);
 	}
 	public boolean isGlobal() {
 		return isGlobal.get(this.index);
@@ -114,6 +129,6 @@ public class BlockType {
 	}
 	
 	public String toString() {
-		return this.getName();
+		return this.getId();
 	}
 }

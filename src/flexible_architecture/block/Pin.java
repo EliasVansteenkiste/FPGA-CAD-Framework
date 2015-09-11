@@ -3,16 +3,25 @@ package flexible_architecture.block;
 import java.util.ArrayList;
 import java.util.List;
 
+import flexible_architecture.architecture.PortType;
+
 import util.Logger;
 
 public class Pin {
 	
 	private AbstractBlock owner;
+	private PortType portType;
+	private String portName;
+	private int index;
 	private Pin source;
 	private List<Pin> sinks;
 	
-	public Pin(AbstractBlock owner) {
+	public Pin(AbstractBlock owner, PortType portType, String portName, int index) {
 		this.owner = owner;
+		this.portType = portType;
+		this.portName = portName;
+		this.index = index;
+		
 		//TODO: is this memory efficient? Does the size remain 1 after 1 element is added?
 		this.sinks = new ArrayList<Pin>(1);
 	}
@@ -40,5 +49,10 @@ public class Pin {
 	}
 	public void addSink(Pin sink) {
 		this.sinks.add(sink);
+	}
+	
+	
+	public String toString() {
+		return this.owner.toString() + "." + this.portName + "[" + this.index + "]";
 	}
 }

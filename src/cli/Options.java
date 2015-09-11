@@ -62,7 +62,6 @@ public class Options {
 	}
 	
 	public void parseArguments(String[] args) {
-		
 		try {
 			this.parser.parseArgument(args);
 			
@@ -77,7 +76,6 @@ public class Options {
 			this.printUsage();
 			System.exit(0);
 		}
-		
 		
 		// Set the input folder
 		File workingFolder = new File(System.getProperty("user.dir"));
@@ -162,9 +160,6 @@ public class Options {
 		this.placeFile = new File(outputFolder, circuitName + ".place");
 		
 		
-		// Set the architecture
-		this.architecture = this.architecture.toLowerCase();
-		
 		
 		// Parse the extra placer options
 		String[] placerNames = placersString.split(";");
@@ -234,7 +229,7 @@ public class Options {
 	
 	private void printUsage(PrintStream stream) {
 		
-		stream.println("Usage: java cli [options] circuit");
+		stream.println("Usage: java cli --placer NAME --circuit NAME [options] [placer-options]");
 		
 		CmdLineParser parser = new CmdLineParser(this);		
 		parser.printUsage(stream);

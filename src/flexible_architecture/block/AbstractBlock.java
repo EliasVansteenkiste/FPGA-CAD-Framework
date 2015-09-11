@@ -1,17 +1,14 @@
 package flexible_architecture.block;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import util.ArrayUtil;
 import util.Logger;
 
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.PortType;
-import flexible_architecture.net.AbstractNet;
 
 public abstract class AbstractBlock {
 	
@@ -22,20 +19,18 @@ public abstract class AbstractBlock {
 	
 	private List<Map<String, Pin[]>> pins;
 	
-	//private Map<String, Pin[]> inputs;
-	//private Map<String, Pin[]> outputs;
-	
 	
 	public AbstractBlock(String name, BlockType type) {
 		this.name = name;
 		this.type = type;
 		
 		
-		this.children = new HashMap<String, LocalBlock[]>();
 		Map<String, Integer> numChildren = type.getChildren();
+		int capacity = (int) Math.ceil(numChildren.size() * 1.33);
+		this.children = new HashMap<String, LocalBlock[]>(capacity);
 		
-		for(Map.Entry<String, Integer> numChild : numChildren.entrySet()) {
-			this.children.put(numChild.getKey(), new LocalBlock[numChild.getValue()]);
+		for(Map.Entry<String, Integer> childEntry : numChildren.entrySet()) {
+			this.children.put(childEntry.getKey(), new LocalBlock[childEntry.getValue()]);
 		}
 		
 		
@@ -43,26 +38,33 @@ public abstract class AbstractBlock {
 		this.pins = new ArrayList<Map<String, Pin[]>>(numPortTypes);
 		
 		for(PortType portType : PortType.values()) {
-			this.createPins(this.pins.get(portType.ordinal()), type.getPorts(portType));
+			Map<String, Integer> pinCounts = type.getPorts(portType); 
+			
+			Map<String, Pin[]> pins = this.createPins(portType, pinCounts);
+			this.pins.add(pins);
 		}
 	}
 	
-	private void createPins(Map<String, Pin[]> pins, Map<String, Integer> numPins) {
-		pins = new HashMap<String, Pin[]>();
+	private Map<String, Pin[]> createPins(PortType portType, Map<String, Integer> pinCounts) {
+		int capacity = (int) Math.ceil(pinCounts.size() * 1.33);
+		Map<String, Pin[]> pins = new HashMap<String, Pin[]>(capacity);
 		
-		for(Map.Entry<String, Integer> numPin : numPins.entrySet()) {
-			int num = numPin.getValue();
-			Pin[] newPins = new Pin[num];
+		for(Map.Entry<String, Integer> pinsEntry : pinCounts.entrySet()) {
 			
-			for(int i = 0; i < num; i++) {
-				newPins[i] = new Pin(this);
+			String portName = pinsEntry.getKey();
+			int numPins = pinsEntry.getValue();
+			
+			Pin[] newPins = new Pin[numPins];
+			
+			for(int i = 0; i < numPins; i++) {
+				newPins[i] = new Pin(this, portType, portName, i);
 			}
 			
-			pins.put(numPin.getKey(), newPins);
+			pins.put(portName, newPins);
 		}
+		
+		return pins;
 	}
-	
-	
 	
 	
 	public String getName() {
@@ -72,6 +74,11 @@ public abstract class AbstractBlock {
 		return this.type;
 	}
 	
+	
+	public boolean isGlobal() {
+		return this.getParent() == null;
+	}
+	public abstract AbstractBlock getParent();
 	
 	
 	public Map<String, LocalBlock[]> getChildren() {
@@ -146,5 +153,8 @@ public abstract class AbstractBlock {
 		sinkPin.setSource(sourcePin);
 	}
 	
-	public abstract AbstractBlock getParent();
+	
+	public String toString() {
+		return this.type.getId() + ":" + this.getName();
+	}
 }

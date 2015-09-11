@@ -5,41 +5,33 @@ import org.json.simple.JSONValue;
 
 import util.Logger;
 
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
+import java.util.Set;
 
 public class FlexibleArchitecture {
 	
 	private int x, y;
 	
-	private int ioCapacity = 8;
+	private String filename;
+	private BufferedReader reader;
+	
 	private JSONObject blockDefinitions;
 	
-	//public enum PortType {INPUT, OUTPUT};
-	
-	/*private static Map<BlockType, Map<String, Integer>> inputs = new HashMap<BlockType, Map<String, Integer>>();
-	private static Map<BlockType, Map<String, Integer>> outputs = new HashMap<BlockType, Map<String, Integer>>();
-	static {
-		for(BlockType type : BlockType.values()) {
-			inputs.put(type, new HashMap<String, Integer>());
-			outputs.put(type, new HashMap<String, Integer>());
-		}
-		
-		inputs.get(BlockType.IO).put("outpad", 1);
-		outputs.get(BlockType.IO).put("inpad", 1);
-		
-		inputs.get(BlockType.CLB).put("I", 40);
-		outputs.get(BlockType.CLB).put("O", 40);
-	}*/
-	
 	public FlexibleArchitecture(String filename) {
-		this.parse(filename);
+		this.filename = filename;
+		
+		try {
+			this.reader = new BufferedReader(new FileReader(filename));
+		} catch (FileNotFoundException exception) {
+			Logger.raise("Could not find the architecture file: " + filename, exception);
+		}
 	}
 	
 	public FlexibleArchitecture(String filename, int x, int y) {
@@ -48,18 +40,114 @@ public class FlexibleArchitecture {
 		this.y = y;
 	}
 	
-	private void parse(String filename) {
-		File file = new File(filename);
-		Scanner scanner = null;
+	public void parse() {
+		
+		// Read the entire file
+		String content = "", line;
 		try {
-			scanner = new Scanner(file);
-		} catch (FileNotFoundException exception) {
-			Logger.raise("Architecture file not found: " + filename, exception);
+			while((line = this.reader.readLine()) != null) {
+				content += line;
+			}
+		} catch (IOException exception) {
+			Logger.raise("Failed to read from the architecture file: " + this.filename, exception);
 		}
 		
-		String content = scanner.useDelimiter("\\Z").next();
-		
+		// Parse the JSONObject
 		this.blockDefinitions = (JSONObject) JSONValue.parse(content);
+		
+		
+		// Set the IO capacity
+		int capacity = (int) (long) this.getDefinition("io").get("capacity");
+		BlockType.setIoCapacity(capacity);
+		
+		// Add all the block types
+		this.addBlockTypes();
+	}
+	
+	private void addBlockTypes() {
+		
+		@SuppressWarnings("unchecked")
+		Set<String> blockTypes = this.blockDefinitions.keySet();
+		
+		for(String blockType : blockTypes) {
+			JSONObject definition = this.getDefinition(blockType);
+			
+			// Get some general info
+			boolean isGlobal = (boolean) definition.get("global");
+			boolean isLeaf = (boolean) definition.get("leaf");
+			
+			int height;
+			if(isGlobal) {
+				height = (int) (long) definition.get("height");
+			} else {
+				height = 0;
+			}
+			
+			
+			// Get the port counts
+			@SuppressWarnings("unchecked")
+			Map<String, JSONObject> ports = (Map<String, JSONObject>) definition.get("ports");
+			
+			Map<String, Integer> inputs = castIntegers(ports.get("input"));
+			Map<String, Integer> outputs = castIntegers(ports.get("output"));
+			
+			
+			// Get the modes and children
+			List<String> modes = new ArrayList<String>();
+			List<Map<String, Integer>> children = new ArrayList<Map<String, Integer>>();
+			
+			// If the block is a leaf: there are no modes, the only mode is unnamed
+			if(isLeaf) {
+				modes.add("");
+				children.add(this.getChildren(definition));
+			
+			
+			// There is only one mode, but we have to name it like the block for some reason
+			} else if(!definition.containsKey("modes")) {
+				modes.add(blockType);
+				children.add(this.getChildren(definition));
+			
+				
+			// There are multiple modes
+			} else {
+				JSONObject modeDefinitions = (JSONObject) definition.get("modes");
+				
+				@SuppressWarnings("unchecked")
+				Set<String> modeNames = modeDefinitions.keySet();
+				
+				for(String mode : modeNames) {
+					modes.add(mode);
+					children.add(this.getChildren((JSONObject) modeDefinitions.get(mode)));
+				}
+			}
+			
+			
+			for(int i = 0; i < modes.size(); i++) {
+				BlockType.addType(blockType, modes.get(i), isGlobal, isLeaf, height, inputs, outputs, children.get(i));
+			}
+		}
+	}
+	
+	
+	private Map<String, Integer> getChildren(JSONObject subDefinition) {
+		Map<String, Integer> children = castIntegers((JSONObject) subDefinition.get("children"));;
+		
+		return children;
+	}
+	
+	
+	private Map<String, Integer> castIntegers(JSONObject subDefinition) {
+		@SuppressWarnings("unchecked")
+		Set<String> keys = (Set<String>) subDefinition.keySet();
+		
+		Map<String, Integer> newSubDefinition = new HashMap<String, Integer>();
+		
+		for(String key : keys) {
+			int value = (int) (long) subDefinition.get(key);
+			newSubDefinition.put(key, value);
+		}
+		
+		return newSubDefinition;
 	}
 	
 	
