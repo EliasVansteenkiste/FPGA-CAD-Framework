@@ -25,7 +25,11 @@ public abstract class SAPlacer extends Placer
 		defaultOptions.put("inner_num", "1");
 	}
 	
-	protected double Rlimd;
+	private double Rlimd;
+	private int Rlim;
+	protected double T;
+	protected boolean greedy;
+	
 	protected EfficientCostCalculator calculator;
 	protected Random rand;
 	
@@ -38,10 +42,10 @@ public abstract class SAPlacer extends Placer
 	
 	public abstract void lowTempAnneal(double innerNum);
 	
-	protected Swap findSwap(int Rlim)
-	{
+	protected Swap findSwap(int Rlim) {
 		Swap swap=new Swap();
 		Block b;
+		
 		do{
 			b = circuit.vBlocks.elementAt(rand.nextInt(circuit.vBlocks.size()));
 		}while(b.fixed);
@@ -110,49 +114,49 @@ public abstract class SAPlacer extends Placer
 		return swap;
 	}
 	
-	protected double updateTemperature(double temperature, double alpha)
-	{
+	protected void updateTemperature(double alpha) {
 		double gamma;
+		
 		if (alpha > 0.96)     	gamma=0.5;
 		else if (alpha > 0.8)	gamma=0.9;
 		else if (alpha > 0.15)	gamma=0.95;
 		else 					gamma=0.8;
-		return temperature*gamma;
+		
+		this.T *= gamma;
 	}
 	
-	protected int initialRlim()
-	{
-		int Rlim=(int)Math.round(Rlimd);
-		return Rlim;
+	
+	
+	protected int getRlim() {
+		return this.Rlim;
 	}
 	
-	protected int updateRlim(double alpha)
-	{
-		Rlimd=Rlimd*(1-0.44+alpha);
-		int maxFPGAdimension = Math.max(architecture.getHeight(), architecture.getWidth());
-		if(Rlimd>maxFPGAdimension)
-		{
-			Rlimd=maxFPGAdimension;
-		}
-		if(Rlimd<1)
-		{
-			Rlimd=1;
-		}
-		return  (int) Math.round(Rlimd);
+	protected void setRlimd(double Rlimd) {
+		this.Rlimd = Rlimd;
+		this.updateIntRlim();
 	}
 	
-	protected int updateRlimLimited(double alpha, int maxValue)
-	{
-		Rlimd = Rlimd * (1 - 0.44 + alpha);
-		if(Rlimd > maxValue)
-		{
-			Rlimd = maxValue;
+	protected void updateRlim(double alpha) {
+		int maxFPGADimension = Math.max(this.architecture.getHeight(), this.architecture.getWidth());
+		this.updateRlim(alpha, maxFPGADimension);
+	}
+	
+	protected void updateRlim(double alpha, int maxValue) {
+		this.Rlimd *= (1 - 0.44 + alpha);
+		
+		if(this.Rlimd > maxValue) {
+			this. Rlimd = maxValue;
 		}
-		if(Rlimd < 1)
-		{
-			Rlimd = 1;
+		
+		if(this.Rlimd < 1) {
+			this.Rlimd = 1;
 		}
-		return (int) Math.round(Rlimd);
+		
+		this.updateIntRlim();
+	}
+	
+	private void updateIntRlim() {
+		this.Rlim = (int) Math.round(this.Rlimd);
 	}
 	
 	protected int getBiggestDistance()
