@@ -11,6 +11,7 @@ import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import placers.random.RandomPlacer;
 import timinganalysis.TimingGraph;
+import util.Logger;
 
 import architecture.Architecture;
 import circuit.BlePackedCircuit;
@@ -37,7 +38,11 @@ public class CLI {
 		architecture.parse();
 		
 		Circuit circuit = new Circuit(architecture, options.netFile.toString());
+		
+		CLI.startTimer();
 		circuit.parse();
+		CLI.stopTimer();
+		CLI.printTimer("Circuit parsing: ");
 		
 		
 		
@@ -112,10 +117,9 @@ public class CLI {
 		System.out.println();
 	}
 	
-	
-	private static void error(String error) {
-		System.err.println(error);
-		System.exit(1);
+	private static void printTimer(String prefix) {
+		System.out.println();
+		double placeTime = CLI.getTimer();
+		Logger.log(prefix + ": " + placeTime + "s");
 	}
-
 }

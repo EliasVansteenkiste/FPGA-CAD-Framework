@@ -82,29 +82,21 @@ public class NetParser {
 	    try {
 			while ((line = this.reader.readLine()) != null) {
 				String trimmedLine = line.trim();
-				int lineLength = trimmedLine.length();
 				
-				// Ignore empty lines
-				if(lineLength == 0) {
-					continue;
-				}
 				
-				// A new xml block is started: reset "multiline"
-				if(trimmedLine.substring(0, 1).equals("<")) {
-					multiLine = "";
-				}
 				
 				// Add the current line to the multiLine
-				multiLine += trimmedLine + " ";
+				if(multiLine.length() > 0) {
+					multiLine += " ";
+				}
+				multiLine += trimmedLine;
 				
-				// If this is not the end of the xml block: read the next line 
-				if(!trimmedLine.substring(lineLength - 1).equals(">")) {
+				if(!this.isCompleteLine(multiLine)) {
 					continue;
 				}
 				
 				
-				// Trim the last space
-				multiLine = multiLine.substring(0, multiLine.length() - 1);
+				
 				String lineStart = multiLine.substring(0, 5);
 				
 				switch(lineStart) {
@@ -138,12 +130,39 @@ public class NetParser {
 					this.processBlockEndLine();
 					break;
 				}
+				
+				multiLine = "";
 			}
 		} catch (IOException exception) {
 			Logger.raise("Failed to read from the net file: " + this.filename, exception);
 		}
 		
 		return this.blocks;
+	}
+	
+	
+	private boolean isCompleteLine(String line) {
+		int lineLength = line.length();
+		
+		// The line is empty
+		if(lineLength == 0) {
+			return false;
+		}
+		
+		
+		// The line doesn't end with a ">" character 
+		if(!line.substring(lineLength - 1).equals(">")) {
+			return false;
+		}
+		
+		// The line is a port line, but not all ports are on this line
+		if(lineLength >= 7 
+				&& line.substring(0, 5).equals("<port")
+				&& !line.substring(lineLength - 7).equals("</port>")) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 	
@@ -192,8 +211,6 @@ public class NetParser {
 	private void processBlockLine(String line) {
 		Matcher matcher = blockPattern.matcher(line);
 		matcher.matches();
-		
-		System.out.println(line);
 		
 		String name = matcher.group("name");
 		String type = matcher.group("type");
@@ -270,7 +287,7 @@ public class NetParser {
 	
 	
 	private void addNets(AbstractBlock sinkBlock, PortType sinkPortType, String sinkPortName, String netsString) {
-		String[] nets = netsString.split("\\s+");
+		String[] nets = netsString.trim().split("\\s+");
 		
 		for(int sinkPortIndex = 0; sinkPortIndex < nets.length; sinkPortIndex++) {
 			String net = nets[sinkPortIndex];

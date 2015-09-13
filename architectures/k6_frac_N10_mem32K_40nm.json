@@ -9,7 +9,7 @@
                 "outpad": 1
             },
             "output": {
-                "inpad": 1,
+                "inpad": 1
             }
         },
         "modes": {
@@ -35,7 +35,7 @@
                 "inpad": 1
             }
         },
-        "children": {},
+        "children": {}
     },
 
     "outpad": {
@@ -47,7 +47,7 @@
             },
             "output": {}
         },
-        "children": {},
+        "children": {}
     },
 
     "clb": {
@@ -59,7 +59,7 @@
                 "I": 40
             },
             "output": {
-                "O": 20,
+                "O": 20
             }
         },
         "children": {
@@ -75,7 +75,7 @@
                 "in": 6
             },
             "output": {
-                "out": 2,
+                "out": 2
             }
         },
         "modes": {
@@ -100,7 +100,7 @@
                 "in": 5
             },
             "output": {
-                "out": 2,
+                "out": 2
             }
         },
         "children": {
@@ -116,7 +116,7 @@
                 "in": 6
             },
             "output": {
-                "out": 1,
+                "out": 1
             }
         },
         "children": {
@@ -133,7 +133,7 @@
                 "in": 5
             },
             "output": {
-                "out": 1,
+                "out": 1
             }
         },
         "children": {
@@ -150,7 +150,7 @@
                 "in": 6
             },
             "output": {
-                "out": 1,
+                "out": 1
             }
         },
         "modes": {
@@ -173,7 +173,7 @@
                 "in": 5
             },
             "output": {
-                "out": 1,
+                "out": 1
             }
         },
         "modes": {
@@ -196,7 +196,7 @@
                 "in": 6
             },
             "output": {
-                "out": 1,
+                "out": 1
             }
         },
         "children": {}
@@ -210,7 +210,7 @@
                 "D": 1
             },
             "output": {
-                "Q": 1,
+                "Q": 1
             }
         },
         "children": {}
@@ -226,7 +226,7 @@
                 "b": 36
             },
             "output": {
-                "out": 72,
+                "out": 72
             }
         },
         "modes": {
@@ -252,7 +252,7 @@
                 "b": 18
             },
             "output": {
-                "out": 36,
+                "out": 36
             }
         },
         "modes": {
@@ -278,7 +278,7 @@
                 "B_cfg": 36
             },
             "output": {
-                "OUT_cfg": 72,
+                "OUT_cfg": 72
             }
         },
         "children": {
@@ -295,7 +295,7 @@
                 "B_cfg": 18
             },
             "output": {
-                "OUT_cfg": 36,
+                "OUT_cfg": 36
             }
         },
         "children": {
@@ -312,7 +312,7 @@
                 "B_cfg": 9
             },
             "output": {
-                "OUT_cfg": 18,
+                "OUT_cfg": 18
             }
         },
         "children": {
@@ -329,7 +329,7 @@
                 "b": 36
             },
             "output": {
-                "out": 72,
+                "out": 72
             }
         },
         "children": {}
@@ -344,7 +344,7 @@
                 "b": 18
             },
             "output": {
-                "out": 36,
+                "out": 36
             }
         },
         "children": {}
@@ -359,7 +359,7 @@
                 "b": 9
             },
             "output": {
-                "out": 18,
+                "out": 18
             }
         },
         "children": {}
@@ -375,10 +375,10 @@
                 "addr2": 15,
                 "data": 64,
                 "we1": 1,
-                "we2": 1,
+                "we2": 1
             },
             "output": {
-                "out": 64,
+                "out": 64
             }
         },
         "modes": {
@@ -446,13 +446,13 @@
                 "children": {
                     "mem_32768x1_dp": 1
                 }
-            },
+            }
         }
     },
 
     "mem_512x64_sp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr": 9,
@@ -460,15 +460,21 @@
                 "we": 1
             },
             "output": {
-                "out": 64,
+                "out": 64
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 64
+                }
+            }
+        }
     },
 
     "mem_1024x32_sp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr": 10,
@@ -476,15 +482,21 @@
                 "we": 1
             },
             "output": {
-                "out": 32,
+                "out": 32
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 32
+                }
+            }
+        }
     },
 
     "mem_2048x16_sp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr": 11,
@@ -492,15 +504,21 @@
                 "we": 1
             },
             "output": {
-                "out": 16,
+                "out": 16
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 16
+                }
+            }
+        }
     },
 
     "mem_4096x8_sp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr": 12,
@@ -508,15 +526,21 @@
                 "we": 1
             },
             "output": {
-                "out": 8,
+                "out": 8
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 8
+                }
+            }
+        }
     },
 
     "mem_8192x4_sp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr": 13,
@@ -524,15 +548,21 @@
                 "we": 1
             },
             "output": {
-                "out": 4,
+                "out": 4
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 4
+                }
+            }
+        }
     },
 
     "mem_16384x2_sp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr": 14,
@@ -540,15 +570,21 @@
                 "we": 1
             },
             "output": {
-                "out": 2,
+                "out": 2
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 2
+                }
+            }
+        }
     },
 
     "mem_32768x1_sp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr": 15,
@@ -556,15 +592,21 @@
                 "we": 1
             },
             "output": {
-                "out": 1,
+                "out": 1
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 1
+                }
+            }
+        }
     },
 
     "mem_1024x32_dp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr1": 10,
@@ -579,12 +621,18 @@
                 "out2": 32
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 32
+                }
+            }
+        }
     },
 
     "mem_2048x16_dp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr1": 11,
@@ -599,13 +647,19 @@
                 "out2": 16
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 16
+                }
+            }
+        }
     },
 
 
     "mem_2048x8_dp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr1": 12,
@@ -620,12 +674,18 @@
                 "out2": 8
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 8
+                }
+            }
+        }
     },
 
     "mem_8192x4_dp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr1": 13,
@@ -640,12 +700,18 @@
                 "out2": 4
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 4
+                }
+            }
+        }
     },
 
     "mem_16384x2_dp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr1": 14,
@@ -660,12 +726,18 @@
                 "out2": 2
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 2
+                }
+            }
+        }
     },
 
     "mem_32768x1_dp": {
         "global": false,
-        "leaf": true,
+        "leaf": false,
         "ports": {
             "input": {
                 "addr1": 15,
@@ -680,6 +752,36 @@
                 "out2": 1
             }
         },
-        "children": {}
+        "modes": {
+            "memory_slice": {
+                "children": {
+                    "memory_slice": 1
+                }
+            }
+        }
     },
+
+    "memory_slice": {
+        "global": false,
+        "leaf": true,
+        "ports": {
+            "input": {
+                "addr1": 15,
+                "addr2": 15,
+                "data1": 32,
+                "data2": 32,
+                "we1": 1,
+                "we2": 1,
+                "addr": 15,
+                "data": 64,
+                "we": 1
+            },
+            "output": {
+                "out1": 32,
+                "out2": 32,
+                "out": 64
+            }
+        },
+        "children": {}
+    }
 }
