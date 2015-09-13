@@ -17,6 +17,7 @@ public class WLD_SAPlacer extends SAPlacer
 		
 		defaultOptions.put("greedy", "0");
 		defaultOptions.put("Rlim", "-1");
+		defaultOptions.put("T_multiplier", "1");
 	}
 	
 	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
@@ -52,7 +53,10 @@ public class WLD_SAPlacer extends SAPlacer
 			this.doSwaps();
 		
 		} else {
-			calculateInitialTemperature();
+			double T_multiplier = Double.parseDouble(this.options.get("T_multiplier"));
+			calculateInitialTemperature(T_multiplier);
+			
+			System.out.println(this.calculator.calculateTotalCost());
 			System.out.println("Initial temperature: " + this.T);
 			
 			
@@ -168,18 +172,23 @@ public class WLD_SAPlacer extends SAPlacer
 	
 	
 	private void calculateInitialTemperature() {
+		calculateInitialTemperature(1);
+	}
+	
+	private void calculateInitialTemperature(double T_multiplier) {
 		double	somDeltaKost=0;
 		double 	kwadratischeSomDeltaKost=0;
 		for (int i = 0; i < this.circuit.numBlocks(); i++) 
 		{
-			int maxFPGAdimension = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
-			Swap swap = findSwap(maxFPGAdimension);			
+			//int maxFPGAdimension = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
+			Swap swap = findSwap(this.getRlim());
 			double deltaCost = this.calculator.calculateDeltaCost(swap);
 			
 			//Swap
-			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
-										(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
-			{
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) 
+					&& (swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed))
+					&& deltaCost <= 0) {
+				
 				swap.apply();
 				this.calculator.pushThrough();
 			}
@@ -196,12 +205,12 @@ public class WLD_SAPlacer extends SAPlacer
 		double nbElements = this.circuit.numBlocks();
 		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
 		
-		this.T = 20 * stdafwijkingDeltaKost;
+		this.T = 20 * stdafwijkingDeltaKost * T_multiplier;
 	}
 	
 
 	
-	private double calculateInitialTemperatureLow()
+	private void calculateInitialTemperatureLow()
 	{
 		double sumNegDeltaCost = 0.0;
 		int numNegDeltaCost = 0;
@@ -236,14 +245,11 @@ public class WLD_SAPlacer extends SAPlacer
 		double negKwadraatSom = Math.pow(sumNegDeltaCost, 2);
 		double stdafwijkingNegDeltaKost = Math.sqrt(somNegKwadraten/numNegDeltaCost - negKwadraatSom/(numNegDeltaCost*numNegDeltaCost));
 		
-		double T = 2*stdafwijkingNegDeltaKost;
+		this.T = 2*stdafwijkingNegDeltaKost;
 		
-		if(!(T > 0 && T < 10000))
-		{
+		if(this.T <= 0 || this.T >= 10000) {
 			System.out.println("Trouble");
-			T = 1.0;
+			this.T = 1.0;
 		}
-		
-		return T;
 	}
 }

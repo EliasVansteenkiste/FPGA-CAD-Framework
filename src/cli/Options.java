@@ -3,9 +3,11 @@ package cli;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -41,7 +43,9 @@ public class Options {
 	
 	@Argument(multiValued=true)
 	private List<String> arguments = new ArrayList<String>();
-	public LinkedHashMap<String, HashMap<String, String>> placers;
+	public List<String> placers;
+	public List<HashMap<String, String>> placerOptions;
+	//public LinkedHashMap<String, HashMap<String, String>> placers;
 	
 	
 	
@@ -141,7 +145,7 @@ public class Options {
 		
 		
 		// Set the blif or net file
-		if(pack) {
+		if(this.pack) {
 			this.blifFile = inputFile;
 		
 		} else {
@@ -159,7 +163,7 @@ public class Options {
 		
 		
 		// Set the placement file location
-		this.placeFile = new File(outputFolder, circuitName + ".place");
+		this.placeFile = new File(this.outputFolder, this.circuitName + ".place");
 		
 		
 		// Set the architecture
@@ -167,15 +171,15 @@ public class Options {
 		
 		
 		// Parse the extra placer options
-		String[] placerNames = placersString.split(";");
-		int numPlacers = placerNames.length;
-		ArrayList<HashMap<String, String>> placerOptions = new ArrayList<HashMap<String, String>>();
+		this.placers = Arrays.asList(this.placersString.split(";"));
+		int numPlacers = this.placers.size();
+		this.placerOptions = new ArrayList<HashMap<String, String>>();
 		
 		
 		
 		// For each placer: create an options HashMap
 		for(int i = 0; i < numPlacers; i++) {
-			placerOptions.add(new HashMap<String, String>());
+			this.placerOptions.add(new HashMap<String, String>());
 		}
 		
 		
@@ -199,7 +203,7 @@ public class Options {
 			// If there is no separate value for each placer
 			if(optionValues.length == 1) {
 				for(int i = 0; i < numPlacers; i++) {
-					placerOptions.get(i).put(optionKey, optionValues[0]);
+					this.placerOptions.get(i).put(optionKey, optionValues[0]);
 				}
 			
 			// If there is a separate value for each placer
@@ -215,14 +219,9 @@ public class Options {
 						System.exit(1);
 					}
 					
-					placerOptions.get(i).put(optionKey, optionValue);
+					this.placerOptions.get(i).put(optionKey, optionValue);
 				}
 			}
-		}
-		
-		this.placers = new LinkedHashMap<String, HashMap<String, String>>();
-		for(int i = 0; i < numPlacers; i++) {
-			placers.put(placerNames[i], placerOptions.get(i));
 		}
 	}
 	

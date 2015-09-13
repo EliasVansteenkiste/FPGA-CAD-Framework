@@ -91,10 +91,13 @@ public class CLI {
 		CLI.printStatistics("initial", prePackedCircuit, packedCircuit, false);
 		
 		// Loop through the placers
-		for(String placerName : options.placers.keySet()) {
+		for(int i = 0; i < options.placers.size(); i++) {
+			String placerName = options.placers.get(i);
+			HashMap<String, String> placerOptions = options.placerOptions.get(i);
+			
 			System.out.println("Placing with " + placerName + "...");
 			
-			HashMap<String, String> placerOptions = options.placers.get(placerName);
+			
 			
 			// Create the placer and place the circuit
 			CLI.startTimer();
