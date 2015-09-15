@@ -27,7 +27,7 @@ public class NetParser {
 	private String filename;
 	private BufferedReader reader;
 	
-	private List<AbstractBlock> blocks;
+	private Map<BlockType, List<AbstractBlock>> blocks;
 	
 	private Stack<AbstractBlock> blockStack;
 	private Stack<TupleBlockMap> inputsStack;
@@ -55,12 +55,10 @@ public class NetParser {
 	}
 	
 	
-	public List<AbstractBlock> parse() {
-		
-		// These arrays and stack will be built by the "process....Line()" methods
+	public Map<BlockType, List<AbstractBlock>> parse() {
 		
 		// A list of all the blocks in the circuit
-		this.blocks = new ArrayList<AbstractBlock>();
+		this.blocks = new HashMap<BlockType, List<AbstractBlock>>();
 		
 		// blockStack is a stack that contains the current block hierarchy.
 		// It is used to find the parent of a block. outputsStack contains
@@ -241,7 +239,11 @@ public class NetParser {
 		this.inputsStack.push(new TupleBlockMap(newBlock));
 		this.outputsStack.push(new HashMap<String, String>());
 		
-		this.blocks.add(newBlock);
+		
+		if(!this.blocks.containsKey(blockType)) {
+			this.blocks.put(blockType, new ArrayList<AbstractBlock>());
+		}
+		this.blocks.get(blockType).add(newBlock);
 	}
 	
 	private void processBlockEndLine() {

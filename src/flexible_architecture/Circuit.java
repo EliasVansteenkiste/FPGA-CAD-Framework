@@ -1,14 +1,16 @@
 package flexible_architecture;
 
 import java.util.List;
+import java.util.Map;
 
+import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.FlexibleArchitecture;
 import flexible_architecture.block.AbstractBlock;
 
 public class Circuit {
 	
 	private NetParser netparser;
-	private List<AbstractBlock> blocks;
+	private Map<BlockType, List<AbstractBlock>> blocks;
 	private FlexibleArchitecture architecture;
 	
 	

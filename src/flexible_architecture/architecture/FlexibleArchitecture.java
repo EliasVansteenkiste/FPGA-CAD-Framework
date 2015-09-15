@@ -194,21 +194,18 @@ public class FlexibleArchitecture {
 	
 	
 	
-	public void loadBlocks(List<AbstractBlock> allBlocks) {
+	public void loadBlocks(Map<BlockType, List<AbstractBlock>> allBlocks) {
 		this.addBlocks(allBlocks);
 		this.calculateSizeAndColumns();
 		this.createSites();
 	}
 	
-	private void addBlocks(List<AbstractBlock> allBlocks) {
-		for(AbstractBlock block : allBlocks) {
-			BlockType blockType = block.getType();
-			
-			if(!blockType.isGlobal()) {
-				continue;
+	private void addBlocks(Map<BlockType, List<AbstractBlock>> allBlocks) {
+		for(Entry<BlockType, List<AbstractBlock>> blockEntry : this.blocks.entrySet()) {
+			BlockType blockType = blockEntry.getKey();
+			if(allBlocks.containsKey(blockType)) {
+				this.blocks.put(blockType, allBlocks.get(blockType));
 			}
-			
-			this.blocks.get(blockType).add(block);
 		}
 	}
 	
