@@ -30,7 +30,11 @@ for circuit in circuit_list:
     flags = [
         '--pack',
         '--random',
+<<<<<<< Updated upstream
         'inner_num=0.1'
+=======
+        'inner_num=1'
+>>>>>>> Stashed changes
     ]
 
 

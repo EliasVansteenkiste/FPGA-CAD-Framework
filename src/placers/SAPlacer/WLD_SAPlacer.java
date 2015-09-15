@@ -53,10 +53,14 @@ public class WLD_SAPlacer extends SAPlacer
 			this.doSwaps();
 		
 		} else {
+<<<<<<< Updated upstream
 			double T_multiplier = Double.parseDouble(this.options.get("T_multiplier"));
 			calculateInitialTemperature(T_multiplier);
 			
 			System.out.println(this.calculator.calculateTotalCost());
+=======
+			calculateInitialTemperature();
+>>>>>>> Stashed changes
 			System.out.println("Initial temperature: " + this.T);
 			
 			
@@ -75,6 +79,7 @@ public class WLD_SAPlacer extends SAPlacer
 				
 				tNumber++;
 			}
+<<<<<<< Updated upstream
 			
 			System.out.println("Last temp: " + this.T);
 		}
@@ -104,8 +109,42 @@ public class WLD_SAPlacer extends SAPlacer
 					this.calculator.revert();
 				}
 			}
+=======
+			
+			System.out.println("Last temp: " + this.T);
+>>>>>>> Stashed changes
+		}
+	}
+	
+	
+	private int doSwaps() {
+		int numSwaps = 0;
+		int Rlim = this.getRlim();
+		boolean greedy = (this.T == 0);
+		
+		
+<<<<<<< Updated upstream
+=======
+		for (int i = 0; i < this.movesPerTemperature; i++) {
+			Swap swap = findSwap(Rlim);
+			
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+					(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed))) {
+				
+				double deltaCost = this.calculator.calculateDeltaCost(swap);
+				
+				if(deltaCost <= 0 || (greedy && this.rand.nextDouble() < Math.exp(-deltaCost / this.T))) {
+					swap.apply();
+					numSwaps++;
+					this.calculator.pushThrough();
+					
+				} else {
+					this.calculator.revert();
+				}
+			}
 		}
 		
+>>>>>>> Stashed changes
 		return numSwaps;
 	}
 	
@@ -170,18 +209,28 @@ public class WLD_SAPlacer extends SAPlacer
 		}
 	}
 	
+<<<<<<< Updated upstream
 	
 	private void calculateInitialTemperature() {
 		calculateInitialTemperature(1);
 	}
 	
 	private void calculateInitialTemperature(double T_multiplier) {
+=======
+	
+	private void calculateInitialTemperature() {
+>>>>>>> Stashed changes
 		double	somDeltaKost=0;
 		double 	kwadratischeSomDeltaKost=0;
 		for (int i = 0; i < this.circuit.numBlocks(); i++) 
 		{
+<<<<<<< Updated upstream
 			//int maxFPGAdimension = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
 			Swap swap = findSwap(this.getRlim());
+=======
+			int maxFPGAdimension = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
+			Swap swap = findSwap(maxFPGAdimension);			
+>>>>>>> Stashed changes
 			double deltaCost = this.calculator.calculateDeltaCost(swap);
 			
 			//Swap
@@ -205,12 +254,20 @@ public class WLD_SAPlacer extends SAPlacer
 		double nbElements = this.circuit.numBlocks();
 		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
 		
+<<<<<<< Updated upstream
 		this.T = 20 * stdafwijkingDeltaKost * T_multiplier;
+=======
+		this.T = 20 * stdafwijkingDeltaKost;
+>>>>>>> Stashed changes
 	}
 	
 
 	
+<<<<<<< Updated upstream
 	private void calculateInitialTemperatureLow()
+=======
+	private double calculateInitialTemperatureLow()
+>>>>>>> Stashed changes
 	{
 		double sumNegDeltaCost = 0.0;
 		int numNegDeltaCost = 0;
@@ -249,7 +306,14 @@ public class WLD_SAPlacer extends SAPlacer
 		
 		if(this.T <= 0 || this.T >= 10000) {
 			System.out.println("Trouble");
+<<<<<<< Updated upstream
 			this.T = 1.0;
 		}
+=======
+			T = 1.0;
+		}
+		
+		return T;
+>>>>>>> Stashed changes
 	}
 }
