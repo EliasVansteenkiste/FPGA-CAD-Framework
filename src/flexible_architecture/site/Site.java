@@ -7,8 +7,8 @@ public class Site extends AbstractSite {
 	
 	private GlobalBlock block;
 	
-	public Site(int x, int y) {
-		super(x, y);
+	public Site(int x, int y, int height) {
+		super(x, y, height);
 	}
 	
 	

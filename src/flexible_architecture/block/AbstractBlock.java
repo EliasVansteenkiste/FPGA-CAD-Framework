@@ -155,6 +155,6 @@ public abstract class AbstractBlock {
 	
 	
 	public String toString() {
-		return this.type.getId() + ":" + this.getName();
+		return this.type.toString() + ":" + this.getName();
 	}
 }

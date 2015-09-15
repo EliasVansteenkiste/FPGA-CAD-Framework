@@ -14,7 +14,7 @@ public class IOSite extends AbstractSite {
 	private Set<GlobalBlock> blocks;
 	
 	public IOSite(int x, int y, int capacity) {
-		super(x, y);
+		super(x, y, 1);
 		this.capacity = capacity;
 		this.blocks = new HashSet<GlobalBlock>(capacity);
 	}

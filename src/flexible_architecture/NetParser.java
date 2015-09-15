@@ -20,6 +20,7 @@ import flexible_architecture.block.AbstractBlock;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.LocalBlock;
 import flexible_architecture.block.Pin;
+import flexible_architecture.block.TupleBlockMap;
 
 public class NetParser {
 	

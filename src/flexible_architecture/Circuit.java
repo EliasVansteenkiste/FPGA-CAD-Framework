@@ -19,5 +19,6 @@ public class Circuit {
 	
 	public void parse() {
 		this.blocks = netparser.parse();
+		this.architecture.loadBlocks(this.blocks);
 	}
 }

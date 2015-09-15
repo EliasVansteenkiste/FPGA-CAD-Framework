@@ -1,9 +1,8 @@
-package flexible_architecture;
+package flexible_architecture.block;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import flexible_architecture.block.AbstractBlock;
 
 public class TupleBlockMap {
 	

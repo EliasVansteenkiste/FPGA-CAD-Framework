@@ -3,6 +3,12 @@ package flexible_architecture.architecture;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
+import flexible_architecture.architecture.BlockType.BlockCategory;
+import flexible_architecture.block.AbstractBlock;
+import flexible_architecture.site.AbstractSite;
+import flexible_architecture.site.IOSite;
+import flexible_architecture.site.Site;
+
 import util.Logger;
 
 import java.io.BufferedReader;
@@ -13,39 +19,46 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 public class FlexibleArchitecture {
 	
-	private int x, y;
+	private static final double FILL_GRADE = 0.85;
+	
+	private int width, height;
+	private AbstractSite[][] sites;
+	
+	private Map<BlockType, List<AbstractBlock>> blocks = new HashMap<BlockType, List<AbstractBlock>>(4);
+	private Map<BlockCategory, List<BlockType>> blockTypesPerCategory = new HashMap<BlockCategory, List<BlockType>>();
+	private Map<BlockType, List<Integer>> columnsPerBlockType = new HashMap<BlockType, List<Integer>>();
+	
 	
 	private String filename;
-	private BufferedReader reader;
-	
 	private JSONObject blockDefinitions;
 	
 	public FlexibleArchitecture(String filename) {
 		this.filename = filename;
 		
-		try {
-			this.reader = new BufferedReader(new FileReader(filename));
-		} catch (FileNotFoundException exception) {
-			Logger.raise("Could not find the architecture file: " + filename, exception);
-		}
-	}
-	
-	public FlexibleArchitecture(String filename, int x, int y) {
-		this(filename);
-		this.x = x;
-		this.y = y;
+		this.blockTypesPerCategory.put(BlockCategory.IO, new ArrayList<BlockType>());
+		this.blockTypesPerCategory.put(BlockCategory.CLB, new ArrayList<BlockType>());
+		this.blockTypesPerCategory.put(BlockCategory.HARDBLOCK, new ArrayList<BlockType>());
 	}
 	
 	public void parse() {
 		
+		BufferedReader reader = null;
+		try {
+			reader = new BufferedReader(new FileReader(this.filename));
+		} catch (FileNotFoundException exception) {
+			Logger.raise("Could not find the architecture file: " + this.filename, exception);
+		}
+		
+		
 		// Read the entire file
 		String content = "", line;
 		try {
-			while((line = this.reader.readLine()) != null) {
+			while((line = reader.readLine()) != null) {
 				content += line;
 			}
 		} catch (IOException exception) {
@@ -64,24 +77,36 @@ public class FlexibleArchitecture {
 		this.addBlockTypes();
 	}
 	
+	
 	private void addBlockTypes() {
 		
 		@SuppressWarnings("unchecked")
 		Set<String> blockTypes = this.blockDefinitions.keySet();
 		
-		for(String blockType : blockTypes) {
-			JSONObject definition = this.getDefinition(blockType);
+		for(String typeName : blockTypes) {
+			JSONObject definition = this.getDefinition(typeName);
 			
 			// Get some general info
-			boolean isGlobal = (boolean) definition.get("global");
+			boolean isGlobal = definition.containsKey("globalCategory");
 			boolean isLeaf = (boolean) definition.get("leaf");
 			
-			int height;
+			String category;
 			if(isGlobal) {
-				height = (int) (long) definition.get("height");
+				category = (String) definition.get("globalCategory");
+			} else if(isLeaf) {
+				category = "leaf";
 			} else {
-				height = 0;
+				category = "local";
 			}
+			
+			
+			int height = 1, start = 0, repeat = 0;
+			if(category.equals("hardblock")) {
+				height = (int) (long) definition.get("height");
+				start = (int) (long) definition.get("start");
+				repeat = (int) (long) definition.get("repeat");
+			}
+			
 			
 			
 			// Get the port counts
@@ -90,6 +115,7 @@ public class FlexibleArchitecture {
 			
 			Map<String, Integer> inputs = castIntegers(ports.get("input"));
 			Map<String, Integer> outputs = castIntegers(ports.get("output"));
+			
 			
 			
 			// Get the modes and children
@@ -104,7 +130,7 @@ public class FlexibleArchitecture {
 			
 			// There is only one mode, but we have to name it like the block for some reason
 			} else if(!definition.containsKey("modes")) {
-				modes.add(blockType);
+				modes.add(typeName);
 				children.add(this.getChildren(definition));
 			
 				
@@ -121,20 +147,32 @@ public class FlexibleArchitecture {
 				}
 			}
 			
+			BlockType.addType(typeName, category, height, start, repeat, inputs, outputs);
 			
 			for(int i = 0; i < modes.size(); i++) {
-				BlockType.addType(blockType, modes.get(i), isGlobal, isLeaf, height, inputs, outputs, children.get(i));
+				BlockType.addMode(typeName, modes.get(i), children.get(i));
+			}
+			
+			
+			
+			if(isGlobal) {
+				BlockType blockType = new BlockType(typeName);
+				BlockCategory blockCategory = blockType.getCategory();
+				
+				this.blocks.put(blockType, new ArrayList<AbstractBlock>());
+				this.columnsPerBlockType.put(blockType, new ArrayList<Integer>());
+				this.blockTypesPerCategory.get(blockCategory).add(blockType);
 			}
 		}
 	}
 	
-	
-	private Map<String, Integer> getChildren(JSONObject subDefinition) {
-		Map<String, Integer> children = castIntegers((JSONObject) subDefinition.get("children"));;
-		
-		return children;
+	private JSONObject getDefinition(String blockType) {
+		return (JSONObject) this.blockDefinitions.get(blockType);
 	}
 	
+	private Map<String, Integer> getChildren(JSONObject subDefinition) {
+		return castIntegers((JSONObject) subDefinition.get("children"));
+	}
 	
 	private Map<String, Integer> castIntegers(JSONObject subDefinition) {
 		@SuppressWarnings("unchecked")
@@ -152,57 +190,131 @@ public class FlexibleArchitecture {
 	
 	
 	
-	private JSONObject getDefinition(String blockType) {
-		return (JSONObject) this.blockDefinitions.get(blockType);
+	
+	
+	
+	
+	public void loadBlocks(List<AbstractBlock> allBlocks) {
+		this.addBlocks(allBlocks);
+		this.calculateSizeAndColumns();
+		this.createSites();
 	}
 	
-	/*public Map<String, Integer> getChildren(String blockType) {
-		return this.getChildren(blockType, null);
+	private void addBlocks(List<AbstractBlock> allBlocks) {
+		for(AbstractBlock block : allBlocks) {
+			BlockType blockType = block.getType();
+			
+			if(!blockType.isGlobal()) {
+				continue;
+			}
+			
+			this.blocks.get(blockType).add(block);
+		}
 	}
-	public Map<String, Integer> getChildren(String blockType, String mode) {
-		JSONObject definition = this.getDefinition(blockType);
+	
+	private void calculateSizeAndColumns() {
+		BlockType ioType = this.blockTypesPerCategory.get(BlockCategory.IO).get(0);
+		BlockType clbType = this.blockTypesPerCategory.get(BlockCategory.CLB).get(0);
+		List<BlockType> hardBlockTypes = this.blockTypesPerCategory.get(BlockCategory.HARDBLOCK);
 		
-		if(mode != null) {
-			definition = (JSONObject) ((JSONObject) definition.get("modes")).get(mode);
+		
+		int numClbColumns = 0;
+		int[] numHardBlockColumns = new int[hardBlockTypes.size()];
+		for(int i = 0; i < hardBlockTypes.size(); i++) {
+			numHardBlockColumns[i] = 0;
 		}
 		
-		@SuppressWarnings("unchecked")
-		Map<String, Integer> children = (Map<String, Integer>) definition.get("children");
+		List<BlockType> columns = new ArrayList<BlockType>();
+		columns.add(ioType);
+		int size = 2;
 		
-		return children;
-	}
-	
-	
-	public Map<String, Integer> getInputs(String blockType) {
-		return this.getPorts(blockType, "input");
-	}
-	public Map<String, Integer> getOutputs(String blockType) {
-		return this.getPorts(blockType, "output");
-	}
-	public Map<String, Integer> getPorts(String blockType, PortType portType) {
-		String portTypeString = null;
-		
-		switch(portType) {
-		case INPUT:
-			portTypeString = "input";
-			break;
-		case OUTPUT:
-			portTypeString = "output";
-			break;
+		boolean tooSmall = true;
+		while(tooSmall) {
+			for(int i = 0; i < hardBlockTypes.size(); i++) {
+				BlockType hardBlockType = hardBlockTypes.get(i);
+				int start = hardBlockType.getStart();
+				int repeat = hardBlockType.getRepeat();
+				
+				if((size - 1 - start) % repeat == 0) {
+					columns.add(hardBlockType);
+					numHardBlockColumns[i]++;
+					break;
+				}
+			}
+			
+			if(columns.size() < size) {
+				columns.add(clbType);
+				numClbColumns++;
+			}
+			
+			size++;
+			tooSmall = false;
+			
+			int clbCapacity = (int) ((size - 2) * numClbColumns * FlexibleArchitecture.FILL_GRADE);
+			int ioCapacity = (size - 1) * 4 * BlockType.getIoCapacity();
+			if(clbCapacity < this.blocks.get(clbType).size() || ioCapacity < this.blocks.get(ioType).size()) { 
+				tooSmall = true;
+				continue;
+			}
+			
+			for(int i = 0; i < hardBlockTypes.size(); i++) {
+				BlockType hardBlockType = hardBlockTypes.get(i);
+				
+				int heightPerBlock = hardBlockType.getHeight();
+				int blocksPerColumn = (size - 2) / heightPerBlock;
+				int capacity = numHardBlockColumns[i] * blocksPerColumn;
+				
+				if(capacity < this.blocks.get(hardBlockType).size()) {
+					tooSmall = true;
+					break;
+				}
+			}
 		}
 		
-		return this.getPorts(blockType, portTypeString);
-	}
-	private Map<String, Integer> getPorts(String blockType, String portType) {
-		Map<String, Map<String, Integer>> ports = this.getPorts(blockType);
-		return ports.get(portType);
-	}
-	public Map<String, Map<String, Integer>> getPorts(String blockType) {
-		JSONObject definition = this.getDefinition(blockType);
 		
-		@SuppressWarnings("unchecked")
-		Map<String, Map<String, Integer>> ports = (Map<String, Map<String, Integer>>) definition.get("ports");
+		columns.add(ioType);
+		this.width = size;
+		this.height = size;
 		
-		return ports;
-	}*/
+		for(int i = 0; i < columns.size(); i++) {
+			this.columnsPerBlockType.get(columns.get(i)).add(i);
+		}
+	}
+	
+	private void createSites() {
+		this.sites = new AbstractSite[this.width][this.height];
+		
+		BlockType ioType = this.blockTypesPerCategory.get(BlockCategory.IO).get(0);
+		int ioCapacity = BlockType.getIoCapacity();
+		
+		int size = this.width;
+		for(int i = 0; i < size - 1; i++) {
+			this.sites[0][i] = new IOSite(0, i, ioCapacity);
+			this.sites[size-1][size-1-i] = new IOSite(size-1, size-1-i, ioCapacity);
+			this.sites[i][0] = new IOSite(i, 0, ioCapacity);
+			this.sites[size-1-i][size-1] = new IOSite(size-1-i, size-1, ioCapacity);
+		}
+		
+		for(Entry<BlockType, List<Integer>> columnEntry : this.columnsPerBlockType.entrySet()) {
+			BlockType blockType = columnEntry.getKey();
+			if(blockType.equals(ioType)) {
+				continue;
+			}
+			
+			int height = blockType.getHeight();
+			List<Integer> columns = columnEntry.getValue();
+			
+			for(int x : columns) {
+				for(int y = 1; y < size - 1; y++) {
+					this.sites[x][y] = new Site(x, y, height);
+				}
+			}
+		}
+	}
+	
+	
+	
+	public AbstractSite getSite(int x, int y) {
+		return this.sites[x][y];
+	}
 }
