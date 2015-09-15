@@ -17,6 +17,8 @@ import circuit.HardBlock;
 import circuit.Input;
 import circuit.Output;
 import circuit.PackedCircuit;
+import flexible_architecture.Circuit;
+import flexible_architecture.architecture.FlexibleArchitecture;
 
 public abstract class SAPlacer extends Placer
 {
@@ -29,14 +31,12 @@ public abstract class SAPlacer extends Placer
 	protected EfficientCostCalculator calculator;
 	protected Random rand;
 	
-	public SAPlacer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
+	public SAPlacer(FlexibleArchitecture architecture, Circuit circuit, HashMap<String, String> options)
 	{
 		super(architecture, circuit, options);
 		this.calculator = new EfficientBoundingBoxNetCC(circuit);
 		circuit.fillVector();
 	}
-	
-	public abstract void lowTempAnneal(double innerNum);
 	
 	protected Swap findSwap(int Rlim)
 	{

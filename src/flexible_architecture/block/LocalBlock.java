@@ -1,7 +1,9 @@
 package flexible_architecture.block;
 
 import flexible_architecture.architecture.BlockType;
-import flexible_architecture.architecture.FlexibleArchitecture;
+
+import flexible_architecture.architecture.PortType;
+import flexible_architecture.pin.LocalPin;
 
 public class LocalBlock extends AbstractBlock {
 	
@@ -14,7 +16,13 @@ public class LocalBlock extends AbstractBlock {
 		this.parent = parent;
 	}
 	
+	@Override
 	public AbstractBlock getParent() {
 		return this.parent;
+	}
+	
+	@Override
+	public LocalPin createPin(PortType portType, String portName, int index) {
+		return new LocalPin(this, portType, portName, index);
 	}
 }

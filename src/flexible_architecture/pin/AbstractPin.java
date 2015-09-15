@@ -1,45 +1,47 @@
-package flexible_architecture.block;
+package flexible_architecture.pin;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import flexible_architecture.architecture.PortType;
+import flexible_architecture.block.AbstractBlock;
 
 import util.Logger;
 
-public class Pin {
+public abstract class AbstractPin {
 	
 	private AbstractBlock owner;
 	private PortType portType;
 	private String portName;
 	private int index;
-	private Pin source;
-	private List<Pin> sinks;
 	
-	public Pin(AbstractBlock owner, PortType portType, String portName, int index) {
+	private AbstractPin source;
+	private List<AbstractPin> sinks;
+	
+	public AbstractPin(AbstractBlock owner, PortType portType, String portName, int index) {
 		this.owner = owner;
 		this.portType = portType;
 		this.portName = portName;
 		this.index = index;
 		
 		//TODO: is this memory efficient? Does the size remain 1 after 1 element is added?
-		this.sinks = new ArrayList<Pin>(1);
+		this.sinks = new ArrayList<AbstractPin>(1);
 	}
 	
 	public AbstractBlock getOwner() {
 		return this.owner;
 	}
 	
-	public Pin setSource(Pin source) {
-		Pin oldSource = this.source;
+	public AbstractPin setSource(AbstractPin source) {
+		AbstractPin oldSource = this.source;
 		this.source = source;
 		return oldSource;
 	}
 	
-	public List<Pin> getSinks() {
+	public List<AbstractPin> getSinks() {
 		return this.sinks;
 	}
-	public Pin getSink(int index) {
+	public AbstractPin getSink(int index) {
 		try {
 			return this.sinks.get(index);
 		} catch(IndexOutOfBoundsException exception) {
@@ -47,7 +49,7 @@ public class Pin {
 			return null;
 		}
 	}
-	public void addSink(Pin sink) {
+	public void addSink(AbstractPin sink) {
 		this.sinks.add(sink);
 	}
 	

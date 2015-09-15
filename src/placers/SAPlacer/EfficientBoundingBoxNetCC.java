@@ -8,20 +8,21 @@ import circuit.Block;
 import circuit.Net;
 import circuit.PackedCircuit;
 import circuit.Pin;
+import flexible_architecture.Circuit;
 
 public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 {
 	
 	private Map<Block,ArrayList<EfficientBoundingBoxData>> bbDataMap;
 	private EfficientBoundingBoxData[] bbDataArray;
-	private int nbNets;
+	//private int nbNets;
 	private Block[] toRevert;
 	
-	public EfficientBoundingBoxNetCC(PackedCircuit circuit)
+	public EfficientBoundingBoxNetCC(Circuit circuit)
 	{
 		toRevert = new Block[2]; //Contains the blocks for which the associated boundingBox's might need to be reverted
 		bbDataMap = new HashMap<>();
-		nbNets = circuit.getNets().size();
+		//nbNets = circuit.getNets().size();
 		bbDataArray = new EfficientBoundingBoxData[nbNets];
 		int counter = 0;
 		
@@ -176,36 +177,4 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 			}
 		}
 	}
-	
-//	public void checkBbDataMap(PackedCircuit circuit)
-//	{
-//		for(Clb clb: circuit.clbs.values())
-//		{
-//			ArrayList<EfficientBoundingBoxData> bbDataList = bbDataMap.get(clb);
-//			if(bbDataList == null || bbDataList.size() == 0)
-//			{
-//				System.out.println("Not ok for " + clb.name);
-//			}
-//			else
-//			{
-//				for(EfficientBoundingBoxData data: bbDataList)
-//				{
-//					if(data.getNetCost() <= 0.02)
-//					{
-//						System.out.println("It is zero");
-//					}
-//				}
-//			}
-//			
-//			if(clb.name.equals("top^memory_controller_out~11"))
-//			{
-//				System.out.println("Found the clb");
-//				for(EfficientBoundingBoxData data: bbDataList)
-//				{
-//					System.out.println(data.getNetCost());
-//				}
-//			}
-//		}
-//	}
-	
 }

@@ -15,6 +15,12 @@ public class BlockType {
 	private static List<String> typeNames = new ArrayList<String>();
 	
 	private static List<BlockCategory> category = new ArrayList<BlockCategory>();
+	private static List<List<BlockType>> blockTypesPerCategory = new ArrayList<List<BlockType>>();
+	static {
+		for(int i = 0; i < BlockCategory.values().length; i++) {
+			blockTypesPerCategory.add(new ArrayList<BlockType>());
+		}
+	}
 	
 	private static List<Integer> height = new ArrayList<Integer>();
 	private static List<Integer> start = new ArrayList<Integer>();
@@ -52,6 +58,7 @@ public class BlockType {
 		
 		BlockCategory category = BlockType.getCategoryFromString(categoryName);
 		BlockType.category.add(category);
+		BlockType.blockTypesPerCategory.get(category.ordinal()).add(new BlockType(typeName));
 		
 		BlockType.height.add(height);
 		BlockType.start.add(start);
@@ -127,6 +134,12 @@ public class BlockType {
 	
 	
 	
+	public static List<BlockType> getBlockTypes(BlockCategory category) {
+		return BlockType.blockTypesPerCategory.get(category.ordinal());
+	}
+	
+	
+	
 	public String getName() {
 		return BlockType.typeNames.get(this.typeIndex);
 	}
@@ -193,12 +206,12 @@ public class BlockType {
 	}
 	
 	public boolean equals(BlockType otherBlockType) {
-		//return this.typeIndex == otherBlockType.typeIndex && this.modeIndex == otherBlockType.modeIndex;
-		if(this.modeIndex == null || otherBlockType.modeIndex == null) {
-			return this.typeIndex == otherBlockType.typeIndex;
-		} else {
-			return this.typeIndex == otherBlockType.typeIndex && this.modeIndex == otherBlockType.modeIndex;
-		}
+		return this.typeIndex == otherBlockType.typeIndex;
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.typeIndex;
 	}
 	
 	@Override
@@ -208,10 +221,5 @@ public class BlockType {
 		} else {
 			return this.getName() + "<" + this.getMode() + ">";
 		}
-	}
-	
-	@Override
-	public int hashCode() {
-		return this.typeIndex;
 	}
 }

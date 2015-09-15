@@ -9,6 +9,7 @@ import util.Logger;
 
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.PortType;
+import flexible_architecture.pin.AbstractPin;
 
 public abstract class AbstractBlock {
 	
@@ -17,7 +18,7 @@ public abstract class AbstractBlock {
 	
 	protected Map<String, LocalBlock[]> children;
 	
-	private List<Map<String, Pin[]>> pins;
+	private List<Map<String, AbstractPin[]>> pins;
 	
 	
 	public AbstractBlock(String name, BlockType type) {
@@ -35,29 +36,29 @@ public abstract class AbstractBlock {
 		
 		
 		int numPortTypes = PortType.values().length;
-		this.pins = new ArrayList<Map<String, Pin[]>>(numPortTypes);
+		this.pins = new ArrayList<Map<String, AbstractPin[]>>(numPortTypes);
 		
 		for(PortType portType : PortType.values()) {
 			Map<String, Integer> pinCounts = type.getPorts(portType); 
 			
-			Map<String, Pin[]> pins = this.createPins(portType, pinCounts);
+			Map<String, AbstractPin[]> pins = this.createPins(portType, pinCounts);
 			this.pins.add(pins);
 		}
 	}
 	
-	private Map<String, Pin[]> createPins(PortType portType, Map<String, Integer> pinCounts) {
+	private Map<String, AbstractPin[]> createPins(PortType portType, Map<String, Integer> pinCounts) {
 		int capacity = (int) Math.ceil(pinCounts.size() * 1.33);
-		Map<String, Pin[]> pins = new HashMap<String, Pin[]>(capacity);
+		Map<String, AbstractPin[]> pins = new HashMap<String, AbstractPin[]>(capacity);
 		
 		for(Map.Entry<String, Integer> pinsEntry : pinCounts.entrySet()) {
 			
 			String portName = pinsEntry.getKey();
 			int numPins = pinsEntry.getValue();
 			
-			Pin[] newPins = new Pin[numPins];
+			AbstractPin[] newPins = new AbstractPin[numPins];
 			
-			for(int i = 0; i < numPins; i++) {
-				newPins[i] = new Pin(this, portType, portName, i);
+			for(int index = 0; index < numPins; index++) {
+				newPins[index] = createPin(portType, portName, index);
 			}
 			
 			pins.put(portName, newPins);
@@ -65,6 +66,8 @@ public abstract class AbstractBlock {
 		
 		return pins;
 	}
+	
+	public abstract AbstractPin createPin(PortType portType, String portName, int index);
 	
 	
 	public String getName() {
@@ -99,31 +102,31 @@ public abstract class AbstractBlock {
 	
 	
 	
-	public Map<String, Pin[]> getInputPins() {
+	public Map<String, AbstractPin[]> getInputPins() {
 		return this.getPins(PortType.INPUT);
 	}
-	public Pin[] getInputPins(String portName) {
+	public AbstractPin[] getInputPins(String portName) {
 		return this.getPins(PortType.INPUT, portName);
 	}
-	public Pin getInputPin(String portName, int index) {
+	public AbstractPin getInputPin(String portName, int index) {
 		return this.getPin(PortType.INPUT, portName, index);
 	}
 	
-	public Map<String, Pin[]> getOutputPins() {
+	public Map<String, AbstractPin[]> getOutputPins() {
 		return this.getPins(PortType.OUTPUT);
 	}
-	public Pin[] getOutputPins(String portName) {
+	public AbstractPin[] getOutputPins(String portName) {
 		return this.getPins(PortType.OUTPUT, portName);
 	}
-	public Pin getOutputPin(String portName, int index) {
+	public AbstractPin getOutputPin(String portName, int index) {
 		return this.getPin(PortType.OUTPUT, portName, index);
 	}
 	
-	public Map<String, Pin[]> getPins(PortType portType) {
+	public Map<String, AbstractPin[]> getPins(PortType portType) {
 		return this.pins.get(portType.ordinal());
 	}	
-	private Pin[] getPins(PortType portType, String portName) {
-		Map<String, Pin[]> pinsOfType = this.getPins(portType);
+	private AbstractPin[] getPins(PortType portType, String portName) {
+		Map<String, AbstractPin[]> pinsOfType = this.getPins(portType);
 		if(pinsOfType.containsKey(portName)) {
 			return pinsOfType.get(portName);
 		} else {
@@ -131,7 +134,7 @@ public abstract class AbstractBlock {
 			return null;
 		}
 	}
-	private Pin getPin(PortType portType, String portName, int index) {
+	private AbstractPin getPin(PortType portType, String portName, int index) {
 		return this.getPins(portType, portName)[index];
 	}
 	
@@ -146,8 +149,8 @@ public abstract class AbstractBlock {
 		 * Source pin output, sink pin output: child -> parent.
 		 */
 		
-		Pin sourcePin = this.getPin(portType, portName, portIndex);
-		Pin sinkPin = sink.getPin(sinkPortType, sinkPortName, sinkPortIndex);
+		AbstractPin sourcePin = this.getPin(portType, portName, portIndex);
+		AbstractPin sinkPin = sink.getPin(sinkPortType, sinkPortName, sinkPortIndex);
 		
 		sourcePin.addSink(sinkPin);
 		sinkPin.setSource(sourcePin);

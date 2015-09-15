@@ -19,8 +19,8 @@ import flexible_architecture.architecture.PortType;
 import flexible_architecture.block.AbstractBlock;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.LocalBlock;
-import flexible_architecture.block.Pin;
 import flexible_architecture.block.TupleBlockMap;
+import flexible_architecture.pin.AbstractPin;
 
 public class NetParser {
 	
@@ -33,7 +33,7 @@ public class NetParser {
 	private Stack<TupleBlockMap> inputsStack;
 	private Stack<HashMap<String, String>> outputsStack;
 	
-	private Map<String, Pin> sourcePins;
+	private Map<String, AbstractPin> sourcePins;
 	
 	private PortType currentPortType;
 	
@@ -74,7 +74,7 @@ public class NetParser {
 		// the corresponding output pins. It is needed to be able to create
 		// global nets: at the time: only the name of the bottom-level source
 		// block is given for these nets.
-		this.sourcePins = new HashMap<String, Pin>();
+		this.sourcePins = new HashMap<String, AbstractPin>();
 		
 		
 		String line, multiLine = "";
@@ -241,7 +241,8 @@ public class NetParser {
 		
 		
 		if(!this.blocks.containsKey(blockType)) {
-			this.blocks.put(blockType, new ArrayList<AbstractBlock>());
+			BlockType emptyModeType = new BlockType(blockType.getName());
+			this.blocks.put(emptyModeType, new ArrayList<AbstractBlock>());
 		}
 		this.blocks.get(blockType).add(newBlock);
 	}
@@ -358,7 +359,7 @@ public class NetParser {
 		// The current block is a leaf block. We can add a reference from the net name to
 		// the correct pin in this block, so that we can add the todo-nets later.
 		} else if(sinkPortType == PortType.OUTPUT) {
-			Pin sourcePin = sinkBlock.getOutputPin(sinkPortName, sinkPortIndex);
+			AbstractPin sourcePin = sinkBlock.getOutputPin(sinkPortName, sinkPortIndex);
 			this.sourcePins.put(net, sourcePin);
 		
 			
@@ -367,11 +368,11 @@ public class NetParser {
 		// up through the hierarchy from the referenced block.
 		} else {
 			String sourceName = net;
-			Pin sinkPin = sinkBlock.getInputPin(sinkPortName, sinkPortIndex);
+			AbstractPin sinkPin = sinkBlock.getInputPin(sinkPortName, sinkPortIndex);
 			
 			
 			
-	    	Pin sourcePin = this.sourcePins.get(sourceName);
+	    	AbstractPin sourcePin = this.sourcePins.get(sourceName);
 	    	AbstractBlock parent = sourcePin.getOwner().getParent();
 	    	
 	    	if(!sinkPin.getOwner().isGlobal()) {
@@ -379,10 +380,10 @@ public class NetParser {
 	    	}
 	    	
 	    	while(parent != null) {
-	    		List<Pin> nextSourcePins = sourcePin.getSinks();
-	    		Pin nextSourcePin = null;
+	    		List<AbstractPin> nextSourcePins = sourcePin.getSinks();
+	    		AbstractPin nextSourcePin = null;
 	    		
-	    		for(Pin pin : nextSourcePins) {
+	    		for(AbstractPin pin : nextSourcePins) {
 	    			if(pin.getOwner() == parent) {
 	    				nextSourcePin = pin;
 	    				break;

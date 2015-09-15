@@ -11,6 +11,8 @@ import architecture.Architecture;
 import architecture.FourLutSanitized;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
+import flexible_architecture.Circuit;
+import flexible_architecture.architecture.FlexibleArchitecture;
 
 public abstract class Placer {
 	
@@ -22,11 +24,11 @@ public abstract class Placer {
 		requiredOptions = new ArrayList<String>();
 	}
 	
-	protected Architecture architecture;
-	protected PackedCircuit circuit;
+	protected FlexibleArchitecture architecture;
+	protected Circuit circuit;
 	protected HashMap<String, String> options;
 	
-	protected Placer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options) {
+	protected Placer(FlexibleArchitecture architecture, Circuit circuit, HashMap<String, String> options) {
 		this.architecture = architecture;
 		this.circuit = circuit;
 		this.options = options;
