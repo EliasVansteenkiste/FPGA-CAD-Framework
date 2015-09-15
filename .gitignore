@@ -2,5 +2,8 @@ bin
 .project
 .classpath
 dependencies
+benchmarks
 
+*.csv
+*.ods
 **/__pycache__
