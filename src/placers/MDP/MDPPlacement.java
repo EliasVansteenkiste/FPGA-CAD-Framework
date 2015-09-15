@@ -118,10 +118,6 @@ public class MDPPlacement {
 					blocksInPartition[numBlocksInPartition] = block;
 					numBlocksInPartition++;
 					
-					if(block.optimalPosition < left) {
-						System.out.println(left + "," + right + "," + block.optimalPosition);
-					}
-					
 					double[] costInPartition = block.getCostInPartition(partition);
 					System.arraycopy(costInPartition, 0, costEdges[i - left], 0, partitionSize);
 				}
@@ -133,7 +129,7 @@ public class MDPPlacement {
 			}
 			
 			
-			//TODO: remove unused rows from coestEdges
+			//TODO: remove unused rows from costEdges
 			
 			//TODO: Remove edges to simplify the problem
 			

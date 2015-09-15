@@ -1,7 +1,8 @@
 import subprocess
 import os
+import re
 
-def placer(options, placer_options):
+def placer(options, flags):
 
     # Basic command
     command = [
@@ -12,16 +13,27 @@ def placer(options, placer_options):
     ]
 
     # Add optional arguments
-    for argument, value in options.items():
-        command += [argument, value]
+    for option in options:
+        command += [option, options[option]]
 
-    for argument, value in placer_options.items():
-        command.append(argument + '=' + value)
+    for flag in flags:
+        command.append(flag)
+
 
     # Call the placer
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #p = subprocess.Popen(command)
 
     # Return output
     out, err = p.communicate()
     return out.decode('utf-8'), err.decode('utf-8')
+
+
+def get_stats(output, prefix):
+    regex = r'{0}\s+place time:\s+(?P<time>[0-9.]+).*{0}\s+total cost:\s+(?P<cost>[0-9.]+)'.format(prefix)
+    pattern = re.compile(regex, re.DOTALL)
+    match = pattern.search(output)
+
+    time = match.group('time')
+    cost = match.group('cost')
+
+    return (time, cost)
