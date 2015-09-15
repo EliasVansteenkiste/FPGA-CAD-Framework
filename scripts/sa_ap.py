@@ -30,7 +30,7 @@ for circuit in circuit_list:
     flags = [
         '--pack',
         '--random',
-        'inner_num=1'
+        'inner_num=0.1'
     ]
 
 
