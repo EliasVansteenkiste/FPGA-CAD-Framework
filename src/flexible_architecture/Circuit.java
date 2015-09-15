@@ -177,6 +177,10 @@ public class Circuit {
 		return this.sites[x][y];
 	}
 	
+	public int getNumGlobalBlocks() {
+		return this.globalBlockList.size();
+	}
+	
 	public List<AbstractBlock> getBlocks(BlockType blockType) {
 		return this.blocks.get(blockType);
 	}

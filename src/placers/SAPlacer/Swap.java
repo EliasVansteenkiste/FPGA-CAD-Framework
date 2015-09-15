@@ -12,6 +12,13 @@ public class Swap {
 		this.block2 = block2;
 	}
 	
+	public GlobalBlock getBlock1() {
+		return this.block1;
+	}
+	public GlobalBlock getBlock2() {
+		return this.block2;
+	}
+	
 	public void apply() {
 		AbstractSite site1 = this.block1.getSite();
 		site1.removeBlock(this.block1);

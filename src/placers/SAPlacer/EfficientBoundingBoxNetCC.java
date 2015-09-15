@@ -90,24 +90,24 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 	public double calculateDeltaCost(Swap swap) {
 		double totalDeltaCost = 0.0;
 		
-		this.toRevert[0] = swap.pl1.getBlock();
+		this.toRevert[0] = swap.getBlock1();
 		if(this.toRevert[0] != null) {
 			List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[0]);
 			if(bbDataList != null) {
 				for(EfficientBoundingBoxData bbData: bbDataList) {
 					bbData.saveState();
-					totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[0], swap.pl2);
+					totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[0], swap.getBlock2().getSite());
 				}
 			}
 		}
 		
-		this.toRevert[1] = swap.pl2.getBlock();
+		this.toRevert[1] = swap.getBlock2();
 		if(this.toRevert[1] != null) {
 			List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[1]);
 			if(bbDataList != null) {
 				for(EfficientBoundingBoxData bbData: bbDataList) {
 					bbData.saveState();
-					totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[1], swap.pl1);
+					totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[1], swap.getBlock1().getSite());
 				}
 			}
 		}

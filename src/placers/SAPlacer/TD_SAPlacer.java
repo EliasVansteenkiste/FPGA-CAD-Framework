@@ -58,7 +58,6 @@ public class TD_SAPlacer extends SAPlacer
 	{
 		//Initialize SA parameters
 		calculator.recalculateFromScratch();
-		rand = new Random(1);
 		Rlimd = Math.max(architecture.getWidth(),architecture.getHeight());
 		int Rlim = initialRlim();
 		double firstRlim = Rlimd;

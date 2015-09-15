@@ -46,6 +46,7 @@ public class EfficientBoundingBoxData
 		}
 		
 		this.blocks = new GlobalBlock[blockSet.size()];
+		blockSet.toArray(this.blocks);
 		
 		this.setWeightandSize();
 		
@@ -210,8 +211,7 @@ public class EfficientBoundingBoxData
 	
 	private void setWeightandSize() {
 		int size = this.blocks.length;
-		switch (size) 
-		{
+		switch (size)  {
 			case 1:  this.weight = 1; break;
 			case 2:  this.weight = 1; break;
 			case 3:  this.weight = 1; break;

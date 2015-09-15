@@ -1,26 +1,12 @@
 package placers.SAPlacer;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Random;
-import java.util.Vector;
-
 import placers.Placer;
 
-import architecture.Architecture;
-import architecture.HardBlockSite;
-import circuit.Block;
-import circuit.BlockType;
-import circuit.Clb;
-import circuit.HardBlock;
-import circuit.Input;
-import circuit.Output;
-import circuit.PackedCircuit;
 import flexible_architecture.Circuit;
 import flexible_architecture.architecture.FlexibleArchitecture;
 import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.site.AbstractSite;
 
 public abstract class SAPlacer extends Placer
 {
@@ -40,7 +26,9 @@ public abstract class SAPlacer extends Placer
 	public SAPlacer(FlexibleArchitecture architecture, Circuit circuit, HashMap<String, String> options)
 	{
 		super(architecture, circuit, options);
+		
 		this.calculator = new EfficientBoundingBoxNetCC(circuit);
+		this.random = new Random(1);
 	}
 	
 	protected Swap findSwap(int Rlim) {

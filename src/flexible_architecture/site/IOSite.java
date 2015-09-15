@@ -24,8 +24,12 @@ public class IOSite extends AbstractSite {
 	
 	
 	public GlobalBlock getRandomBlock(Random random) {
-		int index = random.nextInt(this.blocks.size());
+		int size = this.blocks.size();
+		if(size == 0) {
+			return null;
+		}
 		
+		int index = random.nextInt(size);
 		Iterator<GlobalBlock> iter = this.blocks.iterator();
 		for(int i = 0; i < index; i++) {
 		    iter.next();
