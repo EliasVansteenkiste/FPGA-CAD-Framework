@@ -1,6 +1,7 @@
 package flexible_architecture.pin;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import flexible_architecture.architecture.PortType;
@@ -38,8 +39,8 @@ public abstract class AbstractPin {
 		return oldSource;
 	}
 	
-	public List<AbstractPin> getSinks() {
-		return this.sinks;
+	public int getNumSinks() {
+		return this.sinks.size();
 	}
 	public AbstractPin getSink(int index) {
 		try {
@@ -48,7 +49,8 @@ public abstract class AbstractPin {
 			Logger.raise("Port doesn't have " + index + "pins", exception);
 			return null;
 		}
-	}
+	} 
+	
 	public void addSink(AbstractPin sink) {
 		this.sinks.add(sink);
 	}

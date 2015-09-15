@@ -3,16 +3,15 @@ package placers.SAPlacer;
 import java.util.HashSet;
 import java.util.Set;
 
-import architecture.Site;
-
-import circuit.Block;
-import circuit.Net;
+import flexible_architecture.block.GlobalBlock;
+import flexible_architecture.pin.GlobalPin;
+import flexible_architecture.site.AbstractSite;
 
 public class EfficientBoundingBoxData
 {
 	
 	private double weight;
-	private Block[] blocks;
+	private GlobalBlock[] blocks;
 	private boolean alreadySaved;
 	
 	private int min_x;
@@ -35,267 +34,238 @@ public class EfficientBoundingBoxData
 	private int nb_max_y_old;
 	private int boundingBox_old;
 	
-	public EfficientBoundingBoxData(Net net)
+	
+	public EfficientBoundingBoxData(GlobalPin pin)
 	{
-		Set<Block> blockSet = new HashSet<>();
-		blockSet.add(net.source.owner);
-		for(int i = 0; i < net.sinks.size(); i++)
-		{
-			blockSet.add(net.sinks.get(i).owner);
+		Set<GlobalBlock> blockSet = new HashSet<GlobalBlock>();
+		blockSet.add(pin.getOwner());
+		
+		int numSinks = pin.getNumSinks();
+		for(int i = 0; i < numSinks; i++) {
+			blockSet.add(pin.getSink(i).getOwner());
 		}
-		blocks = new Block[blockSet.size()];
-		blockSet.toArray(blocks);
-		setWeightandSize();
-		boundingBox = -1;
-		min_x = Integer.MAX_VALUE;
-		min_y = -1;
-		max_x = Integer.MAX_VALUE;
-		max_y = -1;
-		calculateBoundingBoxFromScratch();
-		alreadySaved = false;
+		
+		this.blocks = new GlobalBlock[blockSet.size()];
+		
+		this.setWeightandSize();
+		
+		this.boundingBox = -1;
+		this.min_x = Integer.MAX_VALUE;
+		this.min_y = -1;
+		this.max_x = Integer.MAX_VALUE;
+		this.max_y = -1;
+		
+		this.calculateBoundingBoxFromScratch();
+		this.alreadySaved = false;
 	}
 	
-	public double calculateDeltaCost(Block block, Site newSite)
-	{
-		double originalBB = boundingBox;
-		if((block.getSite().getX() == min_x && nb_min_x == 1 && newSite.getX() > min_x) || (block.getSite().getX() == max_x && nb_max_x == 1 && newSite.getX() < max_x) || 
-					(block.getSite().getY() == min_y && nb_min_y == 1 && newSite.getY() > min_y) || (block.getSite().getY() == max_y && nb_max_y == 1 && newSite.getY() < max_y))
-		{
-			Site originalSite = block.getSite();
+	
+	public double calculateDeltaCost(GlobalBlock block, AbstractSite newSite) {
+		double originalBB = this.boundingBox;
+		
+		if((block.getSite().getX() == this.min_x && this.nb_min_x == 1 && newSite.getX() > this.min_x)
+				|| (block.getSite().getX() == this.max_x && this.nb_max_x == 1 && newSite.getX() < this.max_x)
+				|| (block.getSite().getY() == this.min_y && this.nb_min_y == 1 && newSite.getY() > this.min_y)
+				|| (block.getSite().getY() == this.max_y && this.nb_max_y == 1 && newSite.getY() < this.max_y)) {
+			
+			AbstractSite originalSite = block.getSite();
+			
 			block.setSite(newSite);
 			calculateBoundingBoxFromScratch();
 			block.setSite(originalSite);
-		}
-		else
-		{
-			if(newSite.getX() < min_x)
-			{
-				min_x = newSite.getX();
-				nb_min_x = 1;
+		
+		} else {
+			if(newSite.getX() < this.min_x) {
+				this.min_x = newSite.getX();
+				this.nb_min_x = 1;
+			} else if(newSite.getX() == this.min_x && block.getSite().getX() != this.min_x) {
+				this.nb_min_x++;
+			} else if(newSite.getX() > this.min_x && block.getSite().getX() == this.min_x) {
+				this.nb_min_x--;
 			}
-			else
-			{
-				if(newSite.getX() == min_x && block.getSite().getX() != min_x)
-				{
-					nb_min_x++;
-				}
-				else if(newSite.getX() > min_x && block.getSite().getX() == min_x)
-				{
-					nb_min_x--;
-				}
+			
+			if(newSite.getX() > this.max_x) {
+				this.max_x = newSite.getX();
+				this.nb_max_x = 1;
+			} else if(newSite.getX() == this.max_x && block.getSite().getX() != this.max_x) {
+				this.nb_max_x++;
+			} else if(newSite.getX() < this.max_x && block.getSite().getX() == this.max_x) {
+				this.nb_max_x--;
 			}
-			if(newSite.getX() > max_x)
-			{
-				max_x = newSite.getX();
-				nb_max_x = 1;
+			
+			if(newSite.getY() < this.min_y) {
+				this.min_y = newSite.getY();
+				this.nb_min_y = 1;
+			} else if(newSite.getY() == this.min_y && block.getSite().getY() != this.min_y) {
+				this.nb_min_y++;
+			} else if(newSite.getY() > this.min_y && block.getSite().getY() == this.min_y) {
+				this.nb_min_y--;
 			}
-			else
-			{
-				if(newSite.getX() == max_x && block.getSite().getX() != max_x)
-				{
-					nb_max_x++;
-				}
-				else if(newSite.getX() < max_x && block.getSite().getX() == max_x)
-				{
-					nb_max_x--;
-				}
-			}
-			if(newSite.getY() < min_y)
-			{
-				min_y = newSite.getY();
-				nb_min_y = 1;
-			}
-			else
-			{
-				if(newSite.getY() == min_y && block.getSite().getY() != min_y)
-				{
-					nb_min_y++;
-				}
-				else if(newSite.getY() > min_y && block.getSite().getY() == min_y)
-				{
-					nb_min_y--;
-				}
-			}
-			if(newSite.getY() > max_y)
-			{
-				max_y = newSite.getY();
-				nb_max_y = 1;
-			}
-			else
-			{
-				if(newSite.getY() == max_y && block.getSite().getY() != max_y)
-				{
-					nb_max_y++;
-				}
-				else if(newSite.getY() < max_y && block.getSite().getY() == max_y)
-				{
-					nb_max_y--;
-				}
+			
+			if(newSite.getY() > this.max_y) {
+				this.max_y = newSite.getY();
+				this.nb_max_y = 1;
+			} else if(newSite.getY() == this.max_y && block.getSite().getY() != this.max_y) {
+				this.nb_max_y++;
+			} else if(newSite.getY() < this.max_y && block.getSite().getY() == this.max_y) {
+				this.nb_max_y--;
 			}
 		}
-		boundingBox = (max_x-min_x+1)+(max_y-min_y+1);
+		
+		this.boundingBox = (this.max_x - this.min_x + 1) + (this.max_y - this.min_y + 1);
 	
-		return weight*(boundingBox-originalBB);
+		return this.weight * (this.boundingBox - originalBB);
 	}
 	
-	public void pushThrough()
-	{
-		alreadySaved = false;
+	
+	public void pushThrough() {
+		this.alreadySaved = false;
 	}
 	
-	public void revert()
-	{
-		boundingBox = boundingBox_old;
-		min_x = min_x_old;
-		nb_min_x = nb_min_x_old;
-		max_x = max_x_old;
-		nb_max_x = nb_max_x_old;
-		min_y = min_y_old;
-		nb_min_y = nb_min_y_old;
-		max_y = max_y_old;
-		nb_max_y = nb_max_y_old;
-		alreadySaved = false;
+	
+	public void revert() {
+		this.boundingBox = this.boundingBox_old;
+		
+		this.min_x = this.min_x_old;
+		this.nb_min_x = this.nb_min_x_old;
+		
+		this.max_x = this.max_x_old;
+		this.nb_max_x = this.nb_max_x_old;
+		
+		this.min_y = this.min_y_old;
+		this.nb_min_y = this.nb_min_y_old;
+		
+		this.max_y = this.max_y_old;
+		this.nb_max_y = this.nb_max_y_old;
+		
+		this.alreadySaved = false;
 	}
 	
-	public void saveState()
-	{
-		if(!alreadySaved)
-		{
-			min_x_old = min_x;
-			nb_min_x_old = nb_min_x;
-			max_x_old = max_x;
-			nb_max_x_old = nb_max_x;
-			min_y_old = min_y;
-			nb_min_y_old = nb_min_y;
-			max_y_old = max_y;
-			nb_max_y_old = nb_max_y;
-			boundingBox_old = boundingBox;
-			alreadySaved = true;
+	
+	public void saveState() {
+		if(!this.alreadySaved) {
+			this.min_x_old = this.min_x;
+			this.nb_min_x_old = this.nb_min_x;
+			
+			this.max_x_old = this.max_x;
+			this.nb_max_x_old = this.nb_max_x;
+			
+			this.min_y_old = this.min_y;
+			this.nb_min_y_old = this.nb_min_y;
+			
+			this.max_y_old = this.max_y;
+			this.nb_max_y_old = this.nb_max_y;
+			
+			this.boundingBox_old = this.boundingBox;
+			this.alreadySaved = true;
 		}
 	}
 	
-	public double getNetCost()
-	{
-		return boundingBox*weight;
+	
+	public double getNetCost() {
+		return this.boundingBox * this.weight;
 	}
+	
 	
 	public void calculateBoundingBoxFromScratch() 
 	{
-		min_x = Integer.MAX_VALUE;
-		max_x = -1;
-		min_y = Integer.MAX_VALUE;
-		max_y = -1;
-		for(int i = 0; i < blocks.length; i++)
-		{
-			if(blocks[i].getSite().getX() < min_x)
-			{
-				min_x = blocks[i].getSite().getX();
-				nb_min_x = 1;
+		this.min_x = Integer.MAX_VALUE;
+		this.max_x = -1;
+		this.min_y = Integer.MAX_VALUE;
+		this.max_y = -1;
+		
+		for(int i = 0; i < this.blocks.length; i++) {
+			if(this.blocks[i].getSite().getX() < this.min_x) {
+				this.min_x = this.blocks[i].getSite().getX();
+				this.nb_min_x = 1;
+			} else if(this.blocks[i].getSite().getX() == this.min_x){
+				this.nb_min_x++;
 			}
-			else
-			{
-				if(blocks[i].getSite().getX() == min_x)
-				{
-					nb_min_x++;
-				}
+			
+			if(this.blocks[i].getSite().getX() > this.max_x) {
+				this.max_x = this.blocks[i].getSite().getX();
+				this.nb_max_x = 1;
+			} else if(this.blocks[i].getSite().getX() == this.max_x) {
+				this.nb_max_x++;
 			}
-			if(blocks[i].getSite().getX() > max_x)
-			{
-				max_x = blocks[i].getSite().getX();
-				nb_max_x = 1;
+			
+			if(this.blocks[i].getSite().getY() < this.min_y) {
+				this.min_y = this.blocks[i].getSite().getY();
+				this.nb_min_y = 1;
+			} else if(this.blocks[i].getSite().getY() == this.min_y) {
+				this.nb_min_y++;
 			}
-			else
-			{
-				if(blocks[i].getSite().getX() == max_x)
-				{
-					nb_max_x++;
-				}
-			}
-			if(blocks[i].getSite().getY() < min_y)
-			{
-				min_y = blocks[i].getSite().getY();
-				nb_min_y = 1;
-			}
-			else
-			{
-				if(blocks[i].getSite().getY() == min_y)
-				{
-					nb_min_y++;
-				}
-			}
-			if(blocks[i].getSite().getY() > max_y)
-			{
-				max_y = blocks[i].getSite().getY();
-				nb_max_y = 1;
-			}
-			else
-			{
-				if(blocks[i].getSite().getY() == max_y)
-				{
-					nb_max_y++;
-				}
+	
+			if(this.blocks[i].getSite().getY() > this.max_y) {
+				this.max_y = this.blocks[i].getSite().getY();
+				this.nb_max_y = 1;
+			} else if(this.blocks[i].getSite().getY() == this.max_y) {
+				this.nb_max_y++;
 			}
 		}
-		boundingBox = (max_x-min_x+1)+(max_y-min_y+1);
+
+		this.boundingBox = (this.max_x - this.min_x+1) + (this.max_y - this.min_y + 1);
 	}
 	
+	
 	private void setWeightandSize() {
-		int size = blocks.length;
+		int size = this.blocks.length;
 		switch (size) 
 		{
-			case 1:  weight=1; break;
-			case 2:  weight=1; break;
-			case 3:  weight=1; break;
-			case 4:  weight=1.0828; break;
-			case 5:  weight=1.1536; break;
-			case 6:  weight=1.2206; break;
-			case 7:  weight=1.2823; break;
-			case 8:  weight=1.3385; break;
-			case 9:  weight=1.3991; break;
-			case 10: weight=1.4493; break;
+			case 1:  this.weight = 1; break;
+			case 2:  this.weight = 1; break;
+			case 3:  this.weight = 1; break;
+			case 4:  this.weight = 1.0828; break;
+			case 5:  this.weight = 1.1536; break;
+			case 6:  this.weight = 1.2206; break;
+			case 7:  this.weight = 1.2823; break;
+			case 8:  this.weight = 1.3385; break;
+			case 9:  this.weight = 1.3991; break;
+			case 10: this.weight = 1.4493; break;
 			case 11:
 			case 12:
 			case 13:
 			case 14:
-			case 15: weight=(size-10)*(1.6899-1.4493)/5+1.4493;break;				
+			case 15: this.weight = (size-10) * (1.6899-1.4493) / 5 + 1.4493; break;
 			case 16:
 			case 17:
 			case 18:
 			case 19:
-			case 20: weight=(size-15)*(1.8924-1.6899)/5+1.6899;break;
+			case 20: this.weight = (size-15) * (1.8924-1.6899) / 5 + 1.6899; break;
 			case 21:
 			case 22:
 			case 23:
 			case 24:
-			case 25: weight=(size-20)*(2.0743-1.8924)/5+1.8924;break;		
+			case 25: this.weight = (size-20) * (2.0743-1.8924) / 5 + 1.8924; break;
 			case 26:
 			case 27:
 			case 28:
 			case 29:
-			case 30: weight=(size-25)*(2.2334-2.0743)/5+2.0743;break;		
+			case 30: this.weight = (size-25) * (2.2334-2.0743) / 5 + 2.0743; break;
 			case 31:
 			case 32:
 			case 33:
 			case 34:
-			case 35: weight=(size-30)*(2.3895-2.2334)/5+2.2334;break;		
+			case 35: this.weight = (size-30) * (2.3895-2.2334) / 5 + 2.2334; break;
 			case 36:
 			case 37:
 			case 38:
 			case 39:
-			case 40: weight=(size-35)*(2.5356-2.3895)/5+2.3895;break;		
+			case 40: this.weight = (size-35) * (2.5356-2.3895) / 5 + 2.3895; break;
 			case 41:
 			case 42:
 			case 43:
 			case 44:
-			case 45: weight=(size-40)*(2.6625-2.5356)/5+2.5356;break;		
+			case 45: this.weight = (size-40) * (2.6625-2.5356) / 5 + 2.5356; break;
 			case 46:
 			case 47:
 			case 48:
 			case 49:
-			case 50: weight=(size-45)*(2.7933-2.6625)/5+2.6625;break;
-			default: weight=(size-50)*0.02616+2.7933;break;
+			case 50: this.weight = (size-45) * (2.7933-2.6625) / 5 + 2.6625; break;
+			default: this.weight = (size-50) * 0.02616 + 2.7933; break;
 		}
-		weight *= 0.01;
+		
+		this.weight *= 0.01;
 	}
 	
 }

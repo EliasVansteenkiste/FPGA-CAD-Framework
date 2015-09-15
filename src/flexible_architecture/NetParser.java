@@ -21,6 +21,7 @@ import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.LocalBlock;
 import flexible_architecture.block.TupleBlockMap;
 import flexible_architecture.pin.AbstractPin;
+import flexible_architecture.pin.GlobalPin;
 
 public class NetParser {
 	
@@ -380,10 +381,11 @@ public class NetParser {
 	    	}
 	    	
 	    	while(parent != null) {
-	    		List<AbstractPin> nextSourcePins = sourcePin.getSinks();
+	    		int numPins = sourcePin.getNumSinks();
 	    		AbstractPin nextSourcePin = null;
 	    		
-	    		for(AbstractPin pin : nextSourcePins) {
+	    		for(int i = 0; i < numPins; i++) {
+	    			AbstractPin pin = sourcePin.getSink(i); 
 	    			if(pin.getOwner() == parent) {
 	    				nextSourcePin = pin;
 	    				break;

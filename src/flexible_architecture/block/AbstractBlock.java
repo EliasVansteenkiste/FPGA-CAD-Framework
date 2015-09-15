@@ -77,9 +77,12 @@ public abstract class AbstractBlock {
 		return this.type;
 	}
 	
+	public boolean isFixed() {
+		return false;
+	}
 	
 	public boolean isGlobal() {
-		return this.getParent() == null;
+		return this.getType().isGlobal();
 	}
 	public abstract AbstractBlock getParent();
 	

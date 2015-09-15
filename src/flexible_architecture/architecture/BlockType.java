@@ -133,6 +133,14 @@ public class BlockType {
 	}
 	
 	
+	public static List<BlockType> getGlobalBlockTypes() {
+		List<BlockType> types = new ArrayList<BlockType>();
+		types.addAll(BlockType.getBlockTypes(BlockCategory.IO));
+		types.addAll(BlockType.getBlockTypes(BlockCategory.CLB));
+		types.addAll(BlockType.getBlockTypes(BlockCategory.HARDBLOCK));
+		
+		return types;
+	}
 	
 	public static List<BlockType> getBlockTypes(BlockCategory category) {
 		return BlockType.blockTypesPerCategory.get(category.ordinal());
@@ -195,6 +203,7 @@ public class BlockType {
 	public Map<String, Integer> getOutputs() {
 		return BlockType.outputs.get(this.typeIndex);
 	}
+	
 	
 	@Override
 	public boolean equals(Object otherObject) {

@@ -34,43 +34,4 @@ public class GlobalBlock extends AbstractBlock {
 	public GlobalPin createPin(PortType portType, String portName, int index) {
 		return new GlobalPin(this, portType, portName, index);
 	}
-	
-	
-	public double getCost() {
-		double cost = 0;
-		Map<String, AbstractPin[]> allPins = this.getOutputPins();
-		for(AbstractPin[] pins : allPins.values()) {
-			for(int i = 0; i < pins.length; i++) {
-				cost += ((GlobalPin) pins[i]).getCost();
-			}
-		}
-		
-		return cost;
-	}
-	
-	public double calculateCost(CostCalculator calculator, Site newSite) {
-		double cost = 0;
-		
-		Map<String, AbstractPin[]> allPins = this.getOutputPins();
-		for(AbstractPin[] pins : allPins.values()) {
-			for(int i = 0; i < pins.length; i++) {
-				cost += ((GlobalPin) pins[i]).calculateCost(calculator, newSite);
-			}
-		}
-		
-		return cost;
-	}
-
-	public double applyCost() {
-		double cost = 0;
-		
-		Map<String, AbstractPin[]> allPins = this.getOutputPins();
-		for(AbstractPin[] pins : allPins.values()) {
-			for(int i = 0; i < pins.length; i++) {
-				cost += ((GlobalPin) pins[i]).applyCost();
-			}
-		}
-		
-		return cost;
-	}
 }
