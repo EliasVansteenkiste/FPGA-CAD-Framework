@@ -2,10 +2,13 @@ package placers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import placers.MDP.MDPPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
 import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
+import placers.parser.PlaceParser;
 
 import architecture.Architecture;
 import architecture.FourLutSanitized;
@@ -14,19 +17,14 @@ import circuit.PrePackedCircuit;
 
 public abstract class Placer {
 	
-	protected static HashMap<String, String> defaultOptions;
-	protected static ArrayList<String> requiredOptions;
-	
-	static {
-		defaultOptions = new HashMap<String, String>();
-		requiredOptions = new ArrayList<String>();
-	}
+	protected static Map<String, String> defaultOptions = new HashMap<String, String>();
+	protected static List<String> requiredOptions = new ArrayList<String>();
 	
 	protected Architecture architecture;
 	protected PackedCircuit circuit;
-	protected HashMap<String, String> options;
+	protected Map<String, String> options;
 	
-	protected Placer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options) {
+	protected Placer(Architecture architecture, PackedCircuit circuit, Map<String, String> options) {
 		this.architecture = architecture;
 		this.circuit = circuit;
 		this.options = options;
@@ -46,9 +44,19 @@ public abstract class Placer {
 	public abstract void place();
 	
 	
+	protected boolean hasOption(String optionName) {
+		return this.options.containsKey(optionName);
+	}
+	protected String getOption(String optionName) {
+		return this.options.get(optionName);
+	}
+	
 	
 	public static Placer newPlacer(String type, Architecture architecture, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit, HashMap<String, String> options) {
 		switch(type) {
+		
+		case "parser":
+			return new PlaceParser(architecture, packedCircuit, options);
 		
 		case "SA":
 		case "sa":

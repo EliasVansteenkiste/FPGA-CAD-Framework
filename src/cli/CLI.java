@@ -85,10 +85,10 @@ public class CLI {
 		if(options.random) {
 			Random rand = new Random(1);
 			RandomPlacer.placeCLBsandFixedIOs(packedCircuit, architecture, rand);
+			
+			CLI.printStatistics("initial", prePackedCircuit, packedCircuit, false);
 		}
 		
-		
-		CLI.printStatistics("initial", prePackedCircuit, packedCircuit, false);
 		
 		// Loop through the placers
 		for(int i = 0; i < options.placers.size(); i++) {

@@ -1,6 +1,7 @@
 package placers.SAPlacer;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import architecture.Architecture;
@@ -20,7 +21,7 @@ public class WLD_SAPlacer extends SAPlacer
 		defaultOptions.put("T_multiplier", "1");
 	}
 	
-	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
+	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit, Map<String, String> options)
 	{
 		super(architecture, circuit, options);
 	}

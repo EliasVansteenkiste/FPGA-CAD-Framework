@@ -65,7 +65,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer
 		this(architecture, circuit, new HashMap<String, String>());
 	}
 	
-	public HeteroAnalyticalPlacerTwo(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
+	public HeteroAnalyticalPlacerTwo(Architecture architecture, PackedCircuit circuit, Map<String, String> options)
 	{
 		super(architecture, circuit, options);
 		

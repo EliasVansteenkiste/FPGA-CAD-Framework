@@ -1,6 +1,8 @@
 package placers.MDP;
 
 import java.util.HashMap;
+import java.util.Map;
+
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import circuit.PackedCircuit;
@@ -15,7 +17,7 @@ public class MDPPlacer extends Placer {
 	private MDPPlacement placement;
 	
 	
-	public MDPPlacer(FourLutSanitized architecture, PackedCircuit circuit, HashMap<String, String> options) {
+	public MDPPlacer(FourLutSanitized architecture, PackedCircuit circuit, Map<String, String> options) {
 		super(architecture, circuit, options);
 		
 		this.placement = new MDPPlacement(architecture, circuit);

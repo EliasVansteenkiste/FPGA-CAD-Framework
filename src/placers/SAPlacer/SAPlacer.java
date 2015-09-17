@@ -3,6 +3,7 @@ package placers.SAPlacer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
@@ -33,7 +34,7 @@ public abstract class SAPlacer extends Placer
 	protected EfficientCostCalculator calculator;
 	protected Random rand;
 	
-	public SAPlacer(Architecture architecture, PackedCircuit circuit, HashMap<String, String> options)
+	public SAPlacer(Architecture architecture, PackedCircuit circuit, Map<String, String> options)
 	{
 		super(architecture, circuit, options);
 		this.calculator = new EfficientBoundingBoxNetCC(circuit);

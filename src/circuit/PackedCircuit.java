@@ -55,16 +55,11 @@ public class PackedCircuit extends Circuit{
 		stream.println();
 		stream.println("#block name	x	y	subblk	block number");
 		stream.println("#----------	--	--	------	------------");
-				
-		for(Block blok:inputs.values())
-		{
-			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
-		}
-		for(Block blok:clbs.values()) {
-			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
-		}
-		for(Block blok:outputs.values()) {
-			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
+		
+		this.fillVector();
+		for(Block block : this.vBlocks) {
+			Site site = block.getSite();
+			stream.println(block.name + "	" + site.getX() + "	" + site.getY() + "	" + site.getZ());
 		}
 		stream.close();
 	}
