@@ -18,6 +18,7 @@ import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
 import circuit.parser.blif.BlifReader;
 import circuit.parser.net.NetReader;
+import circuit.parser.placement.PlaceParser;
 import cli.Options;
 
 
@@ -40,7 +41,7 @@ public class CLI {
 		int nbLutInputs = Architecture.getNbLutInputs(options.architecture);
 		
 		// If the circuit should be packed: read the blif file
-		if(options.pack) {
+		if(options.startingStage.equals("blif")) {
 			BlifReader blifReader = new BlifReader();
 			
 			try {
@@ -70,6 +71,8 @@ public class CLI {
 			packedCircuit = netReader.getPackedCircuit();
 		}
 		
+		packedCircuit.setName(options.circuit);
+		
 		
 		
 		// Set the architecture
@@ -87,6 +90,12 @@ public class CLI {
 			RandomPlacer.placeCLBsandFixedIOs(packedCircuit, architecture, rand);
 			
 			CLI.printStatistics("initial", prePackedCircuit, packedCircuit, false);
+		}
+		
+		// Read the place file
+		if(options.startingStage.equals("place")) {
+			PlaceParser placeParser = new PlaceParser(architecture, packedCircuit, options.placeFile);
+			placeParser.parse();
 		}
 		
 		
@@ -112,7 +121,7 @@ public class CLI {
 		
 		// Print out the place file
 		try {
-			packedCircuit.dumpPlacement(options.placeFile.toString());
+			packedCircuit.dumpPlacement(architecture, options.outputFile.toString());
 		} catch (FileNotFoundException e) {
 			error("Place file not found: " + options.placeFile);
 		}

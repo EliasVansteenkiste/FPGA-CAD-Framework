@@ -1,6 +1,5 @@
 package placers.SAPlacer;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -18,7 +17,8 @@ public class WLD_SAPlacer extends SAPlacer
 		
 		defaultOptions.put("greedy", "0");
 		defaultOptions.put("Rlim", "-1");
-		defaultOptions.put("T_multiplier", "1");
+		defaultOptions.put("maxRlim", "-1");
+		defaultOptions.put("T_multiplier", "20");
 	}
 	
 	public WLD_SAPlacer(Architecture architecture, PackedCircuit circuit, Map<String, String> options)
@@ -35,11 +35,17 @@ public class WLD_SAPlacer extends SAPlacer
 		
 		this.greedy = Boolean.parseBoolean(this.options.get("greedy"));
 		
-		int optionRlimd = Integer.parseInt(this.options.get("Rlim"));
-		if(optionRlimd == -1) {
-			optionRlimd = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
+		int optionMaxRlim = Integer.parseInt(this.options.get("Rlim"));
+		if(optionMaxRlim == -1) {
+			optionMaxRlim = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
 		}
-		this.setRlimd(optionRlimd);
+		this.setMaxRlim(optionMaxRlim);
+		
+		int optionRlim = Integer.parseInt(this.options.get("Rlim"));
+		if(optionRlim == -1) {
+			optionRlim = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
+		}
+		this.setRlimd(optionRlim);
 		
 		
 		double inner_num = Double.parseDouble(this.options.get("inner_num"));
@@ -110,75 +116,15 @@ public class WLD_SAPlacer extends SAPlacer
 		return numSwaps;
 	}
 	
-
-	
-	@Override
-	public void lowTempAnneal(double innerNum)
-	{
-		this.calculator.recalculateFromScratch();
-		this.rand = new Random(1);
-		int biggestDistance = getBiggestDistance();
-		
-		int maxValue = (int)Math.floor(biggestDistance / 16.0);
-		if(maxValue < 1)
-		{
-			maxValue = 1;
-		}
-		
-		setRlimd(maxValue);
-		
-		calculateInitialTemperatureLow();
-		int movesPerTemperature=(int) (innerNum*Math.pow(this.circuit.numBlocks(),4.0/3.0));
-		
-		System.out.println("Initial temp = " + this.T + ", initial Rlim = " + this.getRlim());
-		
-		while (this.T > 0.005 * this.calculator.calculateAverageNetCost()) {
-			int alphaAbs=0;
-			for (int i =0; i<movesPerTemperature;i++) {
-				Swap swap = findSwap(this.getRlim());
-      			
-				if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
-												(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
-				{
-					double deltaCost = this.calculator.calculateDeltaCost(swap);
-					
-					if(deltaCost<=0)
-					{
-						swap.apply();
-						alphaAbs+=1;
-						this.calculator.pushThrough();
-					}
-					else
-					{
-						if(this.rand.nextDouble()<Math.exp(-deltaCost / this.T))
-						{
-							swap.apply();
-							alphaAbs+=1;
-							this.calculator.pushThrough();
-						}
-						else
-						{
-							this.calculator.revert();
-						}
-					}
-				}
-			}
-
-			double alpha = ((double) alphaAbs) / movesPerTemperature;
-			
-			updateRlim(alpha, maxValue);
-			updateTemperature(alpha);
-		}
-	}
-	
 	
 	private void calculateInitialTemperature() {
-		calculateInitialTemperature(1);
+		calculateInitialTemperature(20);
 	}
 	
 	private void calculateInitialTemperature(double T_multiplier) {
-		double	somDeltaKost=0;
-		double 	kwadratischeSomDeltaKost=0;
+		double somDeltaKost = 0;
+		double kwadratischeSomDeltaKost = 0;
+		
 		for (int i = 0; i < this.circuit.numBlocks(); i++) {
 			Swap swap = findSwap(this.getRlim());
 			double deltaCost = this.calculator.calculateDeltaCost(swap);
@@ -186,7 +132,7 @@ public class WLD_SAPlacer extends SAPlacer
 			//Swap
 			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) 
 					&& (swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed))
-					&& deltaCost <= 0) {
+					&& (deltaCost <= 0)) {
 				
 				swap.apply();
 				this.calculator.pushThrough();
@@ -203,50 +149,6 @@ public class WLD_SAPlacer extends SAPlacer
 		double nbElements = this.circuit.numBlocks();
 		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
 		
-		this.T = 20 * stdafwijkingDeltaKost * T_multiplier;
-	}
-	
-
-	
-	private void calculateInitialTemperatureLow() {
-		double sumNegDeltaCost = 0.0;
-		int numNegDeltaCost = 0;
-		double quadraticSumNegDeltaCost = 0.0;
-		
-		for (int i = 0; i < this.circuit.numBlocks(); i++) {
-			int Rlim = this.getRlim();
-			Swap swap = findSwap(Rlim);
-			
-			double deltaCost = this.calculator.calculateDeltaCost(swap);
-			
-			//Swap
-			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
-											(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed))) {
-				if(deltaCost <= 0) {
-					swap.apply();
-					this.calculator.pushThrough();
-					sumNegDeltaCost -= deltaCost;
-					quadraticSumNegDeltaCost += Math.pow(deltaCost, 2);
-					numNegDeltaCost++;
-				
-				} else {
-					this.calculator.revert();
-				}
-				
-			} else {
-				this.calculator.revert();
-			}
-		}
-		
-		double somNegKwadraten = quadraticSumNegDeltaCost;
-		double negKwadraatSom = Math.pow(sumNegDeltaCost, 2);
-		double stdafwijkingNegDeltaKost = Math.sqrt(somNegKwadraten/numNegDeltaCost - negKwadraatSom/(numNegDeltaCost*numNegDeltaCost));
-		
-		this.T = 2*stdafwijkingNegDeltaKost;
-		
-		if(this.T <= 0 || this.T >= 10000) {
-			System.out.println("Trouble");
-			this.T = 1.0;
-		}
+		this.T = T_multiplier * stdafwijkingDeltaKost;
 	}
 }

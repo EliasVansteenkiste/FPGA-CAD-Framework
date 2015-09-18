@@ -1,6 +1,7 @@
-package placers.parser;
+package circuit.parser.placement;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -15,33 +16,29 @@ import architecture.Site;
 import circuit.Block;
 import circuit.PackedCircuit;
 
-import placers.Placer;
-
-public class PlaceParser extends Placer {
+public class PlaceParser {
 	
 	private static Pattern pattern = Pattern.compile("(?<block>\\S+)\\s+(?<x>\\d+)\\s+(?<y>\\d+)\\s+(?<z>\\d+)");
 	
 	private Map<String, int[]> coordinates;
+	private Architecture architecture;
+	private PackedCircuit circuit;
+	private File file;
 	
-	public PlaceParser(Architecture architecture, PackedCircuit circuit, Map<String, String> options) {
-		super(architecture, circuit, options);
+	public PlaceParser(Architecture architecture, PackedCircuit circuit, File file) {
+		this.architecture = architecture;
+		this.circuit = circuit;
+		this.file = file;
 	}
 	
 	
-	public void place() {
+	public void parse() {
 		
-		// Open the place file that should have been provided in the options
-		if(!this.hasOption("place_file")) {
-			System.err.println("PlaceParser requires a place_file value");
-			System.exit(1);
-		}
-		
-		String placeFile = this.getOption("place_file");
 		BufferedReader reader = null;
 		try {
-			reader = new BufferedReader(new FileReader(placeFile));
+			reader = new BufferedReader(new FileReader(this.file));
 		} catch (FileNotFoundException e) {
-			System.err.println("Place file not found: " + placeFile);
+			System.err.println("Place file not found: " + this.file);
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -56,7 +53,7 @@ public class PlaceParser extends Placer {
 				this.processLine(line);
 			}
 		} catch (IOException e) {
-			System.err.println("Failed to read from place file: " + placeFile);
+			System.err.println("Failed to read from place file: " + this.file);
 			e.printStackTrace();
 			System.exit(1);
 		}

@@ -492,9 +492,11 @@ public class NetReader
 					}
 					prePackedCircuit.getNets().get(connectedNetName).addSink(output.input);
 					
-					output.name = connectedNetName;
-					packedCircuit.outputs.remove(blockName);
-					packedCircuit.outputs.put(output.name, output);
+					// Commented out by Seppe: why is this necessary? Block names are not unique anymore
+					// because of this
+					//output.name = connectedNetName;
+					//packedCircuit.outputs.remove(blockName);
+					//packedCircuit.outputs.put(output.name, output);
 				}
 			}
 			else

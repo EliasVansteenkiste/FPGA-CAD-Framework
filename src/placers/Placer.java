@@ -8,12 +8,12 @@ import java.util.Map;
 import placers.MDP.MDPPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
 import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
-import placers.parser.PlaceParser;
 
 import architecture.Architecture;
 import architecture.FourLutSanitized;
 import circuit.PackedCircuit;
 import circuit.PrePackedCircuit;
+import circuit.parser.placement.PlaceParser;
 
 public abstract class Placer {
 	
@@ -54,9 +54,6 @@ public abstract class Placer {
 	
 	public static Placer newPlacer(String type, Architecture architecture, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit, HashMap<String, String> options) {
 		switch(type) {
-		
-		case "parser":
-			return new PlaceParser(architecture, packedCircuit, options);
 		
 		case "SA":
 		case "sa":

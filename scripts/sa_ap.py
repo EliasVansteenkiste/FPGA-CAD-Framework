@@ -5,31 +5,30 @@ import sys, os
 import re
 import csv
 
-#circuits = 'LU32PEEng LU8PEEng bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
-circuits = 'blob_merge boundtop ch_intrinsics diffeq1 diffeq2 mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
+circuits = 'LU32PEEng LU8PEEng bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
+#circuits = 'stereovision1 stereovision2 stereovision3'
 
 
 circuit_list = circuits.split(' ')
 _file = open('sa_ap.csv', 'w')
 csv_file = csv.writer(_file)
-csv_file.writerow(['benchmark', 'cost after SA', 'cost after AP'])
+csv_file.writerow(['benchmark', 'place time', 'cost', 'delay'])
 
 os.chdir('..')
 
+options = {
+    '--input': 'benchmarks/heterogeneous',
+    '--architecture': 'heterogeneous',
+    '--placer': 'AP',
+    '--start': 'net',
+}
+
+placer_options = {
+
+}
 
 for circuit in circuit_list:
-    options = {
-        '--input': '../../benchmarks/k6_N1_90nm_heterogeneous',
-        '--circuit': circuit,
-        '--architecture': '4lut',
-        '--placer': 'SA;AP',
-        '--pack': '',
-        '--random': '',
-    }
-
-    placer_options = {
-        'starting_stage': '0;1',
-    }
+    options['--circuit'] = circuit
 
     # Call the java placer
     print('Placing {0}'.format(circuit))
@@ -41,11 +40,9 @@ for circuit in circuit_list:
         print(err)
         sys.exit(1)
 
-    regex = re.compile(r'SA\s+total cost:\s+(?P<SA>[0-9.]+).*AP\s+total cost:\s+(?P<AP>[0-9.]+)', re.DOTALL)
-    match = regex.search(out)
+    (ap_time, ap_cost, ap_delay) = call.get_stats(out, "ap")
 
-    SA = match.group('SA')
-    AP = match.group('AP')
+    row = [circuit, ap_time, ap_cost, ap_delay]
 
-    csv_file.writerow([circuit, SA, AP])
-    print([circuit, SA, AP])
+    csv_file.writerow(row)
+    #print(row)

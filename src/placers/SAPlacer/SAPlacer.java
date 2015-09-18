@@ -27,7 +27,7 @@ public abstract class SAPlacer extends Placer
 	}
 	
 	private double Rlimd;
-	private int Rlim;
+	private int Rlim, maxRlim;
 	protected double T;
 	protected boolean greedy;
 	
@@ -40,8 +40,6 @@ public abstract class SAPlacer extends Placer
 		this.calculator = new EfficientBoundingBoxNetCC(circuit);
 		circuit.fillVector();
 	}
-	
-	public abstract void lowTempAnneal(double innerNum);
 	
 	protected Swap findSwap(int Rlim) {
 		Swap swap=new Swap();
@@ -132,21 +130,23 @@ public abstract class SAPlacer extends Placer
 		return this.Rlim;
 	}
 	
+	protected void setMaxRlim(int maxRlim) {
+		this.maxRlim = maxRlim;
+	}
 	protected void setRlimd(double Rlimd) {
 		this.Rlimd = Rlimd;
 		this.updateIntRlim();
 	}
 	
 	protected void updateRlim(double alpha) {
-		int maxFPGADimension = Math.max(this.architecture.getHeight(), this.architecture.getWidth());
-		this.updateRlim(alpha, maxFPGADimension);
+		this.updateRlim(alpha, this.maxRlim);
 	}
 	
 	protected void updateRlim(double alpha, int maxValue) {
 		this.Rlimd *= (1 - 0.44 + alpha);
 		
 		if(this.Rlimd > maxValue) {
-			this. Rlimd = maxValue;
+			this.Rlimd = maxValue;
 		}
 		
 		if(this.Rlimd < 1) {

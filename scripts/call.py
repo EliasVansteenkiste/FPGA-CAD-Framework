@@ -2,7 +2,7 @@ import subprocess
 import os
 import re
 
-def placer(options, flags):
+def placer(options, placer_options):
 
     # Basic command
     command = [
@@ -16,8 +16,8 @@ def placer(options, flags):
     for option in options:
         command += [option, options[option]]
 
-    for flag in flags:
-        command.append(flag)
+    for option in placer_options:
+        command.append('='.join((option, placer_options[option])))
 
 
     # Call the placer
@@ -29,11 +29,12 @@ def placer(options, flags):
 
 
 def get_stats(output, prefix):
-    regex = r'{0}\s+place time:\s+(?P<time>[0-9.]+).*{0}\s+total cost:\s+(?P<cost>[0-9.]+)'.format(prefix)
+    regex = r'{0}\s+place time:\s+(?P<time>[0-9.]+).*{0}\s+total cost:\s+(?P<cost>[0-9.]+).*{0}\s+max delay:\s+(?P<delay>[0-9.]+)'.format(prefix)
     pattern = re.compile(regex, re.DOTALL)
     match = pattern.search(output)
 
     time = match.group('time')
     cost = match.group('cost')
+    delay = match.group('delay')
 
-    return (time, cost)
+    return (time, cost, delay)
