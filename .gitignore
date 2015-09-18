@@ -3,4 +3,5 @@ bin
 .classpath
 dependencies
 
+benchmarks
 **/__pycache__
