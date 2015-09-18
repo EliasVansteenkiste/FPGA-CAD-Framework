@@ -129,6 +129,9 @@ public abstract class SAPlacer extends Placer
 	protected int getRlim() {
 		return this.Rlim;
 	}
+	protected double getRlimd() {
+		return this.Rlimd;
+	}
 	
 	protected void setMaxRlim(int maxRlim) {
 		this.maxRlim = maxRlim;

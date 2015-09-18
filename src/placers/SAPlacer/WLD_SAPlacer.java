@@ -117,10 +117,6 @@ public class WLD_SAPlacer extends SAPlacer
 	}
 	
 	
-	private void calculateInitialTemperature() {
-		calculateInitialTemperature(20);
-	}
-	
 	private void calculateInitialTemperature(double T_multiplier) {
 		double somDeltaKost = 0;
 		double kwadratischeSomDeltaKost = 0;
