@@ -4,6 +4,17 @@ import re
 
 def placer(options, placer_options):
 
+    command = build_command(options, placer_options)
+
+    # Call the placer
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Return output
+    out, err = p.communicate()
+    return out.decode('utf-8'), err.decode('utf-8')
+
+
+def build_command(options, placer_options):
     # Basic command
     command = [
         'java',
@@ -19,13 +30,7 @@ def placer(options, placer_options):
     for option in placer_options:
         command.append('='.join((option, placer_options[option])))
 
-
-    # Call the placer
-    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    # Return output
-    out, err = p.communicate()
-    return out.decode('utf-8'), err.decode('utf-8')
+    return command
 
 
 def get_stats(output, prefix):

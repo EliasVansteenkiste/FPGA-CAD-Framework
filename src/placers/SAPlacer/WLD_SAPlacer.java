@@ -9,8 +9,6 @@ import circuit.PackedCircuit;
 public class WLD_SAPlacer extends SAPlacer
 {
 	
-	private int movesPerTemperature;
-	
 	static {
 		//Effort level: affects the number of swaps per temperature
 		defaultOptions.put("inner_num", "1.0");
@@ -33,7 +31,7 @@ public class WLD_SAPlacer extends SAPlacer
 		this.calculator.recalculateFromScratch();
 		
 		
-		this.greedy = Boolean.parseBoolean(this.options.get("greedy"));
+		boolean greedy = Boolean.parseBoolean(this.options.get("greedy"));
 		
 		int optionMaxRlim = Integer.parseInt(this.options.get("Rlim"));
 		if(optionMaxRlim == -1) {
@@ -56,7 +54,7 @@ public class WLD_SAPlacer extends SAPlacer
 		System.out.println("Effort level: " + inner_num);
 		System.out.println("Moves per temperature: " + this.movesPerTemperature);
 		
-		if(this.greedy) {
+		if(greedy) {
 			this.doSwaps();
 		
 		} else {

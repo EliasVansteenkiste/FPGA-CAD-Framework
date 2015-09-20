@@ -12,8 +12,7 @@ public class TD_SAPlacer extends SAPlacer
 {
 	
 	private TimingGraph timingGraph;
-	private double previousBBCost;
-	private double previousTDCost;
+	private double criticalityExponent;
 	
 	static {
 		//Effort level: affects the number of swaps per temperature
@@ -46,27 +45,12 @@ public class TD_SAPlacer extends SAPlacer
 	}
 	
 	@Override
-	public void place()
-	{
+	public void place() {
 		
-		double inner_num = Double.parseDouble(this.options.get("inner_num"));
-		double tradeOffFactor = Double.parseDouble(this.options.get("trade_off_factor"));
-		double tdPlaceExpFirst = Double.parseDouble(this.options.get("crit_exp_first"));
-		double tdPlaceExpLast = Double.parseDouble(this.options.get("crit_exp_last"));
-		int nbIterationsBeforeRecalculate = Integer.parseInt(this.options.get("nb_iterations_before_recalculate"));
-		
-		placeLoop(inner_num, tradeOffFactor, tdPlaceExpFirst, tdPlaceExpLast, nbIterationsBeforeRecalculate);
-	}
-	
-	
-	private void placeLoop(double inner_num, double tradeOffFactor, double tdPlaceExpFirst, 
-										double tdPlaceExpLast, int nbIterationsBeforeRecalculate)
-	{
-		//Initialize SA parameters
 		this.calculator.recalculateFromScratch();
 		this.rand = new Random(1);
 		
-		this.greedy = Boolean.parseBoolean(this.options.get("greedy"));
+		boolean greedy = Boolean.parseBoolean(this.options.get("greedy"));
 		
 		int optionMaxRlim = Integer.parseInt(this.options.get("Rlim"));
 		if(optionMaxRlim == -1) {
@@ -81,43 +65,83 @@ public class TD_SAPlacer extends SAPlacer
 		this.setRlimd(optionRlim);
 		int firstRlim = optionRlim;
 		
+		double inner_num = Double.parseDouble(this.options.get("inner_num"));
+		this.movesPerTemperature = (int) (inner_num * Math.pow(this.circuit.numBlocks(), 4.0/3.0));
+		
+		System.out.println("Effort level: " + inner_num);
+		System.out.println("Moves per temperature: " + this.movesPerTemperature);
 		
 		
-		double criticalityExponent = updateCriticalityExponent(this.getRlim(), tdPlaceExpFirst, tdPlaceExpLast);
-		this.timingGraph.setCriticalityExponent(criticalityExponent);
-		this.timingGraph.recalculateAllSlacksCriticalities();
-		this.previousBBCost = this.calculator.calculateTotalCost();
-		this.previousTDCost = this.timingGraph.calculateTotalCost();
-		double T = calculateInitialTemperature(tradeOffFactor, nbIterationsBeforeRecalculate);
-		int movesPerTemperature = (int) (inner_num*Math.pow(this.circuit.numBlocks(),4.0/3.0));
-
-		//Print SA parameters
-		System.out.println("Initial temperature: " + T);
-		System.out.println("Moves per temperature: " + movesPerTemperature);
+		double tradeOffFactor = Double.parseDouble(this.options.get("trade_off_factor"));
+		double tdPlaceExpFirst = Double.parseDouble(this.options.get("crit_exp_first"));
+		double tdPlaceExpLast = Double.parseDouble(this.options.get("crit_exp_last"));
+		int nbIterationsBeforeRecalculate = Integer.parseInt(this.options.get("nb_iterations_before_recalculate"));
 		
-		while(T > 0.005 / this.circuit.getNets().values().size())
-		{
-			this.timingGraph.setCriticalityExponent(criticalityExponent);
-			this.timingGraph.recalculateAllSlacksCriticalities();
-			this.previousBBCost = this.calculator.calculateTotalCost();
-			this.previousTDCost = this.timingGraph.calculateTotalCost();
+		this.updateCriticalityExponent(this.getRlim(), tdPlaceExpFirst, tdPlaceExpLast);
+		
+		
+		
+		if(greedy) {
+			doSwaps(firstRlim, tdPlaceExpFirst, tdPlaceExpLast, nbIterationsBeforeRecalculate, tradeOffFactor);
+		
+		} else {
+		
+			double T_multiplier = Double.parseDouble(this.options.get("T_multiplier"));
+			calculateInitialTemperature(tradeOffFactor, nbIterationsBeforeRecalculate, T_multiplier);
+	
+			//Print SA parameters
+			System.out.println("Initial temperature: " + this.T);
+			System.out.println("Moves per temperature: " + this.movesPerTemperature);
 			
-			int iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
-			int alphaAbs=0;
-			for (int i =0; i<movesPerTemperature;i++) 
+			int tNumber = 0;
+		
+			while(this.T > 0.005 / this.circuit.getNets().values().size()) {
+				int alphaAbs = doSwaps(firstRlim, tdPlaceExpFirst, tdPlaceExpLast, nbIterationsBeforeRecalculate, tradeOffFactor);
+				
+				double alpha = (double) alphaAbs / this.movesPerTemperature;
+				
+				this.updateRlim(alpha);
+				this.updateTemperature(alpha);
+				
+				this.updateCriticalityExponent(firstRlim, tdPlaceExpFirst, tdPlaceExpLast);
+				System.out.println("Temperature " + tNumber +" = " + this.T + ", cost = " + cost + ", Rlim = " + this.getRlim() + ", crit exp = " + this.criticalityExponent);
+				tNumber++;
+			}
+		}
+	}
+	
+	private int doSwaps(int firstRlim, double tdPlaceExpFirst, double tdPlaceExpLast, int nbIterationsBeforeRecalculate, double tradeOffFactor) {
+		
+		this.timingGraph.setCriticalityExponent(this.criticalityExponent);
+		this.timingGraph.recalculateAllSlacksCriticalities();
+		double previousBBCost = this.calculator.calculateTotalCost();
+		double previousTDCost = this.timingGraph.calculateTotalCost();
+		
+		int iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
+		int alphaAbs=0;
+		for (int i =0; i<this.movesPerTemperature;i++) 
+		{
+			Swap swap = findSwap(this.getRlim());
+			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
+											(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
 			{
-				Swap swap = findSwap(this.getRlim());
-				if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed)) && 
-												(swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed)))
+				double deltaBBCost = this.calculator.calculateDeltaCost(swap);
+				double deltaTimingCost = this.timingGraph.calculateDeltaCost(swap);
+				
+				double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / previousBBCost
+									+ (tradeOffFactor * deltaTimingCost) / previousTDCost;
+				//double deltaCost = deltaBBCost;
+				
+				if(deltaCost<=0)
 				{
-					double deltaBBCost = this.calculator.calculateDeltaCost(swap);
-					double deltaTimingCost = this.timingGraph.calculateDeltaCost(swap);
-					
-					double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / this.previousBBCost
-										+ (tradeOffFactor * deltaTimingCost) / this.previousTDCost;
-					//double deltaCost = deltaBBCost;
-					
-					if(deltaCost<=0)
+					swap.apply();
+					alphaAbs+=1;
+					this.calculator.pushThrough();
+					this.timingGraph.pushThrough();
+				}
+				else
+				{
+					if(this.rand.nextDouble() < Math.exp(-deltaCost / this.T))
 					{
 						swap.apply();
 						alphaAbs+=1;
@@ -126,38 +150,31 @@ public class TD_SAPlacer extends SAPlacer
 					}
 					else
 					{
-						if(this.rand.nextDouble() < Math.exp(-deltaCost/T))
-						{
-							swap.apply();
-							alphaAbs+=1;
-							this.calculator.pushThrough();
-							this.timingGraph.pushThrough();
-						}
-						else
-						{
-							this.calculator.revert();
-							this.timingGraph.revert();
-						}
+						this.calculator.revert();
+						this.timingGraph.revert();
 					}
 				}
-				iterationsToGoBeforeRecalculate--;
-				if(iterationsToGoBeforeRecalculate <= 0)
-				{
-					this.previousBBCost = this.calculator.calculateTotalCost();
-					this.previousTDCost = this.timingGraph.calculateTotalCost();
-					iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
-				}
 			}
-			double alpha = (double)alphaAbs/movesPerTemperature;
-			this.updateRlim(alpha);
-			this.updateTemperature(alpha);
-			criticalityExponent = updateCriticalityExponent(firstRlim, tdPlaceExpFirst, tdPlaceExpLast);
+			iterationsToGoBeforeRecalculate--;
+			if(iterationsToGoBeforeRecalculate <= 0)
+			{
+				previousBBCost = this.calculator.calculateTotalCost();
+				previousTDCost = this.timingGraph.calculateTotalCost();
+				iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
+			}
 		}
+		
+		return alphaAbs;
 	}
 	
 	
-	private double calculateInitialTemperature(double tradeOffFactor, int nbIterationsBeforeRecalculate)
-	{
+	private void calculateInitialTemperature(double tradeOffFactor, int nbIterationsBeforeRecalculate, double T_multiplier) {
+		
+		this.timingGraph.setCriticalityExponent(this.criticalityExponent);
+		this.timingGraph.recalculateAllSlacksCriticalities();
+		double previousBBCost = this.calculator.calculateTotalCost();
+		double previousTDCost = this.timingGraph.calculateTotalCost();
+		
 		double	somDeltaKost=0;
 		double 	kwadratischeSomDeltaKost=0;
 		
@@ -169,8 +186,8 @@ public class TD_SAPlacer extends SAPlacer
 			//Swap
 			double deltaBBCost = this.calculator.calculateDeltaCost(swap);
 			double deltaTimingCost = this.timingGraph.calculateDeltaCost(swap);
-			double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / this.previousBBCost
-								+ (tradeOffFactor * deltaTimingCost) / this.previousTDCost;
+			double deltaCost = ((1 - tradeOffFactor) * deltaBBCost) / previousBBCost
+								+ (tradeOffFactor * deltaTimingCost) / previousTDCost;
 			
 			if((swap.pl1.getBlock() == null || (!swap.pl1.getBlock().fixed))
 					&& (swap.pl2.getBlock() == null || (!swap.pl2.getBlock().fixed))
@@ -191,8 +208,8 @@ public class TD_SAPlacer extends SAPlacer
 			iterationsToGoBeforeRecalculate--;
 			if(iterationsToGoBeforeRecalculate <= 0)
 			{
-				this.previousBBCost = this.calculator.calculateTotalCost();
-				this.previousTDCost = this.timingGraph.calculateTotalCost();
+				previousBBCost = this.calculator.calculateTotalCost();
+				previousTDCost = this.timingGraph.calculateTotalCost();
 				iterationsToGoBeforeRecalculate = nbIterationsBeforeRecalculate;
 			}
 		}
@@ -200,16 +217,14 @@ public class TD_SAPlacer extends SAPlacer
 		double kwadraatSom = Math.pow(somDeltaKost,2);
 		double nbElements = this.circuit.numBlocks();
 		double stdafwijkingDeltaKost=Math.sqrt(Math.abs(somKwadraten/nbElements-kwadraatSom/(nbElements*nbElements)));
-		double T=20*stdafwijkingDeltaKost;
 		
-		return T;
+		this.T = T_multiplier * stdafwijkingDeltaKost;
 	}
 	
-	private double updateCriticalityExponent(double firstRlim, double tdPlaceExpFirst, double tdPlaceExpLast)
-	{
+	private void updateCriticalityExponent(double firstRlim, double tdPlaceExpFirst, double tdPlaceExpLast) {
 		double finalRlim = 1.0;
 		double inverseDeltaRlim = 1 / (firstRlim - finalRlim);
-		return (1 - (this.getRlimd() - finalRlim) * inverseDeltaRlim) * (tdPlaceExpLast - tdPlaceExpFirst) + tdPlaceExpFirst;
+		this.criticalityExponent = (1 - (this.getRlimd() - finalRlim) * inverseDeltaRlim) * (tdPlaceExpLast - tdPlaceExpFirst) + tdPlaceExpFirst;
 	}
 	
 }

@@ -29,7 +29,7 @@ public abstract class SAPlacer extends Placer
 	private double Rlimd;
 	private int Rlim, maxRlim;
 	protected double T;
-	protected boolean greedy;
+	protected int movesPerTemperature;
 	
 	protected EfficientCostCalculator calculator;
 	protected Random rand;
