@@ -61,11 +61,14 @@ public class CLI {
 		} else {
 			NetReader netReader = new NetReader();
 			
+			CLI.startTimer();
 			try {
 				netReader.readNetlist(options.netFile.toString(), nbLutInputs);
 			} catch(IOException e) {
 				error("Failed to read net file: " + options.netFile.toString());
 			}
+			CLI.stopTimer();
+			System.out.println(CLI.getTimer());
 			
 			prePackedCircuit = netReader.getPrePackedCircuit();
 			packedCircuit = netReader.getPackedCircuit();

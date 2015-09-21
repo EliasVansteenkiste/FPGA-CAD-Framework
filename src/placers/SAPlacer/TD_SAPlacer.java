@@ -58,9 +58,9 @@ public class TD_SAPlacer extends SAPlacer {
 	
 	private void updatePreviousCosts() {
 		this.getCost();
+		
 		this.previousBBCost = this.cachedBBCost;
 		this.previousTDCost = this.cachedTDCost;
-		System.out.println(this.getStatistics());
 	}
 	
 	
