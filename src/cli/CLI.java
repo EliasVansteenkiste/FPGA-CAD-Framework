@@ -96,6 +96,8 @@ public class CLI {
 		if(options.startingStage.equals("place")) {
 			PlaceParser placeParser = new PlaceParser(architecture, packedCircuit, options.placeFile);
 			placeParser.parse();
+			
+			CLI.printStatistics("parser", prePackedCircuit, packedCircuit, false);
 		}
 		
 		
@@ -158,6 +160,8 @@ public class CLI {
 		timingGraph.buildTimingGraph();
 		double maxDelay = timingGraph.calculateMaximalDelay();
 		System.out.format("%s %15s: %f\n", prefix, "max delay", maxDelay);
+		
+		System.out.format("%s %15s: %f\n", prefix, "T cost", timingGraph.calculateTotalCost());
 		
 		System.out.println();
 	}

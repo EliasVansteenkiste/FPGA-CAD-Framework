@@ -9,10 +9,19 @@ circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8P
 
 
 input_folder = 'benchmarks/heterogeneous'
-output_folder = input_folder
+output_folder = 'benchmarks/heterogeneous_sa'
 architecture = 'heterogeneous'
-placer = 'ap'
-start = 'net'
+placer = 'td_sa'
+start = 'place'
+random = False
+
+placer_options = {
+    'greedy': '1',
+    'effort_level': '4'
+}
+
+
+
 
 
 options = {
@@ -23,8 +32,8 @@ options = {
     '--start': start,
 }
 
-placer_options = {
-}
+if random:
+    options['random'] = ''
 
 
 circuit_list = circuits.split(' ')
@@ -57,4 +66,4 @@ for circuit in circuit_list:
     csv_file.writerow(row)
     _file.flush()
 
-csv_file.close()
+_file.close()

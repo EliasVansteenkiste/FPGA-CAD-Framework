@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import placers.MDP.MDPPlacer;
+import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
 import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
 
@@ -55,15 +56,15 @@ public abstract class Placer {
 	public static Placer newPlacer(String type, Architecture architecture, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit, HashMap<String, String> options) {
 		switch(type) {
 		
-		case "SA":
-		case "sa":
+		case "wld_sa":
 			return new WLD_SAPlacer(architecture, packedCircuit, options);
+			
+		case "td_sa":
+			return new TD_SAPlacer(architecture, packedCircuit, prePackedCircuit, options);
 		
-		case "AP":
 		case "ap":
 			return new HeteroAnalyticalPlacerTwo(architecture, packedCircuit, options);
 			
-		case "MDP":
 		case "mdp":
 			return new MDPPlacer((FourLutSanitized) architecture, packedCircuit, options);
 			
