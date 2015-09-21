@@ -2,34 +2,21 @@ package placers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import placers.MDP.MDPPlacer;
-import placers.SAPlacer.WLD_SAPlacer;
-import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
-
-import architecture.Architecture;
-import architecture.FourLutSanitized;
-import circuit.PackedCircuit;
-import circuit.PrePackedCircuit;
 import flexible_architecture.Circuit;
-import flexible_architecture.architecture.FlexibleArchitecture;
 
 public abstract class Placer {
 	
-	protected static HashMap<String, String> defaultOptions;
-	protected static ArrayList<String> requiredOptions;
+	protected static Map<String, String> defaultOptions = new HashMap<String, String>();
+	protected static List<String> requiredOptions = new ArrayList<String>();
 	
-	static {
-		defaultOptions = new HashMap<String, String>();
-		requiredOptions = new ArrayList<String>();
-	}
-	
-	protected FlexibleArchitecture architecture;
 	protected Circuit circuit;
-	protected HashMap<String, String> options;
+	protected Map<String, String> options;
 	
-	protected Placer(FlexibleArchitecture architecture, Circuit circuit, HashMap<String, String> options) {
-		this.architecture = architecture;
+	
+	protected Placer(Circuit circuit, Map<String, String> options) {
 		this.circuit = circuit;
 		this.options = options;
 		
@@ -48,29 +35,10 @@ public abstract class Placer {
 	public abstract void place();
 	
 	
-	
-	public static Placer newPlacer(String type, Architecture architecture, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit, HashMap<String, String> options) {
-		switch(type) {
-		
-		case "SA":
-		case "sa":
-			return new WLD_SAPlacer(architecture, packedCircuit, options);
-		
-		case "AP":
-		case "ap":
-			return new HeteroAnalyticalPlacerTwo(architecture, packedCircuit, options);
-			
-		case "MDP":
-		case "mdp":
-			return new MDPPlacer((FourLutSanitized) architecture, packedCircuit, options);
-			
-		default:
-			System.err.println("Unknown placer type: " + type);
-			System.err.println(Thread.currentThread().getStackTrace());
-			System.err.println("ok");
-			System.exit(1);
-		}
-		
-		return null;
-	}	
+	protected boolean hasOption(String optionName) {
+		return this.options.containsKey(optionName);
+	}
+	protected String getOption(String optionName) {
+		return this.options.get(optionName);
+	}
 }

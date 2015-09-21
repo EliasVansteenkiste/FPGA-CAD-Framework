@@ -46,25 +46,23 @@ public class PackedCircuit extends Circuit{
 		return clbs;
 	}
 
-	public void dumpPlacement(String file) throws FileNotFoundException
+	public void dumpPlacement(Architecture architecture, String file) throws FileNotFoundException
 	{
 		PrintStream stream = new PrintStream(new FileOutputStream(file));
 		
-		stream.println("Netlist file: na.net	Architecture file: na.arch");
-		stream.println("Array size: 0 x 0 logic blocks");
+		String name = this.getName();
+		int width = architecture.getWidth(), height = architecture.getHeight();
+		
+		stream.printf("Netlist file: %s.net", name);
+		stream.printf("Array size: %d x %d logic blocks\n", width, height);
 		stream.println();
 		stream.println("#block name	x	y	subblk	block number");
 		stream.println("#----------	--	--	------	------------");
-				
-		for(Block blok:inputs.values())
-		{
-			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
-		}
-		for(Block blok:clbs.values()) {
-			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
-		}
-		for(Block blok:outputs.values()) {
-			stream.println(blok.name + "	" + blok.getSite().getX() + "	" + blok.getSite().getY());
+		
+		this.fillVector();
+		for(Block block : this.vBlocks) {
+			Site site = block.getSite();
+			stream.println(block.name + "	" + site.getX() + "	" + site.getY() + "	" + site.getZ());
 		}
 		stream.close();
 	}

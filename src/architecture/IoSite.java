@@ -16,7 +16,7 @@ public class IoSite extends Site {
 	@Override
 	public Block setBlock(Block block)
 	{
-		if(block.type == BlockType.INPUT || block.type == BlockType.OUTPUT) {
+		if(block == null || block.type == BlockType.INPUT || block.type == BlockType.OUTPUT) {
 			return super.setBlock(block);
 		} else {
 			try {

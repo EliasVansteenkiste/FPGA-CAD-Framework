@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 
 import flexible_architecture.architecture.BlockType;
@@ -21,9 +20,10 @@ import flexible_architecture.site.Site;
 
 public class Circuit {
 	
+	private String name;
 	private int width, height;
 	
-	private NetParser netparser;
+	
 	private FlexibleArchitecture architecture;
 	
 	private Map<BlockType, List<AbstractBlock>> blocks;
@@ -36,13 +36,13 @@ public class Circuit {
 	private AbstractSite[][] sites;
 	
 	
-	public Circuit(FlexibleArchitecture architecture, String filename) {
-		this.netparser = new NetParser(filename);
+	public Circuit(String name, FlexibleArchitecture architecture) {
+		this.name = name;
 		this.architecture = architecture;
 	}
 	
-	public void parse() {
-		this.blocks = this.netparser.parse();
+	public void loadBlocks(Map<BlockType, List<AbstractBlock>> blocks) {
+		this.blocks = blocks;
 		
 		this.addGlobalBlocks();
 		this.calculateSizeAndColumns();
@@ -90,7 +90,7 @@ public class Circuit {
 				int repeat = hardBlockType.getRepeat();
 				
 				if((size - 1 - start) % repeat == 0) {
-					columns.add(hardBlockType);
+					this.columns.add(hardBlockType);
 					numHardBlockColumns[i]++;
 					break;
 				}
@@ -134,11 +134,10 @@ public class Circuit {
 		this.width = size;
 		this.height = size;
 		
-		for(int i = 0; i < columns.size(); i++) {
-			this.columnsPerBlockType.get(columns.get(i)).add(i);
+		for(int i = 0; i < this.columns.size(); i++) {
+			this.columnsPerBlockType.get(this.columns.get(i)).add(i);
 		}
 	}
-	
 	
 	private void createSites() {
 		this.sites = new AbstractSite[this.width][this.height];
@@ -165,7 +164,9 @@ public class Circuit {
 	}
 	
 	
-	
+	public String getName() {
+		return this.name;
+	}
 	public int getWidth() {
 		return this.width;
 	}
@@ -173,17 +174,66 @@ public class Circuit {
 		return this.height;
 	}
 	
+	
+	
 	public AbstractSite getSite(int x, int y) {
 		return this.sites[x][y];
+	}
+	
+	public void putBlock(GlobalBlock block, int x, int y) {
+		this.putBlock(block, this.getSite(x, y));
+	}
+	
+	public void putBlock(GlobalBlock block, AbstractSite site) {
+		block.setSite(site);
+		site.addBlock(block);
 	}
 	
 	public int getNumGlobalBlocks() {
 		return this.globalBlockList.size();
 	}
 	
+	public List<BlockType> getGlobalBlockTypes() {
+		return this.globalBlockTypes;
+	}
+	
 	public List<AbstractBlock> getBlocks(BlockType blockType) {
 		return this.blocks.get(blockType);
 	}
+	
+	
+	public List<AbstractSite> getSites(BlockType blockType) {
+		BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
+		List<AbstractSite> sites;
+		
+		if(blockType.equals(ioType)) {
+			int size = this.width;
+			int ioCapacity = BlockType.getIoCapacity();
+			sites = new ArrayList<AbstractSite>((size - 1) * 4);
+			
+			for(int i = 0; i < size - 1; i++) {
+				for(int n = 0; n < ioCapacity; n++) {
+					sites.add(this.sites[0][i]);
+					sites.add(this.sites[size-1][size-1-i]);
+					sites.add(this.sites[i][0]);
+					sites.add(this.sites[size-1-i][size-1]);
+				}
+			}
+			
+		} else {
+			List<Integer> columns = this.columnsPerBlockType.get(blockType);
+			sites = new ArrayList<AbstractSite>(columns.size() * this.height - 2);
+			
+			for(Integer column : columns) {
+				for(int row = 1; row < this.height - 1; row++) {
+					sites.add(this.sites[column][row]);
+				}
+			}
+		}
+		
+		return sites;
+	}
+	
 	
 	public GlobalBlock getRandomBlock(Random random) {
 		int index = random.nextInt(this.globalBlockList.size());
@@ -227,5 +277,10 @@ public class Circuit {
 		}
 		
 		return globalPins;
+	}
+	
+	
+	public String toString() {
+		return this.getName();
 	}
 }

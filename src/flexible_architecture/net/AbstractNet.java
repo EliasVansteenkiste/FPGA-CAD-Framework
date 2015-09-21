@@ -1,8 +1,5 @@
 package flexible_architecture.net;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import flexible_architecture.block.AbstractBlock;
 
 public abstract class AbstractNet {

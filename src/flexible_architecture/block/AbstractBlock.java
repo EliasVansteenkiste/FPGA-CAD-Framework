@@ -15,15 +15,17 @@ public abstract class AbstractBlock {
 	
 	private String name;
 	private BlockType type;
+	private int index;
 	
 	protected Map<String, LocalBlock[]> children;
 	
 	private List<Map<String, AbstractPin[]>> pins;
 	
 	
-	public AbstractBlock(String name, BlockType type) {
+	public AbstractBlock(String name, BlockType type, int index) {
 		this.name = name;
 		this.type = type;
+		this.index = index;
 		
 		
 		Map<String, Integer> numChildren = type.getChildren();
@@ -75,6 +77,9 @@ public abstract class AbstractBlock {
 	}
 	public BlockType getType() {
 		return this.type;
+	}
+	public int getIndex() {
+		return this.index;
 	}
 	
 	public boolean isFixed() {

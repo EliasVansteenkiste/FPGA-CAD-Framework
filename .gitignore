@@ -4,6 +4,10 @@ bin
 dependencies
 benchmarks
 
+<<<<<<< HEAD
 *.csv
 *.ods
+=======
+benchmarks
+>>>>>>> master
 **/__pycache__

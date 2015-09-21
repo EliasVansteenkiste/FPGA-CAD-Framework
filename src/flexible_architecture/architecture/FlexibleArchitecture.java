@@ -3,12 +3,6 @@ package flexible_architecture.architecture;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-import flexible_architecture.architecture.BlockType.BlockCategory;
-import flexible_architecture.block.AbstractBlock;
-import flexible_architecture.site.AbstractSite;
-import flexible_architecture.site.IOSite;
-import flexible_architecture.site.Site;
-
 import util.Logger;
 
 import java.io.BufferedReader;
@@ -19,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 public class FlexibleArchitecture {

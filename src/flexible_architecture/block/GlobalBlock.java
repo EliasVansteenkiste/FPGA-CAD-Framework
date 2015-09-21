@@ -1,21 +1,16 @@
 package flexible_architecture.block;
 
-import java.util.Map;
-
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.PortType;
-import flexible_architecture.cost_calculator.CostCalculator;
-import flexible_architecture.pin.AbstractPin;
 import flexible_architecture.pin.GlobalPin;
 import flexible_architecture.site.AbstractSite;
-import flexible_architecture.site.Site;
 
 public class GlobalBlock extends AbstractBlock {
 	
 	private AbstractSite site;
 	
-	public GlobalBlock(String name, BlockType type) {
-		super(name, type);
+	public GlobalBlock(String name, BlockType type, int index) {
+		super(name, type, index);
 	}
 	
 	public AbstractSite getSite() {

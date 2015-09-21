@@ -1,13 +1,7 @@
 package flexible_architecture.pin;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
 import flexible_architecture.architecture.PortType;
 import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.cost_calculator.CostCalculator;
-import flexible_architecture.site.Site;
 
 public class GlobalPin extends AbstractPin {
 	

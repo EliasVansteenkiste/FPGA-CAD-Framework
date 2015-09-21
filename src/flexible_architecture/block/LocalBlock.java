@@ -10,8 +10,8 @@ public class LocalBlock extends AbstractBlock {
 	
 	private AbstractBlock parent;
 	
-	public LocalBlock(String name, BlockType type, AbstractBlock parent) {
-		super(name, type);
+	public LocalBlock(String name, BlockType type, int index, AbstractBlock parent) {
+		super(name, type, index);
 		
 		this.parent = parent;
 	}

@@ -470,10 +470,13 @@ public class NetReader
 			{
 				String connectedNetName = topLevelInputs.get(0);
 				String blockName = name;
-				if(blockName.substring(0,4).equals("out:"))
+				
+				// Commented out by Seppe: not quite sure why we would do this,
+				// and block names are not unique because of this
+				/*if(blockName.substring(0,4).equals("out:"))
 				{
 					blockName = blockName.substring(4);
-				}
+				}*/
 				if(!blockName.equals(connectedNetName))
 				{
 					packedCircuit.nets.remove(blockName);
@@ -492,9 +495,11 @@ public class NetReader
 					}
 					prePackedCircuit.getNets().get(connectedNetName).addSink(output.input);
 					
-					output.name = connectedNetName;
-					packedCircuit.outputs.remove(blockName);
-					packedCircuit.outputs.put(output.name, output);
+					// Commented out by Seppe: why is this necessary? Block names are not unique anymore
+					// because of this
+					//output.name = connectedNetName;
+					//packedCircuit.outputs.remove(blockName);
+					//packedCircuit.outputs.put(output.name, output);
 				}
 			}
 			else
@@ -1033,10 +1038,12 @@ public class NetReader
 					if(!lineParts[i].equals("<outputs>"))
 					{
 						String outputName = lineParts[i];
-						if(outputName.substring(0,4).equals("out:"))
+						// Commented out by Seppe: not quite sure why we would do this,
+						// and block names are not unique because of this
+						/*if(outputName.substring(0,4).equals("out:"))
 						{
 							outputName = outputName.substring(4);
-						}
+						}*/
 						//System.out.println(outputName + " is an FPGA output");
 						Output output = new Output(outputName);
 						packedCircuit.addOutput(output);

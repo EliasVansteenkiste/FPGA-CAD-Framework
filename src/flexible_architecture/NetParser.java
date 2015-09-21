@@ -1,6 +1,7 @@
 package flexible_architecture;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -21,11 +22,11 @@ import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.LocalBlock;
 import flexible_architecture.block.TupleBlockMap;
 import flexible_architecture.pin.AbstractPin;
-import flexible_architecture.pin.GlobalPin;
 
 public class NetParser {
 	
-	private String filename;
+	private Circuit circuit;
+	private File file;
 	private BufferedReader reader;
 	
 	private Map<BlockType, List<AbstractBlock>> blocks;
@@ -45,18 +46,19 @@ public class NetParser {
 	private static Pattern internalNetPattern = Pattern.compile("(?<block>\\w+)(?:\\[(?<blockIndex>\\d+)\\])?\\.(?<port>\\w+)\\[(?<portIndex>\\d+)\\]->.*");
 	
 	
-	public NetParser(String filename) {
-		this.filename = filename;
+	public NetParser(Circuit circuit, File file) {
+		this.circuit = circuit;
+		this.file = file;
 		
 		try {
-			this.reader = new BufferedReader(new FileReader(filename));
+			this.reader = new BufferedReader(new FileReader(file));
 		} catch (FileNotFoundException exception) {
-			Logger.raise("Could not find the net file: " + filename, exception);
+			Logger.raise("Could not find the net file: " + file, exception);
 		}
 	}
 	
 	
-	public Map<BlockType, List<AbstractBlock>> parse() {
+	public void parse() {
 		
 		// A list of all the blocks in the circuit
 		this.blocks = new HashMap<BlockType, List<AbstractBlock>>();
@@ -134,10 +136,10 @@ public class NetParser {
 				multiLine = "";
 			}
 		} catch (IOException exception) {
-			Logger.raise("Failed to read from the net file: " + this.filename, exception);
+			Logger.raise("Failed to read from the net file: " + this.file, exception);
 		}
 		
-		return this.blocks;
+	    this.circuit.loadBlocks(this.blocks);
 	}
 	
 	
@@ -227,11 +229,11 @@ public class NetParser {
 		
 		AbstractBlock newBlock;
 		if(this.blockStack.size() == 0) {
-			newBlock = new GlobalBlock(name, blockType);
+			newBlock = new GlobalBlock(name, blockType, index);
 		
 		} else {
 			AbstractBlock parent = this.blockStack.peek();
-			newBlock = new LocalBlock(name, blockType, parent);
+			newBlock = new LocalBlock(name, blockType, index, parent);
 			parent.setChild((LocalBlock) newBlock, index);
 		}
 		

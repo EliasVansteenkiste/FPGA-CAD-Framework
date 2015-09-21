@@ -1,7 +1,6 @@
 package flexible_architecture.pin;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import flexible_architecture.architecture.PortType;
@@ -29,9 +28,20 @@ public abstract class AbstractPin {
 		this.sinks = new ArrayList<AbstractPin>(1);
 	}
 	
+	
 	public AbstractBlock getOwner() {
 		return this.owner;
 	}
+	public PortType getPortType() {
+		return this.portType;
+	}
+	public String getPortName() {
+		return this.portName;
+	}
+	public int getIndex() {
+		return this.index;
+	}
+	
 	
 	public AbstractPin setSource(AbstractPin source) {
 		AbstractPin oldSource = this.source;

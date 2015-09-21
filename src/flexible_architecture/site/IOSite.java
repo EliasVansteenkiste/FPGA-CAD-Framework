@@ -1,5 +1,6 @@
 package flexible_architecture.site;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
@@ -51,5 +52,10 @@ public class IOSite extends AbstractSite {
 		if(!success) {
 			Logger.raise("Trying to remove a block that is not present in site");
 		}
+	}
+	
+	
+	public Collection<GlobalBlock> getBlocks() {
+		return this.blocks;
 	}
 }

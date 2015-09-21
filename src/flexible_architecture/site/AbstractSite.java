@@ -1,5 +1,6 @@
 package flexible_architecture.site;
 
+import java.util.Collection;
 import java.util.Random;
 
 import flexible_architecture.architecture.BlockType;
@@ -30,4 +31,6 @@ public abstract class AbstractSite {
 	public abstract GlobalBlock getRandomBlock(Random random);
 	public abstract void addBlock(GlobalBlock block);
 	public abstract void removeBlock(GlobalBlock block);
+	
+	public abstract Collection<GlobalBlock> getBlocks();
 }
