@@ -41,6 +41,24 @@ public abstract class Placer {
 		}
 	}
 	
+	protected boolean parseBooleanOption(String option) {
+		try {
+			int greedy_int = Integer.parseInt(this.options.get(option));
+			return (greedy_int > 0);
+		
+		} catch(NumberFormatException e) {
+			return Boolean.parseBoolean(this.options.get(option));
+		}
+	}
+	
+	protected int parseIntegerOptionWithDefault(String option, int defaultValue) {
+		int value = Integer.parseInt(this.options.get(option));
+		if(value == -1) {
+			value = defaultValue;
+		}
+		
+		return value;
+	}
 	
 	public abstract void place();
 	

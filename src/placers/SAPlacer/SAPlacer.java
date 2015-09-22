@@ -1,5 +1,6 @@
 package placers.SAPlacer;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
@@ -16,7 +17,9 @@ public abstract class SAPlacer extends Placer
 	
 	static {
 		defaultOptions.put("effort_level", "1");
+		defaultOptions.put("T_multiplier", "1");
 		
+		defaultOptions.put("detailed", "0");
 		defaultOptions.put("greedy", "0");
 		defaultOptions.put("Rlim", "-1");
 		defaultOptions.put("maxRlim", "-1");
@@ -24,13 +27,16 @@ public abstract class SAPlacer extends Placer
 	
 	private double Rlimd;
 	private int Rlim, maxRlim;
-	private double T, T_multiplier;
+	private double T, TMultiplier;
 	
-	private boolean greedy;
+	private boolean greedy, detailed;
 	private double effortLevel;
 	private int movesPerTemperature;
 	
 	protected boolean circuitChanged = true;
+	private double[] deltaCosts;
+	
+	private final double TMultiplierGlobal = 5; 
 	
 	
 	protected Random rand;
@@ -41,34 +47,29 @@ public abstract class SAPlacer extends Placer
 		circuit.fillVector();
 		
 		// Get greedy option
-		try {
-			int greedy_int = Integer.parseInt(this.options.get("greedy"));
-			this.greedy = (greedy_int > 0);
+		this.greedy = this.parseBooleanOption("greedy");
 		
-		} catch(NumberFormatException e) {
-			this.greedy = Boolean.parseBoolean(this.options.get("greedy"));
-		}
+		// Get detailed option
+		this.detailed = this.parseBooleanOption("detailed");
 		
 		
 		// Get Rlim and maxRlim option
-		int optionMaxRlim = Integer.parseInt(this.options.get("Rlim"));
-		if(optionMaxRlim == -1) {
-			optionMaxRlim = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
-		}
-		this.setMaxRlim(optionMaxRlim);
+		int size = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
 		
-		int optionRlim = Integer.parseInt(this.options.get("Rlim"));
-		if(optionRlim == -1) {
-			optionRlim = Math.max(this.architecture.getWidth(), this.architecture.getHeight());
-		}
+		int optionMaxRlim = this.parseIntegerOptionWithDefault("maxRlim", size);
+		int optionRlim = this.parseIntegerOptionWithDefault("Rlim", size);
+		
+		// Set maxRlim first, because Rlim depends on it
+		this.setMaxRlim(optionMaxRlim);
 		this.setRlimd(optionRlim);
+		
 		
 		// Get inner_num option
 		this.effortLevel = Double.parseDouble(this.options.get("effort_level"));
 		this.movesPerTemperature = (int) (this.effortLevel * Math.pow(this.circuit.numBlocks(), 4.0/3.0));
 		
 		// Get T multiplier option
-		this.T_multiplier = Double.parseDouble(this.options.get("T_multiplier"));
+		this.TMultiplier = Double.parseDouble(this.options.get("T_multiplier"));
 	}
 	
 	
@@ -86,7 +87,13 @@ public abstract class SAPlacer extends Placer
 			this.doSwapIteration();
 		
 		} else {
-			this.calculateInititalTemperature();
+			
+			if(this.detailed) {
+				this.calculateInititalTemperatureDetailed();
+			} else {
+				this.calculateInititalTemperatureGlobal();
+			}
+			
 			System.out.println("Initial temperature: " + this.T);
 			
 			
@@ -112,9 +119,82 @@ public abstract class SAPlacer extends Placer
 	
 	
 	
-	private void calculateInititalTemperature() {
-		double stdDeviation = this.doSwapIteration(this.circuit.numBlocks(), false);
-		this.T = this.T_multiplier * stdDeviation;
+	private void calculateInititalTemperatureGlobal() {
+		int numSamples = this.circuit.numBlocks();
+		double stdDev = this.doSwapIteration(numSamples, false);
+		
+		this.T = this.TMultiplier * this.TMultiplierGlobal * stdDev;
+	}
+	
+	private void calculateInititalTemperatureDetailed() {
+		// Use the method described in "Temperature Measurement and
+		// Equilibrium Dynamics of Simulated Annealing Placements"
+		
+		int numSamples = Math.max(this.circuit.numBlocks() / 5, 500);
+		this.doSwapIteration(numSamples, false);
+		
+		Arrays.sort(this.deltaCosts);
+		
+		int zeroIndex = Arrays.binarySearch(this.deltaCosts, 0);
+		if(zeroIndex < 0) {
+			zeroIndex = -zeroIndex - 1;
+		}
+		
+		double Emin = integral(this.deltaCosts, 0, zeroIndex, 0);
+		double maxEplus = integral(this.deltaCosts, zeroIndex, numSamples, 0);
+		
+		if(maxEplus < Emin) {
+			System.err.println("SA failed to get a temperature estimate");
+			System.exit(1);
+		}
+		
+		double minT = 0;
+		double maxT = Double.MAX_VALUE;
+		
+		// very coarse estimate
+		this.T = this.deltaCosts[this.deltaCosts.length - 1] / 1000;
+		
+		while(minT == 0 || maxT / minT > 1.1) {
+			double Eplus = integral(this.deltaCosts, zeroIndex, numSamples, this.T);
+			
+			if(Emin < Eplus) {
+				if(this.T < maxT) {
+					maxT = this.T;
+				}
+				
+				if(minT == 0) {
+					this.T /= 8;
+				} else {
+					this.T = (maxT + minT) / 2;
+				}
+			
+			} else {
+				if(this.T > minT) {
+					minT = this.T;
+				}
+				
+				if(maxT == Double.MAX_VALUE) {
+					this.T *= 8;
+				} else {
+					this.T = (maxT + minT) / 2;
+				}
+			}
+		}
+		
+		this.T *= this.TMultiplier;
+	}
+	
+	private double integral(double[] values, int start, int stop, double temperature) {
+		double sum = 0;
+		for(int i = start; i < stop; i++) {
+			if(temperature == 0) {
+				sum += values[i];
+			} else {
+				sum += values[i] * Math.exp(-values[i] / temperature);
+			}
+		}
+		
+		return Math.abs(sum / values.length);
 	}
 	
 	private int doSwapIteration() {
@@ -128,8 +208,13 @@ public abstract class SAPlacer extends Placer
 		int numSwaps = 0;
 		int Rlim = this.getRlim();
 		
+		
 		double sumDeltaCost = 0;
 		double quadSumDeltaCost = 0;
+		if(!pushThrough) {
+			this.deltaCosts = new double[moves];
+		}
+		
 		
 		for (int i = 0; i < moves; i++) {
 			Swap swap = this.findSwap(Rlim);
@@ -156,17 +241,17 @@ public abstract class SAPlacer extends Placer
 				
 				} else {
 					this.revert(i);
+					this.deltaCosts[i] = deltaCost;
 					sumDeltaCost += deltaCost;
 					quadSumDeltaCost += deltaCost * deltaCost;
 				}
 			}
 		}
 		
-		
 		if(pushThrough) {
 			return numSwaps;
 		
-		} else {			
+		} else {
 			double sumQuads = quadSumDeltaCost;
 			double quadSum = sumDeltaCost * sumDeltaCost;
 			
@@ -174,7 +259,6 @@ public abstract class SAPlacer extends Placer
 			double quadNumBlocks = numBlocks * numBlocks;
 			
 			return Math.sqrt(Math.abs(sumQuads / numBlocks - quadSum / quadNumBlocks));
-		
 		}
 	}
 	

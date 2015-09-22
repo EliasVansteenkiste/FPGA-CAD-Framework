@@ -11,8 +11,6 @@ public class TD_SAPlacer extends SAPlacer {
 	
 	
 	static {
-		defaultOptions.put("T_multiplier", "2");
-		
 		//Timing trade off factor: 0.0 = wire-length-driven
 		defaultOptions.put("trade_off_factor", "0.5");
 		
@@ -44,6 +42,7 @@ public class TD_SAPlacer extends SAPlacer {
 		double criticalityExponent = Double.parseDouble(this.options.get("criticality_exponent"));
 		this.timingGraph.setCriticalityExponent(criticalityExponent);
 	}
+	
 	
 	
 	protected void initializePlace() {
