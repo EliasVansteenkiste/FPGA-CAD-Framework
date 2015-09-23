@@ -80,6 +80,10 @@ public class FlexibleArchitecture {
 				category = "local";
 			}
 			
+			boolean isClocked = false;
+			if(isLeaf) {
+				isClocked = (boolean) definition.get("clocked");
+			}
 			
 			int height = 1, start = 0, repeat = 0;
 			if(category.equals("hardblock")) {
@@ -128,12 +132,14 @@ public class FlexibleArchitecture {
 				}
 			}
 			
-			BlockType.addType(typeName, category, height, start, repeat, inputs, outputs);
+			BlockType.addType(typeName, category, height, start, repeat, isClocked, inputs, outputs);
 			
 			for(int i = 0; i < modes.size(); i++) {
 				BlockType.addMode(typeName, modes.get(i), children.get(i));
 			}
 		}
+		
+		BlockType.findBlocksWithClockedChild();
 	}
 	
 	private JSONObject getDefinition(String blockType) {

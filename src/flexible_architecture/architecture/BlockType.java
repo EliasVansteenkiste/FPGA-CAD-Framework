@@ -9,7 +9,7 @@ import util.Logger;
 
 public class BlockType {
 	
-	public enum BlockCategory {IO, CLB, HARDBLOCK, LOCAL, LEAF};
+	public static enum BlockCategory {IO, CLB, HARDBLOCK, LOCAL, LEAF};
 	
 	private static Map<String, Integer> types = new HashMap<String, Integer>();
 	private static List<String> typeNames = new ArrayList<String>();
@@ -25,6 +25,9 @@ public class BlockType {
 	private static List<Integer> height = new ArrayList<Integer>();
 	private static List<Integer> start = new ArrayList<Integer>();
 	private static List<Integer> repeat = new ArrayList<Integer>();
+	
+	private static List<Boolean> clocked = new ArrayList<Boolean>();
+	private static List<Boolean> hasClockedChild = new ArrayList<Boolean>();
 	
 	private static List<Map<String, Integer>> inputs = new ArrayList<Map<String, Integer>>();
 	private static List<Map<String, Integer>> outputs = new ArrayList<Map<String, Integer>>();
@@ -50,7 +53,7 @@ public class BlockType {
 	}
 	
 	
-	public static void addType(String typeName, String categoryName, int height, int start, int repeat, Map<String, Integer> inputs, Map<String, Integer> outputs) {
+	public static void addType(String typeName, String categoryName, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
 		
 		int typeIndex = BlockType.typeNames.size();
 		BlockType.typeNames.add(typeName);
@@ -64,14 +67,56 @@ public class BlockType {
 		BlockType.start.add(start);
 		BlockType.repeat.add(repeat);
 		
+		
 		BlockType.inputs.add(inputs);
 		BlockType.outputs.add(outputs);
+		
+		BlockType.clocked.add(clocked);
+		BlockType.hasClockedChild.add(null);
 		
 		
 		BlockType.modeNames.add(new ArrayList<String>());
 		BlockType.modes.add(new HashMap<String, Integer>());
 		BlockType.children.add(new ArrayList<Map<String, Integer>>());
 	}
+	
+	
+	public static void findBlocksWithClockedChild() {
+		for(int typeIndex = 0; typeIndex < BlockType.types.size(); typeIndex++) {
+			BlockType.hasClockedChild(typeIndex);
+		}
+	}
+	
+	private static boolean hasClockedChild(int typeIndex) {
+		boolean hasClockedChild = false;
+		if(BlockType.hasClockedChild.get(typeIndex) != null) {
+			hasClockedChild = BlockType.hasClockedChild.get(typeIndex);
+		
+		} else if(BlockType.clocked.get(typeIndex) == true) {
+			hasClockedChild = true;
+		
+		} else {
+			for(int modeIndex = 0; modeIndex < BlockType.modes.get(typeIndex).size(); modeIndex++) {
+				for(String childTypeName : BlockType.children.get(typeIndex).get(modeIndex).keySet()) {
+					int childTypeIndex = BlockType.types.get(childTypeName);
+					boolean childIsClocked = BlockType.hasClockedChild(childTypeIndex);
+					if(childIsClocked) {
+						hasClockedChild = true;
+						break;
+					}
+				}
+				
+				if(hasClockedChild) {
+					break;
+				}
+			}
+		}
+		
+		BlockType.hasClockedChild.set(typeIndex, hasClockedChild);
+		return hasClockedChild;
+	}
+	
+	
 	
 	private static BlockCategory getCategoryFromString(String categoryName) {
 		switch(categoryName) {
@@ -104,7 +149,6 @@ public class BlockType {
 		
 		BlockType.children.get(typeIndex).add(children);
 	}
-	
 	
 	
 	public BlockType(String typeName) {
