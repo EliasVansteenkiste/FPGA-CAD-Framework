@@ -6,10 +6,6 @@ import flexible_architecture.Circuit;
 
 public class WLD_SAPlacer extends SAPlacer {	
 	
-	static {
-		defaultOptions.put("T_multiplier", "20");
-	}
-	
 	private EfficientCostCalculator calculator;
 	private double cachedCost;
 	

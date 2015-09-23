@@ -41,7 +41,6 @@ public class CLI {
 		CLI.printTimer("Circuit parsing: ");
 		
 		
-		
 		// Read the place file
 		if(options.startingStage.equals("place")) {
 			PlaceParser placeParser = new PlaceParser(circuit, options.placeFile);

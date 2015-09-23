@@ -253,6 +253,7 @@ public class Circuit {
 		int minY = Math.max(0, site.getY() - distance);
 		int maxY = Math.min(this.height - 1, site.getY() + distance);
 		
+		//TODO: this should be smarter: only consider sites of the same BlockType
 		while(true) {
 			int x = random.nextInt(maxX - minX + 1) + minX;
 			int y = random.nextInt(maxY - minY + 1) + minY;

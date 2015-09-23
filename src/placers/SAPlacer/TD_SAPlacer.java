@@ -12,8 +12,6 @@ public class TD_SAPlacer extends SAPlacer {
 	
 	
 	static {
-		defaultOptions.put("T_multiplier", "2");
-		
 		//Timing trade off factor: 0.0 = wire-length-driven
 		defaultOptions.put("trade_off_factor", "0.5");
 		
@@ -47,6 +45,7 @@ public class TD_SAPlacer extends SAPlacer {
 	}
 	
 	
+	
 	protected void initializePlace() {
 		this.calculator.recalculateFromScratch();
 	}
@@ -59,9 +58,9 @@ public class TD_SAPlacer extends SAPlacer {
 	
 	private void updatePreviousCosts() {
 		this.getCost();
+		
 		this.previousBBCost = this.cachedBBCost;
 		this.previousTDCost = this.cachedTDCost;
-		System.out.println(this.getStatistics());
 	}
 	
 	
