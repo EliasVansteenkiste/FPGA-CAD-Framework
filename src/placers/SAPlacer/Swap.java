@@ -27,18 +27,22 @@ public class Swap {
 		return this.block2;
 	}
 	
+	public AbstractSite getSite1() {
+		return this.site1;
+	}
+	public AbstractSite getSite2() {
+		return this.site2;
+	}
+	
 	
 	public void apply() {
-		this.site1.removeBlock(this.block1);
+		this.block1.removeSite();
 		
 		if(this.block2 != null) {
-			this.site2.removeBlock(this.block2);
-			
-			this.site1.addBlock(this.block2);
+			this.block2.removeSite();
 			this.block2.setSite(this.site1);
 		}
 		
-		this.site2.addBlock(this.block1);
 		this.block1.setSite(this.site2);
 	}
 	

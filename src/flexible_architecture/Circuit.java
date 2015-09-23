@@ -55,9 +55,11 @@ public class Circuit {
 		this.globalBlockTypes = BlockType.getGlobalBlockTypes();
 		
 		for(BlockType blockType : this.globalBlockTypes) {
-			if(this.blocks.containsKey(blockType)) {
-				this.globalBlockList.addAll((List<GlobalBlock>) (List<?>) this.blocks.get(blockType));
+			if(!this.blocks.containsKey(blockType)) {
+				this.blocks.put(blockType, new ArrayList<AbstractBlock>(0));
 			}
+			
+			this.globalBlockList.addAll((List<GlobalBlock>) (List<?>) this.blocks.get(blockType));
 		}
 	}
 	
@@ -148,16 +150,16 @@ public class Circuit {
 		int size = this.width;
 		for(int i = 0; i < size - 1; i++) {
 			this.sites[0][i] = new IOSite(0, i, ioType, ioCapacity);
-			this.sites[size-1][size-1-i] = new IOSite(size-1, size-1-i, ioType, ioCapacity);
-			this.sites[i][0] = new IOSite(i, 0, ioType, ioCapacity);
-			this.sites[size-1-i][size-1] = new IOSite(size-1-i, size-1, ioType, ioCapacity);
+			this.sites[i][size-1] = new IOSite(size-1, size-1-i, ioType, ioCapacity);
+			this.sites[size-1][size-1-i] = new IOSite(i, 0, ioType, ioCapacity);
+			this.sites[size-1-i][0] = new IOSite(size-1-i, size-1, ioType, ioCapacity);
 		}
 		
 		for(int x = 1; x < this.columns.size() - 1; x++) {
 			BlockType blockType = this.columns.get(x);
 			
-			int height = blockType.getHeight();
-			for(int y = 1; y < size - height; y += height) {
+			int blockHeight = blockType.getHeight();
+			for(int y = 1; y < size - blockHeight; y += blockHeight) {
 				this.sites[x][y] = new Site(x, y, blockType);
 			}
 		}
@@ -177,16 +179,14 @@ public class Circuit {
 	
 	
 	public AbstractSite getSite(int x, int y) {
-		return this.sites[x][y];
-	}
-	
-	public void putBlock(GlobalBlock block, int x, int y) {
-		this.putBlock(block, this.getSite(x, y));
-	}
-	
-	public void putBlock(GlobalBlock block, AbstractSite site) {
-		block.setSite(site);
-		site.addBlock(block);
+		AbstractSite site = null;
+		int topY = y;
+		while(site == null) {
+			site = this.sites[x][topY];
+			topY--;
+		}
+		
+		return site;
 	}
 	
 	public int getNumGlobalBlocks() {
@@ -214,18 +214,19 @@ public class Circuit {
 			for(int i = 0; i < size - 1; i++) {
 				for(int n = 0; n < ioCapacity; n++) {
 					sites.add(this.sites[0][i]);
+					sites.add(this.sites[i][size-1]);
 					sites.add(this.sites[size-1][size-1-i]);
-					sites.add(this.sites[i][0]);
-					sites.add(this.sites[size-1-i][size-1]);
+					sites.add(this.sites[size-1-i][0]);
 				}
 			}
 			
 		} else {
 			List<Integer> columns = this.columnsPerBlockType.get(blockType);
-			sites = new ArrayList<AbstractSite>(columns.size() * this.height - 2);
+			int blockHeight = blockType.getHeight();
+			sites = new ArrayList<AbstractSite>(columns.size() * (this.height - 2));
 			
 			for(Integer column : columns) {
-				for(int row = 1; row < this.height - 1; row++) {
+				for(int row = 1; row < this.height - blockHeight; row += blockHeight) {
 					sites.add(this.sites[column][row]);
 				}
 			}

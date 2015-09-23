@@ -1,5 +1,6 @@
 package flexible_architecture.block;
 
+import util.Logger;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.PortType;
 import flexible_architecture.pin.GlobalPin;
@@ -16,8 +17,22 @@ public class GlobalBlock extends AbstractBlock {
 	public AbstractSite getSite() {
 		return this.site;
 	}
+	
+	public void removeSite() {
+		if(this.site != null) {
+			this.site.removeBlock(this);
+			this.site = null;
+		} else {
+			Logger.raise("Trying to remove the site of an unplaced block");
+		}
+	}
 	public void setSite(AbstractSite site) {
-		this.site = site;
+		if(this.site == null) {
+			this.site = site;
+			this.site.addBlock(this);
+		} else {
+			Logger.raise("Trying to set the site of a placed block");
+		}
 	}
 	
 	@Override

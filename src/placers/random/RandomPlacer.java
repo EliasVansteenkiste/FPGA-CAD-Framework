@@ -37,7 +37,7 @@ public class RandomPlacer extends Placer {
 				AbstractSite site = sites.get(siteIndex);
 				GlobalBlock block = (GlobalBlock) abstractBlock;
 				
-				this.circuit.putBlock(block, site);
+				block.setSite(site);
 				
 				siteIndex++;
 			}

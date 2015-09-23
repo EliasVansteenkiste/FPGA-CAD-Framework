@@ -191,7 +191,11 @@ public abstract class SAPlacer extends Placer
 			fromBlock = this.circuit.getRandomBlock(this.random);
 		} while(fromBlock.isFixed());
 		
-		AbstractSite toSite = this.circuit.getRandomSite(fromBlock, Rlim, this.random);
+		AbstractSite toSite;
+		do {
+			toSite = this.circuit.getRandomSite(fromBlock, Rlim, this.random);
+		} while(fromBlock.getSite() != toSite);
+		
 		
 		return new Swap(fromBlock, toSite, this.random);
 	}

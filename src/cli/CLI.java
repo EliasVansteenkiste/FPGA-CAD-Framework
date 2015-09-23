@@ -68,7 +68,7 @@ public class CLI {
 		
 		
 		
-		PlaceDumper placeDumper = new PlaceDumper(circuit, options.placeFile);
+		PlaceDumper placeDumper = new PlaceDumper(circuit, options.outputFile);
 		placeDumper.dump();
 		
 		// Print out the place file

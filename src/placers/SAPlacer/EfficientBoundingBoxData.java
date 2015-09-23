@@ -69,11 +69,7 @@ public class EfficientBoundingBoxData
 				|| (block.getSite().getY() == this.min_y && this.nb_min_y == 1 && newSite.getY() > this.min_y)
 				|| (block.getSite().getY() == this.max_y && this.nb_max_y == 1 && newSite.getY() < this.max_y)) {
 			
-			AbstractSite originalSite = block.getSite();
-			
-			block.setSite(newSite);
-			calculateBoundingBoxFromScratch();
-			block.setSite(originalSite);
+			calculateBoundingBoxFromScratch(block, newSite);
 		
 		} else {
 			if(newSite.getX() < this.min_x) {
@@ -168,39 +164,50 @@ public class EfficientBoundingBoxData
 	}
 	
 	
-	public void calculateBoundingBoxFromScratch() 
-	{
+	public void calculateBoundingBoxFromScratch()  {
+		this.calculateBoundingBoxFromScratch(null, null);
+	}
+	
+	public void calculateBoundingBoxFromScratch(GlobalBlock block, AbstractSite alternativeSite)  {
 		this.min_x = Integer.MAX_VALUE;
 		this.max_x = -1;
 		this.min_y = Integer.MAX_VALUE;
 		this.max_y = -1;
 		
+		AbstractSite site;
 		for(int i = 0; i < this.blocks.length; i++) {
-			if(this.blocks[i].getSite().getX() < this.min_x) {
-				this.min_x = this.blocks[i].getSite().getX();
+			if(this.blocks[i] == block) {
+				site = alternativeSite;
+			} else {
+				site = this.blocks[i].getSite();
+			}
+			
+			
+			if(site.getX() < this.min_x) {
+				this.min_x = site.getX();
 				this.nb_min_x = 1;
-			} else if(this.blocks[i].getSite().getX() == this.min_x){
+			} else if(site.getX() == this.min_x){
 				this.nb_min_x++;
 			}
 			
-			if(this.blocks[i].getSite().getX() > this.max_x) {
-				this.max_x = this.blocks[i].getSite().getX();
+			if(site.getX() > this.max_x) {
+				this.max_x = site.getX();
 				this.nb_max_x = 1;
-			} else if(this.blocks[i].getSite().getX() == this.max_x) {
+			} else if(site.getX() == this.max_x) {
 				this.nb_max_x++;
 			}
 			
-			if(this.blocks[i].getSite().getY() < this.min_y) {
-				this.min_y = this.blocks[i].getSite().getY();
+			if(site.getY() < this.min_y) {
+				this.min_y = site.getY();
 				this.nb_min_y = 1;
-			} else if(this.blocks[i].getSite().getY() == this.min_y) {
+			} else if(site.getY() == this.min_y) {
 				this.nb_min_y++;
 			}
 	
-			if(this.blocks[i].getSite().getY() > this.max_y) {
-				this.max_y = this.blocks[i].getSite().getY();
+			if(site.getY() > this.max_y) {
+				this.max_y = site.getY();
 				this.nb_max_y = 1;
-			} else if(this.blocks[i].getSite().getY() == this.max_y) {
+			} else if(site.getY() == this.max_y) {
 				this.nb_max_y++;
 			}
 		}

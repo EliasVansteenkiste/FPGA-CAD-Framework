@@ -96,7 +96,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 			if(bbDataList != null) {
 				for(EfficientBoundingBoxData bbData: bbDataList) {
 					bbData.saveState();
-					totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[0], swap.getBlock2().getSite());
+					totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[0], swap.getSite2());
 				}
 			}
 		}
