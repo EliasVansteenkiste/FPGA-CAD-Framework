@@ -83,11 +83,11 @@ public class BlockType {
 	
 	public static void findBlocksWithClockedChild() {
 		for(int typeIndex = 0; typeIndex < BlockType.types.size(); typeIndex++) {
-			BlockType.hasClockedChild(typeIndex);
+			BlockType.setAndGetHasClockedChild(typeIndex);
 		}
 	}
 	
-	private static boolean hasClockedChild(int typeIndex) {
+	private static boolean setAndGetHasClockedChild(int typeIndex) {
 		boolean hasClockedChild = false;
 		if(BlockType.hasClockedChild.get(typeIndex) != null) {
 			hasClockedChild = BlockType.hasClockedChild.get(typeIndex);
@@ -99,7 +99,7 @@ public class BlockType {
 			for(int modeIndex = 0; modeIndex < BlockType.modes.get(typeIndex).size(); modeIndex++) {
 				for(String childTypeName : BlockType.children.get(typeIndex).get(modeIndex).keySet()) {
 					int childTypeIndex = BlockType.types.get(childTypeName);
-					boolean childIsClocked = BlockType.hasClockedChild(childTypeIndex);
+					boolean childIsClocked = BlockType.setAndGetHasClockedChild(childTypeIndex);
 					if(childIsClocked) {
 						hasClockedChild = true;
 						break;
@@ -225,6 +225,13 @@ public class BlockType {
 			Logger.raise("Cannot get children of a block type without mode");
 		}
 		return BlockType.children.get(this.typeIndex).get(this.modeIndex);
+	}
+	
+	public boolean isClocked() {
+		return BlockType.clocked.get(this.typeIndex);
+	}
+	public boolean hasClockedChild() {
+		return BlockType.hasClockedChild.get(this.typeIndex);
 	}
 	
 	
