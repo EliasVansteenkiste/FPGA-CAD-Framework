@@ -37,7 +37,8 @@ public class NetParser {
 	
 	private Map<String, AbstractPin> sourcePins;
 	
-	private PortType currentPortType;
+	private enum PortDirection {INPUT, OUTPUT};
+	private PortDirection currentPortType;
 	
 	
 	private static Pattern portPattern = Pattern.compile(".*name=\"(?<name>[^\"]+)\">(?<ports>.+)</port>.*");
@@ -170,11 +171,11 @@ public class NetParser {
 	
 	
 	private void processInputLine(String line) {
-		this.currentPortType = PortType.INPUT;
+		this.currentPortType = PortDirection.INPUT;
 	}
 	
 	private void processOutputLine(String line) {
-		this.currentPortType = PortType.OUTPUT;
+		this.currentPortType = PortDirection.OUTPUT;
 	}
 	
 	private void processClockLine(String line) {
@@ -260,7 +261,7 @@ public class NetParser {
 				AbstractBlock globalBlock = globalTuple.getBlock();
 				Map<String, String> inputs = globalTuple.getMap();
 				
-				processPortsHashMap(globalBlock, PortType.INPUT, inputs);
+				processPortsHashMap(globalBlock, inputs);
 			}
 		
 		// This is 
@@ -269,7 +270,7 @@ public class NetParser {
 			AbstractBlock block = this.blockStack.pop();
 			
 			HashMap<String, String> outputs = this.outputsStack.pop();
-			processPortsHashMap(block, PortType.OUTPUT, outputs);
+			processPortsHashMap(block, outputs);
 			
 			// Process the inputs of all the children of this block, but
 			// not of this block itself. This is because the inputs may
@@ -279,91 +280,96 @@ public class NetParser {
 				AbstractBlock childBlock = childTuple.getBlock();
 				Map<String, String> inputs = childTuple.getMap();
 				
-				processPortsHashMap(childBlock, PortType.INPUT, inputs);
+				processPortsHashMap(childBlock, inputs);
 			}
 		}
 	}
 	
-	private void processPortsHashMap(AbstractBlock block, PortType portType, Map<String, String> ports) {
+	private void processPortsHashMap(AbstractBlock block, Map<String, String> ports) {
 		for(Map.Entry<String, String> portEntry : ports.entrySet()) {
-			String port = portEntry.getKey();
-			String pins = portEntry.getValue();
-			this.addNets(block, portType, port, pins);
+			String portName = portEntry.getKey();
+			PortType portType = new PortType(block.getType(), portName);
+			List<AbstractPin> pins = block.getPins(portType);
+			
+			String nets = portEntry.getValue();
+			
+			this.addNets(pins, nets);
 		}
 	}
 	
 	
-	private void addNets(AbstractBlock sinkBlock, PortType sinkPortType, String sinkPortName, String netsString) {
+	private void addNets(List<AbstractPin> sinkPins, String netsString) {
 		String[] nets = netsString.trim().split("\\s+");
 		
-		for(int sinkPortIndex = 0; sinkPortIndex < nets.length; sinkPortIndex++) {
-			String net = nets[sinkPortIndex];
+		for(int sinkPinIndex = 0; sinkPinIndex < nets.length; sinkPinIndex++) {
+			AbstractPin sinkPin = sinkPins.get(sinkPinIndex);
+			String net = nets[sinkPinIndex];
 			
-			this.addNet(sinkBlock, sinkPortType, sinkPortName, sinkPortIndex, net);	
+			this.addNet(sinkPin, net);	
 		}
 	}
 	
 	
-	private void addNet(AbstractBlock sinkBlock, PortType sinkPortType, String sinkPortName, int sinkPortIndex, String net) {
+	private void addNet(AbstractPin sinkPin, String net) {
 		if(net.equals("open")) {
 			return;
 		}
 		
+		AbstractBlock sinkBlock = sinkPin.getOwner();
 		
 		Matcher matcher = internalNetPattern.matcher(net);
 		boolean matches = matcher.matches();
 		
 		
 		if(matches) {
-			AbstractBlock sourceBlock;
-			PortType sourcePortType;
+			String sourceBlockTypeString = matcher.group("block");
+			BlockType sourceBlockType = new BlockType(sourceBlockTypeString);
 			
-			String sourceBlockType = matcher.group("block");
-			String sourceBlockIndexString = matcher.group("blockIndex");
 			String sourcePortName = matcher.group("port");
-			int sourcePortIndex = Integer.parseInt(matcher.group("portIndex"));
+			PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
+			
+			
+			String sourceBlockIndexString = matcher.group("blockIndex");
+			int sourcePinIndex = Integer.parseInt(matcher.group("portIndex"));
+			
+			
+			// The hardest part: determine the source block
+			AbstractBlock sourceBlock;
 			
 			// The net is incident to an input port. It has an input port of the parent block as source.
 			if(sourceBlockIndexString == null) {
 				sourceBlock = ((LocalBlock) sinkBlock).getParent();
-				sourcePortType = PortType.INPUT;
 				
 			
 			} else {
 				int sourceBlockIndex = Integer.parseInt(sourceBlockIndexString);
 				
 				// The net is incident to an input port. It has a sibling output port as source.
-				if(sinkPortType == PortType.INPUT) {
+				if(sinkPin.isInput()) {
 					AbstractBlock parent = ((LocalBlock) sinkBlock).getParent();
 					sourceBlock = parent.getChild(sourceBlockType, sourceBlockIndex);
-					sourcePortType = PortType.OUTPUT;
 					
 				
 				// The net is incident to an output port. It has either a child output port as source
 				// or an input port of itself.
 				} else {
-					if(sinkBlock.getType().getName().equals(sourceBlockType)) {
+					if(sinkBlock.getType().equals(sourceBlockType)) {
 						sourceBlock = sinkBlock;
-						sourcePortType = PortType.INPUT;
 					} else {
 						sourceBlock = sinkBlock.getChild(sourceBlockType, sourceBlockIndex);
-						sourcePortType = PortType.OUTPUT;
 					}
 				}
-				
 			}
 			
-			sourceBlock.addSink(
-					sourcePortType, sourcePortName, sourcePortIndex,
-					sinkBlock,
-					sinkPortType, sinkPortName, sinkPortIndex);
+			AbstractPin sourcePin = sourceBlock.getPin(sourcePortType, sourcePinIndex);
+			sourcePin.addSink(sinkPin);
+			sinkPin.setSource(sourcePin);
 		
 			
 		// The current block is a leaf block. We can add a reference from the net name to
 		// the correct pin in this block, so that we can add the todo-nets later.
-		} else if(sinkPortType == PortType.OUTPUT) {
-			AbstractPin sourcePin = sinkBlock.getOutputPin(sinkPortName, sinkPortIndex);
-			this.sourcePins.put(net, sourcePin);
+		} else if(sinkPin.isOutput()) {
+			this.sourcePins.put(net, sinkPin);
 		
 			
 		// The input net that we want to add has a leaf block as its (indirect) source.
@@ -371,9 +377,6 @@ public class NetParser {
 		// up through the hierarchy from the referenced block.
 		} else {
 			String sourceName = net;
-			AbstractPin sinkPin = sinkBlock.getInputPin(sinkPortName, sinkPortIndex);
-			
-			
 			
 	    	AbstractPin sourcePin = this.sourcePins.get(sourceName);
 	    	AbstractBlock parent = sourcePin.getOwner().getParent();

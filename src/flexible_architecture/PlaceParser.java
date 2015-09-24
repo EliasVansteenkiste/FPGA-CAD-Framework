@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.block.AbstractBlock;
 import flexible_architecture.block.GlobalBlock;
+import flexible_architecture.site.AbstractSite;
 
 public class PlaceParser {
 	
@@ -73,7 +74,8 @@ public class PlaceParser {
 				int x = coordinate[0], y = coordinate[1];
 				
 				// Bind the site and block to each other
-				this.circuit.putBlock((GlobalBlock) block, x, y);
+				AbstractSite site = this.circuit.getSite(x, y);
+				((GlobalBlock) block).setSite(site);
 			}
 		}
 	}

@@ -6,8 +6,8 @@ import flexible_architecture.block.LocalBlock;
 
 public class LocalPin extends AbstractPin {
 	
-	public LocalPin(AbstractBlock owner, PortType portType, String portName, int index) {
-		super(owner, portType, portName, index);
+	public LocalPin(AbstractBlock owner, PortType portType, int index) {
+		super(owner, portType, index);
 	}
 	
 	public LocalBlock getOwner() {

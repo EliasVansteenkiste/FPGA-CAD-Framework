@@ -41,7 +41,7 @@ public class GlobalBlock extends AbstractBlock {
 	}
 	
 	@Override
-	public GlobalPin createPin(PortType portType, String portName, int index) {
-		return new GlobalPin(this, portType, portName, index);
+	public GlobalPin createPin(PortType portType, int index) {
+		return new GlobalPin(this, portType, index);
 	}
 }

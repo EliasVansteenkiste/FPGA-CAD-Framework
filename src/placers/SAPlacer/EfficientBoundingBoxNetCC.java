@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import flexible_architecture.Circuit;
-import flexible_architecture.architecture.PortType;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.pin.GlobalPin;
 
@@ -23,7 +22,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
 	{
 		this.toRevert = new GlobalBlock[2]; //Contains the blocks for which the associated boundingBox's might need to be reverted
 		
-		this.pins = circuit.getGlobalPins(PortType.OUTPUT);
+		this.pins = circuit.getGlobalOutputPins();
 		this.numPins = this.pins.size();
 		
 		this.bbDataArray = new EfficientBoundingBoxData[this.numPins];

@@ -12,16 +12,14 @@ public abstract class AbstractPin {
 	
 	private AbstractBlock owner;
 	private PortType portType;
-	private String portName;
 	private int index;
 	
 	private AbstractPin source;
 	private List<AbstractPin> sinks;
 	
-	public AbstractPin(AbstractBlock owner, PortType portType, String portName, int index) {
+	public AbstractPin(AbstractBlock owner, PortType portType, int index) {
 		this.owner = owner;
 		this.portType = portType;
-		this.portName = portName;
 		this.index = index;
 		
 		//TODO: is this memory efficient? Does the size remain 1 after 1 element is added?
@@ -36,17 +34,25 @@ public abstract class AbstractPin {
 		return this.portType;
 	}
 	public String getPortName() {
-		return this.portName;
+		return this.portType.getName();
 	}
 	public int getIndex() {
 		return this.index;
 	}
 	
+	public boolean isOutput() {
+		return this.portType.isOutput();
+	}
+	public boolean isInput() {
+		return this.portType.isInput();
+	}
 	
-	public AbstractPin setSource(AbstractPin source) {
-		AbstractPin oldSource = this.source;
+	
+	public AbstractPin getSource() {
+		return this.source;
+	}
+	public void setSource(AbstractPin source) {
 		this.source = source;
-		return oldSource;
 	}
 	
 	public int getNumSinks() {
@@ -59,14 +65,15 @@ public abstract class AbstractPin {
 			Logger.raise("Port doesn't have " + index + "pins", exception);
 			return null;
 		}
-	} 
+	}
 	
 	public void addSink(AbstractPin sink) {
 		this.sinks.add(sink);
 	}
 	
 	
+	@Override
 	public String toString() {
-		return this.owner.toString() + "." + this.portName + "[" + this.index + "]";
+		return this.owner.toString() + "." + this.portType.getName() + "[" + this.index + "]";
 	}
 }

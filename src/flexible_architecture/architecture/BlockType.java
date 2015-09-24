@@ -1,6 +1,7 @@
 package flexible_architecture.architecture;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,9 @@ import util.Logger;
 public class BlockType {
 	
 	public static enum BlockCategory {IO, CLB, HARDBLOCK, LOCAL, LEAF};
+	
+	private static int ioCapacity;
+	
 	
 	private static Map<String, Integer> types = new HashMap<String, Integer>();
 	private static List<String> typeNames = new ArrayList<String>();
@@ -29,23 +33,24 @@ public class BlockType {
 	private static List<Boolean> clocked = new ArrayList<Boolean>();
 	private static List<Boolean> hasClockedChild = new ArrayList<Boolean>();
 	
-	private static List<Map<String, Integer>> inputs = new ArrayList<Map<String, Integer>>();
-	private static List<Map<String, Integer>> outputs = new ArrayList<Map<String, Integer>>();
-	
-	private static int ioCapacity;
-	
-	
 	
 	private static List<Map<String, Integer>> modes = new ArrayList<Map<String, Integer>>();
 	private static List<List<String>> modeNames = new ArrayList<List<String>>();
 	private static List<List<Map<String, Integer>>> children = new ArrayList<List<Map<String, Integer>>>();
+	
+	private static List<List<List<Integer>>> childStarts = new ArrayList<List<List<Integer>>>();
+	private static List<List<List<Integer>>> childEnds = new ArrayList<List<List<Integer>>>();
+	private static List<List<Integer>> numChildren = new ArrayList<List<Integer>>();
+	
+	private static List<List<PortType>> portTypes = new ArrayList<List<PortType>>();
+	
 	
 	
 	private Integer typeIndex, modeIndex;
 	
 	
 	
-	public static void setIoCapacity(int capacity) {
+	static void setIoCapacity(int capacity) {
 		BlockType.ioCapacity = capacity;
 	}
 	public static int getIoCapacity() {
@@ -53,7 +58,7 @@ public class BlockType {
 	}
 	
 	
-	public static void addType(String typeName, String categoryName, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
+	static void addType(String typeName, String categoryName, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
 		
 		int typeIndex = BlockType.typeNames.size();
 		BlockType.typeNames.add(typeName);
@@ -67,21 +72,30 @@ public class BlockType {
 		BlockType.start.add(start);
 		BlockType.repeat.add(repeat);
 		
-		
-		BlockType.inputs.add(inputs);
-		BlockType.outputs.add(outputs);
-		
 		BlockType.clocked.add(clocked);
 		BlockType.hasClockedChild.add(null);
-		
 		
 		BlockType.modeNames.add(new ArrayList<String>());
 		BlockType.modes.add(new HashMap<String, Integer>());
 		BlockType.children.add(new ArrayList<Map<String, Integer>>());
+		
+		PortType.setNumInputPorts(typeIndex, inputs.size());
+		PortType.addPorts(typeIndex, inputs);
+		PortType.addPorts(typeIndex, outputs);
+		
+		// getPortTypes is a heavy operation, and it has to be performed loads of times during
+		// netparsing, so we cache it
+		BlockType.portTypes.add(PortType.getPortTypes(typeIndex));
 	}
 	
 	
-	public static void findBlocksWithClockedChild() {
+	public static void finishAdding() {
+		BlockType.findBlocksWithClockedChild();
+		BlockType.cacheChildren();
+	}
+	
+	
+	private static void findBlocksWithClockedChild() {
 		for(int typeIndex = 0; typeIndex < BlockType.types.size(); typeIndex++) {
 			BlockType.setAndGetHasClockedChild(typeIndex);
 		}
@@ -114,6 +128,37 @@ public class BlockType {
 		
 		BlockType.hasClockedChild.set(typeIndex, hasClockedChild);
 		return hasClockedChild;
+	}
+	
+	private static void cacheChildren() {
+		
+		int numTypes = BlockType.types.size();
+		for(int typeIndex = 0; typeIndex < numTypes; typeIndex++) {
+			
+			BlockType.childStarts.add(new ArrayList<List<Integer>>());
+			BlockType.childEnds.add(new ArrayList<List<Integer>>());
+			BlockType.numChildren.add(new ArrayList<Integer>());
+			
+			int numModes = BlockType.modeNames.get(typeIndex).size();
+			for(int modeIndex = 0; modeIndex < numModes; modeIndex++) {
+				
+				BlockType.childStarts.get(typeIndex).add(new ArrayList<Integer>(Collections.nCopies(numTypes, (Integer) null)));
+				BlockType.childEnds.get(typeIndex).add(new ArrayList<Integer>(Collections.nCopies(numTypes, (Integer) null)));
+				int numChildren = 0;
+				
+				for(Map.Entry<String, Integer> childEntry : BlockType.children.get(typeIndex).get(modeIndex).entrySet()) {
+					String childName = childEntry.getKey();
+					int childTypeIndex = BlockType.types.get(childName);
+					int childCount = childEntry.getValue();
+					
+					BlockType.childStarts.get(typeIndex).get(modeIndex).set(childTypeIndex, numChildren);
+					numChildren += childCount;
+					BlockType.childEnds.get(typeIndex).get(modeIndex).set(childTypeIndex, numChildren);
+				}
+				
+				BlockType.numChildren.get(typeIndex).add(numChildren);
+			}
+		}
 	}
 	
 	
@@ -151,31 +196,6 @@ public class BlockType {
 	}
 	
 	
-	public BlockType(String typeName) {
-		this.typeIndex = this.getTypeIndex(typeName);
-		this.modeIndex = null;
-	}
-	public BlockType(String typeName, String modeName) {
-		this.typeIndex = this.getTypeIndex(typeName);
-		this.modeIndex = this.getModeIndex(modeName);
-	}
-	
-	
-	private int getTypeIndex(String typeName) {
-		if(!BlockType.types.containsKey(typeName)) {
-			Logger.raise("Invalid block type: " + typeName);
-		}
-		return BlockType.types.get(typeName);
-	}
-	
-	private int getModeIndex(String argumentModeName) {
-		String modeName = (argumentModeName == null) ? "" : argumentModeName;
-		if(!BlockType.modes.get(this.typeIndex).containsKey(modeName)) {
-			Logger.raise("Invalid mode type for block " + this.getName() + ": " + modeName);
-		}
-		return BlockType.modes.get(this.typeIndex).get(modeName);
-	}
-	
 	
 	public static List<BlockType> getGlobalBlockTypes() {
 		List<BlockType> types = new ArrayList<BlockType>();
@@ -191,6 +211,36 @@ public class BlockType {
 	}
 	
 	
+	
+	
+	public BlockType(String typeName) {
+		this.typeIndex = BlockType.getTypeIndex(typeName);
+		this.modeIndex = null;
+	}
+	public BlockType(String typeName, String modeName) {
+		this.typeIndex = BlockType.getTypeIndex(typeName);
+		this.modeIndex = this.getModeIndex(modeName);
+	}
+	
+	private static int getTypeIndex(String typeName) {
+		if(!BlockType.types.containsKey(typeName)) {
+			Logger.raise("Invalid block type: " + typeName);
+		}
+		return BlockType.types.get(typeName);
+	}
+	
+	private int getModeIndex(String argumentModeName) {
+		String modeName = (argumentModeName == null) ? "" : argumentModeName;
+		if(!BlockType.modes.get(this.typeIndex).containsKey(modeName)) {
+			Logger.raise("Invalid mode type for block " + this.getName() + ": " + modeName);
+		}
+		return BlockType.modes.get(this.typeIndex).get(modeName);
+	}
+	
+	
+	int getIndex() {
+		return this.typeIndex;
+	}
 	
 	public String getName() {
 		return BlockType.typeNames.get(this.typeIndex);
@@ -235,7 +285,34 @@ public class BlockType {
 	}
 	
 	
-	public Map<String, Integer> getPorts(PortType type) {
+	public int getNumChildren() {
+		return BlockType.numChildren.get(this.typeIndex).get(this.modeIndex);
+	}
+	public int[] getChildRange(BlockType blockType) {
+		int childStart = BlockType.childStarts.get(this.typeIndex).get(this.modeIndex).get(blockType.getIndex());
+		int childEnd = BlockType.childEnds.get(this.typeIndex).get(this.modeIndex).get(blockType.getIndex());
+		
+		int[] childRange = {childStart, childEnd};
+		return childRange;
+	}
+	
+	
+	public int getNumPins() {
+		return PortType.getNumPins(this.typeIndex);
+	}
+	public int[] getInputPortRange() {
+		return PortType.getInputPortRange(this.typeIndex);
+	}
+	public int[] getOutputPortRange() {
+		return PortType.getOutputPortRange(this.typeIndex);
+	}
+	
+	public List<PortType> getPortTypes() {
+		return BlockType.portTypes.get(this.typeIndex);
+	}
+	
+	
+	/*public Map<String, Integer> getPorts(PortType type) {
 		switch(type) {
 		case INPUT:
 			return this.getInputs();
@@ -253,7 +330,7 @@ public class BlockType {
 	}
 	public Map<String, Integer> getOutputs() {
 		return BlockType.outputs.get(this.typeIndex);
-	}
+	}*/
 	
 	
 	@Override

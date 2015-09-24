@@ -2,11 +2,8 @@ package placers.SAPlacer;
 
 import java.util.Map;
 
-import timinganalysis.TimingGraph;
-import architecture.Architecture;
-import circuit.PackedCircuit;
-import circuit.PrePackedCircuit;
 import flexible_architecture.Circuit;
+import flexible_architecture.timing_graph.TimingGraph;
 
 public class TD_SAPlacer extends SAPlacer {
 	
@@ -34,7 +31,7 @@ public class TD_SAPlacer extends SAPlacer {
 		
 		this.calculator = new EfficientBoundingBoxNetCC(circuit);
 		this.timingGraph = new TimingGraph(circuit);
-		this.timingGraph.buildTimingGraph();
+		this.timingGraph.build();
 		
 		
 		this.tradeOffFactor = Double.parseDouble(this.options.get("trade_off_factor"));
@@ -51,7 +48,7 @@ public class TD_SAPlacer extends SAPlacer {
 	}
 	
 	protected void initializeSwapIteration() {
-		this.timingGraph.recalculateAllSlacksCriticalities();
+		this.timingGraph.recalculateAllSlackCriticalities();
 		
 		this.updatePreviousCosts();
 	}
@@ -81,7 +78,6 @@ public class TD_SAPlacer extends SAPlacer {
 			this.cachedTDCost = this.timingGraph.calculateTotalCost();
 		}
 		
-		//TODO: is this ok?
 		return this.balancedCost(this.cachedBBCost, this.cachedTDCost);
 	}
 	

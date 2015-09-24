@@ -3,6 +3,9 @@ package flexible_architecture.architecture;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
+import flexible_architecture.block.AbstractBlock;
+import flexible_architecture.pin.AbstractPin;
+
 import util.Logger;
 
 import java.io.BufferedReader;
@@ -21,11 +24,13 @@ public class FlexibleArchitecture {
 	
 	private String filename;
 	private JSONObject blockDefinitions;
+	private Map<String, Double> delays;
 	
 	public FlexibleArchitecture(String filename) {
 		this.filename = filename;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void parse() {
 		
 		BufferedReader reader = null;
@@ -47,7 +52,9 @@ public class FlexibleArchitecture {
 		}
 		
 		// Parse the JSONObject
-		this.blockDefinitions = (JSONObject) JSONValue.parse(content);
+		JSONObject jsonContent = (JSONObject) JSONValue.parse(content);
+		this.blockDefinitions = (JSONObject) jsonContent.get("blocks");
+		this.delays = (Map<String, Double>) jsonContent.get("delays");
 		
 		
 		// Set the IO capacity
@@ -139,7 +146,7 @@ public class FlexibleArchitecture {
 			}
 		}
 		
-		BlockType.findBlocksWithClockedChild();
+		BlockType.finishAdding();
 	}
 	
 	private JSONObject getDefinition(String blockType) {
@@ -165,6 +172,34 @@ public class FlexibleArchitecture {
 	}
 	
 	
+	public double getDelay(AbstractPin fromPin, AbstractPin toPin) {
+		String key = String.format("%s.%s-%s.%s",
+				fromPin.getOwner().getType().getName(), fromPin.getPortName(),
+				toPin.getOwner().getType().getName(), toPin.getPortName());
+		
+		return this.getDelay(key);
+	}
+	public double getDelay(AbstractBlock fromBlock, AbstractPin toPin) {
+		String key = String.format("%s-%s.%s",
+				fromBlock.getType().getName(),
+				toPin.getOwner().getType().getName(), toPin.getPortName());
+		return this.getDelay(key);
+	}
+	public double getDelay(AbstractPin fromPin, AbstractBlock toBlock) {
+		String key = String.format("%s.%s-%s",
+				fromPin.getOwner().getType().getName(), fromPin.getPortName(),
+				toBlock.getType().getName());
+		return this.getDelay(key);
+	}
+	
+	public double getDelay(String key) {
+		if(this.delays.containsKey(key)) {
+			return this.delays.get(key);
+		} else {
+			//Logger.log(Logger.Stream.ERR, "Delay key not found: " + key);
+			return 0;
+		}
+	}
 	
 	
 	public double getFillGrade() {

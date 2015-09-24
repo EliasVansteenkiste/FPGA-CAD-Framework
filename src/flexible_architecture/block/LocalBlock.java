@@ -22,7 +22,7 @@ public class LocalBlock extends AbstractBlock {
 	}
 	
 	@Override
-	public LocalPin createPin(PortType portType, String portName, int index) {
-		return new LocalPin(this, portType, portName, index);
+	public LocalPin createPin(PortType portType, int index) {
+		return new LocalPin(this, portType, index);
 	}
 }

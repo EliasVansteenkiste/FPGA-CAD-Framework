@@ -9,7 +9,6 @@ import java.util.Random;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.FlexibleArchitecture;
 import flexible_architecture.architecture.BlockType.BlockCategory;
-import flexible_architecture.architecture.PortType;
 import flexible_architecture.block.AbstractBlock;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.pin.AbstractPin;
@@ -175,6 +174,9 @@ public class Circuit {
 	public int getHeight() {
 		return this.height;
 	}
+	public FlexibleArchitecture getArchitecture() {
+		return this.architecture;
+	}
 	
 	
 	
@@ -264,17 +266,13 @@ public class Circuit {
 		}
 	}
 	
-	public List<GlobalPin> getGlobalPins(PortType portType) {
+	public List<GlobalPin> getGlobalOutputPins() {
 		List<GlobalPin> globalPins = new ArrayList<GlobalPin>();
 		
-		for(BlockType blockType : this.globalBlockTypes) {
-			for(AbstractBlock block : this.getBlocks(blockType)) {
-				Map<String, AbstractPin[]> allPins = block.getPins(portType);
-				for(AbstractPin[] pins : allPins.values()) {
-					for(int i = 0; i < pins.length; i++) {
-						globalPins.add((GlobalPin) pins[i]);
-					}
-				}
+		for(AbstractBlock block : this.globalBlockList) {
+			List<AbstractPin> pins = block.getOutputPins();
+			for(AbstractPin pin : pins) {
+				globalPins.add((GlobalPin) pin);
 			}
 		}
 		

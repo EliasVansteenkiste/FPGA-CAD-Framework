@@ -5,8 +5,8 @@ import flexible_architecture.block.GlobalBlock;
 
 public class GlobalPin extends AbstractPin {
 	
-	public GlobalPin(GlobalBlock owner, PortType portType, String portName, int index) {
-		super(owner, portType, portName, index);
+	public GlobalPin(GlobalBlock owner, PortType portType, int index) {
+		super(owner, portType, index);
 	}
 	
 	public GlobalBlock getOwner() {
