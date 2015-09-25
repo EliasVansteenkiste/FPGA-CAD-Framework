@@ -58,6 +58,9 @@ public abstract class AbstractPin {
 	public int getNumSinks() {
 		return this.sinks.size();
 	}
+	public List<AbstractPin> getSinks() {
+		return this.sinks;
+	}
 	public AbstractPin getSink(int index) {
 		try {
 			return this.sinks.get(index);

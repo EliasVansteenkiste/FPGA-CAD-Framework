@@ -173,23 +173,26 @@ public class FlexibleArchitecture {
 	
 	
 	public double getDelay(AbstractPin fromPin, AbstractPin toPin) {
-		String key = String.format("%s.%s-%s.%s",
+		return 0;
+		/*String key = String.format("%s.%s-%s.%s",
 				fromPin.getOwner().getType().getName(), fromPin.getPortName(),
 				toPin.getOwner().getType().getName(), toPin.getPortName());
 		
-		return this.getDelay(key);
+		return this.getDelay(key);*/
 	}
 	public double getDelay(AbstractBlock fromBlock, AbstractPin toPin) {
-		String key = String.format("%s-%s.%s",
+		return 0;
+		/*String key = String.format("%s-%s.%s",
 				fromBlock.getType().getName(),
 				toPin.getOwner().getType().getName(), toPin.getPortName());
-		return this.getDelay(key);
+		return this.getDelay(key);*/
 	}
 	public double getDelay(AbstractPin fromPin, AbstractBlock toBlock) {
-		String key = String.format("%s.%s-%s",
+		return 0;
+		/*String key = String.format("%s.%s-%s",
 				fromPin.getOwner().getType().getName(), fromPin.getPortName(),
 				toBlock.getType().getName());
-		return this.getDelay(key);
+		return this.getDelay(key);*/
 	}
 	
 	public double getDelay(String key) {

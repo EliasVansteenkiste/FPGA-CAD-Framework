@@ -12,6 +12,9 @@ public class PortType {
 	private static List<Map<String, Integer>> ports = new ArrayList<Map<String, Integer>>();
 	private static List<Integer> numInputPorts = new ArrayList<Integer>();
 	
+	private static List<List<Double>> delays = new ArrayList<List<Double>>();
+	
+	private static int maxPortIndex;
 	
 	private int blockTypeIndex, portIndex;
 	
@@ -55,6 +58,10 @@ public class PortType {
 			ports.put(portName, portIndex);
 			
 			portIndex++;
+		}
+		
+		if(portIndex > PortType.maxPortIndex) {
+			PortType.maxPortIndex = portIndex;
 		}
 	}
 	
@@ -122,5 +129,10 @@ public class PortType {
 	}
 	public boolean isInput() {
 		return this.portIndex < PortType.numInputPorts.get(this.blockTypeIndex);
+	}
+	
+	
+	private int uniqueId() {
+		return this.blockTypeIndex * PortType.maxPortIndex + this.portIndex;
 	}
 }

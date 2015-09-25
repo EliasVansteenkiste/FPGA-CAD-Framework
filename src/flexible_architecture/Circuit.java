@@ -1,10 +1,12 @@
 package flexible_architecture;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.FlexibleArchitecture;
@@ -199,6 +201,9 @@ public class Circuit {
 		return this.globalBlockTypes;
 	}
 	
+	public Set<BlockType> getBlockTypes() {
+		return this.blocks.keySet();
+	}
 	public List<AbstractBlock> getBlocks(BlockType blockType) {
 		return this.blocks.get(blockType);
 	}
