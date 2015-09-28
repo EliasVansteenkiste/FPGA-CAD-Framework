@@ -67,9 +67,6 @@ public class TimingGraph {
 			
 			this.traverseFromSource(block, node);
 		}
-		
-		// Garbage collect nodes
-		this.nodes = null;
 	}
 	
 	private void traverseFromSource(LocalBlock block, TimingNode pathSource) {
@@ -193,7 +190,7 @@ public class TimingGraph {
 	
 	
 	
-	public double getMaxArrivaltime() {
+	public double getMaxArrivalTime() {
 		return this.maxArrivalTime;
 	}
 	
