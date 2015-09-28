@@ -18,6 +18,13 @@ public class GlobalBlock extends AbstractBlock {
 		return this.site;
 	}
 	
+	public int getX() {
+		return this.site.getX();
+	}
+	public int getY() {
+		return this.site.getY();
+	}
+	
 	public void removeSite() {
 		if(this.site != null) {
 			this.site.removeBlock(this);

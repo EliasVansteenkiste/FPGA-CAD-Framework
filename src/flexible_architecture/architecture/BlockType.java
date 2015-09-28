@@ -12,8 +12,6 @@ public class BlockType {
 	
 	public static enum BlockCategory {IO, CLB, HARDBLOCK, LOCAL, LEAF};
 	
-	private static int ioCapacity;
-	
 	
 	private static Map<String, Integer> types = new HashMap<String, Integer>();
 	private static List<String> typeNames = new ArrayList<String>();
@@ -31,7 +29,7 @@ public class BlockType {
 	private static List<Integer> repeat = new ArrayList<Integer>();
 	
 	private static List<Boolean> clocked = new ArrayList<Boolean>();
-	private static List<Boolean> hasClockedChild = new ArrayList<Boolean>();
+	//private static List<Boolean> hasClockedChild = new ArrayList<Boolean>();
 	
 	
 	private static List<Map<String, Integer>> modes = new ArrayList<Map<String, Integer>>();
@@ -49,15 +47,6 @@ public class BlockType {
 	private Integer typeIndex, modeIndex;
 	
 	
-	
-	static void setIoCapacity(int capacity) {
-		BlockType.ioCapacity = capacity;
-	}
-	public static int getIoCapacity() {
-		return BlockType.ioCapacity;
-	}
-	
-	
 	static void addType(String typeName, String categoryName, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
 		
 		int typeIndex = BlockType.typeNames.size();
@@ -73,7 +62,7 @@ public class BlockType {
 		BlockType.repeat.add(repeat);
 		
 		BlockType.clocked.add(clocked);
-		BlockType.hasClockedChild.add(null);
+		//BlockType.hasClockedChild.add(null);
 		
 		BlockType.modeNames.add(new ArrayList<String>());
 		BlockType.modes.add(new HashMap<String, Integer>());
@@ -89,13 +78,14 @@ public class BlockType {
 	}
 	
 	
-	public static void finishAdding() {
-		BlockType.findBlocksWithClockedChild();
+	public static void postProcess() {
+		//BlockType.findBlocksWithClockedChild();
 		BlockType.cacheChildren();
+		PortType.postProcess();
 	}
 	
 	
-	private static void findBlocksWithClockedChild() {
+	/*private static void findBlocksWithClockedChild() {
 		for(int typeIndex = 0; typeIndex < BlockType.types.size(); typeIndex++) {
 			BlockType.setAndGetHasClockedChild(typeIndex);
 		}
@@ -128,7 +118,7 @@ public class BlockType {
 		
 		BlockType.hasClockedChild.set(typeIndex, hasClockedChild);
 		return hasClockedChild;
-	}
+	}*/
 	
 	private static void cacheChildren() {
 		
@@ -280,9 +270,9 @@ public class BlockType {
 	public boolean isClocked() {
 		return BlockType.clocked.get(this.typeIndex);
 	}
-	public boolean hasClockedChild() {
+	/*public boolean hasClockedChild() {
 		return BlockType.hasClockedChild.get(this.typeIndex);
-	}
+	}*/
 	
 	
 	public int getNumChildren() {

@@ -1,7 +1,6 @@
 package flexible_architecture;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +107,7 @@ public class Circuit {
 			tooSmall = false;
 			
 			int clbCapacity = (int) ((size - 2) * numClbColumns * this.architecture.getFillGrade());
-			int ioCapacity = (size - 1) * 4 * BlockType.getIoCapacity();
+			int ioCapacity = (size - 1) * 4 * this.architecture.getIoCapacity();
 			if(clbCapacity < this.blocks.get(clbType).size() || ioCapacity < this.blocks.get(ioType).size()) { 
 				tooSmall = true;
 				continue;
@@ -146,7 +145,7 @@ public class Circuit {
 		this.sites = new AbstractSite[this.width][this.height];
 		
 		BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
-		int ioCapacity = BlockType.getIoCapacity();
+		int ioCapacity = this.architecture.getIoCapacity();
 		
 		int size = this.width;
 		for(int i = 0; i < size - 1; i++) {
@@ -215,7 +214,7 @@ public class Circuit {
 		
 		if(blockType.equals(ioType)) {
 			int size = this.width;
-			int ioCapacity = BlockType.getIoCapacity();
+			int ioCapacity = this.architecture.getIoCapacity();
 			sites = new ArrayList<AbstractSite>((size - 1) * 4);
 			
 			for(int i = 0; i < size - 1; i++) {
@@ -254,11 +253,10 @@ public class Circuit {
 			return null;
 		}
 		
-		AbstractSite site = block.getSite(); 
-		int minX = Math.max(0, site.getX() - distance);
-		int maxX = Math.min(this.width - 1, site.getX() + distance);
-		int minY = Math.max(0, site.getY() - distance);
-		int maxY = Math.min(this.height - 1, site.getY() + distance);
+		int minX = Math.max(0, block.getX() - distance);
+		int maxX = Math.min(this.width - 1, block.getX() + distance);
+		int minY = Math.max(0, block.getY() - distance);
+		int maxY = Math.min(this.height - 1, block.getY() + distance);
 		
 		//TODO: this should be smarter: only consider sites of the same BlockType
 		while(true) {

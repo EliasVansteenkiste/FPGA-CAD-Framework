@@ -93,9 +93,6 @@ public abstract class AbstractBlock {
 	public boolean isClocked() {
 		return this.blockType.isClocked();
 	}
-	public boolean hasClockedChild() {
-		return this.blockType.hasClockedChild();
-	}
 	
 	
 	

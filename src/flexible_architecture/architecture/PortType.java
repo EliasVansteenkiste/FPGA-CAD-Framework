@@ -1,6 +1,7 @@
 package flexible_architecture.architecture;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,21 @@ public class PortType {
 		}
 	}
 	
+	
+	
+	static void postProcess() {
+		PortType.createDelayArrays();
+	}
+	
+	private static void createDelayArrays() {
+		int maxId = PortType.ports.size() * PortType.maxPortIndex;
+		for(int i = 0; i < maxId; i++) {
+			PortType.delays.add(new ArrayList<Double>(Collections.nCopies(maxId, 0.0)));
+		}
+	}
+	
+	
+	
 	static List<PortType> getPortTypes(int blockTypeIndex) {
 		List<String> portNames = PortType.portNames.get(blockTypeIndex);
 		List<PortType> portTypes = new ArrayList<PortType>();
@@ -102,6 +118,9 @@ public class PortType {
 	}
 	
 	
+	public PortType(String blockTypeName, String portName) {
+		this(new BlockType(blockTypeName), portName);
+	}
 	public PortType(BlockType blockType, String portName) {
 		this(blockType.getIndex(), portName);
 	}
@@ -109,6 +128,32 @@ public class PortType {
 		this.blockTypeIndex = blockTypeIndex;
 		this.portIndex = PortType.ports.get(this.blockTypeIndex).get(portName);
 	}
+	
+	
+	
+	void setSetupTime(double delay) {
+		int id = this.uniqueId();
+		PortType.delays.get(id).set(id, delay);
+	}
+	public double getSetupTime() {
+		int id = this.uniqueId();
+		return PortType.delays.get(id).get(id);
+	}
+	
+	void setDelay(PortType sinkType, double delay) {
+		int sourceId = this.uniqueId();
+		int sinkId = sinkType.uniqueId();
+		
+		PortType.delays.get(sourceId).set(sinkId, delay);
+	}
+	public double getDelay(PortType sinkType) {
+		int sourceId = this.uniqueId();
+		int sinkId = sinkType.uniqueId();
+		
+		return PortType.delays.get(sourceId).get(sinkId); 
+	}
+	
+	
 	
 	public String getName() {
 		return PortType.portNames.get(this.blockTypeIndex).get(this.portIndex);

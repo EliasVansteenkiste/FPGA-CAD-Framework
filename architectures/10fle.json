@@ -1,10 +1,12 @@
 {
+    "io_capacity": 8,
+    "wire_delay": 100e-12,
+
     "blocks": {
         "io": {
             "globalCategory": "io",
             "leaf": false,
             "height": 1,
-            "capacity": 8,
             "ports": {
                 "input": {
                     "outpad": 1

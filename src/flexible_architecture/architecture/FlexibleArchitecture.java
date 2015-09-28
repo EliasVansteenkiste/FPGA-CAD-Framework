@@ -3,9 +3,6 @@ package flexible_architecture.architecture;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-import flexible_architecture.block.AbstractBlock;
-import flexible_architecture.pin.AbstractPin;
-
 import util.Logger;
 
 import java.io.BufferedReader;
@@ -17,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FlexibleArchitecture {
 	
@@ -24,7 +23,9 @@ public class FlexibleArchitecture {
 	
 	private String filename;
 	private JSONObject blockDefinitions;
-	private Map<String, Double> delays;
+	
+	private int ioCapacity;
+	private double wireDelay;
 	
 	public FlexibleArchitecture(String filename) {
 		this.filename = filename;
@@ -54,15 +55,19 @@ public class FlexibleArchitecture {
 		// Parse the JSONObject
 		JSONObject jsonContent = (JSONObject) JSONValue.parse(content);
 		this.blockDefinitions = (JSONObject) jsonContent.get("blocks");
-		this.delays = (Map<String, Double>) jsonContent.get("delays");
 		
 		
 		// Set the IO capacity
-		int capacity = (int) (long) this.getDefinition("io").get("capacity");
-		BlockType.setIoCapacity(capacity);
+		this.ioCapacity = (int) (long) jsonContent.get("io_capacity");
+		
+		// Set the unit wire delay
+		this.wireDelay = (double) jsonContent.get("wire_delay");
 		
 		// Add all the block types
 		this.addBlockTypes();
+		
+		// Get all the delays
+		this.processDelays((Map<String, Double>) jsonContent.get("delays"));
 	}
 	
 	
@@ -146,7 +151,7 @@ public class FlexibleArchitecture {
 			}
 		}
 		
-		BlockType.finishAdding();
+		BlockType.postProcess();
 	}
 	
 	private JSONObject getDefinition(String blockType) {
@@ -171,39 +176,46 @@ public class FlexibleArchitecture {
 		return newSubDefinition;
 	}
 	
-	
-	public double getDelay(AbstractPin fromPin, AbstractPin toPin) {
-		return 0;
-		/*String key = String.format("%s.%s-%s.%s",
-				fromPin.getOwner().getType().getName(), fromPin.getPortName(),
-				toPin.getOwner().getType().getName(), toPin.getPortName());
+	private void processDelays(Map<String, Double> delays) {
+		Pattern keyPattern = Pattern.compile("(?<sourceBlock>[^.-]+)(\\.(?<sourcePort>[^-]+))?-(?<sinkBlock>[^.-]+)(\\.(?<sinkPort>.+))?");
 		
-		return this.getDelay(key);*/
-	}
-	public double getDelay(AbstractBlock fromBlock, AbstractPin toPin) {
-		return 0;
-		/*String key = String.format("%s-%s.%s",
-				fromBlock.getType().getName(),
-				toPin.getOwner().getType().getName(), toPin.getPortName());
-		return this.getDelay(key);*/
-	}
-	public double getDelay(AbstractPin fromPin, AbstractBlock toBlock) {
-		return 0;
-		/*String key = String.format("%s.%s-%s",
-				fromPin.getOwner().getType().getName(), fromPin.getPortName(),
-				toBlock.getType().getName());
-		return this.getDelay(key);*/
-	}
-	
-	public double getDelay(String key) {
-		if(this.delays.containsKey(key)) {
-			return this.delays.get(key);
-		} else {
-			//Logger.log(Logger.Stream.ERR, "Delay key not found: " + key);
-			return 0;
+		for(Map.Entry<String, Double> delayEntry : delays.entrySet()) {
+			Double delay = delayEntry.getValue();
+			
+			String key = delayEntry.getKey();
+			Matcher matcher = keyPattern.matcher(key);
+			matcher.matches();
+			
+			
+			String sourceBlockName = matcher.group("sourceBlock");
+			String sourcePortName = matcher.group("sourcePort");
+			String sinkBlockName = matcher.group("sinkBlock");
+			String sinkPortName = matcher.group("sinkPort");
+			
+			if(sourcePortName == null) {
+				PortType portType = new PortType(sinkBlockName, sinkPortName);
+				portType.setSetupTime(delay);
+			
+			} else if(sinkPortName == null) {
+				PortType portType = new PortType(sourceBlockName, sourcePortName);
+				portType.setSetupTime(delay);
+			
+			} else {
+				PortType sourcePortType = new PortType(sourceBlockName, sourcePortName);
+				PortType sinkPortType = new PortType(sinkBlockName, sinkPortName);
+				sourcePortType.setDelay(sinkPortType, delay);
+			}
 		}
 	}
 	
+	
+	
+	public int getIoCapacity() {
+		return this.ioCapacity;
+	}
+	public double getWireDelay() {
+		return this.wireDelay;
+	}
 	
 	public double getFillGrade() {
 		return FlexibleArchitecture.FILL_GRADE;
