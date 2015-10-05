@@ -109,7 +109,7 @@ public class TD_SAPlacer extends SAPlacer {
 		this.calculator.revert();
 		this.timingGraph.revert();
 		
-		if(iteration % this.iterationsBeforeRecalculate == 0) {
+		if(iteration % this.iterationsBeforeRecalculate == 0 && iteration > 0) {
 			this.updatePreviousCosts();
 		}
 	}

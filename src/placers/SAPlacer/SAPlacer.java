@@ -95,7 +95,7 @@ public abstract class SAPlacer extends Placer
 			
 			int iteration = 0;
 			
-			//Do placement
+			// Do placement
 			while(this.T > 0.005 * this.getCost() / this.circuit.getNumGlobalBlocks()) {
 				int numSwaps = this.doSwapIteration();
 				double alpha = ((double) numSwaps) / this.movesPerTemperature;
@@ -193,6 +193,8 @@ public abstract class SAPlacer extends Placer
 		return Math.abs(sum / values.length);
 	}
 	
+	
+	
 	private int doSwapIteration() {
 		return (int) this.doSwapIteration(this.movesPerTemperature, true);
 	}
@@ -287,9 +289,8 @@ public abstract class SAPlacer extends Placer
 			// Try another block
 		} while(toSite == null);
 		
-		
-		
-		return new Swap(fromBlock, toSite, this.random);
+		Swap swap = new Swap(fromBlock, toSite, this.random);
+		return swap;
 	}
 	
 	
