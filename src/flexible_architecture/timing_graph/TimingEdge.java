@@ -43,4 +43,10 @@ public class TimingEdge {
 	public void pushThrough() {
 		this.totalDelay = this.stagedTotalDelay;
 	}
+	
+	
+	
+	public String toString() {
+		return String.format("%e", this.totalDelay);
+	}
 }

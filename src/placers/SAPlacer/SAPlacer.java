@@ -72,7 +72,7 @@ public abstract class SAPlacer extends Placer
 	public void place() {
 		this.initializePlace();
 		
-		this.random = new Random(1);
+		this.random = new Random(10);
 		
 		//Print parameters
 		System.out.println("Effort level: " + this.effortLevel);

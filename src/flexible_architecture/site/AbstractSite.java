@@ -33,4 +33,10 @@ public abstract class AbstractSite {
 	public abstract void removeBlock(GlobalBlock block);
 	
 	public abstract Collection<GlobalBlock> getBlocks();
+	
+	
+	
+	public String toString() {
+		return "[" + this.x + ", " + this.y + "]";
+	}
 }

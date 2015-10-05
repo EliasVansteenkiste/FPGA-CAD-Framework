@@ -37,7 +37,7 @@ public class TimingNode {
 	
 	
 	void addSink(TimingNode sink, double fixedDelay) {
-		TimingEdge timingEdge = this.sources.get(sink);
+		TimingEdge timingEdge = this.sinks.get(sink);
 		if(timingEdge == null) {
 			timingEdge = new TimingEdge(fixedDelay);
 			this.sinks.put(sink, timingEdge);
@@ -78,6 +78,10 @@ public class TimingNode {
 		return this.arrivalTime;
 	}
 	
+	
+	void setRequiredTime(double requiredTime) {
+		this.requiredTime = requiredTime;
+	}
 	double calculateRequiredTime() {
 		for(Map.Entry<TimingNode, TimingEdge> sinkEntry : this.sinks.entrySet()) {
 			Double sinkRequiredTime = sinkEntry.getKey().requiredTime;
@@ -97,7 +101,7 @@ public class TimingNode {
 	
 	void reset() {
 		this.arrivalTime = 0;
-		this.requiredTime = 0;
+		this.requiredTime = Double.MAX_VALUE;
 		this.numProcessedSources = 0;
 		this.numProcessedSinks = 0;
 	}
@@ -193,7 +197,7 @@ public class TimingNode {
 	private double calculateDeltaCost(int newX, int newY, TimingNode otherNode, TimingEdge edge) {
 		double wireDelay = this.calculateWireDelay(otherNode, newX, newY);
 		edge.setStagedWireDelay(wireDelay);
-		return edge.getCriticality() * edge.getStagedTotalDelay();
+		return edge.getCriticality() * (edge.getStagedTotalDelay() - edge.getTotalDelay());
 	}
 	
 	

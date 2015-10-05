@@ -1,6 +1,7 @@
 package flexible_architecture.timing_graph;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,11 +21,11 @@ public class TimingGraph {
 	
 	private Circuit circuit;
 	private Map<LocalBlock, TimingNode> nodes = new HashMap<LocalBlock, TimingNode>();
-	private Map<GlobalBlock, List<TimingNode>> globalNodes = new HashMap<GlobalBlock, List<TimingNode>>();
+	private Map<GlobalBlock, List<TimingNode>> nodesInGlobalBlocks = new HashMap<GlobalBlock, List<TimingNode>>();
 	private List<TimingNode> clockedNodes = new ArrayList<TimingNode>();
 	private List<TimingNode> affectedNodes = new ArrayList<TimingNode>();
 	
-	private double criticalityExponent;
+	private double criticalityExponent = 8;
 	private double maxArrivalTime;
 	
 	public TimingGraph(Circuit circuit) {
@@ -50,10 +51,10 @@ public class TimingGraph {
 				
 				this.nodes.put((LocalBlock) block, node);
 				
-				if(this.globalNodes.get(parent) == null) {
-					this.globalNodes.put((GlobalBlock) parent, new ArrayList<TimingNode>());
+				if(this.nodesInGlobalBlocks.get(parent) == null) {
+					this.nodesInGlobalBlocks.put((GlobalBlock) parent, new ArrayList<TimingNode>());
 				}
-				this.globalNodes.get(parent).add(node);
+				this.nodesInGlobalBlocks.get(parent).add(node);
 				
 				if(blockType.isClocked()) {
 					this.clockedNodes.add(node);
@@ -172,18 +173,27 @@ public class TimingGraph {
 	
 	private void calculateRequiredTimes() {
 		Stack<TimingNode> todo = new Stack<TimingNode>();
-		todo.addAll(this.clockedNodes);
+		Stack<TimingNode> done = new Stack<TimingNode>();
+		
+		for(TimingNode endNode : this.clockedNodes) {
+			endNode.setRequiredTime(this.maxArrivalTime);
+			this.requiredTimesAddChildren(endNode, todo);
+			done.add(endNode);
+		}
 		
 		while(todo.size() > 0) {
 			TimingNode currentNode = todo.pop();
-			
 			currentNode.calculateRequiredTime();
-			
-			for(TimingNode source : currentNode.getSources()) {
-				source.incrementProcessedSinks();
-				if(source.allSinksProcessed()) {
-					todo.add(source);
-				}
+			this.requiredTimesAddChildren(currentNode, todo);
+			done.add(currentNode);
+		}
+	}
+	
+	private void requiredTimesAddChildren(TimingNode node, Collection<TimingNode> todo) {
+		for(TimingNode source : node.getSources()) {
+			source.incrementProcessedSinks();
+			if(source.allSinksProcessed()) {
+				todo.add(source);
 			}
 		}
 	}
@@ -212,14 +222,14 @@ public class TimingGraph {
 		
 		this.affectedNodes.clear();
 		
-		List<TimingNode> nodes = this.globalNodes.get(swap.getBlock1());
+		List<TimingNode> nodes = this.nodesInGlobalBlocks.get(swap.getBlock1());
 		this.affectedNodes.addAll(nodes);
-		this.calculateDeltaCost(nodes, swap.getSite2());
+		cost += this.calculateDeltaCost(nodes, swap.getSite2());
 		
 		if(swap.getBlock2() != null) {
-			nodes = this.globalNodes.get(swap.getBlock2());
+			nodes = this.nodesInGlobalBlocks.get(swap.getBlock2());
 			this.affectedNodes.addAll(nodes);
-			this.calculateDeltaCost(nodes, swap.getSite1());
+			cost += this.calculateDeltaCost(nodes, swap.getSite1());
 		}
 		
 		return cost;

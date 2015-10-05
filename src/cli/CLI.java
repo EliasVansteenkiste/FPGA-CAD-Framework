@@ -57,7 +57,7 @@ public class CLI {
 			HashMap<String, String> placerOptions = options.placerOptions.get(i);
 			
 			// Do a random placement if an initial placement is required
-			if(i == 0 && PlacerFactory.needsInitialPlacement(placerName)) {
+			if(options.startingStage.equals("net") && i == 0 && PlacerFactory.needsInitialPlacement(placerName)) {
 				CLI.timePlacement("random", circuit);
 			}
 			
@@ -70,13 +70,6 @@ public class CLI {
 		
 		PlaceDumper placeDumper = new PlaceDumper(circuit, options.outputFile);
 		placeDumper.dump();
-		
-		// Print out the place file
-		/*try {
-			circuit.dumpPlacement(options.placeFile.toString());
-		} catch (FileNotFoundException e) {
-			error("Place file not found: " + options.placeFile);
-		}*/
 	}
 	
 	

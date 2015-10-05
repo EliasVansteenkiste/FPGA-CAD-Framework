@@ -30,8 +30,8 @@ public class Circuit {
 	private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
 	private List<BlockType> globalBlockTypes;
 	
-	private List<BlockType> columns = new ArrayList<BlockType>();
-	private Map<BlockType, List<Integer>> columnsPerBlockType = new HashMap<BlockType, List<Integer>>();
+	private List<BlockType> columns;
+	private Map<BlockType, List<Integer>> columnsPerBlockType;
 	
 	private AbstractSite[][] sites;
 	
@@ -45,7 +45,16 @@ public class Circuit {
 		this.blocks = blocks;
 		
 		this.addGlobalBlocks();
-		this.calculateSizeAndColumns();
+		
+		this.calculateSizeAndColumns(true);
+		this.createSites();
+	}
+	
+	public void setSize(int width, int height) {
+		this.width = width;
+		this.height = height;
+		
+		this.calculateSizeAndColumns(false);
 		this.createSites();
 	}
 	
@@ -63,11 +72,13 @@ public class Circuit {
 		}
 	}
 	
-	private void calculateSizeAndColumns() {
+	private void calculateSizeAndColumns(boolean autoSize) {
 		BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
 		BlockType clbType = BlockType.getBlockTypes(BlockCategory.CLB).get(0);
 		List<BlockType> hardBlockTypes = BlockType.getBlockTypes(BlockCategory.HARDBLOCK);
 		
+		
+		this.columnsPerBlockType = new HashMap<BlockType, List<Integer>>();
 		this.columnsPerBlockType.put(ioType, new ArrayList<Integer>());
 		this.columnsPerBlockType.put(clbType, new ArrayList<Integer>());
 		for(BlockType blockType : hardBlockTypes) {
@@ -81,6 +92,8 @@ public class Circuit {
 			numHardBlockColumns[i] = 0;
 		}
 		
+		
+		this.columns = new ArrayList<BlockType>();
 		this.columns.add(ioType);
 		int size = 2;
 		
@@ -104,30 +117,36 @@ public class Circuit {
 			}
 			
 			size++;
-			tooSmall = false;
 			
-			int clbCapacity = (int) ((size - 2) * numClbColumns * this.architecture.getFillGrade());
-			int ioCapacity = (size - 1) * 4 * this.architecture.getIoCapacity();
-			if(clbCapacity < this.blocks.get(clbType).size() || ioCapacity < this.blocks.get(ioType).size()) { 
-				tooSmall = true;
-				continue;
-			}
-			
-			for(int i = 0; i < hardBlockTypes.size(); i++) {
-				BlockType hardBlockType = hardBlockTypes.get(i);
+			if(autoSize) {
+				tooSmall = false;
 				
-				if(!this.blocks.containsKey(hardBlockType)) {
+				int clbCapacity = (int) ((size - 2) * numClbColumns * this.architecture.getFillGrade());
+				int ioCapacity = (size - 1) * 4 * this.architecture.getIoCapacity();
+				if(clbCapacity < this.blocks.get(clbType).size() || ioCapacity < this.blocks.get(ioType).size()) { 
+					tooSmall = true;
 					continue;
 				}
 				
-				int heightPerBlock = hardBlockType.getHeight();
-				int blocksPerColumn = (size - 2) / heightPerBlock;
-				int capacity = numHardBlockColumns[i] * blocksPerColumn;
-				
-				if(capacity < this.blocks.get(hardBlockType).size()) {
-					tooSmall = true;
-					break;
+				for(int i = 0; i < hardBlockTypes.size(); i++) {
+					BlockType hardBlockType = hardBlockTypes.get(i);
+					
+					if(!this.blocks.containsKey(hardBlockType)) {
+						continue;
+					}
+					
+					int heightPerBlock = hardBlockType.getHeight();
+					int blocksPerColumn = (size - 2) / heightPerBlock;
+					int capacity = numHardBlockColumns[i] * blocksPerColumn;
+					
+					if(capacity < this.blocks.get(hardBlockType).size()) {
+						tooSmall = true;
+						break;
+					}
 				}
+				
+			} else {
+				tooSmall = (size != this.width);
 			}
 		}
 		

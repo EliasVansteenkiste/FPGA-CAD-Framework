@@ -18,7 +18,8 @@ import flexible_architecture.site.AbstractSite;
 
 public class PlaceParser {
 	
-	private static Pattern pattern = Pattern.compile("(?<block>\\S+)\\s+(?<x>\\d+)\\s+(?<y>\\d+)\\s+(?<z>\\d+)");
+	private static Pattern sizePattern = Pattern.compile("Array size: (?<width>\\d+) x (?<height>\\d+).*");
+	private static Pattern sitePattern = Pattern.compile("(?<block>\\S+)\\s+(?<x>\\d+)\\s+(?<y>\\d+)\\s+(?<z>\\d+).*");
 	
 	private Map<String, int[]> coordinates;
 	private Circuit circuit;
@@ -82,14 +83,24 @@ public class PlaceParser {
 	
 	
 	private void processLine(String line) {
-		Matcher matcher = pattern.matcher(line);
-		boolean matches = matcher.matches();
+		Matcher sizeMatcher = sizePattern.matcher(line);
+		boolean sizeMatches = sizeMatcher.matches();
 		
-		if(matches) {
-			String blockName = matcher.group("block");
-			int x = Integer.parseInt(matcher.group("x"));
-			int y = Integer.parseInt(matcher.group("y"));
-			int z = Integer.parseInt(matcher.group("z"));
+		Matcher siteMatcher = sitePattern.matcher(line);
+		boolean siteMatches = siteMatcher.matches();
+		
+		
+		if(sizeMatches) {
+			int width = Integer.parseInt(sizeMatcher.group("width"));
+			int height = Integer.parseInt(sizeMatcher.group("height"));
+			
+			this.circuit.setSize(width + 2, height + 2);
+		
+		} else if(siteMatches) {
+			String blockName = siteMatcher.group("block");
+			int x = Integer.parseInt(siteMatcher.group("x"));
+			int y = Integer.parseInt(siteMatcher.group("y"));
+			int z = Integer.parseInt(siteMatcher.group("z"));
 			
 			int[] coordinate = {x, y, z};
 			this.coordinates.put(blockName, coordinate);
