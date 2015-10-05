@@ -14,6 +14,7 @@ import flexible_architecture.NetParser;
 import flexible_architecture.PlaceDumper;
 import flexible_architecture.PlaceParser;
 import flexible_architecture.architecture.FlexibleArchitecture;
+import flexible_architecture.timing_graph.TimingGraph;
 
 
 public class CLI {
@@ -117,15 +118,18 @@ public class CLI {
 		}
 		
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(circuit);
-		double totalCost = effcc.calculateTotalCost();
-		System.out.format("%s %15s: %f\n", prefix, "BB cost", totalCost);
+		double totalWLCost = effcc.calculateTotalCost();
+		System.out.format("%s %15s: %f\n", prefix, "BB cost", totalWLCost);
 		
 		//TODO: timingGraph
-		/*TimingGraph timingGraph = new TimingGraph(circuit);
-		timingGraph.buildTimingGraph();
-		double maxDelay = timingGraph.calculateMaximalDelay();
-		System.out.format("%s %15s: %f\n", prefix, "timing cost", timingGraph.calculateTotalCost());
-		System.out.format("%s %15s: %f\n", prefix, "max delay", maxDelay);*/
+		TimingGraph timingGraph = new TimingGraph(circuit);
+		timingGraph.build();
+		timingGraph.recalculateAllSlackCriticalities();
+		
+		double totalTimingCost = timingGraph.calculateTotalCost();
+		double maxDelay = timingGraph.getMaxArrivalTime();
+		System.out.format("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
+		System.out.format("%s %15s: %e\n", prefix, "max delay", maxDelay);
 		
 		System.out.println();
 	}
