@@ -1,0 +1,976 @@
+{
+    "io_capacity": 8,
+    "wire_delay": 100e-12,
+
+    "blocks": {
+        "io": {
+            "globalCategory": "io",
+            "leaf": false,
+            "height": 1,
+            "ports": {
+                "input": {
+                    "outpad": 1
+                },
+                "output": {
+                    "inpad": 1
+                }
+            },
+            "modes": {
+                "inpad": {
+                    "children": {
+                        "inpad": 1
+                    }
+                },
+                "outpad": {
+                    "children": {
+                        "outpad": 1
+                    }
+                }
+            }
+        },
+
+        "inpad": {
+            "leaf": true,
+            "clocked": true,
+            "ports": {
+                "input": {},
+                "output": {
+                    "inpad": 1
+                }
+            },
+            "children": {}
+        },
+
+        "outpad": {
+            "leaf": true,
+            "clocked": true,
+            "ports": {
+                "input": {
+                    "outpad": 1
+                },
+                "output": {}
+            },
+            "children": {}
+        },
+
+        "clb": {
+            "globalCategory": "clb",
+            "leaf": false,
+            "height": 1,
+            "ports": {
+                "input": {
+                    "I": 40
+                },
+                "output": {
+                    "O": 20
+                }
+            },
+            "children": {
+                "fle": 10
+            }
+        },
+
+        "fle": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "in": 6
+                },
+                "output": {
+                    "out": 2
+                }
+            },
+            "modes": {
+                "n2_lut5": {
+                    "children": {
+                        "lut5inter": 1
+                    }
+                },
+                "n1_lut6": {
+                    "children": {
+                        "ble6": 1
+                    }
+                }
+            }
+        },
+
+        "lut5inter": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "in": 5
+                },
+                "output": {
+                    "out": 2
+                }
+            },
+            "children": {
+                "ble5": 2
+            }
+        },
+
+        "ble6": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "in": 6
+                },
+                "output": {
+                    "out": 1
+                }
+            },
+            "children": {
+                "lut6": 1,
+                "ff": 1
+            }
+        },
+
+        "ble5": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "in": 5
+                },
+                "output": {
+                    "out": 1
+                }
+            },
+            "children": {
+                "lut5": 1,
+                "ff": 1
+            }
+        },
+
+        "lut6": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "in": 6
+                },
+                "output": {
+                    "out": 1
+                }
+            },
+            "modes": {
+                "lut6": {
+                    "children": {
+                        "lut": 1
+                    }
+                },
+                "wire": {
+                    "children": {}
+                }
+            }
+        },
+
+        "lut5": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "in": 5
+                },
+                "output": {
+                    "out": 1
+                }
+            },
+            "modes": {
+                "lut5": {
+                    "children": {
+                        "lut": 1
+                    }
+                },
+                "wire": {
+                    "children": {}
+                }
+            }
+        },
+
+        "lut": {
+            "leaf": true,
+            "clocked": false,
+            "ports": {
+                "input": {
+                    "in": 6
+                },
+                "output": {
+                    "out": 1
+                }
+            },
+            "children": {}
+        },
+
+        "ff": {
+            "leaf": true,
+            "clocked": true,
+            "ports": {
+                "input": {
+                    "D": 1
+                },
+                "output": {
+                    "Q": 1
+                }
+            },
+            "children": {}
+        },
+
+        "mult_36": {
+            "globalCategory": "hardblock",
+            "start": 6,
+            "repeat": 8,
+            "leaf": false,
+            "height": 4,
+            "ports": {
+                "input": {
+                    "a": 36,
+                    "b": 36
+                },
+                "output": {
+                    "out": 72
+                }
+            },
+            "modes": {
+                "two_divisible_mult_18x18": {
+                    "children": {
+                        "divisible_mult_18x18": 2
+                    }
+                },
+                "mult_36x36": {
+                    "children": {
+                        "mult_36x36_slice": 1
+                    }
+                }
+            }
+        },
+
+        "divisible_mult_18x18": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "a": 18,
+                    "b": 18
+                },
+                "output": {
+                    "out": 36
+                }
+            },
+            "modes": {
+                "two_mult_9x9": {
+                    "children": {
+                        "mult_9x9_slice": 2
+                    }
+                },
+                "mult_18x18": {
+                    "children": {
+                        "mult_18x18_slice": 1
+                    }
+                }
+            }
+        },
+
+        "mult_36x36_slice": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "A_cfg": 36,
+                    "B_cfg": 36
+                },
+                "output": {
+                    "OUT_cfg": 72
+                }
+            },
+            "children": {
+                "mult_36x36": 1
+            }
+        },
+
+        "mult_18x18_slice": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "A_cfg": 18,
+                    "B_cfg": 18
+                },
+                "output": {
+                    "OUT_cfg": 36
+                }
+            },
+            "children": {
+                "mult_18x18": 1
+            }
+        },
+
+        "mult_9x9_slice": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "A_cfg": 9,
+                    "B_cfg": 9
+                },
+                "output": {
+                    "OUT_cfg": 18
+                }
+            },
+            "children": {
+                "mult_9x9": 1
+            }
+        },
+
+        "mult_36x36": {
+            "leaf": true,
+            "clocked": false,
+            "ports": {
+                "input": {
+                    "a": 36,
+                    "b": 36
+                },
+                "output": {
+                    "out": 72
+                }
+            },
+            "children": {}
+        },
+
+        "mult_18x18": {
+            "leaf": true,
+            "clocked": false,
+            "ports": {
+                "input": {
+                    "a": 18,
+                    "b": 18
+                },
+                "output": {
+                    "out": 36
+                }
+            },
+            "children": {}
+        },
+
+        "mult_9x9": {
+            "leaf": true,
+            "clocked": false,
+            "ports": {
+                "input": {
+                    "a": 9,
+                    "b": 9
+                },
+                "output": {
+                    "out": 18
+                }
+            },
+            "children": {}
+        },
+
+        "memory": {
+            "globalCategory": "hardblock",
+            "start": 2,
+            "repeat": 8,
+            "leaf": false,
+            "height": 4,
+            "ports": {
+                "input": {
+                    "addr1": 15,
+                    "addr2": 15,
+                    "data": 64,
+                    "we1": 1,
+                    "we2": 1
+                },
+                "output": {
+                    "out": 64
+                }
+            },
+            "modes": {
+                "mem_512x64_sp": {
+                    "children": {
+                        "mem_512x64_sp": 1
+                    }
+                },
+                "mem_1024x32_sp": {
+                    "children": {
+                        "mem_1024x32_sp": 1
+                    }
+                },
+                "mem_2048x16_sp": {
+                    "children": {
+                        "mem_2048x16_sp": 1
+                    }
+                },
+                "mem_4096x8_sp": {
+                    "children": {
+                        "mem_4096x8_sp": 1
+                    }
+                },
+                "mem_8192x4_sp": {
+                    "children": {
+                        "mem_8192x4_sp": 1
+                    }
+                },
+                "mem_16384x2_sp": {
+                    "children": {
+                        "mem_16384x2_sp": 1
+                    }
+                },
+                "mem_32768x1_sp": {
+                    "children": {
+                        "mem_32768x1_sp": 1
+                    }
+                },
+                "mem_1024x32_dp": {
+                    "children": {
+                        "mem_1024x32_dp": 1
+                    }
+                },
+                "mem_2048x16_dp": {
+                    "children": {
+                        "mem_2048x16_dp": 1
+                    }
+                },
+                "mem_2048x8_dp": {
+                    "children": {
+                        "mem_2048x8_dp": 1
+                    }
+                },
+                "mem_8192x4_dp": {
+                    "children": {
+                        "mem_8192x4_dp": 1
+                    }
+                },
+                "mem_16384x2_dp": {
+                    "children": {
+                        "mem_16384x2_dp": 1
+                    }
+                },
+                "mem_32768x1_dp": {
+                    "children": {
+                        "mem_32768x1_dp": 1
+                    }
+                }
+            }
+        },
+
+        "mem_512x64_sp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr": 9,
+                    "data": 64,
+                    "we": 1
+                },
+                "output": {
+                    "out": 64
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 64
+                    }
+                }
+            }
+        },
+
+        "mem_1024x32_sp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr": 10,
+                    "data": 32,
+                    "we": 1
+                },
+                "output": {
+                    "out": 32
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 32
+                    }
+                }
+            }
+        },
+
+        "mem_2048x16_sp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr": 11,
+                    "data": 16,
+                    "we": 1
+                },
+                "output": {
+                    "out": 16
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 16
+                    }
+                }
+            }
+        },
+
+        "mem_4096x8_sp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr": 12,
+                    "data": 8,
+                    "we": 1
+                },
+                "output": {
+                    "out": 8
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 8
+                    }
+                }
+            }
+        },
+
+        "mem_8192x4_sp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr": 13,
+                    "data": 4,
+                    "we": 1
+                },
+                "output": {
+                    "out": 4
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 4
+                    }
+                }
+            }
+        },
+
+        "mem_16384x2_sp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr": 14,
+                    "data": 2,
+                    "we": 1
+                },
+                "output": {
+                    "out": 2
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 2
+                    }
+                }
+            }
+        },
+
+        "mem_32768x1_sp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr": 15,
+                    "data": 1,
+                    "we": 1
+                },
+                "output": {
+                    "out": 1
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 1
+                    }
+                }
+            }
+        },
+
+        "mem_1024x32_dp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr1": 10,
+                    "addr2": 10,
+                    "data1": 32,
+                    "data2": 32,
+                    "we1": 1,
+                    "we2": 1
+                },
+                "output": {
+                    "out1": 32,
+                    "out2": 32
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 32
+                    }
+                }
+            }
+        },
+
+        "mem_2048x16_dp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr1": 11,
+                    "addr2": 11,
+                    "data1": 16,
+                    "data2": 16,
+                    "we1": 1,
+                    "we2": 1
+                },
+                "output": {
+                    "out1": 16,
+                    "out2": 16
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 16
+                    }
+                }
+            }
+        },
+
+
+        "mem_2048x8_dp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr1": 12,
+                    "addr2": 12,
+                    "data1": 8,
+                    "data2": 8,
+                    "we1": 1,
+                    "we2": 1
+                },
+                "output": {
+                    "out1": 8,
+                    "out2": 8
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 8
+                    }
+                }
+            }
+        },
+
+        "mem_8192x4_dp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr1": 13,
+                    "addr2": 13,
+                    "data1": 4,
+                    "data2": 4,
+                    "we1": 1,
+                    "we2": 1
+                },
+                "output": {
+                    "out1": 4,
+                    "out2": 4
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 4
+                    }
+                }
+            }
+        },
+
+        "mem_16384x2_dp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr1": 14,
+                    "addr2": 14,
+                    "data1": 2,
+                    "data2": 2,
+                    "we1": 1,
+                    "we2": 1
+                },
+                "output": {
+                    "out1": 2,
+                    "out2": 2
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 2
+                    }
+                }
+            }
+        },
+
+        "mem_32768x1_dp": {
+            "leaf": false,
+            "ports": {
+                "input": {
+                    "addr1": 15,
+                    "addr2": 15,
+                    "data1": 1,
+                    "data2": 1,
+                    "we1": 1,
+                    "we2": 1
+                },
+                "output": {
+                    "out1": 1,
+                    "out2": 1
+                }
+            },
+            "modes": {
+                "memory_slice": {
+                    "children": {
+                        "memory_slice": 1
+                    }
+                }
+            }
+        },
+
+        "memory_slice": {
+            "leaf": true,
+            "clocked": true,
+            "ports": {
+                "input": {
+                    "addr1": 15,
+                    "addr2": 15,
+                    "data1": 32,
+                    "data2": 32,
+                    "we1": 1,
+                    "we2": 1,
+                    "addr": 15,
+                    "data": 64,
+                    "we": 1
+                },
+                "output": {
+                    "out1": 32,
+                    "out2": 32,
+                    "out": 64
+                }
+            },
+            "children": {}
+        }
+    },
+
+    "delays": {
+        "inpad.inpad-io.inpad": 4.243e-11,
+        "io.outpad-outpad.outpad": 1.394e-11,
+
+
+        "clb.I-fle.in": 95e-12,
+        "fle.out-fle.in": 75e-12,
+        "fle.out-clb.O": 75e-12,
+
+        "lut5.in-lut.in": 235e-12,
+        "lut5.out-ble5.out": 25e-12,
+
+        "lut6.in-lut.in": 261e-12,
+        "lut6.out-ble6.out": 25e-12,
+
+        "ff.D-ff": 66e-12,
+        "ff-ff.Q": 124e-12,
+        "ff.Q-ble5.out": 45e-12,
+        "ff.Q-ble6.out": 45e-12,
+
+
+        "mult_9x9.a-mult_9x9.out": 1.523e-9,
+        "mult_9x9.b-mult_9x9.out": 1.523e-9,
+
+        "mult_18x18.a-mult_18x18.out": 1.523e-9,
+        "mult_18x18.b-mult_18x18.out": 1.523e-9,
+        "mult_36.a-divisible_mult_18x18.a": 134e-12,
+        "mult_36.b-divisible_mult_18x18.b": 134e-12,
+        "divisible_mult_18x18.out-mult_36.out": 1.09e-9,
+
+        "mult_36x36.a-mult_36x36.out": 1.523e-9,
+        "mult_36x36.b-mult_36x36.out": 1.523e-9,
+        "mult_36.a-mult_36x36_slice.A_cfg": 134e-12,
+        "mult_36.b-mult_36x36_slice.B_cfg": 134e-12,
+        "mult_36x36_slice.OUT_cfg-mult_36.out": 1.93e-9,
+
+
+        "memory.addr1-mem_512x64_sp.addr": 132e-12,
+        "memory.data-mem_512x64_sp.data": 132e-12,
+        "memory.we1-mem_512x64_sp.we": 132e-12,
+        "mem_512x64_sp.out-memory.out": 40e-12,
+        "mem_512x64_sp.addr-mem_512x64_sp": 509e-12,
+        "mem_512x64_sp.data-mem_512x64_sp": 509e-12,
+        "mem_512x64_sp.we-mem_512x64_sp": 509e-12,
+        "mem_512x64_sp-mem_512x64_sp.out": 1.234e-9,
+
+        "memory.addr1-mem_1024x32_sp.addr": 132e-12,
+        "memory.data-mem_1024x32_sp.data": 132e-12,
+        "memory.we1-mem_1024x32_sp.we": 132e-12,
+        "mem_1024x32_sp.out-memory.out": 40e-12,
+        "mem_1024x32_sp.addr-mem_1024x32_sp": 509e-12,
+        "mem_1024x32_sp.data-mem_1024x32_sp": 509e-12,
+        "mem_1024x32_sp.we-mem_1024x32_sp": 509e-12,
+        "mem_1024x32_sp-mem_1024x32_sp.out": 1.234e-9,
+
+        "memory.addr1-mem_2048x16_sp.addr": 132e-12,
+        "memory.data-mem_2048x16_sp.data": 132e-12,
+        "memory.we1-mem_2048x16_sp.we": 132e-12,
+        "mem_2048x16_sp.out-memory.out": 40e-12,
+        "mem_2048x16_sp.addr-mem_2048x16_sp": 509e-12,
+        "mem_2048x16_sp.data-mem_2048x16_sp": 509e-12,
+        "mem_2048x16_sp.we-mem_2048x16_sp": 509e-12,
+        "mem_2048x16_sp-mem_2048x16_sp.out": 1.234e-9,
+
+        "memory.addr1-mem_4096x8_sp.addr": 132e-12,
+        "memory.data-mem_4096x8_sp.data": 132e-12,
+        "memory.we1-mem_4096x8_sp.we": 132e-12,
+        "mem_4096x8_sp.out-memory.out": 40e-12,
+        "mem_4096x8_sp.addr-mem_4096x8_sp": 509e-12,
+        "mem_4096x8_sp.data-mem_4096x8_sp": 509e-12,
+        "mem_4096x8_sp.we-mem_4096x8_sp": 509e-12,
+        "mem_4096x8_sp-mem_4096x8_sp.out": 1.234e-9,
+
+        "memory.addr1-mem_8192x4_sp.addr": 132e-12,
+        "memory.data-mem_8192x4_sp.data": 132e-12,
+        "memory.we1-mem_8192x4_sp.we": 132e-12,
+        "mem_8192x4_sp.out-memory.out": 40e-12,
+        "mem_8192x4_sp.addr-mem_8192x4_sp": 509e-12,
+        "mem_8192x4_sp.data-mem_8192x4_sp": 509e-12,
+        "mem_8192x4_sp.we-mem_8192x4_sp": 509e-12,
+        "mem_8192x4_sp-mem_8192x4_sp.out": 1.234e-9,
+
+        "memory.addr1-mem_16384x2_sp.addr": 132e-12,
+        "memory.data-mem_16384x2_sp.data": 132e-12,
+        "memory.we1-mem_16384x2_sp.we": 132e-12,
+        "mem_16384x2_sp.out-memory.out": 40e-12,
+        "mem_16384x2_sp.addr-mem_16384x2_sp": 509e-12,
+        "mem_16384x2_sp.data-mem_16384x2_sp": 509e-12,
+        "mem_16384x2_sp.we-mem_16384x2_sp": 509e-12,
+        "mem_16384x2_sp-mem_16384x2_sp.out": 1.234e-9,
+
+        "memory.addr1-mem_32768x1_sp.addr": 132e-12,
+        "memory.data-mem_32768x1_sp.data": 132e-12,
+        "memory.we1-mem_32768x1_sp.we": 132e-12,
+        "mem_32768x1_sp.out-memory.out": 40e-12,
+        "mem_32768x1_sp.addr-mem_32768x1_sp": 509e-12,
+        "mem_32768x1_sp.data-mem_32768x1_sp": 509e-12,
+        "mem_32768x1_sp.we-mem_32768x1_sp": 509e-12,
+        "mem_32768x1_sp-mem_32768x1_sp.out": 1.234e-9,
+
+
+        "memory.addr1-mem_1024x32_dp.addr1": 132e-12,
+        "memory.addr2-mem_1024x32_dp.addr2": 132e-12,
+        "memory.data-mem_1024x32_dp.data1": 132e-12,
+        "memory.data-mem_1024x32_dp.data2": 132e-12,
+        "memory.we1-mem_1024x32_dp.we1": 132e-12,
+        "memory.we2-mem_1024x32_dp.we2": 132e-12,
+        "mem_1024x32_dp.out1-memory.out": 40e-12,
+        "mem_1024x32_dp.out2-memory.out": 40e-12,
+        "mem_1024x32_dp.addr1-mem_1024x32_dp": 509e-12,
+        "mem_1024x32_dp.addr2-mem_1024x32_dp": 509e-12,
+        "mem_1024x32_dp.data1-mem_1024x32_dp": 509e-12,
+        "mem_1024x32_dp.data2-mem_1024x32_dp": 509e-12,
+        "mem_1024x32_dp.we1-mem_1024x32_dp": 509e-12,
+        "mem_1024x32_dp.we2-mem_1024x32_dp": 509e-12,
+        "mem_1024x32_dp-mem_1024x32_dp.out1": 1.234e-9,
+        "mem_1024x32_dp-mem_1024x32_dp.out2": 1.234e-9,
+
+        "memory.addr1-mem_2048x16_dp.addr1": 132e-12,
+        "memory.addr2-mem_2048x16_dp.addr2": 132e-12,
+        "memory.data-mem_2048x16_dp.data1": 132e-12,
+        "memory.data-mem_2048x16_dp.data2": 132e-12,
+        "memory.we1-mem_2048x16_dp.we1": 132e-12,
+        "memory.we2-mem_2048x16_dp.we2": 132e-12,
+        "mem_2048x16_dp.out1-memory.out": 40e-12,
+        "mem_2048x16_dp.out2-memory.out": 40e-12,
+        "mem_2048x16_dp.addr1-mem_2048x16_dp": 509e-12,
+        "mem_2048x16_dp.addr2-mem_2048x16_dp": 509e-12,
+        "mem_2048x16_dp.data1-mem_2048x16_dp": 509e-12,
+        "mem_2048x16_dp.data2-mem_2048x16_dp": 509e-12,
+        "mem_2048x16_dp.we1-mem_2048x16_dp": 509e-12,
+        "mem_2048x16_dp.we2-mem_2048x16_dp": 509e-12,
+        "mem_2048x16_dp-mem_2048x16_dp.out1": 1.234e-9,
+        "mem_2048x16_dp-mem_2048x16_dp.out2": 1.234e-9,
+
+        "memory.addr1-mem_2048x8_dp.addr1": 132e-12,
+        "memory.addr2-mem_2048x8_dp.addr2": 132e-12,
+        "memory.data-mem_2048x8_dp.data1": 132e-12,
+        "memory.data-mem_2048x8_dp.data2": 132e-12,
+        "memory.we1-mem_2048x8_dp.we1": 132e-12,
+        "memory.we2-mem_2048x8_dp.we2": 132e-12,
+        "mem_2048x8_dp.out1-memory.out": 40e-12,
+        "mem_2048x8_dp.out2-memory.out": 40e-12,
+        "mem_2048x8_dp.addr1-mem_2048x8_dp": 509e-12,
+        "mem_2048x8_dp.addr2-mem_2048x8_dp": 509e-12,
+        "mem_2048x8_dp.data1-mem_2048x8_dp": 509e-12,
+        "mem_2048x8_dp.data2-mem_2048x8_dp": 509e-12,
+        "mem_2048x8_dp.we1-mem_2048x8_dp": 509e-12,
+        "mem_2048x8_dp.we2-mem_2048x8_dp": 509e-12,
+        "mem_2048x8_dp-mem_2048x8_dp.out1": 1.234e-9,
+        "mem_2048x8_dp-mem_2048x8_dp.out2": 1.234e-9,
+
+        "memory.addr1-mem_8192x4_dp.addr1": 132e-12,
+        "memory.addr2-mem_8192x4_dp.addr2": 132e-12,
+        "memory.data-mem_8192x4_dp.data1": 132e-12,
+        "memory.data-mem_8192x4_dp.data2": 132e-12,
+        "memory.we1-mem_8192x4_dp.we1": 132e-12,
+        "memory.we2-mem_8192x4_dp.we2": 132e-12,
+        "mem_8192x4_dp.out1-memory.out": 40e-12,
+        "mem_8192x4_dp.out2-memory.out": 40e-12,
+        "mem_8192x4_dp.addr1-mem_8192x4_dp": 509e-12,
+        "mem_8192x4_dp.addr2-mem_8192x4_dp": 509e-12,
+        "mem_8192x4_dp.data1-mem_8192x4_dp": 509e-12,
+        "mem_8192x4_dp.data2-mem_8192x4_dp": 509e-12,
+        "mem_8192x4_dp.we1-mem_8192x4_dp": 509e-12,
+        "mem_8192x4_dp.we2-mem_8192x4_dp": 509e-12,
+        "mem_8192x4_dp-mem_8192x4_dp.out1": 1.234e-9,
+        "mem_8192x4_dp-mem_8192x4_dp.out2": 1.234e-9,
+
+        "memory.addr1-mem_16384x2_dp.addr1": 132e-12,
+        "memory.addr2-mem_16384x2_dp.addr2": 132e-12,
+        "memory.data-mem_16384x2_dp.data1": 132e-12,
+        "memory.data-mem_16384x2_dp.data2": 132e-12,
+        "memory.we1-mem_16384x2_dp.we1": 132e-12,
+        "memory.we2-mem_16384x2_dp.we2": 132e-12,
+        "mem_16384x2_dp.out1-memory.out": 40e-12,
+        "mem_16384x2_dp.out2-memory.out": 40e-12,
+        "mem_16384x2_dp.addr1-mem_16384x2_dp": 509e-12,
+        "mem_16384x2_dp.addr2-mem_16384x2_dp": 509e-12,
+        "mem_16384x2_dp.data1-mem_16384x2_dp": 509e-12,
+        "mem_16384x2_dp.data2-mem_16384x2_dp": 509e-12,
+        "mem_16384x2_dp.we1-mem_16384x2_dp": 509e-12,
+        "mem_16384x2_dp.we2-mem_16384x2_dp": 509e-12,
+        "mem_16384x2_dp-mem_16384x2_dp.out1": 1.234e-9,
+        "mem_16384x2_dp-mem_16384x2_dp.out2": 1.234e-9,
+
+        "memory.addr1-mem_32768x1_dp.addr1": 132e-12,
+        "memory.addr2-mem_32768x1_dp.addr2": 132e-12,
+        "memory.data-mem_32768x1_dp.data1": 132e-12,
+        "memory.data-mem_32768x1_dp.data2": 132e-12,
+        "memory.we1-mem_32768x1_dp.we1": 132e-12,
+        "memory.we2-mem_32768x1_dp.we2": 132e-12,
+        "mem_32768x1_dp.out1-memory.out": 40e-12,
+        "mem_32768x1_dp.out2-memory.out": 40e-12,
+        "mem_32768x1_dp.addr1-mem_32768x1_dp": 509e-12,
+        "mem_32768x1_dp.addr2-mem_32768x1_dp": 509e-12,
+        "mem_32768x1_dp.data1-mem_32768x1_dp": 509e-12,
+        "mem_32768x1_dp.data2-mem_32768x1_dp": 509e-12,
+        "mem_32768x1_dp.we1-mem_32768x1_dp": 509e-12,
+        "mem_32768x1_dp.we2-mem_32768x1_dp": 509e-12,
+        "mem_32768x1_dp-mem_32768x1_dp.out1": 1.234e-9,
+        "mem_32768x1_dp-mem_32768x1_dp.out2": 1.234e-9,
+    }
+}
