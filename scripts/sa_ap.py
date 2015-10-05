@@ -7,17 +7,18 @@ import csv
 
 circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
 
-
-input_folder = 'benchmarks/heterogeneous'
-output_folder = 'benchmarks/heterogeneous_sa'
+input_folder = 'benchmarks/1ble'
+output_folder = 'benchmarks/1ble_place'
 architecture = 'heterogeneous'
 placer = 'td_sa'
 start = 'place'
 random = False
 
 placer_options = {
+    'detailed': '1',
+    'Rlim': '5',
     'greedy': '1',
-    'effort_level': '4'
+    'effort_level': '3',
 }
 
 
@@ -33,7 +34,7 @@ options = {
 }
 
 if random:
-    options['random'] = ''
+    options['--random'] = ''
 
 
 circuit_list = circuits.split(' ')
