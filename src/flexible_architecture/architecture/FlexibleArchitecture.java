@@ -97,7 +97,7 @@ public class FlexibleArchitecture {
 				isClocked = (boolean) definition.get("clocked");
 			}
 			
-			int height = 1, start = 0, repeat = 0;
+			int height = 1, start = 1, repeat = 1;
 			if(category.equals("hardblock")) {
 				height = (int) (long) definition.get("height");
 				start = (int) (long) definition.get("start");

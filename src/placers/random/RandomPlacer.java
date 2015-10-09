@@ -45,7 +45,7 @@ public class RandomPlacer extends Placer {
 		List<BlockType> blockTypes = this.circuit.getGlobalBlockTypes();
 		for(BlockType blockType : blockTypes) {
 			
-			if(!this.categories.contains(blockType.getCategory())) {
+			if(this.categories.size() > 0 && !this.categories.contains(blockType.getCategory())) {
 				continue;
 			}
 			

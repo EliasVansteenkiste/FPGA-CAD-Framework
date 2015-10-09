@@ -135,20 +135,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		
 		if(this.startingStage == 0) {
 			
-			// Place the IOs randomly
-			String categories = BlockCategory.IO.toString();
-			Map<String, String> options = new HashMap<String, String>();
-			options.put("categories", categories);
-			
-			// This isn't deterministically random
-			Placer randomPlacer = PlacerFactory.newPlacer("random", this.circuit, options);
-			randomPlacer.place();
-			
-			
 			//Initial linear solves, should normally be done 5-7 times
 			int blockTypeIndex = -1;
 			for(int i = 0; i < 7; i++) {
-				solveLinear(true, blockTypeIndex, 0.0);
+				this.solveLinear(true, blockTypeIndex, 0.0);
 			}
 			
 			//Initial legalization
@@ -172,8 +162,9 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		double linearCost, legalCost;
 		
 		do {
-			System.out.format("Iteration %d: pseudoWeightFactor = %f, solveMode = %d",
-					iteration, pseudoWeightFactor, blockTypeIndex);
+			String blockType = blockTypeIndex == -1 ? "all" : this.blockTypes.get(blockTypeIndex).getName();
+			System.out.format("Iteration %d: pseudoWeightFactor = %f, blockType = %s",
+					iteration, pseudoWeightFactor, blockType);
 			
 			// Solve linear
 			this.solveLinear(false, blockTypeIndex, pseudoWeightFactor);
@@ -189,10 +180,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 			linearCost = this.legalizer.calculateLinearCost();
 			legalCost = this.legalizer.calculateLegalCost();
 			
-			System.out.format("Iteration %d: linear cost = %f, legal cost = %f", iteration, linearCost, legalCost);
+			System.out.format(", linear cost = %f, legal cost = %f\n", linearCost, legalCost);
 			
 			
-			blockTypeIndex = ((blockTypeIndex + 2) % this.blockTypes.size()) - 1;
+			blockTypeIndex = (blockTypeIndex + 2) % (this.blockTypes.size() + 1) - 1;
 			if(blockTypeIndex < 0) {
 				pseudoWeightFactor += this.anchorWeightIncrease;
 				iteration++;
@@ -209,14 +200,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 	/*
 	 * Build and solve the linear system ==> recalculates linearX and linearY
 	 * If it is the first time we solve the linear system ==> don't take pseudonets into account
-	 * SolveMode: 0 = solve all, 1 = solve CLBs only, 2 = solve hb1 type only, 3 = solve hb2 type only,...
 	 */
 	private void solveLinear(boolean firstSolve, int blockTypeIndex, double pseudoWeightFactor) {
 		
 		BlockType blockType = null;
-		if(blockTypeIndex > -1) {
-			blockType = this.blockTypes.get(blockTypeIndex);
-		}
 		int startIndex, endIndex;
 		
 		// Solve all blocks
@@ -226,6 +213,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		
 		// Solve blocks of one type
 		} else {
+			blockType = this.blockTypes.get(blockTypeIndex);
 			startIndex = this.blockTypeIndexStarts.get(blockTypeIndex);
 			endIndex = this.blockTypeIndexStarts.get(blockTypeIndex + 1);
 		}
@@ -250,7 +238,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 				double pseudoWeightX = 2 * pseudoWeightFactor / deltaX;
 				double pseudoWeightY = 2 * pseudoWeightFactor / deltaY;
 				
-				int relativeIndex = index = startIndex;
+				int relativeIndex = index - startIndex;
 				xMatrix.setElement(relativeIndex, relativeIndex,
 						xMatrix.getElement(relativeIndex, relativeIndex) + pseudoWeightX);
 				yMatrix.setElement(relativeIndex, relativeIndex,
@@ -333,7 +321,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 					if(x > maxX) {
 						maxX = x;
 						maxXIndex = index;
-					} else if(x < minX) {
+					}
+					if(x < minX) {
 						minX = x;
 						minXIndex = index;
 					}
@@ -341,7 +330,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 					if(y > maxY) {
 						maxY = y;
 						maxYIndex = index;
-					} else if(y < minY) {
+					}
+					if(y < minY) {
 						minY = y;
 						minYIndex = index;
 					}
@@ -356,7 +346,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 					this.addMinMaxConnections(minXIndex - startIndex, minX, maxXIndex - startIndex, maxX,
 							weightMultiplier, xMatrix, xVector);
 				}
-				if(minYIndex != 0 || maxYIndex != 0) {
+				if(minYIndex != -1 || maxYIndex != -1) {
 					this.addMinMaxConnections(minYIndex - startIndex, minY, maxYIndex - startIndex, maxY,
 							weightMultiplier, yMatrix, yVector);
 				}
@@ -433,10 +423,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		
 		
 		//Save results
-		for(int i = 0; i < numBlocks; i++) {
-			this.linearX[startIndex + i] = xSolution[i];
-			this.linearY[startIndex + i] = ySolution[i];
-		}
+		System.arraycopy(xSolution, 0, this.linearX, startIndex, numBlocks);
+		System.arraycopy(ySolution, 0, this.linearY, startIndex, numBlocks);
 	}
 	
 	
@@ -465,7 +453,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 	private void addMinMaxConnections(int minIndex, double min, int maxIndex, double max,
 			double weightMultiplier, Crs matrix, double[] vector) {
 		double delta = Math.max(max - min, 0.005);
-		double weight = delta * weightMultiplier;
+		double weight = weightMultiplier / delta;
 		
 		
 		if(minIndex >= 0 && maxIndex >= 0) {
@@ -486,15 +474,15 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 			double weightMultiplier, Crs matrix, double[] vector) {
 		
 		double delta = Math.max(Math.abs(movableValue - value), 0.005);
-		double weight = delta * weightMultiplier;
+		double weight = weightMultiplier / delta;
 		
-		// Second block is a fixed block
+		// Boundary block is a fixed block
 		// Connection between fixed and non fixed block
 		if(index < 0)  {
 			matrix.setElement(movableIndex, movableIndex, matrix.getElement(movableIndex, movableIndex) + weight);
 			vector[movableIndex] += weight * value;
 		
-		// Second block is not fixed
+		// Boundary block is not fixed
 		// Connection between two non fixed blocks
 		} else if(movableIndex != index) {
 			matrix.setElement(index, index, matrix.getElement(index, index) + weight);
@@ -510,7 +498,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		if(fixedPosition != value1 || index1 >= 0 || first == false) {
 			if(index2 >= 0) {
 				double delta = Math.max(Math.abs(fixedPosition - value2), 0.005);
-				double weight = delta * weightMultiplier;
+				double weight = weightMultiplier / delta;
 				
 				matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
 				vector[index2] += weight * fixedPosition;
@@ -533,17 +521,11 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		int[] bestLegalY = this.legalizer.getBestLegalY();
 		
 		//Clear all previous locations
-		int width = this.circuit.getWidth();
-		int height = this.circuit.getHeight();
-		
-		for(int i = 1; i <= width; i++) {
-			for(int j = 1; j <= height; j++) {
-				AbstractSite site = this.circuit.getSite(i, j);
-				site.clear();
-			}
+		for(GlobalBlock block : this.blockIndexes.keySet()) {
+			block.removeSite();
 		}
 		
-		//Update locations
+		// Update locations
 		for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
 			GlobalBlock block = blockEntry.getKey();
 			int index = blockEntry.getValue();

@@ -3,6 +3,8 @@ package placers.analyticalplacer;
 import java.util.ArrayList;
 import java.util.List;
 
+import flexible_architecture.architecture.BlockType;
+
 public class LegalizerArea {
 	
 	int top, bottom, left, right;
@@ -10,6 +12,8 @@ public class LegalizerArea {
 	private boolean absorbed = false;
 	
 	private double tileCapacity;
+	private int blockHeight, blockRepeat;
+	
 	private int numTiles = 0;
 	private List<Integer> blockIndexes = new ArrayList<Integer>();
 	
@@ -20,29 +24,45 @@ public class LegalizerArea {
 		this.right = a.right;
 		
 		this.tileCapacity = a.tileCapacity;
+		this.blockHeight = a.blockHeight;
+		this.blockRepeat = a.blockRepeat;
 	}
 	
-	LegalizerArea(int x, int y, double tileCapacity) {
+	LegalizerArea(int x, int y, double tileCapacity, BlockType blockType) {
 		this.left = x;
 		this.right = x;
 		this.top = y;
 		this.bottom = y;
 		
 		this.tileCapacity = tileCapacity;
+		this.blockHeight = blockType.getHeight();
+		this.blockRepeat = blockType.getRepeat();
 	}
 	
+	
+	int getBlockHeight() {
+		return this.blockHeight;
+	}
+	int getBlockRepeat() {
+		return this.blockRepeat;
+	}
+	
+	
 	void grow(int[] direction) {
-		if(direction[0] == -1) {
-			this.left--;
+		this.grow(direction[0], direction[1]);
+	}
+	void grow(int horizontal, int vertical) {
+		if(horizontal == -1) {
+			this.left -= this.blockRepeat;
 		
-		} else if(direction[0] == 1) {
-			this.right++;
+		} else if(horizontal == 1) {
+			this.right += this.blockRepeat;
 		
-		} else if(direction[1] == -1) {
-			this.top--;
+		} else if(vertical == -1) {
+			this.top -= this.blockHeight;
 		
-		} else if(direction[1] == 1) {
-			this.bottom++;
+		} else if(vertical == 1) {
+			this.bottom += this.blockHeight;
 		}
 	}
 	

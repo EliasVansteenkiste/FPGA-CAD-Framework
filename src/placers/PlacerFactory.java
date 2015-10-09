@@ -5,6 +5,7 @@ import java.util.Map;
 
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
+import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
 import placers.random.RandomPlacer;
 import util.Logger;
 import flexible_architecture.Circuit;
@@ -47,7 +48,7 @@ public class PlacerFactory {
 			return new TD_SAPlacer(circuit, options);
 		
 		case "ap":
-			//return new HeteroAnalyticalPlacerTwo(circuit, options);
+			return new HeteroAnalyticalPlacerTwo(circuit, options);
 			
 		case "mdp":
 			//return new MDPPlacer(circuit, options);

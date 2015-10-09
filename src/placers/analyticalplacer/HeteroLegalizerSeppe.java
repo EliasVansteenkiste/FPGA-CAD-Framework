@@ -1,14 +1,13 @@
 package placers.analyticalplacer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import util.Logger;
 
 import flexible_architecture.Circuit;
 import flexible_architecture.architecture.BlockType;
@@ -20,7 +19,6 @@ import flexible_architecture.pin.AbstractPin;
 
 public class HeteroLegalizerSeppe {
 	
-	private static final double UTILIZATION_FACTOR = 0.9;
 	private static enum Axis {X, Y};
 	
 	private Circuit circuit;
@@ -41,8 +39,8 @@ public class HeteroLegalizerSeppe {
 	private int[] tmpLegalY;
 	
 	// These are temporary data structures
-	LegalizerArea[][] areaPointers;
-	List<List<List<Integer>>> blockMatrix;
+	private LegalizerArea[][] areaPointers;
+	private List<List<List<Integer>>> blockMatrix;
 	
 	private double bestCost;
 	boolean lastMaxUtilizationSmallerThanOne;
@@ -69,6 +67,8 @@ public class HeteroLegalizerSeppe {
 		this.linearY = linearY;
 		this.numBlocks = linearX.length;
 		
+		this.bestLegalX = new int[this.numBlocks];
+		this.bestLegalY = new int[this.numBlocks];
 		this.tmpLegalX = new int[this.numBlocks];
 		this.tmpLegalY = new int[this.numBlocks];
 		
@@ -105,7 +105,7 @@ public class HeteroLegalizerSeppe {
 		
 		System.arraycopy(this.bestLegalX, 0, this.tmpLegalX, 0, this.numBlocks);
 		System.arraycopy(this.bestLegalY, 0, this.tmpLegalY, 0, this.numBlocks);
-		this.tileCapacity = tileCapacity * HeteroLegalizerSeppe.UTILIZATION_FACTOR;
+		this.tileCapacity = tileCapacity;
 		
 		if(blockTypeIndex == -1) {
 			for(int i = 0; i < this.blockTypes.size(); i++) {
@@ -153,7 +153,7 @@ public class HeteroLegalizerSeppe {
 		List<LegalizerArea> areas = new ArrayList<LegalizerArea>();
 		
 		for(int x = 1; x < this.width - 1; x++) {
-			for(int y = 1; y < this.height; y++) {
+			for(int y = 1; y < this.height - 1; y++) {
 				if(this.blockMatrix.get(x).get(y).size() > 1 && this.areaPointers[x][y] == null) {
 					LegalizerArea newArea = this.newArea(blockType, x, y);
 					areas.add(newArea);
@@ -215,7 +215,7 @@ public class HeteroLegalizerSeppe {
 	
 	private LegalizerArea newArea(BlockType blockType, int x, int y) {
 		// left, top, right, bottom
-		LegalizerArea area = new LegalizerArea(x, y, this.tileCapacity);
+		LegalizerArea area = new LegalizerArea(x, y, this.tileCapacity, blockType);
 		area.incrementTiles();
 		area.addBlockIndexes(this.blockMatrix.get(x).get(y));
 		
@@ -254,43 +254,50 @@ public class HeteroLegalizerSeppe {
 		int[] rows = {0, 0};
 		int[] columns = {0, 0};
 		
+		int blockHeight = area.getBlockHeight();
+		int blockRepeat = area.getBlockRepeat(); 
+		
 		// While goalArea is not completely covered by area
 		while(true) {
+			int[] direction = {0, 0};
+			
 			if(area.left != goalArea.left) {
 				rows[0] = area.top;
 				rows[1] = area.bottom;
-				columns[0] = area.left - 1;
-				columns[1] = area.left - 1;
-				area.left--;
+				columns[0] = area.left - blockRepeat;
+				columns[1] = area.left - blockRepeat;
+				area.grow(-1, 0);
 			
 			} else if(area.right != goalArea.right) {
 				rows[0] = area.top;
 				rows[1] = area.bottom;
-				columns[0] = area.right + 1;
-				columns[1] = area.right + 1;
-				area.right++;
+				columns[0] = area.right + blockRepeat;
+				columns[1] = area.right + blockRepeat;
+				area.grow(1, 0);
 			
 			} else if(area.top != goalArea.top) {
-				rows[0] = area.top - 1;
-				rows[1] = area.top - 1;
+				rows[0] = area.top - blockHeight;
+				rows[1] = area.top - blockHeight;
 				columns[0] = area.left;
 				columns[1] = area.right;
-				area.top--;
+				area.grow(0, -1);
 			
 			} else if(area.bottom != goalArea.bottom) {
-				rows[0] = area.bottom + 1;
-				rows[1] = area.bottom + 1;
+				rows[0] = area.bottom + blockHeight;
+				rows[1] = area.bottom + blockHeight;
 				columns[0] = area.left;
 				columns[1] = area.right;
-				area.bottom++;
+				area.grow(0, 1);
 			
 			} else {
 				return;
 			}
 			
+			area.grow(direction);
 			
-			for(int y = rows[0]; y <= rows[0]; y++) {
-				for(int x = columns[0]; x <= columns[1]; x++) {
+			
+			for(int y = rows[0]; y <= rows[1]; y += blockHeight) {
+				for(int x = columns[0]; x <= columns[1]; x += blockRepeat) {
 					
 					// If this tile is occupied by an unabsorbed area
 					LegalizerArea neighbour = this.areaPointers[x][y];
@@ -325,22 +332,57 @@ public class HeteroLegalizerSeppe {
 	private void legalizeArea(LegalizerArea area) {
 		List<Integer> blockIndexes = area.getBlockIndexes();
 		int[] coordinates = {area.left, area.top, area.right, area.bottom};
-		this.legalizeArea(coordinates, blockIndexes, Axis.X);
+		this.legalizeArea(coordinates, area.getBlockRepeat(), area.getBlockHeight(), blockIndexes, Axis.X);
 	}
 	
-	private void legalizeArea(int[] coordinates, List<Integer> blockIndexes, Axis axis) {
+	private void legalizeArea(
+			int[] coordinates,
+			int blockRepeat,
+			int blockHeight,
+			List<Integer> blockIndexes,
+			Axis axis) {
 		
 		// If the area is only one tile big: place all the blocks on this tile
-		if(coordinates[0] == coordinates[2] && coordinates[1] == coordinates[3]) {
-			if(blockIndexes.size() > this.tileCapacity) {
-				Logger.raise("Too many blocks assigned to one tile");
-			}
-			
+		if(coordinates[2] - coordinates[0] < blockRepeat && coordinates[3] - coordinates[1] < blockHeight) {
 			for(Integer blockIndex : blockIndexes) {
 				this.tmpLegalX[blockIndex] = coordinates[0];
 				this.tmpLegalY[blockIndex] = coordinates[1];
 			}
 			
+			return;
+		
+		} else if(blockIndexes.size() == 0) {
+			return;
+			
+		} else if(blockIndexes.size() == 1) {
+			int blockIndex = blockIndexes.get(0);
+			double linearX = this.linearX[blockIndex];
+			double linearY = this.linearY[blockIndex];
+			
+			double minDistance = Double.MAX_VALUE;
+			int minX = -1, minY = -1;
+			
+			for(int x = coordinates[0]; x <= coordinates[2]; x += blockRepeat) {
+				for(int y = coordinates[1]; y <= coordinates[3]; y += blockHeight) {
+					double distance = Math.pow(linearX - x, 2) + Math.pow(linearY - y, 2);
+					if(distance < minDistance) {
+						minDistance = distance;
+						minX = x;
+						minY = y;
+					}
+				}
+			}
+			
+			this.tmpLegalX[blockIndex] = minX;
+			this.tmpLegalY[blockIndex] = minY;
+			return;
+		
+		} else if(coordinates[2] - coordinates[0] < blockRepeat && axis == Axis.X) {
+			this.legalizeArea(coordinates, blockRepeat, blockHeight, blockIndexes, Axis.Y);
+			return;
+		
+		} else if(coordinates[3] - coordinates[1] < blockHeight && axis == Axis.Y) {
+			this.legalizeArea(coordinates, blockRepeat, blockHeight, blockIndexes, Axis.X);
 			return;
 		}
 		
@@ -354,35 +396,79 @@ public class HeteroLegalizerSeppe {
 		Axis newAxis;
 		
 		if(axis == Axis.X) {
-			int split = (coordinates[0] + coordinates[2]) / 2;
-			splitRatio = (split - coordinates[0]) / (coordinates[2] - coordinates[0]);
 			
-			coordinates1[2] = split;
-			coordinates2[0] = split;
+			// If the blockType is CLB
+			if(blockRepeat == 1) {
+				int numClbColumns = 0;
+				for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+					if(this.circuit.getColumnType(column).getCategory() == BlockCategory.CLB) {
+						numClbColumns++;
+					}
+				}
+				
+				int splitColumn = -1;
+				int halfNumClbColumns = 0;
+				for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+					if(this.circuit.getColumnType(column).getCategory() == BlockCategory.CLB) {
+						halfNumClbColumns++;
+					}
+					
+					if(halfNumClbColumns >= numClbColumns / 2) {
+						splitColumn = column;
+						break;
+					}
+				}
+				
+				splitRatio = halfNumClbColumns / (double) numClbColumns;
+				
+				coordinates1[2] = splitColumn;
+				coordinates2[0] = splitColumn + 1;
+				
+			// Else: it's a hardblock
+			} else {
+				int numColumns = (coordinates[2] - coordinates[0]) / blockRepeat + 1;
+				splitRatio = (numColumns / 2) / (double) numColumns;
+				
+				coordinates1[2] = coordinates[0] + (numColumns / 2 - 1) * blockRepeat;
+				coordinates2[0] = coordinates[0] + (numColumns / 2) * blockRepeat;
+			}
 			
 			Collections.sort(blockIndexes, new BlockComparator(this.linearX));
 			
 			newAxis = Axis.Y;
 			
 		} else {
-			int split = (coordinates[1] + coordinates[3]) / 2;
-			splitRatio = (split - coordinates[1]) / (coordinates[3] - coordinates[1]);
 			
-			coordinates1[3] = split;
-			coordinates2[1] = split;
+			// If the blockType is CLB
+			if(blockRepeat == 1) {
+				int splitRow = (coordinates[1] + coordinates[3]) / 2;
+				splitRatio = (splitRow - coordinates[1] + 1) / (double) (coordinates[3] - coordinates[1] + 1);
+				
+				coordinates1[3] = splitRow;
+				coordinates2[1] = splitRow + 1;
+			
+			// Else: it's a hardblock
+			} else {
+				int numRows = (coordinates[3] - coordinates[1]) / blockHeight + 1;
+				splitRatio = (numRows / 2) / (double) numRows;
+				
+				coordinates1[3] = coordinates[1] + (numRows / 2 - 1) * blockHeight;
+				coordinates2[1] = coordinates[1] + (numRows / 2) * blockHeight;
+			}
 			
 			Collections.sort(blockIndexes, new BlockComparator(this.linearY));
 			
 			newAxis = Axis.X;
 		}
 		
+		
 		// Split blocks in two lists with a ratio approx. equal to area split
 		int split = (int) (splitRatio * blockIndexes.size());
-		List<Integer> blocks1 = blockIndexes.subList(0, split);
-		List<Integer> blocks2 = blockIndexes.subList(split, blockIndexes.size());
+		List<Integer> blocks1 = new ArrayList<Integer>(blockIndexes.subList(0, split));
+		List<Integer> blocks2 = new ArrayList<Integer>(blockIndexes.subList(split, blockIndexes.size()));
 		
-		this.legalizeArea(coordinates1, blocks1, newAxis);
-		this.legalizeArea(coordinates2, blocks2, newAxis);
+		this.legalizeArea(coordinates1, blockRepeat, blockHeight, blocks1, newAxis);
+		this.legalizeArea(coordinates2, blockRepeat, blockHeight, blocks2, newAxis);
 	}
 	
 	
@@ -455,13 +541,15 @@ public class HeteroLegalizerSeppe {
 					
 					if(x < minX) {
 						minX = x;
-					} else if(x > maxX) {
+					}
+					if(x > maxX) {
 						maxX = x;
 					}
 					
 					if(y < minY) {
 						minY = y;
-					} else if(y > maxY) {
+					}
+					if(y > maxY) {
 						maxY = y;
 					}
 				}
