@@ -11,12 +11,12 @@ import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.FlexibleArchitecture;
 import flexible_architecture.architecture.BlockType.BlockCategory;
 import flexible_architecture.block.AbstractBlock;
+import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
+import flexible_architecture.block.IOSite;
+import flexible_architecture.block.Site;
 import flexible_architecture.pin.AbstractPin;
 import flexible_architecture.pin.GlobalPin;
-import flexible_architecture.site.AbstractSite;
-import flexible_architecture.site.IOSite;
-import flexible_architecture.site.Site;
 
 public class Circuit {
 	
@@ -199,16 +199,32 @@ public class Circuit {
 	}
 	
 	
+	public BlockType getColumnType(int x) {
+		return this.columns.get(x);
+	}
 	
+	/*
+	 * Return the site at coordinate (x, y). If allowNull is false,
+	 * return the site that overlaps coordinate (x, y) but may not
+	 * start at that position.
+	 */
 	public AbstractSite getSite(int x, int y) {
-		AbstractSite site = null;
-		int topY = y;
-		while(site == null) {
-			site = this.sites[x][topY];
-			topY--;
-		}
+		return this.getSite(x, y, false);
+	}
+	public AbstractSite getSite(int x, int y, boolean allowNull) {
+		if(allowNull) {
+			return this.sites[x][y];
 		
-		return site;
+		} else {
+			AbstractSite site = null;
+			int topY = y;
+			while(site == null) {
+				site = this.sites[x][topY];
+				topY--;
+			}
+			
+			return site;
+		}
 	}
 	
 	public int getNumGlobalBlocks() {

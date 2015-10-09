@@ -4,7 +4,6 @@ import util.Logger;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.PortType;
 import flexible_architecture.pin.GlobalPin;
-import flexible_architecture.site.AbstractSite;
 
 public class GlobalBlock extends AbstractBlock {
 	
@@ -24,6 +23,7 @@ public class GlobalBlock extends AbstractBlock {
 	public int getY() {
 		return this.site.getY();
 	}
+	
 	
 	public void removeSite() {
 		if(this.site != null) {

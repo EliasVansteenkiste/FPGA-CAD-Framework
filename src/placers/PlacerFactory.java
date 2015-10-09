@@ -3,16 +3,10 @@ package placers;
 import java.util.HashMap;
 import java.util.Map;
 
-import placers.MDP.MDPPlacer;
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
-import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
 import placers.random.RandomPlacer;
 import util.Logger;
-import architecture.Architecture;
-import architecture.FourLutSanitized;
-import circuit.PackedCircuit;
-import circuit.PrePackedCircuit;
 import flexible_architecture.Circuit;
 
 public class PlacerFactory {
@@ -22,7 +16,7 @@ public class PlacerFactory {
 		needsInitialPlacement.put("random", false);
 		needsInitialPlacement.put("wld_sa", true);
 		needsInitialPlacement.put("td_sa", true);
-		needsInitialPlacement.put("ap", false);
+		needsInitialPlacement.put("ap", true);
 	}
 	
 	public static boolean needsInitialPlacement(String type) {
@@ -35,7 +29,12 @@ public class PlacerFactory {
 		}
 	}
 	
-	public static Placer getPlacer(String type, Circuit circuit, Map<String, String> options) {
+	
+	public static Placer newPlacer(String type, Circuit circuit) {
+		return PlacerFactory.newPlacer(type, circuit, new HashMap<String, String>());
+	}
+	
+	public static Placer newPlacer(String type, Circuit circuit, Map<String, String> options) {
 		switch(type) {
 		
 		case "random":

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import flexible_architecture.architecture.BlockType;
+import flexible_architecture.architecture.BlockType.BlockCategory;
 import flexible_architecture.architecture.PortType;
 import flexible_architecture.pin.AbstractPin;
 
@@ -54,6 +55,9 @@ public abstract class AbstractBlock {
 	}
 	public BlockType getType() {
 		return this.blockType;
+	}
+	public BlockCategory getCategory() {
+		return this.blockType.getCategory();
 	}
 	public int getIndex() {
 		return this.index;

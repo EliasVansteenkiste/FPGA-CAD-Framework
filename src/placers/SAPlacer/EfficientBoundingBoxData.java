@@ -3,9 +3,9 @@ package placers.SAPlacer;
 import java.util.HashSet;
 import java.util.Set;
 
+import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.pin.GlobalPin;
-import flexible_architecture.site.AbstractSite;
 
 public class EfficientBoundingBoxData
 {

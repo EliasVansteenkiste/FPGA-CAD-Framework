@@ -15,7 +15,7 @@ public class CGSolver
 	public CGSolver(Crs crs, double[] vector)
 	{
 		this.val = crs.getVal();
-		this.col_ind = crs.getCol_ind();
+		this.col_ind = crs.getColInd();
 		this.row_ptr = crs.getRow_ptr();
 		this.vector = vector;
 	}

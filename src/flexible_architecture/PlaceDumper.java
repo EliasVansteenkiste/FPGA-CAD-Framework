@@ -8,8 +8,8 @@ import java.io.PrintWriter;
 
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.block.AbstractBlock;
+import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.site.AbstractSite;
 
 import util.Logger;
 

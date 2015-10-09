@@ -79,7 +79,7 @@ public class CLI {
 	
 	private static void timePlacement(String placerName, Circuit circuit, Map<String, String> options) {
 		CLI.startTimer();
-		Placer placer = PlacerFactory.getPlacer(placerName, circuit, options);
+		Placer placer = PlacerFactory.newPlacer(placerName, circuit, options);
 		placer.place();
 		CLI.stopTimer();
 		

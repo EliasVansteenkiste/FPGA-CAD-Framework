@@ -1,4 +1,4 @@
-package flexible_architecture.site;
+package flexible_architecture.block;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -9,7 +9,6 @@ import java.util.Set;
 import util.Logger;
 
 import flexible_architecture.architecture.BlockType;
-import flexible_architecture.block.GlobalBlock;
 
 public class IOSite extends AbstractSite {
 	
@@ -39,7 +38,7 @@ public class IOSite extends AbstractSite {
 		return iter.next();		
 	}
 	
-	public void addBlock(GlobalBlock block) {
+	void addBlock(GlobalBlock block) {
 		if(this.blocks.size() == this.capacity) {
 			Logger.raise("Tried to add a block to a full IO site");
 		} else {
@@ -52,6 +51,10 @@ public class IOSite extends AbstractSite {
 		if(!success) {
 			Logger.raise("Trying to remove a block that is not present in site");
 		}
+	}
+	
+	public void clear() {
+		this.blocks.clear();
 	}
 	
 	

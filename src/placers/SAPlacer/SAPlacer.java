@@ -7,8 +7,8 @@ import java.util.Random;
 import placers.Placer;
 
 import flexible_architecture.Circuit;
+import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.site.AbstractSite;
 
 public abstract class SAPlacer extends Placer
 {

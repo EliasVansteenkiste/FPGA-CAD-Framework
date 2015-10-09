@@ -12,10 +12,10 @@ import placers.SAPlacer.Swap;
 import flexible_architecture.Circuit;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.block.AbstractBlock;
+import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.LocalBlock;
 import flexible_architecture.pin.AbstractPin;
-import flexible_architecture.site.AbstractSite;
 
 public class TimingGraph {
 	

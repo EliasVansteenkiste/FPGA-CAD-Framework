@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.block.AbstractBlock;
+import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.site.AbstractSite;
 
 public class PlaceParser {
 	
