@@ -282,9 +282,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 				
 				
 				// Loop through all pins on the net and calculate the bounding box
-				for(AbstractPin abstractPin : pins) {
-					GlobalPin pin = (GlobalPin) abstractPin;
-					GlobalBlock block = pin.getOwner();
+				for(AbstractPin pin : pins) {
+					GlobalBlock block = ((GlobalPin) pin).getOwner();
 					
 					double x, y;
 					int index;
@@ -421,7 +420,6 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		double[] ySolution = ySolver.solve(epsilon);
 		
 		
-		
 		//Save results
 		System.arraycopy(xSolution, 0, this.linearX, startIndex, numBlocks);
 		System.arraycopy(ySolution, 0, this.linearY, startIndex, numBlocks);
@@ -456,43 +454,49 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		double weight = weightMultiplier / delta;
 		
 		
+		// Both blocks are movable
 		if(minIndex >= 0 && maxIndex >= 0) {
 			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
 			matrix.setElement(minIndex, maxIndex, matrix.getElement(minIndex, maxIndex) + weight);
 			matrix.setElement(maxIndex, minIndex, matrix.getElement(maxIndex, minIndex) + weight);
 			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
-			
+		
+		// Only min block is movable
+		} else if(minIndex >= 0) {
+			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
+			vector[minIndex] += weight * max;
+		
+		// Only max block is movable
 		} else {
-			// Get the one index that is not negative
-			int index = Math.max(minIndex, maxIndex); 
-			matrix.setElement(index, index, matrix.getElement(index, index) + weight);
-			vector[index] = vector[index] + weight * max;
+			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
+			vector[maxIndex] += weight * min;
 		}
 	}
 	
-	private void addMovableConnections(int movableIndex, double movableValue, int index, double value,
+	private void addMovableConnections(int movableIndex, double movableValue, int boundaryIndex, double boundaryValue,
 			double weightMultiplier, Crs matrix, double[] vector) {
 		
-		double delta = Math.max(Math.abs(movableValue - value), 0.005);
+		double delta = Math.max(Math.abs(movableValue - boundaryValue), 0.005);
 		double weight = weightMultiplier / delta;
 		
 		// Boundary block is a fixed block
 		// Connection between fixed and non fixed block
-		if(index < 0)  {
+		if(boundaryIndex < 0) {
 			matrix.setElement(movableIndex, movableIndex, matrix.getElement(movableIndex, movableIndex) + weight);
-			vector[movableIndex] += weight * value;
+			vector[movableIndex] += weight * boundaryValue;
 		
 		// Boundary block is not fixed
 		// Connection between two non fixed blocks
-		} else if(movableIndex != index) {
-			matrix.setElement(index, index, matrix.getElement(index, index) + weight);
-			matrix.setElement(index, movableIndex, matrix.getElement(index, movableIndex) + weight);
-			matrix.setElement(movableIndex, index, matrix.getElement(movableIndex, index) + weight);
+		} else if(movableIndex != boundaryIndex) {
+			matrix.setElement(boundaryIndex, boundaryIndex, matrix.getElement(boundaryIndex, boundaryIndex) + weight);
+			matrix.setElement(boundaryIndex, movableIndex, matrix.getElement(boundaryIndex, movableIndex) + weight);
+			matrix.setElement(movableIndex, boundaryIndex, matrix.getElement(movableIndex, boundaryIndex) + weight);
 			matrix.setElement(movableIndex, movableIndex, matrix.getElement(movableIndex, movableIndex) + weight);
 		}
 	}
 	
-	private boolean addFixedConnections(boolean first, double fixedPosition, int index1, double value1, int index2, double value2,
+	private boolean addFixedConnections(boolean first, double fixedPosition,
+			int index1, double value1, int index2, double value2,
 			double weightMultiplier, Crs matrix, double[] vector) {
 		
 		if(fixedPosition != value1 || index1 >= 0 || first == false) {
