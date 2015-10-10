@@ -22,7 +22,7 @@ public class CGSolver
 	
 	public double[] solve(double epselon)
 	{
-		int dimensions = vector.length;
+		int dimensions = this.vector.length;
 		double[] x = new double[dimensions];
 		double[] r = new double[dimensions];
 		double[] s = new double[dimensions];
@@ -40,7 +40,7 @@ public class CGSolver
 		for(int i = 0; i < dimensions; i++)
 		{
 			x[i] = 0.0;
-			r[i] = vector[i];
+			r[i] = this.vector[i];
 		}
 		m = constructJacobi();
 		elementWiseProduct(m, r, s);
@@ -76,7 +76,7 @@ public class CGSolver
 		sparseMatrixVectorProduct(solution, calculatedB);
 		for(int i = 0; i < calculatedB.length; i++)
 		{
-			if(calculatedB[i] - vector[i] < -0.3 || calculatedB[i] - vector[i] > 0.3)
+			if(calculatedB[i] - this.vector[i] < -0.3 || calculatedB[i] - this.vector[i] > 0.3)
 			{
 				//System.err.println("Solution was not correct");
 				//System.err.println("i: " + i + ", calc: " + calculatedB[i] + ", orig: " + vector[i]);
@@ -92,17 +92,17 @@ public class CGSolver
 	
 	private double[] constructJacobi()
 	{
-		int dimensions = vector.length;
+		int dimensions = this.vector.length;
 		double[] jacobi = new double[dimensions];
 		int index;
 		for(int row = 0; row < dimensions; row++)
 		{
-			index = row_ptr[row];
-			while(col_ind[index] != row) //We suppose the diagonal elements are always non-zero
+			index = this.row_ptr[row];
+			while(this.col_ind[index] != row) //We suppose the diagonal elements are always non-zero
 			{
 				index++;
 			}
-			jacobi[row] = 1.0 / val[index];
+			jacobi[row] = 1.0 / this.val[index];
 		}
 		return jacobi;
 	}
@@ -136,13 +136,13 @@ public class CGSolver
 	private void sparseMatrixVectorProduct(double[] b, double[] c)
 	{
 		int index = 0;
-		for(int row = 0; row < vector.length; row++)
+		for(int row = 0; row < this.vector.length; row++)
 		{
 			double sum = 0.0;
 			int nextRow = row + 1;
-			while(index < row_ptr[nextRow])
+			while(index < this.row_ptr[nextRow])
 			{
-				sum += val[index] * b[col_ind[index]];
+				sum += this.val[index] * b[this.col_ind[index]];
 				index++;
 			}
 			c[row] = sum;
