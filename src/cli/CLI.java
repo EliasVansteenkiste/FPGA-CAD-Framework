@@ -120,7 +120,7 @@ public class CLI {
 		timingGraph.recalculateAllSlackCriticalities();
 		
 		double totalTimingCost = timingGraph.calculateTotalCost();
-		double maxDelay = timingGraph.getMaxArrivalTime();
+		double maxDelay = timingGraph.getMaxDelay();
 		System.out.format("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
 		System.out.format("%s %15s: %e\n", prefix, "max delay", maxDelay);
 		

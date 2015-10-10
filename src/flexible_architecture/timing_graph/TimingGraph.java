@@ -3,6 +3,7 @@ package flexible_architecture.timing_graph;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -17,7 +18,7 @@ import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.LocalBlock;
 import flexible_architecture.pin.AbstractPin;
 
-public class TimingGraph {
+public class TimingGraph implements Iterable<TimingGraphEntry> {
 	
 	private Circuit circuit;
 	private Map<LocalBlock, TimingNode> nodes = new HashMap<LocalBlock, TimingNode>();
@@ -26,7 +27,7 @@ public class TimingGraph {
 	private List<TimingNode> affectedNodes = new ArrayList<TimingNode>();
 	
 	private double criticalityExponent = 8;
-	private double maxArrivalTime;
+	private double maxDelay;
 	
 	public TimingGraph(Circuit circuit) {
 		this.circuit = circuit;
@@ -122,18 +123,17 @@ public class TimingGraph {
 	}
 	
 	
-	
 	public void setCriticalityExponent(double criticalityExponent) {
 		this.criticalityExponent = criticalityExponent;
 	}
 	
 	
 	public void recalculateAllSlackCriticalities() {
-		this.maxArrivalTime = this.calculateArrivalTimes();
+		this.maxDelay = this.calculateArrivalTimes();
 		this.calculateRequiredTimes();
 		
 		for(TimingNode node : this.nodes.values()) {
-			node.calculateCriticalities(this.maxArrivalTime, this.criticalityExponent);
+			node.calculateCriticalities(this.maxDelay, this.criticalityExponent);
 		}
 	}
 	
@@ -150,14 +150,14 @@ public class TimingGraph {
 		Stack<TimingNode> todo = new Stack<TimingNode>();
 		todo.addAll(this.clockedNodes);
 		
-		double maxArrivalTime = 0;
+		double maxDelay = 0;
 		while(todo.size() > 0) {
 			TimingNode currentNode = todo.pop();
 			
 			double arrivalTime = currentNode.calculateArrivalTime();
 			
-			if(arrivalTime > maxArrivalTime) {
-				maxArrivalTime = arrivalTime;
+			if(arrivalTime > maxDelay) {
+				maxDelay = arrivalTime;
 			}
 			
 			for(TimingNode sink : currentNode.getSinks()) {
@@ -168,7 +168,7 @@ public class TimingGraph {
 			}
 		}
 		
-		return maxArrivalTime;
+		return maxDelay;
 	}
 	
 	private void calculateRequiredTimes() {
@@ -176,7 +176,7 @@ public class TimingGraph {
 		Stack<TimingNode> done = new Stack<TimingNode>();
 		
 		for(TimingNode endNode : this.clockedNodes) {
-			endNode.setRequiredTime(this.maxArrivalTime);
+			endNode.setRequiredTime(this.maxDelay);
 			this.requiredTimesAddChildren(endNode, todo);
 			done.add(endNode);
 		}
@@ -200,8 +200,8 @@ public class TimingGraph {
 	
 	
 	
-	public double getMaxArrivalTime() {
-		return this.maxArrivalTime;
+	public double getMaxDelay() {
+		return this.maxDelay;
 	}
 	
 	
@@ -254,5 +254,15 @@ public class TimingGraph {
 	
 	public void revert() {
 		// Do nothing
+	}
+	
+	
+	
+	// Iterator methods
+	// When iterating over a TimingGraph object, you will get a TimingGraphEntry object
+	// for each connection in the timinggraph. Each of those objects contains a source
+	// block, a sink block and the criticality of the connection.
+	public Iterator<TimingGraphEntry> iterator() {
+		return new TimingGraphIterator(this.nodesInGlobalBlocks);
 	}
 }

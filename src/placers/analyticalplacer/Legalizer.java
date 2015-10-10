@@ -1,30 +1,24 @@
 package placers.analyticalplacer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import util.Logger;
 
 import flexible_architecture.Circuit;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.BlockType.BlockCategory;
-import flexible_architecture.block.AbstractBlock;
 import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.Site;
-import flexible_architecture.pin.AbstractPin;
 
-public class HeteroLegalizerSeppe {
+public class Legalizer {
 	
 	private static enum Axis {X, Y};
 	
 	private Circuit circuit;
+	private CostCalculator costCalculator;
 	private int width, height;
 	
 	private Map<GlobalBlock, Integer> blockIndexes;
@@ -50,8 +44,9 @@ public class HeteroLegalizerSeppe {
 	boolean firstOneDone;
 	
 	
-	HeteroLegalizerSeppe(
+	Legalizer(
 			Circuit circuit,
+			CostCalculator costCalculator,
 			Map<GlobalBlock, Integer> blockIndexes,
 			List<BlockType> blockTypes,
 			List<Integer> blockTypeIndexStarts,
@@ -61,6 +56,8 @@ public class HeteroLegalizerSeppe {
 		this.circuit = circuit;
 		this.width = this.circuit.getWidth();
 		this.height = this.circuit.getHeight();
+		
+		this.costCalculator = costCalculator;
 		
 		this.blockIndexes = blockIndexes;
 		this.blockTypes = blockTypes;
@@ -84,10 +81,13 @@ public class HeteroLegalizerSeppe {
 			this.bestLegalY[index] = (int) Math.round(this.linearY[index]);
 		}
 		
-		this.bestCost = this.calculateLegalCost();
+		this.bestCost = this.costCalculator.calculate(this.bestLegalX, this.bestLegalY);
 	}
 	
 	
+	double getBestCost() {
+		return this.bestCost;
+	}
 	int[] getBestLegalX() {
 		return this.bestLegalX;
 	}
@@ -489,96 +489,40 @@ public class HeteroLegalizerSeppe {
 	
 	
 	private void updateBestLegal() {
-		double newCost = this.calculateTemporaryLegalCost();
+		boolean update = this.costCalculator.requiresCircuitUpdate(); 
+		
+		if(update) {
+			this.updateCircuit(this.tmpLegalX, this.tmpLegalY);
+		}
+		
+		double newCost = this.costCalculator.calculate(this.tmpLegalX, this.tmpLegalY);
 		
 		if(newCost < this.bestCost) {
 			System.arraycopy(this.tmpLegalX, 0, this.bestLegalX, 0, this.numBlocks);
 			System.arraycopy(this.tmpLegalY, 0, this.bestLegalY, 0, this.numBlocks);
 			this.bestCost = newCost;
-		}
-	}
-	
-	
-	double calculateLegalCost() {
-		return this.bestCost;
-	}
-	private double calculateTemporaryLegalCost() {
-		return this.calculateCost(true, true);
-	}
-	double calculateLinearCost() {
-		return this.calculateCost(false, false);
-	}
-	private double calculateCost(boolean legal, boolean temporary) {
-		double cost = 0.0;
 		
-		for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
-			for(AbstractBlock sourceBlock : this.circuit.getBlocks(blockType)) {
-				for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
-					
-					Set<GlobalBlock> netBlocks = new HashSet<GlobalBlock>();
-					List<AbstractPin> pins = new ArrayList<AbstractPin>();
-					
-					// The source pin must be added first!
-					pins.add(sourcePin);
-					pins.addAll(sourcePin.getSinks());
-					
-					double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE,
-							minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE;
-					
-					for(AbstractPin pin : pins) {
-						GlobalBlock block = (GlobalBlock) pin.getOwner();
-						netBlocks.add(block);
-						
-						double x, y;
-						
-						if(block.getCategory() == BlockCategory.IO) {
-							x = block.getX();
-							y = block.getY();
-							
-						} else {
-							int index = this.blockIndexes.get(block);
-							if(!legal) {
-								x = this.linearX[index];
-								y = this.linearY[index];
-							
-							} else if(temporary) {
-								x = this.tmpLegalX[index];
-								y = this.tmpLegalY[index];
-							
-							} else {
-								x = this.bestLegalX[index];
-								y = this.bestLegalY[index];
-							}
-						}
-						
-						
-						if(x < minX) {
-							minX = x;
-						}
-						if(x > maxX) {
-							maxX = x;
-						}
-						
-						if(y < minY) {
-							minY = y;
-						}
-						if(y > maxY) {
-							maxY = y;
-						}
-					}
-					
-					double weight = HeteroAnalyticalPlacerTwo.getWeight(netBlocks.size());
-					cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
-				}
-			}
+		} else if(update) {
+			this.updateCircuit();
 		}
+	}
+	
+	void updateCircuit() {
+		this.updateCircuit(this.bestLegalX, this.bestLegalY);
+	}
+	void updateCircuit(int[] x, int[] y) {
+		//Clear all previous locations
+		for(GlobalBlock block : this.blockIndexes.keySet()) {
+			block.removeSite();
+		}
+		
+		// Update locations
 		for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
-			GlobalBlock sourceBlock = blockEntry.getKey();
+			GlobalBlock block = blockEntry.getKey();
 			int index = blockEntry.getValue();
 			
-			
+			AbstractSite site = this.circuit.getSite(x[index], y[index], true);
+			block.setSite(site);
 		}
-		
-		return cost;
 	}
 }

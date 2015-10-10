@@ -66,7 +66,7 @@ public class TD_SAPlacer extends SAPlacer {
 		this.getCost();
 		return "WL cost = " + this.cachedBBCost
 				+ ", T cost = " + this.cachedTDCost
-				+ ", delay = " + this.timingGraph.getMaxArrivalTime();
+				+ ", delay = " + this.timingGraph.getMaxDelay();
 	}
 	
 	

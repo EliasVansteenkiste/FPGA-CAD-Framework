@@ -5,7 +5,8 @@ import java.util.Map;
 
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
-import placers.analyticalplacer.HeteroAnalyticalPlacerTwo;
+import placers.analyticalplacer.TD_AnalyticalPlacer;
+import placers.analyticalplacer.WLD_AnalyticalPlacer;
 import placers.random.RandomPlacer;
 import util.Logger;
 import flexible_architecture.Circuit;
@@ -17,7 +18,8 @@ public class PlacerFactory {
 		needsInitialPlacement.put("random", false);
 		needsInitialPlacement.put("wld_sa", true);
 		needsInitialPlacement.put("td_sa", true);
-		needsInitialPlacement.put("ap", true);
+		needsInitialPlacement.put("wld_ap", true);
+		needsInitialPlacement.put("td_ap", true);
 	}
 	
 	public static boolean needsInitialPlacement(String type) {
@@ -47,8 +49,11 @@ public class PlacerFactory {
 		case "td_sa":
 			return new TD_SAPlacer(circuit, options);
 		
-		case "ap":
-			return new HeteroAnalyticalPlacerTwo(circuit, options);
+		case "wld_ap":
+			return new WLD_AnalyticalPlacer(circuit, options);
+		
+		case "td_ap":
+			return new TD_AnalyticalPlacer(circuit, options);
 			
 		case "mdp":
 			//return new MDPPlacer(circuit, options);

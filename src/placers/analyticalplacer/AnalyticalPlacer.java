@@ -14,32 +14,28 @@ import flexible_architecture.Circuit;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.BlockType.BlockCategory;
 import flexible_architecture.block.AbstractBlock;
-import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.pin.AbstractPin;
 import flexible_architecture.pin.GlobalPin;
 
-public class HeteroAnalyticalPlacerTwo extends Placer {
-	
-	private boolean debug = true;
+abstract class AnalyticalPlacer extends Placer {
 	
 	private int startingStage;
 	private double[] maxUtilizationSequence;
 	private double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
 	
-	
-	private Map<GlobalBlock, Integer> blockIndexes = new HashMap<GlobalBlock, Integer>(); // Maps a block (CLB or hardblock) to its integer index
-	private int numBlocks;
-	
-	private Crs xMatrix, yMatrix;
-	private double[] xVector, yVector;
-	private double[] linearX, linearY;
-	
+	protected Map<GlobalBlock, Integer> blockIndexes = new HashMap<GlobalBlock, Integer>(); // Maps a block (CLB or hardblock) to its integer index
 	private List<BlockType> blockTypes = new ArrayList<BlockType>();
 	private List<Integer> blockTypeIndexStarts = new ArrayList<Integer>();
+	private int numBlocks;
 	
+	protected Crs xMatrix, yMatrix;
+	protected double[] xVector, yVector;
+	protected double[] linearX, linearY;
 	
-	private HeteroLegalizerSeppe legalizer;
+	protected CostCalculator costCalculator;
+	protected Legalizer legalizer;
+	
 	
 	static {
 		//startingStage = 0 ==> start with initial solves (no anchors)
@@ -59,7 +55,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		defaultOptions.put("stop_ratio_linear_legal", "0.8");
 	}
 	
-	public HeteroAnalyticalPlacerTwo(Circuit circuit, Map<String, String> options) {
+	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
 		super(circuit, options);
 		
 		// Parse options
@@ -74,11 +70,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		}
 		
 		
+		// Initialize blocks and positions
 		this.linearX = new double[this.numBlocks];
 		this.linearY = new double[this.numBlocks];
-			
 		
-		// Initialize blocks and positions
 		int blockIndex = 0;
 		this.blockTypeIndexStarts.add(blockIndex);
 		
@@ -103,10 +98,15 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 			this.blockTypeIndexStarts.add(blockIndex);
 		}
 		
-		this.legalizer = new HeteroLegalizerSeppe(circuit, this.blockIndexes, this.blockTypes, this.blockTypeIndexStarts, this.linearX, this.linearY);
+		this.costCalculator = this.createCostCalculator();
+		this.legalizer = new Legalizer(
+				circuit, this.costCalculator,
+				this.blockIndexes, this.blockTypes, this.blockTypeIndexStarts,
+				this.linearX, this.linearY);
 	}
 	
 	private void parsePrivateOptions() {
+		
 		// Starting stage (0 or 1)
 		this.startingStage = Integer.parseInt(this.options.get("starting_stage"));
 		this.startingStage = Math.min(1, Math.max(0, this.startingStage)); //startingStage can only be 0 or 1
@@ -120,12 +120,16 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		}
 		
 		// Anchor weights and stop ratio
-		this.startingAnchorWeight = Double.parseDouble(this.options.get("starting_anchor_weight"));
-		this.anchorWeightIncrease = Double.parseDouble(this.options.get("anchor_weight_increase"));
-		this.stopRatioLinearLegal = Double.parseDouble(this.options.get("stop_ratio_linear_legal"));
+		this.startingAnchorWeight = this.parseDoubleOption("starting_anchor_weight");
+		this.anchorWeightIncrease = this.parseDoubleOption("anchor_weight_increase");
+		this.stopRatioLinearLegal = this.parseDoubleOption("stop_ratio_linear_legal");
 	}
 	
 	
+	
+	protected abstract CostCalculator createCostCalculator();
+	protected abstract void initializePlacement();
+	protected abstract void addExtraConnections(BlockType blockType, int startIndex, boolean firstSolve);
 	
 	
 	public void place() {
@@ -156,11 +160,11 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 			iteration = 0;
 		}
 		
-		
-		
 		// Do the actual placing
 		int blockTypeIndex = -1;
 		double linearCost, legalCost;
+		
+		this.initializePlacement();
 		
 		do {
 			String blockType = blockTypeIndex == -1 ? "all" : this.blockTypes.get(blockTypeIndex).getName();
@@ -178,8 +182,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 			
 			
 			// Get the costs and print them
-			linearCost = this.legalizer.calculateLinearCost();
-			legalCost = this.legalizer.calculateLegalCost();
+			linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+			legalCost = this.legalizer.getBestCost();
 			
 			System.out.format(", linear cost = %f, legal cost = %f\n", linearCost, legalCost);
 			
@@ -193,7 +197,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		} while(linearCost / legalCost < this.stopRatioLinearLegal);
 		
 		
-		this.updateCircuit();
+		this.legalizer.updateCircuit();
 	}
 	
 	
@@ -254,6 +258,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		// Build the linear systems (x and y are solved separately)
 		
 		// Loop through all sources of nets
+		// This part is wirelength driven, but is also used for timing driven placement
 		for(BlockType circuitBlockType : this.circuit.getGlobalBlockTypes()) {
 			for(AbstractBlock sourceBlock : this.circuit.getBlocks(circuitBlockType)) {
 				for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
@@ -263,15 +268,10 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		}
 		
 		
-		if(this.debug) {
-			if(!this.xMatrix.isSymmetricalAndFinite()) {
-				System.err.println("ERROR: X-Matrix is assymmetrical: there must be a bug in the code!");
-			}
-			if(!this.yMatrix.isSymmetricalAndFinite())
-			{
-				System.err.println("ERROR: Y-Matrix is assymmetrical: there must be a bug in the code!");
-			}
-		}
+		// Add source sink connections
+		// This is only for timing driven, and not in the first iteration
+		this.addExtraConnections(blockType, startIndex, firstSolve);
+		
 		
 		double epsilon = 0.0001;
 		
@@ -434,7 +434,7 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 	
 	
 	
-	private boolean isFixed(AbstractBlock block, BlockType blockType) {
+	protected boolean isFixed(GlobalBlock block, BlockType blockType) {
 
 		// IOs are always considered fixed
 		if(block.getCategory() == BlockCategory.IO) {
@@ -455,42 +455,46 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 	}
 
 
-	private void addMinMaxConnections(int minIndex, double min, int maxIndex, double max,
+	private void addMinMaxConnections(
+			int minIndex, double minCoordinate,
+			int maxIndex, double maxCoordinate,
 			double weightMultiplier, Crs matrix, double[] vector) {
-		double delta = Math.max(max - min, 0.005);
+		
+		double delta = Math.max(maxCoordinate - minCoordinate, 0.005);
 		double weight = weightMultiplier / delta;
 		
-		
+		// Only min block is movable
+		if(maxIndex < 0) {
+			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
+			vector[minIndex] += weight * maxCoordinate;
+			
+		// Only max block is movable
+		} else if(minIndex < 0) {
+			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
+			vector[maxIndex] += weight * minCoordinate;
+			
 		// Both blocks are movable
-		if(minIndex >= 0 && maxIndex >= 0) {
+		} else {
 			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
 			matrix.setElement(minIndex, maxIndex, matrix.getElement(minIndex, maxIndex) - weight);
 			matrix.setElement(maxIndex, minIndex, matrix.getElement(maxIndex, minIndex) - weight);
 			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
-		
-		// Only min block is movable
-		} else if(minIndex >= 0) {
-			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
-			vector[minIndex] += weight * max;
-		
-		// Only max block is movable
-		} else {
-			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
-			vector[maxIndex] += weight * min;
 		}
 	}
 	
-	private void addMovableConnections(int movableIndex, double movableValue, int boundaryIndex, double boundaryValue,
+	private void addMovableConnections(
+			int movableIndex, double movableCoordinate,
+			int boundaryIndex, double boundaryCoordinate,
 			double weightMultiplier, Crs matrix, double[] vector) {
 		
-		double delta = Math.max(Math.abs(movableValue - boundaryValue), 0.005);
+		double delta = Math.max(Math.abs(movableCoordinate - boundaryCoordinate), 0.005);
 		double weight = weightMultiplier / delta;
 		
 		// Boundary block is a fixed block
 		// Connection between fixed and non fixed block
 		if(boundaryIndex < 0) {
 			matrix.setElement(movableIndex, movableIndex, matrix.getElement(movableIndex, movableIndex) + weight);
-			vector[movableIndex] += weight * boundaryValue;
+			vector[movableIndex] += weight * boundaryCoordinate;
 		
 		// Boundary block is not fixed
 		// Connection between two non fixed blocks
@@ -502,13 +506,14 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		}
 	}
 	
+	
 	private boolean addFixedConnections(boolean first, double fixedPosition,
-			int index1, double value1, int index2, double value2,
+			int index1, double coordinate1, int index2, double coordinate2,
 			double weightMultiplier, Crs matrix, double[] vector) {
 		
-		if(fixedPosition != value1 || index1 >= 0 || first == false) {
+		if(fixedPosition != coordinate1 || index1 >= 0 || first == false) {
 			if(index2 >= 0) {
-				double delta = Math.max(Math.abs(fixedPosition - value2), 0.005);
+				double delta = Math.max(Math.abs(fixedPosition - coordinate2), 0.005);
 				double weight = weightMultiplier / delta;
 				
 				matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
@@ -519,32 +524,6 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		
 		} else {
 			return false;
-		}
-	}
-	
-	
-	
-	
-	
-	
-	private void updateCircuit() {
-		int[] bestLegalX = this.legalizer.getBestLegalX();
-		int[] bestLegalY = this.legalizer.getBestLegalY();
-		
-		//Clear all previous locations
-		for(GlobalBlock block : this.blockIndexes.keySet()) {
-			block.removeSite();
-		}
-		
-		// Update locations
-		List<Integer[]> indexes = new ArrayList<Integer[]>();
-		for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
-			GlobalBlock block = blockEntry.getKey();
-			int index = blockEntry.getValue();
-			Integer[] coor = {bestLegalX[index], bestLegalY[index]};
-			
-			AbstractSite site = this.circuit.getSite(bestLegalX[index], bestLegalY[index], true);
-			block.setSite(site);
 		}
 	}
 	

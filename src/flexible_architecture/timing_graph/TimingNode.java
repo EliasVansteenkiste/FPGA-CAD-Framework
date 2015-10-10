@@ -8,7 +8,7 @@ import flexible_architecture.block.GlobalBlock;
 
 public class TimingNode {
 	
-	GlobalBlock owner;
+	private GlobalBlock owner;
 	
 	/* For every source and sink, 5 values are stored:
 	 * - the fixed delay, assuming the source and sink are in the same block
@@ -34,6 +34,10 @@ public class TimingNode {
 		this.owner = owner;
 	}
 	
+	
+	GlobalBlock getOwner() {
+		return this.owner;
+	}
 	
 	
 	void addSink(TimingNode sink, double fixedDelay) {
