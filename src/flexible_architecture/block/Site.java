@@ -32,14 +32,9 @@ public class Site extends AbstractSite {
 		}
 	}
 	
-	private GlobalBlock removeBlock() {
-		GlobalBlock oldBlock = this.block;
-		this.block = null;
-		return oldBlock;
-	}
 	public void removeBlock(GlobalBlock block) {
 		if(block == this.block) {
-			this.removeBlock();
+			this.block = null;
 		} else {
 			Logger.raise("Trying to remove a block that is not present in site");
 		}

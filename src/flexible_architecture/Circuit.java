@@ -169,9 +169,9 @@ public class Circuit {
 		int size = this.width;
 		for(int i = 0; i < size - 1; i++) {
 			this.sites[0][i] = new IOSite(0, i, ioType, ioCapacity);
-			this.sites[i][size-1] = new IOSite(size-1, size-1-i, ioType, ioCapacity);
-			this.sites[size-1][size-1-i] = new IOSite(i, 0, ioType, ioCapacity);
-			this.sites[size-1-i][0] = new IOSite(size-1-i, size-1, ioType, ioCapacity);
+			this.sites[i][size-1] = new IOSite(i, size-1, ioType, ioCapacity);
+			this.sites[size-1][size-1-i] = new IOSite(size-1, size-1-i, ioType, ioCapacity);
+			this.sites[size-1-i][0] = new IOSite(size-1-i, 0, ioType, ioCapacity);
 		}
 		
 		for(int x = 1; x < this.columns.size() - 1; x++) {

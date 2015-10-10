@@ -245,8 +245,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 				this.yMatrix.setElement(relativeIndex, relativeIndex,
 						this.yMatrix.getElement(relativeIndex, relativeIndex) + pseudoWeightY);
 				
-				this.xVector[index] += pseudoWeightX * anchorPointsX[index];
-				this.yVector[index] += pseudoWeightY * anchorPointsY[index];
+				this.xVector[relativeIndex] += pseudoWeightX * anchorPointsX[relativeIndex];
+				this.yVector[relativeIndex] += pseudoWeightY * anchorPointsY[relativeIndex];
 			}
 		}
 		
@@ -537,11 +537,13 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		}
 		
 		// Update locations
+		List<Integer[]> indexes = new ArrayList<Integer[]>();
 		for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
 			GlobalBlock block = blockEntry.getKey();
 			int index = blockEntry.getValue();
+			Integer[] coor = {bestLegalX[index], bestLegalY[index]};
 			
-			AbstractSite site = this.circuit.getSite(bestLegalX[index], bestLegalY[index]);
+			AbstractSite site = this.circuit.getSite(bestLegalX[index], bestLegalY[index], true);
 			block.setSite(site);
 		}
 	}

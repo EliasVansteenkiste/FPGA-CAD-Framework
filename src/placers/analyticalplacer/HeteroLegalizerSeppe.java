@@ -9,9 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import util.Logger;
+
 import flexible_architecture.Circuit;
 import flexible_architecture.architecture.BlockType;
 import flexible_architecture.architecture.BlockType.BlockCategory;
+import flexible_architecture.block.AbstractBlock;
 import flexible_architecture.block.AbstractSite;
 import flexible_architecture.block.GlobalBlock;
 import flexible_architecture.block.Site;
@@ -154,7 +157,7 @@ public class HeteroLegalizerSeppe {
 		
 		for(int x = 1; x < this.width - 1; x++) {
 			for(int y = 1; y < this.height - 1; y++) {
-				if(this.blockMatrix.get(x).get(y).size() > 1 && this.areaPointers[x][y] == null) {
+				if(this.blockMatrix.get(x).get(y).size() >= 1 && this.areaPointers[x][y] == null) {
 					LegalizerArea newArea = this.newArea(blockType, x, y);
 					areas.add(newArea);
 				}
@@ -164,7 +167,7 @@ public class HeteroLegalizerSeppe {
 		// Legalize all unabsorbed areas
 		for(LegalizerArea area : areas) {
 			if(!area.isAbsorbed()) {
-				this.legalizeArea(area);
+				this.legalizeArea(area, blockType);
 			}
 		}
 	}
@@ -242,8 +245,12 @@ public class HeteroLegalizerSeppe {
 			// goalArea is the area that area should eventually cover
 			LegalizerArea goalArea = new LegalizerArea(area);
 			goalArea.grow(realDirection);
-			
-			this.growArea(blockType, area, goalArea);
+			if(goalArea.left > 0
+					&& goalArea.right < this.width - 1
+					&& goalArea.top > 0
+					&& goalArea.bottom < this.height - 1) {
+				this.growArea(blockType, area, goalArea);
+			}
 		}
 		
 		return area;
@@ -329,14 +336,15 @@ public class HeteroLegalizerSeppe {
 	
 	
 	
-	private void legalizeArea(LegalizerArea area) {
+	private void legalizeArea(LegalizerArea area, BlockType blockType) {
 		List<Integer> blockIndexes = area.getBlockIndexes();
 		int[] coordinates = {area.left, area.top, area.right, area.bottom};
-		this.legalizeArea(coordinates, area.getBlockRepeat(), area.getBlockHeight(), blockIndexes, Axis.X);
+		this.legalizeArea(coordinates, blockType, area.getBlockRepeat(), area.getBlockHeight(), blockIndexes, Axis.X);
 	}
 	
 	private void legalizeArea(
 			int[] coordinates,
+			BlockType blockType,
 			int blockRepeat,
 			int blockHeight,
 			List<Integer> blockIndexes,
@@ -363,6 +371,10 @@ public class HeteroLegalizerSeppe {
 			int minX = -1, minY = -1;
 			
 			for(int x = coordinates[0]; x <= coordinates[2]; x += blockRepeat) {
+				if(!this.circuit.getColumnType(x).equals(blockType)) {
+					continue;
+				}
+				
 				for(int y = coordinates[1]; y <= coordinates[3]; y += blockHeight) {
 					double distance = Math.pow(linearX - x, 2) + Math.pow(linearY - y, 2);
 					if(distance < minDistance) {
@@ -373,16 +385,20 @@ public class HeteroLegalizerSeppe {
 				}
 			}
 			
+			if((minX - 2) % 4 == 0 && (minY - 1) % 4 != 0) {
+				System.err.println("problem");
+			}
+			
 			this.tmpLegalX[blockIndex] = minX;
 			this.tmpLegalY[blockIndex] = minY;
 			return;
 		
 		} else if(coordinates[2] - coordinates[0] < blockRepeat && axis == Axis.X) {
-			this.legalizeArea(coordinates, blockRepeat, blockHeight, blockIndexes, Axis.Y);
+			this.legalizeArea(coordinates, blockType, blockRepeat, blockHeight, blockIndexes, Axis.Y);
 			return;
 		
 		} else if(coordinates[3] - coordinates[1] < blockHeight && axis == Axis.Y) {
-			this.legalizeArea(coordinates, blockRepeat, blockHeight, blockIndexes, Axis.X);
+			this.legalizeArea(coordinates, blockType, blockRepeat, blockHeight, blockIndexes, Axis.X);
 			return;
 		}
 		
@@ -467,8 +483,8 @@ public class HeteroLegalizerSeppe {
 		List<Integer> blocks1 = new ArrayList<Integer>(blockIndexes.subList(0, split));
 		List<Integer> blocks2 = new ArrayList<Integer>(blockIndexes.subList(split, blockIndexes.size()));
 		
-		this.legalizeArea(coordinates1, blockRepeat, blockHeight, blocks1, newAxis);
-		this.legalizeArea(coordinates2, blockRepeat, blockHeight, blocks2, newAxis);
+		this.legalizeArea(coordinates1, blockType, blockRepeat, blockHeight, blocks1, newAxis);
+		this.legalizeArea(coordinates2, blockType, blockRepeat, blockHeight, blocks2, newAxis);
 	}
 	
 	
@@ -492,71 +508,75 @@ public class HeteroLegalizerSeppe {
 	double calculateLinearCost() {
 		return this.calculateCost(false, false);
 	}
-	private double calculateCost(boolean legal, boolean temp) {
+	private double calculateCost(boolean legal, boolean temporary) {
 		double cost = 0.0;
 		
+		for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
+			for(AbstractBlock sourceBlock : this.circuit.getBlocks(blockType)) {
+				for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
+					
+					Set<GlobalBlock> netBlocks = new HashSet<GlobalBlock>();
+					List<AbstractPin> pins = new ArrayList<AbstractPin>();
+					
+					// The source pin must be added first!
+					pins.add(sourcePin);
+					pins.addAll(sourcePin.getSinks());
+					
+					double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE,
+							minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE;
+					
+					for(AbstractPin pin : pins) {
+						GlobalBlock block = (GlobalBlock) pin.getOwner();
+						netBlocks.add(block);
+						
+						double x, y;
+						
+						if(block.getCategory() == BlockCategory.IO) {
+							x = block.getX();
+							y = block.getY();
+							
+						} else {
+							int index = this.blockIndexes.get(block);
+							if(!legal) {
+								x = this.linearX[index];
+								y = this.linearY[index];
+							
+							} else if(temporary) {
+								x = this.tmpLegalX[index];
+								y = this.tmpLegalY[index];
+							
+							} else {
+								x = this.bestLegalX[index];
+								y = this.bestLegalY[index];
+							}
+						}
+						
+						
+						if(x < minX) {
+							minX = x;
+						}
+						if(x > maxX) {
+							maxX = x;
+						}
+						
+						if(y < minY) {
+							minY = y;
+						}
+						if(y > maxY) {
+							maxY = y;
+						}
+					}
+					
+					double weight = HeteroAnalyticalPlacerTwo.getWeight(netBlocks.size());
+					cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
+				}
+			}
+		}
 		for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
 			GlobalBlock sourceBlock = blockEntry.getKey();
 			int index = blockEntry.getValue();
 			
-			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
-				
-				Set<GlobalBlock> netBlocks = new HashSet<GlobalBlock>();
-				List<AbstractPin> pins = new ArrayList<AbstractPin>();
-				
-				// The source pin must be added first!
-				pins.add(sourcePin);
-				pins.addAll(sourcePin.getSinks());
-				
-				double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE,
-						minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE;
-				
-				
-				
-				for(AbstractPin pin : pins) {
-					GlobalBlock block = (GlobalBlock) pin.getOwner();
-					netBlocks.add(block);
-					
-					double x, y;
-					
-					if(block.getCategory() == BlockCategory.IO) {
-						x = block.getX();
-						y = block.getY();
-						
-					} else if(legal) {
-						if(temp) {
-							x = this.tmpLegalX[index];
-							y = this.tmpLegalY[index];
-						
-						} else {
-							x = this.bestLegalX[index];
-							y = this.bestLegalY[index];
-						}
-					
-					} else {
-						x = this.linearX[index];
-						y = this.linearY[index];
-					}
-					
-					
-					if(x < minX) {
-						minX = x;
-					}
-					if(x > maxX) {
-						maxX = x;
-					}
-					
-					if(y < minY) {
-						minY = y;
-					}
-					if(y > maxY) {
-						maxY = y;
-					}
-				}
-				
-				double weight = HeteroAnalyticalPlacerTwo.getWeight(netBlocks.size());
-				cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
-			}
+			
 		}
 		
 		return cost;
