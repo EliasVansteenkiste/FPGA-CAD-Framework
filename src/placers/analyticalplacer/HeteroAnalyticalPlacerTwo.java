@@ -464,8 +464,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		// Both blocks are movable
 		if(minIndex >= 0 && maxIndex >= 0) {
 			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
-			matrix.setElement(minIndex, maxIndex, matrix.getElement(minIndex, maxIndex) + weight);
-			matrix.setElement(maxIndex, minIndex, matrix.getElement(maxIndex, minIndex) + weight);
+			matrix.setElement(minIndex, maxIndex, matrix.getElement(minIndex, maxIndex) - weight);
+			matrix.setElement(maxIndex, minIndex, matrix.getElement(maxIndex, minIndex) - weight);
 			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
 		
 		// Only min block is movable
@@ -496,8 +496,8 @@ public class HeteroAnalyticalPlacerTwo extends Placer {
 		// Connection between two non fixed blocks
 		} else if(movableIndex != boundaryIndex) {
 			matrix.setElement(boundaryIndex, boundaryIndex, matrix.getElement(boundaryIndex, boundaryIndex) + weight);
-			matrix.setElement(boundaryIndex, movableIndex, matrix.getElement(boundaryIndex, movableIndex) + weight);
-			matrix.setElement(movableIndex, boundaryIndex, matrix.getElement(movableIndex, boundaryIndex) + weight);
+			matrix.setElement(boundaryIndex, movableIndex, matrix.getElement(boundaryIndex, movableIndex) - weight);
+			matrix.setElement(movableIndex, boundaryIndex, matrix.getElement(movableIndex, boundaryIndex) - weight);
 			matrix.setElement(movableIndex, movableIndex, matrix.getElement(movableIndex, movableIndex) + weight);
 		}
 	}
