@@ -1,6 +1,0 @@
-package circuit;
-
-public enum BlockType
-{
-	CLB, BLE, LUT, FLIPFLOP, INPUT, OUTPUT, HARDBLOCK_CLOCKED, HARDBLOCK_UNCLOCKED,TCON, NET, BUNDLE
-}

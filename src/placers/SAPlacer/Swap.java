@@ -2,8 +2,9 @@ package placers.SAPlacer;
 
 import java.util.Random;
 
-import flexible_architecture.block.AbstractSite;
-import flexible_architecture.block.GlobalBlock;
+import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.GlobalBlock;
+
 
 public class Swap {
 	private GlobalBlock block1;

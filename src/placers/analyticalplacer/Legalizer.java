@@ -6,12 +6,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.architecture.BlockType;
-import flexible_architecture.architecture.BlockType.BlockCategory;
-import flexible_architecture.block.AbstractSite;
-import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.block.Site;
+import architecture.BlockType;
+import architecture.BlockType.BlockCategory;
+import architecture.circuit.Circuit;
+import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.GlobalBlock;
+import architecture.circuit.block.Site;
+
 
 public class Legalizer {
 	

@@ -6,12 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.architecture.BlockType;
-import flexible_architecture.architecture.BlockType.BlockCategory;
-import flexible_architecture.block.AbstractBlock;
-import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.pin.AbstractPin;
+import architecture.BlockType;
+import architecture.BlockType.BlockCategory;
+import architecture.circuit.Circuit;
+import architecture.circuit.block.AbstractBlock;
+import architecture.circuit.block.GlobalBlock;
+import architecture.circuit.pin.AbstractPin;
+
 
 public class WLD_CostCalculator extends CostCalculator {
 	

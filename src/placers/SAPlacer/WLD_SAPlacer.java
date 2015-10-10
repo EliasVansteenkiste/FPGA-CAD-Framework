@@ -2,7 +2,8 @@ package placers.SAPlacer;
 
 import java.util.Map;
 
-import flexible_architecture.Circuit;
+import architecture.circuit.Circuit;
+
 
 public class WLD_SAPlacer extends SAPlacer {	
 	

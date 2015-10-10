@@ -5,18 +5,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import architecture.BlockType;
+import architecture.BlockType.BlockCategory;
+import architecture.circuit.Circuit;
+import architecture.circuit.block.AbstractBlock;
+import architecture.circuit.block.GlobalBlock;
+import architecture.circuit.pin.AbstractPin;
+import architecture.circuit.pin.GlobalPin;
+
 import mathtools.CGSolver;
 import mathtools.Crs;
 
 import placers.Placer;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.architecture.BlockType;
-import flexible_architecture.architecture.BlockType.BlockCategory;
-import flexible_architecture.block.AbstractBlock;
-import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.pin.AbstractPin;
-import flexible_architecture.pin.GlobalPin;
 
 abstract class AnalyticalPlacer extends Placer {
 	

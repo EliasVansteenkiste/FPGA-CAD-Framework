@@ -3,13 +3,14 @@ package placers;
 import java.util.HashMap;
 import java.util.Map;
 
+import architecture.circuit.Circuit;
+
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;
 import placers.analyticalplacer.TD_AnalyticalPlacer;
 import placers.analyticalplacer.WLD_AnalyticalPlacer;
 import placers.random.RandomPlacer;
 import util.Logger;
-import flexible_architecture.Circuit;
 
 public class PlacerFactory {
 	

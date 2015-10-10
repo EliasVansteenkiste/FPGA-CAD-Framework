@@ -2,8 +2,9 @@ package placers.analyticalplacer;
 
 import java.util.Map;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.architecture.BlockType;
+import architecture.BlockType;
+import architecture.circuit.Circuit;
+
 
 public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 	

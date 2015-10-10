@@ -2,9 +2,11 @@ package placers.analyticalplacer;
 
 import java.util.Map;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.block.GlobalBlock;
-import flexible_architecture.timing_graph.TimingGraph;
+import timing_graph.TimingGraph;
+
+import architecture.circuit.Circuit;
+import architecture.circuit.block.GlobalBlock;
+
 
 public class TD_CostCalculator extends CostCalculator {
 	

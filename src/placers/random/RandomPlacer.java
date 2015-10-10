@@ -8,14 +8,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import architecture.BlockType;
+import architecture.BlockType.BlockCategory;
+import architecture.circuit.Circuit;
+import architecture.circuit.block.AbstractBlock;
+import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.GlobalBlock;
+
 import placers.Placer;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.architecture.BlockType;
-import flexible_architecture.architecture.BlockType.BlockCategory;
-import flexible_architecture.block.AbstractBlock;
-import flexible_architecture.block.AbstractSite;
-import flexible_architecture.block.GlobalBlock;
 
 public class RandomPlacer extends Placer {
 	

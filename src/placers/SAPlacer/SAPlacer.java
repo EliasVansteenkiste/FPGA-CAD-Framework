@@ -4,11 +4,12 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
+import architecture.circuit.Circuit;
+import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.GlobalBlock;
+
 import placers.Placer;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.block.AbstractSite;
-import flexible_architecture.block.GlobalBlock;
 
 public abstract class SAPlacer extends Placer
 {

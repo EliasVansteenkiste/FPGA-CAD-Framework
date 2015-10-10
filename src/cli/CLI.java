@@ -3,18 +3,19 @@ package cli;
 import java.util.HashMap;
 import java.util.Map;
 
+import architecture.FlexibleArchitecture;
+import architecture.circuit.Circuit;
+import architecture.circuit.parser.NetParser;
+import architecture.circuit.parser.PlaceDumper;
+import architecture.circuit.parser.PlaceParser;
+
 import placers.Placer;
 import placers.PlacerFactory;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import timing_graph.TimingGraph;
 import util.Logger;
 
 import cli.Options;
-import flexible_architecture.Circuit;
-import flexible_architecture.NetParser;
-import flexible_architecture.PlaceDumper;
-import flexible_architecture.PlaceParser;
-import flexible_architecture.architecture.FlexibleArchitecture;
-import flexible_architecture.timing_graph.TimingGraph;
 
 
 public class CLI {

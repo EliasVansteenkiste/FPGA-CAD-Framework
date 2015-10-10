@@ -2,8 +2,10 @@ package placers.SAPlacer;
 
 import java.util.Map;
 
-import flexible_architecture.Circuit;
-import flexible_architecture.timing_graph.TimingGraph;
+import timing_graph.TimingGraph;
+
+import architecture.circuit.Circuit;
+
 
 public class TD_SAPlacer extends SAPlacer {
 	
