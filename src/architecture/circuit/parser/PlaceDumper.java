@@ -56,11 +56,11 @@ public class PlaceDumper {
 			
 			int z;
 			if(siteOccupations.containsKey(site)) {
-				z = siteOccupations.get(site) + 1;
+				z = siteOccupations.get(site);
 			} else {
-				z = 1;
+				z = 0;
 			}
-			siteOccupations.put(site, z);	
+			siteOccupations.put(site, z + 1);	
 			
 			
 			
@@ -104,7 +104,7 @@ public class PlaceDumper {
 		writer.printf("Array size: %d x %d logic blocks\n\n", width - 2, height - 2);
 		
 		length = Math.max(length, 10);
-		writer.printf("%-"+length+"s x       y       subblk  block number\n", "block name");
-		writer.printf("%-"+length+"s --      --      ------  ------------\n", "----------");
+		writer.printf("%-"+length+"s x       y       subblk  block number\n", "#block name");
+		writer.printf("%-"+length+"s --      --      ------  ------------\n", "#----------");
 	}
 }

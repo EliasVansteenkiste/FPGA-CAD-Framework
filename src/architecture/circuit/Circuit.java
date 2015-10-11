@@ -178,7 +178,7 @@ public class Circuit {
 		int ioCapacity = this.architecture.getIoCapacity();
 		
 		int size = this.width;
-		for(int i = 0; i < size - 1; i++) {
+		for(int i = 1; i < size - 1; i++) {
 			this.sites[0][i] = new IOSite(0, i, ioType, ioCapacity);
 			this.sites[i][size-1] = new IOSite(i, size-1, ioType, ioCapacity);
 			this.sites[size-1][size-1-i] = new IOSite(size-1, size-1-i, ioType, ioCapacity);
@@ -263,7 +263,7 @@ public class Circuit {
 			int ioCapacity = this.architecture.getIoCapacity();
 			sites = new ArrayList<AbstractSite>((size - 1) * 4);
 			
-			for(int i = 0; i < size - 1; i++) {
+			for(int i = 1; i < size - 1; i++) {
 				for(int n = 0; n < ioCapacity; n++) {
 					sites.add(this.sites[0][i]);
 					sites.add(this.sites[i][size-1]);
@@ -308,8 +308,9 @@ public class Circuit {
 		while(true) {
 			int x = random.nextInt(maxX - minX + 1) + minX;
 			int y = random.nextInt(maxY - minY + 1) + minY;
-			AbstractSite randomSite = this.getSite(x, y);
-			if(block.getType().equals(randomSite.getType())) {
+			
+			AbstractSite randomSite = this.getSite(x, y, true);
+			if(randomSite == null || block.getType().equals(randomSite.getType())) {
 				return randomSite;
 			}
 		}
