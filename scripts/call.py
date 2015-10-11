@@ -19,7 +19,7 @@ def build_command(options, placer_options):
     command = [
         'java',
         '-cp',
-        'bin:dependencies/args4j-2.32.jar',
+        'bin:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
         'cli.CLI'
     ]
 
@@ -34,7 +34,7 @@ def build_command(options, placer_options):
 
 
 def get_stats(output, prefix):
-    regex = r'{0}\s+place time:\s+(?P<time>[0-9.]+).*{0}\s+total cost:\s+(?P<cost>[0-9.]+).*{0}\s+max delay:\s+(?P<delay>[0-9.]+)'.format(prefix)
+    regex = r'{0}\s+time:\s+(?P<time>[0-9.]+).*{0}\s+BB cost:\s+(?P<cost>[0-9.]+).*{0}\s+max delay:\s+(?P<delay>[0-9.]+)'.format(prefix)
     pattern = re.compile(regex, re.DOTALL)
     match = pattern.search(output)
 

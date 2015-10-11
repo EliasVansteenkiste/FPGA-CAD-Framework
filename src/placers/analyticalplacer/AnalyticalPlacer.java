@@ -53,7 +53,7 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("anchor_weight_increase", "0.3");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
-		defaultOptions.put("stop_ratio_linear_legal", "0.8");
+		defaultOptions.put("stop_ratio_linear_legal", "0.85");
 	}
 	
 	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
