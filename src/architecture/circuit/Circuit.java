@@ -1,6 +1,7 @@
 package architecture.circuit;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import architecture.FlexibleArchitecture;
 import architecture.BlockType.BlockCategory;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.BlockComparatorIndex;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.block.IOSite;
 import architecture.circuit.block.Site;
@@ -45,7 +47,7 @@ public class Circuit {
 	public void loadBlocks(Map<BlockType, List<AbstractBlock>> blocks) {
 		this.blocks = blocks;
 		
-		this.addGlobalBlocks();
+		this.createGlobalBlockList();
 		
 		this.calculateSizeAndColumns(true);
 		this.createSites();
@@ -61,7 +63,7 @@ public class Circuit {
 	
 	
 	@SuppressWarnings("unchecked")
-	private void addGlobalBlocks() {
+	private void createGlobalBlockList() {
 		this.globalBlockTypes = BlockType.getGlobalBlockTypes();
 		
 		for(BlockType blockType : this.globalBlockTypes) {
@@ -71,7 +73,15 @@ public class Circuit {
 			
 			this.globalBlockList.addAll((List<GlobalBlock>) (List<?>) this.blocks.get(blockType));
 		}
+		
+		Collections.sort(this.globalBlockList, new BlockComparatorIndex());
 	}
+	
+	public List<GlobalBlock> getGlobalBlocks() {
+		return this.globalBlockList;
+	}
+	
+	
 	
 	private void calculateSizeAndColumns(boolean autoSize) {
 		BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);

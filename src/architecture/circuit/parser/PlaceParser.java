@@ -5,15 +5,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import architecture.BlockType;
 import architecture.circuit.Circuit;
-import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.AbstractSite;
 import architecture.circuit.block.GlobalBlock;
 
@@ -61,25 +58,21 @@ public class PlaceParser {
 		
 		
 		// Loop over all the blocks in the circuit
-		Collection<BlockType> blockTypes = this.circuit.getGlobalBlockTypes();
-		
-		for(BlockType blockType : blockTypes) {
-			for(AbstractBlock block : this.circuit.getBlocks(blockType)) {
+		for(GlobalBlock block : this.circuit.getGlobalBlocks()) {
 				
-				// Get the coordinate of the block
-				String blockName = block.getName();
-				if(!this.coordinates.containsKey(blockName)) {
-					System.err.println("Block not found in placement file: " + blockName);
-					System.exit(1);
-				}
-				
-				int[] coordinate = this.coordinates.get(blockName);
-				int x = coordinate[0], y = coordinate[1];
-				
-				// Bind the site and block to each other
-				AbstractSite site = this.circuit.getSite(x, y);
-				((GlobalBlock) block).setSite(site);
+			// Get the coordinate of the block
+			String blockName = block.getName();
+			if(!this.coordinates.containsKey(blockName)) {
+				System.err.println("Block not found in placement file: " + blockName);
+				System.exit(1);
 			}
+			
+			int[] coordinate = this.coordinates.get(blockName);
+			int x = coordinate[0], y = coordinate[1];
+			
+			// Bind the site and block to each other
+			AbstractSite site = this.circuit.getSite(x, y);
+			((GlobalBlock) block).setSite(site);
 		}
 	}
 	

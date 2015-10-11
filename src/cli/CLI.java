@@ -69,7 +69,7 @@ public class CLI {
 		
 		
 		
-		PlaceDumper placeDumper = new PlaceDumper(circuit, options.outputFile);
+		PlaceDumper placeDumper = new PlaceDumper(circuit, options.netFile, options.outputFile);
 		placeDumper.dump();
 	}
 	

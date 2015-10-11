@@ -260,11 +260,9 @@ abstract class AnalyticalPlacer extends Placer {
 		
 		// Loop through all sources of nets
 		// This part is wirelength driven, but is also used for timing driven placement
-		for(BlockType circuitBlockType : this.circuit.getGlobalBlockTypes()) {
-			for(AbstractBlock sourceBlock : this.circuit.getBlocks(circuitBlockType)) {
-				for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
-					this.processNet(blockType, startIndex, (GlobalPin) sourcePin);
-				}
+		for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
+			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
+				this.processNet(blockType, startIndex, (GlobalPin) sourcePin);
 			}
 		}
 		
