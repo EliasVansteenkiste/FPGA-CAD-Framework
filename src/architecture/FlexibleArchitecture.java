@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 
 public class FlexibleArchitecture {
 	
-	private static final double FILL_GRADE = 0.85;
+	private static final double FILL_GRADE = 1;
 	
 	private String filename;
 	private JSONObject blockDefinitions;

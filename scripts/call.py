@@ -41,13 +41,21 @@ def build_place_command(options, placer_options):
     return command
 
 
+
 def get_place_stats(output, prefix):
-    regex = r'{0}\s+time:\s+(?P<time>[0-9.]+).*{0}\s+BB cost:\s+(?P<cost>[0-9.]+).*{0}\s+max delay:\s+(?P<delay>[0-9.]+)'.format(prefix)
+    regex = r'{0}\s+time:\s+(?P<time>[0-9.]+).*{0}\s+BB cost:\s+(?P<wl_cost>[0-9.]+).*{0}\s+max delay:\s+(?P<delay>[0-9.]+)'.format(prefix)
+    return get_stats(output, regex)
+
+def get_route_stats(output):
+    regex = r'Total wirelength: (?P<wl_cost>\d+),.*Final critical path: (?P<delay>[0-9.]+) ns.*Routing took (?P<time>[0-9.]+) seconds'
+    return get_stats(output, regex)
+
+def get_stats(output, regex):
     pattern = re.compile(regex, re.DOTALL)
     match = pattern.search(output)
 
     time = match.group('time')
-    cost = match.group('cost')
+    wl_cost = match.group('wl_cost')
     delay = match.group('delay')
 
-    return (time, cost, delay)
+    return (time, wl_cost, delay)

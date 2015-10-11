@@ -44,7 +44,7 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("starting_stage", "0");
 		
 		//initialize maxUtilizationSequence used by the legalizer
-		defaultOptions.put("max_utilization_sequence", "0.9");
+		defaultOptions.put("max_utilization_sequence", "1");
 		
 		//The first anchorWeight factor that will be used in the main solve loop
 		defaultOptions.put("starting_anchor_weight", "0.3");

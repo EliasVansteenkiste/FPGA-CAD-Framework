@@ -370,6 +370,11 @@ public class Legalizer {
 		
 		// If the area is only one tile big: place all the blocks on this tile
 		if(coordinates[2] - coordinates[0] < this.blockRepeat && coordinates[3] - coordinates[1] < this.blockHeight) {
+			
+			if(blockIndexes.size() > 1) {
+				System.out.println(blockIndexes.size());
+			}
+			
 			for(Integer blockIndex : blockIndexes) {
 				this.tmpLegalX[blockIndex] = coordinates[0];
 				this.tmpLegalY[blockIndex] = coordinates[1];
@@ -497,7 +502,7 @@ public class Legalizer {
 		
 		
 		// Split blocks in two lists with a ratio approx. equal to area split
-		int split = (int) (splitRatio * blockIndexes.size());
+		int split = (int) Math.ceil(splitRatio * blockIndexes.size());
 		List<Integer> blocks1 = new ArrayList<Integer>(blockIndexes.subList(0, split));
 		List<Integer> blocks2 = new ArrayList<Integer>(blockIndexes.subList(split, blockIndexes.size()));
 		
