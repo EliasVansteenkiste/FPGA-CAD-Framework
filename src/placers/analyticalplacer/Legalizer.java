@@ -152,7 +152,7 @@ public class Legalizer {
 		
 		// Loop through all the blocks of the correct block type and add them to their closest position
 		for(int index = startIndex; index < endIndex; index++) {
-			Site site = (Site) this.getClosestSite(this.linearX[index], this.linearY[index]);
+			Site site = this.getClosestSite(this.linearX[index], this.linearY[index]);
 			int x = site.getX();
 			int y = site.getY();
 			
@@ -181,7 +181,7 @@ public class Legalizer {
 	}
 	
 	
-	private AbstractSite getClosestSite(double x, double y) {
+	private Site getClosestSite(double x, double y) {
 		if(this.blockType.getCategory() == BlockCategory.CLB) {
 			int row = (int) Math.round(Math.max(Math.min(y, this.height - 2), 1));
 			
@@ -202,7 +202,7 @@ public class Legalizer {
 				direction *= -1;
 			}
 			
-			return this.circuit.getSite(column, row);
+			return (Site) this.circuit.getSite(column, row);
 		
 			
 		} else {
@@ -211,12 +211,12 @@ public class Legalizer {
 			int blockHeight = this.blockType.getHeight();
 			
 			int numRows = (int) Math.floor((this.height - 2) / blockHeight); 
-			int numColumns = (int) Math.floor((this.width - start - 1) / repeat + 1);
+			int numColumns = (int) Math.floor((this.width - start - 2) / repeat + 1);
 			
-			int columnIndex = (int) Math.round(Math.max(Math.min((x - start) / repeat, numColumns), 0));
-			int rowIndex = (int) Math.round(Math.max(Math.min((y - 1) / blockHeight, numRows), 0));
+			int columnIndex = (int) Math.round(Math.max(Math.min((x - start) / repeat, numColumns - 1), 0));
+			int rowIndex = (int) Math.round(Math.max(Math.min((y - 1) / blockHeight, numRows - 1), 0));
 			
-			return this.circuit.getSite(columnIndex * repeat + start, rowIndex * blockHeight + 1);
+			return (Site) this.circuit.getSite(columnIndex * repeat + start, rowIndex * blockHeight + 1);
 		}
 	}
 	
@@ -234,8 +234,9 @@ public class Legalizer {
 		// status = 1: opposite direction (when growing in original direction is not possible anymore)
 		// status = 2: no direction (when growing in original or opposite direction is not possible)
 		int[] directionStatuses = {0, 0, 0, 0};
+		int impossibleDirections = 0;
 		
-		while(area.getOccupation() > area.getCapacity()) {
+		while(area.getOccupation() > area.getCapacity() && impossibleDirections < 4) {
 			
 			if(directionStatuses[directionIndex] == 0 && !growthPossible(area, directions[directionIndex])) {
 				directions[directionIndex][0] = -directions[directionIndex][0];
@@ -245,6 +246,7 @@ public class Legalizer {
 			
 			if(directionStatuses[directionIndex] == 1 && !growthPossible(area, directions[directionIndex])) {
 				directionStatuses[directionIndex] = 2;
+				impossibleDirections++;
 			}
 			
 			if(directionStatuses[directionIndex] != 2) {

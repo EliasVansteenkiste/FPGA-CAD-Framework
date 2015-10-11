@@ -49,8 +49,8 @@ abstract class AnalyticalPlacer extends Placer {
 		//The first anchorWeight factor that will be used in the main solve loop
 		defaultOptions.put("starting_anchor_weight", "0.3");
 		
-		//The amount with which the anchorWeight factor will be increased each iteration
-		defaultOptions.put("anchor_weight_increase", "0.3");
+		//The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
+		defaultOptions.put("anchor_weight_increase", "1.5");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
 		defaultOptions.put("stop_ratio_linear_legal", "0.85");
@@ -150,7 +150,7 @@ abstract class AnalyticalPlacer extends Placer {
 			//Initial legalization
 			this.legalizer.legalize(blockTypeIndex, this.maxUtilizationSequence[0]);
 			
-			pseudoWeightFactor = this.anchorWeightIncrease;
+			pseudoWeightFactor = this.startingAnchorWeight;
 			iteration = 1;
 		
 		
@@ -191,7 +191,7 @@ abstract class AnalyticalPlacer extends Placer {
 			
 			blockTypeIndex = (blockTypeIndex + 2) % (this.blockTypes.size() + 1) - 1;
 			if(blockTypeIndex < 0) {
-				pseudoWeightFactor += this.anchorWeightIncrease;
+				pseudoWeightFactor *= this.anchorWeightIncrease;
 				iteration++;
 			}
 			
