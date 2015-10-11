@@ -36,6 +36,10 @@ public class Legalizer {
 	private int[] tmpLegalX;
 	private int[] tmpLegalY;
 	
+	// Contain the properties of the blockType that is currently being legalized
+	private BlockType blockType;
+	private int blockHeight, blockRepeat;
+	
 	// These are temporary data structures
 	private LegalizerArea[][] areaPointers;
 	private List<List<List<Integer>>> blockMatrix;
@@ -124,7 +128,10 @@ public class Legalizer {
 	
 	
 	void legalizeBlockType(int blockTypeIndex) {
-		BlockType blockType = this.blockTypes.get(blockTypeIndex);
+		this.blockType = this.blockTypes.get(blockTypeIndex);
+		this.blockHeight = this.blockType.getHeight();
+		this.blockRepeat = this.blockType.getRepeat();
+		
 		int startIndex = this.blockTypeIndexStarts.get(blockTypeIndex);
 		int endIndex = this.blockTypeIndexStarts.get(blockTypeIndex + 1);
 		
@@ -145,7 +152,7 @@ public class Legalizer {
 		
 		// Loop through all the blocks of the correct block type and add them to their closest position
 		for(int index = startIndex; index < endIndex; index++) {
-			Site site = (Site) this.getClosestSite(this.linearX[index], this.linearY[index], blockType);
+			Site site = (Site) this.getClosestSite(this.linearX[index], this.linearY[index]);
 			int x = site.getX();
 			int y = site.getY();
 			
@@ -159,7 +166,7 @@ public class Legalizer {
 		for(int x = 1; x < this.width - 1; x++) {
 			for(int y = 1; y < this.height - 1; y++) {
 				if(this.blockMatrix.get(x).get(y).size() >= 1 && this.areaPointers[x][y] == null) {
-					LegalizerArea newArea = this.newArea(blockType, x, y);
+					LegalizerArea newArea = this.newArea(x, y);
 					areas.add(newArea);
 				}
 			}
@@ -168,18 +175,15 @@ public class Legalizer {
 		// Legalize all unabsorbed areas
 		for(LegalizerArea area : areas) {
 			if(!area.isAbsorbed()) {
-				this.legalizeArea(area, blockType);
+				this.legalizeArea(area);
 			}
 		}
 	}
 	
 	
-	private AbstractSite getClosestSite(double x, double y, BlockType blockType) {
-		int width = this.circuit.getWidth();
-		int height = this.circuit.getWidth();
-		
-		if(blockType.getCategory() == BlockCategory.CLB) {
-			int row = (int) Math.round(Math.max(Math.min(y, height - 2), 1));
+	private AbstractSite getClosestSite(double x, double y) {
+		if(this.blockType.getCategory() == BlockCategory.CLB) {
+			int row = (int) Math.round(Math.max(Math.min(y, this.height - 2), 1));
 			
 			// Get closest column
 			// Not easy to do this with calculations if there are multiple hardblock types
@@ -189,7 +193,7 @@ public class Legalizer {
 			int direction = (x > column) ? 1 : -1;
 			
 			while(true) {
-				if(column > 0 && column < width-1 && this.circuit.getColumnType(column).equals(blockType)) {
+				if(column > 0 && column < this.width-1 && this.circuit.getColumnType(column).equals(this.blockType)) {
 					break;
 				}
 				
@@ -202,12 +206,12 @@ public class Legalizer {
 		
 			
 		} else {
-			int start = blockType.getStart();
-			int repeat = blockType.getRepeat();
-			int blockHeight = blockType.getHeight();
+			int start = this.blockType.getStart();
+			int repeat = this.blockType.getRepeat();
+			int blockHeight = this.blockType.getHeight();
 			
-			int numRows = (int) Math.floor((height - 2) / blockHeight + 1); 
-			int numColumns = (int) Math.floor((width - start - 1) / repeat + 1);
+			int numRows = (int) Math.floor((this.height - 2) / blockHeight); 
+			int numColumns = (int) Math.floor((this.width - start - 1) / repeat + 1);
 			
 			int columnIndex = (int) Math.round(Math.max(Math.min((x - start) / repeat, numColumns), 0));
 			int rowIndex = (int) Math.round(Math.max(Math.min((y - 1) / blockHeight, numRows), 0));
@@ -217,53 +221,67 @@ public class Legalizer {
 	}
 	
 	
-	private LegalizerArea newArea(BlockType blockType, int x, int y) {
+	private LegalizerArea newArea(int x, int y) {
 		// left, top, right, bottom
-		LegalizerArea area = new LegalizerArea(x, y, this.tileCapacity, blockType);
+		LegalizerArea area = new LegalizerArea(x, y, this.tileCapacity, this.blockType);
 		area.incrementTiles();
 		area.addBlockIndexes(this.blockMatrix.get(x).get(y));
 		
+		int directionIndex = 0;
+		int[][] directions = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
 		
-		int[] desiredDirection = {0, -1};
+		// status = 0: original direction
+		// status = 1: opposite direction (when growing in original direction is not possible anymore)
+		// status = 2: no direction (when growing in original or opposite direction is not possible)
+		int[] directionStatuses = {0, 0, 0, 0};
 		
 		while(area.getOccupation() > area.getCapacity()) {
-			// Rotate direction clockwise
-			int tmp = desiredDirection[0];
-			desiredDirection[0] = -desiredDirection[1];
-			desiredDirection[1] = tmp;
 			
-			// If growing in desired direction is not possible: choose the opposite direction
-			int[] realDirection = {desiredDirection[0], desiredDirection[1]};
-			if(area.left + desiredDirection[0] < 1
-					|| area.right + desiredDirection[0] > this.width - 2
-					|| area.top + desiredDirection[1] < 1
-					|| area.bottom + desiredDirection[1] > this.height - 2) {
-				realDirection[0] = -realDirection[0];
-				realDirection[1] = -realDirection[1];
+			if(directionStatuses[directionIndex] == 0 && !growthPossible(area, directions[directionIndex])) {
+				directions[directionIndex][0] = -directions[directionIndex][0];
+				directions[directionIndex][1] = -directions[directionIndex][1];
+				directionStatuses[directionIndex] = 1;
 			}
 			
-			
-			// goalArea is the area that area should eventually cover
-			LegalizerArea goalArea = new LegalizerArea(area);
-			goalArea.grow(realDirection);
-			if(goalArea.left > 0
-					&& goalArea.right < this.width - 1
-					&& goalArea.top > 0
-					&& goalArea.bottom < this.height - 1) {
-				this.growArea(blockType, area, goalArea);
+			if(directionStatuses[directionIndex] == 1 && !growthPossible(area, directions[directionIndex])) {
+				directionStatuses[directionIndex] = 2;
 			}
+			
+			if(directionStatuses[directionIndex] != 2) {
+				// goalArea is the area that area should eventually cover
+				LegalizerArea goalArea = new LegalizerArea(area);
+				goalArea.grow(directions[directionIndex]);
+				this.growArea(area, goalArea);
+			}
+			
+			directionIndex = (directionIndex + 1) % 4;
 		}
 		
 		return area;
 	}
 	
-	private void growArea(BlockType blockType, LegalizerArea area, LegalizerArea goalArea) {
+	private boolean growthPossible(LegalizerArea area, int[] direction) {
+		if(direction[0] == 0) {
+			if(direction[1] == 1) {
+				return area.bottom + 2 * this.blockHeight <= this.height - 1;
+			} else {
+				return area.top - this.blockHeight >= 1;
+			}
+		
+		} else {
+			if(direction[0] == 1) {
+				return area.right + this.blockRepeat <= this.width - 2;
+			} else {
+				return area.left - this.blockRepeat >= 1;
+			}
+		}
+	}
+	
+	
+	private void growArea(LegalizerArea area, LegalizerArea goalArea) {
 		
 		int[] rows = {0, 0};
-		int[] columns = {0, 0};
-		
-		int blockHeight = area.getBlockHeight();
-		int blockRepeat = area.getBlockRepeat(); 
+		int[] columns = {0, 0}; 
 		
 		// While goalArea is not completely covered by area
 		while(true) {
@@ -272,27 +290,27 @@ public class Legalizer {
 			if(area.left != goalArea.left) {
 				rows[0] = area.top;
 				rows[1] = area.bottom;
-				columns[0] = area.left - blockRepeat;
-				columns[1] = area.left - blockRepeat;
+				columns[0] = area.left - this.blockRepeat;
+				columns[1] = area.left - this.blockRepeat;
 				area.grow(-1, 0);
 			
 			} else if(area.right != goalArea.right) {
 				rows[0] = area.top;
 				rows[1] = area.bottom;
-				columns[0] = area.right + blockRepeat;
-				columns[1] = area.right + blockRepeat;
+				columns[0] = area.right + this.blockRepeat;
+				columns[1] = area.right + this.blockRepeat;
 				area.grow(1, 0);
 			
 			} else if(area.top != goalArea.top) {
-				rows[0] = area.top - blockHeight;
-				rows[1] = area.top - blockHeight;
+				rows[0] = area.top - this.blockHeight;
+				rows[1] = area.top - this.blockHeight;
 				columns[0] = area.left;
 				columns[1] = area.right;
 				area.grow(0, -1);
 			
 			} else if(area.bottom != goalArea.bottom) {
-				rows[0] = area.bottom + blockHeight;
-				rows[1] = area.bottom + blockHeight;
+				rows[0] = area.bottom + this.blockHeight;
+				rows[1] = area.bottom + this.blockHeight;
 				columns[0] = area.left;
 				columns[1] = area.right;
 				area.grow(0, 1);
@@ -304,8 +322,8 @@ public class Legalizer {
 			area.grow(direction);
 			
 			
-			for(int y = rows[0]; y <= rows[1]; y += blockHeight) {
-				for(int x = columns[0]; x <= columns[1]; x += blockRepeat) {
+			for(int y = rows[0]; y <= rows[1]; y += this.blockHeight) {
+				for(int x = columns[0]; x <= columns[1]; x += this.blockRepeat) {
 					
 					// If this tile is occupied by an unabsorbed area
 					LegalizerArea neighbour = this.areaPointers[x][y];
@@ -327,7 +345,7 @@ public class Legalizer {
 					
 					// Update the capacity
 					AbstractSite site = this.circuit.getSite(x, y, true);
-					if(site != null && site.getType().equals(blockType)) {
+					if(site != null && site.getType().equals(this.blockType)) {
 						area.incrementTiles();
 					}
 				}
@@ -337,22 +355,19 @@ public class Legalizer {
 	
 	
 	
-	private void legalizeArea(LegalizerArea area, BlockType blockType) {
+	private void legalizeArea(LegalizerArea area) {
 		List<Integer> blockIndexes = area.getBlockIndexes();
 		int[] coordinates = {area.left, area.top, area.right, area.bottom};
-		this.legalizeArea(coordinates, blockType, area.getBlockRepeat(), area.getBlockHeight(), blockIndexes, Axis.X);
+		this.legalizeArea(coordinates, blockIndexes, Axis.X);
 	}
 	
 	private void legalizeArea(
 			int[] coordinates,
-			BlockType blockType,
-			int blockRepeat,
-			int blockHeight,
 			List<Integer> blockIndexes,
 			Axis axis) {
 		
 		// If the area is only one tile big: place all the blocks on this tile
-		if(coordinates[2] - coordinates[0] < blockRepeat && coordinates[3] - coordinates[1] < blockHeight) {
+		if(coordinates[2] - coordinates[0] < this.blockRepeat && coordinates[3] - coordinates[1] < this.blockHeight) {
 			for(Integer blockIndex : blockIndexes) {
 				this.tmpLegalX[blockIndex] = coordinates[0];
 				this.tmpLegalY[blockIndex] = coordinates[1];
@@ -371,12 +386,12 @@ public class Legalizer {
 			double minDistance = Double.MAX_VALUE;
 			int minX = -1, minY = -1;
 			
-			for(int x = coordinates[0]; x <= coordinates[2]; x += blockRepeat) {
-				if(!this.circuit.getColumnType(x).equals(blockType)) {
+			for(int x = coordinates[0]; x <= coordinates[2]; x += this.blockRepeat) {
+				if(!this.circuit.getColumnType(x).equals(this.blockType)) {
 					continue;
 				}
 				
-				for(int y = coordinates[1]; y <= coordinates[3]; y += blockHeight) {
+				for(int y = coordinates[1]; y <= coordinates[3]; y += this.blockHeight) {
 					double distance = Math.pow(linearX - x, 2) + Math.pow(linearY - y, 2);
 					if(distance < minDistance) {
 						minDistance = distance;
@@ -394,12 +409,12 @@ public class Legalizer {
 			this.tmpLegalY[blockIndex] = minY;
 			return;
 		
-		} else if(coordinates[2] - coordinates[0] < blockRepeat && axis == Axis.X) {
-			this.legalizeArea(coordinates, blockType, blockRepeat, blockHeight, blockIndexes, Axis.Y);
+		} else if(coordinates[2] - coordinates[0] < this.blockRepeat && axis == Axis.X) {
+			this.legalizeArea(coordinates, blockIndexes, Axis.Y);
 			return;
 		
-		} else if(coordinates[3] - coordinates[1] < blockHeight && axis == Axis.Y) {
-			this.legalizeArea(coordinates, blockType, blockRepeat, blockHeight, blockIndexes, Axis.X);
+		} else if(coordinates[3] - coordinates[1] < this.blockHeight && axis == Axis.Y) {
+			this.legalizeArea(coordinates, blockIndexes, Axis.X);
 			return;
 		}
 		
@@ -415,7 +430,7 @@ public class Legalizer {
 		if(axis == Axis.X) {
 			
 			// If the blockType is CLB
-			if(blockRepeat == 1) {
+			if(this.blockType.getCategory() == BlockCategory.CLB) {
 				int numClbColumns = 0;
 				for(int column = coordinates[0]; column <= coordinates[2]; column++) {
 					if(this.circuit.getColumnType(column).getCategory() == BlockCategory.CLB) {
@@ -443,11 +458,11 @@ public class Legalizer {
 				
 			// Else: it's a hardblock
 			} else {
-				int numColumns = (coordinates[2] - coordinates[0]) / blockRepeat + 1;
+				int numColumns = (coordinates[2] - coordinates[0]) / this.blockRepeat + 1;
 				splitRatio = (numColumns / 2) / (double) numColumns;
 				
-				coordinates1[2] = coordinates[0] + (numColumns / 2 - 1) * blockRepeat;
-				coordinates2[0] = coordinates[0] + (numColumns / 2) * blockRepeat;
+				coordinates1[2] = coordinates[0] + (numColumns / 2 - 1) * this.blockRepeat;
+				coordinates2[0] = coordinates[0] + (numColumns / 2) * this.blockRepeat;
 			}
 			
 			Collections.sort(blockIndexes, new BlockComparator(this.linearX));
@@ -457,7 +472,7 @@ public class Legalizer {
 		} else {
 			
 			// If the blockType is CLB
-			if(blockRepeat == 1) {
+			if(this.blockRepeat == 1) {
 				int splitRow = (coordinates[1] + coordinates[3]) / 2;
 				splitRatio = (splitRow - coordinates[1] + 1) / (double) (coordinates[3] - coordinates[1] + 1);
 				
@@ -466,11 +481,11 @@ public class Legalizer {
 			
 			// Else: it's a hardblock
 			} else {
-				int numRows = (coordinates[3] - coordinates[1]) / blockHeight + 1;
+				int numRows = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
 				splitRatio = (numRows / 2) / (double) numRows;
 				
-				coordinates1[3] = coordinates[1] + (numRows / 2 - 1) * blockHeight;
-				coordinates2[1] = coordinates[1] + (numRows / 2) * blockHeight;
+				coordinates1[3] = coordinates[1] + (numRows / 2 - 1) * this.blockHeight;
+				coordinates2[1] = coordinates[1] + (numRows / 2) * this.blockHeight;
 			}
 			
 			Collections.sort(blockIndexes, new BlockComparator(this.linearY));
@@ -484,8 +499,8 @@ public class Legalizer {
 		List<Integer> blocks1 = new ArrayList<Integer>(blockIndexes.subList(0, split));
 		List<Integer> blocks2 = new ArrayList<Integer>(blockIndexes.subList(split, blockIndexes.size()));
 		
-		this.legalizeArea(coordinates1, blockType, blockRepeat, blockHeight, blocks1, newAxis);
-		this.legalizeArea(coordinates2, blockType, blockRepeat, blockHeight, blocks2, newAxis);
+		this.legalizeArea(coordinates1, blocks1, newAxis);
+		this.legalizeArea(coordinates2, blocks2, newAxis);
 	}
 	
 	
