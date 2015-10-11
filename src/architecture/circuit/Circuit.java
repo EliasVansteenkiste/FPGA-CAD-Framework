@@ -1,7 +1,6 @@
 package architecture.circuit;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,6 @@ import architecture.FlexibleArchitecture;
 import architecture.BlockType.BlockCategory;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.AbstractSite;
-import architecture.circuit.block.BlockComparatorIndex;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.block.IOSite;
 import architecture.circuit.block.Site;
@@ -74,7 +72,8 @@ public class Circuit {
 			this.globalBlockList.addAll((List<GlobalBlock>) (List<?>) this.blocks.get(blockType));
 		}
 		
-		Collections.sort(this.globalBlockList, new BlockComparatorIndex());
+		// This is not necessary for anything
+		//Collections.sort(this.globalBlockList);
 	}
 	
 	public List<GlobalBlock> getGlobalBlocks() {

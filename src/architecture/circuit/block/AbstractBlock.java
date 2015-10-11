@@ -10,7 +10,7 @@ import architecture.BlockType.BlockCategory;
 import architecture.circuit.pin.AbstractPin;
 
 
-public abstract class AbstractBlock {
+public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 	
 	private String name;
 	private BlockType blockType;
@@ -129,5 +129,10 @@ public abstract class AbstractBlock {
 	@Override
 	public String toString() {
 		return this.blockType.toString() + ":" + this.getName();
+	}
+	
+	@Override
+	public int compareTo(AbstractBlock otherBlock) {
+		return this.index - otherBlock.index;
 	}
 }
