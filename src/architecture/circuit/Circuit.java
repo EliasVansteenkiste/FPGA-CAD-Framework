@@ -132,7 +132,7 @@ public class Circuit {
 				tooSmall = false;
 				
 				int clbCapacity = (int) ((size - 2) * numClbColumns * this.architecture.getFillGrade());
-				int ioCapacity = (size - 1) * 4 * this.architecture.getIoCapacity();
+				int ioCapacity = (size - 2) * 4 * this.architecture.getIoCapacity();
 				if(clbCapacity < this.blocks.get(clbType).size() || ioCapacity < this.blocks.get(ioType).size()) { 
 					tooSmall = true;
 					continue;
