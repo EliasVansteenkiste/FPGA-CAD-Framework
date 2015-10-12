@@ -16,6 +16,7 @@ placer_options = {
 
 # Fixed config
 circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
+circuits = 'mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
 placer = sys.argv[1]
 output_folder = input_folder + '_place-' + placer
 
