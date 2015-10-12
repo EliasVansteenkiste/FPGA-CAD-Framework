@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
+import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractSite;
 import architecture.circuit.block.GlobalBlock;
@@ -22,12 +23,15 @@ public abstract class SAPlacer extends Placer
 		defaultOptions.put("greedy", "0");
 		defaultOptions.put("Rlim", "-1");
 		defaultOptions.put("maxRlim", "-1");
+		
+		defaultOptions.put("fix_pins", "1");
 	}
 	
 	private double Rlimd;
 	private int Rlim, maxRlim;
 	private double T, TMultiplier;
 	
+	private boolean fixPins;
 	private boolean greedy, detailed;
 	private double effortLevel;
 	private int movesPerTemperature;
@@ -48,6 +52,8 @@ public abstract class SAPlacer extends Placer
 		
 		// Get detailed option
 		this.detailed = this.parseBooleanOption("detailed");
+		
+		this.fixPins = this.parseBooleanOption("fix_pins");
 		
 		
 		// Get Rlim and maxRlim option
@@ -279,7 +285,7 @@ public abstract class SAPlacer extends Placer
 			// Find a suitable block
 			do {
 				fromBlock = this.circuit.getRandomBlock(this.random);
-			} while(fromBlock.isFixed());
+			} while(this.isFixed(fromBlock));
 			
 			// Find a suitable site near this block
 			do {
@@ -292,6 +298,11 @@ public abstract class SAPlacer extends Placer
 		
 		Swap swap = new Swap(fromBlock, toSite, this.random);
 		return swap;
+	}
+	
+	private boolean isFixed(GlobalBlock block) {
+		// Only IO blocks are fixed, if fixPins option is true
+		return this.fixPins && block.getCategory() == BlockCategory.IO;
 	}
 	
 	
