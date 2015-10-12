@@ -365,7 +365,7 @@
             "start": 2,
             "repeat": 8,
             "leaf": false,
-            "height": 4,
+            "height": 6,
             "ports": {
                 "input": {
                     "addr1": 15,

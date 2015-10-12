@@ -19,12 +19,44 @@ public class PlaceDumper {
 	
 	private Circuit circuit;
 	private File netFile, placeFile;
+	private String netPath, architecturePath;
 	
 	public PlaceDumper(Circuit circuit, File netFile, File placeFile) {
 		this.circuit = circuit;
 		this.netFile = netFile;
 		this.placeFile = placeFile;
+		
+		this.getPaths();
 	}
+	
+	private void getPaths() {
+		String userDir = System.getProperty("user.dir");
+		File inputFolder = this.netFile.getParentFile();
+		
+		// Get the net file
+		this.netPath = this.netFile.getAbsolutePath().substring(userDir.length() + 1);
+		
+		// Get the architecture file
+		File[] files = inputFolder.listFiles();
+		File architectureFile = null;
+		for(File file : files) {
+			String path = file.getAbsolutePath();
+			if(path.substring(path.length() - 4).equals(".xml")) {
+				if(architectureFile != null) {
+					Logger.raise("Multiple architecture files found in the input folder");
+				}
+				architectureFile = file;
+			}
+		}
+		
+		if(architectureFile == null) {
+			Logger.raise("No architecture file found in the inputfolder");
+		}
+		
+		this.architecturePath = architectureFile.getAbsolutePath().substring(userDir.length() + 1);
+	}
+	
+	
 	
 	public void dump() {
 		PrintWriter writer = null;
@@ -65,7 +97,6 @@ public class PlaceDumper {
 			
 			
 			writer.printf("%-"+length+"s %-7d %-7d %-7d #%d\n",
-			//writer.printf("%s\t%d\t%d\t%d\t#%d\n",
 					block.getName(), x, y, z, index);
 		}
 		
@@ -73,34 +104,8 @@ public class PlaceDumper {
 	}
 	
 	private void dumpHeader(PrintWriter writer, int width, int height, int length) {
-		String userDir = System.getProperty("user.dir");
-		File inputFolder = this.netFile.getParentFile();
-		
-		// Get the net file
-		String netPath = this.netFile.getAbsolutePath().substring(userDir.length() + 1);
-		
-		// Get the architecture file
-		File[] files = inputFolder.listFiles();
-		File architectureFile = null;
-		for(File file : files) {
-			String path = file.getAbsolutePath();
-			if(path.substring(path.length() - 4).equals(".xml")) {
-				if(architectureFile != null) {
-					Logger.raise("Multiple architecture files found in the input folder");
-				}
-				architectureFile = file;
-			}
-		}
-		
-		if(architectureFile == null) {
-			Logger.raise("No architecture file found in the inputfolder");
-		}
-		
-		String architecturePath = architectureFile.getAbsolutePath().substring(userDir.length() + 1);
-		
-		
 		// Print out the header
-		writer.printf("Netlist file: %s   Architecture file: %s\n", netPath, architecturePath);
+		writer.printf("Netlist file: %s   Architecture file: %s\n", this.netPath, this.architecturePath);
 		writer.printf("Array size: %d x %d logic blocks\n\n", width - 2, height - 2);
 		
 		length = Math.max(length, 10);

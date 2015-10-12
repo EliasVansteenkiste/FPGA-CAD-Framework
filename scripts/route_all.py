@@ -11,6 +11,7 @@ input_folder = 'benchmarks/10fle'
 
 # Fixed config
 circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
+circuits = 'LU32PEEng'
 placer = sys.argv[1]
 output_folder = input_folder + '_place-' + placer
 
@@ -54,7 +55,7 @@ for circuit in circuit_list:
     # Call the VPR router
     print('Routing from {0}: {1}'.format(placer, circuit))
     out, err = call.call(command)
-
+    print(out)
     # Remove temporary files
     os.remove(circuit + '.critical_path.out')
     os.remove(circuit + '.slack.out')

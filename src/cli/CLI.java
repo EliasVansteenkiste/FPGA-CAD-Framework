@@ -35,6 +35,10 @@ public class CLI {
 		// Create a circuit
 		Circuit circuit = new Circuit(options.circuit, architecture);
 		
+		// Create the placement file dumper
+		// It does some checks to find an architecture file, that's why we put it here already
+		PlaceDumper placeDumper = new PlaceDumper(circuit, options.netFile, options.outputFile);
+		
 		// Parse net file
 		NetParser netParser = new NetParser(circuit, options.netFile);
 		CLI.startTimer();
@@ -68,8 +72,6 @@ public class CLI {
 		}
 		
 		
-		
-		PlaceDumper placeDumper = new PlaceDumper(circuit, options.netFile, options.outputFile);
 		placeDumper.dump();
 	}
 	
