@@ -16,6 +16,7 @@ import timing_graph.TimingGraph;
 import util.Logger;
 
 import cli.Options;
+import cli.Options.StartingStage;
 
 
 public class CLI {
@@ -33,11 +34,11 @@ public class CLI {
 		architecture.parse();
 		
 		// Create a circuit
-		Circuit circuit = new Circuit(options.circuit, architecture);
+		Circuit circuit = new Circuit(options.circuitName, architecture);
 		
 		// Create the placement file dumper
 		// It does some checks to find an architecture file, that's why we put it here already
-		PlaceDumper placeDumper = new PlaceDumper(circuit, options.netFile, options.outputFile);
+		PlaceDumper placeDumper = new PlaceDumper(circuit, options.netFile, options.outputPlaceFile);
 		
 		// Parse net file
 		NetParser netParser = new NetParser(circuit, options.netFile);
@@ -48,8 +49,8 @@ public class CLI {
 		
 		
 		// Read the place file
-		if(options.startingStage.equals("place")) {
-			PlaceParser placeParser = new PlaceParser(circuit, options.placeFile);
+		if(options.startingStage == StartingStage.PLACE) {
+			PlaceParser placeParser = new PlaceParser(circuit, options.inputPlaceFile);
 			placeParser.parse();
 			
 			CLI.printStatistics("parser", circuit);
@@ -62,7 +63,7 @@ public class CLI {
 			HashMap<String, String> placerOptions = options.placerOptions.get(i);
 			
 			// Do a random placement if an initial placement is required
-			if(options.startingStage.equals("net") && i == 0 && PlacerFactory.needsInitialPlacement(placerName)) {
+			if(options.startingStage == StartingStage.NET && i == 0) {
 				CLI.timePlacement("random", circuit);
 			}
 			

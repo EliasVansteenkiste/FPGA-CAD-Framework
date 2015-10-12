@@ -14,30 +14,31 @@ import org.kohsuke.args4j.Option;
 
 public class Options {
 	
-	@Option(name="-c", aliases="--circuit", metaVar="NAME", required=true, usage="input circuit, can be the circuit name or the location of a net file")
-	public String circuit;
-	
-	@Option(name="-s", aliases="--start", metaVar="NAME", usage="starting stage, either blif, net or place, default is net")
-	public String startingStage = "net";
-	
-	
+	public enum StartingStage {NET, PLACE};
 	
 	@Option(name="-p", aliases="--placer", metaVar="NAME", required=true, usage="the placer that should be used; can be multi-valued using a comma separated list")
 	private String placersString;
 	
-	@Option(name="-a", aliases="--architecture", metaVar="NAME", usage="the architecture on which the circuit is placed; supported values: heterogeneous, 4LUT")
+	@Option(name="-a", aliases="--architecture", metaVar="NAME", required=true, usage="the architecture on which the circuit is placed; supported values: heterogeneous, 4LUT")
 	public String architecture = "heterogeneous";
 	
 	
+	@Option(name="-n", aliases="--net_file", required=true, metaVar="PATH", usage="path to net file")
+	private String netPath;
 	
-	@Option(name="-i", aliases="--input", metaVar="FOLDER", usage="input folder")
-	public String inputPath;
+	@Option(name="-i", aliases="--input_file", metaVar="PATH", usage="path to input place file or folder")
+	private String inputPlacePath;
 	
-	@Option(name="-o", aliases="--output", metaVar="FOLDER", usage="output folder, defaults to the folder of the input file")
-	public String outputPath;
+	@Option(name="-o", aliases="--output", metaVar="PATH", usage="path to output place file or folder")
+	private String outputPlacePath;
 	
 	
-	@Argument(multiValued=true)
+	public String circuitName;
+	public File netFile, inputPlaceFile, outputPlaceFile;
+	public StartingStage startingStage;
+	
+	
+	@Argument(multiValued=true, metaVar="placer-options", usage="a whitespace-separated list of key=value pairs")
 	private List<String> arguments = new ArrayList<String>();
 	public List<String> placers;
 	public List<HashMap<String, String>> placerOptions;
@@ -46,9 +47,6 @@ public class Options {
 	
 	@Option(name="-h", aliases="--help", usage="show this help list", help=true)
 	public boolean showHelp = false;
-	
-	
-	public File inputFolder, outputFolder, blifFile, netFile, placeFile, outputFile;
 	
 	
 	private CmdLineParser parser;
@@ -74,53 +72,39 @@ public class Options {
 			System.exit(0);
 		}
 		
-		// Set the input folder
-		File workingFolder = new File(System.getProperty("user.dir"));
-		if(this.inputPath != null) {
-			this.inputFolder = new File(workingFolder, this.inputPath);
-			this.testFolder("Input folder", this.inputFolder);
+		// Set the net file
+		File workingDir = new File(System.getProperty("user.dir"));
+		this.netFile = new File(workingDir, this.netPath);
+		this.testFile("Net file", this.netFile);
+		
+		// Set the circuit name
+		this.circuitName = this.netFile.getAbsolutePath().replaceFirst(".*/(.*)\\..+", "$1");
+		
+		// Set the input place file and starting stage
+		if(this.inputPlacePath == null) {
+			this.startingStage = StartingStage.NET;
 		
 		} else {
-			this.inputFolder = workingFolder;
-		}
-		
-		
-		
-		// Check the starting stage
-		String[] possibleStages = {"blif", "net", "place"};
-		if(!Arrays.asList(possibleStages).contains(this.startingStage)) {
-			this.error("Invalid starting stage: " + this.startingStage + ". Choose either blif, net or place");
-		}
-		
-		
-		// Get the input extension
-		if(this.startingStage.equals("blif")) {
-			this.blifFile = new File(this.inputFolder, this.circuit + ".blif");
-			this.testFile("Input file", this.blifFile);
-		} else {
-			this.netFile = new File(this.inputFolder, this.circuit + ".net");
-			this.testFile("Input file", this.netFile);
+			this.startingStage = StartingStage.PLACE;
 			
-			if(this.startingStage.equals("place")) {
-				this.placeFile = new File(this.inputFolder, this.circuit + ".place");
-				this.testFile("Input file", this.placeFile);
+			this.inputPlaceFile = new File(workingDir, this.inputPlacePath);
+			if(this.inputPlaceFile.isDirectory()) {
+				this.inputPlaceFile = new File(this.inputPlaceFile, this.circuitName + ".place");
+			}
+			
+			this.testFile("Input place file", this.inputPlaceFile);
+		}
+		
+		// Set the output place file
+		if(this.outputPlacePath == null) {
+			this.outputPlaceFile = new File(this.netFile.getParent(), this.circuitName + ".place");
+		
+		} else {
+			this.outputPlaceFile = new File(workingDir, this.outputPlacePath);
+			if(this.outputPlaceFile.isDirectory()) {
+				this.outputPlaceFile = new File(this.outputPlaceFile, this.circuitName + ".place");
 			}
 		}
-		
-		
-		
-		// Set the output folder
-		if(this.outputPath != null) {
-			this.outputFolder = new File(workingFolder, this.outputPath);
-			this.testFolder("Output folder", this.outputFolder);
-		
-		} else {
-			this.outputFolder = this.inputFolder;
-		}
-		
-		
-		// Set the output file
-		this.outputFile = new File(this.outputFolder, this.circuit + ".place");
 		
 		
 		
@@ -182,16 +166,6 @@ public class Options {
 	}
 	
 	
-	private void testFolder(String name, File file) {
-		// Test if a given folder exists
-		if(!file.exists()) {
-			this.error(name + " not found: " + file);
-		
-		} else if(!file.isDirectory()) {
-			this.error(name + " is not a directory: " + file);
-		}
-	}
-	
 	private void testFile(String name, File file) {
 		// Test if a given file exists
 		if(!file.exists()) {
@@ -210,7 +184,7 @@ public class Options {
 	
 	private void printUsage(PrintStream stream) {
 		
-		stream.println("Usage: java cli --placer NAME --circuit NAME [options] [placer-options]");
+		stream.println("Usage: java cli --placer NAME --net_file PATH [options] [placer-options]");
 		
 		CmdLineParser parser = new CmdLineParser(this);		
 		parser.printUsage(stream);

@@ -14,26 +14,6 @@ import util.Logger;
 
 public class PlacerFactory {
 	
-	private static Map<String, Boolean> needsInitialPlacement = new HashMap<String, Boolean>();
-	static {
-		needsInitialPlacement.put("random", false);
-		needsInitialPlacement.put("wld_sa", true);
-		needsInitialPlacement.put("td_sa", true);
-		needsInitialPlacement.put("wld_ap", true);
-		needsInitialPlacement.put("td_ap", true);
-	}
-	
-	public static boolean needsInitialPlacement(String type) {
-		if(PlacerFactory.needsInitialPlacement.containsKey(type)) {
-			return PlacerFactory.needsInitialPlacement.get(type);
-		
-		} else {
-			Logger.raise("Unknown placer type: " + type);
-			return false;
-		}
-	}
-	
-	
 	public static Placer newPlacer(String type, Circuit circuit) {
 		return PlacerFactory.newPlacer(type, circuit, new HashMap<String, String>());
 	}
