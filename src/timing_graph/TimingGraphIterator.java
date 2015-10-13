@@ -23,11 +23,9 @@ public class TimingGraphIterator implements Iterator<TimingGraphEntry> {
 	TimingGraphIterator(Map<GlobalBlock, List<TimingNode>> nodesInGlobalBlocks) {
 		this.sourceBlockIterator = nodesInGlobalBlocks.entrySet().iterator();
 		
-		while(this.sourceNodeIterator == null || !this.sourceNodeIterator.hasNext()) {
-			Map.Entry<GlobalBlock, List<TimingNode>> sourceBlockEntry = this.sourceBlockIterator.next();
-			this.sourceBlock = sourceBlockEntry.getKey();
-			this.sourceNodeIterator = sourceBlockEntry.getValue().iterator();
-		}
+		Map.Entry<GlobalBlock, List<TimingNode>> sourceBlockEntry = this.sourceBlockIterator.next();
+		this.sourceBlock = sourceBlockEntry.getKey();
+		this.sourceNodeIterator = sourceBlockEntry.getValue().iterator();
 		
 		this.sourceNode = this.sourceNodeIterator.next();
 		this.sinkNodeIterator = this.sourceNode.sinks.entrySet().iterator();
