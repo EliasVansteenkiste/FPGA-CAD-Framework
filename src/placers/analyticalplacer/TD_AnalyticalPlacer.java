@@ -85,7 +85,7 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 			double sourceX, sourceY, sinkX, sinkY;
 			
 			if(sourceIsFixed) {
-				if(source.getCategory() != BlockCategory.IO) {
+				if(source.getCategory() == BlockCategory.IO) {
 					sourceX = source.getX();
 					sourceY = source.getY();
 				
