@@ -86,7 +86,7 @@ class Caller:
             # Get and print statistics
             match = stats_pattern.search(out)
 
-            if match in None:
+            if match is None:
                 print(out)
                 print("Failed to match pattern" + self.stats_regex)
                 sys.exit(1)
