@@ -85,6 +85,12 @@ class Caller:
 
             # Get and print statistics
             match = stats_pattern.search(out)
+
+            if match in None:
+                print(out)
+                print("Failed to match pattern" + self.stats_regex)
+                sys.exit(1)
+
             row = [circuit]
             for column in self.stats_columns:
                 row.append(match.group(column.lower().replace(' ', '_')))
