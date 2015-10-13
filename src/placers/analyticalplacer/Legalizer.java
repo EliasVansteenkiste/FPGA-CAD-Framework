@@ -408,10 +408,6 @@ public class Legalizer {
 				}
 			}
 			
-			if((minX - 2) % 4 == 0 && (minY - 1) % 4 != 0) {
-				System.err.println("problem");
-			}
-			
 			this.tmpLegalX[blockIndex] = minX;
 			this.tmpLegalY[blockIndex] = minY;
 			return;

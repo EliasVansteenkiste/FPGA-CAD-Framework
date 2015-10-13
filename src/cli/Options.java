@@ -26,10 +26,10 @@ public class Options {
 	@Option(name="-n", aliases="--net_file", required=true, metaVar="PATH", usage="path to net file")
 	private String netPath;
 	
-	@Option(name="-i", aliases="--input_file", metaVar="PATH", usage="path to input place file or folder")
+	@Option(name="-i", aliases="--input", metaVar="PATH", usage="folder that contains the input place file")
 	private String inputPlacePath;
 	
-	@Option(name="-o", aliases="--output", metaVar="PATH", usage="path to output place file or folder")
+	@Option(name="-o", aliases="--output", metaVar="PATH", usage="folder that will contain the output place file")
 	private String outputPlacePath;
 	
 	
@@ -87,10 +87,8 @@ public class Options {
 		} else {
 			this.startingStage = StartingStage.PLACE;
 			
-			this.inputPlaceFile = new File(workingDir, this.inputPlacePath);
-			if(this.inputPlaceFile.isDirectory()) {
-				this.inputPlaceFile = new File(this.inputPlaceFile, this.circuitName + ".place");
-			}
+			File inputPlaceFolder = new File(workingDir, this.inputPlacePath);
+			this.inputPlaceFile = new File(inputPlaceFolder, this.circuitName + ".place");
 			
 			this.testFile("Input place file", this.inputPlaceFile);
 		}
@@ -100,10 +98,9 @@ public class Options {
 			this.outputPlaceFile = new File(this.netFile.getParent(), this.circuitName + ".place");
 		
 		} else {
-			this.outputPlaceFile = new File(workingDir, this.outputPlacePath);
-			if(this.outputPlaceFile.isDirectory()) {
-				this.outputPlaceFile = new File(this.outputPlaceFile, this.circuitName + ".place");
-			}
+			File outputPlaceFolder = new File(workingDir, this.outputPlacePath);
+			outputPlaceFolder.mkdir();
+			this.outputPlaceFile = new File(outputPlaceFolder, this.circuitName + ".place");
 		}
 		
 		

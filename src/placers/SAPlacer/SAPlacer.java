@@ -17,12 +17,12 @@ public abstract class SAPlacer extends Placer
 	
 	static {
 		defaultOptions.put("effort_level", "1");
-		defaultOptions.put("T_multiplier", "1");
+		defaultOptions.put("t_multiplier", "1");
 		
 		defaultOptions.put("detailed", "0");
 		defaultOptions.put("greedy", "0");
-		defaultOptions.put("Rlim", "-1");
-		defaultOptions.put("maxRlim", "-1");
+		defaultOptions.put("rlim", "-1");
+		defaultOptions.put("max_rlim", "-1");
 		
 		defaultOptions.put("fix_pins", "1");
 	}
@@ -59,8 +59,8 @@ public abstract class SAPlacer extends Placer
 		// Get Rlim and maxRlim option
 		int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight());
 		
-		int optionMaxRlim = this.parseIntegerOptionWithDefault("maxRlim", size);
-		int optionRlim = this.parseIntegerOptionWithDefault("Rlim", size);
+		int optionMaxRlim = this.parseIntegerOptionWithDefault("max_rlim", size);
+		int optionRlim = this.parseIntegerOptionWithDefault("rlim", size);
 		
 		// Set maxRlim first, because Rlim depends on it
 		this.setMaxRlim(optionMaxRlim);
@@ -72,7 +72,7 @@ public abstract class SAPlacer extends Placer
 		this.movesPerTemperature = (int) (this.effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), 4.0/3.0));
 		
 		// Get T multiplier option
-		this.TMultiplier = Double.parseDouble(this.options.get("T_multiplier"));
+		this.TMultiplier = Double.parseDouble(this.options.get("t_multiplier"));
 	}
 	
 	
