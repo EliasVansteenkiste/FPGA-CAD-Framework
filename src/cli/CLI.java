@@ -3,6 +3,7 @@ package cli;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import packers.BlePacker;
@@ -114,12 +115,9 @@ public class CLI {
 			
 			
 			// Create the placer and place the circuit
-			CLI.startTimer();
-			Placer placer = Placer.newPlacer(placerName, architecture, prePackedCircuit, packedCircuit, placerOptions);
-			placer.place();
-			CLI.stopTimer();
+			timePlacement(placerName, architecture, prePackedCircuit, packedCircuit, placerOptions);
 			
-			CLI.printStatistics(placerName, prePackedCircuit, packedCircuit);
+			//CLI.printStatistics(placerName, prePackedCircuit, packedCircuit);
 		}
 		
 		
@@ -130,6 +128,14 @@ public class CLI {
 		} catch (FileNotFoundException e) {
 			error("Place file not found: " + options.placeFile);
 		}
+	}
+	
+	
+	private static void timePlacement(String placerName, Architecture architecture, PrePackedCircuit prePackedCircuit, PackedCircuit packedCircuit, HashMap<String, String> placerOptions) {
+		CLI.startTimer();
+		Placer placer = Placer.newPlacer(placerName, architecture, prePackedCircuit, packedCircuit, placerOptions);
+		placer.place();
+		CLI.stopTimer();
 	}
 	
 	private static void startTimer() {
