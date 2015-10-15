@@ -88,7 +88,7 @@ class Caller:
 
             if match is None:
                 print(out)
-                print("Failed to match pattern" + self.stats_regex)
+                print("Failed to match pattern: " + self.stats_regex)
                 sys.exit(1)
 
             row = [circuit]
