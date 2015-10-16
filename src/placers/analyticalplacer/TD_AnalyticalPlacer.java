@@ -10,8 +10,6 @@ import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.GlobalBlock;
 
-import mathtools.Crs;
-
 
 public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 	

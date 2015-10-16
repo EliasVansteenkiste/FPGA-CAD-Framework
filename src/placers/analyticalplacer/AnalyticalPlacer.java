@@ -382,25 +382,12 @@ abstract class AnalyticalPlacer extends Placer {
 			if(i != minYIndex) {
 				this.addConnection(
 						minY, minYFixed, pinBlockIndex[minYIndex] - startIndex,
-						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
+						pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.yMatrix, this.yVector);
 			}
 			if(i != maxYIndex) {
 				this.addConnection(
 						maxY, maxYFixed, pinBlockIndex[maxYIndex] - startIndex,
-						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.yMatrix, this.yVector);
-			}
-			
-			// Add connections from source-sink model
-			if(i > 0) {
-				this.addConnection(
-						pinX[0], pinFixed[0], pinBlockIndex[0] - startIndex,
-						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.xMatrix, this.xVector);
-				
-				this.addConnection(
-						pinY[0], pinFixed[0], pinBlockIndex[0] - startIndex,
 						pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.yMatrix, this.yVector);
 			}

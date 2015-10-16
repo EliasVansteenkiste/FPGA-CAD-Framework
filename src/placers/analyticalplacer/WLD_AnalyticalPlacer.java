@@ -26,6 +26,4 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 	protected void processNets(BlockType blockType, int startIndex, boolean firstSolve) {
 		this.processNetsB2B(blockType, startIndex);
 	}
-	
-	
 }
