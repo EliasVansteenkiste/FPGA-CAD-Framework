@@ -359,37 +359,42 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		
-		double weightMultiplier = 2.0 / (numPins + 1) * getWeight(numPins);
+		double weightMultiplier = 2.0 / (numPins - 1) * AnalyticalPlacer.getWeight(numPins);
 		boolean minXFixed = pinFixed[minXIndex], maxXFixed = pinFixed[maxXIndex],
 				minYFixed = pinFixed[minYIndex], maxYFixed = pinFixed[maxYIndex];
 		
 		for(int i = 0; i < numPins; i++) {
 			
-			// Add connections from bound to bound model
+			// Add connection to min X block
 			if(i != minXIndex) {
 				this.addConnection(
 						minX, minXFixed, pinBlockIndex[minXIndex] - startIndex,
 						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.xMatrix, this.xVector);
-			}
-			if(i != maxXIndex) {
-				this.addConnection(
-						maxX, maxXFixed, pinBlockIndex[maxXIndex] - startIndex,
-						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.xMatrix, this.xVector);
+				
+				// Add connection to max X block
+				if(i != maxXIndex) {
+					this.addConnection(
+							maxX, maxXFixed, pinBlockIndex[maxXIndex] - startIndex,
+							pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
+							weightMultiplier, this.xMatrix, this.xVector);
+				}
 			}
 			
+			// Add connection to min Y block
 			if(i != minYIndex) {
 				this.addConnection(
 						minY, minYFixed, pinBlockIndex[minYIndex] - startIndex,
 						pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.yMatrix, this.yVector);
-			}
-			if(i != maxYIndex) {
-				this.addConnection(
-						maxY, maxYFixed, pinBlockIndex[maxYIndex] - startIndex,
-						pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.yMatrix, this.yVector);
+				
+				// Add connection to max Y block
+				if(i != maxYIndex) {
+					this.addConnection(
+							maxY, maxYFixed, pinBlockIndex[maxYIndex] - startIndex,
+							pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
+							weightMultiplier, this.yMatrix, this.yVector);
+				}
 			}
 		}
 	}
@@ -421,8 +426,6 @@ abstract class AnalyticalPlacer extends Placer {
 			double coor1, boolean fixed1, int index1,
 			double coor2, boolean fixed2, int index2,
 			double weightMultiplier, Crs matrix, double[] vector) {
-		
-		
 		
 		if(fixed1 && fixed2) {
 			return;
