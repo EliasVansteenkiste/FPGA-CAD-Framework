@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import placers.Placer;
+
 import architecture.BlockType;
 import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
@@ -13,26 +15,21 @@ import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.pin.AbstractPin;
 import architecture.circuit.pin.GlobalPin;
 
-import mathtools.CGSolver;
-import mathtools.Crs;
-
-import placers.Placer;
-
 
 abstract class AnalyticalPlacer extends Placer {
 	
 	private int startingStage;
 	private double[] maxUtilizationSequence;
 	private double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
+	private double gradientMultiplier;
 	
 	protected Map<GlobalBlock, Integer> blockIndexes = new HashMap<GlobalBlock, Integer>(); // Maps a block (CLB or hardblock) to its integer index
 	private List<BlockType> blockTypes = new ArrayList<BlockType>();
 	private List<Integer> blockTypeIndexStarts = new ArrayList<Integer>();
 	private int numBlocks;
 	
-	protected Crs xMatrix, yMatrix;
-	protected double[] xVector, yVector;
 	protected double[] linearX, linearY;
+	protected double[] pullX, pullY;
 	
 	protected CostCalculator costCalculator;
 	protected Legalizer legalizer;
@@ -47,13 +44,16 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("max_utilization_sequence", "1");
 		
 		//The first anchorWeight factor that will be used in the main solve loop
-		defaultOptions.put("starting_anchor_weight", "0.3");
+		defaultOptions.put("starting_anchor_weight", "0.1");
 		
 		//The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
-		defaultOptions.put("anchor_weight_increase", "1.5");
+		defaultOptions.put("anchor_weight_increase", "1.02");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
 		defaultOptions.put("stop_ratio_linear_legal", "0.85");
+		
+		// The speed at which the gradient solver moves to the optimal position
+		defaultOptions.put("gradient_multiplier", "0.02");
 	}
 	
 	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -124,6 +124,9 @@ abstract class AnalyticalPlacer extends Placer {
 		this.startingAnchorWeight = this.parseDoubleOption("starting_anchor_weight");
 		this.anchorWeightIncrease = this.parseDoubleOption("anchor_weight_increase");
 		this.stopRatioLinearLegal = this.parseDoubleOption("stop_ratio_linear_legal");
+		
+		// Gradient solver
+		this.gradientMultiplier = this.parseDoubleOption("gradient_multiplier");
 	}
 	
 	
@@ -136,8 +139,6 @@ abstract class AnalyticalPlacer extends Placer {
 	public void place() {
 		double pseudoWeightFactor;
 		int iteration;
-		
-		// Initialize the data structures
 		
 		if(this.startingStage == 0) {
 			
@@ -189,7 +190,7 @@ abstract class AnalyticalPlacer extends Placer {
 			System.out.format(", linear cost = %f, legal cost = %f\n", linearCost, legalCost);
 			
 			
-			blockTypeIndex = (blockTypeIndex + 2) % (this.blockTypes.size() + 1) - 1;
+			//blockTypeIndex = (blockTypeIndex + 2) % (this.blockTypes.size() + 1) - 1;
 			if(blockTypeIndex < 0) {
 				pseudoWeightFactor *= this.anchorWeightIncrease;
 				iteration++;
@@ -225,10 +226,9 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		int numBlocks = endIndex - startIndex;
-		this.xMatrix = new Crs(numBlocks);
-		this.yMatrix = new Crs(numBlocks);
-		this.xVector = new double[numBlocks];
-		this.yVector = new double[numBlocks];
+		
+		this.pullX = new double[numBlocks];
+		this.pullY = new double[numBlocks];
 		
 		
 		//Add pseudo connections
@@ -238,20 +238,12 @@ abstract class AnalyticalPlacer extends Placer {
 			int[] anchorPointsY = this.legalizer.getAnchorPointsY();
 			
 			for(int index = startIndex; index < endIndex; index++) {
-				double deltaX = Math.max(Math.abs(anchorPointsX[index] - this.linearX[index]), 0.005);
-				double deltaY = Math.max(Math.abs(anchorPointsY[index] - this.linearY[index]), 0.005);
-				
-				double pseudoWeightX = 2 * pseudoWeightFactor / deltaX;
-				double pseudoWeightY = 2 * pseudoWeightFactor / deltaY;
+				double deltaX = anchorPointsX[index] - this.linearX[index];
+				double deltaY = anchorPointsY[index] - this.linearY[index];
 				
 				int relativeIndex = index - startIndex;
-				this.xMatrix.setElement(relativeIndex, relativeIndex,
-						this.xMatrix.getElement(relativeIndex, relativeIndex) + pseudoWeightX);
-				this.yMatrix.setElement(relativeIndex, relativeIndex,
-						this.yMatrix.getElement(relativeIndex, relativeIndex) + pseudoWeightY);
-				
-				this.xVector[relativeIndex] += pseudoWeightX * anchorPointsX[relativeIndex];
-				this.yVector[relativeIndex] += pseudoWeightY * anchorPointsY[relativeIndex];
+				this.pullX[relativeIndex] = pseudoWeightFactor * deltaX;
+				this.pullY[relativeIndex] = pseudoWeightFactor * deltaY;
 			}
 		}
 		
@@ -259,15 +251,15 @@ abstract class AnalyticalPlacer extends Placer {
 		this.processNets(blockType, startIndex, firstSolve);
 		
 		
-		double epsilon = 0.0001;
+		double[] xSolution = new double[numBlocks];
+		double[] ySolution = new double[numBlocks];
 		
-		// Solve x problem
-		CGSolver xSolver = new CGSolver(this.xMatrix, this.xVector);
-		double[] xSolution = xSolver.solve(epsilon);
-		
-		// Solve y problem
-		CGSolver ySolver = new CGSolver(this.yMatrix, this.yVector);
-		double[] ySolution = ySolver.solve(epsilon);
+		for(int index = startIndex; index < endIndex; index++) {
+			int relativeIndex = index - startIndex;
+			xSolution[relativeIndex] = Math.max(Math.min(this.linearX[index] + this.gradientMultiplier * this.pullX[relativeIndex], this.circuit.getWidth() - 2), 1);
+			ySolution[relativeIndex] = Math.max(Math.min(this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex], this.circuit.getWidth() - 2), 1);
+			//ySolution[relativeIndex] = this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex];
+		}
 		
 		
 		// Save results
@@ -359,7 +351,7 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		
-		double weightMultiplier = 2.0 / (numPins - 1) * AnalyticalPlacer.getWeight(numPins);
+		double weightMultiplier = 1.0 / (numPins - 1) * AnalyticalPlacer.getWeight(numPins);
 		boolean minXFixed = pinFixed[minXIndex], maxXFixed = pinFixed[maxXIndex],
 				minYFixed = pinFixed[minYIndex], maxYFixed = pinFixed[maxYIndex];
 		
@@ -370,14 +362,14 @@ abstract class AnalyticalPlacer extends Placer {
 				this.addConnection(
 						minX, minXFixed, pinBlockIndex[minXIndex] - startIndex,
 						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.xMatrix, this.xVector);
+						weightMultiplier, this.pullX);
 				
 				// Add connection to max X block
 				if(i != maxXIndex) {
 					this.addConnection(
 							maxX, maxXFixed, pinBlockIndex[maxXIndex] - startIndex,
 							pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-							weightMultiplier, this.xMatrix, this.xVector);
+							weightMultiplier, this.pullX);
 				}
 			}
 			
@@ -386,14 +378,14 @@ abstract class AnalyticalPlacer extends Placer {
 				this.addConnection(
 						minY, minYFixed, pinBlockIndex[minYIndex] - startIndex,
 						pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.yMatrix, this.yVector);
+						weightMultiplier, this.pullY);
 				
 				// Add connection to max Y block
 				if(i != maxYIndex) {
 					this.addConnection(
 							maxY, maxYFixed, pinBlockIndex[maxYIndex] - startIndex,
 							pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-							weightMultiplier, this.yMatrix, this.yVector);
+							weightMultiplier, this.pullY);
 				}
 			}
 		}
@@ -425,28 +417,14 @@ abstract class AnalyticalPlacer extends Placer {
 	protected void addConnection(
 			double coor1, boolean fixed1, int index1,
 			double coor2, boolean fixed2, int index2,
-			double weightMultiplier, Crs matrix, double[] vector) {
+			double weightMultiplier, double[] pull) {
 		
-		if(fixed1 && fixed2) {
-			return;
+		if(!fixed1) {
+			pull[index1] += weightMultiplier * (coor2 - coor1);
 		}
 		
-		double delta = Math.max(Math.abs(coor1 - coor2), 0.005);
-		double weight = weightMultiplier / delta;
-		
-		if(fixed1) {
-			matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
-			vector[index2] += weight * coor1;
-		
-		} else if(fixed2) {
-			matrix.setElement(index1, index1, matrix.getElement(index1, index1) + weight);
-			vector[index1] += weight * coor2;
-		
-		} else {
-			matrix.setElement(index1, index1, matrix.getElement(index1, index1) + weight);
-			matrix.setElement(index1, index2, matrix.getElement(index1, index2) - weight);
-			matrix.setElement(index2, index1, matrix.getElement(index2, index1) - weight);
-			matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
+		if(!fixed2) {
+			pull[index2] += weightMultiplier * (coor1 - coor2);
 		}
 	}
 	
