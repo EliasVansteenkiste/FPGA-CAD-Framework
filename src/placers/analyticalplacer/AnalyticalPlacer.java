@@ -49,7 +49,7 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("anchor_weight_increase", "1.02");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
-		defaultOptions.put("stop_ratio_linear_legal", "0.95");
+		defaultOptions.put("stop_ratio_linear_legal", "0.85");
 		
 		// The speed at which the gradient solver moves to the optimal position
 		defaultOptions.put("gradient_multiplier", "0.01");
@@ -260,22 +260,7 @@ abstract class AnalyticalPlacer extends Placer {
 		
 		//Add pseudo connections
 		if(!firstSolve) {
-			// Process pseudonets
-			int[] legalX = this.legalizer.getBestLegalX();
-			int[] legalY = this.legalizer.getBestLegalY();
-			
-			for(int index = this.numIOBlocks; index < this.numBlocks; index++) {
-				
-				this.addConnection(
-						false, index, this.linearX[index],
-						true, -1, legalX[index],
-						pseudoWeightFactor, this.tmpX);
-				
-				this.addConnection(
-						false, index, this.linearY[index],
-						true, -1, legalY[index],
-						pseudoWeightFactor, this.tmpY);
-			}
+			this.addPseudoConnections(pseudoWeightFactor);
 		}
 		
 		
@@ -291,6 +276,24 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 	}
 	
+	private void addPseudoConnections(double pseudoWeightFactor) {
+		int[] legalX = this.legalizer.getBestLegalX();
+		int[] legalY = this.legalizer.getBestLegalY();
+		
+		for(int index = this.numIOBlocks; index < this.numBlocks; index++) {
+			
+			this.addConnection(
+					false, index, this.linearX[index],
+					true, -1, legalX[index],
+					pseudoWeightFactor, this.tmpX);
+			
+			this.addConnection(
+					false, index, this.linearY[index],
+					true, -1, legalY[index],
+					pseudoWeightFactor, this.tmpY);
+		}
+	}
+	
 	
 	protected void processNetsB2B() {
 		for(Integer[] net : this.nets) {
@@ -303,7 +306,59 @@ abstract class AnalyticalPlacer extends Placer {
 		int numNetBlocks = blockIndexes.length;
 		double weightMultiplier = AnalyticalPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
 		
-		for(int index1 = 0; index1 < numNetBlocks - 1; index1++) {
+		double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
+			   minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+		int minXIndex = -1, maxXIndex = -1,
+			minYIndex = -1, maxYIndex = -1;
+		
+		for(int i = 0; i < numNetBlocks; i++) {
+			int blockIndex = blockIndexes[i];
+			double x = this.linearX[blockIndex], y = this.linearY[blockIndex];
+			
+			if(x < minX) {
+				minX = x;
+				minXIndex = blockIndex;
+			}
+			if(x > maxX) {
+				maxX = x;
+				maxXIndex = blockIndex;
+			}
+			
+			if(y < minY) {
+				minY = y;
+				minYIndex = blockIndex;
+			}
+			if(y > maxY) {
+				maxY = y;
+				maxYIndex = blockIndex;
+			}
+		}
+		
+		boolean minXFixed = isFixed(minXIndex),maxXFixed = isFixed(maxXIndex),
+				minYFixed = isFixed(minYIndex),maxYFixed = isFixed(maxYIndex);
+		
+		for(int i = 0; i < numNetBlocks; i++) {
+			int blockIndex = blockIndexes[i];
+			boolean isFixed = isFixed(blockIndex);
+			
+			if(blockIndex != minXIndex) {
+				this.addConnection(isFixed, blockIndex, minXFixed, minXIndex, weightMultiplier, this.linearX, this.tmpX);
+				
+				if(blockIndex != maxXIndex) {
+					this.addConnection(isFixed, blockIndex, maxXFixed, maxXIndex, weightMultiplier, this.linearX, this.tmpX);
+				}
+			}
+			
+			if(blockIndex != minYIndex) {
+				this.addConnection(isFixed, blockIndex, minYFixed, minYIndex, weightMultiplier, this.linearY, this.tmpY);
+				
+				if(blockIndex != maxXIndex) {
+					this.addConnection(isFixed, blockIndex, maxYFixed, maxYIndex, weightMultiplier, this.linearY, this.tmpY);
+				}
+			}
+		}
+		
+		/*for(int index1 = 0; index1 < numNetBlocks - 1; index1++) {
 			int blockIndex1 = blockIndexes[index1];
 			boolean fixed1 = (blockIndex1 < this.numIOBlocks);
 			
@@ -314,9 +369,12 @@ abstract class AnalyticalPlacer extends Placer {
 				this.addConnection(fixed1, blockIndex1, fixed2, blockIndex2, weightMultiplier, this.linearX, this.tmpX);
 				this.addConnection(fixed1, blockIndex1, fixed2, blockIndex2, weightMultiplier, this.linearY, this.tmpY);
 			}
-		}
+		}*/
 	}
 	
+	private boolean isFixed(int blockIndex) {
+		return blockIndex < this.numIOBlocks;
+	}
 	
 	
 	/*protected boolean isFixed(GlobalBlock block, BlockType blockType) {
