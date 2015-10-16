@@ -6,13 +6,13 @@ public class TimingGraphEntry {
 	private GlobalBlock source;
 	private GlobalBlock sink;
 	private double criticality;
-	private int netSize;
+	private int numSinks;
 	
-	TimingGraphEntry(GlobalBlock source, GlobalBlock sink, double criticality, int netSize) {
+	TimingGraphEntry(GlobalBlock source, GlobalBlock sink, double criticality, int numSinks) {
 		this.source = source;
 		this.sink = sink;
 		this.criticality = criticality;
-		this.netSize = netSize;
+		this.numSinks = numSinks;
 	}
 	
 	public GlobalBlock getSource() {
@@ -24,7 +24,7 @@ public class TimingGraphEntry {
 	public double getCriticality() {
 		return this.criticality;
 	}
-	public int getNetSize() {
-		return this.netSize;
+	public int getNumSinks() {
+		return this.numSinks;
 	}
 }

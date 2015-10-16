@@ -130,7 +130,7 @@ abstract class AnalyticalPlacer extends Placer {
 	
 	protected abstract CostCalculator createCostCalculator();
 	protected abstract void initializePlacement();
-	protected abstract void addExtraConnections(BlockType blockType, int startIndex, boolean firstSolve);
+	protected abstract void processNets(BlockType blockType, int startIndex, boolean firstSolve);
 	
 	
 	public void place() {
@@ -256,20 +256,7 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		
-		// Build the linear systems (x and y are solved separately)
-		
-		// Loop through all sources of nets
-		// This part is wirelength driven, but is also used for timing driven placement
-		for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
-			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
-				this.processNet(blockType, startIndex, (GlobalPin) sourcePin);
-			}
-		}
-		
-		
-		// Add source sink connections
-		// This is only for timing driven, and not in the first iteration
-		this.addExtraConnections(blockType, startIndex, firstSolve);
+		this.processNets(blockType, startIndex, firstSolve);
 		
 		
 		double epsilon = 0.0001;
@@ -283,14 +270,21 @@ abstract class AnalyticalPlacer extends Placer {
 		double[] ySolution = ySolver.solve(epsilon);
 		
 		
-		//Save results
+		// Save results
 		System.arraycopy(xSolution, 0, this.linearX, startIndex, numBlocks);
 		System.arraycopy(ySolution, 0, this.linearY, startIndex, numBlocks);
 	}
 	
 	
+	protected void processNetsB2B(BlockType blockType, int startIndex) {
+		for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
+			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
+				this.processNetB2B(blockType, startIndex, (GlobalPin) sourcePin); 
+			}
+		}
+	}
 	
-	private void processNet(BlockType blockType, int startIndex, GlobalPin sourcePin) {
+	private void processNetB2B(BlockType blockType, int startIndex, GlobalPin sourcePin) {
 		List<AbstractPin> pins = new ArrayList<AbstractPin>();
 		// The source pin *must* be added first!
 		pins.add(sourcePin);
@@ -302,132 +296,114 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		
-		ArrayList<Integer> netMovableBlockIndices = new ArrayList<Integer>();
-		ArrayList<Integer> fixedXPositions = new ArrayList<Integer>();
-		ArrayList<Integer> fixedYPositions = new ArrayList<Integer>();
+		double[] pinX = new double[numPins];
+		double[] pinY = new double[numPins];
+		boolean[] pinFixed = new boolean[numPins];
+		int[] pinBlockIndex = new int[numPins];
 		
+		int minXIndex = -1, maxXIndex = -1,
+			minYIndex = -1, maxYIndex = -1;
+		double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
+			   minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
 		
-		// Index = -1 means fixed block
-		double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE;
-		int minXIndex = -1, maxXIndex = -1;
-		double minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE;
-		int minYIndex = -1, maxYIndex = -1;
-		double Qn = getWeight(numPins);
-		
-		
-		// Loop through all pins on the net and calculate the bounding box
-		for(AbstractPin pin : pins) {
+		for(int i = 0; i < numPins; i++) {
+			AbstractPin pin = pins.get(i); 
 			GlobalBlock block = ((GlobalPin) pin).getOwner();
 			
-			double x, y;
-			int index;
 			
-			if(isFixed(block, blockType)) {
-				int intX, intY;
-				
+			double x, y;
+			int blockIndex;
+			
+			boolean fixed = isFixed(block, blockType);
+			if(fixed) {
 				if(block.getCategory() == BlockCategory.IO) {
-					intX = block.getX();
-					intY = block.getY();
+					blockIndex = -1;
+					x = block.getX();
+					y = block.getY();
 				
 				} else {
-					index = this.blockIndexes.get(block);
-					intX = this.legalizer.getAnchorPointsX()[index];
-					intY = this.legalizer.getAnchorPointsY()[index];
+					blockIndex = this.blockIndexes.get(block);
+					x = this.legalizer.getAnchorPointsX()[blockIndex];
+					y = this.legalizer.getAnchorPointsY()[blockIndex];
 				}
-				
-				
-				fixedXPositions.add(intX);
-				fixedYPositions.add(intY);
-				
-				x = intX;
-				y = intY;
-				index = -1;
 			
 			} else {
-				index = this.blockIndexes.get(block);
-				x = this.linearX[index];
-				y = this.linearY[index];
-				
-				netMovableBlockIndices.add(index);
-			}
-				
-			if(x > maxX) {
-				maxX = x;
-				maxXIndex = index;
-			}
-			if(x < minX) {
-				minX = x;
-				minXIndex = index;
+				blockIndex = this.blockIndexes.get(block);
+				x = this.linearX[blockIndex];
+				y = this.linearY[blockIndex];
 			}
 			
-			if(y > maxY) {
-				maxY = y;
-				maxYIndex = index;
+			
+			pinX[i] = x;
+			pinY[i] = y;
+			pinFixed[i] = fixed;
+			pinBlockIndex[i] = blockIndex;
+			
+			
+			if(x < minX) {
+				minX = x;
+				minXIndex = i;
+			}
+			if(x > maxX) {
+				maxX = x;
+				maxXIndex = i;
 			}
 			if(y < minY) {
 				minY = y;
-				minYIndex = index;
+				minYIndex = i;
+			}
+			if(y > maxY) {
+				maxY = y;
+				maxYIndex = i;
 			}
 		}
 		
 		
+		double weightMultiplier = 2.0 / (numPins + 1) * getWeight(numPins);
+		boolean minXFixed = pinFixed[minXIndex], maxXFixed = pinFixed[maxXIndex],
+				minYFixed = pinFixed[minYIndex], maxYFixed = pinFixed[maxYIndex];
 		
-		double weightMultiplier = 2.0 / (numPins - 1) * Qn;
-		
-		// Add connections between the min and max blocks
-		if(minXIndex != -1 || maxXIndex != -1) {
-			this.addMinMaxConnections(minXIndex - startIndex, minX, maxXIndex - startIndex, maxX,
-					weightMultiplier, this.xMatrix, this.xVector);
-		}
-		if(minYIndex != -1 || maxYIndex != -1) {
-			this.addMinMaxConnections(minYIndex - startIndex, minY, maxYIndex - startIndex, maxY,
-					weightMultiplier, this.yMatrix, this.yVector);
-		}
-		
-		
-		// Add connections between movable internal blocks and boundary blocks
-		for(Integer movableIndex : netMovableBlockIndices) {
-			double value = this.linearX[movableIndex];
-			if(movableIndex != minXIndex) {
-				this.addMovableConnections(movableIndex - startIndex, value, maxXIndex - startIndex, maxX,
+		for(int i = 0; i < numPins; i++) {
+			
+			// Add connections from bound to bound model
+			if(i != minXIndex) {
+				this.addConnection(
+						minX, minXFixed, pinBlockIndex[minXIndex] - startIndex,
+						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.xMatrix, this.xVector);
 			}
-			if(movableIndex != maxXIndex) {
-				this.addMovableConnections(movableIndex - startIndex, value, minXIndex - startIndex, minX,
+			if(i != maxXIndex) {
+				this.addConnection(
+						maxX, maxXFixed, pinBlockIndex[maxXIndex] - startIndex,
+						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.xMatrix, this.xVector);
 			}
 			
-			value = this.linearY[movableIndex];
-			if(movableIndex != minYIndex) {
-				this.addMovableConnections(movableIndex - startIndex, value, maxYIndex - startIndex, maxY,
+			if(i != minYIndex) {
+				this.addConnection(
+						minY, minYFixed, pinBlockIndex[minYIndex] - startIndex,
+						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.yMatrix, this.yVector);
 			}
-			if(movableIndex != maxYIndex) {
-				this.addMovableConnections(movableIndex - startIndex, value, minYIndex - startIndex, minY,
+			if(i != maxYIndex) {
+				this.addConnection(
+						maxY, maxYFixed, pinBlockIndex[maxYIndex] - startIndex,
+						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
 						weightMultiplier, this.yMatrix, this.yVector);
 			}
-		}
-		
-		
-		// Add connections between fixed internal blocks and boundary blocks
-		boolean firstXMin = true, firstXMax = true; 
-		for(double fixedXPosition: fixedXPositions) {
-			firstXMin = this.addFixedConnections(firstXMin, fixedXPosition,
-					minXIndex - startIndex, minX, maxXIndex - startIndex, maxX,
-					weightMultiplier, this.xMatrix, this.xVector);
-			firstXMax = this.addFixedConnections(firstXMax, fixedXPosition,
-					maxXIndex - startIndex, maxX, minXIndex - startIndex, minX,
-					weightMultiplier, this.xMatrix, this.xVector);
-		}
-		
-		boolean firstYMin = true, firstYMax = true;
-		for(double fixedYPosition: fixedYPositions) {
-			firstYMin = this.addFixedConnections(firstYMin, fixedYPosition,
-					minYIndex - startIndex, minY, maxYIndex - startIndex, maxY,
-					weightMultiplier, this.yMatrix, this.yVector);
-			firstYMax = this.addFixedConnections(firstYMax, fixedYPosition,
-					maxYIndex - startIndex, maxY, minYIndex - startIndex, minY,
-					weightMultiplier, this.yMatrix, this.yVector);
+			
+			// Add connections from source-sink model
+			if(i > 0) {
+				this.addConnection(
+						pinX[0], pinFixed[0], pinBlockIndex[0] - startIndex,
+						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
+						weightMultiplier, this.xMatrix, this.xVector);
+				
+				this.addConnection(
+						pinY[0], pinFixed[0], pinBlockIndex[0] - startIndex,
+						pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
+						weightMultiplier, this.yMatrix, this.yVector);
+			}
 		}
 	}
 	
@@ -452,79 +428,38 @@ abstract class AnalyticalPlacer extends Placer {
 			return true;
 		}
 	}
-
-
-	private void addMinMaxConnections(
-			int minIndex, double minCoordinate,
-			int maxIndex, double maxCoordinate,
+	
+	
+	protected void addConnection(
+			double coor1, boolean fixed1, int index1,
+			double coor2, boolean fixed2, int index2,
 			double weightMultiplier, Crs matrix, double[] vector) {
 		
-		double delta = Math.max(maxCoordinate - minCoordinate, 0.005);
+		
+		
+		if(fixed1 && fixed2) {
+			return;
+		}
+		
+		double delta = Math.max(coor1 - coor2, 0.005);
 		double weight = weightMultiplier / delta;
 		
-		// Only min block is movable
-		if(maxIndex < 0) {
-			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
-			vector[minIndex] += weight * maxCoordinate;
-			
-		// Only max block is movable
-		} else if(minIndex < 0) {
-			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
-			vector[maxIndex] += weight * minCoordinate;
-			
-		// Both blocks are movable
-		} else {
-			matrix.setElement(minIndex, minIndex, matrix.getElement(minIndex, minIndex) + weight);
-			matrix.setElement(minIndex, maxIndex, matrix.getElement(minIndex, maxIndex) - weight);
-			matrix.setElement(maxIndex, minIndex, matrix.getElement(maxIndex, minIndex) - weight);
-			matrix.setElement(maxIndex, maxIndex, matrix.getElement(maxIndex, maxIndex) + weight);
-		}
-	}
-	
-	private void addMovableConnections(
-			int movableIndex, double movableCoordinate,
-			int boundaryIndex, double boundaryCoordinate,
-			double weightMultiplier, Crs matrix, double[] vector) {
+		if(fixed1) {
+			matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
+			vector[index2] += weight * coor1;
 		
-		double delta = Math.max(Math.abs(movableCoordinate - boundaryCoordinate), 0.005);
-		double weight = weightMultiplier / delta;
-		
-		// Boundary block is a fixed block
-		// Connection between fixed and non fixed block
-		if(boundaryIndex < 0) {
-			matrix.setElement(movableIndex, movableIndex, matrix.getElement(movableIndex, movableIndex) + weight);
-			vector[movableIndex] += weight * boundaryCoordinate;
-		
-		// Boundary block is not fixed
-		// Connection between two non fixed blocks
-		} else if(movableIndex != boundaryIndex) {
-			matrix.setElement(boundaryIndex, boundaryIndex, matrix.getElement(boundaryIndex, boundaryIndex) + weight);
-			matrix.setElement(boundaryIndex, movableIndex, matrix.getElement(boundaryIndex, movableIndex) - weight);
-			matrix.setElement(movableIndex, boundaryIndex, matrix.getElement(movableIndex, boundaryIndex) - weight);
-			matrix.setElement(movableIndex, movableIndex, matrix.getElement(movableIndex, movableIndex) + weight);
-		}
-	}
-	
-	
-	private boolean addFixedConnections(boolean first, double fixedPosition,
-			int index1, double coordinate1, int index2, double coordinate2,
-			double weightMultiplier, Crs matrix, double[] vector) {
-		
-		if(fixedPosition != coordinate1 || index1 >= 0 || first == false) {
-			if(index2 >= 0) {
-				double delta = Math.max(Math.abs(fixedPosition - coordinate2), 0.005);
-				double weight = weightMultiplier / delta;
-				
-				matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
-				vector[index2] += weight * fixedPosition;
-			}
-			
-			return first;
+		} else if(fixed2) {
+			matrix.setElement(index1, index1, matrix.getElement(index1, index1) + weight);
+			vector[index1] += weight * coor2;
 		
 		} else {
-			return false;
+			matrix.setElement(index1, index1, matrix.getElement(index1, index1) + weight);
+			matrix.setElement(index1, index2, matrix.getElement(index1, index2) - weight);
+			matrix.setElement(index2, index1, matrix.getElement(index2, index1) - weight);
+			matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
 		}
 	}
+	
 	
 	
 	static double getWeight(int size) {

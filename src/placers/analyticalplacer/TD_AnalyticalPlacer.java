@@ -58,42 +58,48 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 	}
 	
 	@Override
-	protected void addExtraConnections(BlockType blockType, int startIndex, boolean firstSolve) {
+	protected void processNets(BlockType blockType, int startIndex, boolean firstSolve) {
+		this.processNetsB2B(blockType, startIndex);
+		
 		if(!firstSolve) {
-			for(TimingGraphEntry entry : this.timingGraph) {
-				double criticality = entry.getCriticality();
+			this.processNetsSourceSink(blockType, startIndex);
+		}
+	}
+	
+	protected void processNetsSourceSink(BlockType blockType, int startIndex) {
+		for(TimingGraphEntry entry : this.timingGraph) {
+			double criticality = entry.getCriticality();
+			
+			if(criticality > this.maxCriticalityThreshold) {
+				GlobalBlock source = entry.getSource();
+				GlobalBlock sink = entry.getSink();
+				double weightMultiplier = ((double) 2) / entry.getNumSinks() * criticality;
 				
-				if(criticality > this.maxCriticalityThreshold) {
-					GlobalBlock source = entry.getSource();
-					GlobalBlock sink = entry.getSink();
-					
-					double weightMultiplier = ((double) 2) / entry.getNetSize() * criticality;
-					this.processTimingDrivenConnection(blockType, source, sink, startIndex, weightMultiplier);
-				}
+				this.processTimingDrivenConnection(blockType, source, sink, startIndex, weightMultiplier);
 			}
 		}
 	}
 	
 	
 	private void processTimingDrivenConnection(BlockType blockType, GlobalBlock source, GlobalBlock sink, int startIndex, double weightMultiplier) {
-		boolean sourceIsFixed = isFixed(source, blockType);
-		boolean sinkIsFixed = isFixed(sink, blockType);
+		boolean sourceFixed = isFixed(source, blockType);
+		boolean sinkFixed = isFixed(sink, blockType);
 		
 		// If at least one of the two blocks is movable
-		if(!sourceIsFixed || !sinkIsFixed) {
+		if(!sourceFixed || !sinkFixed) {
 			int sourceIndex = -1, sinkIndex = -1;
 			double sourceX, sourceY, sinkX, sinkY;
 			
-			if(sourceIsFixed) {
+			if(sourceFixed) {
 				if(source.getCategory() == BlockCategory.IO) {
 					sourceX = source.getX();
 					sourceY = source.getY();
 				
 				} else {
 					// Don't update sourceIndex
-					int index = this.blockIndexes.get(source);
-					sourceX = this.legalizer.getBestLegalX()[index];
-					sourceY = this.legalizer.getBestLegalY()[index];
+					sourceIndex = this.blockIndexes.get(source);
+					sourceX = this.legalizer.getBestLegalX()[sourceIndex];
+					sourceY = this.legalizer.getBestLegalY()[sourceIndex];
 				}
 			
 			} else {
@@ -103,16 +109,16 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 			}
 			
 			
-			if(sinkIsFixed) {
+			if(sinkFixed) {
 				if(sink.getCategory() == BlockCategory.IO) {
 					sinkX = sink.getX();
 					sinkY = sink.getY();
 				
 				} else {
 					// Don't update sinkIndex
-					int index = this.blockIndexes.get(sink);
-					sinkX = this.legalizer.getBestLegalX()[index];
-					sinkY = this.legalizer.getBestLegalY()[index];
+					sinkIndex = this.blockIndexes.get(sink);
+					sinkX = this.legalizer.getBestLegalX()[sinkIndex];
+					sinkY = this.legalizer.getBestLegalY()[sinkIndex];
 				}
 			
 			} else {
@@ -122,43 +128,15 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 			} 
 			
 			
-			this.addSourceSinkConnection(
-					sourceIndex - startIndex, sourceX,
-					sinkIndex - startIndex, sinkX,
+			this.addConnection(
+					sourceX, sourceFixed, sourceIndex - startIndex,
+					sinkX, sinkFixed, sinkIndex - startIndex,
 					weightMultiplier, this.xMatrix, this.xVector);
 			
-			this.addSourceSinkConnection(
-					sourceIndex - startIndex, sourceY,
-					sinkIndex - startIndex, sinkY,
+			this.addConnection(
+					sourceY, sourceFixed, sourceIndex - startIndex,
+					sinkY, sinkFixed, sinkIndex - startIndex,
 					weightMultiplier, this.yMatrix, this.yVector);
-		}
-	}	
-
-	
-	private void addSourceSinkConnection(
-			int index1, double coordinate1,
-			int index2, double coordinate2,
-			double weightMultiplier, Crs matrix, double[] vector) {
-		
-		double delta = Math.max(Math.abs(coordinate2 - coordinate1), 0.001);
-		double weight = weightMultiplier / delta;
-		
-		// Only second block is free
-		if(index1 < 0) {
-			matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
-			vector[index2] += weight * coordinate1;
-		
-		// Only first block is free
-		} else if(index2 < 0) {
-			matrix.setElement(index1, index1, matrix.getElement(index1, index1) + weight);
-			vector[index1] += weight * coordinate2;
-		
-		// Both blocks are free
-		} else {
-			matrix.setElement(index1, index1, matrix.getElement(index1, index1) + weight);
-			matrix.setElement(index1, index2, matrix.getElement(index1, index2) - weight);
-			matrix.setElement(index2, index1, matrix.getElement(index2, index1) - weight);
-			matrix.setElement(index2, index2, matrix.getElement(index2, index2) + weight);
 		}
 	}
 }

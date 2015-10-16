@@ -23,8 +23,8 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 	}
 
 	@Override
-	protected void addExtraConnections(BlockType blockType, int startIndex, boolean firstSolve) {
-		//Do nothing
+	protected void processNets(BlockType blockType, int startIndex, boolean firstSolve) {
+		this.processNetsB2B(blockType, startIndex);
 	}
 	
 	
