@@ -137,33 +137,21 @@ abstract class AnalyticalPlacer extends Placer {
 	
 	
 	public void place() {
-		double pseudoWeightFactor;
-		int iteration;
-		
-		if(this.startingStage == 0) {
-			
+		if(this.startingStage == 0) {	
 			//Initial linear solves, should normally be done 5-7 times
 			int blockTypeIndex = -1;
-			for(int i = 0; i < 7; i++) {
+			for(int i = 0; i < 50; i++) {
 				this.solveLinear(true, blockTypeIndex, 0.0);
 			}
-			
-			//Initial legalization
-			this.legalizer.legalize(blockTypeIndex, this.maxUtilizationSequence[0]);
-			
-			pseudoWeightFactor = this.startingAnchorWeight;
-			iteration = 1;
-		
 		
 		} else {
 			// Initial legalization
 			this.legalizer.initializeArrays();
-			pseudoWeightFactor = this.startingAnchorWeight;
-			iteration = 0;
 		}
 		
 		// Do the actual placing
-		int blockTypeIndex = -1;
+		int blockTypeIndex = -1, iteration = 0;
+		double pseudoWeightFactor = this.startingAnchorWeight;
 		double linearCost, legalCost;
 		
 		this.initializePlacement();
