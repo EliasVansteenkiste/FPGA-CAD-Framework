@@ -16,7 +16,6 @@ import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.pin.AbstractPin;
-import architecture.circuit.pin.GlobalPin;
 
 
 abstract class AnalyticalPlacer extends Placer {
@@ -26,13 +25,10 @@ abstract class AnalyticalPlacer extends Placer {
 	private double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
 	private double gradientMultiplier;
 	
-	protected Map<GlobalBlock, Integer> blockIndexes = new HashMap<GlobalBlock, Integer>(); // Maps a block (CLB or hardblock) to its integer index
-	private List<BlockType> blockTypes = new ArrayList<BlockType>();
-	private List<Integer> blockTypeIndexStarts = new ArrayList<Integer>();
-	private int numBlocks;
+	private List<Integer[]> nets;
+	private int numBlocks, numIOBlocks, numMovableBlocks;
 	
-	protected double[] linearX, linearY;
-	protected double[] pullX, pullY;
+	protected double[] linearX, linearY, tmpX, tmpY;
 	
 	protected CostCalculator costCalculator;
 	protected Legalizer legalizer;
@@ -53,7 +49,7 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("anchor_weight_increase", "1.02");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
-		defaultOptions.put("stop_ratio_linear_legal", "0.85");
+		defaultOptions.put("stop_ratio_linear_legal", "0.95");
 		
 		// The speed at which the gradient solver moves to the optimal position
 		defaultOptions.put("gradient_multiplier", "0.01");
@@ -68,46 +64,104 @@ abstract class AnalyticalPlacer extends Placer {
 		// Get number of blocks
 		this.numBlocks = 0;
 		for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
-			if(blockType.getCategory() != BlockCategory.IO) {
-				this.numBlocks += this.circuit.getBlocks(blockType).size();
-			}
+			this.numBlocks += this.circuit.getBlocks(blockType).size();
 		}
 		
 		
-		// Initialize blocks and positions
+		// Initialize block positions at the center of the design 
 		this.linearX = new double[this.numBlocks];
 		this.linearY = new double[this.numBlocks];
-		Arrays.fill(this.linearX, this.circuit.getWidth() / 2);
-		Arrays.fill(this.linearY, this.circuit.getHeight() / 2);
+		Arrays.fill(this.linearX, this.circuit.getWidth() / 2 - 1);
+		Arrays.fill(this.linearY, this.circuit.getHeight() / 2 - 1);
 		
-		int blockIndex = 0;
-		this.blockTypeIndexStarts.add(blockIndex);
+		// Initialize temporary positions. The first numIOBlocks elements
+		// of these arrays will never be used, but it's more convenient to
+		// make them the same length as linearX and linearY
+		this.tmpX = new double[this.numBlocks];
+		this.tmpY = new double[this.numBlocks];
 		
+		
+		// Make a list of all block types, with IO blocks first
+		BlockType ioBlockType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
+		List<BlockType> blockTypes = new ArrayList<BlockType>();
+		blockTypes.add(ioBlockType);
 		for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
-			if(blockType.getCategory() == BlockCategory.IO) {
-				continue;
+			if(!blockType.equals(ioBlockType)) {
+				blockTypes.add(blockType);
 			}
+		}
+		
+		// Loop through all block types
+		// Make an index entry for each block type
+		
+		
+		// Add all blocks
+		Map<GlobalBlock, Integer> blockIndexes = new HashMap<GlobalBlock, Integer>();
+		List<Integer> blockTypeIndexStarts = new ArrayList<Integer>();
+		int blockIndex = 0;
+		blockTypeIndexStarts.add(0);
+		
+		for(BlockType blockType : blockTypes) {
+			boolean isFixed = blockType.equals(ioBlockType);
 			
-			List<AbstractBlock> blocksOfType = this.circuit.getBlocks(blockType);
-			for(AbstractBlock abstractBlock : blocksOfType) {
+			for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
 				GlobalBlock block = (GlobalBlock) abstractBlock;
 				
-				// Set the linear position to be equal to the current legal position
-				//this.linearX[blockIndex] = block.getX();
-				//this.linearY[blockIndex] = block.getY();
+				if(isFixed) {
+					this.linearX[blockIndex] = block.getX();
+					this.linearY[blockIndex] = block.getY();
+				}
 				
-				this.blockIndexes.put(block, blockIndex);
+				blockIndexes.put(block, blockIndex);
 				blockIndex++;
 			}
 			
-			this.blockTypes.add(blockType);
-			this.blockTypeIndexStarts.add(blockIndex);
+			blockTypeIndexStarts.add(blockIndex);
 		}
 		
-		this.costCalculator = this.createCostCalculator();
+		this.numIOBlocks = blockTypeIndexStarts.get(1);
+		this.numMovableBlocks = this.numBlocks - this.numIOBlocks;
+		
+		
+		
+		// Add all nets
+		// Loop through all net sources
+		this.nets = new ArrayList<Integer[]>();
+		for(Map.Entry<GlobalBlock, Integer> sourceBlockEntry : blockIndexes.entrySet()) {
+			GlobalBlock sourceBlock = sourceBlockEntry.getKey();
+			
+			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
+				
+				// Build a set of all blocks connected to the net
+				List<AbstractPin> netPins = new ArrayList<AbstractPin>();
+				netPins.add(sourcePin);
+				netPins.addAll(sourcePin.getSinks());
+				
+				Set<GlobalBlock> netBlocks = new HashSet<GlobalBlock>();
+				for(AbstractPin pin : netPins) {
+					netBlocks.add((GlobalBlock) pin.getOwner());
+				}
+				
+				// Make a list of the block indexes
+				int numNetBlocks = netBlocks.size();
+				Integer[] netBlockIndexes = new Integer[numNetBlocks];
+				int i = 0;
+				for(GlobalBlock netBlock : netBlocks) {
+					netBlockIndexes[i] = blockIndexes.get(netBlock);
+					i++;
+				}
+				
+				// Add this "net" to the list of nets
+				this.nets.add(netBlockIndexes);
+			}
+		}
+		
+		
+		this.costCalculator = this.createCostCalculator(circuit, blockIndexes);
 		this.legalizer = new Legalizer(
 				circuit, this.costCalculator,
-				this.blockIndexes, this.blockTypes, this.blockTypeIndexStarts,
+				blockIndexes,
+				blockTypes, blockTypeIndexStarts,
 				this.linearX, this.linearY);
 	}
 	
@@ -136,16 +190,16 @@ abstract class AnalyticalPlacer extends Placer {
 	
 	
 	
-	protected abstract CostCalculator createCostCalculator();
+	protected abstract CostCalculator createCostCalculator(Circuit circuit, Map<GlobalBlock, Integer> blockIndexes);
 	protected abstract void initializePlacement();
-	protected abstract void processNets(BlockType blockType, int startIndex, boolean firstSolve);
+	protected abstract void processNets(boolean firstSolve);
 	
 	
 	public void place() {
 		if(this.startingStage == 0) {	
 			//Initial linear solves, should normally be done 5-7 times
-			for(int i = 0; i < 7; i++) {
-				this.solveLinear(true, -1, 0);
+			for(int i = 0; i < 5; i++) {
+				this.solveLinear(true, 0);
 			}
 		
 		} else {
@@ -154,25 +208,24 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		// Do the actual placing
-		int blockTypeIndex = -1, iteration = 0;
+		int iteration = 0;
 		double pseudoWeightFactor = this.startingAnchorWeight;
 		double linearCost, legalCost;
 		
 		this.initializePlacement();
 		
 		do {
-			String blockType = blockTypeIndex == -1 ? "all" : this.blockTypes.get(blockTypeIndex).getName();
-			System.out.format("Iteration %d: pseudoWeightFactor = %f, blockType = %s",
-					iteration, pseudoWeightFactor, blockType);
+			System.out.format("Iteration %d: pseudoWeightFactor = %f",
+					iteration, pseudoWeightFactor);
 			
 			// Solve linear
-			this.solveLinear(false, blockTypeIndex, pseudoWeightFactor);
+			this.solveLinear(false, pseudoWeightFactor);
 			
 			// Legalize
 			int sequenceIndex = Math.min(iteration, this.maxUtilizationSequence.length - 1);
 			double maxUtilizationLegalizer = this.maxUtilizationSequence[sequenceIndex];
 			
-			this.legalizer.legalize(blockTypeIndex, maxUtilizationLegalizer);
+			this.legalizer.legalize(maxUtilizationLegalizer);
 			
 			
 			// Get the costs and print them
@@ -183,10 +236,8 @@ abstract class AnalyticalPlacer extends Placer {
 			
 			
 			//blockTypeIndex = (blockTypeIndex + 2) % (this.blockTypes.size() + 1) - 1;
-			if(blockTypeIndex < 0) {
-				pseudoWeightFactor *= this.anchorWeightIncrease;
-				iteration++;
-			}
+			pseudoWeightFactor *= this.anchorWeightIncrease;
+			iteration++;
 			
 		} while(linearCost / legalCost < this.stopRatioLinearLegal);
 		
@@ -200,194 +251,75 @@ abstract class AnalyticalPlacer extends Placer {
 	 * Build and solve the linear system ==> recalculates linearX and linearY
 	 * If it is the first time we solve the linear system ==> don't take pseudonets into account
 	 */
-	private void solveLinear(boolean firstSolve, int blockTypeIndex, double pseudoWeightFactor) {
+	private void solveLinear(boolean firstSolve, double pseudoWeightFactor) {
 		
-		BlockType blockType = null;
-		int startIndex, endIndex;
-		
-		// Solve all blocks
-		if(blockTypeIndex == -1) {
-			startIndex = 0;
-			endIndex = this.numBlocks;
-		
-		// Solve blocks of one type
-		} else {
-			blockType = this.blockTypes.get(blockTypeIndex);
-			startIndex = this.blockTypeIndexStarts.get(blockTypeIndex);
-			endIndex = this.blockTypeIndexStarts.get(blockTypeIndex + 1);
-		}
-		
-		int numBlocks = endIndex - startIndex;
-		
-		this.pullX = new double[numBlocks];
-		this.pullY = new double[numBlocks];
-		
+		//System.arraycopy(this.linearX, this.numIOBlocks, this.tmpX, this.numIOBlocks, this.numMovableBlocks);
+		//System.arraycopy(this.linearX, this.numIOBlocks, this.tmpY, this.numIOBlocks, this.numMovableBlocks);
+		Arrays.fill(this.tmpX, 0);
+		Arrays.fill(this.tmpY, 0);
 		
 		//Add pseudo connections
 		if(!firstSolve) {
 			// Process pseudonets
-			int[] anchorPointsX = this.legalizer.getAnchorPointsX();
-			int[] anchorPointsY = this.legalizer.getAnchorPointsY();
+			int[] legalX = this.legalizer.getBestLegalX();
+			int[] legalY = this.legalizer.getBestLegalY();
 			
-			for(int index = startIndex; index < endIndex; index++) {
-				double deltaX = anchorPointsX[index] - this.linearX[index];
-				double deltaY = anchorPointsY[index] - this.linearY[index];
+			for(int index = this.numIOBlocks; index < this.numBlocks; index++) {
 				
-				int relativeIndex = index - startIndex;
-				this.pullX[relativeIndex] = pseudoWeightFactor * deltaX;
-				this.pullY[relativeIndex] = pseudoWeightFactor * deltaY;
+				this.addConnection(
+						false, index, this.linearX[index],
+						true, -1, legalX[index],
+						pseudoWeightFactor, this.tmpX);
+				
+				this.addConnection(
+						false, index, this.linearY[index],
+						true, -1, legalY[index],
+						pseudoWeightFactor, this.tmpY);
 			}
 		}
 		
 		
-		this.processNets(blockType, startIndex, firstSolve);
-		
-		
-		double[] xSolution = new double[numBlocks];
-		double[] ySolution = new double[numBlocks];
-		
-		for(int index = startIndex; index < endIndex; index++) {
-			int relativeIndex = index - startIndex;
-			xSolution[relativeIndex] = this.linearX[index] + this.gradientMultiplier * this.pullX[relativeIndex];
-			ySolution[relativeIndex] = this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex];
-		}
+		this.processNets(firstSolve);
 		
 		
 		// Save results
-		System.arraycopy(xSolution, 0, this.linearX, startIndex, numBlocks);
-		System.arraycopy(ySolution, 0, this.linearY, startIndex, numBlocks);
-	}
-	
-	
-	protected void processNetsB2B(BlockType blockType, int startIndex) {
-		for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
-			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
-				this.processNetB2B(blockType, startIndex, (GlobalPin) sourcePin); 
-			}
+		//System.arraycopy(this.tmpX, this.numIOBlocks, this.linearX, this.numIOBlocks, this.numMovableBlocks);
+		//System.arraycopy(this.tmpX, this.numIOBlocks, this.linearY, this.numIOBlocks, this.numMovableBlocks);
+		for(int i = 0; i < this.numBlocks; i++) {
+			this.linearX[i] += this.tmpX[i];
+			this.linearY[i] += this.tmpY[i];
 		}
 	}
 	
-	private void processNetB2B(BlockType blockType, int startIndex, GlobalPin sourcePin) {
-		
-		Set<GlobalBlock> netBlocks = new HashSet<GlobalBlock>();
-		
-		List<AbstractPin> pins = new ArrayList<AbstractPin>();
-		pins.add(sourcePin);
-		pins.addAll(sourcePin.getSinks());
-		
-		int numPins = pins.size();
-		if(numPins < 2) {
-			return;
+	
+	protected void processNetsB2B() {
+		for(Integer[] net : this.nets) {
+			this.processNetB2B(net);
 		}
+	}
+	
+	private void processNetB2B(Integer[] blockIndexes) {
 		
+		int numNetBlocks = blockIndexes.length;
+		double weightMultiplier = AnalyticalPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
 		
-		double[] pinX = new double[numPins];
-		double[] pinY = new double[numPins];
-		boolean[] pinFixed = new boolean[numPins];
-		int[] pinBlockIndex = new int[numPins];
-		
-		int minXIndex = -1, maxXIndex = -1,
-			minYIndex = -1, maxYIndex = -1;
-		double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
-			   minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-		
-		for(int i = 0; i < numPins; i++) {
-			AbstractPin pin = pins.get(i); 
-			GlobalBlock block = ((GlobalPin) pin).getOwner();
-			netBlocks.add(block);
+		for(int index1 = 0; index1 < numNetBlocks - 1; index1++) {
+			int blockIndex1 = blockIndexes[index1];
+			boolean fixed1 = (blockIndex1 < this.numIOBlocks);
 			
-			
-			double x, y;
-			int blockIndex;
-			
-			boolean fixed = isFixed(block, blockType);
-			if(fixed) {
-				if(block.getCategory() == BlockCategory.IO) {
-					blockIndex = -1;
-					x = block.getX();
-					y = block.getY();
+			for(int index2 = index1 + 1; index2 < numNetBlocks; index2++) {
+				int blockIndex2 = blockIndexes[index2];
+				boolean fixed2 = (blockIndex2 < this.numIOBlocks);
 				
-				} else {
-					blockIndex = this.blockIndexes.get(block);
-					x = this.legalizer.getAnchorPointsX()[blockIndex];
-					y = this.legalizer.getAnchorPointsY()[blockIndex];
-				}
-			
-			} else {
-				blockIndex = this.blockIndexes.get(block);
-				x = this.linearX[blockIndex];
-				y = this.linearY[blockIndex];
-			}
-			
-			
-			pinX[i] = x;
-			pinY[i] = y;
-			pinFixed[i] = fixed;
-			pinBlockIndex[i] = blockIndex;
-			
-			
-			if(x < minX) {
-				minX = x;
-				minXIndex = i;
-			}
-			if(x > maxX) {
-				maxX = x;
-				maxXIndex = i;
-			}
-			if(y < minY) {
-				minY = y;
-				minYIndex = i;
-			}
-			if(y > maxY) {
-				maxY = y;
-				maxYIndex = i;
-			}
-		}
-		
-		
-		double weightMultiplier = 1.0 / (numPins - 1) * AnalyticalPlacer.getWeight(netBlocks.size());
-		boolean minXFixed = pinFixed[minXIndex], maxXFixed = pinFixed[maxXIndex],
-				minYFixed = pinFixed[minYIndex], maxYFixed = pinFixed[maxYIndex];
-		
-		for(int i = 0; i < numPins; i++) {
-			
-			// Add connection to min X block
-			if(i != minXIndex) {
-				this.addConnection(
-						minX, minXFixed, pinBlockIndex[minXIndex] - startIndex,
-						pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.pullX);
-				
-				// Add connection to max X block
-				if(i != maxXIndex) {
-					this.addConnection(
-							maxX, maxXFixed, pinBlockIndex[maxXIndex] - startIndex,
-							pinX[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-							weightMultiplier, this.pullX);
-				}
-			}
-			
-			// Add connection to min Y block
-			if(i != minYIndex) {
-				this.addConnection(
-						minY, minYFixed, pinBlockIndex[minYIndex] - startIndex,
-						pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-						weightMultiplier, this.pullY);
-				
-				// Add connection to max Y block
-				if(i != maxYIndex) {
-					this.addConnection(
-							maxY, maxYFixed, pinBlockIndex[maxYIndex] - startIndex,
-							pinY[i], pinFixed[i], pinBlockIndex[i] - startIndex,
-							weightMultiplier, this.pullY);
-				}
+				this.addConnection(fixed1, blockIndex1, fixed2, blockIndex2, weightMultiplier, this.linearX, this.tmpX);
+				this.addConnection(fixed1, blockIndex1, fixed2, blockIndex2, weightMultiplier, this.linearY, this.tmpY);
 			}
 		}
 	}
 	
 	
 	
-	protected boolean isFixed(GlobalBlock block, BlockType blockType) {
+	/*protected boolean isFixed(GlobalBlock block, BlockType blockType) {
 
 		// IOs are always considered fixed
 		if(block.getCategory() == BlockCategory.IO) {
@@ -405,23 +337,33 @@ abstract class AnalyticalPlacer extends Placer {
 		} else {
 			return true;
 		}
+	}*/
+	
+	protected void addConnection(
+			boolean fixed1, int index1,
+			boolean fixed2, int index2,
+			double weightMultiplier, double[] oldCoordinates, double[] newCoordinates) {
+		
+		this.addConnection(
+				fixed1, index1, oldCoordinates[index1],
+				fixed2, index2, oldCoordinates[index2],
+				weightMultiplier, newCoordinates);
 	}
 	
 	
 	protected void addConnection(
-			double coor1, boolean fixed1, int index1,
-			double coor2, boolean fixed2, int index2,
-			double weightMultiplier, double[] pull) {
+			boolean fixed1, int index1, double coordinate1,
+			boolean fixed2, int index2, double coordinate2,
+			double weightMultiplier, double[] newCoordinates) {
 		
-		int sign = (int) Math.signum(coor2 - coor1);
+		//double weight = this.gradientMultiplier * weightMultiplier * Math.signum(coordinate2 - coordinate1);
+		double weight = this.gradientMultiplier * weightMultiplier * (coordinate2 - coordinate1);
+		
 		if(!fixed1) {
-			//pull[index1] += weightMultiplier * sign;
-			pull[index1] += weightMultiplier * (coor2 - coor1);
+			newCoordinates[index1] += weight;
 		}
-		
 		if(!fixed2) {
-			//pull[index2] -= weightMultiplier * sign;
-			pull[index2] += weightMultiplier * (coor1 - coor2);
+			newCoordinates[index2] -= weight;
 		}
 	}
 	

@@ -2,8 +2,8 @@ package placers.analyticalplacer;
 
 import java.util.Map;
 
-import architecture.BlockType;
 import architecture.circuit.Circuit;
+import architecture.circuit.block.GlobalBlock;
 
 
 public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
@@ -13,8 +13,8 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 	}
 	
 	@Override
-	protected CostCalculator createCostCalculator() {
-		return new WLD_CostCalculator(this.circuit, this.blockIndexes);
+	protected CostCalculator createCostCalculator(Circuit circuit, Map<GlobalBlock, Integer> blockIndexes) {
+		return new WLD_CostCalculator(circuit, blockIndexes);
 	}
 
 	@Override
@@ -23,7 +23,7 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 	}
 
 	@Override
-	protected void processNets(BlockType blockType, int startIndex, boolean firstSolve) {
-		this.processNetsB2B(blockType, startIndex);
+	protected void processNets(boolean firstSolve) {
+		this.processNetsB2B();
 	}
 }

@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import util.Logger;
+
 import architecture.BlockType;
 import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
@@ -25,7 +27,7 @@ public class Legalizer {
 	private Map<GlobalBlock, Integer> blockIndexes;
 	private List<BlockType> blockTypes;
 	private List<Integer> blockTypeIndexStarts;
-	private int numBlocks;
+	private int numBlocks, numIOBlocks, numMovableBlocks;
 	
 	private double tileCapacity;
 	
@@ -58,25 +60,39 @@ public class Legalizer {
 			double[] linearX,
 			double[] linearY) {
 		
+		// Store easy stuff
 		this.circuit = circuit;
 		this.width = this.circuit.getWidth();
 		this.height = this.circuit.getHeight();
 		
+		this.blockIndexes = blockIndexes;
 		this.costCalculator = costCalculator;
 		
-		this.blockIndexes = blockIndexes;
+		
+		// Store block types
+		if(blockTypes.get(0).getCategory() != BlockCategory.IO) {
+			Logger.raise("The first block type is not IO");
+		}
+		if(blockTypes.size() != blockTypeIndexStarts.size() - 1) {
+			Logger.raise("blockTypes and blockTypeIndexes don't have matching dimensions");
+		}
 		this.blockTypes = blockTypes;
 		this.blockTypeIndexStarts = blockTypeIndexStarts;
 		
+		// Store linear solution (this array is updated by the linear solver
 		this.linearX = linearX;
 		this.linearY = linearY;
-		this.numBlocks = linearX.length;
 		
+		// Cache the number of blocks
+		this.numBlocks = linearX.length;
+		this.numIOBlocks = blockTypeIndexStarts.get(0);
+		this.numMovableBlocks = this.numBlocks - this.numIOBlocks;
+		
+		// Initialize the best solution and a temporary solution
 		this.bestLegalX = new int[this.numBlocks];
 		this.bestLegalY = new int[this.numBlocks];
 		this.tmpLegalX = new int[this.numBlocks];
 		this.tmpLegalY = new int[this.numBlocks];
-		
 		this.bestCost = Double.MAX_VALUE;
 	}
 	
@@ -100,27 +116,16 @@ public class Legalizer {
 		return this.bestLegalY;
 	}
 	
-	//TODO: should these depend on lastMaxUtilizationSmallerThanOne?
-	int[] getAnchorPointsX() {
-		return this.bestLegalX;
-	}
-	int[] getAnchorPointsY() {
-		return this.bestLegalY;
-	}
 	
-	
-	void legalize(int blockTypeIndex, double tileCapacity) {
+	void legalize(double tileCapacity) {
 		
-		System.arraycopy(this.bestLegalX, 0, this.tmpLegalX, 0, this.numBlocks);
-		System.arraycopy(this.bestLegalY, 0, this.tmpLegalY, 0, this.numBlocks);
+		System.arraycopy(this.bestLegalX, this.numIOBlocks, this.tmpLegalX, this.numIOBlocks, this.numMovableBlocks);
+		System.arraycopy(this.bestLegalY, this.numIOBlocks, this.tmpLegalY, this.numIOBlocks, this.numMovableBlocks);
 		this.tileCapacity = tileCapacity;
 		
-		if(blockTypeIndex == -1) {
-			for(int i = 0; i < this.blockTypes.size(); i++) {
-				legalizeBlockType(i);
-			}
-		} else {
-			legalizeBlockType(blockTypeIndex);
+		// Skip i = 0: these are IO blocks
+		for(int i = 1; i < this.blockTypes.size(); i++) {
+			legalizeBlockType(i);
 		}
 		
 		this.updateBestLegal();
@@ -532,16 +537,21 @@ public class Legalizer {
 	void updateCircuit(int[] x, int[] y) {
 		//Clear all previous locations
 		for(GlobalBlock block : this.blockIndexes.keySet()) {
-			block.removeSite();
+			if(block.getCategory() != BlockCategory.IO) {
+				block.removeSite();
+			}
 		}
 		
 		// Update locations
 		for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
 			GlobalBlock block = blockEntry.getKey();
-			int index = blockEntry.getValue();
 			
-			AbstractSite site = this.circuit.getSite(x[index], y[index], true);
-			block.setSite(site);
+			if(block.getCategory() != BlockCategory.IO) {
+				int index = blockEntry.getValue();
+				
+				AbstractSite site = this.circuit.getSite(x[index], y[index], true);
+				block.setSite(site);
+			}
 		}
 	}
 }
