@@ -431,7 +431,7 @@ abstract class AnalyticalPlacer extends Placer {
 			return;
 		}
 		
-		double delta = Math.max(coor1 - coor2, 0.005);
+		double delta = Math.max(Math.abs(coor1 - coor2), 0.005);
 		double weight = weightMultiplier / delta;
 		
 		if(fixed1) {
