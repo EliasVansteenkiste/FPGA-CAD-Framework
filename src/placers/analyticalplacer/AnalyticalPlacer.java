@@ -56,7 +56,7 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("stop_ratio_linear_legal", "0.85");
 		
 		// The speed at which the gradient solver moves to the optimal position
-		defaultOptions.put("gradient_multiplier", "0.1");
+		defaultOptions.put("gradient_multiplier", "0.01");
 	}
 	
 	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -144,10 +144,8 @@ abstract class AnalyticalPlacer extends Placer {
 	public void place() {
 		if(this.startingStage == 0) {	
 			//Initial linear solves, should normally be done 5-7 times
-			int blockTypeIndex = -1;
-			for(int i = 0; i < 10000; i++) {
-				this.solveLinear(true, blockTypeIndex, 0.0);
-				System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
+			for(int i = 0; i < 7; i++) {
+				this.solveLinear(true, -1, 0);
 			}
 		
 		} else {
@@ -236,8 +234,8 @@ abstract class AnalyticalPlacer extends Placer {
 				double deltaY = anchorPointsY[index] - this.linearY[index];
 				
 				int relativeIndex = index - startIndex;
-				this.pullX[relativeIndex] = pseudoWeightFactor;// * deltaX;
-				this.pullY[relativeIndex] = pseudoWeightFactor;// * deltaY;
+				this.pullX[relativeIndex] = pseudoWeightFactor * deltaX;
+				this.pullY[relativeIndex] = pseudoWeightFactor * deltaY;
 			}
 		}
 		
@@ -250,8 +248,6 @@ abstract class AnalyticalPlacer extends Placer {
 		
 		for(int index = startIndex; index < endIndex; index++) {
 			int relativeIndex = index - startIndex;
-			//xSolution[relativeIndex] = Math.max(Math.min(this.linearX[index] + this.gradientMultiplier * this.pullX[relativeIndex], this.circuit.getWidth() - 2), 1);
-			//ySolution[relativeIndex] = Math.max(Math.min(this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex], this.circuit.getWidth() - 2), 1);
 			xSolution[relativeIndex] = this.linearX[index] + this.gradientMultiplier * this.pullX[relativeIndex];
 			ySolution[relativeIndex] = this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex];
 		}
@@ -417,13 +413,15 @@ abstract class AnalyticalPlacer extends Placer {
 			double coor2, boolean fixed2, int index2,
 			double weightMultiplier, double[] pull) {
 		
-		int sign = coor2 > coor1 ? 1 : -1;
+		int sign = (int) Math.signum(coor2 - coor1);
 		if(!fixed1) {
-			pull[index1] += weightMultiplier * sign;// * (coor2 - coor1);
+			//pull[index1] += weightMultiplier * sign;
+			pull[index1] += weightMultiplier * (coor2 - coor1);
 		}
 		
 		if(!fixed2) {
-			pull[index2] -= weightMultiplier * sign;// * (coor1 - coor2);
+			//pull[index2] -= weightMultiplier * sign;
+			pull[index2] += weightMultiplier * (coor1 - coor2);
 		}
 	}
 	
