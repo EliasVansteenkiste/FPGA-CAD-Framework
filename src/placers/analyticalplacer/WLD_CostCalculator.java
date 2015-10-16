@@ -1,10 +1,8 @@
 package placers.analyticalplacer;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
@@ -34,19 +32,16 @@ public class WLD_CostCalculator extends CostCalculator {
 		for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
 			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
 				
-				Set<GlobalBlock> netBlocks = new HashSet<GlobalBlock>();
 				List<AbstractPin> pins = new ArrayList<AbstractPin>();
-				
-				// The source pin must be added first!
 				pins.add(sourcePin);
 				pins.addAll(sourcePin.getSinks());
 				
-				double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE,
-						minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE;
+				
+				double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
+						minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
 				
 				for(AbstractPin pin : pins) {
 					GlobalBlock block = (GlobalBlock) pin.getOwner();
-					netBlocks.add(block);
 					
 					double x, y;
 					
@@ -76,8 +71,7 @@ public class WLD_CostCalculator extends CostCalculator {
 					}
 				}
 				
-				double weight = AnalyticalPlacer.getWeight(netBlocks.size());
-				cost += ((maxX - minX) + (maxY - minY) + 2) * weight;
+				cost += ((maxX - minX) + (maxY - minY) + 2) * AnalyticalPlacer.getWeight(pins.size());
 			}
 		}
 		

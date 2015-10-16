@@ -1,9 +1,12 @@
 package placers.analyticalplacer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import placers.Placer;
 
@@ -53,7 +56,7 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("stop_ratio_linear_legal", "0.85");
 		
 		// The speed at which the gradient solver moves to the optimal position
-		defaultOptions.put("gradient_multiplier", "0.02");
+		defaultOptions.put("gradient_multiplier", "0.1");
 	}
 	
 	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -74,6 +77,8 @@ abstract class AnalyticalPlacer extends Placer {
 		// Initialize blocks and positions
 		this.linearX = new double[this.numBlocks];
 		this.linearY = new double[this.numBlocks];
+		Arrays.fill(this.linearX, this.circuit.getWidth() / 2);
+		Arrays.fill(this.linearY, this.circuit.getHeight() / 2);
 		
 		int blockIndex = 0;
 		this.blockTypeIndexStarts.add(blockIndex);
@@ -88,8 +93,8 @@ abstract class AnalyticalPlacer extends Placer {
 				GlobalBlock block = (GlobalBlock) abstractBlock;
 				
 				// Set the linear position to be equal to the current legal position
-				this.linearX[blockIndex] = block.getX();
-				this.linearY[blockIndex] = block.getY();
+				//this.linearX[blockIndex] = block.getX();
+				//this.linearY[blockIndex] = block.getY();
 				
 				this.blockIndexes.put(block, blockIndex);
 				blockIndex++;
@@ -140,8 +145,9 @@ abstract class AnalyticalPlacer extends Placer {
 		if(this.startingStage == 0) {	
 			//Initial linear solves, should normally be done 5-7 times
 			int blockTypeIndex = -1;
-			for(int i = 0; i < 50; i++) {
+			for(int i = 0; i < 10000; i++) {
 				this.solveLinear(true, blockTypeIndex, 0.0);
+				System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
 			}
 		
 		} else {
@@ -230,8 +236,8 @@ abstract class AnalyticalPlacer extends Placer {
 				double deltaY = anchorPointsY[index] - this.linearY[index];
 				
 				int relativeIndex = index - startIndex;
-				this.pullX[relativeIndex] = pseudoWeightFactor * deltaX;
-				this.pullY[relativeIndex] = pseudoWeightFactor * deltaY;
+				this.pullX[relativeIndex] = pseudoWeightFactor;// * deltaX;
+				this.pullY[relativeIndex] = pseudoWeightFactor;// * deltaY;
 			}
 		}
 		
@@ -244,9 +250,10 @@ abstract class AnalyticalPlacer extends Placer {
 		
 		for(int index = startIndex; index < endIndex; index++) {
 			int relativeIndex = index - startIndex;
-			xSolution[relativeIndex] = Math.max(Math.min(this.linearX[index] + this.gradientMultiplier * this.pullX[relativeIndex], this.circuit.getWidth() - 2), 1);
-			ySolution[relativeIndex] = Math.max(Math.min(this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex], this.circuit.getWidth() - 2), 1);
-			//ySolution[relativeIndex] = this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex];
+			//xSolution[relativeIndex] = Math.max(Math.min(this.linearX[index] + this.gradientMultiplier * this.pullX[relativeIndex], this.circuit.getWidth() - 2), 1);
+			//ySolution[relativeIndex] = Math.max(Math.min(this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex], this.circuit.getWidth() - 2), 1);
+			xSolution[relativeIndex] = this.linearX[index] + this.gradientMultiplier * this.pullX[relativeIndex];
+			ySolution[relativeIndex] = this.linearY[index] + this.gradientMultiplier * this.pullY[relativeIndex];
 		}
 		
 		
@@ -265,8 +272,10 @@ abstract class AnalyticalPlacer extends Placer {
 	}
 	
 	private void processNetB2B(BlockType blockType, int startIndex, GlobalPin sourcePin) {
+		
+		Set<GlobalBlock> netBlocks = new HashSet<GlobalBlock>();
+		
 		List<AbstractPin> pins = new ArrayList<AbstractPin>();
-		// The source pin *must* be added first!
 		pins.add(sourcePin);
 		pins.addAll(sourcePin.getSinks());
 		
@@ -289,6 +298,7 @@ abstract class AnalyticalPlacer extends Placer {
 		for(int i = 0; i < numPins; i++) {
 			AbstractPin pin = pins.get(i); 
 			GlobalBlock block = ((GlobalPin) pin).getOwner();
+			netBlocks.add(block);
 			
 			
 			double x, y;
@@ -339,7 +349,7 @@ abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		
-		double weightMultiplier = 1.0 / (numPins - 1) * AnalyticalPlacer.getWeight(numPins);
+		double weightMultiplier = 1.0 / (numPins - 1) * AnalyticalPlacer.getWeight(netBlocks.size());
 		boolean minXFixed = pinFixed[minXIndex], maxXFixed = pinFixed[maxXIndex],
 				minYFixed = pinFixed[minYIndex], maxYFixed = pinFixed[maxYIndex];
 		
@@ -407,12 +417,13 @@ abstract class AnalyticalPlacer extends Placer {
 			double coor2, boolean fixed2, int index2,
 			double weightMultiplier, double[] pull) {
 		
+		int sign = coor2 > coor1 ? 1 : -1;
 		if(!fixed1) {
-			pull[index1] += weightMultiplier * (coor2 - coor1);
+			pull[index1] += weightMultiplier * sign;// * (coor2 - coor1);
 		}
 		
 		if(!fixed2) {
-			pull[index2] += weightMultiplier * (coor1 - coor2);
+			pull[index2] -= weightMultiplier * sign;// * (coor1 - coor2);
 		}
 	}
 	
