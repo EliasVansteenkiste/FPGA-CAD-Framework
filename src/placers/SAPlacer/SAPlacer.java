@@ -29,12 +29,13 @@ public abstract class SAPlacer extends Placer
 	
 	private double Rlimd;
 	private int Rlim, maxRlim;
-	private double T, TMultiplier;
+    private double temperature;
 	
-	private boolean fixPins;
-	private boolean greedy, detailed;
-	private double effortLevel;
-	private int movesPerTemperature;
+    private final double temperatureMultiplier;
+	private final boolean fixPins;
+	private final boolean greedy, detailed;
+	private final double effortLevel;
+	private final int movesPerTemperature;
 	
 	protected boolean circuitChanged = true;
 	private double[] deltaCosts;
@@ -55,7 +56,25 @@ public abstract class SAPlacer extends Placer
 		
 		this.fixPins = this.parseBooleanOption("fix_pins");
 		
+        // Get inner_num option
+		this.effortLevel = Double.parseDouble(this.options.get("effort_level"));
+		this.movesPerTemperature = (int) (this.effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), 4.0/3.0));
 		
+		// Get T multiplier option
+		this.temperatureMultiplier = Double.parseDouble(this.options.get("t_multiplier"));	
+    }
+    
+    protected abstract void initializePlace();
+	protected abstract void initializeSwapIteration();
+	protected abstract String getStatistics();
+	protected abstract double getCost();
+	protected abstract double getDeltaCost(Swap swap);
+	protected abstract void pushThrough(int iteration);
+	protected abstract void revert(int iteration);
+    
+    
+    @Override
+    public void initializeData() {
 		// Get Rlim and maxRlim option
 		int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight());
 		
@@ -65,17 +84,10 @@ public abstract class SAPlacer extends Placer
 		// Set maxRlim first, because Rlim depends on it
 		this.setMaxRlim(optionMaxRlim);
 		this.setRlimd(optionRlim);
-		
-		
-		// Get inner_num option
-		this.effortLevel = Double.parseDouble(this.options.get("effort_level"));
-		this.movesPerTemperature = (int) (this.effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), 4.0/3.0));
-		
-		// Get T multiplier option
-		this.TMultiplier = Double.parseDouble(this.options.get("t_multiplier"));
 	}
 	
 	
+    @Override
 	public void place() {
 		this.initializePlace();
 		
@@ -97,13 +109,13 @@ public abstract class SAPlacer extends Placer
 				this.calculateInititalTemperatureGlobal();
 			}
 			
-			System.out.println("Initial temperature: " + this.T);
+			System.out.println("Initial temperature: " + this.temperature);
 			
 			
 			int iteration = 0;
 			
 			// Do placement
-			while(this.T > 0.005 * this.getCost() / this.circuit.getNumGlobalBlocks()) {
+			while(this.temperature > 0.005 * this.getCost() / this.circuit.getNumGlobalBlocks()) {
 				int numSwaps = this.doSwapIteration();
 				double alpha = ((double) numSwaps) / this.movesPerTemperature;
 				
@@ -111,22 +123,21 @@ public abstract class SAPlacer extends Placer
 				this.updateTemperature(alpha);
 				
 				System.out.format("Temperature %d = %.9f, Rlim = %d, %s\n",
-						iteration, this.T, this.Rlim, this.getStatistics());
+						iteration, this.temperature, this.Rlim, this.getStatistics());
 				
 				iteration++;
 			}
 			
-			System.out.println("Last temp: " + this.T);
+			System.out.println("Last temp: " + this.temperature);
 		}
 	}
-	
 	
 	
 	private void calculateInititalTemperatureGlobal() {
 		int numSamples = this.circuit.getNumGlobalBlocks();
 		double stdDev = this.doSwapIteration(numSamples, false);
 		
-		this.T = this.TMultiplier * this.TMultiplierGlobal * stdDev;
+		this.temperature = this.temperatureMultiplier * this.TMultiplierGlobal * stdDev;
 	}
 	
 	private void calculateInititalTemperatureDetailed() {
@@ -155,36 +166,36 @@ public abstract class SAPlacer extends Placer
 		double maxT = Double.MAX_VALUE;
 		
 		// very coarse estimate
-		this.T = this.deltaCosts[this.deltaCosts.length - 1] / 1000;
+		this.temperature = this.deltaCosts[this.deltaCosts.length - 1] / 1000;
 		
 		while(minT == 0 || maxT / minT > 1.1) {
-			double Eplus = integral(this.deltaCosts, zeroIndex, numSamples, this.T);
+			double Eplus = integral(this.deltaCosts, zeroIndex, numSamples, this.temperature);
 			
 			if(Emin < Eplus) {
-				if(this.T < maxT) {
-					maxT = this.T;
+				if(this.temperature < maxT) {
+					maxT = this.temperature;
 				}
 				
 				if(minT == 0) {
-					this.T /= 8;
+					this.temperature /= 8;
 				} else {
-					this.T = (maxT + minT) / 2;
+					this.temperature = (maxT + minT) / 2;
 				}
 			
 			} else {
-				if(this.T > minT) {
-					minT = this.T;
+				if(this.temperature > minT) {
+					minT = this.temperature;
 				}
 				
 				if(maxT == Double.MAX_VALUE) {
-					this.T *= 8;
+					this.temperature *= 8;
 				} else {
-					this.T = (maxT + minT) / 2;
+					this.temperature = (maxT + minT) / 2;
 				}
 			}
 		}
 		
-		this.T *= this.TMultiplier;
+		this.temperature *= this.temperatureMultiplier;
 	}
 	
 	private double integral(double[] values, int start, int stop, double temperature) {
@@ -211,7 +222,6 @@ public abstract class SAPlacer extends Placer
 		this.initializeSwapIteration();
 		
 		int numSwaps = 0;
-		int Rlim = this.getRlim();
 		
 		
 		double sumDeltaCost = 0;
@@ -222,7 +232,7 @@ public abstract class SAPlacer extends Placer
 		
 		
 		for (int i = 0; i < moves; i++) {
-			Swap swap = this.findSwap(Rlim);
+			Swap swap = this.findSwap(this.Rlim);
 			
 			if((swap.getBlock1() == null || !swap.getBlock1().isFixed())
 					&& (swap.getBlock2() == null || !swap.getBlock2().isFixed())) {
@@ -232,7 +242,7 @@ public abstract class SAPlacer extends Placer
 				
 				if(pushThrough) {
 					if(deltaCost <= 0
-							|| (this.greedy == false && this.random.nextDouble() < Math.exp(-deltaCost / this.T))) {
+							|| (this.greedy == false && this.random.nextDouble() < Math.exp(-deltaCost / this.temperature))) {
 						
 						swap.apply();
 						numSwaps++;
@@ -267,18 +277,9 @@ public abstract class SAPlacer extends Placer
 		}
 	}
 	
-	protected abstract void initializePlace();
-	protected abstract void initializeSwapIteration();
-	protected abstract String getStatistics();
-	protected abstract double getCost();
-	protected abstract double getDeltaCost(Swap swap);
-	protected abstract void pushThrough(int iteration);
-	protected abstract void revert(int iteration);
 	
 	
-	
-	
-	protected Swap findSwap(int Rlim) {
+	protected final Swap findSwap(int Rlim) {
 		GlobalBlock fromBlock = null;
 		AbstractSite toSite = null;
 		do {
@@ -307,39 +308,44 @@ public abstract class SAPlacer extends Placer
 	
 	
 	
-	protected void updateTemperature(double alpha) {
+	protected final void updateTemperature(double alpha) {
 		double gamma;
 		
-		if (alpha > 0.96)     	gamma = 0.5;
-		else if (alpha > 0.8)	gamma = 0.9;
-		else if (alpha > 0.15)	gamma = 0.95;
-		else 					gamma = 0.8;
+		if (alpha > 0.96) {
+            gamma = 0.5;
+        } else if (alpha > 0.8) {
+            gamma = 0.9;
+        } else if (alpha > 0.15) {
+            gamma = 0.95;
+        } else {
+            gamma = 0.8;
+        }
 		
-		this.T *= gamma;
+		this.temperature *= gamma;
 	}
 	
 	
-	protected int getRlim() {
+	protected final int getRlim() {
 		return this.Rlim;
 	}
-	protected double getRlimd() {
+	protected final double getRlimd() {
 		return this.Rlimd;
 	}
 	
-	protected void setMaxRlim(int maxRlim) {
+	protected final void setMaxRlim(int maxRlim) {
 		this.maxRlim = maxRlim;
 	}
-	protected void setRlimd(double Rlimd) {
+	protected final void setRlimd(double Rlimd) {
 		this.Rlimd = Rlimd;
 		this.Rlim = (int) Math.round(this.Rlimd);
 	}
 	
 	
-	protected void updateRlim(double alpha) {
+	protected final void updateRlim(double alpha) {
 		this.updateRlim(alpha, this.maxRlim);
 	}
 	
-	protected void updateRlim(double alpha, int maxValue) {
+	protected final void updateRlim(double alpha, int maxValue) {
 		double newRlimd = this.Rlimd * (1 - 0.44 + alpha);
 		
 		if(newRlimd > maxValue) {

@@ -10,8 +10,8 @@ import architecture.circuit.Circuit;
 
 public abstract class Placer {
 	
-	protected static Map<String, String> defaultOptions = new HashMap<String, String>();
-	protected static List<String> requiredOptions = new ArrayList<String>();
+	protected final static Map<String, String> defaultOptions = new HashMap<>();
+	protected static List<String> requiredOptions = new ArrayList<>();
 	
 	protected Circuit circuit;
 	protected Map<String, String> options;
@@ -24,7 +24,7 @@ public abstract class Placer {
 		this.parseOptions();
 	}
 	
-	protected void parseOptions() {
+	protected final void parseOptions() {
 		for(String option : defaultOptions.keySet()) {
 			if(!this.options.containsKey(option)) {
 				this.options.put(option,  defaultOptions.get(option));
@@ -57,6 +57,7 @@ public abstract class Placer {
 		return value;
 	}
 	
+    public abstract void initializeData();
 	public abstract void place();
 	
 	

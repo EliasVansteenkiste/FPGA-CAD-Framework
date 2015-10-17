@@ -15,7 +15,6 @@ import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import timing_graph.TimingGraph;
 import util.Logger;
 
-import cli.Options;
 import cli.Options.StartingStage;
 
 
@@ -84,6 +83,7 @@ public class CLI {
 	private static void timePlacement(String placerName, Circuit circuit, Map<String, String> options) {
 		CLI.startTimer();
 		Placer placer = PlacerFactory.newPlacer(placerName, circuit, options);
+        placer.initializeData();
 		placer.place();
 		CLI.stopTimer();
 		

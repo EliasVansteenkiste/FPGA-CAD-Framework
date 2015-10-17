@@ -22,11 +22,11 @@ public class TD_SAPlacer extends SAPlacer {
 	}
 	
 	private EfficientCostCalculator calculator;
-	private TimingGraph timingGraph;
+	private final TimingGraph timingGraph;
 	private double cachedBBCost, cachedTDCost, previousBBCost, previousTDCost;
 	
-	private double tradeOffFactor;
-	private int iterationsBeforeRecalculate;
+	private final double tradeOffFactor;
+	private final int iterationsBeforeRecalculate;
 	
 	public TD_SAPlacer(Circuit circuit, Map<String, String> options) {
 		super(circuit, options);
@@ -44,11 +44,12 @@ public class TD_SAPlacer extends SAPlacer {
 	}
 	
 	
-	
+	@Override
 	protected void initializePlace() {
 		this.calculator.recalculateFromScratch();
 	}
 	
+    @Override
 	protected void initializeSwapIteration() {
 		this.timingGraph.recalculateAllSlackCriticalities();
 		
@@ -63,7 +64,7 @@ public class TD_SAPlacer extends SAPlacer {
 	}
 	
 	
-	
+	@Override
 	protected String getStatistics() {
 		this.getCost();
 		return "WL cost = " + this.cachedBBCost
@@ -72,7 +73,7 @@ public class TD_SAPlacer extends SAPlacer {
 	}
 	
 	
-		
+	@Override
 	protected double getCost() {
 		if(this.circuitChanged) {
 			this.circuitChanged = false;
@@ -83,6 +84,7 @@ public class TD_SAPlacer extends SAPlacer {
 		return this.balancedCost(this.cachedBBCost, this.cachedTDCost);
 	}
 	
+    @Override
 	protected double getDeltaCost(Swap swap) {
 		double deltaBBCost = this.calculator.calculateDeltaCost(swap);
 		double deltaTDCost = this.timingGraph.calculateDeltaCost(swap);
@@ -97,7 +99,7 @@ public class TD_SAPlacer extends SAPlacer {
 	}
 	
 	
-	
+	@Override
 	protected void pushThrough(int iteration) {
 		this.calculator.pushThrough();
 		this.timingGraph.pushThrough();
@@ -106,7 +108,8 @@ public class TD_SAPlacer extends SAPlacer {
 			this.updatePreviousCosts();
 		}
 	}
-	
+    
+	@Override
 	protected void revert(int iteration) {
 		this.calculator.revert();
 		this.timingGraph.revert();

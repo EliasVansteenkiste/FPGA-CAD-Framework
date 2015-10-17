@@ -24,13 +24,13 @@ public class RandomPlacer extends Placer {
 		defaultOptions.put("categories", "");
 	}
 	
-	private Set<BlockCategory> categories = new HashSet<BlockCategory>();
+	private final Set<BlockCategory> categories = new HashSet<>();
 	
 	public RandomPlacer(Circuit circuit, Map<String, String> options) {
 		super(circuit, options);
 		
 		String categoriesString = this.options.get("categories");
-		Set<String> categoriesStrings = new HashSet<String>(Arrays.asList(categoriesString.split(",")));
+		Set<String> categoriesStrings = new HashSet<>(Arrays.asList(categoriesString.split(",")));
 		if(categoriesString.length() != 0) {
 			for(BlockCategory category : BlockCategory.values()) {
 				if(categoriesStrings.contains(category.toString())) {
@@ -39,7 +39,13 @@ public class RandomPlacer extends Placer {
 			}
 		}
 	}
+    
+    @Override
+    public void initializeData() {
+        // Do nothing
+    }
 	
+    @Override
 	public void place() {
 		Random random = new Random(1);
 		
