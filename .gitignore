@@ -11,3 +11,5 @@ benchmarks
 benchmarks
 >>>>>>> master
 **/__pycache__
+/nbproject/private/
+/build/
