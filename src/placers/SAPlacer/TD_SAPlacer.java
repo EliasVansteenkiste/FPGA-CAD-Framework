@@ -15,7 +15,7 @@ public class TD_SAPlacer extends SAPlacer {
 		defaultOptions.put("trade_off_factor", "0.5");
 		
 		//Starting criticality exponent
-		defaultOptions.put("criticality_exponent", "8");
+		defaultOptions.put("criticality_exponent", "1");
 		
 		// Number of iterations before recalculating timing information
 		defaultOptions.put("iterations_before_recalculate", "50000");

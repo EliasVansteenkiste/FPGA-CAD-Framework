@@ -24,10 +24,10 @@ import util.Logger;
 
 abstract class AnalyticalPlacer extends Placer {
 	
-    private static enum SolveMode {GRADIENT, SOLVE};
+    private static enum SolveMode {GRADIENT, COMPLETE};
     private static enum Axis {X, Y};
     
-	private int startingStage;
+    private final SolveMode solveMode;
 	private final double[] maxUtilizationSequence;
 	private final double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
 	private final double gradientMultiplier;
@@ -44,34 +44,28 @@ abstract class AnalyticalPlacer extends Placer {
 	
 	
 	static {
-		//startingStage = 0 ==> start with initial solves (no anchors)
-		//startingStage = 1 ==> start from existing placement that is incorporated in the packedCircuit passed with the constructor
-		defaultOptions.put("starting_stage", "0");
-		
 		//initialize maxUtilizationSequence used by the legalizer
 		defaultOptions.put("max_utilization_sequence", "1");
 		
 		//The first anchorWeight factor that will be used in the main solve loop
-		defaultOptions.put("starting_anchor_weight", "0.1");
+		defaultOptions.put("starting_anchor_weight", "1");
 		
 		//The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
-		defaultOptions.put("anchor_weight_increase", "1.3");
+		defaultOptions.put("anchor_weight_increase", "1.15");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
 		defaultOptions.put("stop_ratio_linear_legal", "0.95");
 		
 		// The speed at which the gradient solver moves to the optimal position
-		defaultOptions.put("initial_gradient_speed", "0.25");
-		defaultOptions.put("gradient_multiplier", "0.9");
+        defaultOptions.put("solve_mode", "gradient");
+		defaultOptions.put("initial_gradient_speed", "0.1");
+		defaultOptions.put("gradient_multiplier", "1");
 	}
 	
 	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
 		super(circuit, options);
 		
 		// Parse options
-		// Starting stage (0 or 1)
-		this.startingStage = Integer.parseInt(this.options.get("starting_stage"));
-		this.startingStage = Math.min(1, Math.max(0, this.startingStage)); //startingStage can only be 0 or 1
 		
 		// Max utilization sequence
 		String maxUtilizationSequenceString = this.options.get("max_utilization_sequence");
@@ -87,6 +81,21 @@ abstract class AnalyticalPlacer extends Placer {
 		this.stopRatioLinearLegal = this.parseDoubleOption("stop_ratio_linear_legal");
 		
 		// Gradient solver
+        String solveModeString = this.parseStringOption("solve_mode");
+        switch (solveModeString) {
+            case "gradient":
+                this.solveMode = SolveMode.GRADIENT;
+                break;
+                
+            case "complete":
+                this.solveMode = SolveMode.COMPLETE;
+                break;
+                
+            default:
+                Logger.raise("Unknown solve mode: " + solveModeString);
+                this.solveMode = null;
+        }
+        
 		this.gradientSpeed = this.parseDoubleOption("initial_gradient_speed");
 		this.gradientMultiplier = this.parseDoubleOption("gradient_multiplier");
     }
@@ -196,8 +205,6 @@ abstract class AnalyticalPlacer extends Placer {
     
 	@Override
 	public void place() {
-        // Initial placement
-        this.solveLinear(SolveMode.SOLVE, true, 0);
         
 		// Do the actual placing
         this.initializePlacement();
@@ -205,15 +212,25 @@ abstract class AnalyticalPlacer extends Placer {
 		int iteration = 0;
 		double pseudoWeightFactor = this.startingAnchorWeight;
 		double linearCost, legalCost;
+        boolean firstSolve = true;
         
 		do {
 			System.out.format("Iteration %d: pseudoWeightFactor = %f, gradientSpeed = %f",
 					iteration, pseudoWeightFactor, this.gradientSpeed);
 			
 			// Solve linear
-			for(int i = 0; i < 10; i++) {
-				this.solveLinear(SolveMode.GRADIENT, false, pseudoWeightFactor);
-			}
+			if(firstSolve || this.solveMode == SolveMode.COMPLETE) {
+                this.solveLinearComplete(firstSolve, pseudoWeightFactor);
+            
+            } else {
+                for(int i = 0; i < 10; i++) {
+                    this.solveLinearGradient(false, pseudoWeightFactor);
+                }
+            }
+            
+            pseudoWeightFactor *= this.anchorWeightIncrease;
+            this.gradientSpeed *= this.gradientMultiplier;
+            firstSolve = false;
 			
 			// Legalize
 			int sequenceIndex = Math.min(iteration, this.maxUtilizationSequence.length - 1);
@@ -230,8 +247,6 @@ abstract class AnalyticalPlacer extends Placer {
 			
 			
 			//blockTypeIndex = (blockTypeIndex + 2) % (this.blockTypes.size() + 1) - 1;
-			pseudoWeightFactor *= this.anchorWeightIncrease;
-			this.gradientSpeed *= this.gradientMultiplier;
 			iteration++;
 			
 		} while(linearCost / legalCost < this.stopRatioLinearLegal);
@@ -239,8 +254,16 @@ abstract class AnalyticalPlacer extends Placer {
 		
 		this.legalizer.updateCircuit();
 	}
-	
-	
+    
+    
+    // These two methods only exist to be able to profile the "complete" part
+    // of the execution to the "gradient" part.
+    private void solveLinearComplete(boolean firstSolve, double pseudoweightFactor) {
+        this.solveLinear(SolveMode.COMPLETE, firstSolve, pseudoweightFactor);
+    }
+    private void solveLinearGradient(boolean firstSolve, double pseudoweightFactor) {
+        this.solveLinear(SolveMode.GRADIENT, firstSolve, pseudoweightFactor);
+    }
 	
 	/*
 	 * Build and solve the linear system ==> recalculates linearX and linearY
@@ -253,7 +276,7 @@ abstract class AnalyticalPlacer extends Placer {
             this.solverY = new LinearSolverGradient(this.linearY, this.numIOBlocks, this.gradientSpeed);
         
             
-        } else if(solveMode == SolveMode.SOLVE) {
+        } else if(solveMode == SolveMode.COMPLETE) {
             double epsilon = 0.0001;
             this.solverX = new LinearSolverComplete(this.numIOBlocks, this.numMovableBlocks, epsilon);
             this.solverY = new LinearSolverComplete(this.numIOBlocks, this.numMovableBlocks, epsilon);

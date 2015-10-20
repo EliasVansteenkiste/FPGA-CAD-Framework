@@ -32,6 +32,10 @@ public abstract class Placer {
 		}
 	}
 	
+    protected String parseStringOption(String option) {
+        return this.options.get(option);
+    }
+    
 	protected boolean parseBooleanOption(String option) {
 		try {
 			return (Integer.parseInt(this.options.get(option)) > 0);

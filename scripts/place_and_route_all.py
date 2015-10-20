@@ -4,8 +4,10 @@ import os
 from place_and_route import PlaceCaller, RouteCaller
 
 
-placers = ['wld_sa', 'td_sa', 'wld_ap', 'td_ap', ['wld_ap', 'greedy_wld_sa'], ['wld_ap', 'detailed_wld_sa'], ['td_ap', 'greedy_td_sa'], ['td_ap', 'detailed_td_sa']]
-options = [None, None, None, None, ['effort_level=5'], ['rlim=5', 't_multiplier=2', 'effort_level=0.5'], ['effort_level=5'], ['rlim=5', 't_multiplier=2', 'effort_level=0.5']]
+#placers = ['wld_sa', 'td_sa', 'wld_ap', 'td_ap', ['wld_ap', 'greedy_wld_sa'], ['wld_ap', 'detailed_wld_sa'], ['td_ap', 'greedy_td_sa'], ['td_ap', 'detailed_td_sa']]
+#options = [None, None, None, None, ['effort_level=5'], ['rlim=5', 't_multiplier=2', 'effort_level=0.5'], ['effort_level=5'], ['rlim=5', 't_multiplier=2', 'effort_level=0.5']]
+placers = ['td_sa']
+options = [None]
 
 base_folder = 'benchmarks/'
 architecture = '10fle'
@@ -23,4 +25,5 @@ for i in range(len(placers)):
 
 # Route all designs
 for placer in placers:
-    route_caller.route_all(architecture, placer)
+    pass
+    #route_caller.route_all(architecture, placer)
