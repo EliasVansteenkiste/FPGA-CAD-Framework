@@ -1,39 +1,83 @@
 package placers.analyticalplacer.linear_solver;
 
+import placers.analyticalplacer.AnalyticalPlacer;
 
-public class LinearSolverGradient implements LinearSolver {
+
+public class LinearSolverGradient extends LinearSolver {
     
-    private double[] coordinates;
-    private double gradientSpeed;
-    
-    public LinearSolverGradient(double[] linear, int numIOBlocks, double gradientSpeed) {
-        this.gradientSpeed = gradientSpeed;
+    public LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double stepSize) {
+        super(coordinatesX, coordinatesY, numIOBlocks);
         
-        int numBlocks = linear.length;
-        int numMovableBlocks = numBlocks - numIOBlocks;
-    
-        this.coordinates = new double[numBlocks];
-        System.arraycopy(linear, numIOBlocks, this.coordinates, numIOBlocks, numMovableBlocks);        
+        this.solverX = new DimensionSolverGradient(coordinatesX, numIOBlocks, stepSize);
+        this.solverY = new DimensionSolverGradient(coordinatesX, numIOBlocks, stepSize);
     }
     
     @Override
-    public void addConnection(
-            boolean fixed1, int index1, double coordinate1,
-            boolean fixed2, int index2, double coordinate2,
-            double weightMultiplier) {
+    public void processNet(int[] blockIndexes) {
+        int numNetBlocks = blockIndexes.length;
         
-        double weight = this.gradientSpeed * weightMultiplier * (coordinate2 - coordinate1) / (0.5 + Math.abs(coordinate1 - coordinate2));
-
-        if(!fixed1) {
-            this.coordinates[index1] += weight;
+        double weightMultiplier = AnalyticalPlacer.getWeight(numNetBlocks);
+        
+        // Nets with 2 blocks are common and can be processed very quick
+        if(numNetBlocks == 2) {
+            int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
+            boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
+            
+            this.solverX.addConnection(fixed1, blockIndex1, this.coordinatesX[blockIndex1], fixed2, blockIndex2, this.coordinatesX[blockIndex2], weightMultiplier);
+            this.solverY.addConnection(fixed1, blockIndex1, this.coordinatesY[blockIndex1], fixed2, blockIndex2, this.coordinatesY[blockIndex2], weightMultiplier);
+            
+            return;
         }
-        if(!fixed2) {
-            this.coordinates[index2] -= weight;
-        }
+        
+        
+		// For bigger nets, we have to find the min and max block
+		double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
+			   minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+		int minXIndex = -1, maxXIndex = -1,
+			minYIndex = -1, maxYIndex = -1;
+		
+		for(int i = 0; i < numNetBlocks; i++) {
+			int blockIndex = blockIndexes[i];
+			double x = this.coordinatesX[blockIndex], y = this.coordinatesY[blockIndex];
+			
+			if(x < minX) {
+				minX = x;
+				minXIndex = blockIndex;
+			}
+			if(x > maxX) {
+				maxX = x;
+				maxXIndex = blockIndex;
+			}
+			
+			if(y < minY) {
+				minY = y;
+				minYIndex = blockIndex;
+			}
+			if(y > maxY) {
+				maxY = y;
+				maxYIndex = blockIndex;
+			}
+		}
+		
+        
+		boolean minXFixed = isFixed(minXIndex),maxXFixed = isFixed(maxXIndex),
+				minYFixed = isFixed(minYIndex),maxYFixed = isFixed(maxYIndex);
+		
+        // Add connections between the min and max block
+        this.solverX.addConnection(
+                    minXFixed, minXIndex, minX,
+                    maxXFixed, maxXIndex, maxX,
+                    weightMultiplier);
+            
+        this.solverY.addConnection(
+                minYFixed, minYIndex, minY,
+                maxYFixed, maxYIndex, maxY,
+                weightMultiplier);
     }
     
-    @Override
-    public double[] solve() {
-        return this.coordinates;
+    
+    public void solve() {
+        this.solverX.solve();
+        this.solverY.solve();
     }
 }

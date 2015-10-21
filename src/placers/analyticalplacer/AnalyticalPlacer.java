@@ -1,8 +1,5 @@
 package placers.analyticalplacer;
 
-import placers.analyticalplacer.linear_solver.LinearSolverGradient;
-import placers.analyticalplacer.linear_solver.LinearSolverComplete;
-import placers.analyticalplacer.linear_solver.LinearSolver;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,25 +16,29 @@ import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.pin.AbstractPin;
+import placers.analyticalplacer.linear_solver.LinearSolver;
+import placers.analyticalplacer.linear_solver.LinearSolverComplete;
+import placers.analyticalplacer.linear_solver.LinearSolverGradient;
 import util.Logger;
 
 
-abstract class AnalyticalPlacer extends Placer {
+public abstract class AnalyticalPlacer extends Placer {
 	
-    private static enum SolveMode {GRADIENT, COMPLETE};
+    protected static enum SolveMode {GRADIENT, COMPLETE};
     private static enum Axis {X, Y};
     
-    private final SolveMode solveMode;
+    private final SolveMode algorithmSolveMode;
+    
 	private final double[] maxUtilizationSequence;
 	private final double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
 	private final double gradientMultiplier;
     private double gradientSpeed;
     
-	private final List<Integer[]> nets = new ArrayList<>();
+	private final List<int[]> nets = new ArrayList<>();
 	private int numBlocks, numIOBlocks, numMovableBlocks;
 	
 	private double[] linearX, linearY;
-    private LinearSolver solverX, solverY;
+    private LinearSolver solver;
 	
 	protected CostCalculator costCalculator;
 	protected Legalizer legalizer;
@@ -57,7 +58,7 @@ abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("stop_ratio_linear_legal", "0.95");
 		
 		// The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "gradient");
+        defaultOptions.put("solve_mode", "complete");
 		defaultOptions.put("initial_gradient_speed", "0.1");
 		defaultOptions.put("gradient_multiplier", "1");
 	}
@@ -84,16 +85,16 @@ abstract class AnalyticalPlacer extends Placer {
         String solveModeString = this.parseStringOption("solve_mode");
         switch (solveModeString) {
             case "gradient":
-                this.solveMode = SolveMode.GRADIENT;
+                this.algorithmSolveMode = SolveMode.GRADIENT;
                 break;
                 
             case "complete":
-                this.solveMode = SolveMode.COMPLETE;
+                this.algorithmSolveMode = SolveMode.COMPLETE;
                 break;
                 
             default:
                 Logger.raise("Unknown solve mode: " + solveModeString);
-                this.solveMode = null;
+                this.algorithmSolveMode = null;
         }
         
 		this.gradientSpeed = this.parseDoubleOption("initial_gradient_speed");
@@ -103,7 +104,6 @@ abstract class AnalyticalPlacer extends Placer {
     
     protected abstract void createCostCalculator(Map<GlobalBlock, Integer> blockIndexes);
 	protected abstract void initializePlacement();
-	protected abstract void processNets(boolean firstSolve);
     
     
     @Override
@@ -182,15 +182,19 @@ abstract class AnalyticalPlacer extends Placer {
 				
 				// Make a list of the block indexes
 				int numNetBlocks = netBlocks.size();
-				Integer[] netBlockIndexes = new Integer[numNetBlocks];
-				int i = 0;
-				for(GlobalBlock netBlock : netBlocks) {
-					netBlockIndexes[i] = blockIndexes.get(netBlock);
-					i++;
-				}
-				
-				// Add this "net" to the list of nets
-				this.nets.add(netBlockIndexes);
+                
+                // Ignore nets of size 1
+                if(numNetBlocks > 1) {
+                    int[] netBlockIndexes = new int[numNetBlocks];
+                    int i = 0;
+                    for(GlobalBlock netBlock : netBlocks) {
+                        netBlockIndexes[i] = blockIndexes.get(netBlock);
+                        i++;
+                    }
+
+                    // Add this "net" to the list of nets
+                    this.nets.add(netBlockIndexes);
+                }
 			}
 		}
 		
@@ -219,8 +223,13 @@ abstract class AnalyticalPlacer extends Placer {
 					iteration, pseudoWeightFactor, this.gradientSpeed);
 			
 			// Solve linear
-			if(firstSolve || this.solveMode == SolveMode.COMPLETE) {
-                this.solveLinearComplete(firstSolve, pseudoWeightFactor);
+			if(firstSolve) {
+                for(int i = 0; i < 5; i++) {
+                    this.solveLinearComplete(true, pseudoWeightFactor);
+                }
+                
+            } else if(this.algorithmSolveMode == SolveMode.COMPLETE) {
+                this.solveLinearComplete(false, pseudoWeightFactor);
             
             } else {
                 for(int i = 0; i < 10; i++) {
@@ -259,33 +268,20 @@ abstract class AnalyticalPlacer extends Placer {
     // These two methods only exist to be able to profile the "complete" part
     // of the execution to the "gradient" part.
     private void solveLinearComplete(boolean firstSolve, double pseudoweightFactor) {
-        this.solveLinear(SolveMode.COMPLETE, firstSolve, pseudoweightFactor);
+        double epsilon = 0.0001;
+        this.solver = new LinearSolverComplete(this.linearX, this.linearY, this.numIOBlocks, epsilon);
+        this.solveLinear(firstSolve, pseudoweightFactor);
     }
     private void solveLinearGradient(boolean firstSolve, double pseudoweightFactor) {
-        this.solveLinear(SolveMode.GRADIENT, firstSolve, pseudoweightFactor);
+        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.gradientSpeed);
+        this.solveLinear(firstSolve, pseudoweightFactor);
     }
 	
 	/*
 	 * Build and solve the linear system ==> recalculates linearX and linearY
 	 * If it is the first time we solve the linear system ==> don't take pseudonets into account
 	 */
-	private void solveLinear(SolveMode solveMode, boolean firstSolve, double pseudoWeightFactor) {
-		
-        if(solveMode == SolveMode.GRADIENT) {
-            this.solverX = new LinearSolverGradient(this.linearX, this.numIOBlocks, this.gradientSpeed);
-            this.solverY = new LinearSolverGradient(this.linearY, this.numIOBlocks, this.gradientSpeed);
-        
-            
-        } else if(solveMode == SolveMode.COMPLETE) {
-            double epsilon = 0.0001;
-            this.solverX = new LinearSolverComplete(this.numIOBlocks, this.numMovableBlocks, epsilon);
-            this.solverY = new LinearSolverComplete(this.numIOBlocks, this.numMovableBlocks, epsilon);
-            
-        } else {
-            Logger.raise("Unknown solve mode: " + solveMode.toString());
-            return;
-        }
-		
+	private void solveLinear(boolean firstSolve, double pseudoWeightFactor) {
 		
 		//Add pseudo connections
 		if(!firstSolve) {
@@ -293,134 +289,35 @@ abstract class AnalyticalPlacer extends Placer {
 		}
         
         // Add connections between blocks that are connected by a net
-		this.processNets(firstSolve);
+		this.processNets();
 		
         
         // Solve and save result
-        double[] newX = this.solverX.solve();
-        double[] newY = this.solverY.solve();
-        int startIndex = newX.length - this.numMovableBlocks;
-        
-        System.arraycopy(newX, startIndex, this.linearX, this.numIOBlocks, this.numMovableBlocks);
-        System.arraycopy(newY, startIndex, this.linearY, this.numIOBlocks, this.numMovableBlocks);
+        this.solver.solve();
 	}
 	
 	private void addPseudoConnections(double pseudoWeightFactor) {
 		int[] legalX = this.legalizer.getBestLegalX();
 		int[] legalY = this.legalizer.getBestLegalY();
 		
-		for(int index = this.numIOBlocks; index < this.numBlocks; index++) {
-            this.solverX.addConnection(
-                    false, index, this.linearX[index],
-                    true, -1, legalX[index],
-                    pseudoWeightFactor);
-            this.solverY.addConnection(
-                    false, index, this.linearY[index],
-                    true, -1, legalY[index],
-                    pseudoWeightFactor);
+		for(int blockIndex = this.numIOBlocks; blockIndex < this.numBlocks; blockIndex++) {
+            this.solver.addPseudoConnection(blockIndex, legalX[blockIndex], legalY[blockIndex], pseudoWeightFactor);
 		}
 	}
 	
 	
-	protected void processNetsB2B() {
+	protected void processNets() {
         int numNets = this.nets.size();
         for(int i = 0; i < numNets; i++) {
-            this.processNetB2B(this.nets.get(i));
+            this.solver.processNet(this.nets.get(i));
         }
 	}
-	
-	private void processNetB2B(Integer[] blockIndexes) {
-        
-		int numNetBlocks = blockIndexes.length;
-		double weightMultiplier = AnalyticalPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
-        
-        // Nets with 2 blocks are common and can be processed very quick
-        if(numNetBlocks == 2) {
-            int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
-            boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
-            
-            this.solverX.addConnection(fixed1, blockIndex1, this.linearX[blockIndex1], fixed2, blockIndex2, this.linearX[blockIndex2], weightMultiplier);
-            this.solverY.addConnection(fixed1, blockIndex1, this.linearY[blockIndex1], fixed2, blockIndex2, this.linearY[blockIndex2], weightMultiplier);
-            
-            return;
-        }
-		
-		double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
-			   minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-		int minXIndex = -1, maxXIndex = -1,
-			minYIndex = -1, maxYIndex = -1;
-		
-		for(int i = 0; i < numNetBlocks; i++) {
-			int blockIndex = blockIndexes[i];
-			double x = this.linearX[blockIndex], y = this.linearY[blockIndex];
-			
-			if(x < minX) {
-				minX = x;
-				minXIndex = blockIndex;
-			}
-			if(x > maxX) {
-				maxX = x;
-				maxXIndex = blockIndex;
-			}
-			
-			if(y < minY) {
-				minY = y;
-				minYIndex = blockIndex;
-			}
-			if(y > maxY) {
-				maxY = y;
-				maxYIndex = blockIndex;
-			}
-		}
-		
-		boolean minXFixed = this.isFixed(minXIndex),maxXFixed = isFixed(maxXIndex),
-				minYFixed = this.isFixed(minYIndex),maxYFixed = isFixed(maxYIndex);
-		
-        
-        for(int i = 0; i < numNetBlocks; i++) {
-            int blockIndex = blockIndexes[i];
-            boolean isFixed = this.isFixed(blockIndex);
-            
-            
-            if(blockIndex != minXIndex) {
-                this.solverX.addConnection(
-                        isFixed, blockIndex, this.linearX[blockIndex],
-                        minXFixed, minXIndex, minX,
-                        weightMultiplier);
-
-                if(blockIndex != maxXIndex) {
-                    this.solverX.addConnection(
-                            isFixed, blockIndex, this.linearX[blockIndex],
-                            maxXFixed, maxXIndex, maxX,
-                            weightMultiplier);
-                }
-            }
-
-            if(blockIndex != minYIndex) {
-                this.solverY.addConnection(
-                        isFixed, blockIndex, this.linearY[blockIndex],
-                        minYFixed, minYIndex, minY,
-                        weightMultiplier);
-
-                if(blockIndex != maxYIndex) {
-                    this.solverY.addConnection(
-                            isFixed, blockIndex, this.linearY[blockIndex],
-                            maxYFixed, maxYIndex, maxY,
-                            weightMultiplier);
-                }
-            }
-        }
-	}
-	
-	private boolean isFixed(int blockIndex) {
-		return blockIndex < this.numIOBlocks;
-	}
-	
-	
-	static double getWeight(int size) {
+    
+    
+    public static double getWeight(int size) {
 		switch (size) {
-			case 1:  return 1;
-			case 2:  return 1;
+			case 1:
+			case 2:
 			case 3:  return 1;
 			case 4:  return 1.0828;
 			case 5:  return 1.1536;

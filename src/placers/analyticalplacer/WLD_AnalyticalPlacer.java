@@ -21,9 +21,4 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 	protected void initializePlacement() {
 		// Do nothing
 	}
-
-	@Override
-	protected void processNets(boolean firstSolve) {
-		this.processNetsB2B();
-	}
 }
