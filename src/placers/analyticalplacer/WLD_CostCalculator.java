@@ -45,7 +45,7 @@ public class WLD_CostCalculator extends CostCalculator {
                 }
                 
                 if(y < minY) {
-                    minY = x;
+                    minY = y;
                 } else if(y > maxY) {
                     maxY = y;
                 }

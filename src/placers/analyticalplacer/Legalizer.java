@@ -85,7 +85,7 @@ public class Legalizer {
 		
 		// Cache the number of blocks
 		this.numBlocks = linearX.length;
-		this.numIOBlocks = blockTypeIndexStarts.get(0);
+		this.numIOBlocks = blockTypeIndexStarts.get(1);
 		this.numMovableBlocks = this.numBlocks - this.numIOBlocks;
 		
 		// Initialize the best solution and a temporary solution
@@ -94,15 +94,14 @@ public class Legalizer {
 		this.tmpLegalX = new int[this.numBlocks];
 		this.tmpLegalY = new int[this.numBlocks];
 		this.bestCost = Double.MAX_VALUE;
-	}
-	
-	void initializeArrays() {
-		for(int index = 0; index < this.numBlocks; index++) {
-			this.bestLegalX[index] = (int) Math.round(this.linearX[index]);
-			this.bestLegalY[index] = (int) Math.round(this.linearY[index]);
-		}
-		
-		this.bestCost = this.costCalculator.calculate(this.bestLegalX, this.bestLegalY);
+        
+        // Initialize the IO positions in tmpLegal and bestLegal
+        for(int i = 0; i < this.numIOBlocks; i++) {
+            this.bestLegalX[i] = (int) this.linearX[i];
+            this.bestLegalY[i] = (int) this.linearY[i];
+        }
+        System.arraycopy(this.bestLegalX, 0, this.tmpLegalX, 0, this.numBlocks);
+		System.arraycopy(this.bestLegalY, 0, this.tmpLegalY, 0, this.numBlocks);
 	}
 	
 	
@@ -522,8 +521,8 @@ public class Legalizer {
 		double newCost = this.costCalculator.calculate(this.tmpLegalX, this.tmpLegalY);
 		
 		if(newCost < this.bestCost) {
-			System.arraycopy(this.tmpLegalX, 0, this.bestLegalX, 0, this.numBlocks);
-			System.arraycopy(this.tmpLegalY, 0, this.bestLegalY, 0, this.numBlocks);
+			System.arraycopy(this.tmpLegalX, this.numIOBlocks, this.bestLegalX, this.numIOBlocks, this.numMovableBlocks);
+			System.arraycopy(this.tmpLegalY, this.numIOBlocks, this.bestLegalY, this.numIOBlocks, this.numMovableBlocks);
 			this.bestCost = newCost;
 		
 		} else if(update) {

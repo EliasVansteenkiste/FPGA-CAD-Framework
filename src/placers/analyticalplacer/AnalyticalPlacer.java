@@ -56,12 +56,12 @@ public abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("anchor_weight_increase", "1.15");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
-		defaultOptions.put("stop_ratio_linear_legal", "0.95");
+		defaultOptions.put("stop_ratio_linear_legal", "0.85");
 		
 		// The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "complete");
-		defaultOptions.put("initial_gradient_speed", "0.05");
-		defaultOptions.put("gradient_multiplier", "1");
+        defaultOptions.put("solve_mode", "gradient");
+		defaultOptions.put("initial_gradient_speed", "0.1");
+		defaultOptions.put("gradient_multiplier", "1.0");
 	}
 	
 	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -164,18 +164,14 @@ public abstract class AnalyticalPlacer extends Placer {
 		
 		// Add all nets
 		// Loop through all net sources
-		for(Map.Entry<GlobalBlock, Integer> sourceBlockEntry : blockIndexes.entrySet()) {
-			GlobalBlock sourceBlock = sourceBlockEntry.getKey();
-			
+		for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
 			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
 				
 				// Build a set of all blocks connected to the net
-				List<AbstractPin> netPins = new ArrayList<>();
-				netPins.add(sourcePin);
-				netPins.addAll(sourcePin.getSinks());
-				
 				Set<GlobalBlock> netBlocks = new HashSet<>();
-				for(AbstractPin pin : netPins) {
+                netBlocks.add((GlobalBlock) sourcePin.getOwner());
+				
+				for(AbstractPin pin : sourcePin.getSinks()) {
 					netBlocks.add((GlobalBlock) pin.getOwner());
 				}
 				
@@ -183,6 +179,11 @@ public abstract class AnalyticalPlacer extends Placer {
 				int numNetBlocks = netBlocks.size();
                 
                 // Ignore nets of size 1
+                // Due to this, the WLD costcalculator (which uses these nets
+                // for speedup) is not entirely accurate, but that doesn't
+                // matter, because we use the same (inaccurate) costcalculator
+                // to calculate both the linear and legal cost, so the deviation
+                // cancels out.
                 if(numNetBlocks > 1) {
                     int[] netBlockIndexes = new int[numNetBlocks];
                     int i = 0;
@@ -231,7 +232,7 @@ public abstract class AnalyticalPlacer extends Placer {
                 this.solveLinearComplete(false, pseudoWeightFactor);
             
             } else {
-                for(int i = 0; i < 1000; i++) {
+                for(int i = 0; i < 10; i++) {
                     this.solveLinearGradient(false, pseudoWeightFactor);
                     //System.out.println(i + ": " + this.costCalculator.calculate(this.linearX, this.linearY));
                 }
@@ -256,7 +257,7 @@ public abstract class AnalyticalPlacer extends Placer {
 			
 			iteration++;
 			
-		} while(linearCost / legalCost < this.stopRatioLinearLegal || true); // DEBUG
+		} while(linearCost / legalCost < this.stopRatioLinearLegal);
 		
 		
 		this.legalizer.updateCircuit();
