@@ -59,7 +59,7 @@ public abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("stop_ratio_linear_legal", "0.85");
 		
 		// The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "gradient");
+        defaultOptions.put("solve_mode", "complete");
 		defaultOptions.put("initial_gradient_speed", "0.1");
 		defaultOptions.put("gradient_multiplier", "1.0");
 	}
