@@ -6,8 +6,8 @@ public class DimensionSolverGradient implements DimensionSolver {
     private final double[] coordinates;
     private final int numIOBlocks;
     
-    private final double[] totalPositiveNetSize, totalNegativeNetSize;
-    private final int[] directions, numPositiveNets, numNegativeNets;
+    private final double[] directions, totalPositiveNetSize, totalNegativeNetSize;
+    private final int[] numPositiveNets, numNegativeNets;
     private final double gradientSpeed;
     
     public DimensionSolverGradient(double[] coordinates, int numIOBlocks, double gradientSpeed) {
@@ -17,7 +17,7 @@ public class DimensionSolverGradient implements DimensionSolver {
         
         int numBlocks = coordinates.length;
         
-        this.directions = new int[numBlocks];
+        this.directions = new double[numBlocks];
         this.numPositiveNets = new int[numBlocks];
         this.numNegativeNets = new int[numBlocks];
         this.totalPositiveNetSize = new double[numBlocks];

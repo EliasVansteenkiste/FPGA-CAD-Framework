@@ -36,6 +36,7 @@ public abstract class LinearSolver {
     
     
     protected boolean isFixed(int blockIndex) {
-        return blockIndex < this.numIOBlocks;
+        return false; // DEBUG
+        //return blockIndex < this.numIOBlocks;
     }
 }

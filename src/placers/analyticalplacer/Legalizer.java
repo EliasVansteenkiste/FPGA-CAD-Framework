@@ -504,8 +504,8 @@ public class Legalizer {
 		
 		// Split blocks in two lists with a ratio approx. equal to area split
 		int split = (int) Math.ceil(splitRatio * blockIndexes.size());
-		List<Integer> blocks1 = new ArrayList<Integer>(blockIndexes.subList(0, split));
-		List<Integer> blocks2 = new ArrayList<Integer>(blockIndexes.subList(split, blockIndexes.size()));
+		List<Integer> blocks1 = new ArrayList<>(blockIndexes.subList(0, split));
+		List<Integer> blocks2 = new ArrayList<>(blockIndexes.subList(split, blockIndexes.size()));
 		
 		this.legalizeArea(coordinates1, blocks1, newAxis);
 		this.legalizeArea(coordinates2, blocks2, newAxis);

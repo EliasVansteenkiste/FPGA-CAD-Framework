@@ -23,28 +23,35 @@ public class LinearSolverGradient extends LinearSolver {
             int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
             boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
             
-            this.solverX.addConnection(fixed1, blockIndex1, this.coordinatesX[blockIndex1], fixed2, blockIndex2, this.coordinatesX[blockIndex2], weightMultiplier);
-            this.solverY.addConnection(fixed1, blockIndex1, this.coordinatesY[blockIndex1], fixed2, blockIndex2, this.coordinatesY[blockIndex2], weightMultiplier);
+            this.solverX.addConnection(
+                    fixed1, blockIndex1, this.coordinatesX[blockIndex1],
+                    fixed2, blockIndex2, this.coordinatesX[blockIndex2],
+                    weightMultiplier);
+            
+            this.solverY.addConnection(
+                    fixed1, blockIndex1, this.coordinatesY[blockIndex1],
+                    fixed2, blockIndex2, this.coordinatesY[blockIndex2],
+                    weightMultiplier);
             
             return;
         }
         
         
 		// For bigger nets, we have to find the min and max block
-		double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
-			   minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-		int minXIndex = -1, maxXIndex = -1,
-			minYIndex = -1, maxYIndex = -1;
+		int initialBlockIndex = blockIndexes[0];
+        double minX = this.coordinatesX[initialBlockIndex], maxX = this.coordinatesX[initialBlockIndex],
+			   minY = this.coordinatesY[initialBlockIndex], maxY = this.coordinatesY[initialBlockIndex];
+		int minXIndex = initialBlockIndex, maxXIndex = initialBlockIndex,
+			minYIndex = initialBlockIndex, maxYIndex = initialBlockIndex;
 		
-		for(int i = 0; i < numNetBlocks; i++) {
+		for(int i = 1; i < numNetBlocks; i++) {
 			int blockIndex = blockIndexes[i];
 			double x = this.coordinatesX[blockIndex], y = this.coordinatesY[blockIndex];
 			
 			if(x < minX) {
 				minX = x;
 				minXIndex = blockIndex;
-			}
-			if(x > maxX) {
+			} else if(x > maxX) {
 				maxX = x;
 				maxXIndex = blockIndex;
 			}
@@ -52,22 +59,21 @@ public class LinearSolverGradient extends LinearSolver {
 			if(y < minY) {
 				minY = y;
 				minYIndex = blockIndex;
-			}
-			if(y > maxY) {
+			} else if(y > maxY) {
 				maxY = y;
 				maxYIndex = blockIndex;
 			}
 		}
 		
         
-		boolean minXFixed = isFixed(minXIndex),maxXFixed = isFixed(maxXIndex),
-				minYFixed = isFixed(minYIndex),maxYFixed = isFixed(maxYIndex);
+		boolean minXFixed = isFixed(minXIndex), maxXFixed = isFixed(maxXIndex),
+				minYFixed = isFixed(minYIndex), maxYFixed = isFixed(maxYIndex);
 		
         // Add connections between the min and max block
         this.solverX.addConnection(
-                    minXFixed, minXIndex, minX,
-                    maxXFixed, maxXIndex, maxX,
-                    weightMultiplier);
+                minXFixed, minXIndex, minX,
+                maxXFixed, maxXIndex, maxX,
+                weightMultiplier);
             
         this.solverY.addConnection(
                 minYFixed, minYIndex, minY,

@@ -37,32 +37,29 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 		this.maxCriticalityThreshold = this.parseDoubleOption("max_criticality_threshold");
 		
 		this.criticalityExponent = this.parseDoubleOption("criticality_exponent");
-		this.timingGraph.setCriticalityExponent(this.criticalityExponent);
+        this.tradeOff = this.parseDoubleOption("trade_off");
 	}
-	
-	@Override
-	protected CostCalculator createCostCalculator() {
-		this.tradeOff = this.parseDoubleOption("trade_off");
-		
-		this.timingGraph = new TimingGraph(this.circuit);
+    
+    @Override
+    public void initializeData() {
+        super.initializeData();
+        
+        this.timingGraph = new TimingGraph(this.circuit);
+        this.timingGraph.setCriticalityExponent(this.criticalityExponent);
 		this.timingGraph.build();
-		
-		return new TD_CostCalculator(this.circuit, this.blockIndexes, this.timingGraph, this.tradeOff);
-	}
+    }
+    
+    @Override
+    protected CostCalculator createCostCalculator() {
+        return new TD_CostCalculator(this.nets, this.timingGraph, this.tradeOff);
+    }
 	
-	@Override
-	protected void initializePlacement() {
-		this.timingGraph.build();
-	}
+    @Override
+    protected void initializePlacementIteration() {
+        this.timingGraph.recalculateAllSlackCriticalities();
+    }
 	
-	@Override
-	protected void processNets(BlockType blockType, int startIndex, boolean firstSolve) {
-		this.processNetsB2B(blockType, startIndex);
-		
-		if(!firstSolve) {
-			this.processNetsSourceSink(blockType, startIndex);
-		}
-	}
+	
 	
 	protected void processNetsSourceSink(BlockType blockType, int startIndex) {
 		for(TimingGraphEntry entry : this.timingGraph) {
@@ -73,13 +70,13 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 				GlobalBlock sink = entry.getSink();
 				double weightMultiplier = ((double) 2) / entry.getNumSinks() * criticality;
 				
-				this.processTimingDrivenConnection(blockType, source, sink, startIndex, weightMultiplier);
+				//this.processTimingDrivenConnection(blockType, source, sink, startIndex, weightMultiplier);
 			}
 		}
 	}
 	
 	
-	private void processTimingDrivenConnection(BlockType blockType, GlobalBlock source, GlobalBlock sink, int startIndex, double weightMultiplier) {
+	/*private void processTimingDrivenConnection(BlockType blockType, GlobalBlock source, GlobalBlock sink, int startIndex, double weightMultiplier) {
 		boolean sourceFixed = isFixed(source, blockType);
 		boolean sinkFixed = isFixed(sink, blockType);
 		
@@ -136,5 +133,5 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 					sinkY, sinkFixed, sinkIndex - startIndex,
 					weightMultiplier, this.yMatrix, this.yVector);
 		}
-	}
+	}*/
 }

@@ -12,12 +12,10 @@ import architecture.circuit.pin.AbstractPin;
 
 public class WLD_CostCalculator extends CostCalculator {
 	
-	private Circuit circuit;
-	private Map<GlobalBlock, Integer> blockIndexes;
-	
-	WLD_CostCalculator(Circuit circuit, Map<GlobalBlock, Integer> blockIndexes) {
-		this.circuit = circuit;
-		this.blockIndexes = blockIndexes;
+    private List<int[]> nets;
+    
+	WLD_CostCalculator(List<int[]> nets) {
+		this.nets = nets;
 	}
 	
 	@Override
@@ -29,51 +27,32 @@ public class WLD_CostCalculator extends CostCalculator {
 	protected double calculate() {
 		double cost = 0.0;
 		
-		for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
-			for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
-				
-				List<AbstractPin> pins = new ArrayList<AbstractPin>();
-				pins.add(sourcePin);
-				pins.addAll(sourcePin.getSinks());
-				
-				
-				double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY,
-						minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
-				
-				for(AbstractPin pin : pins) {
-					GlobalBlock block = (GlobalBlock) pin.getOwner();
-					
-					double x, y;
-					
-					if(block.getCategory() == BlockCategory.IO) {
-						x = block.getX();
-						y = block.getY();
-						
-					} else {
-						int index = this.blockIndexes.get(block);
-						x = this.getX(index);
-						y = this.getY(index);
-					}
-					
-					
-					if(x < minX) {
-						minX = x;
-					}
-					if(x > maxX) {
-						maxX = x;
-					}
-					
-					if(y < minY) {
-						minY = y;
-					}
-					if(y > maxY) {
-						maxY = y;
-					}
-				}
-				
-				cost += ((maxX - minX) + (maxY - minY) + 2) * AnalyticalPlacer.getWeight(pins.size());
-			}
-		}
+        for(int[] blockIndexes : this.nets) {
+            int numNetBlocks = blockIndexes.length;
+            
+            int initialBlockIndex = blockIndexes[0];
+            double minX = getX(initialBlockIndex), minY = getY(initialBlockIndex);
+            double maxX = minX, maxY = minY;
+            
+            for(int i = 1; i < numNetBlocks; i++) {
+                int blockIndex = blockIndexes[i];
+                double x = getX(blockIndex), y = getY(blockIndex);
+                
+                if(x < minX) {
+                    minX = x;
+                } else if(x > maxX) {
+                    maxX = x;
+                }
+                
+                if(y < minY) {
+                    minY = x;
+                } else if(y > maxY) {
+                    maxY = y;
+                }
+            }
+            
+            cost += ((maxX - minX) + (maxY - minY) + 2) * AnalyticalPlacer.getWeight(numNetBlocks);
+        }
 		
 		return cost;
 	}

@@ -3,7 +3,6 @@ package placers.analyticalplacer;
 import java.util.Map;
 
 import architecture.circuit.Circuit;
-import architecture.circuit.block.GlobalBlock;
 
 
 public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
@@ -13,12 +12,17 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 	}
     
     @Override
-    protected void createCostCalculator(Map<GlobalBlock, Integer> blockIndexes) {
-        this.costCalculator = new WLD_CostCalculator(this.circuit, blockIndexes);
+    public void initializeData() {
+        super.initializeData();
     }
-
-	@Override
-	protected void initializePlacement() {
-		// Do nothing
-	}
+    
+    @Override
+    public CostCalculator createCostCalculator() {
+        return new WLD_CostCalculator(this.nets);
+    }
+    
+    @Override
+    protected void initializePlacementIteration() {
+        // Do nothing
+    }
 }

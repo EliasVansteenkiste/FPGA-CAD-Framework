@@ -34,13 +34,14 @@ public abstract class AnalyticalPlacer extends Placer {
 	private final double gradientMultiplier;
     private double gradientSpeed;
     
-	private final List<int[]> nets = new ArrayList<>();
-	private int numBlocks, numIOBlocks, numMovableBlocks;
+    protected final Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
+	protected final List<int[]> nets = new ArrayList<>();
+	private int numBlocks, numIOBlocks;
 	
 	private double[] linearX, linearY;
     private LinearSolver solver;
 	
-	protected CostCalculator costCalculator;
+	private CostCalculator costCalculator;
 	protected Legalizer legalizer;
 	
 	
@@ -58,8 +59,8 @@ public abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("stop_ratio_linear_legal", "0.95");
 		
 		// The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "complete");
-		defaultOptions.put("initial_gradient_speed", "0.1");
+        defaultOptions.put("solve_mode", "gradient");
+		defaultOptions.put("initial_gradient_speed", "0.001");
 		defaultOptions.put("gradient_multiplier", "1");
 	}
 	
@@ -102,8 +103,8 @@ public abstract class AnalyticalPlacer extends Placer {
     }
     
     
-    protected abstract void createCostCalculator(Map<GlobalBlock, Integer> blockIndexes);
-	protected abstract void initializePlacement();
+    protected abstract CostCalculator createCostCalculator();
+    protected abstract void initializePlacementIteration();
     
     
     @Override
@@ -135,7 +136,6 @@ public abstract class AnalyticalPlacer extends Placer {
 		
 		
 		// Add all blocks
-		Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
 		List<Integer> blockTypeIndexStarts = new ArrayList<>();
 		int blockIndex = 0;
 		blockTypeIndexStarts.add(0);
@@ -146,7 +146,7 @@ public abstract class AnalyticalPlacer extends Placer {
 			for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
 				GlobalBlock block = (GlobalBlock) abstractBlock;
 				
-				if(isFixed) {
+				if(isFixed || true) { // DEBUG
 					this.linearX[blockIndex] = block.getX();
 					this.linearY[blockIndex] = block.getY();
 				}
@@ -159,7 +159,6 @@ public abstract class AnalyticalPlacer extends Placer {
 		}
 		
 		this.numIOBlocks = blockTypeIndexStarts.get(1);
-		this.numMovableBlocks = this.numBlocks - this.numIOBlocks;
 		
 		
 		
@@ -197,10 +196,11 @@ public abstract class AnalyticalPlacer extends Placer {
                 }
 			}
 		}
-		
-		this.createCostCalculator(blockIndexes);
-		this.legalizer = new Legalizer(
-				circuit, this.costCalculator,
+        
+        this.costCalculator = createCostCalculator();
+        
+        this.legalizer = new Legalizer(
+				circuit, costCalculator,
 				blockIndexes,
 				blockTypes, blockTypeIndexStarts,
 				this.linearX, this.linearY);
@@ -210,9 +210,6 @@ public abstract class AnalyticalPlacer extends Placer {
 	@Override
 	public void place() {
         
-		// Do the actual placing
-        this.initializePlacement();
-        
 		int iteration = 0;
 		double pseudoWeightFactor = this.startingAnchorWeight;
 		double linearCost, legalCost;
@@ -221,9 +218,11 @@ public abstract class AnalyticalPlacer extends Placer {
 		do {
 			System.out.format("Iteration %d: pseudoWeightFactor = %f, gradientSpeed = %f",
 					iteration, pseudoWeightFactor, this.gradientSpeed);
+            
+            this.initializePlacementIteration();
 			
 			// Solve linear
-			if(firstSolve) {
+			if(firstSolve && false) { // DEBUG
                 for(int i = 0; i < 5; i++) {
                     this.solveLinearComplete(true, pseudoWeightFactor);
                 }
@@ -232,8 +231,9 @@ public abstract class AnalyticalPlacer extends Placer {
                 this.solveLinearComplete(false, pseudoWeightFactor);
             
             } else {
-                for(int i = 0; i < 10; i++) {
-                    this.solveLinearGradient(false, pseudoWeightFactor);
+                for(int i = 0; i < 1000; i++) {
+                    this.solveLinearGradient(true, pseudoWeightFactor); // DEBUG
+                    System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
                 }
             }
             
@@ -254,11 +254,9 @@ public abstract class AnalyticalPlacer extends Placer {
 			//System.out.format("Legal gost = %f\n", legalCost);
 			System.out.format(", linear cost = %f, legal cost = %f\n", linearCost, legalCost);
 			
-			
-			//blockTypeIndex = (blockTypeIndex + 2) % (this.blockTypes.size() + 1) - 1;
 			iteration++;
 			
-		} while(linearCost / legalCost < this.stopRatioLinearLegal);
+		} while(linearCost / legalCost < this.stopRatioLinearLegal || true); // DEBUG
 		
 		
 		this.legalizer.updateCircuit();
@@ -307,9 +305,8 @@ public abstract class AnalyticalPlacer extends Placer {
 	
 	
 	protected void processNets() {
-        int numNets = this.nets.size();
-        for(int i = 0; i < numNets; i++) {
-            this.solver.processNet(this.nets.get(i));
+        for(int[] net : this.nets) {
+            this.solver.processNet(net);
         }
 	}
     

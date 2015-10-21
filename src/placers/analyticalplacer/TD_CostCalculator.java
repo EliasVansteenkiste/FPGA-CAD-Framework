@@ -6,17 +6,18 @@ import timing_graph.TimingGraph;
 
 import architecture.circuit.Circuit;
 import architecture.circuit.block.GlobalBlock;
+import java.util.List;
 
 
-public class TD_CostCalculator extends CostCalculator {
+public class TD_CostCalculator extends WLD_CostCalculator {
 	
-	private WLD_CostCalculator wldCostCalculator;
 	private TimingGraph timingGraph;
 	private double tradeOff;
 	private double initialBBCost, initialTDCost;
 	
-	TD_CostCalculator(Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, TimingGraph timingGraph, double tradeOff) {
-		this.wldCostCalculator = new WLD_CostCalculator(circuit, blockIndexes);
+	TD_CostCalculator(List<int[]> nets, TimingGraph timingGraph, double tradeOff) {
+		super(nets);
+        
 		this.timingGraph = timingGraph;
 		this.tradeOff = tradeOff;
 	}
@@ -32,12 +33,7 @@ public class TD_CostCalculator extends CostCalculator {
 		this.timingGraph.recalculateAllSlackCriticalities();
 		double TDCost = this.timingGraph.calculateTotalCost();
 		
-		double BBCost;
-		if(this.ints) {
-			BBCost = this.wldCostCalculator.calculate(this.intX, this.intY);
-		} else {
-			BBCost = this.wldCostCalculator.calculate(this.doubleX, this.doubleY);
-		}
+		double BBCost = super.calculate();
 		
 		if(this.initialBBCost == 0) {
 			this.initialBBCost = BBCost;

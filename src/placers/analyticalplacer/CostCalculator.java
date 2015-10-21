@@ -2,9 +2,9 @@ package placers.analyticalplacer;
 
 abstract class CostCalculator {
 	
-	protected boolean ints;
-	protected int[] intX, intY;
-	protected double[] doubleX, doubleY;
+	private boolean ints;
+	private int[] intX, intY;
+	private double[] doubleX, doubleY;
 	
 	
 	double calculate(int[] x, int[] y) {
