@@ -59,8 +59,8 @@ public class LinearSolverComplete extends LinearSolver {
 		}
 		
         
-		boolean minXFixed = this.isFixed(minXIndex),maxXFixed = isFixed(maxXIndex),
-				minYFixed = this.isFixed(minYIndex),maxYFixed = isFixed(maxYIndex);
+		boolean minXFixed = this.isFixed(minXIndex), maxXFixed = isFixed(maxXIndex),
+				minYFixed = this.isFixed(minYIndex), maxYFixed = isFixed(maxYIndex);
 		
         // Add connections from the min and max block to every block inside the net
         for(int i = 0; i < numNetBlocks; i++) {

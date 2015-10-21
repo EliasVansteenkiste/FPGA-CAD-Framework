@@ -9,7 +9,7 @@ public class LinearSolverGradient extends LinearSolver {
         super(coordinatesX, coordinatesY, numIOBlocks);
         
         this.solverX = new DimensionSolverGradient(coordinatesX, numIOBlocks, stepSize);
-        this.solverY = new DimensionSolverGradient(coordinatesX, numIOBlocks, stepSize);
+        this.solverY = new DimensionSolverGradient(coordinatesY, numIOBlocks, stepSize);
     }
     
     @Override

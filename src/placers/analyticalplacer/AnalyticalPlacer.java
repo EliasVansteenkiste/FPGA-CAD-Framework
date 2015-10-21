@@ -59,8 +59,8 @@ public abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("stop_ratio_linear_legal", "0.95");
 		
 		// The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "gradient");
-		defaultOptions.put("initial_gradient_speed", "0.001");
+        defaultOptions.put("solve_mode", "complete");
+		defaultOptions.put("initial_gradient_speed", "0.05");
 		defaultOptions.put("gradient_multiplier", "1");
 	}
 	
@@ -146,7 +146,7 @@ public abstract class AnalyticalPlacer extends Placer {
 			for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
 				GlobalBlock block = (GlobalBlock) abstractBlock;
 				
-				if(isFixed || true) { // DEBUG
+				if(isFixed) {
 					this.linearX[blockIndex] = block.getX();
 					this.linearY[blockIndex] = block.getY();
 				}
@@ -222,7 +222,7 @@ public abstract class AnalyticalPlacer extends Placer {
             this.initializePlacementIteration();
 			
 			// Solve linear
-			if(firstSolve && false) { // DEBUG
+			if(firstSolve) {
                 for(int i = 0; i < 5; i++) {
                     this.solveLinearComplete(true, pseudoWeightFactor);
                 }
@@ -232,8 +232,8 @@ public abstract class AnalyticalPlacer extends Placer {
             
             } else {
                 for(int i = 0; i < 1000; i++) {
-                    this.solveLinearGradient(true, pseudoWeightFactor); // DEBUG
-                    System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
+                    this.solveLinearGradient(false, pseudoWeightFactor);
+                    //System.out.println(i + ": " + this.costCalculator.calculate(this.linearX, this.linearY));
                 }
             }
             

@@ -41,7 +41,7 @@ public class DimensionSolverGradient implements DimensionSolver {
                 this.totalPositiveNetSize[index1] += netSize;
                 this.numPositiveNets[index1] += 1;
 
-            } else {
+            } else if(weight < 0) {
                 this.totalNegativeNetSize[index1] += netSize;
                 this.numNegativeNets[index1] += 1;
             }
@@ -54,7 +54,7 @@ public class DimensionSolverGradient implements DimensionSolver {
                 this.totalPositiveNetSize[index2] += netSize;
                 this.numPositiveNets[index2] += 1;
 
-            } else {
+            } else if(weight > 0) {
                 this.totalNegativeNetSize[index2] += netSize;
                 this.numNegativeNets[index2] += 1;
             }
@@ -65,14 +65,17 @@ public class DimensionSolverGradient implements DimensionSolver {
     
     @Override
     public void solve() {
-        int numBlocks = coordinates.length;
+        int numBlocks = this.coordinates.length;
         for(int i = this.numIOBlocks; i < numBlocks; i++) {
-            double force;
+            double force = 0;
+            
             if(this.directions[i] > 0) {
                 force = this.totalPositiveNetSize[i] / this.numPositiveNets[i];
-            } else {
+                
+            } else if(this.directions[i] < 0) {
                 force = -this.totalNegativeNetSize[i] / this.numNegativeNets[i];
             }
+            
             this.coordinates[i] += this.gradientSpeed * force;
         }
     }
