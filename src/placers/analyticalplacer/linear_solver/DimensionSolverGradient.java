@@ -1,5 +1,8 @@
 package placers.analyticalplacer.linear_solver;
 
+import java.util.Arrays;
+import util.Logger;
+
 
 public class DimensionSolverGradient implements DimensionSolver {
     
@@ -22,44 +25,53 @@ public class DimensionSolverGradient implements DimensionSolver {
         this.numNegativeNets = new int[numBlocks];
         this.totalPositiveNetSize = new double[numBlocks];
         this.totalNegativeNetSize = new double[numBlocks];
+        
+        //Arrays.fill(this.totalPositiveNetSize, Double.MAX_VALUE);
+        //Arrays.fill(this.totalNegativeNetSize, Double.MAX_VALUE);
     }
-    
     
     
     @Override
     public void addConnection(
-            boolean fixed1, int index1, double coordinate1,
-            boolean fixed2, int index2, double coordinate2,
+            boolean minFixed, int minIndex, double minCoordinate,
+            boolean maxFixed, int maxIndex, double maxCoordinate,
             double weightMultiplier) {
         
-        double netSize = Math.abs(coordinate2 - coordinate1);
-        double weight = weightMultiplier * Math.signum(coordinate2 - coordinate1);
-        
-
-        if(!fixed1) {
-            if(weight > 0) {
-                this.totalPositiveNetSize[index1] += netSize;
-                this.numPositiveNets[index1] += 1;
-
-            } else if(weight < 0) {
-                this.totalNegativeNetSize[index1] += netSize;
-                this.numNegativeNets[index1] += 1;
-            }
+        if(minCoordinate > maxCoordinate) {
+            boolean tmpFixed = minFixed;
+            minFixed = maxFixed;
+            maxFixed = tmpFixed;
             
-            this.directions[index1] += weight;
+            int tmpIndex = minIndex;
+            minIndex = maxIndex;
+            maxIndex = tmpIndex;
+            
+            double tmpCoordinate = minCoordinate;
+            minCoordinate = maxCoordinate;
+            maxCoordinate = tmpCoordinate;
         }
         
-        if(!fixed2) {
-            if(weight < 0) {
-                this.totalPositiveNetSize[index2] += netSize;
-                this.numPositiveNets[index2] += 1;
+        double netSize = maxCoordinate - minCoordinate;
+        double weight = netSize == 0 ? 0 : weightMultiplier;
+        
 
-            } else if(weight > 0) {
-                this.totalNegativeNetSize[index2] += netSize;
-                this.numNegativeNets[index2] += 1;
+        if(!minFixed) {
+            this.totalPositiveNetSize[minIndex] += netSize;
+            this.numPositiveNets[minIndex] += 1;
+            if(weight != 0) {
+                //this.totalPositiveNetSize[minIndex] = Math.min(netSize, this.totalPositiveNetSize[minIndex]);
+                this.directions[minIndex] += weight;
             }
             
-            this.directions[index2] -= weight;
+        }
+        
+        if(!maxFixed) {
+            this.totalNegativeNetSize[maxIndex] += netSize;
+            this.numNegativeNets[maxIndex] += 1;
+            if(weight != 0) {
+                //this.totalNegativeNetSize[maxIndex] = Math.min(netSize, this.totalNegativeNetSize[maxIndex]);
+                this.directions[maxIndex] -= weight;
+            }
         }
     }
     
@@ -71,10 +83,19 @@ public class DimensionSolverGradient implements DimensionSolver {
             
             if(this.directions[i] > 0) {
                 force = this.totalPositiveNetSize[i] / this.numPositiveNets[i];
+                //force = this.totalPositiveNetSize[i];
                 
             } else if(this.directions[i] < 0) {
                 force = -this.totalNegativeNetSize[i] / this.numNegativeNets[i];
+                //force = -this.totalNegativeNetSize[i];
             }
+            
+            /*if(i == 400) {
+                System.out.format("\n%f, %f, %f, %d, %f, %d",
+                        this.coordinates[i], force,
+                        this.totalPositiveNetSize[i], this.numPositiveNets[i],
+                        this.totalNegativeNetSize[i], this.numNegativeNets[i]);
+            }*/
             
             this.coordinates[i] += this.gradientSpeed * force;
         }

@@ -19,7 +19,7 @@ public class LinearSolverGradient extends LinearSolver {
         double weightMultiplier = AnalyticalPlacer.getWeight(numNetBlocks);
         
         // Nets with 2 blocks are common and can be processed very quick
-        if(numNetBlocks == 2) {
+        /*if(numNetBlocks == 2) {
             int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
             boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
             
@@ -34,7 +34,7 @@ public class LinearSolverGradient extends LinearSolver {
                     weightMultiplier);
             
             return;
-        }
+        }*/
         
         
 		// For bigger nets, we have to find the min and max block

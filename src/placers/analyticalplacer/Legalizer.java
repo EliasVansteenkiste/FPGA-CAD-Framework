@@ -114,12 +114,16 @@ public class Legalizer {
 	int[] getBestLegalY() {
 		return this.bestLegalY;
 	}
+    
+    int[] getAnchorsX() {
+        return this.tmpLegalX;
+    }
+    int[] getAnchorsY() {
+        return this.tmpLegalY;
+    }
 	
 	
 	void legalize(double tileCapacity) {
-		
-		System.arraycopy(this.bestLegalX, this.numIOBlocks, this.tmpLegalX, this.numIOBlocks, this.numMovableBlocks);
-		System.arraycopy(this.bestLegalY, this.numIOBlocks, this.tmpLegalY, this.numIOBlocks, this.numMovableBlocks);
 		this.tileCapacity = tileCapacity;
 		
 		// Skip i = 0: these are IO blocks

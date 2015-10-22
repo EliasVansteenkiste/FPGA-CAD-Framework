@@ -31,7 +31,7 @@ public abstract class AnalyticalPlacer extends Placer {
     
 	private final double[] maxUtilizationSequence;
 	private final double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
-	private final double gradientMultiplier;
+	private final double gradientMultiplier, finalGradientSpeed;
     private double gradientSpeed;
     
     protected final Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
@@ -53,15 +53,16 @@ public abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("starting_anchor_weight", "1");
 		
 		//The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
-		defaultOptions.put("anchor_weight_increase", "1.15");
+		defaultOptions.put("anchor_weight_increase", "1.02");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
 		defaultOptions.put("stop_ratio_linear_legal", "0.85");
 		
 		// The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "complete");
-		defaultOptions.put("initial_gradient_speed", "0.1");
-		defaultOptions.put("gradient_multiplier", "1.0");
+        defaultOptions.put("solve_mode", "gradient");
+		defaultOptions.put("initial_gradient_speed", "0.05");
+		defaultOptions.put("gradient_multiplier", "0.95");
+        defaultOptions.put("final_gradient_speed", "0.05");
 	}
 	
 	public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -100,6 +101,7 @@ public abstract class AnalyticalPlacer extends Placer {
         
 		this.gradientSpeed = this.parseDoubleOption("initial_gradient_speed");
 		this.gradientMultiplier = this.parseDoubleOption("gradient_multiplier");
+        this.finalGradientSpeed = this.parseDoubleOption("final_gradient_speed");
     }
     
     
@@ -146,7 +148,7 @@ public abstract class AnalyticalPlacer extends Placer {
 			for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
 				GlobalBlock block = (GlobalBlock) abstractBlock;
 				
-				if(isFixed) {
+				if(isFixed || true) { // DEBUG
 					this.linearX[blockIndex] = block.getX();
 					this.linearY[blockIndex] = block.getY();
 				}
@@ -223,7 +225,7 @@ public abstract class AnalyticalPlacer extends Placer {
             this.initializePlacementIteration();
 			
 			// Solve linear
-			if(firstSolve) {
+			if(firstSolve) { // DEBUG
                 for(int i = 0; i < 5; i++) {
                     this.solveLinearComplete(true, pseudoWeightFactor);
                 }
@@ -232,14 +234,16 @@ public abstract class AnalyticalPlacer extends Placer {
                 this.solveLinearComplete(false, pseudoWeightFactor);
             
             } else {
-                for(int i = 0; i < 10; i++) {
+                for(int i = 0; i < 200; i++) { // DEBUG
                     this.solveLinearGradient(false, pseudoWeightFactor);
                     //System.out.println(i + ": " + this.costCalculator.calculate(this.linearX, this.linearY));
+                    //System.out.format("%f,%f,%f,%f\n", this.linearX[300], this.linearX[400], this.linearX[500], this.linearX[600]);
                 }
             }
             
             pseudoWeightFactor *= this.anchorWeightIncrease;
-            this.gradientSpeed *= this.gradientMultiplier;
+            //this.gradientSpeed *= this.gradientMultiplier;
+            this.gradientSpeed = 0.95 * this.gradientSpeed + 0.05 * this.finalGradientSpeed;
             firstSolve = false;
 			
 			// Legalize
@@ -252,7 +256,6 @@ public abstract class AnalyticalPlacer extends Placer {
 			// Get the costs and print them
 			linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
 			legalCost = this.legalizer.getBestCost();
-			//System.out.format("Legal gost = %f\n", legalCost);
 			System.out.format(", linear cost = %f, legal cost = %f\n", linearCost, legalCost);
 			
 			iteration++;
@@ -296,8 +299,8 @@ public abstract class AnalyticalPlacer extends Placer {
 	}
 	
 	private void addPseudoConnections(double pseudoWeightFactor) {
-		int[] legalX = this.legalizer.getBestLegalX();
-		int[] legalY = this.legalizer.getBestLegalY();
+		int[] legalX = this.legalizer.getAnchorsX();
+		int[] legalY = this.legalizer.getAnchorsY();
 		
 		for(int blockIndex = this.numIOBlocks; blockIndex < this.numBlocks; blockIndex++) {
             this.solver.addPseudoConnection(blockIndex, legalX[blockIndex], legalY[blockIndex], pseudoWeightFactor);
