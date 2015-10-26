@@ -6,7 +6,6 @@ import timing_graph.TimingGraph;
 import timing_graph.TimingGraphEntry;
 
 import architecture.BlockType;
-import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.GlobalBlock;
 

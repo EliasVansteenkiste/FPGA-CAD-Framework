@@ -25,7 +25,6 @@ import util.Logger;
 public abstract class AnalyticalPlacer extends Placer {
 	
     protected static enum SolveMode {GRADIENT, COMPLETE};
-    private static enum Axis {X, Y};
     
     private final SolveMode algorithmSolveMode;
     
@@ -153,7 +152,7 @@ public abstract class AnalyticalPlacer extends Placer {
 					this.linearY[blockIndex] = block.getY();
 				}
 				
-				blockIndexes.put(block, blockIndex);
+				this.blockIndexes.put(block, blockIndex);
 				blockIndex++;
 			}
 			
@@ -190,7 +189,7 @@ public abstract class AnalyticalPlacer extends Placer {
                     int[] netBlockIndexes = new int[numNetBlocks];
                     int i = 0;
                     for(GlobalBlock netBlock : netBlocks) {
-                        netBlockIndexes[i] = blockIndexes.get(netBlock);
+                        netBlockIndexes[i] = this.blockIndexes.get(netBlock);
                         i++;
                     }
 
@@ -203,8 +202,8 @@ public abstract class AnalyticalPlacer extends Placer {
         this.costCalculator = createCostCalculator();
         
         this.legalizer = new Legalizer(
-				circuit, costCalculator,
-				blockIndexes,
+				this.circuit, this.costCalculator,
+				this.blockIndexes,
 				blockTypes, blockTypeIndexStarts,
 				this.linearX, this.linearY);
 	}

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Stack;
 
 import architecture.BlockType;
+import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.AbstractSite;
@@ -28,7 +29,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     private Circuit circuit;
     private File folder;
     
-    private DelayTable delaysIoIo, delaysIoClb, delaysClbIo, delaysClbClb;
+    private DelayTables delayTables;
     
     private Map<LocalBlock, TimingNode> nodes = new HashMap<LocalBlock, TimingNode>();
     private Map<GlobalBlock, List<TimingNode>> nodesInGlobalBlocks = new HashMap<GlobalBlock, List<TimingNode>>();
@@ -41,7 +42,6 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     public TimingGraph(Circuit circuit, File folder) {
         this.circuit = circuit;
         this.folder = folder;
-        TimingNode.setWireDelay(circuit.getArchitecture().getWireDelay());
     }
 
     public void build() {
@@ -59,8 +59,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
                 while (!parent.isGlobal()) {
                     parent = parent.getParent();
                 }
-                TimingNode node = new TimingNode((GlobalBlock) parent,
-                        block.toString());
+                TimingNode node = new TimingNode(this, (GlobalBlock) parent, block.toString());
 
                 this.nodes.put((LocalBlock) block, node);
 
@@ -110,26 +109,19 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
             Logger.raise("vpr was interrupted", error);
         }
         
+        
         // Parse the delay tables
         File delaysFile = new File("lookup_dump.echo");
-        this.delaysIoIo = new DelayTable(delaysFile, "io_to_io");
-        this.delaysIoClb = new DelayTable(delaysFile, "io_to_clb");
-        this.delaysClbIo = new DelayTable(delaysFile, "clb_to_io");
-        this.delaysClbClb = new DelayTable(delaysFile, "clb_to_clb");
-        
-        this.delaysIoIo.parse();
-        this.delaysIoClb.parse();
-        this.delaysClbIo.parse();
-        this.delaysClbClb.parse();
-	    
+        this.delayTables = new DelayTables(delaysFile);
+        this.delayTables.parse();
         
         // Clean up
-        this.delete("vpr_tmp");
-        this.delete("vpr_stdout.log");
-        this.delete("lookup_dump.echo");
+        this.deleteFile("vpr_tmp");
+        this.deleteFile("vpr_stdout.log");
+        this.deleteFile("lookup_dump.echo");
 	}
     
-    private void delete(String path) {
+    private void deleteFile(String path) {
         try {
             Files.deleteIfExists(new File(path).toPath());
         } catch(IOException error) {
@@ -193,6 +185,26 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     public void setCriticalityExponent(double criticalityExponent) {
         this.criticalityExponent = criticalityExponent;
     }
+    
+    
+    double calculateWireDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
+        if(fromCategory == BlockCategory.IO) {
+            if (toCategory == BlockCategory.IO) {
+                return this.delayTables.getIoToIo(deltaX, deltaY);
+            } else {
+                return this.delayTables.getIoToClb(deltaX, deltaY);
+            }
+        } else {
+            if (toCategory == BlockCategory.IO) {
+                return this.delayTables.getClbToIo(deltaX, deltaY);
+            } else {
+                return this.delayTables.getClbToClb(deltaX, deltaY);
+            }
+        }
+    }
+    
+    
+    
 
     public void recalculateAllSlackCriticalities() {
         this.maxDelay = this.calculateArrivalTimes();

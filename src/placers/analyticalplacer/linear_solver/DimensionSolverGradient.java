@@ -1,7 +1,5 @@
 package placers.analyticalplacer.linear_solver;
 
-import java.util.Arrays;
-import util.Logger;
 
 
 public class DimensionSolverGradient implements DimensionSolver {

@@ -1,13 +1,6 @@
 package placers.analyticalplacer;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import architecture.BlockType.BlockCategory;
-import architecture.circuit.Circuit;
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.pin.AbstractPin;
 
 
 public class WLD_CostCalculator extends CostCalculator {

@@ -25,7 +25,6 @@ public class FlexibleArchitecture {
 	private JSONObject blockDefinitions;
 	
 	private int ioCapacity;
-	private double wireDelay;
 	
 	public FlexibleArchitecture(String filename) {
 		this.filename = filename;
@@ -60,8 +59,6 @@ public class FlexibleArchitecture {
 		// Set the IO capacity
 		this.ioCapacity = (int) (long) jsonContent.get("io_capacity");
 		
-		// Set the unit wire delay
-		this.wireDelay = (double) jsonContent.get("wire_delay");
 		
 		// Add all the block types
 		this.addBlockTypes();
@@ -212,9 +209,6 @@ public class FlexibleArchitecture {
 	
 	public int getIoCapacity() {
 		return this.ioCapacity;
-	}
-	public double getWireDelay() {
-		return this.wireDelay;
 	}
 	
 	public double getFillGrade() {

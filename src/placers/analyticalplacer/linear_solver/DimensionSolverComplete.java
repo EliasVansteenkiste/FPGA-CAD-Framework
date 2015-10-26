@@ -34,18 +34,18 @@ public class DimensionSolverComplete implements DimensionSolver {
         int relativeIndex2 = index2 - this.numIOBlocks;
         
         if(!fixed1 && !fixed2) {
-            matrix.setElement(relativeIndex1, relativeIndex1, matrix.getElement(relativeIndex1, relativeIndex1) + weight);
-			matrix.setElement(relativeIndex1, relativeIndex2, matrix.getElement(relativeIndex1, relativeIndex2) - weight);
-			matrix.setElement(relativeIndex2, relativeIndex1, matrix.getElement(relativeIndex2, relativeIndex1) - weight);
-			matrix.setElement(relativeIndex2, relativeIndex2, matrix.getElement(relativeIndex2, relativeIndex2) + weight);
+            this.matrix.setElement(relativeIndex1, relativeIndex1, this.matrix.getElement(relativeIndex1, relativeIndex1) + weight);
+            this.matrix.setElement(relativeIndex1, relativeIndex2, this.matrix.getElement(relativeIndex1, relativeIndex2) - weight);
+            this.matrix.setElement(relativeIndex2, relativeIndex1, this.matrix.getElement(relativeIndex2, relativeIndex1) - weight);
+            this.matrix.setElement(relativeIndex2, relativeIndex2, this.matrix.getElement(relativeIndex2, relativeIndex2) + weight);
         
         } else if(fixed1) {
-            matrix.setElement(relativeIndex2, relativeIndex2, matrix.getElement(relativeIndex2, relativeIndex2) + weight);
-			vector[relativeIndex2] += weight * coordinate1;
+            this.matrix.setElement(relativeIndex2, relativeIndex2, this.matrix.getElement(relativeIndex2, relativeIndex2) + weight);
+            this.vector[relativeIndex2] += weight * coordinate1;
         
         } else if(fixed2) {
-            matrix.setElement(relativeIndex1, relativeIndex1, matrix.getElement(relativeIndex1, relativeIndex1) + weight);
-			vector[relativeIndex1] += weight * coordinate2;
+            this.matrix.setElement(relativeIndex1, relativeIndex1, this.matrix.getElement(relativeIndex1, relativeIndex1) + weight);
+            this.vector[relativeIndex1] += weight * coordinate2;
         }
     }
     
