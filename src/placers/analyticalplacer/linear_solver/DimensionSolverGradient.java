@@ -51,7 +51,7 @@ public class DimensionSolverGradient implements DimensionSolver {
             maxCoordinate = tmpCoordinate;
         }
         
-        double netSize = maxCoordinate - minCoordinate;
+        double netSize = 5 * Math.tanh((maxCoordinate - minCoordinate) / 5);
         double weight = netSize == 0 ? 0 : weightMultiplier;
         
 

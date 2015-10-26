@@ -22,6 +22,7 @@ import architecture.circuit.block.LocalBlock;
 import architecture.circuit.block.TupleBlockMap;
 import architecture.circuit.pin.AbstractPin;
 
+import timing_graph.TimingGraph;
 import util.Logger;
 
 
@@ -143,6 +144,11 @@ public class NetParser {
 		}
 		
 	    this.circuit.loadBlocks(this.blocks);
+	    
+	    // Create the timing graph and store it in the circuit
+	    TimingGraph timingGraph = new TimingGraph(this.circuit, this.file.getParentFile());
+	    timingGraph.build();
+	    this.circuit.setTimingGraph(timingGraph);
 	}
 	
 	

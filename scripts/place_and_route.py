@@ -103,6 +103,89 @@ class Caller:
         _file.close()
 
 
+
+class StatisticsCaller(Caller):
+
+    stats_columns = ['time', 'BB cost', 'max delay']
+    stats_regex = r'.*time:\s+(?P<time>[0-9.e+-]+).*\s+BB cost:\s+(?P<bb_cost>[0-9.e+-]+).*\s+max delay:\s+(?P<max_delay>[0-9.e+-]+)'
+
+    def place_all(self, architecture, input_folder, output_folder):
+        print("Printing statistics")
+
+        self.input_folder = self.base_folder + input_folder
+        self.output_folder = self.base_folder + output_folder
+
+        options = [
+            '--architecture', 'architectures/' + architecture + '.json',
+            '--input', self.output_folder,
+            '--output', self.output_folder
+        ]
+
+        output_file = self.output_folder + 'results_place.csv'
+
+        self.call_all(options, output_file)
+
+
+    def get_base_command(self):
+        return [
+            'java',
+            '-cp',
+            'build/classes:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
+            'cli.CLI'
+        ]
+
+
+    def get_circuit_options(self, circuit):
+        return ['--net_file', self.input_folder + circuit + '.net']
+
+    def post_process_circuit(self, circuit):
+        pass
+
+
+class VPRPlaceCaller(Caller):
+
+    stats_columns = ['time', 'BB cost', 'max delay']
+    stats_regex = r'Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns.*bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<time>[0-9.e+-]+) seconds'
+
+    def place_all(self, architecture, input_folder, output_folder, options=[]):
+        print("Placing with vpr to " + output_folder)
+
+        self.input_folder = self.base_folder + input_folder
+        self.output_folder = self.base_folder + output_folder
+        self.options = options
+
+        architecture_file = self.input_folder + architecture + '.xml'
+        output_file = self.output_folder + 'results_place_vpr.csv'
+
+        self.call_all([architecture_file], output_file)
+
+
+        # Print statistics
+        statistics_caller = StatisticsCaller(self.base_folder)
+        architecture = '10fle'
+        statistics_caller.place_all(architecture, input_folder, output_folder)
+
+
+    def get_base_command(self):
+        return ['../../vtr/vpr/vpr']
+
+
+    def get_circuit_options(self, circuit):
+        return [
+            circuit,
+            '--place',
+            '--blif_file', self.input_folder + circuit + '.blif',
+            '--net_file', self.input_folder + circuit + '.net',
+            '--place_file', self.output_folder + circuit + '.place',
+        ] + self.options
+
+
+    def post_process_circuit(self, circuit):
+        os.remove('vpr_stdout.log')
+
+
+
+
 class PlaceCaller(Caller):
 
     stats_columns = ['time', 'BB cost', 'max delay']
@@ -143,7 +226,7 @@ class PlaceCaller(Caller):
         return [
             'java',
             '-cp',
-            'bin:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
+            'build:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
             'cli.CLI'
         ]
 
@@ -186,7 +269,7 @@ class RouteCaller(Caller):
 
 
     def get_base_command(self):
-        return ['../../vtr-modified/vpr/vpr']
+        return ['../../vtr/vpr/vpr']
 
 
     def get_circuit_options(self, circuit):

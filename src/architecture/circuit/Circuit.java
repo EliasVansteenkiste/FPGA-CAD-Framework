@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import timing_graph.TimingGraph;
+
 import architecture.BlockType;
 import architecture.FlexibleArchitecture;
 import architecture.BlockType.BlockCategory;
@@ -26,6 +28,7 @@ public class Circuit {
 	
 	
 	private FlexibleArchitecture architecture;
+	private TimingGraph timingGraph;
 	
 	private Map<BlockType, List<AbstractBlock>> blocks;
 	private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
@@ -57,6 +60,27 @@ public class Circuit {
 		
 		this.calculateSizeAndColumns(false);
 		this.createSites();
+	}
+	
+	
+	/*************************
+	 * Timing graph wrapping *
+	 *************************/
+	public void setTimingGraph(TimingGraph timingGraph) {
+        this.timingGraph = timingGraph;
+    }
+	public TimingGraph getTimingGraph() {
+	    return this.timingGraph;
+	}
+	
+	public void recalculateTimingGraph() {
+	    this.timingGraph.recalculateAllSlackCriticalities();
+	}
+	public double calculateTimingCost() {
+	    return this.timingGraph.calculateTotalCost();
+	}
+	public double getMaxDelay() {
+	    return this.timingGraph.getMaxDelay();
 	}
 	
 	

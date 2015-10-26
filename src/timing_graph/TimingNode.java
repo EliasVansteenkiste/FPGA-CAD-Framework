@@ -10,6 +10,7 @@ import architecture.circuit.block.GlobalBlock;
 public class TimingNode {
 	
 	private GlobalBlock owner;
+    private String name;
 	
 	/* For every source and sink, 5 values are stored:
 	 * - the fixed delay, assuming the source and sink are in the same block
@@ -31,8 +32,9 @@ public class TimingNode {
 	}
 	
 	
-	TimingNode(GlobalBlock owner) {
+	TimingNode(GlobalBlock owner, String name) {
 		this.owner = owner;
+        this.name = name;
 	}
 	
 	
@@ -214,11 +216,15 @@ public class TimingNode {
 			edge.pushThrough();
 		}
 	}
+    
 	
+    public String getName() {
+        return this.name;
+    }
 	
 	
 	@Override
 	public String toString() {
-		return "Tnode in " + this.owner.toString();
+		return this.getName();
 	}
 }

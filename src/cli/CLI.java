@@ -12,7 +12,6 @@ import architecture.circuit.parser.PlaceParser;
 import placers.Placer;
 import placers.PlacerFactory;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
-import timing_graph.TimingGraph;
 import util.Logger;
 
 import cli.Options.StartingStage;
@@ -49,8 +48,10 @@ public class CLI {
 		
 		// Read the place file
 		if(options.startingStage == StartingStage.PLACE) {
-			PlaceParser placeParser = new PlaceParser(circuit, options.inputPlaceFile);
+			CLI.startTimer();
+            PlaceParser placeParser = new PlaceParser(circuit, options.inputPlaceFile);
 			placeParser.parse();
+            CLI.stopTimer();
 			
 			CLI.printStatistics("parser", circuit);
 		}
@@ -71,8 +72,9 @@ public class CLI {
 			CLI.timePlacement(placerName, circuit, placerOptions);
 		}
 		
-		
-		placeDumper.dump();
+		if(options.placers.size() > 0) {
+            placeDumper.dump();
+        }
 	}
 	
 	
@@ -114,17 +116,16 @@ public class CLI {
 			System.out.format("%s %15s: %f s\n", prefix, "time", placeTime);
 		}
 		
+		// Calculate BB cost
 		EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(circuit);
 		double totalWLCost = effcc.calculateTotalCost();
 		System.out.format("%s %15s: %f\n", prefix, "BB cost", totalWLCost);
 		
-		//TODO: timingGraph
-		TimingGraph timingGraph = new TimingGraph(circuit);
-		timingGraph.build();
-		timingGraph.recalculateAllSlackCriticalities();
+		// Calculate timing cost
+		circuit.recalculateTimingGraph();
+		double totalTimingCost = circuit.calculateTimingCost();
+		double maxDelay = circuit.getMaxDelay();
 		
-		double totalTimingCost = timingGraph.calculateTotalCost();
-		double maxDelay = timingGraph.getMaxDelay();
 		System.out.format("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
 		System.out.format("%s %15s: %e\n", prefix, "max delay", maxDelay);
 		

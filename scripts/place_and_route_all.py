@@ -26,4 +26,4 @@ for i in range(len(placers)):
 # Route all designs
 for placer in placers:
     pass
-    #route_caller.route_all(architecture, placer)
+    route_caller.route_all(architecture, placer)

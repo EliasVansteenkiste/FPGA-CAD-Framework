@@ -32,8 +32,7 @@ public class TD_SAPlacer extends SAPlacer {
 		super(circuit, options);
 		
 		this.calculator = new EfficientBoundingBoxNetCC(circuit);
-		this.timingGraph = new TimingGraph(circuit);
-		this.timingGraph.build();
+		this.timingGraph = circuit.getTimingGraph();
 		
 		
 		this.tradeOffFactor = Double.parseDouble(this.options.get("trade_off_factor"));

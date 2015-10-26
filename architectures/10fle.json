@@ -777,7 +777,6 @@
 
         "clb.I-fle.in": 95e-12,
         "fle.out-fle.in": 75e-12,
-        "fle.out-clb.O": 75e-12,
 
         "lut5.in-lut.in": 235e-12,
         "lut5.out-ble5.out": 25e-12,

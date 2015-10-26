@@ -37,22 +37,7 @@ public class PlaceDumper {
 		this.netPath = this.netFile.getAbsolutePath().substring(userDir.length() + 1);
 		
 		// Get the architecture file
-		File[] files = inputFolder.listFiles();
-		File architectureFile = null;
-		for(File file : files) {
-			String path = file.getAbsolutePath();
-			if(path.substring(path.length() - 4).equals(".xml")) {
-				if(architectureFile != null) {
-					Logger.raise("Multiple architecture files found in the input folder");
-				}
-				architectureFile = file;
-			}
-		}
-		
-		if(architectureFile == null) {
-			Logger.raise("No architecture file found in the inputfolder");
-		}
-		
+		File architectureFile = Util.getArchitectureFile(inputFolder);
 		this.architecturePath = architectureFile.getAbsolutePath().substring(userDir.length() + 1);
 	}
 	

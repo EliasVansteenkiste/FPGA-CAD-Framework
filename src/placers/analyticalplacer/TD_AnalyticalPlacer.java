@@ -44,9 +44,7 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
     public void initializeData() {
         super.initializeData();
         
-        this.timingGraph = new TimingGraph(this.circuit);
-        this.timingGraph.setCriticalityExponent(this.criticalityExponent);
-		this.timingGraph.build();
+        this.timingGraph = this.circuit.getTimingGraph();
     }
     
     @Override

@@ -16,12 +16,12 @@ public class Options {
 	
 	public enum StartingStage {NET, PLACE};
 	
-	@Option(name="-p", aliases="--placer", metaVar="NAME", required=true, usage="the placer that should be used; can be multi-valued using a comma separated list")
-	private String placersString;
-	
 	@Option(name="-a", aliases="--architecture", metaVar="NAME", required=true, usage="the architecture on which the circuit is placed; supported values: heterogeneous, 4LUT")
 	public String architecture = "heterogeneous";
 	
+    
+    @Option(name="-p", aliases="--placer", metaVar="NAME", usage="the placer that should be used; can be multi-valued using a comma separated list")
+	private String placersString;
 	
 	@Option(name="-n", aliases="--net_file", required=true, metaVar="PATH", usage="path to net file")
 	private String netPath;
@@ -106,60 +106,65 @@ public class Options {
 		
 		
 		// Parse the extra placer options
-		this.placers = Arrays.asList(this.placersString.split(";"));
-		int numPlacers = this.placers.size();
-		for(int i = 0; i < numPlacers; i++) {
-			this.placers.set(i, this.placers.get(i).toLowerCase());
-		}
-		
-		
-		// For each placer: create an options HashMap
-		this.placerOptions = new ArrayList<HashMap<String, String>>(numPlacers);
-		for(int i = 0; i < numPlacers; i++) {
-			this.placerOptions.add(new HashMap<String, String>());
-		}
-		
-		
-		// Loop through all the extra placer options
-		for(String option : this.arguments) {
-			
-			int splitPos = option.indexOf('=');
-			String optionKey;
-			String[] optionValues;
-			if(splitPos == -1) {
-				optionKey = option;
-				optionValues = new String[1];
-				optionValues[0] = "";
+        if(this.placersString == null) {
+            this.placers = new ArrayList<>();
+        
+        } else {
+            this.placers = Arrays.asList(this.placersString.split(";"));
+            int numPlacers = this.placers.size();
+            for(int i = 0; i < numPlacers; i++) {
+                this.placers.set(i, this.placers.get(i).toLowerCase());
+            }
 
-			} else {
-				optionKey = option.substring(0, splitPos);
-				optionValues = option.substring(splitPos + 1).split(";"); 
-			}
-			
-			
-			// If there is no separate value for each placer
-			if(optionValues.length == 1) {
-				for(int i = 0; i < numPlacers; i++) {
-					this.placerOptions.get(i).put(optionKey, optionValues[0]);
-				}
-			
-			// If there is a separate value for each placer
-			} else {
-				for(int i = 0; i < numPlacers; i++) {
-					String optionValue = null;
-					
-					try {
-						optionValue = optionValues[i];
-					} catch(IndexOutOfBoundsException e) {
-						System.err.println("Option " + optionKey + " doesn't have a value for each placer: " + option);
-						e.printStackTrace();
-						System.exit(1);
-					}
-					
-					this.placerOptions.get(i).put(optionKey, optionValue);
-				}
-			}
-		}
+
+            // For each placer: create an options HashMap
+            this.placerOptions = new ArrayList<HashMap<String, String>>(numPlacers);
+            for(int i = 0; i < numPlacers; i++) {
+                this.placerOptions.add(new HashMap<String, String>());
+            }
+
+
+            // Loop through all the extra placer options
+            for(String option : this.arguments) {
+
+                int splitPos = option.indexOf('=');
+                String optionKey;
+                String[] optionValues;
+                if(splitPos == -1) {
+                    optionKey = option;
+                    optionValues = new String[1];
+                    optionValues[0] = "";
+
+                } else {
+                    optionKey = option.substring(0, splitPos);
+                    optionValues = option.substring(splitPos + 1).split(";"); 
+                }
+
+
+                // If there is no separate value for each placer
+                if(optionValues.length == 1) {
+                    for(int i = 0; i < numPlacers; i++) {
+                        this.placerOptions.get(i).put(optionKey, optionValues[0]);
+                    }
+
+                // If there is a separate value for each placer
+                } else {
+                    for(int i = 0; i < numPlacers; i++) {
+                        String optionValue = null;
+
+                        try {
+                            optionValue = optionValues[i];
+                        } catch(IndexOutOfBoundsException e) {
+                            System.err.println("Option " + optionKey + " doesn't have a value for each placer: " + option);
+                            e.printStackTrace();
+                            System.exit(1);
+                        }
+
+                        this.placerOptions.get(i).put(optionKey, optionValue);
+                    }
+                }
+            }
+        }
 	}
 	
 	

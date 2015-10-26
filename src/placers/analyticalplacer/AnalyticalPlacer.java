@@ -53,7 +53,7 @@ public abstract class AnalyticalPlacer extends Placer {
 		defaultOptions.put("starting_anchor_weight", "1");
 		
 		//The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
-		defaultOptions.put("anchor_weight_increase", "1.02");
+		defaultOptions.put("anchor_weight_increase", "1.05");
 		
 		//The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
 		defaultOptions.put("stop_ratio_linear_legal", "0.85");
