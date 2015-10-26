@@ -89,9 +89,10 @@ public class TimingNode implements Comparable<TimingNode> {
         this.requiredTime = requiredTime;
     }
 
-    double calculateRequiredTime() {
+    double calculateRequiredTime(double maxDelay) {
         for(Map.Entry<TimingNode, TimingEdge> sinkEntry : this.sinks.entrySet()) {
-            Double sinkRequiredTime = sinkEntry.getKey().requiredTime;
+            TimingNode sink = sinkEntry.getKey();
+            Double sinkRequiredTime = sink.isClocked ? maxDelay : sink.requiredTime;
             Double delay = sinkEntry.getValue().getTotalDelay();
 
             double requiredTime = sinkRequiredTime - delay;
@@ -158,6 +159,9 @@ public class TimingNode implements Comparable<TimingNode> {
 
             double slack = sink.requiredTime - this.arrivalTime - edge.getTotalDelay();
             double criticality = 1 - slack / maxArrivalTime;
+            if(Math.pow(criticality, criticalityExponent) > 1000) {
+                int d = 0;
+            }
             edge.setCriticality(Math.pow(criticality, criticalityExponent));
         }
     }

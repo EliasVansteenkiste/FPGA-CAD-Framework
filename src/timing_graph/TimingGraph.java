@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -208,8 +207,8 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
         Stack<TimingNode> todo = new Stack<TimingNode>();
 
-        for(TimingNode currentNode : this.clockedNodes) {
-            for(TimingNode sink : currentNode.getSinks()) {
+        for(TimingNode startNode : this.clockedNodes) {
+            for(TimingNode sink : startNode.getSinks()) {
                 sink.incrementProcessedSources();
                 if(sink.allSourcesProcessed()) {
                     todo.add(sink);
@@ -220,11 +219,9 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
         double maxDelay = 0;
         while(todo.size() > 0) {
-
             TimingNode currentNode = todo.pop();
 
             double arrivalTime = currentNode.calculateArrivalTime();
-
             if(arrivalTime > maxDelay) {
                 maxDelay = arrivalTime;
             }
@@ -244,27 +241,30 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
     private void calculateRequiredTimes() {
         Stack<TimingNode> todo = new Stack<TimingNode>();
-        Stack<TimingNode> done = new Stack<TimingNode>();
 
         for(TimingNode endNode : this.clockedNodes) {
             endNode.setRequiredTime(this.maxDelay);
-            this.requiredTimesAddChildren(endNode, todo);
-            done.add(endNode);
+
+            for(TimingNode source : endNode.getSources()) {
+                source.incrementProcessedSinks();
+                if(source.allSinksProcessed()) {
+                    todo.add(source);
+                }
+            }
         }
 
         while(todo.size() > 0) {
             TimingNode currentNode = todo.pop();
-            currentNode.calculateRequiredTime();
-            this.requiredTimesAddChildren(currentNode, todo);
-            done.add(currentNode);
-        }
-    }
 
-    private void requiredTimesAddChildren(TimingNode node, Collection<TimingNode> todo) {
-        for(TimingNode source : node.getSources()) {
-            source.incrementProcessedSinks();
-            if(source.allSinksProcessed()) {
-                todo.add(source);
+            if(!currentNode.isClocked()) {
+                currentNode.calculateRequiredTime(this.maxDelay);
+
+                for(TimingNode source : currentNode.getSources()) {
+                    source.incrementProcessedSinks();
+                    if(source.allSinksProcessed()) {
+                        todo.add(source);
+                    }
+                }
             }
         }
     }
