@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 import util.Logger;
+import architecture.BlockType.BlockCategory;
 
 public class DelayTables {
 
@@ -21,7 +22,7 @@ public class DelayTables {
             clbToIo = new ArrayList<>(),
             clbToClb = new ArrayList<>();
 
-    
+
     DelayTables(File delayFile) {
         try {
             this.reader = new BufferedReader(new FileReader(delayFile));
@@ -36,20 +37,20 @@ public class DelayTables {
         this.parseType("clb_to_io", this.clbToIo);
         this.parseType("io_to_io", this.ioToIo);
     }
-    
+
     private void parseType(String type, List<List<Double>> matrix) {
-        
+
         boolean lineFound = false;
         try {
             lineFound = this.findStartingLine(type);
         } catch(IOException error) {
             Logger.raise("Could not read from delays file", error);
         }
-            
+
         if (!lineFound) {
             Logger.raise("Faild to find type in delays file: " + type);
         }
-        
+
         try {
             this.readMatrix(matrix);
         } catch (IOException error) {
@@ -66,7 +67,7 @@ public class DelayTables {
                 this.reader.readLine();
                 this.reader.readLine();
                 this.reader.readLine();
-                
+
                 return true;
             }
         }
@@ -77,26 +78,56 @@ public class DelayTables {
     private void readMatrix(List<List<Double>> matrix) throws IOException {
         String line;
         int y = 0;
-        
+
         while ((line = this.reader.readLine()) != null) {
             if (line.length() == 0) {
                 Collections.reverse(matrix);
                 return;
             }
-            
+
             matrix.add(new ArrayList<Double>());
-            
+
             String[] lineDelayStrings = line.split("\\s+");
             for(int i = 1; i < lineDelayStrings.length; i++) {
                 Double lineDelay = Double.parseDouble(lineDelayStrings[i]);
                 matrix.get(y).add(lineDelay);
             }
-            
+
             y++;
         }
     }
-    
-    
+
+
+    double getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
+        if(deltaX == 0 && deltaY == 0) {
+            return 0;
+        }
+
+        List<List<Double>> matrix;
+
+        if(fromCategory == BlockCategory.IO) {
+            if(toCategory == BlockCategory.IO) {
+                matrix = this.ioToIo;
+            } else {
+                matrix = this.ioToClb;
+            }
+        } else {
+            if(toCategory == BlockCategory.IO) {
+                matrix = this.clbToIo;
+            } else {
+                matrix = this.clbToClb;
+            }
+        }
+
+
+        double delay = matrix.get(deltaY).get(deltaX);
+        if(delay <= 0) {
+            Logger.raise(String.format("Negative wire delay: (%d, %d)", deltaX, deltaY));
+        }
+
+        return delay;
+    }
+
     double getIoToIo(int x, int y) {
         return this.ioToIo.get(x).get(y);
     }

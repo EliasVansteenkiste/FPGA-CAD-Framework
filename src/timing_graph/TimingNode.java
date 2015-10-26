@@ -7,11 +7,12 @@ import java.util.Set;
 import architecture.BlockType.BlockCategory;
 import architecture.circuit.block.GlobalBlock;
 
-public class TimingNode {
+public class TimingNode implements Comparable<TimingNode> {
 
-    private TimingGraph timingGraph;
+    private DelayTables delayTables;
     private GlobalBlock owner;
     private String name;
+    private boolean isClocked;
 
     /*
      * For every source and sink, 5 values are stored: - the fixed delay,
@@ -28,14 +29,19 @@ public class TimingNode {
     private int numProcessedSources, numProcessedSinks;
 
 
-    TimingNode(TimingGraph timingGraph, GlobalBlock owner, String name) {
-        this.timingGraph = timingGraph;
+    TimingNode(DelayTables delayTables, GlobalBlock owner, String name, boolean isClocked) {
+        this.delayTables = delayTables;
         this.owner = owner;
         this.name = name;
+        this.isClocked = isClocked;
     }
 
     GlobalBlock getOwner() {
         return this.owner;
+    }
+
+    boolean isClocked() {
+        return this.isClocked;
     }
 
     void addSink(TimingNode sink, double fixedDelay) {
@@ -66,7 +72,8 @@ public class TimingNode {
 
     double calculateArrivalTime() {
         for(Map.Entry<TimingNode, TimingEdge> sourceEntry : this.sources.entrySet()) {
-            Double sourceArrivalTime = sourceEntry.getKey().arrivalTime;
+            TimingNode source = sourceEntry.getKey();
+            Double sourceArrivalTime = source.isClocked ? 0 : source.arrivalTime;
             Double delay = sourceEntry.getValue().getTotalDelay();
 
             double arrivalTime = sourceArrivalTime + delay;
@@ -104,7 +111,6 @@ public class TimingNode {
         this.numProcessedSinks = 0;
     }
 
-
     void incrementProcessedSources() {
         this.numProcessedSources++;
     }
@@ -120,7 +126,7 @@ public class TimingNode {
 
 
 
-    void calculateSinkDelays() {
+    void calculateSinkWireDelays() {
         for(Map.Entry<TimingNode, TimingEdge> sinkEntry : this.sinks.entrySet()) {
             TimingNode sink = sinkEntry.getKey();
             TimingEdge edge = sinkEntry.getValue();
@@ -140,7 +146,7 @@ public class TimingNode {
         BlockCategory fromCategory = this.owner.getCategory();
         BlockCategory toCategory = otherNode.owner.getCategory();
 
-        return this.timingGraph.calculateWireDelay(fromCategory, toCategory, deltaX, deltaY);
+        return this.delayTables.getDelay(fromCategory, toCategory, deltaX, deltaY);
     }
 
 
@@ -181,10 +187,8 @@ public class TimingNode {
         for(Map.Entry<TimingNode, TimingEdge> sourceEntry : this.sources.entrySet()) {
             TimingNode source = sourceEntry.getKey();
 
-            // Only calculate the delta cost of the source is not in the block
-            // where we would swap to
-            // This is necessary to avoid double counting: the other swap block
-            // also calculates delta
+            // Only calculate the delta cost if the source is not in the block where we would swap to
+            // This is necessary to avoid double counting: the other swap block also calculates delta
             // costs of all sink edges
             if(!(source.owner.getX() == newX && source.owner.getY() == newY)) {
                 TimingEdge edge = sourceEntry.getValue();
@@ -220,5 +224,10 @@ public class TimingNode {
     @Override
     public String toString() {
         return this.getName();
+    }
+
+    @Override
+    public int compareTo(TimingNode otherNode) {
+        return this.name.compareTo(otherNode.name);
     }
 }

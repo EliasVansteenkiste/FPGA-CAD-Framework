@@ -55,7 +55,7 @@ public class TimingGraphIterator implements Iterator<TimingGraphEntry> {
         Map.Entry<TimingNode, TimingEdge> sinkNodeEntry = this.sinkNodeIterator.next();
         
         this.cachedEntry = new TimingGraphEntry(this.sourceBlock,
-                sinkNodeEntry.getKey().getOwner(),
+                sinkNodeEntry.getKey().getGlobalOwner(),
                 sinkNodeEntry.getValue().getCriticality(),
                 this.sourceNode.sinks.size());
         

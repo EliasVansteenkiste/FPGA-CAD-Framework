@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import placers.SAPlacer.Swap;
+import util.Logger;
 import architecture.BlockType;
 import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
@@ -21,16 +23,13 @@ import architecture.circuit.block.LocalBlock;
 import architecture.circuit.parser.Util;
 import architecture.circuit.pin.AbstractPin;
 
-import placers.SAPlacer.Swap;
-import util.Logger;
-
 public class TimingGraph implements Iterable<TimingGraphEntry> {
 
     private Circuit circuit;
     private File folder;
-    
+
     private DelayTables delayTables;
-    
+
     private Map<LocalBlock, TimingNode> nodes = new HashMap<LocalBlock, TimingNode>();
     private Map<GlobalBlock, List<TimingNode>> nodesInGlobalBlocks = new HashMap<GlobalBlock, List<TimingNode>>();
     private List<TimingNode> clockedNodes = new ArrayList<TimingNode>();
@@ -39,6 +38,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     private double criticalityExponent = 8;
     private double maxDelay;
 
+
     public TimingGraph(Circuit circuit, File folder) {
         this.circuit = circuit;
         this.folder = folder;
@@ -46,37 +46,88 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
     public void build() {
 
-        this.getDelayMatrixes();
+        this.buildDelayMatrixes();
 
-        // Get all leaf nodes
-        for (BlockType blockType : this.circuit.getBlockTypes()) {
-            if (!blockType.isLeaf()) {
+        this.buildGraph();
+    }
+
+
+    private void buildDelayMatrixes() {
+        String circuitName = this.circuit.getName();
+
+        File architectureFile = Util.getArchitectureFile(this.folder);
+        File blifFile = new File(this.folder, circuitName + ".blif");
+        File netFile = new File(this.folder, circuitName + ".net");
+
+        // Run vpr
+        String command = String.format(
+                "./vpr %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
+                architectureFile, circuitName, blifFile, netFile);
+
+        Runtime runtime = Runtime.getRuntime();
+        Process process;
+        try {
+            process = runtime.exec(command);
+            process.waitFor();
+        } catch(IOException error) {
+            Logger.raise("Failed to execute vpr: " + command, error);
+
+        } catch(InterruptedException error) {
+            Logger.raise("vpr was interrupted", error);
+        }
+
+        // Parse the delay tables
+        File delaysFile = new File("lookup_dump.echo");
+        this.delayTables = new DelayTables(delaysFile);
+        this.delayTables.parse();
+
+        // Clean up
+        this.deleteFile("vpr_tmp");
+        this.deleteFile("vpr_stdout.log");
+        this.deleteFile("lookup_dump.echo");
+    }
+
+    private void deleteFile(String path) {
+        try {
+            Files.deleteIfExists(new File(path).toPath());
+        } catch(IOException error) {
+
+            Logger.raise("File not found: " + path);
+        }
+    }
+
+
+    private void buildGraph() {
+     // Get all leaf nodes
+        for(BlockType blockType : this.circuit.getBlockTypes()) {
+            if(!blockType.isLeaf()) {
                 continue;
             }
 
-            for (AbstractBlock block : this.circuit.getBlocks(blockType)) {
+            boolean typeIsClocked = blockType.isClocked();
+
+
+            for(AbstractBlock block : this.circuit.getBlocks(blockType)) {
                 AbstractBlock parent = block;
-                while (!parent.isGlobal()) {
+                while(!parent.isGlobal()) {
                     parent = parent.getParent();
                 }
-                TimingNode node = new TimingNode(this, (GlobalBlock) parent, block.toString());
+                TimingNode node = new TimingNode(this.delayTables, (GlobalBlock) parent, block.toString(), typeIsClocked);
 
                 this.nodes.put((LocalBlock) block, node);
 
-                if (this.nodesInGlobalBlocks.get(parent) == null) {
-                    this.nodesInGlobalBlocks.put((GlobalBlock) parent,
-                            new ArrayList<TimingNode>());
+                if(this.nodesInGlobalBlocks.get(parent) == null) {
+                    this.nodesInGlobalBlocks.put((GlobalBlock) parent, new ArrayList<TimingNode>());
                 }
                 this.nodesInGlobalBlocks.get(parent).add(node);
 
-                if (blockType.isClocked()) {
+                if(typeIsClocked) {
                     this.clockedNodes.add(node);
                 }
             }
         }
 
-        for (Map.Entry<LocalBlock, TimingNode> nodeEntry : this.nodes
-                .entrySet()) {
+        for(Map.Entry<LocalBlock, TimingNode> nodeEntry : this.nodes.entrySet()) {
             LocalBlock block = nodeEntry.getKey();
             TimingNode node = nodeEntry.getValue();
 
@@ -84,59 +135,13 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         }
     }
 
-    private void getDelayMatrixes() {
-        String circuitName = this.circuit.getName();
-        
-        File architectureFile = Util.getArchitectureFile(this.folder);
-        File blifFile = new File(this.folder, circuitName + ".blif");
-        File netFile = new File(this.folder, circuitName + ".net");
-        
-        
-        // Run vpr
-        String command = String.format(
-                "./vpr %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
-                architectureFile, circuitName, blifFile, netFile);
-        
-        Runtime runtime = Runtime.getRuntime();
-        Process process;
-        try {
-            process = runtime.exec(command);
-            process.waitFor();
-        } catch (IOException error) {
-            Logger.raise("Failed to execute vpr: " + command, error);
-            
-        } catch (InterruptedException error) {
-            Logger.raise("vpr was interrupted", error);
-        }
-        
-        
-        // Parse the delay tables
-        File delaysFile = new File("lookup_dump.echo");
-        this.delayTables = new DelayTables(delaysFile);
-        this.delayTables.parse();
-        
-        // Clean up
-        this.deleteFile("vpr_tmp");
-        this.deleteFile("vpr_stdout.log");
-        this.deleteFile("lookup_dump.echo");
-    }
-    
-    private void deleteFile(String path) {
-        try {
-            Files.deleteIfExists(new File(path).toPath());
-        } catch(IOException error) {
-            
-            Logger.raise("File not found: " + path);
-        }
-    }
-
     private void traverseFromSource(LocalBlock block, TimingNode pathSource) {
         Stack<AbstractPin> pinStack = new Stack<AbstractPin>();
         Stack<Double> delayStack = new Stack<Double>();
 
-        for (AbstractPin outputPin : block.getOutputPins()) {
+        for(AbstractPin outputPin : block.getOutputPins()) {
             double setupDelay = 0;
-            if (block.isClocked()) {
+            if(block.isClocked()) {
                 setupDelay = outputPin.getPortType().getSetupTime();
             }
 
@@ -144,23 +149,22 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
             delayStack.push(setupDelay);
         }
 
-        while (pinStack.size() > 0) {
+        while(pinStack.size() > 0) {
             AbstractPin currentPin = pinStack.pop();
             double currentDelay = delayStack.pop();
 
             AbstractBlock owner = currentPin.getOwner();
 
-            if (currentPin.isInput() && owner.isLeaf()) {
+            if(currentPin.isInput() && owner.isLeaf()) {
                 TimingNode pathSink = this.nodes.get(owner);
 
                 double endDelay;
-                if (owner.isClocked()) {
+                if(owner.isClocked()) {
                     endDelay = currentPin.getPortType().getSetupTime();
 
                 } else {
                     List<AbstractPin> outputPins = owner.getOutputPins();
-                    endDelay = currentPin.getPortType().getDelay(
-                            outputPins.get(0).getPortType());
+                    endDelay = currentPin.getPortType().getDelay(outputPins.get(0).getPortType());
                 }
 
                 pathSource.addSink(pathSink, currentDelay + endDelay);
@@ -168,10 +172,9 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
                 // The block has children: proceed with the sinks of the current
                 // pin
             } else {
-                for (AbstractPin sinkPin : currentPin.getSinks()) {
-                    if (sinkPin != null) {
-                        double sourceSinkDelay = currentPin.getPortType()
-                                .getDelay(sinkPin.getPortType());
+                for(AbstractPin sinkPin : currentPin.getSinks()) {
+                    if(sinkPin != null) {
+                        double sourceSinkDelay = currentPin.getPortType().getDelay(sinkPin.getPortType());
                         double totalDelay = currentDelay + sourceSinkDelay;
 
                         pinStack.push(sinkPin);
@@ -182,62 +185,56 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         }
     }
 
+
     public void setCriticalityExponent(double criticalityExponent) {
         this.criticalityExponent = criticalityExponent;
     }
-    
-    
-    double calculateWireDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
-        if(fromCategory == BlockCategory.IO) {
-            if (toCategory == BlockCategory.IO) {
-                return this.delayTables.getIoToIo(deltaX, deltaY);
-            } else {
-                return this.delayTables.getIoToClb(deltaX, deltaY);
-            }
-        } else {
-            if (toCategory == BlockCategory.IO) {
-                return this.delayTables.getClbToIo(deltaX, deltaY);
-            } else {
-                return this.delayTables.getClbToClb(deltaX, deltaY);
-            }
-        }
-    }
-    
-    
-    
 
     public void recalculateAllSlackCriticalities() {
         this.maxDelay = this.calculateArrivalTimes();
         this.calculateRequiredTimes();
 
-        for (TimingNode node : this.nodes.values()) {
+        for(TimingNode node : this.nodes.values()) {
             node.calculateCriticalities(this.maxDelay, this.criticalityExponent);
         }
     }
 
     private double calculateArrivalTimes() {
-        for (TimingNode node : this.nodes.values()) {
+        for(TimingNode node : this.nodes.values()) {
             node.reset();
-            node.calculateSinkDelays();
+            node.calculateSinkWireDelays();
         }
 
+
         Stack<TimingNode> todo = new Stack<TimingNode>();
-        todo.addAll(this.clockedNodes);
+
+        for(TimingNode currentNode : this.clockedNodes) {
+            for(TimingNode sink : currentNode.getSinks()) {
+                sink.incrementProcessedSources();
+                if(sink.allSourcesProcessed()) {
+                    todo.add(sink);
+                }
+            }
+        }
+
 
         double maxDelay = 0;
-        while (todo.size() > 0) {
+        while(todo.size() > 0) {
+
             TimingNode currentNode = todo.pop();
 
             double arrivalTime = currentNode.calculateArrivalTime();
 
-            if (arrivalTime > maxDelay) {
+            if(arrivalTime > maxDelay) {
                 maxDelay = arrivalTime;
             }
 
-            for (TimingNode sink : currentNode.getSinks()) {
-                sink.incrementProcessedSources();
-                if (sink.allSourcesProcessed()) {
-                    todo.add(sink);
+            if(!currentNode.isClocked()) {
+                for(TimingNode sink : currentNode.getSinks()) {
+                    sink.incrementProcessedSources();
+                    if(sink.allSourcesProcessed()) {
+                        todo.add(sink);
+                    }
                 }
             }
         }
@@ -249,13 +246,13 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         Stack<TimingNode> todo = new Stack<TimingNode>();
         Stack<TimingNode> done = new Stack<TimingNode>();
 
-        for (TimingNode endNode : this.clockedNodes) {
+        for(TimingNode endNode : this.clockedNodes) {
             endNode.setRequiredTime(this.maxDelay);
             this.requiredTimesAddChildren(endNode, todo);
             done.add(endNode);
         }
 
-        while (todo.size() > 0) {
+        while(todo.size() > 0) {
             TimingNode currentNode = todo.pop();
             currentNode.calculateRequiredTime();
             this.requiredTimesAddChildren(currentNode, todo);
@@ -263,11 +260,10 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         }
     }
 
-    private void requiredTimesAddChildren(TimingNode node,
-            Collection<TimingNode> todo) {
-        for (TimingNode source : node.getSources()) {
+    private void requiredTimesAddChildren(TimingNode node, Collection<TimingNode> todo) {
+        for(TimingNode source : node.getSources()) {
             source.incrementProcessedSinks();
-            if (source.allSinksProcessed()) {
+            if(source.allSinksProcessed()) {
                 todo.add(source);
             }
         }
@@ -280,7 +276,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     public double calculateTotalCost() {
         double totalCost = 0;
 
-        for (TimingNode node : this.nodes.values()) {
+        for(TimingNode node : this.nodes.values()) {
             totalCost += node.calculateCost();
         }
 
@@ -296,7 +292,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         this.affectedNodes.addAll(nodes);
         cost += this.calculateDeltaCost(nodes, swap.getSite2());
 
-        if (swap.getBlock2() != null) {
+        if(swap.getBlock2() != null) {
             nodes = this.nodesInGlobalBlocks.get(swap.getBlock2());
             this.affectedNodes.addAll(nodes);
             cost += this.calculateDeltaCost(nodes, swap.getSite1());
@@ -308,7 +304,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     private double calculateDeltaCost(List<TimingNode> nodes, AbstractSite site) {
         double cost = 0;
 
-        for (TimingNode node : nodes) {
+        for(TimingNode node : nodes) {
             cost += node.calculateDeltaCost(site.getX(), site.getY());
         }
 
@@ -316,7 +312,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     }
 
     public void pushThrough() {
-        for (TimingNode node : this.affectedNodes) {
+        for(TimingNode node : this.affectedNodes) {
             node.pushThrough();
         }
     }
@@ -324,6 +320,24 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     public void revert() {
         // Do nothing
     }
+
+
+    double calculateWireDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
+        if(fromCategory == BlockCategory.IO) {
+            if(toCategory == BlockCategory.IO) {
+                return this.delayTables.getIoToIo(deltaX, deltaY);
+            } else {
+                return this.delayTables.getIoToClb(deltaX, deltaY);
+            }
+        } else {
+            if(toCategory == BlockCategory.IO) {
+                return this.delayTables.getClbToIo(deltaX, deltaY);
+            } else {
+                return this.delayTables.getClbToClb(deltaX, deltaY);
+            }
+        }
+    }
+
 
     // Iterator methods
     // When iterating over a TimingGraph object, you will get a TimingGraphEntry
