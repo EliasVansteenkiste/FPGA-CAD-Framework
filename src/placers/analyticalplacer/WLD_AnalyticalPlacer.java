@@ -6,10 +6,10 @@ import architecture.circuit.Circuit;
 
 
 public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
-	
-	public WLD_AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
-		super(circuit, options);
-	}
+    
+    public WLD_AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
+        super(circuit, options);
+    }
     
     @Override
     public void initializeData() {

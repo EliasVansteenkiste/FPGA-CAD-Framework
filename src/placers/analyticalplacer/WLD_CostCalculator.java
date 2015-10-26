@@ -4,22 +4,22 @@ import java.util.List;
 
 
 public class WLD_CostCalculator extends CostCalculator {
-	
+    
     private List<int[]> nets;
     
-	WLD_CostCalculator(List<int[]> nets) {
-		this.nets = nets;
-	}
-	
-	@Override
-	boolean requiresCircuitUpdate() {
-		return false;
-	}
-	
-	@Override
-	protected double calculate() {
-		double cost = 0.0;
-		
+    WLD_CostCalculator(List<int[]> nets) {
+        this.nets = nets;
+    }
+    
+    @Override
+    boolean requiresCircuitUpdate() {
+        return false;
+    }
+    
+    @Override
+    protected double calculate() {
+        double cost = 0.0;
+        
         for(int[] blockIndexes : this.nets) {
             int numNetBlocks = blockIndexes.length;
             
@@ -46,7 +46,7 @@ public class WLD_CostCalculator extends CostCalculator {
             
             cost += ((maxX - minX) + (maxY - minY) + 2) * AnalyticalPlacer.getWeight(numNetBlocks);
         }
-		
-		return cost;
-	}
+        
+        return cost;
+    }
 }

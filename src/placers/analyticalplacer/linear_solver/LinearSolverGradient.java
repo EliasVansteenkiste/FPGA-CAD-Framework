@@ -37,38 +37,38 @@ public class LinearSolverGradient extends LinearSolver {
         }*/
         
         
-		// For bigger nets, we have to find the min and max block
-		int initialBlockIndex = blockIndexes[0];
+        // For bigger nets, we have to find the min and max block
+        int initialBlockIndex = blockIndexes[0];
         double minX = this.coordinatesX[initialBlockIndex], maxX = this.coordinatesX[initialBlockIndex],
-			   minY = this.coordinatesY[initialBlockIndex], maxY = this.coordinatesY[initialBlockIndex];
-		int minXIndex = initialBlockIndex, maxXIndex = initialBlockIndex,
-			minYIndex = initialBlockIndex, maxYIndex = initialBlockIndex;
-		
-		for(int i = 1; i < numNetBlocks; i++) {
-			int blockIndex = blockIndexes[i];
-			double x = this.coordinatesX[blockIndex], y = this.coordinatesY[blockIndex];
-			
-			if(x < minX) {
-				minX = x;
-				minXIndex = blockIndex;
-			} else if(x > maxX) {
-				maxX = x;
-				maxXIndex = blockIndex;
-			}
-			
-			if(y < minY) {
-				minY = y;
-				minYIndex = blockIndex;
-			} else if(y > maxY) {
-				maxY = y;
-				maxYIndex = blockIndex;
-			}
-		}
-		
+               minY = this.coordinatesY[initialBlockIndex], maxY = this.coordinatesY[initialBlockIndex];
+        int minXIndex = initialBlockIndex, maxXIndex = initialBlockIndex,
+            minYIndex = initialBlockIndex, maxYIndex = initialBlockIndex;
         
-		boolean minXFixed = isFixed(minXIndex), maxXFixed = isFixed(maxXIndex),
-				minYFixed = isFixed(minYIndex), maxYFixed = isFixed(maxYIndex);
-		
+        for(int i = 1; i < numNetBlocks; i++) {
+            int blockIndex = blockIndexes[i];
+            double x = this.coordinatesX[blockIndex], y = this.coordinatesY[blockIndex];
+            
+            if(x < minX) {
+                minX = x;
+                minXIndex = blockIndex;
+            } else if(x > maxX) {
+                maxX = x;
+                maxXIndex = blockIndex;
+            }
+            
+            if(y < minY) {
+                minY = y;
+                minYIndex = blockIndex;
+            } else if(y > maxY) {
+                maxY = y;
+                maxYIndex = blockIndex;
+            }
+        }
+        
+        
+        boolean minXFixed = isFixed(minXIndex), maxXFixed = isFixed(maxXIndex),
+                minYFixed = isFixed(minYIndex), maxYFixed = isFixed(maxYIndex);
+        
         // Add connections between the min and max block
         this.solverX.addConnection(
                 minXFixed, minXIndex, minX,

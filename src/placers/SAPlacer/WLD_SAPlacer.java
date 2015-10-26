@@ -5,53 +5,53 @@ import java.util.Map;
 import architecture.circuit.Circuit;
 
 
-public class WLD_SAPlacer extends SAPlacer {	
-	
-	private EfficientCostCalculator calculator;
-	private double cachedCost;
-	
-	public WLD_SAPlacer(Circuit circuit, Map<String, String> options) {
-		super(circuit, options);
-		
-		this.calculator = new EfficientBoundingBoxNetCC(circuit);
-	}
-	
-	@Override
-	protected void initializePlace() {
-		this.calculator.recalculateFromScratch();
-	}
-	
+public class WLD_SAPlacer extends SAPlacer {    
+    
+    private EfficientCostCalculator calculator;
+    private double cachedCost;
+    
+    public WLD_SAPlacer(Circuit circuit, Map<String, String> options) {
+        super(circuit, options);
+        
+        this.calculator = new EfficientBoundingBoxNetCC(circuit);
+    }
+    
     @Override
-	protected void initializeSwapIteration() {
-	}
-	
+    protected void initializePlace() {
+        this.calculator.recalculateFromScratch();
+    }
+    
     @Override
-	protected String getStatistics() {
-		return "cost = " + this.getCost();
-	}
-	
+    protected void initializeSwapIteration() {
+    }
+    
     @Override
-	protected double getCost() {
-		if(this.circuitChanged) {
-			this.circuitChanged = false;
-			this.cachedCost = this.calculator.calculateTotalCost();
-		}
-		
-		return this.cachedCost;
-	}
-	
+    protected String getStatistics() {
+        return "cost = " + this.getCost();
+    }
+    
     @Override
-	protected double getDeltaCost(Swap swap) {
-		return this.calculator.calculateDeltaCost(swap);
-	}
-	
+    protected double getCost() {
+        if(this.circuitChanged) {
+            this.circuitChanged = false;
+            this.cachedCost = this.calculator.calculateTotalCost();
+        }
+        
+        return this.cachedCost;
+    }
+    
     @Override
-	protected void pushThrough(int iteration) {
-		this.calculator.pushThrough();
-	}
-	
+    protected double getDeltaCost(Swap swap) {
+        return this.calculator.calculateDeltaCost(swap);
+    }
+    
     @Override
-	protected void revert(int iteration) {
-		this.calculator.revert();
-	}
+    protected void pushThrough(int iteration) {
+        this.calculator.pushThrough();
+    }
+    
+    @Override
+    protected void revert(int iteration) {
+        this.calculator.revert();
+    }
 }

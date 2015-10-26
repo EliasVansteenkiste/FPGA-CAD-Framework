@@ -90,15 +90,15 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         File architectureFile = Util.getArchitectureFile(this.folder);
         File blifFile = new File(this.folder, circuitName + ".blif");
         File netFile = new File(this.folder, circuitName + ".net");
-	    
-	    
-	    // Run vpr
+        
+        
+        // Run vpr
         String command = String.format(
                 "./vpr %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
                 architectureFile, circuitName, blifFile, netFile);
         
-	    Runtime runtime = Runtime.getRuntime();
-	    Process process;
+        Runtime runtime = Runtime.getRuntime();
+        Process process;
         try {
             process = runtime.exec(command);
             process.waitFor();
@@ -119,7 +119,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         this.deleteFile("vpr_tmp");
         this.deleteFile("vpr_stdout.log");
         this.deleteFile("lookup_dump.echo");
-	}
+    }
     
     private void deleteFile(String path) {
         try {
