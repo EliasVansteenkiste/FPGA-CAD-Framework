@@ -18,8 +18,6 @@ def silentremove(filename):
 class Caller:
     circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
 
-    circuits = 'mcml'
-
     def __init__(self, base_folder):
         self.circuit_list = self.circuits.split(' ')
 
