@@ -86,7 +86,6 @@ class Caller:
             circuit_options = self.get_circuit_options(circuit)
 
             command = base_command + options + circuit_options
-            print(' '.join(command))
             out, err = self.call(command)
 
             # If there is an error: print it and exit
