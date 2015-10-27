@@ -58,9 +58,9 @@ public abstract class AnalyticalPlacer extends Placer {
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "complete");
-        defaultOptions.put("initial_gradient_speed", "0.05");
+        defaultOptions.put("initial_gradient_speed", "0.15");
         defaultOptions.put("gradient_multiplier", "0.95");
-        defaultOptions.put("final_gradient_speed", "0.05");
+        defaultOptions.put("final_gradient_speed", "0.15");
     }
 
     public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -232,7 +232,7 @@ public abstract class AnalyticalPlacer extends Placer {
                 this.solveLinearComplete(false, pseudoWeightFactor);
 
             } else {
-                for(int i = 0; i < 200; i++) { // DEBUG
+                for(int i = 0; i < 30; i++) {
                     this.solveLinearGradient(false, pseudoWeightFactor);
                     //System.out.println(i + ": " + this.costCalculator.calculate(this.linearX, this.linearY));
                     //System.out.format("%f,%f,%f,%f\n", this.linearX[300], this.linearX[400], this.linearX[500], this.linearX[600]);

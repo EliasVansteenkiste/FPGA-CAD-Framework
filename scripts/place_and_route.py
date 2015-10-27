@@ -4,9 +4,21 @@ import re
 import csv
 import glob
 import sys
+import errno
+
+
+def silentremove(filename):
+    try:
+        os.remove(filename)
+    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise # re-raise exception if a different error occured
+
 
 class Caller:
     circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
+
+    circuits = 'mcml'
 
     def __init__(self, base_folder):
         self.circuit_list = self.circuits.split(' ')
@@ -74,6 +86,7 @@ class Caller:
             circuit_options = self.get_circuit_options(circuit)
 
             command = base_command + options + circuit_options
+            print(' '.join(command))
             out, err = self.call(command)
 
             # If there is an error: print it and exit
@@ -181,7 +194,7 @@ class VPRPlaceCaller(Caller):
 
 
     def post_process_circuit(self, circuit):
-        os.remove('vpr_stdout.log')
+        silentremove('vpr_stdout.log')
 
 
 
