@@ -142,7 +142,7 @@ class StatisticsCaller(Caller):
         return [
             'java',
             '-cp',
-            'bin/classes:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
+            'bin:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
             'cli.CLI'
         ]
 
