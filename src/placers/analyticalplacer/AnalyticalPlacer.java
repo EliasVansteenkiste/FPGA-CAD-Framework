@@ -57,10 +57,10 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
 
         // The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "complete");
-        defaultOptions.put("initial_gradient_speed", "0.15");
+        defaultOptions.put("solve_mode", "gradient");
+        defaultOptions.put("initial_gradient_speed", "0.08");
         defaultOptions.put("gradient_multiplier", "0.95");
-        defaultOptions.put("final_gradient_speed", "0.15");
+        defaultOptions.put("final_gradient_speed", "0.08");
     }
 
     public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {

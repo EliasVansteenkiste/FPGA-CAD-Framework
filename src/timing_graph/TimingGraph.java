@@ -1,7 +1,9 @@
 package timing_graph;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,14 +65,24 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
                 "./vpr %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
                 architectureFile, circuitName, blifFile, netFile);
 
-        Runtime runtime = Runtime.getRuntime();
-        Process process;
+        Process process = null;
         try {
-            process = runtime.exec(command);
-            process.waitFor();
+            process = Runtime.getRuntime().exec(command);
         } catch(IOException error) {
             Logger.raise("Failed to execute vpr: " + command, error);
+        }
 
+        // Read output to avoid buffer overflow and deadlock
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        try {
+            while ((reader.readLine()) != null) {}
+        } catch(IOException error) {
+            Logger.raise("Failed to read from vpr output", error);
+        }
+
+        // Finish execution
+        try {
+            process.waitFor();
         } catch(InterruptedException error) {
             Logger.raise("vpr was interrupted", error);
         }
