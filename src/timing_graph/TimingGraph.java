@@ -282,7 +282,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     }
 
     public double getMaxDelay() {
-        return this.maxDelay;
+        return this.maxDelay * Math.pow(10, 9);
     }
 
     public double calculateTotalCost() {
@@ -292,7 +292,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
             totalCost += node.calculateCost();
         }
 
-        return totalCost;
+        return totalCost * Math.pow(10, 9);
     }
 
     public double calculateDeltaCost(Swap swap) {

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import cli.CLI;
+
 import placers.Placer;
 import placers.analyticalplacer.linear_solver.LinearSolver;
 import placers.analyticalplacer.linear_solver.LinearSolverComplete;
@@ -30,6 +32,7 @@ public abstract class AnalyticalPlacer extends Placer {
     private final double[] maxUtilizationSequence;
     private final double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
     private final double gradientMultiplier, finalGradientSpeed;
+    private final int gradientIterations;
     private double gradientSpeed;
 
     protected final Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
@@ -48,19 +51,20 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("max_utilization_sequence", "1");
 
         //The first anchorWeight factor that will be used in the main solve loop
-        defaultOptions.put("starting_anchor_weight", "1");
+        defaultOptions.put("starting_anchor_weight", "0.5");
 
         //The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
-        defaultOptions.put("anchor_weight_increase", "1.15");
+        defaultOptions.put("anchor_weight_increase", "1.1");
 
         //The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "gradient");
-        defaultOptions.put("initial_gradient_speed", "0.08");
+        defaultOptions.put("initial_gradient_speed", "0.1");
         defaultOptions.put("gradient_multiplier", "0.95");
-        defaultOptions.put("final_gradient_speed", "0.08");
+        defaultOptions.put("final_gradient_speed", "0.1");
+        defaultOptions.put("gradient_iterations", "20");
     }
 
     public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -100,6 +104,7 @@ public abstract class AnalyticalPlacer extends Placer {
         this.gradientSpeed = this.parseDoubleOption("initial_gradient_speed");
         this.gradientMultiplier = this.parseDoubleOption("gradient_multiplier");
         this.finalGradientSpeed = this.parseDoubleOption("final_gradient_speed");
+        this.gradientIterations = this.parseIntegerOption("gradient_iterations");
     }
 
 
@@ -223,19 +228,18 @@ public abstract class AnalyticalPlacer extends Placer {
             this.initializePlacementIteration();
 
             // Solve linear
-            if(firstSolve) { // DEBUG
+            double timerBegin = System.nanoTime();
+            if(firstSolve) {
                 for(int i = 0; i < 5; i++) {
                     this.solveLinearComplete(true, pseudoWeightFactor);
                 }
 
-            } else if(this.algorithmSolveMode == SolveMode.COMPLETE) {
+            } else if(this.algorithmSolveMode == SolveMode.COMPLETE || iteration > 50) {
                 this.solveLinearComplete(false, pseudoWeightFactor);
 
             } else {
-                for(int i = 0; i < 30; i++) {
+                for(int i = 0; i < this.gradientIterations; i++) {
                     this.solveLinearGradient(false, pseudoWeightFactor);
-                    //System.out.println(i + ": " + this.costCalculator.calculate(this.linearX, this.linearY));
-                    //System.out.format("%f,%f,%f,%f\n", this.linearX[300], this.linearX[400], this.linearX[500], this.linearX[600]);
                 }
             }
 
@@ -249,12 +253,13 @@ public abstract class AnalyticalPlacer extends Placer {
             double maxUtilizationLegalizer = this.maxUtilizationSequence[sequenceIndex];
 
             this.legalizer.legalize(maxUtilizationLegalizer);
-
+            double timerEnd = System.nanoTime();
+            double time = (timerEnd - timerBegin) * 1e-9;
 
             // Get the costs and print them
             linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
             legalCost = this.legalizer.getBestCost();
-            System.out.format(", linear cost = %f, legal cost = %f\n", linearCost, legalCost);
+            System.out.format(", linear cost = %f, legal cost = %f, time = %f\n", linearCost, legalCost, time);
 
             iteration++;
 
