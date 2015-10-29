@@ -1,28 +1,28 @@
 package placers.analyticalplacer;
 
-abstract class CostCalculator {
-    
+public abstract class CostCalculator {
+
     private boolean ints;
     private int[] intX, intY;
     private double[] doubleX, doubleY;
-    
-    
+
+
     double calculate(int[] x, int[] y) {
         this.intX = x;
         this.intY = y;
         this.ints = true;
-        
+
         return this.calculate();
     }
     double calculate(double[] x, double[] y) {
         this.doubleX = x;
         this.doubleY = y;
         this.ints = false;
-        
+
         return this.calculate();
     }
-    
-    
+
+
     protected double getX(int index) {
         if(this.ints) {
             return this.intX[index];
@@ -37,8 +37,8 @@ abstract class CostCalculator {
             return this.doubleY[index];
         }
     }
-    
-    
+
+
     protected abstract double calculate();
     abstract boolean requiresCircuitUpdate();
 }

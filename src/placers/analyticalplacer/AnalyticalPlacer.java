@@ -1,14 +1,11 @@
 package placers.analyticalplacer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import cli.CLI;
 
 import placers.Placer;
 import placers.analyticalplacer.linear_solver.LinearSolver;
@@ -51,7 +48,7 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("max_utilization_sequence", "1");
 
         //The first anchorWeight factor that will be used in the main solve loop
-        defaultOptions.put("starting_anchor_weight", "0.5");
+        defaultOptions.put("starting_anchor_weight", "0.01");
 
         //The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
         defaultOptions.put("anchor_weight_increase", "1.1");
@@ -61,10 +58,10 @@ public abstract class AnalyticalPlacer extends Placer {
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "gradient");
-        defaultOptions.put("initial_gradient_speed", "0.1");
+        defaultOptions.put("initial_gradient_speed", "0.05");
         defaultOptions.put("gradient_multiplier", "0.95");
-        defaultOptions.put("final_gradient_speed", "0.1");
-        defaultOptions.put("gradient_iterations", "20");
+        defaultOptions.put("final_gradient_speed", "0.05");
+        defaultOptions.put("gradient_iterations", "30");
     }
 
     public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -122,12 +119,6 @@ public abstract class AnalyticalPlacer extends Placer {
         this.numBlocks = numBlocksCounter;
 
 
-        // Initialize block positions at the center of the design
-        this.linearX = new double[this.numBlocks];
-        this.linearY = new double[this.numBlocks];
-        Arrays.fill(this.linearX, this.circuit.getWidth() / 2 - 1);
-        Arrays.fill(this.linearY, this.circuit.getHeight() / 2 - 1);
-
         // Make a list of all block types, with IO blocks first
         BlockType ioBlockType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
         List<BlockType> blockTypes = new ArrayList<>();
@@ -141,20 +132,19 @@ public abstract class AnalyticalPlacer extends Placer {
 
 
         // Add all blocks
+        this.linearX = new double[this.numBlocks];
+        this.linearY = new double[this.numBlocks];
+
         List<Integer> blockTypeIndexStarts = new ArrayList<>();
         int blockIndex = 0;
         blockTypeIndexStarts.add(0);
 
         for(BlockType blockType : blockTypes) {
-            boolean isFixed = blockType.equals(ioBlockType);
-
             for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
                 GlobalBlock block = (GlobalBlock) abstractBlock;
 
-                if(isFixed || true) { // DEBUG
-                    this.linearX[blockIndex] = block.getX();
-                    this.linearY[blockIndex] = block.getY();
-                }
+                this.linearX[blockIndex] = block.getX();
+                this.linearY[blockIndex] = block.getY();
 
                 this.blockIndexes.put(block, blockIndex);
                 blockIndex++;
@@ -220,6 +210,8 @@ public abstract class AnalyticalPlacer extends Placer {
         double pseudoWeightFactor = this.startingAnchorWeight;
         double linearCost, legalCost;
         boolean firstSolve = true;
+        //boolean legalizeIOBlocks = (this.algorithmSolveMode == SolveMode.GRADIENT);
+        boolean legalizeIOBlocks = false;
 
         do {
             System.out.format("Iteration %d: pseudoWeightFactor = %f, gradientSpeed = %f",
@@ -229,17 +221,22 @@ public abstract class AnalyticalPlacer extends Placer {
 
             // Solve linear
             double timerBegin = System.nanoTime();
-            if(firstSolve) {
-                for(int i = 0; i < 5; i++) {
+            if(this.algorithmSolveMode == SolveMode.COMPLETE) {
+                if(firstSolve) {
+                    for(int i = 0; i < 5; i++) {
+                        this.solveLinearComplete(true, pseudoWeightFactor);
+                        System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
+                    }
+
+                } else {
                     this.solveLinearComplete(true, pseudoWeightFactor);
                 }
 
-            } else if(this.algorithmSolveMode == SolveMode.COMPLETE || iteration > 50) {
-                this.solveLinearComplete(false, pseudoWeightFactor);
-
             } else {
-                for(int i = 0; i < this.gradientIterations; i++) {
-                    this.solveLinearGradient(false, pseudoWeightFactor);
+                int iterations = firstSolve ? 5 * this.gradientIterations : this.gradientIterations;
+                for(int i = 0; i < iterations; i++) {
+                    this.solveLinearGradient(firstSolve, pseudoWeightFactor); // DEBUG
+                    System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
                 }
             }
 
@@ -252,7 +249,7 @@ public abstract class AnalyticalPlacer extends Placer {
             int sequenceIndex = Math.min(iteration, this.maxUtilizationSequence.length - 1);
             double maxUtilizationLegalizer = this.maxUtilizationSequence[sequenceIndex];
 
-            this.legalizer.legalize(maxUtilizationLegalizer);
+            this.legalizer.legalize(maxUtilizationLegalizer, legalizeIOBlocks);
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
 
@@ -305,7 +302,8 @@ public abstract class AnalyticalPlacer extends Placer {
         int[] legalX = this.legalizer.getAnchorsX();
         int[] legalY = this.legalizer.getAnchorsY();
 
-        for(int blockIndex = this.numIOBlocks; blockIndex < this.numBlocks; blockIndex++) {
+        int blockIndexStart = this.solver.getPseudoBlockIndexStart();
+        for(int blockIndex = blockIndexStart; blockIndex < this.numBlocks; blockIndex++) {
             this.solver.addPseudoConnection(blockIndex, legalX[blockIndex], legalY[blockIndex], pseudoWeightFactor);
         }
     }
