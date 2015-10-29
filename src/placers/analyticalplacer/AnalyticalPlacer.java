@@ -48,7 +48,7 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("max_utilization_sequence", "1");
 
         //The first anchorWeight factor that will be used in the main solve loop
-        defaultOptions.put("starting_anchor_weight", "0.01");
+        defaultOptions.put("starting_anchor_weight", "0.1");
 
         //The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
         defaultOptions.put("anchor_weight_increase", "1.1");
@@ -58,10 +58,10 @@ public abstract class AnalyticalPlacer extends Placer {
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "gradient");
-        defaultOptions.put("initial_gradient_speed", "0.05");
+        defaultOptions.put("initial_gradient_speed", "0.1");
         defaultOptions.put("gradient_multiplier", "0.95");
-        defaultOptions.put("final_gradient_speed", "0.05");
-        defaultOptions.put("gradient_iterations", "30");
+        defaultOptions.put("final_gradient_speed", "0.1");
+        defaultOptions.put("gradient_iterations", "400");
     }
 
     public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -233,10 +233,10 @@ public abstract class AnalyticalPlacer extends Placer {
                 }
 
             } else {
-                int iterations = firstSolve ? 5 * this.gradientIterations : this.gradientIterations;
+                int iterations = firstSolve ? 4 * this.gradientIterations : this.gradientIterations;
                 for(int i = 0; i < iterations; i++) {
-                    this.solveLinearGradient(firstSolve, pseudoWeightFactor); // DEBUG
-                    System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
+                    this.solveLinearGradient(firstSolve, pseudoWeightFactor);
+                    //System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
                 }
             }
 
