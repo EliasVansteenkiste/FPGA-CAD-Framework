@@ -55,6 +55,7 @@ public class DimensionSolverComplete implements DimensionSolver {
 
     @Override
     public void solve() {
+        this.matrix.prepareArrays();
         CGSolver solver = new CGSolver(this.matrix, this.vector);
         double[] solution = solver.solve(this.epsilon);
 

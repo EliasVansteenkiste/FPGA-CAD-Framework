@@ -8,14 +8,13 @@ import java.util.List;
  */
 public class CGSolver {
 
-    private List<Double> val;
-    private List<Integer> columnIndexes, rowPointers;
-    private double[] vector;
+    private final List<Double> val;
+    private final List<Integer> columnIndexes, rowPointers;
+    private final double[] vector;
 
     public CGSolver(Csr crs, double[] vector) {
-        crs.prepareArrays();
         this.val = crs.getVal();
-        this.columnIndexes = crs.getColInd();
+        this.columnIndexes = crs.getColumnIndexes();
         this.rowPointers = crs.getRowPointers();
         this.vector = vector;
     }
