@@ -2,12 +2,13 @@ package placers.analyticalplacer.linear_solver;
 
 import mathtools.CGSolver;
 import mathtools.Crs;
+import mathtools.FastCrs;
 
 
 public class DimensionSolverComplete implements DimensionSolver {
 
     private final double[] coordinates;
-    private final Crs matrix;
+    private final FastCrs matrix;
     private final double[] vector;
     private final int numIOBlocks;
     private final double epsilon;
@@ -19,7 +20,7 @@ public class DimensionSolverComplete implements DimensionSolver {
 
         int numMovableBlocks = coordinates.length - numIOBlocks;
 
-        this.matrix = new Crs(numMovableBlocks);
+        this.matrix = new FastCrs(numMovableBlocks);
         this.vector = new double[numMovableBlocks];
     }
 
@@ -33,18 +34,22 @@ public class DimensionSolverComplete implements DimensionSolver {
         int relativeIndex1 = index1 - this.numIOBlocks;
         int relativeIndex2 = index2 - this.numIOBlocks;
 
+        if(relativeIndex1 == 0 || relativeIndex2 == 0) {
+            int d = 0;
+        }
+
         if(!fixed1 && !fixed2) {
-            this.matrix.setElement(relativeIndex1, relativeIndex1, this.matrix.getElement(relativeIndex1, relativeIndex1) + weight);
-            this.matrix.setElement(relativeIndex1, relativeIndex2, this.matrix.getElement(relativeIndex1, relativeIndex2) - weight);
-            this.matrix.setElement(relativeIndex2, relativeIndex1, this.matrix.getElement(relativeIndex2, relativeIndex1) - weight);
-            this.matrix.setElement(relativeIndex2, relativeIndex2, this.matrix.getElement(relativeIndex2, relativeIndex2) + weight);
+            this.matrix.addElement(relativeIndex1, relativeIndex1, weight);
+            this.matrix.addElement(relativeIndex1, relativeIndex2, -weight);
+            this.matrix.addElement(relativeIndex2, relativeIndex1, -weight);
+            this.matrix.addElement(relativeIndex2, relativeIndex2, weight);
 
         } else if(fixed1) {
-            this.matrix.setElement(relativeIndex2, relativeIndex2, this.matrix.getElement(relativeIndex2, relativeIndex2) + weight);
+            this.matrix.addElement(relativeIndex2, relativeIndex2, weight);
             this.vector[relativeIndex2] += weight * coordinate1;
 
         } else if(fixed2) {
-            this.matrix.setElement(relativeIndex1, relativeIndex1, this.matrix.getElement(relativeIndex1, relativeIndex1) + weight);
+            this.matrix.addElement(relativeIndex1, relativeIndex1, weight);
             this.vector[relativeIndex1] += weight * coordinate2;
         }
     }

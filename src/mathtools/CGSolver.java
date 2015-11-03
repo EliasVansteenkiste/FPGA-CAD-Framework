@@ -1,152 +1,129 @@
 package mathtools;
 
+import java.util.List;
+
 /*
  * Solves a linear system using the conjugate gradient method
  * Uses a Jacobi preconditioner
  */
-public class CGSolver 
-{
-    
-    private double[] val;
-    private int[] col_ind;
-    private int[] row_ptr;
+public class CGSolver {
+
+    private List<Double> val;
+    private List<Integer> columnIndexes, rowPointers;
     private double[] vector;
-    
-    public CGSolver(Crs crs, double[] vector)
-    {
+
+    public CGSolver(FastCrs crs, double[] vector) {
+        crs.prepareArrays();
         this.val = crs.getVal();
-        this.col_ind = crs.getColInd();
-        this.row_ptr = crs.getRow_ptr();
+        this.columnIndexes = crs.getColInd();
+        this.rowPointers = crs.getRowPointers();
         this.vector = vector;
     }
-    
-    public double[] solve(double epselon)
-    {
+
+    public double[] solve(double epsilon) {
         int dimensions = this.vector.length;
-        double[] x = new double[dimensions];
-        double[] r = new double[dimensions];
-        double[] s = new double[dimensions];
-        double[] m;
-        double[] d = new double[dimensions];
-        double[] q = new double[dimensions];
+
         double deltaNew;
         double deltaFirst;
         double deltaOld;
         double alpha;
         double beta;
         double temp;
-        
-        //Initialize everything
-        for(int i = 0; i < dimensions; i++)
-        {
+
+        // Initialize everything
+        double[] x = new double[dimensions];
+        double[] r = new double[dimensions];
+        for(int i = 0; i < dimensions; i++) {
             x[i] = 0.0;
             r[i] = this.vector[i];
         }
-        m = constructJacobi();
+
+        double[] m = constructJacobi();
+
+        double[] s = new double[dimensions];
         elementWiseProduct(m, r, s);
-        for(int i = 0; i < dimensions; i++)
-        {
+
+        double[] d = new double[dimensions];
+        for(int i = 0; i < dimensions; i++) {
             d[i] = s[i];
         }
+
         deltaNew = dotProduct(s, r);
         deltaFirst = deltaNew;
-        
-        //Main loop of the algorithm
-        while(deltaNew > epselon * epselon * deltaFirst)
-        {
+
+        // Main loop of the algorithm
+        double[] q = new double[dimensions];
+        while(deltaNew > epsilon * epsilon * deltaFirst) {
             sparseMatrixVectorProduct(d, q);
-            temp = dotProduct(d,q);
+            temp = dotProduct(d, q);
             alpha = deltaNew / temp;
+
             vectorUpdate(x, d, alpha, x);
             vectorUpdate(r, q, -alpha, r);
             elementWiseProduct(m, r, s);
+
             deltaOld = deltaNew;
             deltaNew = dotProduct(s, r);
             beta = deltaNew / deltaOld;
+
             vectorUpdate(s, d, beta, d);
         }
-        
-        checkCorrect(x);
+
         return x;
     }
-    
-    private boolean checkCorrect(double[] solution)
-    {
-        double[] calculatedB = new double[solution.length];
-        sparseMatrixVectorProduct(solution, calculatedB);
-        for(int i = 0; i < calculatedB.length; i++)
-        {
-            if(calculatedB[i] - this.vector[i] < -0.3 || calculatedB[i] - this.vector[i] > 0.3)
-            {
-                //System.err.println("Solution was not correct");
-                //System.err.println("i: " + i + ", calc: " + calculatedB[i] + ", orig: " + vector[i]);
-//                for(int j = 0; j < val.length; j++)
-//                {
-//                    System.err.println("" + j + ": " + val[j]);
-//                }
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    private double[] constructJacobi()
-    {
-        int dimensions = this.vector.length;
-        double[] jacobi = new double[dimensions];
+
+    private double[] constructJacobi() {
+        int dimension = this.vector.length;
+        double[] jacobi = new double[dimension];
         int index;
-        for(int row = 0; row < dimensions; row++)
-        {
-            index = this.row_ptr[row];
-            while(this.col_ind[index] != row) //We suppose the diagonal elements are always non-zero
-            {
+
+        for(int row = 0; row < dimension; row++) {
+            // TODO: binary search
+            index = this.rowPointers.get(row);
+            // We suppose the diagonal elements are always non-zero
+            while(this.columnIndexes.get(index) != row) {
                 index++;
             }
-            jacobi[row] = 1.0 / this.val[index];
+
+            jacobi[row] = 1.0 / this.val.get(index);
         }
         return jacobi;
     }
-    
-    private void elementWiseProduct(double[] a, double[] b, double[] c)
-    {
-        for(int i = 0; i < a.length; i++)
-        {
-            c[i] = a[i] * b[i];
+
+    private void elementWiseProduct(double[] a, double[] b, double[] result) {
+        for(int i = 0; i < a.length; i++) {
+            result[i] = a[i] * b[i];
         }
     }
-    
-    private double dotProduct(double[] a, double[] b)
-    {
+
+    private double dotProduct(double[] a, double[] b) {
         double sum = 0.0;
-        for(int i = 0; i < a.length; i++)
-        {
+
+        for(int i = 0; i < a.length; i++) {
             sum += a[i] * b[i];
         }
+
         return sum;
     }
-    
-    private void vectorUpdate(double[] a, double[] b, double constant, double[] c)
-    {
-        for(int i = 0; i < a.length; i++)
-        {
-            c[i] = a[i] + constant * b[i];
+
+    private void vectorUpdate(double[] a, double[] b, double constant, double[] result) {
+        for(int i = 0; i < a.length; i++) {
+            result[i] = a[i] + constant * b[i];
         }
     }
-    
-    private void sparseMatrixVectorProduct(double[] b, double[] c)
-    {
+
+    private void sparseMatrixVectorProduct(double[] vector, double[] result) {
         int index = 0;
-        for(int row = 0; row < this.vector.length; row++)
-        {
+        for(int row = 0; row < this.vector.length; row++) {
+            // TODO: binary search
             double sum = 0.0;
             int nextRow = row + 1;
-            while(index < this.row_ptr[nextRow])
-            {
-                sum += this.val[index] * b[this.col_ind[index]];
+            while(index < this.rowPointers.get(nextRow)) {
+                sum += this.val.get(index) * vector[this.columnIndexes.get(index)];
                 index++;
             }
-            c[row] = sum;
+            result[row] = sum;
         }
     }
-    
+
 }
