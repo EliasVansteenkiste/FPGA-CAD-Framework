@@ -309,7 +309,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
             totalCost += node.calculateCost();
         }
 
-        return totalCost * Math.pow(10, 9);
+        return totalCost;
     }
 
     public double calculateDeltaCost(Swap swap) {
