@@ -12,7 +12,7 @@ public class CGSolver {
     private List<Integer> columnIndexes, rowPointers;
     private double[] vector;
 
-    public CGSolver(FastCrs crs, double[] vector) {
+    public CGSolver(Csr crs, double[] vector) {
         crs.prepareArrays();
         this.val = crs.getVal();
         this.columnIndexes = crs.getColInd();

@@ -1,14 +1,13 @@
 package placers.analyticalplacer.linear_solver;
 
 import mathtools.CGSolver;
-import mathtools.Crs;
-import mathtools.FastCrs;
+import mathtools.Csr;
 
 
 public class DimensionSolverComplete implements DimensionSolver {
 
     private final double[] coordinates;
-    private final FastCrs matrix;
+    private final Csr matrix;
     private final double[] vector;
     private final int numIOBlocks;
     private final double epsilon;
@@ -20,7 +19,7 @@ public class DimensionSolverComplete implements DimensionSolver {
 
         int numMovableBlocks = coordinates.length - numIOBlocks;
 
-        this.matrix = new FastCrs(numMovableBlocks);
+        this.matrix = new Csr(numMovableBlocks);
         this.vector = new double[numMovableBlocks];
     }
 
