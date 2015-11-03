@@ -15,12 +15,12 @@ import java.util.regex.Pattern;
 
 import timing_graph.TimingGraph;
 import util.Logger;
-import architecture.BlockType;
-import architecture.PortType;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractBlock;
+import architecture.circuit.block.BlockType;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.block.LocalBlock;
+import architecture.circuit.block.PortType;
 import architecture.circuit.block.TupleBlockMap;
 import architecture.circuit.pin.AbstractPin;
 
@@ -35,7 +35,7 @@ public class NetParser {
 
     private Stack<AbstractBlock> blockStack;
     private Stack<TupleBlockMap> inputsStack;
-    private Stack<HashMap<String, String>> outputsStack;
+    private Stack<Map<String, String>> outputsStack;
 
     private Map<String, AbstractPin> sourcePins;
 
@@ -73,7 +73,7 @@ public class NetParser {
         // processed.
         this.blockStack = new Stack<AbstractBlock>();
         this.inputsStack = new Stack<TupleBlockMap>();
-        this.outputsStack = new Stack<HashMap<String, String>>();
+        this.outputsStack = new Stack<Map<String, String>>();
 
 
         // sourcePins contains the names of the outputs of leaf blocks and
@@ -276,7 +276,7 @@ public class NetParser {
             // Remove this block and its outputs from the stacks
             AbstractBlock block = this.blockStack.pop();
 
-            HashMap<String, String> outputs = this.outputsStack.pop();
+            Map<String, String> outputs = this.outputsStack.pop();
             processPortsHashMap(block, outputs);
 
             // Process the inputs of all the children of this block, but

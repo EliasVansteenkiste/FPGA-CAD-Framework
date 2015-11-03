@@ -9,14 +9,14 @@ import java.util.Set;
 
 import timing_graph.TimingGraph;
 
-import architecture.BlockType;
-import architecture.FlexibleArchitecture;
-import architecture.BlockType.BlockCategory;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.BlockType;
+import architecture.circuit.block.FlexibleArchitecture;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.block.IOSite;
 import architecture.circuit.block.Site;
+import architecture.circuit.block.BlockType.BlockCategory;
 import architecture.circuit.pin.AbstractPin;
 import architecture.circuit.pin.GlobalPin;
 

@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 import util.Logger;
-import architecture.BlockType.BlockCategory;
+import architecture.circuit.block.BlockType.BlockCategory;
 
 public class DelayTables {
 

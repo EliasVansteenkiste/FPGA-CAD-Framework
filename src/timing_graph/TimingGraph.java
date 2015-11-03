@@ -14,13 +14,14 @@ import java.util.Stack;
 
 import placers.SAPlacer.Swap;
 import util.Logger;
-import architecture.BlockType;
-import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.BlockType;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.block.LocalBlock;
+import architecture.circuit.block.BlockType.BlockCategory;
+import architecture.circuit.block.PortType;
 import architecture.circuit.parser.Util;
 import architecture.circuit.pin.AbstractPin;
 
@@ -33,7 +34,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
     private Map<LocalBlock, TimingNode> nodes = new HashMap<LocalBlock, TimingNode>();
     private Map<GlobalBlock, List<TimingNode>> nodesInGlobalBlocks = new HashMap<GlobalBlock, List<TimingNode>>();
-    private List<TimingNode> clockedNodes = new ArrayList<TimingNode>();
+    private List<TimingNode> endPointNodes = new ArrayList<TimingNode>();
     private List<TimingNode> affectedNodes = new ArrayList<TimingNode>();
 
     private double criticalityExponent = 8;
@@ -133,7 +134,19 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
                 this.nodesInGlobalBlocks.get(parent).add(node);
 
                 if(typeIsClocked) {
-                    this.clockedNodes.add(node);
+                    this.endPointNodes.add(node);
+                } else {
+                    boolean isConstantGenerator = true;
+                    for(AbstractPin inputPin : block.getInputPins()) {
+                        if(inputPin.getSource() != null) {
+                            isConstantGenerator = false;
+                            break;
+                        }
+                    }
+
+                    if(isConstantGenerator) {
+                        this.endPointNodes.add(node);
+                    }
                 }
             }
         }
@@ -154,6 +167,10 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
             double setupDelay = 0;
             if(block.isClocked()) {
                 setupDelay = outputPin.getPortType().getSetupTime();
+
+                if(block.getParent().getCategory() != BlockCategory.IO) {
+                    setupDelay += PortType.getInputSetupTime();
+                }
             }
 
             pinStack.push(outputPin);
@@ -219,7 +236,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
         Stack<TimingNode> todo = new Stack<TimingNode>();
 
-        for(TimingNode startNode : this.clockedNodes) {
+        for(TimingNode startNode : this.endPointNodes) {
             for(TimingNode sink : startNode.getSinks()) {
                 sink.incrementProcessedSources();
                 if(sink.allSourcesProcessed()) {
@@ -254,7 +271,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     private void calculateRequiredTimes() {
         Stack<TimingNode> todo = new Stack<TimingNode>();
 
-        for(TimingNode endNode : this.clockedNodes) {
+        for(TimingNode endNode : this.endPointNodes) {
             endNode.setRequiredTime(this.maxDelay);
 
             for(TimingNode source : endNode.getSources()) {

@@ -8,12 +8,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import architecture.BlockType;
-import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.BlockType;
 import architecture.circuit.block.GlobalBlock;
+import architecture.circuit.block.BlockType.BlockCategory;
 
 import placers.Placer;
 
@@ -47,7 +47,7 @@ public class RandomPlacer extends Placer {
 
     @Override
     public void place() {
-        Random random = new Random(1);
+        Random random = new Random(2);
 
         List<BlockType> blockTypes = this.circuit.getGlobalBlockTypes();
         for(BlockType blockType : blockTypes) {

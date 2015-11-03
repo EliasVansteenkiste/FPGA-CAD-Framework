@@ -1,7 +1,7 @@
 package architecture.circuit.pin;
 
-import architecture.PortType;
 import architecture.circuit.block.GlobalBlock;
+import architecture.circuit.block.PortType;
 
 public class GlobalPin extends AbstractPin {
     

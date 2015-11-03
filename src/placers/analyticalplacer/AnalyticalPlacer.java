@@ -12,11 +12,11 @@ import placers.analyticalplacer.linear_solver.LinearSolver;
 import placers.analyticalplacer.linear_solver.LinearSolverComplete;
 import placers.analyticalplacer.linear_solver.LinearSolverGradient;
 import util.Logger;
-import architecture.BlockType;
-import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractBlock;
+import architecture.circuit.block.BlockType;
 import architecture.circuit.block.GlobalBlock;
+import architecture.circuit.block.BlockType.BlockCategory;
 import architecture.circuit.pin.AbstractPin;
 
 
@@ -44,24 +44,24 @@ public abstract class AnalyticalPlacer extends Placer {
 
 
     static {
-        //initialize maxUtilizationSequence used by the legalizer
+        // Initialize maxUtilizationSequence used by the legalizer
         defaultOptions.put("max_utilization_sequence", "1");
 
-        //The first anchorWeight factor that will be used in the main solve loop
-        defaultOptions.put("starting_anchor_weight", "0.1");
+        // The first anchorWeight factor that will be used in the main solve loop
+        defaultOptions.put("starting_anchor_weight", "1");
 
-        //The amount with which the anchorWeight factor will be increased each iteration (multiplicative)
+        // The amount with which the anchorWeight factor will be multiplied each iteration
         defaultOptions.put("anchor_weight_increase", "1.1");
 
-        //The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
+        // The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
 
         // The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "gradient");
+        defaultOptions.put("solve_mode", "complete");
         defaultOptions.put("initial_gradient_speed", "0.1");
         defaultOptions.put("gradient_multiplier", "0.95");
         defaultOptions.put("final_gradient_speed", "0.1");
-        defaultOptions.put("gradient_iterations", "400");
+        defaultOptions.put("gradient_iterations", "30");
     }
 
     public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
@@ -225,11 +225,9 @@ public abstract class AnalyticalPlacer extends Placer {
                 if(firstSolve) {
                     for(int i = 0; i < 5; i++) {
                         this.solveLinearComplete(true, pseudoWeightFactor);
-                        System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
                     }
-
                 } else {
-                    this.solveLinearComplete(true, pseudoWeightFactor);
+                    this.solveLinearComplete(false, pseudoWeightFactor);
                 }
 
             } else {
@@ -285,13 +283,13 @@ public abstract class AnalyticalPlacer extends Placer {
      */
     private void solveLinear(boolean firstSolve, double pseudoWeightFactor) {
 
-        //Add pseudo connections
+        // Add connections between blocks that are connected by a net
+        this.processNets();
+
+        // Add pseudo connections
         if(!firstSolve) {
             this.addPseudoConnections(pseudoWeightFactor);
         }
-
-        // Add connections between blocks that are connected by a net
-        this.processNets();
 
 
         // Solve and save result

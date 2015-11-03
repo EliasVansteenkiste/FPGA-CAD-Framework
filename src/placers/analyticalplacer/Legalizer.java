@@ -7,12 +7,12 @@ import java.util.Map;
 
 import util.Logger;
 
-import architecture.BlockType;
-import architecture.BlockType.BlockCategory;
 import architecture.circuit.Circuit;
 import architecture.circuit.block.AbstractSite;
+import architecture.circuit.block.BlockType;
 import architecture.circuit.block.GlobalBlock;
 import architecture.circuit.block.Site;
+import architecture.circuit.block.BlockType.BlockCategory;
 
 
 public class Legalizer {

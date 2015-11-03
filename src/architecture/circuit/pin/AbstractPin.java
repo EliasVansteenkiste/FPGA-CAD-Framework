@@ -3,8 +3,8 @@ package architecture.circuit.pin;
 import java.util.ArrayList;
 import java.util.List;
 
-import architecture.PortType;
 import architecture.circuit.block.AbstractBlock;
+import architecture.circuit.block.PortType;
 
 
 import util.Logger;

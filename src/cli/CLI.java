@@ -3,8 +3,8 @@ package cli;
 import java.util.HashMap;
 import java.util.Map;
 
-import architecture.FlexibleArchitecture;
 import architecture.circuit.Circuit;
+import architecture.circuit.block.FlexibleArchitecture;
 import architecture.circuit.parser.NetParser;
 import architecture.circuit.parser.PlaceDumper;
 import architecture.circuit.parser.PlaceParser;
@@ -60,7 +60,7 @@ public class CLI {
         // Loop through the placers
         for(int i = 0; i < options.placers.size(); i++) {
             String placerName = options.placers.get(i);
-            HashMap<String, String> placerOptions = options.placerOptions.get(i);
+            Map<String, String> placerOptions = options.placerOptions.get(i);
 
             // Do a random placement if an initial placement is required
             if(options.startingStage == StartingStage.NET && i == 0) {

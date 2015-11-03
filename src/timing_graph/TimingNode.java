@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import architecture.BlockType.BlockCategory;
 import architecture.circuit.block.GlobalBlock;
+import architecture.circuit.block.BlockType.BlockCategory;
 
 public class TimingNode implements Comparable<TimingNode> {
 
@@ -70,6 +70,10 @@ public class TimingNode implements Comparable<TimingNode> {
         return this.sinks.keySet();
     }
 
+    Map<TimingNode, TimingEdge> getSinksAndEdges() {
+        return this.sinks;
+    }
+
     double calculateArrivalTime() {
         for(Map.Entry<TimingNode, TimingEdge> sourceEntry : this.sources.entrySet()) {
             TimingNode source = sourceEntry.getKey();
@@ -82,6 +86,10 @@ public class TimingNode implements Comparable<TimingNode> {
             }
         }
 
+        return this.arrivalTime;
+    }
+
+    double getArrivalTime() {
         return this.arrivalTime;
     }
 
@@ -223,6 +231,12 @@ public class TimingNode implements Comparable<TimingNode> {
 
     public String getName() {
         return this.name;
+    }
+
+
+    @Override
+    public int hashCode() {
+        return this.name.hashCode();
     }
 
     @Override

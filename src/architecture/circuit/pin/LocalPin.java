@@ -1,8 +1,8 @@
 package architecture.circuit.pin;
 
-import architecture.PortType;
 import architecture.circuit.block.AbstractBlock;
 import architecture.circuit.block.LocalBlock;
+import architecture.circuit.block.PortType;
 
 public class LocalPin extends AbstractPin {
     

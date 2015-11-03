@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
-import architecture.BlockType;
 
 import util.Logger;
 

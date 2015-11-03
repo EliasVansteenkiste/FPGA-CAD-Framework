@@ -1,7 +1,5 @@
 package architecture.circuit.block;
 
-import architecture.BlockType;
-import architecture.PortType;
 import architecture.circuit.pin.LocalPin;
 
 

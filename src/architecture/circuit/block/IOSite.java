@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
-import architecture.BlockType;
 
 import util.Logger;
 

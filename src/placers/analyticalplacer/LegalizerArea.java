@@ -3,7 +3,7 @@ package placers.analyticalplacer;
 import java.util.ArrayList;
 import java.util.List;
 
-import architecture.BlockType;
+import architecture.circuit.block.BlockType;
 
 
 public class LegalizerArea {
