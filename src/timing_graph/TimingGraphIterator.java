@@ -4,7 +4,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import architecture.circuit.block.GlobalBlock;
+import circuit.block.GlobalBlock;
+
 
 
 public class TimingGraphIterator implements Iterator<TimingGraphEntry> {

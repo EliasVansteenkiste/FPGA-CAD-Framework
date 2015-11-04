@@ -8,12 +8,13 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import architecture.circuit.Circuit;
-import architecture.circuit.block.AbstractBlock;
-import architecture.circuit.block.AbstractSite;
-import architecture.circuit.block.BlockType;
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.block.BlockType.BlockCategory;
+import circuit.Circuit;
+import circuit.architecture.BlockType;
+import circuit.architecture.BlockType.BlockCategory;
+import circuit.block.AbstractBlock;
+import circuit.block.AbstractSite;
+import circuit.block.GlobalBlock;
+
 
 import placers.Placer;
 

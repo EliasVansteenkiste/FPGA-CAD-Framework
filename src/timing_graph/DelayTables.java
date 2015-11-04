@@ -9,8 +9,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import circuit.architecture.BlockType.BlockCategory;
+
 import util.Logger;
-import architecture.circuit.block.BlockType.BlockCategory;
 
 public class DelayTables {
 

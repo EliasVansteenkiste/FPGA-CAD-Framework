@@ -1,6 +1,6 @@
 package timing_graph;
 
-import architecture.circuit.block.GlobalBlock;
+import circuit.block.GlobalBlock;
 
 public class TimingGraphEntry {
     private GlobalBlock source;

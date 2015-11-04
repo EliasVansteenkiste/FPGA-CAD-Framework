@@ -3,17 +3,17 @@ package cli;
 import java.util.HashMap;
 import java.util.Map;
 
-import architecture.circuit.Circuit;
-import architecture.circuit.block.FlexibleArchitecture;
-import architecture.circuit.parser.NetParser;
-import architecture.circuit.parser.PlaceDumper;
-import architecture.circuit.parser.PlaceParser;
 
 import placers.Placer;
 import placers.PlacerFactory;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import util.Logger;
 
+import circuit.Circuit;
+import circuit.architecture.FlexibleArchitecture;
+import circuit.parser.NetParser;
+import circuit.parser.PlaceDumper;
+import circuit.parser.PlaceParser;
 import cli.Options.StartingStage;
 
 

@@ -4,10 +4,11 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
-import architecture.circuit.Circuit;
-import architecture.circuit.block.AbstractSite;
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.block.BlockType.BlockCategory;
+import circuit.Circuit;
+import circuit.architecture.BlockType.BlockCategory;
+import circuit.block.AbstractSite;
+import circuit.block.GlobalBlock;
+
 
 import placers.Placer;
 

@@ -3,7 +3,8 @@ package placers;
 import java.util.HashMap;
 import java.util.Map;
 
-import architecture.circuit.Circuit;
+import circuit.Circuit;
+
 
 import placers.SAPlacer.TD_SAPlacer;
 import placers.SAPlacer.WLD_SAPlacer;

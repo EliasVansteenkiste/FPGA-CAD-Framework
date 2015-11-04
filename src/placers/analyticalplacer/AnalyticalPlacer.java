@@ -7,17 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import circuit.Circuit;
+import circuit.architecture.BlockType;
+import circuit.architecture.BlockType.BlockCategory;
+import circuit.block.AbstractBlock;
+import circuit.block.GlobalBlock;
+import circuit.pin.AbstractPin;
+
 import placers.Placer;
 import placers.analyticalplacer.linear_solver.LinearSolver;
 import placers.analyticalplacer.linear_solver.LinearSolverComplete;
 import placers.analyticalplacer.linear_solver.LinearSolverGradient;
 import util.Logger;
-import architecture.circuit.Circuit;
-import architecture.circuit.block.AbstractBlock;
-import architecture.circuit.block.BlockType;
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.block.BlockType.BlockCategory;
-import architecture.circuit.pin.AbstractPin;
 
 
 public abstract class AnalyticalPlacer extends Placer {

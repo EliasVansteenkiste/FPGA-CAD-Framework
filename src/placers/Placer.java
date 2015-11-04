@@ -5,7 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import architecture.circuit.Circuit;
+import circuit.Circuit;
+
 
 
 public abstract class Placer {

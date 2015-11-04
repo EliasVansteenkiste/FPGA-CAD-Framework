@@ -5,14 +5,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import circuit.Circuit;
+import circuit.architecture.BlockType;
+import circuit.architecture.BlockType.BlockCategory;
+import circuit.block.AbstractSite;
+import circuit.block.GlobalBlock;
+import circuit.block.Site;
+
 import util.Logger;
 
-import architecture.circuit.Circuit;
-import architecture.circuit.block.AbstractSite;
-import architecture.circuit.block.BlockType;
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.block.Site;
-import architecture.circuit.block.BlockType.BlockCategory;
 
 
 public class Legalizer {

@@ -2,12 +2,13 @@ package placers.analyticalplacer;
 
 import java.util.Map;
 
+import circuit.Circuit;
+import circuit.architecture.BlockType;
+import circuit.block.GlobalBlock;
+
 import timing_graph.TimingGraph;
 import timing_graph.TimingGraphEntry;
 
-import architecture.circuit.Circuit;
-import architecture.circuit.block.BlockType;
-import architecture.circuit.block.GlobalBlock;
 
 
 public class TD_AnalyticalPlacer extends AnalyticalPlacer {

@@ -13,3 +13,4 @@ benchmarks
 **/__pycache__
 /nbproject/private/
 /build/
+/dist/

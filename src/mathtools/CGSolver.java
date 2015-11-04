@@ -117,7 +117,8 @@ public class CGSolver {
             // TODO: binary search
             double sum = 0.0;
             int nextRow = row + 1;
-            while(index < this.rowPointers.get(nextRow)) {
+            int maxIndex = this.rowPointers.get(nextRow);
+            while(index < maxIndex) {
                 sum += this.val.get(index) * vector[this.columnIndexes.get(index)];
                 index++;
             }

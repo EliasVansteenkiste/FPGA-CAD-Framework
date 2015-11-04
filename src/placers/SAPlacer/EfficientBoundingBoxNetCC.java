@@ -5,9 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import architecture.circuit.Circuit;
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.pin.GlobalPin;
+import circuit.Circuit;
+import circuit.block.GlobalBlock;
+import circuit.pin.GlobalPin;
+
 
 
 public class EfficientBoundingBoxNetCC implements EfficientCostCalculator

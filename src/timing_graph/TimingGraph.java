@@ -12,18 +12,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import circuit.Circuit;
+import circuit.architecture.BlockType;
+import circuit.architecture.PortType;
+import circuit.architecture.BlockType.BlockCategory;
+import circuit.block.AbstractBlock;
+import circuit.block.AbstractSite;
+import circuit.block.GlobalBlock;
+import circuit.block.LocalBlock;
+import circuit.parser.Util;
+import circuit.pin.AbstractPin;
+
 import placers.SAPlacer.Swap;
 import util.Logger;
-import architecture.circuit.Circuit;
-import architecture.circuit.block.AbstractBlock;
-import architecture.circuit.block.AbstractSite;
-import architecture.circuit.block.BlockType;
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.block.LocalBlock;
-import architecture.circuit.block.BlockType.BlockCategory;
-import architecture.circuit.block.PortType;
-import architecture.circuit.parser.Util;
-import architecture.circuit.pin.AbstractPin;
 
 public class TimingGraph implements Iterable<TimingGraphEntry> {
 
@@ -54,7 +55,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     }
 
 
-    private void buildDelayMatrixes() {
+    public void buildDelayMatrixes() {
         String circuitName = this.circuit.getName();
 
         File architectureFile = Util.getArchitectureFile(this.folder);

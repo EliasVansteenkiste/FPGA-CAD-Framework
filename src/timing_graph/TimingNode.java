@@ -4,8 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import architecture.circuit.block.GlobalBlock;
-import architecture.circuit.block.BlockType.BlockCategory;
+import circuit.architecture.BlockType.BlockCategory;
+import circuit.block.GlobalBlock;
+
 
 public class TimingNode implements Comparable<TimingNode> {
 
