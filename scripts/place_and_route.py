@@ -17,6 +17,7 @@ def silentremove(filename):
 
 class Caller:
     circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
+    circuits = 'stereovision3'
 
     def __init__(self, base_folder):
         self.circuit_list = self.circuits.split(' ')
@@ -103,7 +104,8 @@ class Caller:
 
             row = [circuit]
             for column in self.stats_columns:
-                row.append(match.group(column.lower().replace(' ', '_')))
+                group_name = column.lower().replace(' ', '_')
+                row.append(match.group(group_name))
 
             csv_file.writerow(row)
             _file.flush()
@@ -155,7 +157,7 @@ class StatisticsCaller(Caller):
 class VPRPlaceCaller(Caller):
 
     stats_columns = ['time', 'BB cost', 'max delay']
-    stats_regex = r'Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns.*bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<time>[0-9.e+-]+) seconds'
+    stats_regex = r'(Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns)?.*bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<time>[0-9.e+-]+) seconds'
 
     def place_all(self, architecture, input_folder, output_folder, options=[]):
         print("Placing with vpr to " + output_folder)
