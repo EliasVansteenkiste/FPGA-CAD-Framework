@@ -167,9 +167,6 @@ public class TimingNode implements Comparable<TimingNode> {
 
             double slack = sink.requiredTime - this.arrivalTime - edge.getTotalDelay();
             double criticality = 1 - slack / maxArrivalTime;
-            if(Math.pow(criticality, criticalityExponent) > 1000) {
-                int d = 0;
-            }
             edge.setCriticality(Math.pow(criticality, criticalityExponent));
         }
     }

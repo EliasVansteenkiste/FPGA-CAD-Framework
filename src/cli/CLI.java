@@ -126,7 +126,7 @@ public class CLI {
         double totalTimingCost = circuit.calculateTimingCost();
         double maxDelay = circuit.getMaxDelay();
 
-        System.out.format("%s %15s: %f\n", prefix, "timing cost", totalTimingCost);
+        System.out.format("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
         System.out.format("%s %15s: %f ns\n", prefix, "max delay", maxDelay);
 
         System.out.println();

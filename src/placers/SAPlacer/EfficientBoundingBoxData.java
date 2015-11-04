@@ -10,11 +10,11 @@ import architecture.circuit.pin.GlobalPin;
 
 public class EfficientBoundingBoxData
 {
-    
+
     private double weight;
     private GlobalBlock[] blocks;
     private boolean alreadySaved;
-    
+
     private int min_x;
     private int nb_min_x;
     private int max_x;
@@ -24,7 +24,7 @@ public class EfficientBoundingBoxData
     private int max_y;
     private int nb_max_y;
     private int boundingBox;
-    
+
     private int min_x_old;
     private int nb_min_x_old;
     private int max_x_old;
@@ -34,44 +34,44 @@ public class EfficientBoundingBoxData
     private int max_y_old;
     private int nb_max_y_old;
     private int boundingBox_old;
-    
-    
+
+
     public EfficientBoundingBoxData(GlobalPin pin)
     {
         Set<GlobalBlock> blockSet = new HashSet<GlobalBlock>();
         blockSet.add(pin.getOwner());
-        
+
         int numSinks = pin.getNumSinks();
         for(int i = 0; i < numSinks; i++) {
             blockSet.add(pin.getSink(i).getOwner());
         }
-        
+
         this.blocks = new GlobalBlock[blockSet.size()];
         blockSet.toArray(this.blocks);
-        
+
         this.setWeightandSize();
-        
+
         this.boundingBox = -1;
         this.min_x = Integer.MAX_VALUE;
         this.min_y = -1;
         this.max_x = Integer.MAX_VALUE;
         this.max_y = -1;
-        
+
         this.calculateBoundingBoxFromScratch();
         this.alreadySaved = false;
     }
-    
-    
+
+
     public double calculateDeltaCost(GlobalBlock block, AbstractSite newSite) {
         double originalBB = this.boundingBox;
-        
+
         if((block.getX() == this.min_x && this.nb_min_x == 1 && newSite.getX() > this.min_x)
                 || (block.getX() == this.max_x && this.nb_max_x == 1 && newSite.getX() < this.max_x)
                 || (block.getY() == this.min_y && this.nb_min_y == 1 && newSite.getY() > this.min_y)
                 || (block.getY() == this.max_y && this.nb_max_y == 1 && newSite.getY() < this.max_y)) {
-            
+
             calculateBoundingBoxFromScratch(block, newSite);
-        
+
         } else {
             if(newSite.getX() < this.min_x) {
                 this.min_x = newSite.getX();
@@ -81,7 +81,7 @@ public class EfficientBoundingBoxData
             } else if(newSite.getX() > this.min_x && block.getX() == this.min_x) {
                 this.nb_min_x--;
             }
-            
+
             if(newSite.getX() > this.max_x) {
                 this.max_x = newSite.getX();
                 this.nb_max_x = 1;
@@ -90,7 +90,7 @@ public class EfficientBoundingBoxData
             } else if(newSite.getX() < this.max_x && block.getX() == this.max_x) {
                 this.nb_max_x--;
             }
-            
+
             if(newSite.getY() < this.min_y) {
                 this.min_y = newSite.getY();
                 this.nb_min_y = 1;
@@ -99,7 +99,7 @@ public class EfficientBoundingBoxData
             } else if(newSite.getY() > this.min_y && block.getY() == this.min_y) {
                 this.nb_min_y--;
             }
-            
+
             if(newSite.getY() > this.max_y) {
                 this.max_y = newSite.getY();
                 this.nb_max_y = 1;
@@ -109,72 +109,72 @@ public class EfficientBoundingBoxData
                 this.nb_max_y--;
             }
         }
-        
+
         this.boundingBox = (this.max_x - this.min_x + 1) + (this.max_y - this.min_y + 1);
-    
+
         return this.weight * (this.boundingBox - originalBB);
     }
-    
-    
+
+
     public void pushThrough() {
         this.alreadySaved = false;
     }
-    
-    
+
+
     public void revert() {
         this.boundingBox = this.boundingBox_old;
-        
+
         this.min_x = this.min_x_old;
         this.nb_min_x = this.nb_min_x_old;
-        
+
         this.max_x = this.max_x_old;
         this.nb_max_x = this.nb_max_x_old;
-        
+
         this.min_y = this.min_y_old;
         this.nb_min_y = this.nb_min_y_old;
-        
+
         this.max_y = this.max_y_old;
         this.nb_max_y = this.nb_max_y_old;
-        
+
         this.alreadySaved = false;
     }
-    
-    
+
+
     public void saveState() {
         if(!this.alreadySaved) {
             this.min_x_old = this.min_x;
             this.nb_min_x_old = this.nb_min_x;
-            
+
             this.max_x_old = this.max_x;
             this.nb_max_x_old = this.nb_max_x;
-            
+
             this.min_y_old = this.min_y;
             this.nb_min_y_old = this.nb_min_y;
-            
+
             this.max_y_old = this.max_y;
             this.nb_max_y_old = this.nb_max_y;
-            
+
             this.boundingBox_old = this.boundingBox;
             this.alreadySaved = true;
         }
     }
-    
-    
+
+
     public double getNetCost() {
         return this.boundingBox * this.weight;
     }
-    
-    
+
+
     public void calculateBoundingBoxFromScratch()  {
         this.calculateBoundingBoxFromScratch(null, null);
     }
-    
+
     public void calculateBoundingBoxFromScratch(GlobalBlock block, AbstractSite alternativeSite)  {
         this.min_x = Integer.MAX_VALUE;
         this.max_x = -1;
         this.min_y = Integer.MAX_VALUE;
         this.max_y = -1;
-        
+
         AbstractSite site;
         for(int i = 0; i < this.blocks.length; i++) {
             if(this.blocks[i] == block) {
@@ -182,29 +182,29 @@ public class EfficientBoundingBoxData
             } else {
                 site = this.blocks[i].getSite();
             }
-            
-            
+
+
             if(site.getX() < this.min_x) {
                 this.min_x = site.getX();
                 this.nb_min_x = 1;
             } else if(site.getX() == this.min_x){
                 this.nb_min_x++;
             }
-            
+
             if(site.getX() > this.max_x) {
                 this.max_x = site.getX();
                 this.nb_max_x = 1;
             } else if(site.getX() == this.max_x) {
                 this.nb_max_x++;
             }
-            
+
             if(site.getY() < this.min_y) {
                 this.min_y = site.getY();
                 this.nb_min_y = 1;
             } else if(site.getY() == this.min_y) {
                 this.nb_min_y++;
             }
-    
+
             if(site.getY() > this.max_y) {
                 this.max_y = site.getY();
                 this.nb_max_y = 1;
@@ -213,10 +213,10 @@ public class EfficientBoundingBoxData
             }
         }
 
-        this.boundingBox = (this.max_x - this.min_x+1) + (this.max_y - this.min_y + 1);
+        this.boundingBox = (this.max_x - this.min_x + 1) + (this.max_y - this.min_y + 1);
     }
-    
-    
+
+
     private void setWeightandSize() {
         int size = this.blocks.length;
         switch (size)  {
@@ -272,8 +272,8 @@ public class EfficientBoundingBoxData
             case 50: this.weight = (size-45) * (2.7933-2.6625) / 5 + 2.6625; break;
             default: this.weight = (size-50) * 0.02616 + 2.7933; break;
         }
-        
+
         this.weight *= 0.01;
     }
-    
+
 }
