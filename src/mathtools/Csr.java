@@ -45,12 +45,9 @@ public class Csr {
         for(int rowIndex = 0; rowIndex < this.numRows; rowIndex++) {
             this.rowPointers.add(totalIndex);
 
-            this.indexArray.add(rowIndex);
-            this.valueArray.add(this.selfValues.get(rowIndex));
-            totalIndex++;
-
-
             List<CsrTuple> row = this.values.get(rowIndex);
+            CsrTuple selfTuple = new CsrTuple(rowIndex, this.selfValues.get(rowIndex));
+            row.add(selfTuple);
             Collections.sort(row);
 
             CsrTuple initialEntry = row.get(0);

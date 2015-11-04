@@ -275,6 +275,7 @@ public class EfficientBoundingBoxData
         }
 
         this.weight *= 0.01;
+        //this.weight = 0.01;
     }
 
 }

@@ -48,7 +48,7 @@ public class RandomPlacer extends Placer {
 
     @Override
     public void place() {
-        Random random = new Random(2);
+        Random random = new Random(100);
 
         List<BlockType> blockTypes = this.circuit.getGlobalBlockTypes();
         for(BlockType blockType : blockTypes) {
