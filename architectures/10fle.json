@@ -771,7 +771,7 @@
     },
 
     "delays": {
-        "input_setup_time": 4.243e-11,
+        "clock_setup_time": 4.243e-11,
         "inpad.inpad-io.inpad": 4.243e-11,
         "io.outpad-outpad.outpad": 1.394e-11,
 

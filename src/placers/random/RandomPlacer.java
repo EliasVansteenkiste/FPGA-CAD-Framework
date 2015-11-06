@@ -10,7 +10,7 @@ import java.util.Set;
 
 import circuit.Circuit;
 import circuit.architecture.BlockType;
-import circuit.architecture.BlockType.BlockCategory;
+import circuit.architecture.BlockCategory;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;

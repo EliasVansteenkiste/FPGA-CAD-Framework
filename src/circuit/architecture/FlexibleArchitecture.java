@@ -144,14 +144,14 @@ public class FlexibleArchitecture {
                 }
             }
 
-            BlockType.addType(typeName, category, height, start, repeat, isClocked, inputs, outputs);
+            BlockTypeData.getInstance().addType(typeName, category, height, start, repeat, isClocked, inputs, outputs);
 
             for(int i = 0; i < modes.size(); i++) {
-                BlockType.addMode(typeName, modes.get(i), children.get(i));
+                BlockTypeData.getInstance().addMode(typeName, modes.get(i), children.get(i));
             }
         }
 
-        BlockType.postProcess();
+        BlockTypeData.getInstance().postProcess();
     }
 
     private JSONObject getDefinition(String blockType) {
@@ -183,8 +183,8 @@ public class FlexibleArchitecture {
             String key = delayEntry.getKey();
             Double delay = delayEntry.getValue();
 
-            if(key.equals("input_setup_time")) {
-                PortType.setInputSetupTime(delay);
+            if(key.equals("clock_setup_time")) {
+                PortTypeData.getInstance().setClockSetupTime(delay);
                 continue;
             }
 

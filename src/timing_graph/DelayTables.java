@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import circuit.architecture.BlockType.BlockCategory;
+import circuit.architecture.BlockCategory;
 
 import util.Logger;
 

@@ -1,174 +1,28 @@
 package circuit.architecture;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
-
-import util.Logger;
-
 public class BlockType {
+    /**
+     * For a big part, this is a wrapper class around the BlockTypeData singleton.
+     * This class only stores the type index and mode index. (Memory efficient)
+     */
 
-    public static enum BlockCategory {IO, CLB, HARDBLOCK, LOCAL, LEAF};
-
-
-    private static Map<String, Integer> types = new HashMap<String, Integer>();
-    private static List<String> typeNames = new ArrayList<String>();
-
-    private static List<BlockCategory> category = new ArrayList<BlockCategory>();
-    private static List<List<BlockType>> blockTypesPerCategory = new ArrayList<List<BlockType>>();
-    static {
-        for(int i = 0; i < BlockCategory.values().length; i++) {
-            blockTypesPerCategory.add(new ArrayList<BlockType>());
-        }
+    public static List<BlockType> getGlobalBlockTypes() {
+        return BlockTypeData.getInstance().getGlobalBlockTypes();
     }
 
-    private static List<Integer> height = new ArrayList<Integer>();
-    private static List<Integer> start = new ArrayList<Integer>();
-    private static List<Integer> repeat = new ArrayList<Integer>();
-
-    private static List<Boolean> clocked = new ArrayList<Boolean>();
-
-
-    private static List<Map<String, Integer>> modes = new ArrayList<Map<String, Integer>>();
-    private static List<List<String>> modeNames = new ArrayList<List<String>>();
-    private static List<List<Map<String, Integer>>> children = new ArrayList<List<Map<String, Integer>>>();
-
-    private static List<List<List<Integer>>> childStarts = new ArrayList<List<List<Integer>>>();
-    private static List<List<List<Integer>>> childEnds = new ArrayList<List<List<Integer>>>();
-    private static List<List<Integer>> numChildren = new ArrayList<List<Integer>>();
-
-    private static List<List<PortType>> portTypes = new ArrayList<List<PortType>>();
-
+    public static List<BlockType> getBlockTypes(BlockCategory category) {
+        return BlockTypeData.getInstance().getBlockTypes(category);
+    }
 
 
     private Integer typeIndex, modeIndex;
 
-
-    static void addType(String typeName, String categoryName, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
-
-        int typeIndex = BlockType.typeNames.size();
-        BlockType.typeNames.add(typeName);
-        BlockType.types.put(typeName, typeIndex);
-
-        BlockCategory category = BlockType.getCategoryFromString(categoryName);
-        BlockType.category.add(category);
-        BlockType.blockTypesPerCategory.get(category.ordinal()).add(new BlockType(typeName));
-
-        BlockType.height.add(height);
-        BlockType.start.add(start);
-        BlockType.repeat.add(repeat);
-
-        BlockType.clocked.add(clocked);
-        //BlockType.hasClockedChild.add(null);
-
-        BlockType.modeNames.add(new ArrayList<String>());
-        BlockType.modes.add(new HashMap<String, Integer>());
-        BlockType.children.add(new ArrayList<Map<String, Integer>>());
-
-        PortType.setNumInputPorts(typeIndex, inputs.size());
-        PortType.addPorts(typeIndex, inputs);
-        PortType.addPorts(typeIndex, outputs);
-
-        // getPortTypes is a heavy operation, and it has to be performed loads of times during
-        // netparsing, so we cache it
-        BlockType.portTypes.add(PortType.getPortTypes(typeIndex));
-    }
-
-
-    public static void postProcess() {
-        BlockType.cacheChildren();
-        PortType.postProcess();
-    }
-
-    private static void cacheChildren() {
-
-        int numTypes = BlockType.types.size();
-        for(int typeIndex = 0; typeIndex < numTypes; typeIndex++) {
-
-            BlockType.childStarts.add(new ArrayList<List<Integer>>());
-            BlockType.childEnds.add(new ArrayList<List<Integer>>());
-            BlockType.numChildren.add(new ArrayList<Integer>());
-
-            int numModes = BlockType.modeNames.get(typeIndex).size();
-            for(int modeIndex = 0; modeIndex < numModes; modeIndex++) {
-
-                BlockType.childStarts.get(typeIndex).add(new ArrayList<Integer>(Collections.nCopies(numTypes, (Integer) null)));
-                BlockType.childEnds.get(typeIndex).add(new ArrayList<Integer>(Collections.nCopies(numTypes, (Integer) null)));
-                int numChildren = 0;
-
-                for(Map.Entry<String, Integer> childEntry : BlockType.children.get(typeIndex).get(modeIndex).entrySet()) {
-                    String childName = childEntry.getKey();
-                    int childTypeIndex = BlockType.types.get(childName);
-                    int childCount = childEntry.getValue();
-
-                    BlockType.childStarts.get(typeIndex).get(modeIndex).set(childTypeIndex, numChildren);
-                    numChildren += childCount;
-                    BlockType.childEnds.get(typeIndex).get(modeIndex).set(childTypeIndex, numChildren);
-                }
-
-                BlockType.numChildren.get(typeIndex).add(numChildren);
-            }
-        }
-    }
-
-
-
-    private static BlockCategory getCategoryFromString(String categoryName) {
-        switch(categoryName) {
-        case "io":
-            return BlockCategory.IO;
-
-        case "clb":
-            return BlockCategory.CLB;
-
-        case "hardblock":
-            return BlockCategory.HARDBLOCK;
-
-        case "local":
-            return BlockCategory.LOCAL;
-
-        case "leaf":
-            return BlockCategory.LEAF;
-
-        default:
-            return null;
-        }
-    }
-
-    public static void addMode(String typeName, String modeName, Map<String, Integer> children) {
-        int typeIndex = BlockType.types.get(typeName);
-
-        int modeIndex = BlockType.modeNames.get(typeIndex).size();
-        BlockType.modeNames.get(typeIndex).add(modeName);
-        BlockType.modes.get(typeIndex).put(modeName, modeIndex);
-
-        BlockType.children.get(typeIndex).add(children);
-    }
-
-
-
-    public static List<BlockType> getGlobalBlockTypes() {
-        List<BlockType> types = new ArrayList<BlockType>();
-        types.addAll(BlockType.getBlockTypes(BlockCategory.IO));
-        types.addAll(BlockType.getBlockTypes(BlockCategory.CLB));
-        types.addAll(BlockType.getBlockTypes(BlockCategory.HARDBLOCK));
-
-        return types;
-    }
-
-    public static List<BlockType> getBlockTypes(BlockCategory category) {
-        return BlockType.blockTypesPerCategory.get(category.ordinal());
-    }
-
-
-
-
     public BlockType(String typeName) {
-        this.typeIndex = BlockType.getTypeIndex(typeName);
+        this.typeIndex = BlockTypeData.getInstance().getTypeIndex(typeName);
         this.modeIndex = null;
     }
     BlockType(int typeIndex) {
@@ -176,24 +30,10 @@ public class BlockType {
         this.modeIndex = null;
     }
     public BlockType(String typeName, String modeName) {
-        this.typeIndex = BlockType.getTypeIndex(typeName);
-        this.modeIndex = this.getModeIndex(modeName);
+        this.typeIndex = BlockTypeData.getInstance().getTypeIndex(typeName);
+        this.modeIndex = BlockTypeData.getInstance().getModeIndex(this.typeIndex, modeName);
     }
 
-    private static int getTypeIndex(String typeName) {
-        if(!BlockType.types.containsKey(typeName)) {
-            Logger.raise("Invalid block type: " + typeName);
-        }
-        return BlockType.types.get(typeName);
-    }
-
-    private int getModeIndex(String argumentModeName) {
-        String modeName = (argumentModeName == null) ? "" : argumentModeName;
-        if(!BlockType.modes.get(this.typeIndex).containsKey(modeName)) {
-            Logger.raise("Invalid mode type for block " + this.getName() + ": " + modeName);
-        }
-        return BlockType.modes.get(this.typeIndex).get(modeName);
-    }
 
 
     int getIndex() {
@@ -201,95 +41,64 @@ public class BlockType {
     }
 
     public String getName() {
-        return BlockType.typeNames.get(this.typeIndex);
+        return BlockTypeData.getInstance().getName(this.typeIndex);
     }
     public BlockCategory getCategory() {
-        return BlockType.category.get(this.typeIndex);
+        return BlockTypeData.getInstance().getCategory(this.typeIndex);
     }
     public boolean isGlobal() {
-        BlockCategory category = this.getCategory();
-        return category != BlockCategory.LOCAL && category != BlockCategory.LEAF;
+        return BlockTypeData.getInstance().isGlobal(this.typeIndex);
     }
     public boolean isLeaf() {
-        BlockCategory category = this.getCategory();
-        return category == BlockCategory.LEAF;
+        return BlockTypeData.getInstance().isLeaf(this.typeIndex);
     }
 
     public int getHeight() {
-        return BlockType.height.get(this.typeIndex);
+        return BlockTypeData.getInstance().getHeight(this.typeIndex);
     }
     public int getStart() {
-        return BlockType.start.get(this.typeIndex);
+        return BlockTypeData.getInstance().getStart(this.typeIndex);
     }
     public int getRepeat() {
-        return BlockType.repeat.get(this.typeIndex);
+        return BlockTypeData.getInstance().getRepeat(this.typeIndex);
     }
 
-    public String getMode() {
-        return BlockType.modeNames.get(this.typeIndex).get(this.modeIndex);
+    public String getModeName() {
+        return BlockTypeData.getInstance().getModeName(this.typeIndex, this.modeIndex);
     }
     public Map<String, Integer> getChildren() {
-        if(this.modeIndex == null) {
-            Logger.raise("Cannot get children of a block type without mode");
-        }
-        return BlockType.children.get(this.typeIndex).get(this.modeIndex);
+        return BlockTypeData.getInstance().getChildren(this.typeIndex, this.modeIndex);
     }
 
     public boolean isClocked() {
-        return BlockType.clocked.get(this.typeIndex);
+        return BlockTypeData.getInstance().isClocked(this.typeIndex);
     }
-    /*public boolean hasClockedChild() {
-        return BlockType.hasClockedChild.get(this.typeIndex);
-    }*/
-
 
     public int getNumChildren() {
-        return BlockType.numChildren.get(this.typeIndex).get(this.modeIndex);
+        return BlockTypeData.getInstance().getNumChildren(this.typeIndex, this.modeIndex);
     }
     public int[] getChildRange(BlockType blockType) {
-        int childStart = BlockType.childStarts.get(this.typeIndex).get(this.modeIndex).get(blockType.getIndex());
-        int childEnd = BlockType.childEnds.get(this.typeIndex).get(this.modeIndex).get(blockType.getIndex());
-
-        int[] childRange = {childStart, childEnd};
-        return childRange;
+        return BlockTypeData.getInstance().getChildRange(this.typeIndex, this.modeIndex, blockType.typeIndex);
     }
+
 
 
     public int getNumPins() {
-        return PortType.getNumPins(this.typeIndex);
+        return PortTypeData.getInstance().getNumPins(this.typeIndex);
     }
     public int[] getInputPortRange() {
-        return PortType.getInputPortRange(this.typeIndex);
+        return PortTypeData.getInstance().getInputPortRange(this.typeIndex);
     }
     public int[] getOutputPortRange() {
-        return PortType.getOutputPortRange(this.typeIndex);
+        return PortTypeData.getInstance().getOutputPortRange(this.typeIndex);
     }
 
     public List<PortType> getPortTypes() {
-        return BlockType.portTypes.get(this.typeIndex);
+        return PortTypeData.getInstance().getPortTypes(this.typeIndex);
     }
 
 
-    /*public Map<String, Integer> getPorts(PortType type) {
-        switch(type) {
-        case INPUT:
-            return this.getInputs();
-
-        case OUTPUT:
-            return this.getOutputs();
-
-        default:
-            Logger.raise("Unknown port type: " + type);
-            return null;
-        }
-    }
-    public Map<String, Integer> getInputs() {
-        return BlockType.inputs.get(this.typeIndex);
-    }
-    public Map<String, Integer> getOutputs() {
-        return BlockType.outputs.get(this.typeIndex);
-    }*/
-
+    // To compare block types, we only compare the type, and not the mode.
 
     @Override
     public boolean equals(Object otherObject) {
@@ -299,10 +108,10 @@ public class BlockType {
             return false;
         }
     }
-
     public boolean equals(BlockType otherBlockType) {
         return this.typeIndex == otherBlockType.typeIndex;
     }
+
 
     @Override
     public int hashCode() {
@@ -314,7 +123,7 @@ public class BlockType {
         if(this.modeIndex == null) {
             return this.getName();
         } else {
-            return this.getName() + "<" + this.getMode() + ">";
+            return this.getName() + "<" + this.getModeName() + ">";
         }
     }
 }

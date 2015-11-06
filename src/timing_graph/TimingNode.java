@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import circuit.architecture.BlockType.BlockCategory;
+import circuit.architecture.BlockCategory;
 import circuit.block.GlobalBlock;
 
 

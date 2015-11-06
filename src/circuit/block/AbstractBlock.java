@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
 import circuit.architecture.PortType;
-import circuit.architecture.BlockType.BlockCategory;
 import circuit.pin.AbstractPin;
 
 

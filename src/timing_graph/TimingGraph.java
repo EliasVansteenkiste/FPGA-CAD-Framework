@@ -15,7 +15,7 @@ import java.util.Stack;
 import circuit.Circuit;
 import circuit.architecture.BlockType;
 import circuit.architecture.PortType;
-import circuit.architecture.BlockType.BlockCategory;
+import circuit.architecture.BlockCategory;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
@@ -49,13 +49,12 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
     public void build() {
 
-        this.buildDelayMatrixes();
-
         this.buildGraph();
     }
 
 
-    public void buildDelayMatrixes() {
+    public void buildDelayMatrixes(boolean isCached) {
+        // TODO: cache matrixes
         String circuitName = this.circuit.getName();
 
         File architectureFile = Util.getArchitectureFile(this.folder);
@@ -111,7 +110,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
 
 
     private void buildGraph() {
-     // Get all leaf nodes
+        // Get all leaf nodes
         for(BlockType blockType : this.circuit.getBlockTypes()) {
             if(!blockType.isLeaf()) {
                 continue;
@@ -170,7 +169,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
                 setupDelay = outputPin.getPortType().getSetupTime();
 
                 if(block.getParent().getCategory() != BlockCategory.IO) {
-                    setupDelay += PortType.getInputSetupTime();
+                    setupDelay += PortType.getClockSetupTime();
                 }
             }
 
