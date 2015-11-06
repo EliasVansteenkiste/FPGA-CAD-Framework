@@ -9,6 +9,7 @@ import org.json.simple.JSONValue;
 import util.Logger;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -24,13 +25,14 @@ public class FlexibleArchitecture {
 
     private static final double FILL_GRADE = 1;
 
-    private String filename;
+    private File file;
     private JSONObject blockDefinitions;
 
     private int ioCapacity;
 
-    public FlexibleArchitecture(String filename) {
-        this.filename = filename;
+
+    public FlexibleArchitecture(File filename) {
+        this.file = filename;
     }
 
     @SuppressWarnings("unchecked")
@@ -38,9 +40,9 @@ public class FlexibleArchitecture {
 
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader(this.filename));
+            reader = new BufferedReader(new FileReader(this.file));
         } catch (FileNotFoundException exception) {
-            Logger.raise("Could not find the architecture file: " + this.filename, exception);
+            Logger.raise("Could not find the architecture file: " + this.file, exception);
         }
 
 
@@ -51,7 +53,7 @@ public class FlexibleArchitecture {
                 content += line;
             }
         } catch (IOException exception) {
-            Logger.raise("Failed to read from the architecture file: " + this.filename, exception);
+            Logger.raise("Failed to read from the architecture file: " + this.file, exception);
         }
 
         // Parse the JSONObject

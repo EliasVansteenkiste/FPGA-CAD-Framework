@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import options.Options;
+
 import circuit.Circuit;
 import circuit.architecture.BlockType;
 import circuit.architecture.PortType;
@@ -20,7 +22,6 @@ import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.block.LocalBlock;
-import circuit.parser.Util;
 import circuit.pin.AbstractPin;
 
 import placers.SAPlacer.Swap;
@@ -29,7 +30,6 @@ import util.Logger;
 public class TimingGraph implements Iterable<TimingGraphEntry> {
 
     private Circuit circuit;
-    private File folder;
 
     private DelayTables delayTables;
 
@@ -42,9 +42,8 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
     private double maxDelay;
 
 
-    public TimingGraph(Circuit circuit, File folder) {
+    public TimingGraph(Circuit circuit) {
         this.circuit = circuit;
-        this.folder = folder;
     }
 
     public void build() {
@@ -57,14 +56,14 @@ public class TimingGraph implements Iterable<TimingGraphEntry> {
         // TODO: cache matrixes
         String circuitName = this.circuit.getName();
 
-        File architectureFile = Util.getArchitectureFile(this.folder);
-        File blifFile = new File(this.folder, circuitName + ".blif");
-        File netFile = new File(this.folder, circuitName + ".net");
+        File blifFile = Options.getInstance().getBlifFile();
+        File netFile = Options.getInstance().getNetFile();
+        File architectureFileVPR = Options.getInstance().getArchitectureFileVPR();
 
         // Run vpr
         String command = String.format(
                 "./vpr %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
-                architectureFile, circuitName, blifFile, netFile);
+                architectureFileVPR, circuitName, blifFile, netFile);
 
         Process process = null;
         try {

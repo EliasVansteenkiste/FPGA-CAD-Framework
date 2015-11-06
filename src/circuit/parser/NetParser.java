@@ -74,7 +74,7 @@ public class NetParser {
         // Create the timing graph and store it in the circuit
         // We do this first because vpr requires a lot of memory when
         // generating the delay matrixes
-        TimingGraph timingGraph = new TimingGraph(this.circuit, this.file.getParentFile());
+        TimingGraph timingGraph = new TimingGraph(this.circuit);
         this.circuit.setTimingGraph(timingGraph);
 
         // Build the delay matrixes, either by calling vpr or by reading a cached file
@@ -151,16 +151,6 @@ public class NetParser {
         }
     }
     private long getNetFileTimeThrowing() throws IOException {
-        /*BasicFileAttributes attrs = null;
-        try {
-             attrs = Files.readAttributes(this.file.toPath(), BasicFileAttributes.class);
-        } catch(IOException error) {
-            Logger.raise("Net file not found: " + this.file, error);
-        }
-
-        FileTime time = attrs.lastModifiedTime();
-        return time.toMillis() / 1000;*/
-
         boolean isUnix = Files.getFileStore(this.file.toPath()).supportsFileAttributeView("unix");
 
         if(isUnix) {
@@ -170,36 +160,6 @@ public class NetParser {
             Logger.raise("This operation is only supported on Unix platforms");
             return -1;
         }
-
-
-
-        /*String command = String.format(
-                "stat %s | grep 'Change:' | sed 's/Change: \\(.*\\)/\\1/' | date +'%%s'",
-                this.file);
-
-        Process process = null;
-        try {
-            process = Runtime.getRuntime().exec(command);
-        } catch(IOException error) {
-            Logger.raise("Failed to get net file time with command: " + command, error);
-        }
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String timeString = null;
-        try {
-            timeString = reader.readLine();
-        } catch(IOException error) {
-            Logger.raise("Failed to read output of net file time", error);
-        }
-
-        int time = -1;
-        try {
-            time = Integer.parseInt(timeString);
-        } catch(NumberFormatException error) {
-            Logger.raise("Failed to parse net file time: " + timeString, error);
-        }
-
-        return time;*/
     }
 
     private File getCacheFolder() {
