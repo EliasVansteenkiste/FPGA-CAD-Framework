@@ -1,16 +1,21 @@
 bin
-.project
-.classpath
+dist
+data
 dependencies
 benchmarks
 
-<<<<<<< HEAD
+nbproject
+.project
+.settings
+.classpath
+manifest.mf
+build.xml
+
+vpr
+
 *.csv
 *.ods
-=======
+*.pyc
+*.log
 benchmarks
->>>>>>> master
 **/__pycache__
-/nbproject/private/
-/build/
-/dist/
