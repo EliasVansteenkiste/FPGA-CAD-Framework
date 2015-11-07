@@ -3,8 +3,8 @@ package placers.SAPlacer;
 import java.util.Map;
 
 import circuit.Circuit;
+import circuit.timing_graph.TimingGraph;
 
-import timing_graph.TimingGraph;
 
 
 

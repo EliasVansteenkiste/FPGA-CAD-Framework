@@ -4,16 +4,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,7 +22,6 @@ import circuit.block.LocalBlock;
 import circuit.block.TupleBlockMap;
 import circuit.pin.AbstractPin;
 
-import timing_graph.TimingGraph;
 import util.Logger;
 
 
@@ -67,116 +62,6 @@ public class NetParser {
 
 
     public void parse() {
-
-        // Check if this circuit has been cached
-        boolean isCached = this.parseCachedFile();
-
-        // Create the timing graph and store it in the circuit
-        // We do this first because vpr requires a lot of memory when
-        // generating the delay matrixes
-        TimingGraph timingGraph = new TimingGraph(this.circuit);
-        this.circuit.setTimingGraph(timingGraph);
-
-        // Build the delay matrixes, either by calling vpr or by reading a cached file
-        timingGraph.buildDelayMatrixes(isCached);
-
-        // Fill the blocks arrays
-        if(!isCached) {
-            this.parseNetFile();
-            this.cacheBlocks();
-        }
-
-        // Load the parsed blocks into the circuit and the timing graph
-        this.circuit.loadBlocks(this.blocks);
-        timingGraph.build();
-    }
-
-    private boolean parseCachedFile() {
-
-        long cacheTime = getCacheTime();
-        long fileTime = getNetFileTime();
-
-        if(cacheTime == -1 || cacheTime != fileTime) {
-            return false;
-        }
-
-        File cacheFile = this.getCachedFile();
-
-        return false;
-    }
-
-    private void cacheBlocks() {
-
-
-        this.setCacheTime();
-    }
-
-    private long getCacheTime() {
-        File timeFile = this.getCacheTimeFile();
-        long time;
-
-        try {
-            BufferedReader timeReader = new BufferedReader(new FileReader(timeFile));
-            String timeString = timeReader.readLine();
-            time = Long.parseLong(timeString);
-            timeReader.close();
-
-        } catch(IOException|NumberFormatException error) {
-            time = -1;
-        }
-
-        return time;
-    }
-
-    private void setCacheTime() {
-        Long time = this.getNetFileTime();
-
-        File timeFile = this.getCacheTimeFile();
-
-        try {
-            FileWriter timeWriter = new FileWriter(timeFile);
-            timeWriter.write(time.toString());
-            timeWriter.close();
-
-        } catch(IOException error) {
-            Logger.raise("Failed to write cache time: " + timeFile, error);
-        }
-    }
-
-    private long getNetFileTime() {
-        try {
-            return getNetFileTimeThrowing();
-        } catch(IOException error) {
-            return -1;
-        }
-    }
-    private long getNetFileTimeThrowing() throws IOException {
-        boolean isUnix = Files.getFileStore(this.file.toPath()).supportsFileAttributeView("unix");
-
-        if(isUnix) {
-            FileTime test = (FileTime) Files.getAttribute(this.file.toPath(), "unix:ctime");
-            return test.to(TimeUnit.SECONDS);
-        } else {
-            Logger.raise("This operation is only supported on Unix platforms");
-            return -1;
-        }
-    }
-
-    private File getCacheFolder() {
-        return new File("data/circuit");
-    }
-    private File getCachedFile() {
-        return new File(this.getCacheFolder(), this.circuit.getName() + ".ser");
-    }
-    private File getCacheTimeFile() {
-        return new File(this.getCacheFolder(), this.circuit.getName() + ".time");
-    }
-
-
-
-
-
-    private void parseNetFile() {
         // A list of all the blocks in the circuit
         this.blocks = new HashMap<BlockType, List<AbstractBlock>>();
 
@@ -255,6 +140,9 @@ public class NetParser {
         } catch (IOException exception) {
             Logger.raise("Failed to read from the net file: " + this.file, exception);
         }
+
+
+        this.circuit.loadBlocks(this.blocks);
     }
 
 

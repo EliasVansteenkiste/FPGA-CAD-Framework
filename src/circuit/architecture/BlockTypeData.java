@@ -1,5 +1,6 @@
 package circuit.architecture;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,15 +9,20 @@ import java.util.Map;
 
 import util.Logger;
 
-class BlockTypeData {
+class BlockTypeData implements Serializable {
     /**
-     * This is a singleton class.
+     * This is a singleton class. It should be serialized explicitly!
      */
+
+    private static final long serialVersionUID = 4923006752028503183L;
 
     // Stuff that provides singleton functionality
     private static BlockTypeData instance = new BlockTypeData();
-    public static BlockTypeData getInstance() {
+    static BlockTypeData getInstance() {
         return BlockTypeData.instance;
+    }
+    static void setInstance(BlockTypeData instance) {
+        BlockTypeData.instance = instance;
     }
 
 

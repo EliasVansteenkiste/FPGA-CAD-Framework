@@ -1,7 +1,11 @@
 package circuit.architecture;
 
+import java.io.Serializable;
 
-public class PortType {
+
+public class PortType implements Serializable {
+
+    private static final long serialVersionUID = 8336333602345751378L;
 
     private int blockTypeIndex, portTypeIndex;
 

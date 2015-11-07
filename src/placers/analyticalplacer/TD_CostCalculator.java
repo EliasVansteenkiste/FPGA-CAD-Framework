@@ -1,8 +1,9 @@
 package placers.analyticalplacer;
 
-import timing_graph.TimingGraph;
 
 import java.util.List;
+
+import circuit.timing_graph.TimingGraph;
 
 
 public class TD_CostCalculator extends WLD_CostCalculator {

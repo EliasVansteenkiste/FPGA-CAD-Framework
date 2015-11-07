@@ -1,14 +1,18 @@
 package circuit.architecture;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
 
-public class BlockType {
+public class BlockType implements Serializable {
+
     /**
      * For a big part, this is a wrapper class around the BlockTypeData singleton.
      * This class only stores the type index and mode index. (Memory efficient)
      */
+
+    private static final long serialVersionUID = 7705884820007183572L;
 
     public static List<BlockType> getGlobalBlockTypes() {
         return BlockTypeData.getInstance().getGlobalBlockTypes();
@@ -109,7 +113,7 @@ public class BlockType {
         }
     }
     public boolean equals(BlockType otherBlockType) {
-        return this.typeIndex == otherBlockType.typeIndex;
+        return this.typeIndex.equals(otherBlockType.typeIndex);
     }
 
 

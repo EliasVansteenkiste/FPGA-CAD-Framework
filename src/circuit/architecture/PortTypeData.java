@@ -1,20 +1,27 @@
 package circuit.architecture;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PortTypeData {
+public class PortTypeData implements Serializable {
     /**
      * This is a singleton class.
      */
 
+    private static final long serialVersionUID = -7976796410883815420L;
+
+
     // Stuff that provides singleton functionality
     private static PortTypeData instance = new PortTypeData();
-    public static PortTypeData getInstance() {
+    static PortTypeData getInstance() {
         return PortTypeData.instance;
+    }
+    static void setInstance(PortTypeData instance) {
+        PortTypeData.instance = instance;
     }
 
 

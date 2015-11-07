@@ -1,5 +1,8 @@
 package circuit;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,9 +10,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import util.Logger;
+
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
-import circuit.architecture.FlexibleArchitecture;
+import circuit.architecture.Architecture;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
@@ -17,34 +22,74 @@ import circuit.block.IOSite;
 import circuit.block.Site;
 import circuit.pin.AbstractPin;
 import circuit.pin.GlobalPin;
-
-import timing_graph.TimingGraph;
-
+import circuit.timing_graph.TimingGraph;
 
 
-public class Circuit {
+
+
+public class Circuit implements Serializable {
+
+    private static final long serialVersionUID = 7493585190048603640L;
 
     private String name;
-    private int width, height;
+    private transient int width, height;
 
 
-    private FlexibleArchitecture architecture;
+    private Architecture architecture;
+
     private TimingGraph timingGraph;
 
-    private Map<BlockType, List<AbstractBlock>> blocks;
-    private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
-    private List<BlockType> globalBlockTypes;
+    private transient Map<BlockType, List<AbstractBlock>> blocks;
+    private transient List<GlobalBlock> globalBlockList;
+    private transient List<BlockType> globalBlockTypes;
 
-    private List<BlockType> columns;
-    private Map<BlockType, List<Integer>> columnsPerBlockType;
+    private transient List<BlockType> columns;
+    private transient Map<BlockType, List<Integer>> columnsPerBlockType;
 
-    private AbstractSite[][] sites;
+    private transient AbstractSite[][] sites;
 
 
-    public Circuit(String name, FlexibleArchitecture architecture) {
+    public Circuit(String name, Architecture architecture) {
         this.name = name;
         this.architecture = architecture;
+
+        this.initializeData();
     }
+
+    private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException {
+        in.defaultReadObject();
+        this.initializeData();
+    }
+
+    private void initializeData() {
+        this.globalBlockList = new ArrayList<GlobalBlock>();
+    }
+
+
+    /**
+     * Building the delay matrixes in the timing graph is a
+     * very memory intensive process, because VPR has to be
+     * called. If possible, initialize the timing graph
+     * before the circuit has been built, to avoid memory
+     * problems.
+     */
+    public void initializeTimingGraph() {
+        this.timingGraph = new TimingGraph(this);
+        this.timingGraph.buildDelayMatrixes();
+    }
+
+    /**
+     * This should only be called after the blocks of the
+     * circuit have been loaded.
+     */
+    public void buildTimingGraph() {
+        if(this.blocks == null) {
+            Logger.raise("Can't build the timing graph for an empty circuit");
+        }
+
+        this.timingGraph.build();
+    }
+
 
     public void loadBlocks(Map<BlockType, List<AbstractBlock>> blocks) {
         this.blocks = blocks;
@@ -67,9 +112,6 @@ public class Circuit {
     /*************************
      * Timing graph wrapping *
      *************************/
-    public void setTimingGraph(TimingGraph timingGraph) {
-        this.timingGraph = timingGraph;
-    }
     public TimingGraph getTimingGraph() {
         return this.timingGraph;
     }
@@ -96,9 +138,6 @@ public class Circuit {
 
             this.globalBlockList.addAll((List<GlobalBlock>) (List<?>) this.blocks.get(blockType));
         }
-
-        // This is not necessary for anything
-        //Collections.sort(this.globalBlockList);
     }
 
     public List<GlobalBlock> getGlobalBlocks() {
@@ -229,7 +268,7 @@ public class Circuit {
     public int getHeight() {
         return this.height;
     }
-    public FlexibleArchitecture getArchitecture() {
+    public Architecture getArchitecture() {
         return this.architecture;
     }
 
@@ -353,7 +392,7 @@ public class Circuit {
         return globalPins;
     }
 
-
+    @Override
     public String toString() {
         return this.getName();
     }

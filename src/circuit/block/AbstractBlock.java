@@ -125,6 +125,14 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     }
 
 
+    // These methods should only be used for serialization and deserialization!
+    public void setPins(List<AbstractPin> pins) {
+        this.pins = pins;
+    }
+    public List<AbstractPin> getPins() {
+        return this.pins;
+    }
+
 
     @Override
     public int hashCode() {
