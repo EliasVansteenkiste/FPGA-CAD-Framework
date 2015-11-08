@@ -29,7 +29,6 @@ public abstract class AnalyticalPlacer extends Placer {
 
     private final double[] maxUtilizationSequence;
     private final double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
-    private final double gradientMultiplier, finalGradientSpeed;
     private final int gradientIterations;
     private double gradientSpeed;
 
@@ -59,9 +58,7 @@ public abstract class AnalyticalPlacer extends Placer {
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "complete");
-        defaultOptions.put("initial_gradient_speed", "0.1");
-        defaultOptions.put("gradient_multiplier", "0.95");
-        defaultOptions.put("final_gradient_speed", "0.1");
+        defaultOptions.put("gradient_speed", "0.1");
         defaultOptions.put("gradient_iterations", "30");
     }
 
@@ -99,9 +96,7 @@ public abstract class AnalyticalPlacer extends Placer {
                 this.algorithmSolveMode = null;
         }
 
-        this.gradientSpeed = this.parseDoubleOption("initial_gradient_speed");
-        this.gradientMultiplier = this.parseDoubleOption("gradient_multiplier");
-        this.finalGradientSpeed = this.parseDoubleOption("final_gradient_speed");
+        this.gradientSpeed = this.parseDoubleOption("gradient_speed");
         this.gradientIterations = this.parseIntegerOption("gradient_iterations");
     }
 
@@ -240,8 +235,6 @@ public abstract class AnalyticalPlacer extends Placer {
             }
 
             pseudoWeightFactor *= this.anchorWeightIncrease;
-            //this.gradientSpeed *= this.gradientMultiplier;
-            this.gradientSpeed = 0.95 * this.gradientSpeed + 0.05 * this.finalGradientSpeed;
             firstSolve = false;
 
             // Legalize

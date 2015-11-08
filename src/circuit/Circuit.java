@@ -19,10 +19,11 @@ import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.block.IOSite;
+import circuit.block.LeafBlock;
 import circuit.block.Site;
+import circuit.block.TimingGraph;
 import circuit.pin.AbstractPin;
 import circuit.pin.GlobalPin;
-import circuit.timing_graph.TimingGraph;
 
 
 
@@ -40,8 +41,11 @@ public class Circuit implements Serializable {
     private TimingGraph timingGraph;
 
     private transient Map<BlockType, List<AbstractBlock>> blocks;
-    private transient List<GlobalBlock> globalBlockList;
+
     private transient List<BlockType> globalBlockTypes;
+    private transient List<BlockType> leafBlockTypes;
+    private transient List<GlobalBlock> globalBlockList;
+    private transient List<LeafBlock> leafBlockList;
 
     private transient List<BlockType> columns;
     private transient Map<BlockType, List<Integer>> columnsPerBlockType;
@@ -52,6 +56,7 @@ public class Circuit implements Serializable {
     public Circuit(String name, Architecture architecture) {
         this.name = name;
         this.architecture = architecture;
+        this.timingGraph = new TimingGraph(this);
 
         this.initializeData();
     }
@@ -63,19 +68,7 @@ public class Circuit implements Serializable {
 
     private void initializeData() {
         this.globalBlockList = new ArrayList<GlobalBlock>();
-    }
-
-
-    /**
-     * Building the delay matrixes in the timing graph is a
-     * very memory intensive process, because VPR has to be
-     * called. If possible, initialize the timing graph
-     * before the circuit has been built, to avoid memory
-     * problems.
-     */
-    public void initializeTimingGraph() {
-        this.timingGraph = new TimingGraph(this);
-        this.timingGraph.buildDelayMatrixes();
+        this.leafBlockList = new ArrayList<LeafBlock>();
     }
 
     /**
@@ -91,14 +84,35 @@ public class Circuit implements Serializable {
     }
 
 
+
     public void loadBlocks(Map<BlockType, List<AbstractBlock>> blocks) {
         this.blocks = blocks;
 
-        this.createGlobalBlockList();
+        for(BlockType blockType : BlockType.getAllBlockTypes()) {
+            if(!this.blocks.containsKey(blockType)) {
+                this.blocks.put(blockType, new ArrayList<AbstractBlock>(0));
+            }
+        }
+
+        this.globalBlockTypes = BlockType.getGlobalBlockTypes();
+        this.leafBlockTypes = BlockType.getLeafBlockTypes();
+
+        for(BlockType blockType : this.globalBlockTypes) {
+            @SuppressWarnings("unchecked")
+            List<GlobalBlock> blocksOfType = (List<GlobalBlock>) (List<?>) this.blocks.get(blockType);
+            this.globalBlockList.addAll(blocksOfType);
+        }
+
+        for(BlockType blockType : this.leafBlockTypes) {
+            @SuppressWarnings("unchecked")
+            List<LeafBlock> blocksOfType = (List<LeafBlock>) (List<?>) this.blocks.get(blockType);
+            this.leafBlockList.addAll(blocksOfType);
+        }
 
         this.calculateSizeAndColumns(true);
         this.createSites();
     }
+
 
     public void setSize(int width, int height) {
         this.width = width;
@@ -127,21 +141,12 @@ public class Circuit implements Serializable {
     }
 
 
-    @SuppressWarnings("unchecked")
-    private void createGlobalBlockList() {
-        this.globalBlockTypes = BlockType.getGlobalBlockTypes();
-
-        for(BlockType blockType : this.globalBlockTypes) {
-            if(!this.blocks.containsKey(blockType)) {
-                this.blocks.put(blockType, new ArrayList<AbstractBlock>(0));
-            }
-
-            this.globalBlockList.addAll((List<GlobalBlock>) (List<?>) this.blocks.get(blockType));
-        }
-    }
 
     public List<GlobalBlock> getGlobalBlocks() {
         return this.globalBlockList;
+    }
+    public List<LeafBlock> getLeafBlocks() {
+        return this.leafBlockList;
     }
 
 

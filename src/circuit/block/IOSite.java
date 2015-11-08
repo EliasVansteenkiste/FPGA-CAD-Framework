@@ -25,6 +25,7 @@ public class IOSite extends AbstractSite {
 
 
 
+    @Override
     public GlobalBlock getRandomBlock(Random random) {
         int size = this.blocks.size();
         if(size == 0) {
@@ -40,6 +41,7 @@ public class IOSite extends AbstractSite {
         return iter.next();
     }
 
+    @Override
     void addBlock(GlobalBlock block) {
         if(this.blocks.size() == this.capacity) {
             Logger.raise("Tried to add a block to a full IO site");
@@ -48,6 +50,7 @@ public class IOSite extends AbstractSite {
         }
     }
 
+    @Override
     public void removeBlock(GlobalBlock block) {
         boolean success = this.blocks.remove(block);
         if(!success) {
@@ -55,11 +58,13 @@ public class IOSite extends AbstractSite {
         }
     }
 
+    @Override
     public void clear() {
         this.blocks.clear();
     }
 
 
+    @Override
     public Collection<GlobalBlock> getBlocks() {
         return this.blocks;
     }

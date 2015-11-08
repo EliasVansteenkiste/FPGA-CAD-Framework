@@ -22,10 +22,12 @@ public class Site extends AbstractSite {
         return this.block;
     }
 
+    @Override
     public GlobalBlock getRandomBlock(Random random) {
         return this.block;
     }
 
+    @Override
     void addBlock(GlobalBlock block) {
         if(this.block == null) {
             this.block = block;
@@ -34,6 +36,7 @@ public class Site extends AbstractSite {
         }
     }
 
+    @Override
     public void removeBlock(GlobalBlock block) {
         if(block == this.block) {
             this.block = null;
@@ -42,10 +45,12 @@ public class Site extends AbstractSite {
         }
     }
 
+    @Override
     public void clear() {
         this.block = null;
     }
 
+    @Override
     public Collection<GlobalBlock> getBlocks() {
         return Arrays.asList(this.block);
     }

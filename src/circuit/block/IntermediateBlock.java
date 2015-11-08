@@ -5,14 +5,15 @@ import circuit.architecture.PortType;
 import circuit.pin.LocalPin;
 
 
-public class LocalBlock extends AbstractBlock {
+public class IntermediateBlock extends AbstractBlock {
 
     private AbstractBlock parent;
 
-    public LocalBlock(String name, BlockType type, int index, AbstractBlock parent) {
+    public IntermediateBlock(String name, BlockType type, int index, AbstractBlock parent) {
         super(name, type, index);
 
         this.parent = parent;
+        this.parent.setChild(this, index);
     }
 
     @Override
@@ -21,7 +22,12 @@ public class LocalBlock extends AbstractBlock {
     }
 
     @Override
-    public LocalPin createPin(PortType portType, int index) {
+    protected LocalPin createPin(PortType portType, int index) {
         return new LocalPin(this, portType, index);
+    }
+
+    @Override
+    public void compact() {
+
     }
 }

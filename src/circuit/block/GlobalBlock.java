@@ -1,5 +1,8 @@
 package circuit.block;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import circuit.architecture.BlockType;
 import circuit.architecture.PortType;
 import circuit.pin.GlobalPin;
@@ -8,6 +11,7 @@ import util.Logger;
 public class GlobalBlock extends AbstractBlock {
 
     private AbstractSite site;
+    private ArrayList<LeafBlock> leafs = new ArrayList<LeafBlock>();
 
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
@@ -42,13 +46,26 @@ public class GlobalBlock extends AbstractBlock {
         }
     }
 
+
+    public void addLeaf(LeafBlock block) {
+        this.leafs.add(block);
+    }
+    public List<LeafBlock> getLeafBlocks() {
+        return this.leafs;
+    }
+
     @Override
     public AbstractBlock getParent() {
         return null;
     }
 
     @Override
-    public GlobalPin createPin(PortType portType, int index) {
+    protected GlobalPin createPin(PortType portType, int index) {
         return new GlobalPin(this, portType, index);
+    }
+
+    @Override
+    public void compact() {
+        this.leafs.trimToSize();
     }
 }

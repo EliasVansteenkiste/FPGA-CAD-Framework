@@ -5,8 +5,8 @@ import java.util.Map;
 import circuit.Circuit;
 import circuit.architecture.BlockType;
 import circuit.block.GlobalBlock;
-import circuit.timing_graph.TimingGraph;
-import circuit.timing_graph.TimingGraphEntry;
+import circuit.block.TimingGraph;
+import circuit.block.TimingGraphEntry;
 
 
 

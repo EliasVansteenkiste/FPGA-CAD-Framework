@@ -87,6 +87,7 @@ public class LinearSolverGradient extends LinearSolver {
     }
 
 
+    @Override
     public void solve() {
         this.solverX.solve();
         this.solverY.solve();

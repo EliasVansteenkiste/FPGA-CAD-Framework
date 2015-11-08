@@ -33,10 +33,6 @@ public class DimensionSolverComplete implements DimensionSolver {
         int relativeIndex1 = index1 - this.numIOBlocks;
         int relativeIndex2 = index2 - this.numIOBlocks;
 
-        if(relativeIndex1 == 0 || relativeIndex2 == 0) {
-            int d = 0;
-        }
-
         if(!fixed1 && !fixed2) {
             this.matrix.addElement(relativeIndex1, relativeIndex1, weight);
             this.matrix.addElement(relativeIndex1, relativeIndex2, -weight);

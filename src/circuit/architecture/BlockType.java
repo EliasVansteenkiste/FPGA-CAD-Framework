@@ -1,6 +1,7 @@
 package circuit.architecture;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +15,23 @@ public class BlockType implements Serializable {
 
     private static final long serialVersionUID = 7705884820007183572L;
 
+    public static List<BlockType> getAllBlockTypes() {
+        List<BlockType> types = new ArrayList<BlockType>();
+        for(BlockCategory category : BlockCategory.values()) {
+            types.addAll(BlockType.getBlockTypes(category));
+        }
+        return types;
+    }
     public static List<BlockType> getGlobalBlockTypes() {
-        return BlockTypeData.getInstance().getGlobalBlockTypes();
+        List<BlockType> types = new ArrayList<BlockType>();
+        types.addAll(BlockType.getBlockTypes(BlockCategory.IO));
+        types.addAll(BlockType.getBlockTypes(BlockCategory.CLB));
+        types.addAll(BlockType.getBlockTypes(BlockCategory.HARDBLOCK));
+
+        return types;
+    }
+    public static List<BlockType> getLeafBlockTypes() {
+        return BlockType.getBlockTypes(BlockCategory.LEAF);
     }
 
     public static List<BlockType> getBlockTypes(BlockCategory category) {

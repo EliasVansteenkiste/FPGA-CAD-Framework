@@ -1,20 +1,19 @@
-package circuit.timing_graph;
+package circuit.block;
 
-import circuit.block.GlobalBlock;
 
 public class TimingGraphEntry {
     private GlobalBlock source;
     private GlobalBlock sink;
     private double criticality;
     private int numSinks;
-    
+
     TimingGraphEntry(GlobalBlock source, GlobalBlock sink, double criticality, int numSinks) {
         this.source = source;
         this.sink = sink;
         this.criticality = criticality;
         this.numSinks = numSinks;
     }
-    
+
     public GlobalBlock getSource() {
         return this.source;
     }

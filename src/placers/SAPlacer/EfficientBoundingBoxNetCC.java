@@ -75,11 +75,13 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
     }
 
 
+    @Override
     public double calculateAverageNetCost() {
         return calculateTotalCost() / this.numPins;
     }
 
 
+    @Override
     public double calculateTotalCost() {
         double totalCost = 0.0;
         for(int i = 0; i < this.numPins; i++) {
@@ -89,6 +91,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
     }
 
 
+    @Override
     public double calculateDeltaCost(Swap swap) {
         double totalDeltaCost = 0.0;
 
@@ -118,6 +121,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
     }
 
 
+    @Override
     public void recalculateFromScratch() {
         for(int i = 0; i < this.numPins; i++) {
             this.bbDataArray.get(i).calculateBoundingBoxFromScratch();
@@ -125,6 +129,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
     }
 
 
+    @Override
     public void revert() {
         if(this.toRevert[0] != null) {
             List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[0]);
@@ -146,6 +151,7 @@ public class EfficientBoundingBoxNetCC implements EfficientCostCalculator
     }
 
 
+    @Override
     public void pushThrough() {
         if(this.toRevert[0] != null) {
             List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[0]);

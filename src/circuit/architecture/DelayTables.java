@@ -1,4 +1,4 @@
-package circuit.timing_graph;
+package circuit.architecture;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import circuit.architecture.BlockCategory;
 
 import util.Logger;
 
@@ -18,7 +17,13 @@ public class DelayTables implements Serializable {
 
     private static final long serialVersionUID = 3516264508719006250L;
 
-    private File file;
+    private static DelayTables instance = new DelayTables();
+    public static DelayTables getInstance() {
+        return DelayTables.instance;
+    }
+    static void setInstance(DelayTables instance) {
+        DelayTables.instance = instance;
+    }
 
     private List<List<Double>>
             ioToIo = new ArrayList<>(),
@@ -27,16 +32,12 @@ public class DelayTables implements Serializable {
             clbToClb = new ArrayList<>();
 
 
-    DelayTables(File file) {
-        this.file = file;
-    }
-
-    public void parse() {
+    public void parse(File file) {
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader(this.file));
+            reader = new BufferedReader(new FileReader(file));
         } catch (FileNotFoundException error) {
-            Logger.raise("Delays file not found: " + this.file, error);
+            Logger.raise("Delays file not found: " + file, error);
         }
 
         try {
@@ -46,9 +47,8 @@ public class DelayTables implements Serializable {
             this.parseType(reader, "io_to_io", this.ioToIo);
 
         } catch(IOException error) {
-            Logger.raise("Failed to read from delays file: " + this.file, error);
+            Logger.raise("Failed to read from delays file: " + file, error);
         }
-
     }
 
     private void parseType(BufferedReader reader, String type, List<List<Double>> matrix) throws IOException {
@@ -102,7 +102,7 @@ public class DelayTables implements Serializable {
     }
 
 
-    double getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
+    public double getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
         if(deltaX == 0 && deltaY == 0) {
             return 0;
         }
@@ -132,16 +132,16 @@ public class DelayTables implements Serializable {
         return delay;
     }
 
-    double getIoToIo(int x, int y) {
+    public double getIoToIo(int x, int y) {
         return this.ioToIo.get(x).get(y);
     }
-    double getIoToClb(int x, int y) {
+    public double getIoToClb(int x, int y) {
         return this.ioToClb.get(x).get(y);
     }
-    double getClbToIo(int x, int y) {
+    public double getClbToIo(int x, int y) {
         return this.clbToIo.get(x).get(y);
     }
-    double getClbToClb(int x, int y) {
+    public double getClbToClb(int x, int y) {
         return this.clbToClb.get(x).get(y);
     }
 }

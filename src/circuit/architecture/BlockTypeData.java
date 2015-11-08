@@ -180,17 +180,8 @@ class BlockTypeData implements Serializable {
 
 
 
-    public List<BlockType> getBlockTypes(BlockCategory category) {
+    List<BlockType> getBlockTypes(BlockCategory category) {
         return this.blockTypesPerCategory.get(category.ordinal());
-    }
-
-    public List<BlockType> getGlobalBlockTypes() {
-        List<BlockType> types = new ArrayList<BlockType>();
-        types.addAll(this.getBlockTypes(BlockCategory.IO));
-        types.addAll(this.getBlockTypes(BlockCategory.CLB));
-        types.addAll(this.getBlockTypes(BlockCategory.HARDBLOCK));
-
-        return types;
     }
 
 

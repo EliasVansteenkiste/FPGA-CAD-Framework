@@ -3,7 +3,7 @@ package placers.analyticalplacer;
 
 import java.util.List;
 
-import circuit.timing_graph.TimingGraph;
+import circuit.block.TimingGraph;
 
 
 public class TD_CostCalculator extends WLD_CostCalculator {

@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -18,8 +19,8 @@ import circuit.architecture.BlockType;
 import circuit.architecture.PortType;
 import circuit.block.AbstractBlock;
 import circuit.block.GlobalBlock;
-import circuit.block.LocalBlock;
-import circuit.block.TupleBlockMap;
+import circuit.block.LeafBlock;
+import circuit.block.IntermediateBlock;
 import circuit.pin.AbstractPin;
 
 import util.Logger;
@@ -33,7 +34,8 @@ public class NetParser {
 
     private Map<BlockType, List<AbstractBlock>> blocks;
 
-    private Stack<AbstractBlock> blockStack;
+    // blockStack is a LinkedList because we want to be able to peekLast()
+    private LinkedList<AbstractBlock> blockStack;
     private Stack<TupleBlockMap> inputsStack;
     private Stack<Map<String, String>> outputsStack;
 
@@ -70,7 +72,7 @@ public class NetParser {
         // the outputs of these blocks. This is necessary because the outputs
         // of a block can only be processed after all the childs have been
         // processed.
-        this.blockStack = new Stack<AbstractBlock>();
+        this.blockStack = new LinkedList<AbstractBlock>();
         this.inputsStack = new Stack<TupleBlockMap>();
         this.outputsStack = new Stack<Map<String, String>>();
 
@@ -141,6 +143,12 @@ public class NetParser {
             Logger.raise("Failed to read from the net file: " + this.file, exception);
         }
 
+
+        for(List<AbstractBlock> blocksOfType : this.blocks.values()) {
+            for(AbstractBlock block : blocksOfType) {
+                block.compact();
+            }
+        }
 
         this.circuit.loadBlocks(this.blocks);
     }
@@ -231,13 +239,19 @@ public class NetParser {
 
 
         AbstractBlock newBlock;
-        if(this.blockStack.size() == 0) {
+        if(blockType.isGlobal()) {
             newBlock = new GlobalBlock(name, blockType, index);
 
         } else {
             AbstractBlock parent = this.blockStack.peek();
-            newBlock = new LocalBlock(name, blockType, index, parent);
-            parent.setChild((LocalBlock) newBlock, index);
+
+            if(blockType.isLeaf()) {
+                GlobalBlock globalParent = (GlobalBlock) this.blockStack.peekLast();
+                newBlock = new LeafBlock(name, blockType, index, parent, globalParent);
+
+            } else {
+                newBlock = new IntermediateBlock(name, blockType, index, parent);
+            }
         }
 
 
@@ -340,7 +354,7 @@ public class NetParser {
 
             // The net is incident to an input port. It has an input port of the parent block as source.
             if(sourceBlockIndexString == null) {
-                sourceBlock = ((LocalBlock) sinkBlock).getParent();
+                sourceBlock = ((IntermediateBlock) sinkBlock).getParent();
 
 
             } else {
@@ -348,7 +362,7 @@ public class NetParser {
 
                 // The net is incident to an input port. It has a sibling output port as source.
                 if(sinkPin.isInput()) {
-                    AbstractBlock parent = ((LocalBlock) sinkBlock).getParent();
+                    AbstractBlock parent = ((IntermediateBlock) sinkBlock).getParent();
                     sourceBlock = parent.getChild(sourceBlockType, sourceBlockIndex);
 
 

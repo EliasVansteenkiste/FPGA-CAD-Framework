@@ -9,6 +9,7 @@ public class GlobalPin extends AbstractPin {
         super(owner, portType, index);
     }
 
+    @Override
     public GlobalBlock getOwner() {
         return (GlobalBlock) super.getOwner();
     }

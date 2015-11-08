@@ -1,6 +1,6 @@
-package circuit.timing_graph;
+package circuit.block;
 
-public class TimingEdge {
+class TimingEdge {
 
     private double fixedDelay, totalDelay, criticality;
     private transient double stagedTotalDelay;
@@ -46,6 +46,7 @@ public class TimingEdge {
 
 
 
+    @Override
     public String toString() {
         return String.format("%e", this.totalDelay);
     }

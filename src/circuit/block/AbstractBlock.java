@@ -17,7 +17,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     private BlockType blockType;
     private int index;
 
-    private List<LocalBlock> children;
+    private List<IntermediateBlock> children;
     private List<AbstractPin> pins;
 
 
@@ -28,7 +28,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
 
         int numChildren = blockType.getNumChildren();
-        this.children = new ArrayList<LocalBlock>(Collections.nCopies(numChildren, (LocalBlock) null));
+        this.children = new ArrayList<IntermediateBlock>(Collections.nCopies(numChildren, (IntermediateBlock) null));
 
 
         int numPins = blockType.getNumPins();
@@ -49,7 +49,10 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     }
 
 
-    public abstract AbstractPin createPin(PortType portType, int index);
+    public abstract AbstractBlock getParent();
+    protected abstract AbstractPin createPin(PortType portType, int index);
+    public abstract void compact();
+
 
 
     public String getName() {
@@ -75,21 +78,20 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     public boolean isLeaf() {
         return this.getType().isLeaf();
     }
-    public abstract AbstractBlock getParent();
 
 
 
-    public List<LocalBlock> getChildren() {
+    public List<IntermediateBlock> getChildren() {
         return this.children;
     }
-    public List<LocalBlock> getChildren(BlockType blockType) {
+    public List<IntermediateBlock> getChildren(BlockType blockType) {
         int[] childRange = this.blockType.getChildRange(blockType);
         return this.children.subList(childRange[0], childRange[1]);
     }
-    public LocalBlock getChild(BlockType blockType, int childIndex) {
+    public IntermediateBlock getChild(BlockType blockType, int childIndex) {
         return this.getChildren(blockType).get(childIndex);
     }
-    public void setChild(LocalBlock block, int childIndex) {
+    public void setChild(IntermediateBlock block, int childIndex) {
         int childStart = this.blockType.getChildRange(block.getType())[0];
         this.children.set(childStart + childIndex, block);
     }

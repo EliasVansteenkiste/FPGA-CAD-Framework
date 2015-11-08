@@ -10,7 +10,6 @@ import circuit.architecture.BlockType;
 import circuit.architecture.BlockCategory;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-import circuit.block.Site;
 
 import util.Logger;
 

@@ -122,18 +122,15 @@ public class Main {
         // Get architecture
         this.startTimer("Architecture parsing");
 
-        Architecture architecture = new Architecture(this.options.getArchitectureFile());
+        Architecture architecture = new Architecture();
         architecture.parse();
         this.stopAndPrintTimer();
 
-
-        // Create a timing graph with filled delay matrixes
-        // vpr requires a lot of memory when generating the delay matrixes, so
-        // it's good to do this before the circuit is parsed
         this.startTimer("Delay matrix building");
-        this.circuit = new Circuit(this.options.getCircuitName(), architecture);
-        this.circuit.initializeTimingGraph();
+        architecture.buildDelayMatrixes();
         this.stopAndPrintTimer();
+
+        this.circuit = new Circuit(this.options.getCircuitName(), architecture);
     }
 
 
