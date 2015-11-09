@@ -15,6 +15,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
     private String name;
     private BlockType blockType;
+    private BlockCategory category;
     private int index;
 
     private List<IntermediateBlock> children;
@@ -24,6 +25,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     public AbstractBlock(String name, BlockType blockType, int index) {
         this.name = name;
         this.blockType = blockType;
+        this.category = blockType.getCategory();
         this.index = index;
 
 
@@ -62,7 +64,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         return this.blockType;
     }
     public BlockCategory getCategory() {
-        return this.blockType.getCategory();
+        return this.category;
     }
     public int getIndex() {
         return this.index;

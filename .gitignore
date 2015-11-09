@@ -3,6 +3,7 @@ dist
 data
 dependencies
 benchmarks
+results
 
 nbproject
 .project
@@ -17,5 +18,4 @@ vpr
 *.ods
 *.pyc
 *.log
-benchmarks
 **/__pycache__

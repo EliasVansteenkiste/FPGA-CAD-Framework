@@ -25,7 +25,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
     private transient ArrayList<LeafBlock> endPointBlocks;
     private transient List<LeafBlock> affectedBlocks;
 
-    private double criticalityExponent = 8;
+    private double criticalityExponent;
     private transient double maxDelay;
 
 

@@ -103,12 +103,7 @@ public abstract class SAPlacer extends Placer
             this.doSwapIteration();
 
         } else {
-
-            if(this.detailed) {
-                this.calculateInititalTemperatureDetailed();
-            } else {
-                this.calculateInititalTemperatureGlobal();
-            }
+            this.calculateInitialTemperature();
 
             System.out.println("Initial temperature: " + this.temperature);
 
@@ -134,14 +129,22 @@ public abstract class SAPlacer extends Placer
     }
 
 
-    private void calculateInititalTemperatureGlobal() {
+    private void calculateInitialTemperature() {
+        if(this.detailed) {
+            this.temperature = this.calculateInitialTemperatureDetailed();
+        } else {
+            this.temperature = this.calculateInitialTemperatureGlobal();
+        }
+    }
+
+    private double calculateInitialTemperatureGlobal() {
         int numSamples = this.circuit.getNumGlobalBlocks();
         double stdDev = this.doSwapIteration(numSamples, false);
 
-        this.temperature = this.temperatureMultiplier * this.TMultiplierGlobal * stdDev;
+        return this.temperatureMultiplier * this.TMultiplierGlobal * stdDev;
     }
 
-    private void calculateInititalTemperatureDetailed() {
+    private double calculateInitialTemperatureDetailed() {
         // Use the method described in "Temperature Measurement and
         // Equilibrium Dynamics of Simulated Annealing Placements"
 
@@ -167,36 +170,36 @@ public abstract class SAPlacer extends Placer
         double maxT = Double.MAX_VALUE;
 
         // very coarse estimate
-        this.temperature = this.deltaCosts[this.deltaCosts.length - 1] / 1000;
+        double temperature = this.deltaCosts[this.deltaCosts.length - 1] / 1000;
 
         while(minT == 0 || maxT / minT > 1.1) {
-            double Eplus = integral(this.deltaCosts, zeroIndex, numSamples, this.temperature);
+            double Eplus = integral(this.deltaCosts, zeroIndex, numSamples, temperature);
 
             if(Emin < Eplus) {
-                if(this.temperature < maxT) {
-                    maxT = this.temperature;
+                if(temperature < maxT) {
+                    maxT = temperature;
                 }
 
                 if(minT == 0) {
-                    this.temperature /= 8;
+                    temperature /= 8;
                 } else {
-                    this.temperature = (maxT + minT) / 2;
+                    temperature = (maxT + minT) / 2;
                 }
 
             } else {
-                if(this.temperature > minT) {
-                    minT = this.temperature;
+                if(temperature > minT) {
+                    minT = temperature;
                 }
 
                 if(maxT == Double.MAX_VALUE) {
-                    this.temperature *= 8;
+                    temperature *= 8;
                 } else {
-                    this.temperature = (maxT + minT) / 2;
+                    temperature = (maxT + minT) / 2;
                 }
             }
         }
 
-        this.temperature *= this.temperatureMultiplier;
+        return temperature * this.temperatureMultiplier;
     }
 
     private double integral(double[] values, int start, int stop, double temperature) {

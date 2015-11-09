@@ -227,23 +227,25 @@ public class LeafBlock extends IntermediateBlock {
     double calculateDeltaCost(int newX, int newY) {
         double cost = 0;
 
-        for(int sinkIndex = 0; sinkIndex < this.numSinks; sinkIndex++) {
-            LeafBlock sink = this.sinkBlocks.get(sinkIndex);
+        int sinkIndex = 0;
+        for(LeafBlock sink : this.sinkBlocks) {
             TimingEdge edge = this.sinkEdges.get(sinkIndex);
-
             cost += this.calculateDeltaCost(newX, newY, sink, edge);
+
+            sinkIndex++;
         }
 
-        for(int sourceIndex = 0; sourceIndex < this.numSources; sourceIndex++) {
+        int sourceIndex = 0;
+        for(LeafBlock source : this.sourceBlocks) {
             // Only calculate the delta cost if the source is not in the block where we would swap to
             // This is necessary to avoid double counting: the other swap block also calculates delta
             // costs of all sink edges
-            LeafBlock source = this.sourceBlocks.get(sourceIndex);
-            if(!(source.getX() == newX && source.getY() == newY)) {
+            if(source.getX() != newX || source.getY() != newY) {
                 TimingEdge edge = this.sourceEdges.get(sourceIndex);
 
                 cost += this.calculateDeltaCost(newX, newY, source, edge);
             }
+            sourceIndex++;
         }
 
         return cost;

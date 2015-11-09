@@ -57,7 +57,7 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
 
         // The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "complete");
+        defaultOptions.put("solve_mode", "gradient");
         defaultOptions.put("gradient_speed", "0.1");
         defaultOptions.put("gradient_iterations", "30");
     }
@@ -227,11 +227,17 @@ public abstract class AnalyticalPlacer extends Placer {
                 }
 
             } else {
-                int iterations = firstSolve ? 4 * this.gradientIterations : this.gradientIterations;
-                for(int i = 0; i < iterations; i++) {
-                    this.solveLinearGradient(firstSolve, pseudoWeightFactor);
-                    //System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
-                }
+                /*if(firstSolve) { // DEBUG
+                    for(int i = 0; i < 5; i++) {
+                        this.solveLinearComplete(true, pseudoWeightFactor);
+                    }
+                } else {*/
+                    int iterations = firstSolve ? 4 * this.gradientIterations : this.gradientIterations;
+                    for(int i = 0; i < iterations; i++) {
+                        this.solveLinearGradient(firstSolve, pseudoWeightFactor);
+                        //System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
+                    }
+                //}
             }
 
             pseudoWeightFactor *= this.anchorWeightIncrease;
