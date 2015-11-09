@@ -49,17 +49,17 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("max_utilization_sequence", "1");
 
         // The first anchorWeight factor that will be used in the main solve loop
-        defaultOptions.put("starting_anchor_weight", "0.0");
+        defaultOptions.put("starting_anchor_weight", "0");
 
         // The amount with which the anchorWeight factor will be multiplied each iteration
-        defaultOptions.put("anchor_weight_increase", "0.05");
+        defaultOptions.put("anchor_weight_increase", "0.1");
 
         // The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "gradient");
-        defaultOptions.put("gradient_speed", "0.2");
+        defaultOptions.put("gradient_speed", "0.40");
         defaultOptions.put("gradient_iterations", "30");
     }
 

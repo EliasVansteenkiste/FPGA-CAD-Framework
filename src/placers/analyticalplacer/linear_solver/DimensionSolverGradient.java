@@ -70,13 +70,13 @@ public class DimensionSolverGradient extends DimensionSolver {
 
         for(int i = 0; i < numBlocks; i++) {
             double direction = this.directions[i];
-            double netGoal = 0;
+            double netGoal = this.coordinates[i];
 
             if(direction > 0) {
-                netGoal = this.coordinates[i] + this.totalPositiveNetSize[i] / this.numPositiveNets[i];
+                netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
 
             } else if(direction < 0) {
-                netGoal = this.coordinates[i] - this.totalNegativeNetSize[i] / this.numNegativeNets[i];
+                netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
             }
 
             double newCoordinate = this.gradientSpeed * (((1 - this.pseudoWeight) * netGoal + this.pseudoWeight * this.pseudoGoal[i]) - this.coordinates[i]);
