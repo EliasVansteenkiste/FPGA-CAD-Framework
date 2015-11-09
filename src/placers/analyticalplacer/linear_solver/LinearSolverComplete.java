@@ -28,8 +28,15 @@ public class LinearSolverComplete extends LinearSolver {
             int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
             boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
 
-            this.solverX.addConnection(fixed1, blockIndex1, this.coordinatesX[blockIndex1], fixed2, blockIndex2, this.coordinatesX[blockIndex2], weightMultiplier);
-            this.solverY.addConnection(fixed1, blockIndex1, this.coordinatesY[blockIndex1], fixed2, blockIndex2, this.coordinatesY[blockIndex2], weightMultiplier);
+            this.solverX.addConnectionMinMaxUnknown(
+                    fixed1, blockIndex1, this.coordinatesX[blockIndex1],
+                    fixed2, blockIndex2, this.coordinatesX[blockIndex2],
+                    weightMultiplier, false);
+
+            this.solverY.addConnectionMinMaxUnknown(
+                    fixed1, blockIndex1, this.coordinatesY[blockIndex1],
+                    fixed2, blockIndex2, this.coordinatesY[blockIndex2],
+                    weightMultiplier, false);
 
             return;
         }
@@ -75,29 +82,29 @@ public class LinearSolverComplete extends LinearSolver {
 
             if(blockIndex != minXIndex) {
                 this.solverX.addConnection(
-                        isFixed, blockIndex, x,
                         minXFixed, minXIndex, minX,
-                        weightMultiplier);
+                        isFixed, blockIndex, x,
+                        weightMultiplier, false);
 
                 if(blockIndex != maxXIndex) {
                     this.solverX.addConnection(
                             isFixed, blockIndex, x,
                             maxXFixed, maxXIndex, maxX,
-                            weightMultiplier);
+                            weightMultiplier, false);
                 }
             }
 
             if(blockIndex != minYIndex) {
                 this.solverY.addConnection(
-                        isFixed, blockIndex, y,
                         minYFixed, minYIndex, minY,
-                        weightMultiplier);
+                        isFixed, blockIndex, y,
+                        weightMultiplier, false);
 
                 if(blockIndex != maxYIndex) {
                     this.solverY.addConnection(
                             isFixed, blockIndex, y,
                             maxYFixed, maxYIndex, maxY,
-                            weightMultiplier);
+                            weightMultiplier, false);
                 }
             }
         }

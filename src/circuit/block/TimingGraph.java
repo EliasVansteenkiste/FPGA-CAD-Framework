@@ -284,10 +284,8 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
 
     // Iterator methods
     // When iterating over a TimingGraph object, you will get a TimingGraphEntry
-    // object
-    // for each connection in the timinggraph. Each of those objects contains a
-    // source
-    // block, a sink block and the criticality of the connection.
+    // object for each connection in the timinggraph. Each of those objects contains
+    // a source block, a sink block and the criticality of the connection.
     @Override
     public Iterator<TimingGraphEntry> iterator() {
         return new TimingGraphIterator(this.circuit.getGlobalBlocks());

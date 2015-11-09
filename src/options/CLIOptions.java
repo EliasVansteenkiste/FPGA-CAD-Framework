@@ -31,6 +31,9 @@ public class CLIOptions {
     @Option(name="-o", aliases="--output", metaVar="PATH", usage="folder that will contain the output place file")
     private String outputPlacePath;
 
+    @Option(name="-v", aliases="--visual", metaVar="BOOLEAN", usage="show the placement in a visual window")
+    private boolean visual = false;
+
 
     @Argument(multiValued=true, metaVar="placer-options", usage="a whitespace-separated list of key=value pairs")
     private List<String> arguments = new ArrayList<String>();
@@ -65,6 +68,8 @@ public class CLIOptions {
 
 
         Options options = Options.getInstance();
+
+        options.setVisual(this.visual);
 
         // Set the architecture file
         options.setArchitectureFile(this.architecturePath);

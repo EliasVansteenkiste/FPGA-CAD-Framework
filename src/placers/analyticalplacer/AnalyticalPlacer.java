@@ -19,6 +19,7 @@ import placers.analyticalplacer.linear_solver.LinearSolver;
 import placers.analyticalplacer.linear_solver.LinearSolverComplete;
 import placers.analyticalplacer.linear_solver.LinearSolverGradient;
 import util.Logger;
+import visual.PlacementVizualizer;
 
 
 public abstract class AnalyticalPlacer extends Placer {
@@ -48,17 +49,17 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("max_utilization_sequence", "1");
 
         // The first anchorWeight factor that will be used in the main solve loop
-        defaultOptions.put("starting_anchor_weight", "1");
+        defaultOptions.put("starting_anchor_weight", "0.0");
 
         // The amount with which the anchorWeight factor will be multiplied each iteration
-        defaultOptions.put("anchor_weight_increase", "1.1");
+        defaultOptions.put("anchor_weight_increase", "0.05");
 
         // The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "gradient");
-        defaultOptions.put("gradient_speed", "0.1");
+        defaultOptions.put("gradient_speed", "0.2");
         defaultOptions.put("gradient_iterations", "30");
     }
 
@@ -227,20 +228,14 @@ public abstract class AnalyticalPlacer extends Placer {
                 }
 
             } else {
-                /*if(firstSolve) { // DEBUG
-                    for(int i = 0; i < 5; i++) {
-                        this.solveLinearComplete(true, pseudoWeightFactor);
-                    }
-                } else {*/
-                    int iterations = firstSolve ? 4 * this.gradientIterations : this.gradientIterations;
-                    for(int i = 0; i < iterations; i++) {
-                        this.solveLinearGradient(firstSolve, pseudoWeightFactor);
-                        //System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
-                    }
-                //}
+                int iterations = firstSolve ? 4 * this.gradientIterations : this.gradientIterations;
+                for(int i = 0; i < iterations; i++) {
+                    this.solveLinearGradient(firstSolve, pseudoWeightFactor);
+                    //System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
+                }
             }
 
-            pseudoWeightFactor *= this.anchorWeightIncrease;
+            pseudoWeightFactor += this.anchorWeightIncrease;
             firstSolve = false;
 
             // Legalize
@@ -250,6 +245,14 @@ public abstract class AnalyticalPlacer extends Placer {
             this.legalizer.legalize(maxUtilizationLegalizer, legalizeIOBlocks);
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
+
+            // Update the visualizer
+            PlacementVizualizer.getInstance().addPlacement(
+                    String.format("iteration %d: linear", iteration),
+                    this.blockIndexes, this.linearX, this.linearY);
+            PlacementVizualizer.getInstance().addPlacement(
+                    String.format("iteration %d: legal", iteration),
+                    this.blockIndexes, this.legalizer.getAnchorsX(), this.legalizer.getAnchorsY());
 
             // Get the costs and print them
             linearCost = this.costCalculator.calculate(this.linearX, this.linearY);

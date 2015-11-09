@@ -9,6 +9,7 @@ import placers.Placer;
 import placers.PlacerFactory;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import util.Logger;
+import visual.PlacementVizualizer;
 import circuit.Circuit;
 import circuit.architecture.Architecture;
 import circuit.parser.NetParser;
@@ -37,6 +38,13 @@ public class Main {
         this.options = Options.getInstance();
 
         this.loadCircuit();
+
+
+        // Enable the vizualizer
+        PlacementVizualizer visualizer = PlacementVizualizer.getInstance();
+        if(this.options.getVisual()) {
+            visualizer.setCircuit(this.circuit);
+        }
 
 
         // Read the place file
@@ -76,6 +84,8 @@ public class Main {
         }
 
         this.stopAndPrintTimer(totalString);
+
+        visualizer.createAndDrawGUI();
     }
 
 

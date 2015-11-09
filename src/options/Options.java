@@ -21,6 +21,8 @@ public class Options {
     private File inputPlaceFile;
     private File outputPlaceFile;
 
+    private boolean visual;
+
     private int numPlacers;
     private List<String> placers;
     private List<Map<String, String>> placerOptions;
@@ -144,6 +146,13 @@ public class Options {
     }
     public File getArchitectureFileVPR() {
         return this.architectureFileVPR;
+    }
+
+    void setVisual(boolean visual) {
+        this.visual = visual;
+    }
+    public boolean getVisual() {
+        return this.visual;
     }
 
 

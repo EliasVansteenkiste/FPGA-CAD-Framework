@@ -24,22 +24,22 @@ public class LinearSolverGradient extends LinearSolver {
         double weightMultiplier = AnalyticalPlacer.getWeight(numNetBlocks);
 
         // Nets with 2 blocks are common and can be processed very quick
-        /*if(numNetBlocks == 2) {
+        if(numNetBlocks == 2) {
             int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
             boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
 
-            this.solverX.addConnection(
+            this.solverX.addConnectionMinMaxUnknown(
                     fixed1, blockIndex1, this.coordinatesX[blockIndex1],
                     fixed2, blockIndex2, this.coordinatesX[blockIndex2],
-                    weightMultiplier);
+                    weightMultiplier, false);
 
-            this.solverY.addConnection(
+            this.solverY.addConnectionMinMaxUnknown(
                     fixed1, blockIndex1, this.coordinatesY[blockIndex1],
                     fixed2, blockIndex2, this.coordinatesY[blockIndex2],
-                    weightMultiplier);
+                    weightMultiplier, false);
 
             return;
-        }*/
+        }
 
 
         // For bigger nets, we have to find the min and max block
@@ -78,12 +78,12 @@ public class LinearSolverGradient extends LinearSolver {
         this.solverX.addConnection(
                 minXFixed, minXIndex, minX,
                 maxXFixed, maxXIndex, maxX,
-                weightMultiplier);
+                weightMultiplier, false);
 
         this.solverY.addConnection(
                 minYFixed, minYIndex, minY,
                 maxYFixed, maxYIndex, maxY,
-                weightMultiplier);
+                weightMultiplier, false);
     }
 
 

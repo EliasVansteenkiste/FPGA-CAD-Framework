@@ -2,13 +2,16 @@ package placers.analyticalplacer.linear_solver;
 
 
 
-public class DimensionSolverGradient implements DimensionSolver {
+public class DimensionSolverGradient extends DimensionSolver {
 
     private final double[] coordinates;
 
     private final double[] directions, totalPositiveNetSize, totalNegativeNetSize;
     private final int[] numPositiveNets, numNegativeNets;
     private final double gradientSpeed;
+
+    private double pseudoWeight;
+    private double[] pseudoGoal;
 
     public DimensionSolverGradient(double[] coordinates, double gradientSpeed) {
         this.coordinates = coordinates;
@@ -21,6 +24,8 @@ public class DimensionSolverGradient implements DimensionSolver {
         this.numNegativeNets = new int[numBlocks];
         this.totalPositiveNetSize = new double[numBlocks];
         this.totalNegativeNetSize = new double[numBlocks];
+
+        this.pseudoGoal = new double[numBlocks];
     }
 
 
@@ -28,39 +33,32 @@ public class DimensionSolverGradient implements DimensionSolver {
     public void addConnection(
             boolean minFixed, int minIndex, double minCoordinate,
             boolean maxFixed, int maxIndex, double maxCoordinate,
-            double weightMultiplier) {
+            double weightMultiplier, boolean isPseudoConnection) {
 
-        if(minCoordinate > maxCoordinate) {
-            boolean tmpFixed = minFixed;
-            minFixed = maxFixed;
-            maxFixed = tmpFixed;
-
-            int tmpIndex = minIndex;
-            minIndex = maxIndex;
-            maxIndex = tmpIndex;
-
-            double tmpCoordinate = minCoordinate;
-            minCoordinate = maxCoordinate;
-            maxCoordinate = tmpCoordinate;
-        }
-
-        //double netSize = 15 * Math.tanh((maxCoordinate - minCoordinate) / 15);
-        double netSize = 20 * (maxCoordinate - minCoordinate) / (10 + maxCoordinate - minCoordinate);
-        //double netSize = maxCoordinate - minCoordinate;
+        double difference = maxCoordinate - minCoordinate;
+        double netSize = 20 * difference / (10 + difference);
         double weight = netSize == 0 ? 0 : weightMultiplier;
 
-        if(minIndex >= 0) {
-            this.totalPositiveNetSize[minIndex] += netSize;
-            this.numPositiveNets[minIndex] += 1;
-            if(weight != 0) {
+        if(isPseudoConnection) {
+            this.pseudoWeight = weightMultiplier;
+
+            if(minIndex >= 0) {
+                this.pseudoGoal[minIndex] = maxCoordinate;
+            }
+            if(maxIndex >= 0) {
+                this.pseudoGoal[maxIndex] = minCoordinate;
+            }
+
+        } else {
+            if(minIndex >= 0) {
+                this.totalPositiveNetSize[minIndex] += netSize;
+                this.numPositiveNets[minIndex] += 1;
                 this.directions[minIndex] += weight;
             }
-        }
 
-        if(maxIndex >= 0) {
-            this.totalNegativeNetSize[maxIndex] += netSize;
-            this.numNegativeNets[maxIndex] += 1;
-            if(weight != 0) {
+            if(maxIndex >= 0) {
+                this.totalNegativeNetSize[maxIndex] += netSize;
+                this.numNegativeNets[maxIndex] += 1;
                 this.directions[maxIndex] -= weight;
             }
         }
@@ -69,19 +67,20 @@ public class DimensionSolverGradient implements DimensionSolver {
     @Override
     public void solve() {
         int numBlocks = this.coordinates.length;
-        //for(int i = this.numIOBlocks; i < numBlocks; i++) {
+
         for(int i = 0; i < numBlocks; i++) {
             double direction = this.directions[i];
-            double force = 0;
+            double netGoal = 0;
 
             if(direction > 0) {
-                force = this.totalPositiveNetSize[i] / this.numPositiveNets[i];
+                netGoal = this.coordinates[i] + this.totalPositiveNetSize[i] / this.numPositiveNets[i];
 
             } else if(direction < 0) {
-                force = -this.totalNegativeNetSize[i] / this.numNegativeNets[i];
+                netGoal = this.coordinates[i] - this.totalNegativeNetSize[i] / this.numNegativeNets[i];
             }
 
-            this.coordinates[i] += this.gradientSpeed * force;
+            double newCoordinate = this.gradientSpeed * (((1 - this.pseudoWeight) * netGoal + this.pseudoWeight * this.pseudoGoal[i]) - this.coordinates[i]);
+            this.coordinates[i] += this.gradientSpeed * (((1 - this.pseudoWeight) * netGoal + this.pseudoWeight * this.pseudoGoal[i]) - this.coordinates[i]);
         }
     }
 }

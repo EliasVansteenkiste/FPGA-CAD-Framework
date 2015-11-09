@@ -18,15 +18,15 @@ public abstract class LinearSolver {
     public abstract int getPseudoBlockIndexStart();
 
     public void addPseudoConnection(int blockIndex, int legalX, int legalY, double pseudoWeightFactor) {
-        this.solverX.addConnection(
+        this.solverX.addConnectionMinMaxUnknown(
                 false, blockIndex, this.coordinatesX[blockIndex],
                 true, -1, legalX,
-                pseudoWeightFactor);
+                pseudoWeightFactor, true);
 
-        this.solverY.addConnection(
+        this.solverY.addConnectionMinMaxUnknown(
                 false, blockIndex, this.coordinatesY[blockIndex],
                 true, -1, legalY,
-                pseudoWeightFactor);
+                pseudoWeightFactor, true);
     }
 
     public void solve() {
