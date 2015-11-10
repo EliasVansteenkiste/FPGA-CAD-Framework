@@ -25,9 +25,4 @@ public class IntermediateBlock extends AbstractBlock {
     protected LocalPin createPin(PortType portType, int index) {
         return new LocalPin(this, portType, index);
     }
-
-    @Override
-    public void compact() {
-
-    }
 }

@@ -1,5 +1,7 @@
 package placers.SAPlacer;
 
+import interfaces.Logger;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
@@ -8,10 +10,14 @@ import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidBlockException;
+import circuit.exceptions.PlacedBlockException;
+import circuit.exceptions.UnplacedBlockException;
 
 
 import placers.Placer;
-
+import visual.PlacementVisualizer;
 
 public abstract class SAPlacer extends Placer
 {
@@ -46,8 +52,8 @@ public abstract class SAPlacer extends Placer
 
     protected Random random;
 
-    public SAPlacer(Circuit circuit, Map<String, String> options) {
-        super(circuit, options);
+    public SAPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
+        super(logger, visualizer, circuit, options);
 
         // Get greedy option
         this.greedy = this.parseBooleanOption("greedy");
@@ -95,8 +101,8 @@ public abstract class SAPlacer extends Placer
         this.random = new Random(10);
 
         //Print parameters
-        System.out.println("Effort level: " + this.effortLevel);
-        System.out.println("Moves per temperature: " + this.movesPerTemperature);
+        this.logger.logln("Effort level: " + this.effortLevel);
+        this.logger.logln("Moves per temperature: " + this.movesPerTemperature);
 
 
         if(this.greedy) {
@@ -105,7 +111,7 @@ public abstract class SAPlacer extends Placer
         } else {
             this.calculateInitialTemperature();
 
-            System.out.println("Initial temperature: " + this.temperature);
+            this.logger.logln("Initial temperature: " + this.temperature);
 
 
             int iteration = 0;
@@ -118,13 +124,13 @@ public abstract class SAPlacer extends Placer
                 this.updateRlim(alpha);
                 this.updateTemperature(alpha);
 
-                System.out.format("Temperature %d = %.9f, Rlim = %d, %s\n",
+                this.logger.logf("Temperature %d = %.9f, Rlim = %d, %s\n",
                         iteration, this.temperature, this.Rlim, this.getStatistics());
 
                 iteration++;
             }
 
-            System.out.println("Last temp: " + this.temperature);
+            this.logger.logln("Last temp: " + this.temperature);
         }
     }
 
@@ -162,8 +168,7 @@ public abstract class SAPlacer extends Placer
         double maxEplus = integral(this.deltaCosts, zeroIndex, numSamples, 0);
 
         if(maxEplus < Emin) {
-            System.err.println("SA failed to get a temperature estimate");
-            System.exit(1);
+            this.logger.raise("SA failed to get a temperature estimate");
         }
 
         double minT = 0;
@@ -245,10 +250,13 @@ public abstract class SAPlacer extends Placer
 
 
                 if(pushThrough) {
-                    if(deltaCost <= 0
-                            || (this.greedy == false && this.random.nextDouble() < Math.exp(-deltaCost / this.temperature))) {
+                    if(deltaCost <= 0 || (this.greedy == false && this.random.nextDouble() < Math.exp(-deltaCost / this.temperature))) {
 
-                        swap.apply();
+                        try {
+                            swap.apply();
+                        } catch(UnplacedBlockException | InvalidBlockException | PlacedBlockException | FullSiteException error) {
+                            this.logger.raise(error);
+                        }
                         numSwaps++;
 
                         this.pushThrough(i);
@@ -283,7 +291,7 @@ public abstract class SAPlacer extends Placer
 
 
 
-    protected final Swap findSwap(int Rlim) {
+    protected Swap findSwap(int Rlim) {
         GlobalBlock fromBlock = null;
         AbstractSite toSite = null;
         do {

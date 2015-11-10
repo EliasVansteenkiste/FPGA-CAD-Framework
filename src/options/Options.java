@@ -1,14 +1,17 @@
 package options;
 
+import interfaces.Logger;
+
 import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-import util.Logger;
 
 public class Options {
 
     public enum StartingStage {NET, PLACE};
+
+    private Logger logger;
 
     private String circuitName;
     private StartingStage startingStage;
@@ -28,21 +31,17 @@ public class Options {
     private List<Map<String, String>> placerOptions;
 
 
-    private static Options instance = new Options();
-    public static Options getInstance() {
-        return Options.instance;
-    }
-
-    private Options() {
+    Options(Logger logger) {
+        this.logger = logger;
         this.startingStage = StartingStage.NET;
     }
 
     private void checkFileExistence(String prefix, File file) {
         if(!file.exists()) {
-            Logger.raise(prefix + " file not found: " + file);
+            this.logger.raise(prefix + " file not found: " + file);
 
         } else if(file.isDirectory()) {
-            Logger.raise(prefix + " file is a directory:" + file);
+            this.logger.raise(prefix + " file is a directory:" + file);
         }
     }
 
@@ -124,14 +123,14 @@ public class Options {
             String path = file.getAbsolutePath();
             if(path.substring(path.length() - 4).equals(".xml")) {
                 if(architectureFile != null) {
-                    Logger.raise("Multiple architecture files found in the input folder");
+                    this.logger.raise("Multiple architecture files found in the input folder");
                 }
                 architectureFile = file;
             }
         }
 
         if(architectureFile == null) {
-            Logger.raise("No architecture file found in the inputfolder");
+            this.logger.raise("No architecture file found in the inputfolder");
         }
 
         this.setArchitectureFileVPR(architectureFile);
@@ -160,7 +159,7 @@ public class Options {
         int numPlacers = placers.size();
         int numPlacerOptions = placerOptions.size();
         if(numPlacers != numPlacerOptions) {
-            Logger.raise(String.format(
+            this.logger.raise(String.format(
                     "The number op placer options (%d) is not equal to the number of placers (%d",
                     numPlacerOptions, numPlacers));
         }

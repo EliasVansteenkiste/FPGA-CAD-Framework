@@ -1,13 +1,11 @@
 package visual;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import circuit.Circuit;
 import circuit.block.GlobalBlock;
-import util.Logger;
 
 class Placement {
 
@@ -34,11 +32,6 @@ class Placement {
     private Placement(String name, Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, int xSize, int ySize) {
         this.initializeData(name, circuit);
         this.overrideCoordinates = true;
-
-        int size = circuit.getGlobalBlocks().size();
-        if(!(size == blockIndexes.size() && size == xSize && size == ySize)) {
-            Logger.raise("Coordinate arrays don't have the correct size");
-        }
     }
 
     Placement(String name, Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, int[] x, int[] y) {

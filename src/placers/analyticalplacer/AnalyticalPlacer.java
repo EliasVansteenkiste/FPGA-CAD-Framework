@@ -1,5 +1,7 @@
 package placers.analyticalplacer;
 
+import interfaces.Logger;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,14 +14,17 @@ import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
 import circuit.block.AbstractBlock;
 import circuit.block.GlobalBlock;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidBlockException;
+import circuit.exceptions.PlacedBlockException;
+import circuit.exceptions.UnplacedBlockException;
 import circuit.pin.AbstractPin;
 
 import placers.Placer;
 import placers.analyticalplacer.linear_solver.LinearSolver;
 import placers.analyticalplacer.linear_solver.LinearSolverComplete;
 import placers.analyticalplacer.linear_solver.LinearSolverGradient;
-import util.Logger;
-import visual.PlacementVizualizer;
+import visual.PlacementVisualizer;
 
 
 public abstract class AnalyticalPlacer extends Placer {
@@ -52,7 +57,7 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("starting_anchor_weight", "0");
 
         // The amount with which the anchorWeight factor will be multiplied each iteration
-        defaultOptions.put("anchor_weight_increase", "0.1");
+        defaultOptions.put("anchor_weight_increase", "0.01");
 
         // The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
@@ -60,11 +65,11 @@ public abstract class AnalyticalPlacer extends Placer {
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "gradient");
         defaultOptions.put("gradient_speed", "0.40");
-        defaultOptions.put("gradient_iterations", "30");
+        defaultOptions.put("gradient_iterations", "40");
     }
 
-    public AnalyticalPlacer(Circuit circuit, Map<String, String> options) {
-        super(circuit, options);
+    public AnalyticalPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
+        super(logger, visualizer, circuit, options);
 
         // Parse options
 
@@ -93,8 +98,7 @@ public abstract class AnalyticalPlacer extends Placer {
                 break;
 
             default:
-                Logger.raise("Unknown solve mode: " + solveModeString);
-                this.algorithmSolveMode = null;
+                throw new IllegalArgumentException("Unknown solve mode: " + solveModeString);
         }
 
         this.gradientSpeed = this.parseDoubleOption("gradient_speed");
@@ -192,11 +196,16 @@ public abstract class AnalyticalPlacer extends Placer {
 
         this.costCalculator = createCostCalculator();
 
-        this.legalizer = new Legalizer(
-                this.circuit, this.costCalculator,
-                this.blockIndexes,
-                blockTypes, blockTypeIndexStarts,
-                this.linearX, this.linearY);
+        try {
+            this.legalizer = new Legalizer(
+                    this.circuit, this.costCalculator,
+                    this.blockIndexes,
+                    blockTypes, blockTypeIndexStarts,
+                    this.linearX, this.linearY);
+
+        } catch(IllegalArgumentException error) {
+            this.logger.raise(error);
+        }
     }
 
 
@@ -211,7 +220,7 @@ public abstract class AnalyticalPlacer extends Placer {
         boolean legalizeIOBlocks = false;
 
         do {
-            System.out.format("Iteration %d: pseudoWeightFactor = %f, gradientSpeed = %f",
+            this.logger.logf("Iteration %d: pseudoWeightFactor = %f, gradientSpeed = %f",
                     iteration, pseudoWeightFactor, this.gradientSpeed);
 
             this.initializePlacementIteration();
@@ -231,7 +240,7 @@ public abstract class AnalyticalPlacer extends Placer {
                 int iterations = firstSolve ? 4 * this.gradientIterations : this.gradientIterations;
                 for(int i = 0; i < iterations; i++) {
                     this.solveLinearGradient(firstSolve, pseudoWeightFactor);
-                    //System.out.println(this.costCalculator.calculate(this.linearX, this.linearY));
+                    //Logger.logln(this.costCalculator.calculate(this.linearX, this.linearY));
                 }
             }
 
@@ -242,15 +251,20 @@ public abstract class AnalyticalPlacer extends Placer {
             int sequenceIndex = Math.min(iteration, this.maxUtilizationSequence.length - 1);
             double maxUtilizationLegalizer = this.maxUtilizationSequence[sequenceIndex];
 
-            this.legalizer.legalize(maxUtilizationLegalizer, legalizeIOBlocks);
+            try {
+                this.legalizer.legalize(maxUtilizationLegalizer, legalizeIOBlocks);
+            } catch(UnplacedBlockException | InvalidBlockException | PlacedBlockException | FullSiteException error) {
+                this.logger.raise(error);
+            }
+
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
 
             // Update the visualizer
-            PlacementVizualizer.getInstance().addPlacement(
+            this.visualizer.addPlacement(
                     String.format("iteration %d: linear", iteration),
                     this.blockIndexes, this.linearX, this.linearY);
-            PlacementVizualizer.getInstance().addPlacement(
+            this.visualizer.addPlacement(
                     String.format("iteration %d: legal", iteration),
                     this.blockIndexes, this.legalizer.getAnchorsX(), this.legalizer.getAnchorsY());
 
@@ -264,7 +278,11 @@ public abstract class AnalyticalPlacer extends Placer {
         } while(linearCost / legalCost < this.stopRatioLinearLegal);
 
 
-        this.legalizer.updateCircuit();
+        try {
+            this.legalizer.updateCircuit();
+        } catch(UnplacedBlockException | InvalidBlockException | PlacedBlockException | FullSiteException error) {
+            this.logger.raise(error);
+        }
     }
 
 
@@ -275,9 +293,9 @@ public abstract class AnalyticalPlacer extends Placer {
         this.solver = new LinearSolverComplete(this.linearX, this.linearY, this.numIOBlocks, epsilon);
         this.solveLinear(firstSolve, pseudoweightFactor);
     }
-    private void solveLinearGradient(boolean firstSolve, double pseudoweightFactor) {
-        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.gradientSpeed);
-        this.solveLinear(firstSolve, pseudoweightFactor);
+    private void solveLinearGradient(boolean firstSolve, double pseudoWeightFactor) {
+        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, pseudoWeightFactor, this.gradientSpeed);
+        this.solveLinear(firstSolve, pseudoWeightFactor);
     }
 
     /*

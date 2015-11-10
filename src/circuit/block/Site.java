@@ -5,9 +5,8 @@ import java.util.Collection;
 import java.util.Random;
 
 import circuit.architecture.BlockType;
-
-
-import util.Logger;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidBlockException;
 
 public class Site extends AbstractSite {
 
@@ -28,21 +27,21 @@ public class Site extends AbstractSite {
     }
 
     @Override
-    void addBlock(GlobalBlock block) {
-        if(this.block == null) {
-            this.block = block;
-        } else {
-            Logger.raise("Trying to set the block on a non-empty site");
+    void addBlock(GlobalBlock block) throws FullSiteException {
+        if(this.block != null) {
+            throw new FullSiteException();
         }
+
+        this.block = block;
     }
 
     @Override
-    public void removeBlock(GlobalBlock block) {
-        if(block == this.block) {
-            this.block = null;
-        } else {
-            Logger.raise("Trying to remove a block that is not present in site");
+    public void removeBlock(GlobalBlock block) throws InvalidBlockException {
+        if(block != this.block) {
+            throw new InvalidBlockException();
         }
+
+        this.block = null;
     }
 
     @Override

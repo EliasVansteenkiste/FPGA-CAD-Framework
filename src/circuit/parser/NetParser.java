@@ -15,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import circuit.Circuit;
+import circuit.architecture.Architecture;
 import circuit.architecture.BlockType;
 import circuit.architecture.PortType;
 import circuit.block.AbstractBlock;
@@ -23,13 +24,11 @@ import circuit.block.LeafBlock;
 import circuit.block.IntermediateBlock;
 import circuit.pin.AbstractPin;
 
-import util.Logger;
-
-
 public class NetParser {
 
-    private Circuit circuit;
-    private File file;
+    //private Circuit circuit;
+    private Architecture architecture;
+    private String circuitName;
     private BufferedReader reader;
 
     private Map<BlockType, List<AbstractBlock>> blocks;
@@ -51,19 +50,14 @@ public class NetParser {
     private static Pattern internalNetPattern = Pattern.compile("(?<block>\\w+)(?:\\[(?<blockIndex>\\d+)\\])?\\.(?<port>\\w+)\\[(?<portIndex>\\d+)\\]->.*");
 
 
-    public NetParser(Circuit circuit, File file) {
-        this.circuit = circuit;
-        this.file = file;
-
-        try {
-            this.reader = new BufferedReader(new FileReader(file));
-        } catch (FileNotFoundException exception) {
-            Logger.raise("Could not find the net file: " + file, exception);
-        }
+    public NetParser(Architecture architecture, File file, String circuitName) throws FileNotFoundException {
+        this.architecture = architecture;
+        this.circuitName = circuitName;
+        this.reader = new BufferedReader(new FileReader(file));
     }
 
 
-    public void parse() {
+    public Circuit parse() throws IOException {
         // A list of all the blocks in the circuit
         this.blocks = new HashMap<BlockType, List<AbstractBlock>>();
 
@@ -85,62 +79,57 @@ public class NetParser {
 
 
         String line, multiLine = "";
-        try {
-            while ((line = this.reader.readLine()) != null) {
-                String trimmedLine = line.trim();
 
+        while ((line = this.reader.readLine()) != null) {
+            String trimmedLine = line.trim();
 
-
-                // Add the current line to the multiLine
-                if(multiLine.length() > 0) {
-                    multiLine += " ";
-                }
-                multiLine += trimmedLine;
-
-                if(!this.isCompleteLine(multiLine)) {
-                    continue;
-                }
-
-
-
-                String lineStart = multiLine.substring(0, 5);
-
-                switch(lineStart) {
-                case "<inpu":
-                    this.processInputLine(multiLine);
-                    break;
-
-
-                case "<outp":
-                    this.processOutputLine(multiLine);
-                    break;
-
-                case "<cloc":
-                    this.processClockLine(multiLine);
-                    break;
-
-
-                case "<port":
-                    this.processPortLine(multiLine);
-                    break;
-
-
-                case "<bloc":
-                    if(!multiLine.substring(multiLine.length() - 2).equals("/>")) {
-                        this.processBlockLine(multiLine);
-                    }
-                    break;
-
-
-                case "</blo":
-                    this.processBlockEndLine();
-                    break;
-                }
-
-                multiLine = "";
+            // Add the current line to the multiLine
+            if(multiLine.length() > 0) {
+                multiLine += " ";
             }
-        } catch (IOException exception) {
-            Logger.raise("Failed to read from the net file: " + this.file, exception);
+            multiLine += trimmedLine;
+
+            if(!this.isCompleteLine(multiLine)) {
+                continue;
+            }
+
+
+
+            String lineStart = multiLine.substring(0, 5);
+
+            switch(lineStart) {
+            case "<inpu":
+                this.processInputLine(multiLine);
+                break;
+
+
+            case "<outp":
+                this.processOutputLine(multiLine);
+                break;
+
+            case "<cloc":
+                this.processClockLine(multiLine);
+                break;
+
+
+            case "<port":
+                this.processPortLine(multiLine);
+                break;
+
+
+            case "<bloc":
+                if(!multiLine.substring(multiLine.length() - 2).equals("/>")) {
+                    this.processBlockLine(multiLine);
+                }
+                break;
+
+
+            case "</blo":
+                this.processBlockEndLine();
+                break;
+            }
+
+            multiLine = "";
         }
 
 
@@ -150,7 +139,10 @@ public class NetParser {
             }
         }
 
-        this.circuit.loadBlocks(this.blocks);
+        Circuit circuit = new Circuit(this.circuitName, this.architecture, this.blocks);
+        circuit.buildDataStructures();
+
+        return circuit;
     }
 
 
@@ -206,17 +198,13 @@ public class NetParser {
         String ports = matcher.group("ports");
 
         switch(this.currentPortType) {
-        case INPUT:
-            this.inputsStack.peek().getMap().put(name, ports);
-            //this.addNets(this.blockStack.peek(), PortType.INPUT, name, ports);
-            break;
+            case INPUT:
+                this.inputsStack.peek().getMap().put(name, ports);
+                break;
 
-        case OUTPUT:
-            this.outputsStack.peek().put(name, ports);
-            break;
-
-        default:
-            Logger.raise("Port type not set");
+            case OUTPUT:
+                this.outputsStack.peek().put(name, ports);
+                break;
         }
     }
 
@@ -247,7 +235,7 @@ public class NetParser {
 
             if(blockType.isLeaf()) {
                 GlobalBlock globalParent = (GlobalBlock) this.blockStack.peekLast();
-                newBlock = new LeafBlock(name, blockType, index, parent, globalParent);
+                newBlock = new LeafBlock(this.architecture.getDelayTables(), name, blockType, index, parent, globalParent);
 
             } else {
                 newBlock = new IntermediateBlock(name, blockType, index, parent);
@@ -397,9 +385,6 @@ public class NetParser {
             AbstractPin sourcePin = this.sourcePins.get(sourceName);
             AbstractBlock parent = sourcePin.getOwner().getParent();
 
-            if(!sinkPin.getOwner().isGlobal()) {
-                Logger.raise("Found a global net with a sink that is not in a global block");
-            }
 
             while(parent != null) {
                 int numPins = sourcePin.getNumSinks();
@@ -411,10 +396,6 @@ public class NetParser {
                         nextSourcePin = pin;
                         break;
                     }
-                }
-
-                if(nextSourcePin == null) {
-                    Logger.raise("No net to parent block found");
                 }
 
                 sourcePin = nextSourcePin;

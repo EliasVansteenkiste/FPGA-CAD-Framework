@@ -1,16 +1,12 @@
 package circuit.architecture;
 
-import options.Options;
-
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-
-import util.Logger;
+import circuit.exceptions.InvalidFileFormatException;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,36 +28,39 @@ public class Architecture implements Serializable {
 
     private static final double FILL_GRADE = 1;
 
-    private File file;
+    private File architectureFile, architectureFileVPR, blifFile, netFile;
+    private String circuitName;
+
+    private DelayTables delayTables;
     private transient JSONObject blockDefinitions;
 
     private int ioCapacity;
 
 
-    public Architecture() {
-        this.file = Options.getInstance().getArchitectureFile();
+    public Architecture(String circuitName, File architectureFile, File architectureFileVPR, File blifFile, File netFile) {
+        this.architectureFile = architectureFile;
+        this.architectureFileVPR = architectureFileVPR;
+
+        this.blifFile = blifFile;
+        this.netFile = netFile;
+
+        this.circuitName = circuitName;
     }
 
     @SuppressWarnings("unchecked")
-    public void parse() {
-
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new FileReader(this.file));
-        } catch (FileNotFoundException exception) {
-            Logger.raise("Could not find the architecture file: " + this.file, exception);
-        }
-
+    public void parse() throws IOException, InvalidFileFormatException, InterruptedException {
 
         // Read the entire file
-        String content = "", line;
-        try {
-            while((line = reader.readLine()) != null) {
-                content += line;
-            }
-        } catch (IOException exception) {
-            Logger.raise("Failed to read from the architecture file: " + this.file, exception);
+        BufferedReader reader = new BufferedReader(new FileReader(this.architectureFile));
+
+        String content = "";
+        String line;
+        while((line = reader.readLine()) != null) {
+            content += line;
         }
+
+        reader.close();
+
 
         // Parse the JSONObject
         JSONObject jsonContent = (JSONObject) JSONValue.parse(content);
@@ -77,6 +76,9 @@ public class Architecture implements Serializable {
 
         // Get all the delays
         this.processDelays((Map<String, Double>) jsonContent.get("delays"));
+
+        // Build the delay matrixes
+        this.buildDelayMatrixes();
     }
 
 
@@ -226,47 +228,30 @@ public class Architecture implements Serializable {
     }
 
 
-    public void buildDelayMatrixes() {
+    private void buildDelayMatrixes() throws IOException, InvalidFileFormatException, InterruptedException {
         // For this method to work, the macro PRINT_ARRAYS should be defined
         // in vpr: place/timing_place_lookup.c
 
-        Options options = Options.getInstance();
-
-        String circuitName = options.getCircuitName();
-        File blifFile = options.getBlifFile();
-        File netFile = options.getNetFile();
-        File architectureFileVPR = options.getArchitectureFileVPR();
 
         // Run vpr
         String command = String.format(
                 "./vpr %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
-                architectureFileVPR, circuitName, blifFile, netFile);
+                this.architectureFileVPR, this.circuitName, this.blifFile, this.netFile);
 
         Process process = null;
-        try {
-            process = Runtime.getRuntime().exec(command);
-        } catch(IOException error) {
-            Logger.raise("Failed to execute vpr: " + command, error);
-        }
+        process = Runtime.getRuntime().exec(command);
+
 
         // Read output to avoid buffer overflow and deadlock
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        try {
-            while ((reader.readLine()) != null) {}
-        } catch(IOException error) {
-            Logger.raise("Failed to read from vpr output", error);
-        }
+        while ((reader.readLine()) != null) {}
+        process.waitFor();
 
-        // Finish execution
-        try {
-            process.waitFor();
-        } catch(InterruptedException error) {
-            Logger.raise("vpr was interrupted", error);
-        }
 
         // Parse the delay tables
         File delaysFile = new File("lookup_dump.echo");
-        DelayTables.getInstance().parse(delaysFile);
+        this.delayTables = new DelayTables(delaysFile);
+        this.delayTables.parse();
 
         // Clean up
         this.deleteFile("vpr_tmp");
@@ -274,13 +259,13 @@ public class Architecture implements Serializable {
         this.deleteFile("lookup_dump.echo");
     }
 
-    private void deleteFile(String path) {
-        try {
-            Files.deleteIfExists(new File(path).toPath());
+    private void deleteFile(String path) throws IOException {
+        Files.deleteIfExists(new File(path).toPath());
+    }
 
-        } catch(IOException error) {
-            Logger.raise("File not found: " + path, error);
-        }
+
+    public DelayTables getDelayTables() {
+        return this.delayTables;
     }
 
 
@@ -298,13 +283,11 @@ public class Architecture implements Serializable {
         out.defaultWriteObject();
         out.writeObject(BlockTypeData.getInstance());
         out.writeObject(PortTypeData.getInstance());
-        out.writeObject(DelayTables.getInstance());
     }
 
     private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException {
         in.defaultReadObject();
         BlockTypeData.setInstance((BlockTypeData) in.readObject());
         PortTypeData.setInstance((PortTypeData) in.readObject());
-        DelayTables.setInstance((DelayTables) in.readObject());
     }
 }

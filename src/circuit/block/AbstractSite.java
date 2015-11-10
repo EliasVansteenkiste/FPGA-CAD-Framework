@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.Random;
 
 import circuit.architecture.BlockType;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidBlockException;
 
 
 
@@ -30,8 +32,8 @@ public abstract class AbstractSite {
 
 
     public abstract GlobalBlock getRandomBlock(Random random);
-    abstract void addBlock(GlobalBlock block);
-    public abstract void removeBlock(GlobalBlock block);
+    abstract void addBlock(GlobalBlock block) throws FullSiteException;
+    public abstract void removeBlock(GlobalBlock block) throws InvalidBlockException;
     public abstract void clear();
 
     public abstract Collection<GlobalBlock> getBlocks();

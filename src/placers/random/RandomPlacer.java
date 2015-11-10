@@ -1,5 +1,7 @@
 package placers.random;
 
+import interfaces.Logger;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -14,12 +16,15 @@ import circuit.architecture.BlockCategory;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.PlacedBlockException;
 
 import placers.Placer;
-
+import visual.PlacementVisualizer;
 
 public class RandomPlacer extends Placer {
+
+    private static final String name = "Random Placer";
 
     static {
         defaultOptions.put("categories", "");
@@ -27,8 +32,8 @@ public class RandomPlacer extends Placer {
 
     private final Set<BlockCategory> categories = new HashSet<>();
 
-    public RandomPlacer(Circuit circuit, Map<String, String> options) {
-        super(circuit, options);
+    public RandomPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
+        super(logger, visualizer, circuit, options);
 
         String categoriesString = this.options.get("categories");
         Set<String> categoriesStrings = new HashSet<>(Arrays.asList(categoriesString.split(",")));
@@ -70,10 +75,19 @@ public class RandomPlacer extends Placer {
                 AbstractSite site = sites.get(siteIndex);
                 GlobalBlock block = (GlobalBlock) abstractBlock;
 
-                block.setSite(site);
+                try {
+                    block.setSite(site);
+                } catch(PlacedBlockException | FullSiteException error) {
+                    this.logger.raise(error);
+                }
 
                 siteIndex++;
             }
         }
+    }
+
+    @Override
+    public String getName() {
+        return RandomPlacer.name;
     }
 }

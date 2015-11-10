@@ -14,7 +14,6 @@ import circuit.block.GlobalBlock;
 
 
 
-import util.Logger;
 
 public class PlaceDumper {
 
@@ -35,13 +34,9 @@ public class PlaceDumper {
     }
 
 
-    public void dump() {
+    public void dump() throws IOException {
         PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile)));
-        } catch (IOException e) {
-            Logger.raise("Could not open placement output file: " + this.placeFile, e);
-        }
+        writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile)));
 
         int length = 0;
         for(GlobalBlock block : this.circuit.getGlobalBlocks()) {

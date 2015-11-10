@@ -7,9 +7,10 @@ import java.util.Random;
 import java.util.Set;
 
 import circuit.architecture.BlockType;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidBlockException;
 
 
-import util.Logger;
 
 
 public class IOSite extends AbstractSite {
@@ -42,19 +43,19 @@ public class IOSite extends AbstractSite {
     }
 
     @Override
-    void addBlock(GlobalBlock block) {
+    void addBlock(GlobalBlock block) throws FullSiteException {
         if(this.blocks.size() == this.capacity) {
-            Logger.raise("Tried to add a block to a full IO site");
-        } else {
-            this.blocks.add(block);
+            throw new FullSiteException();
         }
+
+        this.blocks.add(block);
     }
 
     @Override
-    public void removeBlock(GlobalBlock block) {
+    public void removeBlock(GlobalBlock block) throws InvalidBlockException {
         boolean success = this.blocks.remove(block);
         if(!success) {
-            Logger.raise("Trying to remove a block that is not present in site");
+            throw new InvalidBlockException();
         }
     }
 

@@ -9,6 +9,7 @@ import circuit.architecture.DelayTables;
 
 public class LeafBlock extends IntermediateBlock {
 
+    private DelayTables delayTables;
     private GlobalBlock globalParent;
 
     private ArrayList<LeafBlock> sourceBlocks = new ArrayList<LeafBlock>();
@@ -21,9 +22,10 @@ public class LeafBlock extends IntermediateBlock {
     private int numProcessedSources, numProcessedSinks;
 
 
-    public LeafBlock(String name, BlockType type, int index, AbstractBlock parent, GlobalBlock globalParent) {
+    public LeafBlock(DelayTables delayTables, String name, BlockType type, int index, AbstractBlock parent, GlobalBlock globalParent) {
         super(name, type, index, parent);
 
+        this.delayTables = delayTables;
         this.globalParent = globalParent;
         this.globalParent.addLeaf(this);
     }
@@ -196,7 +198,7 @@ public class LeafBlock extends IntermediateBlock {
         BlockCategory fromCategory = this.globalParent.getCategory();
         BlockCategory toCategory = otherBlock.globalParent.getCategory();
 
-        return DelayTables.getInstance().getDelay(fromCategory, toCategory, deltaX, deltaY);
+        return this.delayTables.getDelay(fromCategory, toCategory, deltaX, deltaY);
     }
 
 

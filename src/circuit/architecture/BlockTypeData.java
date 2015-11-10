@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import util.Logger;
-
 class BlockTypeData implements Serializable {
     /**
      * This is a singleton class. It should be serialized explicitly!
@@ -161,21 +159,12 @@ class BlockTypeData implements Serializable {
 
 
     int getTypeIndex(String typeName) {
-        Integer typeIndex = this.types.get(typeName);
-        if(typeIndex == null) {
-            Logger.raise("Invalid block type: " + typeName);
-        }
-        return typeIndex;
+        return this.types.get(typeName);
     }
 
     int getModeIndex(int typeIndex, String argumentModeName) {
         String modeName = (argumentModeName == null) ? "" : argumentModeName;
-        Integer modeIndex = this.modes.get(typeIndex).get(modeName);
-
-        if(modeIndex == null) {
-            Logger.raise("Invalid mode type for block type " + this.getName(typeIndex) + ": " + modeName);
-        }
-        return modeIndex;
+        return this.modes.get(typeIndex).get(modeName);
     }
 
 

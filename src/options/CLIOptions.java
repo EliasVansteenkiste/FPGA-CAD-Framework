@@ -1,7 +1,10 @@
 package options;
 
+import interfaces.Logger;
+import interfaces.Logger.Stream;
+
 import java.io.File;
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,33 +46,32 @@ public class CLIOptions {
     public boolean showHelp = false;
 
 
-
+    private Logger logger;
     private CmdLineParser parser;
 
 
-    public CLIOptions() {
+    public CLIOptions(Logger logger) {
+        this.logger = logger;
         this.parser = new CmdLineParser(this);
     }
 
-    public void parseArguments(String[] args) {
+    public Options parseArguments(String[] args) {
         try {
             this.parser.parseArgument(args);
 
         } catch(CmdLineException e) {
-            this.printUsage(System.err);
+            this.printUsage(Stream.ERR);
             System.exit(1);
         }
 
         // Show the help and exit
         if(this.showHelp) {
-            this.printUsage();
+            this.printUsage(Stream.OUT);
             System.exit(0);
         }
 
 
-        Options options = Options.getInstance();
-
-        options.setVisual(this.visual);
+        Options options = new Options(this.logger);
 
         // Set the architecture file
         options.setArchitectureFile(this.architecturePath);
@@ -113,6 +115,9 @@ public class CLIOptions {
         File outputPlaceFile = new File(outputPlaceFolder, options.getCircuitName() + ".place");
         options.setOutputPlaceFile(outputPlaceFile);
 
+
+        // Set vizualization
+        options.setVisual(this.visual);
 
 
         // Parse the extra placer options
@@ -169,21 +174,17 @@ public class CLIOptions {
         }
 
         options.setPlacers(placers, placerOptions);
+
+        return options;
     }
 
 
+    private void printUsage(Stream stream) {
+        PrintWriter writer = this.logger.getWriter(stream);
 
-    private void printUsage() {
-        this.printUsage(System.out);
-    }
+        writer.println("Usage: java cli --placer NAME --net_file PATH [options] [placer-options]");
+        this.parser.printUsage(writer, null);
 
-    private void printUsage(PrintStream stream) {
-
-        stream.println("Usage: java cli --placer NAME --net_file PATH [options] [placer-options]");
-
-        CmdLineParser parser = new CmdLineParser(this);
-        parser.printUsage(stream);
-
-        stream.println();
+        this.logger.logln();
     }
 }

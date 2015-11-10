@@ -1,18 +1,20 @@
 package visual;
 
+import interfaces.Logger;
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.Map;
 
 import javax.swing.JPanel;
 
-import util.Logger;
 
 import circuit.block.GlobalBlock;
 
 public class PlacementPanel extends JPanel {
-
     private static final long serialVersionUID = -2621200118414334047L;
+
+    private Logger logger;
 
     private final Color gridColor = new Color(50, 50, 50);
     private final Color clbColor = new Color(255, 0, 0, 25);
@@ -23,6 +25,10 @@ public class PlacementPanel extends JPanel {
 
     private int blockSize;
     private int left, top;
+
+    PlacementPanel(Logger logger) {
+        this.logger = logger;
+    }
 
     void setPlacement(Placement placement) {
         this.placement = placement;
@@ -39,6 +45,7 @@ public class PlacementPanel extends JPanel {
             this.setDimensions();
 
             this.drawGrid(g);
+
             this.drawBlocks(g);
         }
     }
@@ -105,7 +112,11 @@ public class PlacementPanel extends JPanel {
                 break;
 
             default:
-                Logger.raise("Unknown block category: " + block.getCategory().toString());
+                try {
+                    throw new InvalidBlockCategoryException(block);
+                } catch(InvalidBlockCategoryException error) {
+                    this.logger.raise(error);
+                }
                 color = null;
         }
 

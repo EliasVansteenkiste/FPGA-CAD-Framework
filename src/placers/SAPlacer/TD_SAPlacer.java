@@ -1,6 +1,10 @@
 package placers.SAPlacer;
 
+import interfaces.Logger;
+
 import java.util.Map;
+
+import visual.PlacementVisualizer;
 
 import circuit.Circuit;
 import circuit.block.TimingGraph;
@@ -10,6 +14,7 @@ import circuit.block.TimingGraph;
 
 public class TD_SAPlacer extends SAPlacer {
 
+    private static final String name = "TD Simulated Annealing Placer";
 
     static {
         //Timing trade off factor: 0.0 = wire-length-driven
@@ -29,8 +34,8 @@ public class TD_SAPlacer extends SAPlacer {
     private final double tradeOffFactor;
     private final int iterationsBeforeRecalculate;
 
-    public TD_SAPlacer(Circuit circuit, Map<String, String> options) {
-        super(circuit, options);
+    public TD_SAPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
+        super(logger, visualizer, circuit, options);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);
         this.timingGraph = circuit.getTimingGraph();
@@ -117,5 +122,10 @@ public class TD_SAPlacer extends SAPlacer {
         if(iteration % this.iterationsBeforeRecalculate == 0 && iteration > 0) {
             this.updatePreviousCosts();
         }
+    }
+
+    @Override
+    public String getName() {
+        return TD_SAPlacer.name;
     }
 }

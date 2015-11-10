@@ -1,6 +1,10 @@
 package placers.SAPlacer;
 
+import interfaces.Logger;
+
 import java.util.Map;
+
+import visual.PlacementVisualizer;
 
 import circuit.Circuit;
 
@@ -8,11 +12,13 @@ import circuit.Circuit;
 
 public class WLD_SAPlacer extends SAPlacer {
 
+    private static final String name = "WLD Simulated Annealing Placer";
+
     private EfficientBoundingBoxNetCC calculator;
     private double cachedCost;
 
-    public WLD_SAPlacer(Circuit circuit, Map<String, String> options) {
-        super(circuit, options);
+    public WLD_SAPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
+        super(logger, visualizer, circuit, options);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);
     }
@@ -54,5 +60,10 @@ public class WLD_SAPlacer extends SAPlacer {
     @Override
     protected void revert(int iteration) {
         this.calculator.revert();
+    }
+
+    @Override
+    public String getName() {
+        return WLD_SAPlacer.name;
     }
 }

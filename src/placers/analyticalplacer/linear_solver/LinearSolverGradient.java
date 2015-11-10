@@ -5,11 +5,11 @@ import placers.analyticalplacer.AnalyticalPlacer;
 
 public class LinearSolverGradient extends LinearSolver {
 
-    public LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double stepSize) {
+    public LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeightFactor, double stepSize) {
         super(coordinatesX, coordinatesY, numIOBlocks);
 
-        this.solverX = new DimensionSolverGradient(coordinatesX, stepSize);
-        this.solverY = new DimensionSolverGradient(coordinatesY, stepSize);
+        this.solverX = new DimensionSolverGradient(coordinatesX, stepSize, pseudoWeightFactor);
+        this.solverY = new DimensionSolverGradient(coordinatesY, stepSize, pseudoWeightFactor);
     }
 
     @Override

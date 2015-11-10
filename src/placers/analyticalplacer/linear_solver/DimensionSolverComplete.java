@@ -30,22 +30,24 @@ public class DimensionSolverComplete extends DimensionSolver {
             double weightMultiplier, boolean isPseudoConnection) {
 
         double weight = weightMultiplier / Math.max(Math.abs(minCoordinate - maxCoordinate), 0.005);
-        int relativeIndex1 = minIndex - this.numIOBlocks;
-        int relativeIndex2 = maxIndex - this.numIOBlocks;
+        int minRelativeIndex = minIndex - this.numIOBlocks;
+        int maxRelativeIndex = maxIndex - this.numIOBlocks;
 
-        if(!minFixed && !maxFixed) {
-            this.matrix.addElement(relativeIndex1, relativeIndex1, weight);
-            this.matrix.addElement(relativeIndex1, relativeIndex2, -weight);
-            this.matrix.addElement(relativeIndex2, relativeIndex1, -weight);
-            this.matrix.addElement(relativeIndex2, relativeIndex2, weight);
-
-        } else if(minFixed) {
-            this.matrix.addElement(relativeIndex2, relativeIndex2, weight);
-            this.vector[relativeIndex2] += weight * minCoordinate;
+        if(minFixed) {
+            if(!maxFixed) {
+                this.matrix.addElement(maxRelativeIndex, maxRelativeIndex, weight);
+                this.vector[maxRelativeIndex] += weight * minCoordinate;
+            }
 
         } else if(maxFixed) {
-            this.matrix.addElement(relativeIndex1, relativeIndex1, weight);
-            this.vector[relativeIndex1] += weight * maxCoordinate;
+            this.matrix.addElement(minRelativeIndex, minRelativeIndex, weight);
+            this.vector[minRelativeIndex] += weight * maxCoordinate;
+
+        } else {
+            this.matrix.addElement(minRelativeIndex, minRelativeIndex, weight);
+            this.matrix.addElement(minRelativeIndex, maxRelativeIndex, -weight);
+            this.matrix.addElement(maxRelativeIndex, minRelativeIndex, -weight);
+            this.matrix.addElement(maxRelativeIndex, maxRelativeIndex, weight);
         }
     }
 

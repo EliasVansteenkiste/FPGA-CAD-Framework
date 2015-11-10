@@ -2,7 +2,6 @@ package circuit.architecture;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
@@ -10,53 +9,39 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
-import util.Logger;
+import circuit.exceptions.InvalidFileFormatException;
 
 public class DelayTables implements Serializable {
 
     private static final long serialVersionUID = 3516264508719006250L;
 
-    private static DelayTables instance = new DelayTables();
-    public static DelayTables getInstance() {
-        return DelayTables.instance;
-    }
-    static void setInstance(DelayTables instance) {
-        DelayTables.instance = instance;
-    }
-
+    private transient File file;
     private List<List<Double>>
             ioToIo = new ArrayList<>(),
             ioToClb = new ArrayList<>(),
             clbToIo = new ArrayList<>(),
             clbToClb = new ArrayList<>();
 
-
-    public void parse(File file) {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new FileReader(file));
-        } catch (FileNotFoundException error) {
-            Logger.raise("Delays file not found: " + file, error);
-        }
-
-        try {
-            this.parseType(reader, "clb_to_clb", this.clbToClb);
-            this.parseType(reader, "io_to_clb", this.ioToClb);
-            this.parseType(reader, "clb_to_io", this.clbToIo);
-            this.parseType(reader, "io_to_io", this.ioToIo);
-
-        } catch(IOException error) {
-            Logger.raise("Failed to read from delays file: " + file, error);
-        }
+    public DelayTables(File file) {
+        this.file = file;
     }
 
-    private void parseType(BufferedReader reader, String type, List<List<Double>> matrix) throws IOException {
+    public void parse() throws IOException, InvalidFileFormatException {
+        BufferedReader reader = null;
+        reader = new BufferedReader(new FileReader(this.file));
+
+        this.parseType(reader, "clb_to_clb", this.clbToClb);
+        this.parseType(reader, "io_to_clb", this.ioToClb);
+        this.parseType(reader, "clb_to_io", this.clbToIo);
+        this.parseType(reader, "io_to_io", this.ioToIo);
+    }
+
+    private void parseType(BufferedReader reader, String type, List<List<Double>> matrix) throws IOException, InvalidFileFormatException {
 
         boolean lineFound = this.findStartingLine(reader, type);
 
         if (!lineFound) {
-            Logger.raise("Faild to find type in delays file: " + type);
+            throw new InvalidFileFormatException("Type not found in delays file: " + type);
         }
 
         this.readMatrix(reader, matrix);
@@ -102,34 +87,28 @@ public class DelayTables implements Serializable {
     }
 
 
+    public List<List<Double>> getTable(BlockCategory fromCategory, BlockCategory toCategory) {
+        if(fromCategory == BlockCategory.IO) {
+            if(toCategory == BlockCategory.IO) {
+                return this.ioToIo;
+            } else {
+                return this.ioToClb;
+            }
+        } else {
+            if(toCategory == BlockCategory.IO) {
+                return this.clbToIo;
+            } else {
+                return this.clbToClb;
+            }
+        }
+    }
+
     public double getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
         if(deltaX == 0 && deltaY == 0) {
             return 0;
         }
 
-        List<List<Double>> matrix;
-
-        if(fromCategory == BlockCategory.IO) {
-            if(toCategory == BlockCategory.IO) {
-                matrix = this.ioToIo;
-            } else {
-                matrix = this.ioToClb;
-            }
-        } else {
-            if(toCategory == BlockCategory.IO) {
-                matrix = this.clbToIo;
-            } else {
-                matrix = this.clbToClb;
-            }
-        }
-
-
-        double delay = matrix.get(deltaY).get(deltaX);
-        if(delay <= 0) {
-            Logger.raise(String.format("Negative wire delay: (%d, %d)", deltaX, deltaY));
-        }
-
-        return delay;
+        return this.getTable(fromCategory, toCategory).get(deltaY).get(deltaX);
     }
 
     public double getIoToIo(int x, int y) {

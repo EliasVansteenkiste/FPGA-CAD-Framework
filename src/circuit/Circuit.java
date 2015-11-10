@@ -1,8 +1,5 @@
 package circuit;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +7,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import util.Logger;
 
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
@@ -25,69 +21,47 @@ import circuit.block.TimingGraph;
 import circuit.pin.AbstractPin;
 import circuit.pin.GlobalPin;
 
-
-
-
-public class Circuit implements Serializable {
-
-    private static final long serialVersionUID = 7493585190048603640L;
+public class Circuit {
 
     private String name;
     private transient int width, height;
-
 
     private Architecture architecture;
 
     private TimingGraph timingGraph;
 
-    private transient Map<BlockType, List<AbstractBlock>> blocks;
 
-    private transient List<BlockType> globalBlockTypes;
-    private transient List<BlockType> leafBlockTypes;
-    private transient List<GlobalBlock> globalBlockList;
-    private transient List<LeafBlock> leafBlockList;
+    private Map<BlockType, List<AbstractBlock>> blocks;
 
-    private transient List<BlockType> columns;
-    private transient Map<BlockType, List<Integer>> columnsPerBlockType;
+    private List<BlockType> globalBlockTypes;
+    private List<BlockType> leafBlockTypes;
+    private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
+    private List<LeafBlock> leafBlockList = new ArrayList<LeafBlock>();
 
-    private transient AbstractSite[][] sites;
+    private List<BlockType> columns;
+    private Map<BlockType, List<Integer>> columnsPerBlockType;
+
+    private AbstractSite[][] sites;
 
 
-    public Circuit(String name, Architecture architecture) {
+    public Circuit(String name, Architecture architecture, Map<BlockType, List<AbstractBlock>> blocks) {
         this.name = name;
         this.architecture = architecture;
+
+        this.blocks = blocks;
+
         this.timingGraph = new TimingGraph(this);
-
-        this.initializeData();
     }
 
-    private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException {
-        in.defaultReadObject();
-        this.initializeData();
-    }
 
-    private void initializeData() {
-        this.globalBlockList = new ArrayList<GlobalBlock>();
-        this.leafBlockList = new ArrayList<LeafBlock>();
-    }
-
-    /**
-     * This should only be called after the blocks of the
-     * circuit have been loaded.
-     */
-    public void buildTimingGraph() {
-        if(this.blocks == null) {
-            Logger.raise("Can't build the timing graph for an empty circuit");
-        }
+    public void buildDataStructures() {
+        this.loadBlocks();
 
         this.timingGraph.build();
     }
 
 
-
-    public void loadBlocks(Map<BlockType, List<AbstractBlock>> blocks) {
-        this.blocks = blocks;
-
+    private void loadBlocks() {
         for(BlockType blockType : BlockType.getAllBlockTypes()) {
             if(!this.blocks.containsKey(blockType)) {
                 this.blocks.put(blockType, new ArrayList<AbstractBlock>(0));
@@ -121,34 +95,6 @@ public class Circuit implements Serializable {
         this.calculateSizeAndColumns(false);
         this.createSites();
     }
-
-
-    /*************************
-     * Timing graph wrapping *
-     *************************/
-    public TimingGraph getTimingGraph() {
-        return this.timingGraph;
-    }
-
-    public void recalculateTimingGraph() {
-        this.timingGraph.recalculateAllSlackCriticalities();
-    }
-    public double calculateTimingCost() {
-        return this.timingGraph.calculateTotalCost();
-    }
-    public double getMaxDelay() {
-        return this.timingGraph.getMaxDelay();
-    }
-
-
-
-    public List<GlobalBlock> getGlobalBlocks() {
-        return this.globalBlockList;
-    }
-    public List<LeafBlock> getLeafBlocks() {
-        return this.leafBlockList;
-    }
-
 
 
     private void calculateSizeAndColumns(boolean autoSize) {
@@ -262,6 +208,36 @@ public class Circuit implements Serializable {
             }
         }
     }
+
+
+
+
+    /*************************
+     * Timing graph wrapping *
+     *************************/
+    public TimingGraph getTimingGraph() {
+        return this.timingGraph;
+    }
+
+    public void recalculateTimingGraph() {
+        this.timingGraph.recalculateAllSlackCriticalities();
+    }
+    public double calculateTimingCost() {
+        return this.timingGraph.calculateTotalCost();
+    }
+    public double getMaxDelay() {
+        return this.timingGraph.getMaxDelay();
+    }
+
+
+
+    public List<GlobalBlock> getGlobalBlocks() {
+        return this.globalBlockList;
+    }
+    public List<LeafBlock> getLeafBlocks() {
+        return this.leafBlockList;
+    }
+
 
 
     public String getName() {

@@ -1,5 +1,8 @@
 package main;
 
+import interfaces.Logger;
+
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,42 +11,46 @@ import options.Options.StartingStage;
 import placers.Placer;
 import placers.PlacerFactory;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
-import util.Logger;
-import visual.PlacementVizualizer;
+import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.Architecture;
+import circuit.architecture.ArchitectureCacher;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidFileFormatException;
+import circuit.exceptions.PlacedBlockException;
+import circuit.parser.BlockNotFoundException;
 import circuit.parser.NetParser;
 import circuit.parser.PlaceDumper;
 import circuit.parser.PlaceParser;
 
 public class Main {
 
-    private static Main instance = new Main();
-    public static Main getInstance() {
-        return Main.instance;
-    }
-
-
+    private Logger logger;
+    private PlacementVisualizer visualizer;
     private Options options;
+
     private Map<String, Timer> timers = new HashMap<String, Timer>();
     private String mostRecentTimerName;
     private Circuit circuit;
 
 
+    public Main(Logger logger, Options options) {
+        this.logger = logger;
+        this.options = options;
+    }
 
     public void runPlacement() {
         String totalString = "Total flow took";
         this.startTimer(totalString);
 
-        this.options = Options.getInstance();
-
         this.loadCircuit();
+        this.logger.logln();
 
 
-        // Enable the vizualizer
-        PlacementVizualizer visualizer = PlacementVizualizer.getInstance();
+        // Enable the visualizer
+        this.visualizer = new PlacementVisualizer(this.logger);
         if(this.options.getVisual()) {
-            visualizer.setCircuit(this.circuit);
+            this.visualizer.setCircuit(this.circuit);
         }
 
 
@@ -51,7 +58,13 @@ public class Main {
         if(this.options.getStartingStage() == StartingStage.PLACE) {
             this.startTimer("parser");
             PlaceParser placeParser = new PlaceParser(this.circuit, this.options.getInputPlaceFile());
-            placeParser.parse();
+
+            try {
+                placeParser.parse();
+            } catch(BlockNotFoundException | IOException | PlacedBlockException | FullSiteException error) {
+                this.logger.raise("Something went wrong while parsing the place file", error);
+            }
+
             this.stopTimer();
             this.printStatistics();
         }
@@ -68,7 +81,6 @@ public class Main {
             }
 
             // Create the placer and place the circuit
-            System.out.println("Placing with " + placerName + "...");
             this.timePlacement(placerName, placerOptions);
         }
 
@@ -80,69 +92,65 @@ public class Main {
                     this.options.getOutputPlaceFile(),
                     this.options.getArchitectureFileVPR());
 
-            placeDumper.dump();
+            try {
+                placeDumper.dump();
+            } catch(IOException error) {
+                this.logger.raise("Failed to write to place file: " + this.options.getOutputPlaceFile(), error);
+            }
         }
 
         this.stopAndPrintTimer(totalString);
 
-        visualizer.createAndDrawGUI();
+        this.visualizer.createAndDrawGUI();
     }
 
 
 
 
     private void loadCircuit() {
-        CircuitCacher circuitCacher = new CircuitCacher(this.options.getCircuitName(), this.options.getNetFile());
-        boolean isCached = circuitCacher.isCached();
+        ArchitectureCacher architectureCacher = new ArchitectureCacher(this.options.getCircuitName(), this.options.getNetFile());
+        Architecture architecture = architectureCacher.loadIfCached();
+        boolean isCached = (architecture != null);
 
-        if(isCached) {
-            this.startTimer("Loading cached circuit");
-            this.circuit = circuitCacher.load();
+        // Parse the architecture file if necessary
+        if(!isCached) {
+            this.startTimer("Architecture parsing");
+            architecture = new Architecture(
+                    this.options.getCircuitName(),
+                    this.options.getArchitectureFile(),
+                    this.options.getArchitectureFileVPR(),
+                    this.options.getBlifFile(),
+                    this.options.getNetFile());
+
+            try {
+                architecture.parse();
+            } catch(IOException | InvalidFileFormatException | InterruptedException error) {
+                this.logger.raise("Failed to parse architecture file or delay tables", error);
+            }
+
             this.stopAndPrintTimer();
-
-        } else {
-            this.initializeCircuit();
         }
+
 
         // Parse net file
         this.startTimer("Net file parsing");
+        try {
+            NetParser netParser = new NetParser(architecture, this.options.getNetFile(), this.options.getCircuitName());
+            this.circuit = netParser.parse();
 
-        NetParser netParser = new NetParser(this.circuit, this.options.getNetFile());
-        netParser.parse();
-
-        this.stopAndPrintTimer("Net file parsing");
-
-
-        // Build timing graphs
-        this.startTimer("Timing graph building");
-        this.circuit.buildTimingGraph();
+        } catch(IOException error) {
+            this.logger.raise("Failed to read net file", error);
+        }
         this.stopAndPrintTimer();
 
 
         // Cache the circuit for future use
         if(!isCached) {
             this.startTimer("Circuit caching");
-            circuitCacher.store(this.circuit);
+            architectureCacher.store(architecture);
             this.stopAndPrintTimer();
         }
     }
-
-
-    private void initializeCircuit() {
-        // Get architecture
-        this.startTimer("Architecture parsing");
-
-        Architecture architecture = new Architecture();
-        architecture.parse();
-        this.stopAndPrintTimer();
-
-        this.startTimer("Delay matrix building");
-        architecture.buildDelayMatrixes();
-        this.stopAndPrintTimer();
-
-        this.circuit = new Circuit(this.options.getCircuitName(), architecture);
-    }
-
 
 
 
@@ -153,7 +161,7 @@ public class Main {
     private void timePlacement(String placerName, Map<String, String> options) {
         this.startTimer(placerName);
 
-        Placer placer = PlacerFactory.newPlacer(placerName, this.circuit, options);
+        Placer placer = PlacerFactory.newPlacer(placerName, this.logger, this.visualizer, this.circuit, options);
         placer.initializeData();
         placer.place();
 
@@ -165,7 +173,7 @@ public class Main {
     private void startTimer(String name) {
         this.mostRecentTimerName = name;
 
-        Timer timer = new Timer();
+        Timer timer = new Timer(this.logger);
         this.timers.put(name, timer);
         timer.start();
     }
@@ -177,7 +185,7 @@ public class Main {
         Timer timer = this.timers.get(name);
 
         if(timer == null) {
-            Logger.raise("Timer hasn't been initialized: " + name);
+            this.logger.raise("Timer hasn't been initialized: " + name);
         } else {
             timer.stop();
         }
@@ -187,7 +195,7 @@ public class Main {
         Timer timer = this.timers.get(name);
 
         if(timer == null) {
-            Logger.raise("Timer hasn't been initialized: " + name);
+            this.logger.raise("Timer hasn't been initialized: " + name);
             return -1;
         } else {
             return timer.getTime();
@@ -199,27 +207,25 @@ public class Main {
     }
     private void printStatistics(String prefix, boolean printTime) {
 
-        System.out.println();
-
         if(printTime) {
             double placeTime = this.getTime(prefix);
-            System.out.format("%s %15s: %f s\n", prefix, "time", placeTime);
+            this.logger.logf("%s %15s: %f s\n", prefix, "time", placeTime);
         }
 
         // Calculate BB cost
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
-        System.out.format("%s %15s: %f\n", prefix, "BB cost", totalWLCost);
+        this.logger.logf("%s %15s: %f\n", prefix, "BB cost", totalWLCost);
 
         // Calculate timing cost
         this.circuit.recalculateTimingGraph();
         double totalTimingCost = this.circuit.calculateTimingCost();
         double maxDelay = this.circuit.getMaxDelay();
 
-        System.out.format("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
-        System.out.format("%s %15s: %f ns\n", prefix, "max delay", maxDelay);
+        this.logger.logf("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
+        this.logger.logf("%s %15s: %f ns\n", prefix, "max delay", maxDelay);
 
-        System.out.println();
+        this.logger.logln();
     }
 
 
@@ -232,8 +238,7 @@ public class Main {
     }
 
     private void printTimer(String timerName) {
-        System.out.println();
         double placeTime = this.getTime(timerName);
-        Logger.log(timerName + ": " + placeTime + " s");
+        this.logger.logf("%s: %f s\n", timerName, placeTime);
     }
 }

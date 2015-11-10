@@ -10,7 +10,7 @@ import errno
 def silentremove(filename):
     try:
         os.remove(filename)
-    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+    except OSError as e:
         if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
             raise # re-raise exception if a different error occured
 
@@ -142,7 +142,7 @@ class StatisticsCaller(Caller):
             'java',
             '-cp',
             'bin:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
-            'cli.CLI'
+            'interfaces.CLI'
         ]
 
 
@@ -238,7 +238,7 @@ class PlaceCaller(Caller):
             'java',
             '-cp',
             'bin:dependencies/args4j-2.32.jar:dependencies/json-simple-1.1.1.jar',
-            'cli.CLI'
+            'interfaces.CLI'
         ]
 
 

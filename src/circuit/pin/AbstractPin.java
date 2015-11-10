@@ -6,10 +6,6 @@ import java.util.List;
 import circuit.architecture.PortType;
 import circuit.block.AbstractBlock;
 
-
-
-import util.Logger;
-
 public abstract class AbstractPin {
 
     private AbstractBlock owner;
@@ -17,15 +13,14 @@ public abstract class AbstractPin {
     private int index;
 
     private transient AbstractPin source;
-    private transient List<AbstractPin> sinks;
+    private transient ArrayList<AbstractPin> sinks;
 
     public AbstractPin(AbstractBlock owner, PortType portType, int index) {
         this.owner = owner;
         this.portType = portType;
         this.index = index;
 
-        //TODO: is this memory efficient? Does the size remain 1 after 1 element is added?
-        this.sinks = new ArrayList<AbstractPin>(1);
+        this.sinks = new ArrayList<AbstractPin>();
     }
 
 
@@ -64,16 +59,15 @@ public abstract class AbstractPin {
         return this.sinks;
     }
     public AbstractPin getSink(int index) {
-        try {
-            return this.sinks.get(index);
-        } catch(IndexOutOfBoundsException exception) {
-            Logger.raise("Port doesn't have " + index + "pins", exception);
-            return null;
-        }
+        return this.sinks.get(index);
     }
 
     public void addSink(AbstractPin sink) {
         this.sinks.add(sink);
+    }
+
+    public void compact() {
+        this.sinks.trimToSize();
     }
 
 

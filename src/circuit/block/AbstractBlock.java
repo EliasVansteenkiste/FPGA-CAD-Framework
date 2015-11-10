@@ -53,7 +53,11 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
     public abstract AbstractBlock getParent();
     protected abstract AbstractPin createPin(PortType portType, int index);
-    public abstract void compact();
+    public void compact() {
+        for(AbstractPin pin : this.pins) {
+            pin.compact();
+        }
+    }
 
 
 

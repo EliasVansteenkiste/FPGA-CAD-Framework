@@ -5,8 +5,11 @@ import java.util.List;
 
 import circuit.architecture.BlockType;
 import circuit.architecture.PortType;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidBlockException;
+import circuit.exceptions.PlacedBlockException;
+import circuit.exceptions.UnplacedBlockException;
 import circuit.pin.GlobalPin;
-import util.Logger;
 
 public class GlobalBlock extends AbstractBlock {
 
@@ -29,21 +32,21 @@ public class GlobalBlock extends AbstractBlock {
     }
 
 
-    public void removeSite() {
-        if(this.site != null) {
-            this.site.removeBlock(this);
-            this.site = null;
-        } else {
-            Logger.raise("Trying to remove the site of an unplaced block");
-        }
-    }
-    public void setSite(AbstractSite site) {
+    public void removeSite() throws UnplacedBlockException, InvalidBlockException {
         if(this.site == null) {
-            this.site = site;
-            this.site.addBlock(this);
-        } else {
-            Logger.raise("Trying to set the site of a placed block");
+            throw new UnplacedBlockException();
         }
+
+        this.site.removeBlock(this);
+        this.site = null;
+    }
+    public void setSite(AbstractSite site) throws PlacedBlockException, FullSiteException {
+        if(this.site != null) {
+            throw new PlacedBlockException();
+        }
+
+        this.site = site;
+        this.site.addBlock(this);
     }
 
 
@@ -66,6 +69,7 @@ public class GlobalBlock extends AbstractBlock {
 
     @Override
     public void compact() {
+        super.compact();
         this.leafs.trimToSize();
     }
 }

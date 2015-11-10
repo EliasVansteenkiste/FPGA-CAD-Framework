@@ -10,10 +10,10 @@ import circuit.architecture.BlockType;
 import circuit.architecture.BlockCategory;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-
-import util.Logger;
-
-
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.InvalidBlockException;
+import circuit.exceptions.PlacedBlockException;
+import circuit.exceptions.UnplacedBlockException;
 
 public class Legalizer {
 
@@ -57,7 +57,7 @@ public class Legalizer {
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
-            double[] linearY) {
+            double[] linearY) throws IllegalArgumentException {
 
         // Store easy stuff
         this.circuit = circuit;
@@ -70,11 +70,12 @@ public class Legalizer {
 
         // Store block types
         if(blockTypes.get(0).getCategory() != BlockCategory.IO) {
-            Logger.raise("The first block type is not IO");
+            throw new IllegalArgumentException("The first block type is not IO");
         }
         if(blockTypes.size() != blockTypeIndexStarts.size() - 1) {
-            Logger.raise("blockTypes and blockTypeIndexes don't have matching dimensions");
+            throw new IllegalArgumentException("The objects blockTypes and blockTypeIndexStarts don't have matching dimensions");
         }
+
         this.blockTypes = blockTypes;
         this.blockTypeIndexStarts = blockTypeIndexStarts;
 
@@ -122,7 +123,7 @@ public class Legalizer {
     }
 
 
-    void legalize(double tileCapacity, boolean legalizeIOBlocks) {
+    void legalize(double tileCapacity, boolean legalizeIOBlocks) throws UnplacedBlockException, InvalidBlockException, PlacedBlockException, FullSiteException {
         this.tileCapacity = tileCapacity;
 
         if(legalizeIOBlocks) {
@@ -598,7 +599,7 @@ public class Legalizer {
     }
 
 
-    private void updateBestLegal() {
+    private void updateBestLegal() throws UnplacedBlockException, InvalidBlockException, PlacedBlockException, FullSiteException {
         boolean update = this.costCalculator.requiresCircuitUpdate();
 
         if(update) {
@@ -617,10 +618,10 @@ public class Legalizer {
         }
     }
 
-    void updateCircuit() {
+    void updateCircuit() throws UnplacedBlockException, InvalidBlockException, PlacedBlockException, FullSiteException {
         this.updateCircuit(this.bestLegalX, this.bestLegalY);
     }
-    void updateCircuit(int[] x, int[] y) {
+    void updateCircuit(int[] x, int[] y) throws UnplacedBlockException, InvalidBlockException, PlacedBlockException, FullSiteException {
         //Clear all previous locations
         for(GlobalBlock block : this.blockIndexes.keySet()) {
             if(block.getCategory() != BlockCategory.IO) {

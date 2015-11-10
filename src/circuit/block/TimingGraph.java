@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Stack;
 
 import circuit.Circuit;
-import circuit.architecture.DelayTables;
 import circuit.architecture.PortType;
 import circuit.architecture.BlockCategory;
 import circuit.pin.AbstractPin;
@@ -263,24 +262,6 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
     public void revert() {
         // Do nothing
     }
-
-
-    double calculateWireDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
-        if(fromCategory == BlockCategory.IO) {
-            if(toCategory == BlockCategory.IO) {
-                return DelayTables.getInstance().getIoToIo(deltaX, deltaY);
-            } else {
-                return DelayTables.getInstance().getIoToClb(deltaX, deltaY);
-            }
-        } else {
-            if(toCategory == BlockCategory.IO) {
-                return DelayTables.getInstance().getClbToIo(deltaX, deltaY);
-            } else {
-                return DelayTables.getInstance().getClbToClb(deltaX, deltaY);
-            }
-        }
-    }
-
 
     // Iterator methods
     // When iterating over a TimingGraph object, you will get a TimingGraphEntry

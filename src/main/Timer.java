@@ -1,14 +1,19 @@
 package main;
 
-import util.Logger;
+import interfaces.Logger;
 
 class Timer {
 
+    private Logger logger;
     private Long start = null, stop = null;
+
+    Timer(Logger logger) {
+        this.logger = logger;
+    }
 
     void start() {
         if(this.start != null) {
-            Logger.raise("Timer has already been started");
+            this.logger.raise("Timer has already been started");
         }
 
         this.start = this.getCurrentTime();
@@ -16,9 +21,9 @@ class Timer {
 
     void stop() {
         if(this.start == null) {
-            Logger.raise("Timer hasn't been started");
+            this.logger.raise("Timer hasn't been started");
         } else if(this.stop != null) {
-            Logger.raise("Timer has already been stopped");
+            this.logger.raise("Timer has already been stopped");
         }
 
         this.stop = this.getCurrentTime();
@@ -26,9 +31,9 @@ class Timer {
 
     double getTime() {
         if(this.start == null) {
-            Logger.raise("Timer hasn't been started");
+            this.logger.raise("Timer hasn't been started");
         } else if(this.stop == null) {
-            Logger.raise("Timer hasn't been stopped");
+            this.logger.raise("Timer hasn't been stopped");
         }
 
         return (this.stop - this.start) / 1e9;
