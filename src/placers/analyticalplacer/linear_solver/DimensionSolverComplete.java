@@ -4,17 +4,22 @@ import mathtools.CGSolver;
 import mathtools.Csr;
 
 
-public class DimensionSolverComplete extends DimensionSolver {
+class DimensionSolverComplete extends DimensionSolver {
 
     private final double[] coordinates;
     private final Csr matrix;
     private final double[] vector;
     private final int numIOBlocks;
+
+    private final double pseudoWeight;
     private final double epsilon;
 
-    public DimensionSolverComplete(double[] coordinates, int numIOBlocks, double epsilon) {
+
+    DimensionSolverComplete(double[] coordinates, int numIOBlocks, double pseudoWeight, double epsilon) {
         this.coordinates = coordinates;
         this.numIOBlocks = numIOBlocks;
+
+        this.pseudoWeight = pseudoWeight;
         this.epsilon = epsilon;
 
         int numMovableBlocks = coordinates.length - numIOBlocks;
@@ -23,13 +28,22 @@ public class DimensionSolverComplete extends DimensionSolver {
         this.vector = new double[numMovableBlocks];
     }
 
+
+    void addPseudoConnection(int blockIndex, double coordinate, int legalCoordinate) {
+        double weight = this.pseudoWeight / Math.max(Math.abs(coordinate - legalCoordinate), 0.005);
+        int relativeIndex = blockIndex - this.numIOBlocks;
+
+        this.matrix.addElement(relativeIndex, relativeIndex, weight);
+        this.vector[relativeIndex] += weight * legalCoordinate;
+    }
+
     @Override
-    public void addConnection(
+    void addConnection(
             boolean minFixed, int minIndex, double minCoordinate,
             boolean maxFixed, int maxIndex, double maxCoordinate,
-            double weightMultiplier, boolean isPseudoConnection) {
+            double weightMultiplier) {
 
-        double weight = weightMultiplier / Math.max(Math.abs(minCoordinate - maxCoordinate), 0.005);
+        double weight = weightMultiplier / Math.max(maxCoordinate - minCoordinate, 0.005);
         int minRelativeIndex = minIndex - this.numIOBlocks;
         int maxRelativeIndex = maxIndex - this.numIOBlocks;
 
@@ -52,7 +66,7 @@ public class DimensionSolverComplete extends DimensionSolver {
     }
 
     @Override
-    public void solve() {
+    void solve() {
         this.matrix.prepareArrays();
         CGSolver solver = new CGSolver(this.matrix, this.vector);
         double[] solution = solver.solve(this.epsilon);

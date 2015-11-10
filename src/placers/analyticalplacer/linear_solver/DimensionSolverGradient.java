@@ -2,21 +2,22 @@ package placers.analyticalplacer.linear_solver;
 
 
 
-public class DimensionSolverGradient extends DimensionSolver {
+class DimensionSolverGradient extends DimensionSolver {
 
     private final double[] coordinates;
 
     private final double[] directions, totalPositiveNetSize, totalNegativeNetSize;
     private final int[] numPositiveNets, numNegativeNets;
-    private final double gradientSpeed;
+    private final double stepSize;
 
     private double pseudoWeight;
-    private double[] pseudoGoal;
+    private int[] legalCoordinates;
+    private boolean firstSolve;
 
-    public DimensionSolverGradient(double[] coordinates, double pseudoWeight, double gradientSpeed) {
+    DimensionSolverGradient(double[] coordinates, double pseudoWeight, double stepSize) {
         this.coordinates = coordinates;
         this.pseudoWeight = pseudoWeight;
-        this.gradientSpeed = gradientSpeed;
+        this.stepSize = stepSize;
 
         int numBlocks = coordinates.length;
 
@@ -26,46 +27,41 @@ public class DimensionSolverGradient extends DimensionSolver {
         this.totalPositiveNetSize = new double[numBlocks];
         this.totalNegativeNetSize = new double[numBlocks];
 
-        this.pseudoGoal = new double[numBlocks];
+        this.firstSolve = true;
     }
 
+    void setLegal(int[] legal) {
+        this.legalCoordinates = legal;
+        this.firstSolve = false;
+    }
 
     @Override
-    public void addConnection(
+    void addConnection(
             boolean minFixed, int minIndex, double minCoordinate,
             boolean maxFixed, int maxIndex, double maxCoordinate,
-            double weightMultiplier, boolean isPseudoConnection) {
+            double weightMultiplier) {
 
-        if(isPseudoConnection) {
-            if(minIndex >= 0) {
-                this.pseudoGoal[minIndex] = maxCoordinate;
-            }
-            if(maxIndex >= 0) {
-                this.pseudoGoal[maxIndex] = minCoordinate;
-            }
+        // isPseudoConnection is always false
 
-        } else {
+        double difference = maxCoordinate - minCoordinate;
+        double netSize = 20 * difference / (10 + difference);
+        double weight = netSize == 0 ? 0 : weightMultiplier;
 
-            double difference = maxCoordinate - minCoordinate;
-            double netSize = 20 * difference / (10 + difference);
-            double weight = netSize == 0 ? 0 : weightMultiplier;
+        if(minIndex >= 0) {
+            this.totalPositiveNetSize[minIndex] += netSize;
+            this.numPositiveNets[minIndex] += 1;
+            this.directions[minIndex] += weight;
+        }
 
-            if(minIndex >= 0) {
-                this.totalPositiveNetSize[minIndex] += netSize;
-                this.numPositiveNets[minIndex] += 1;
-                this.directions[minIndex] += weight;
-            }
-
-            if(maxIndex >= 0) {
-                this.totalNegativeNetSize[maxIndex] += netSize;
-                this.numNegativeNets[maxIndex] += 1;
-                this.directions[maxIndex] -= weight;
-            }
+        if(maxIndex >= 0) {
+            this.totalNegativeNetSize[maxIndex] += netSize;
+            this.numNegativeNets[maxIndex] += 1;
+            this.directions[maxIndex] -= weight;
         }
     }
 
     @Override
-    public void solve() {
+    void solve() {
         int numBlocks = this.coordinates.length;
 
         for(int i = 0; i < numBlocks; i++) {
@@ -78,14 +74,19 @@ public class DimensionSolverGradient extends DimensionSolver {
              * pseudoWeight P:
              * W = P * L + (1-P) * N
              *
-             * Then we calculate the next coordinate C2 of this block, using gradient speed G:
-             * C2 = G * W + (1-G) * C1
+             * Then we calculate the next coordinate C2 of this block, using step size S:
+             * C2 = S * W + (1-S) * C1
              *
-             * -> C2 = (1-G)*C1 + G*(P*L + (1-P)*N)
+             * => C2 = (1-S)*C1 + S*(P*L + (1-P)*N)
+             *
+             * In place, we can rewrite as:
+             * => C1 += S * (N + P*(L-N) - C1)
              */
 
             double direction = this.directions[i];
-            double netGoal = this.coordinates[i];
+            double currentCoordinate = this.coordinates[i];
+
+            double netGoal = currentCoordinate;
             if(direction > 0) {
                 netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
 
@@ -93,7 +94,11 @@ public class DimensionSolverGradient extends DimensionSolver {
                 netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
             }
 
-            this.coordinates[i] += this.gradientSpeed * (netGoal + this.pseudoWeight * (this.pseudoGoal[i] - netGoal) - this.coordinates[i]);
+            if(this.firstSolve) {
+                this.coordinates[i] += this.stepSize * ((1 - this.pseudoWeight) * netGoal - currentCoordinate);
+            } else {
+                this.coordinates[i] += this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
+            }
         }
     }
 }

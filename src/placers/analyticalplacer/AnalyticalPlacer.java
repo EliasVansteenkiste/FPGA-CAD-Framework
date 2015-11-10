@@ -57,7 +57,7 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("starting_anchor_weight", "0");
 
         // The amount with which the anchorWeight factor will be multiplied each iteration
-        defaultOptions.put("anchor_weight_increase", "0.01");
+        defaultOptions.put("anchor_weight_increase", "0.2");
 
         // The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
         defaultOptions.put("stop_ratio_linear_legal", "0.9");
@@ -288,43 +288,35 @@ public abstract class AnalyticalPlacer extends Placer {
 
     // These two methods only exist to be able to profile the "complete" part
     // of the execution to the "gradient" part.
-    private void solveLinearComplete(boolean firstSolve, double pseudoweightFactor) {
+    private void solveLinearComplete(boolean firstSolve, double pseudoWeight) {
         double epsilon = 0.0001;
-        this.solver = new LinearSolverComplete(this.linearX, this.linearY, this.numIOBlocks, epsilon);
-        this.solveLinear(firstSolve, pseudoweightFactor);
+        this.solver = new LinearSolverComplete(this.linearX, this.linearY, this.numIOBlocks, pseudoWeight, epsilon);
+        this.solveLinear(firstSolve);
     }
-    private void solveLinearGradient(boolean firstSolve, double pseudoWeightFactor) {
-        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, pseudoWeightFactor, this.gradientSpeed);
-        this.solveLinear(firstSolve, pseudoWeightFactor);
+    private void solveLinearGradient(boolean firstSolve, double pseudoWeight) {
+        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, pseudoWeight, this.gradientSpeed);
+        this.solveLinear(firstSolve);
     }
 
     /*
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
-    private void solveLinear(boolean firstSolve, double pseudoWeightFactor) {
+    private void solveLinear(boolean firstSolve) {
 
         // Add connections between blocks that are connected by a net
         this.processNets();
 
         // Add pseudo connections
         if(!firstSolve) {
-            this.addPseudoConnections(pseudoWeightFactor);
+            this.solver.addPseudoConnections(
+                    this.legalizer.getAnchorsX(),
+                    this.legalizer.getAnchorsY());
         }
 
 
         // Solve and save result
         this.solver.solve();
-    }
-
-    private void addPseudoConnections(double pseudoWeightFactor) {
-        int[] legalX = this.legalizer.getAnchorsX();
-        int[] legalY = this.legalizer.getAnchorsY();
-
-        int blockIndexStart = this.solver.getPseudoBlockIndexStart();
-        for(int blockIndex = blockIndexStart; blockIndex < this.numBlocks; blockIndex++) {
-            this.solver.addPseudoConnection(blockIndex, legalX[blockIndex], legalY[blockIndex], pseudoWeightFactor);
-        }
     }
 
 

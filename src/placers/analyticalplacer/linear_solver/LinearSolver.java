@@ -5,7 +5,6 @@ public abstract class LinearSolver {
 
     protected double[] coordinatesX, coordinatesY;
     private int numIOBlocks;
-    protected DimensionSolver solverX, solverY;
 
     LinearSolver(double[] coordinatesX, double[] coordinatesY, int numIOBlocks) {
         this.coordinatesX = coordinatesX;
@@ -15,24 +14,8 @@ public abstract class LinearSolver {
     }
 
     public abstract void processNet(int[] blockIndexes);
-    public abstract int getPseudoBlockIndexStart();
-
-    public void addPseudoConnection(int blockIndex, int legalX, int legalY, double pseudoWeightFactor) {
-        this.solverX.addConnectionMinMaxUnknown(
-                false, blockIndex, this.coordinatesX[blockIndex],
-                true, -1, legalX,
-                pseudoWeightFactor, true);
-
-        this.solverY.addConnectionMinMaxUnknown(
-                false, blockIndex, this.coordinatesY[blockIndex],
-                true, -1, legalY,
-                pseudoWeightFactor, true);
-    }
-
-    public void solve() {
-        this.solverX.solve();
-        this.solverY.solve();
-    }
+    public abstract void addPseudoConnections(int[] legalX, int[] legalY);
+    public abstract void solve();
 
 
     protected boolean isFixed(int blockIndex) {

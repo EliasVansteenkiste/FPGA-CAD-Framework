@@ -5,16 +5,23 @@ import placers.analyticalplacer.AnalyticalPlacer;
 
 public class LinearSolverComplete extends LinearSolver {
 
-    public LinearSolverComplete(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double epsilon) {
+    private DimensionSolverComplete solverX, solverY;
+
+    public LinearSolverComplete(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double epsilon) {
         super(coordinatesX, coordinatesY, numIOBlocks);
 
-        this.solverX = new DimensionSolverComplete(coordinatesX, numIOBlocks, epsilon);
-        this.solverY = new DimensionSolverComplete(coordinatesY, numIOBlocks, epsilon);
+        this.solverX = new DimensionSolverComplete(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
+        this.solverY = new DimensionSolverComplete(coordinatesY, numIOBlocks, pseudoWeight, epsilon);
     }
 
     @Override
-    public int getPseudoBlockIndexStart() {
-        return this.getNumIOBlocks();
+    public void addPseudoConnections(int[] legalX, int[] legalY) {
+        int numIOBlocks = this.getNumIOBlocks();
+        int numBlocks = this.coordinatesX.length;
+        for(int blockIndex = numIOBlocks; blockIndex < numBlocks; blockIndex++) {
+            this.solverX.addPseudoConnection(blockIndex, this.coordinatesX[blockIndex], legalX[blockIndex]);
+            this.solverY.addPseudoConnection(blockIndex, this.coordinatesY[blockIndex], legalY[blockIndex]);
+        }
     }
 
     @Override
@@ -31,12 +38,12 @@ public class LinearSolverComplete extends LinearSolver {
             this.solverX.addConnectionMinMaxUnknown(
                     fixed1, blockIndex1, this.coordinatesX[blockIndex1],
                     fixed2, blockIndex2, this.coordinatesX[blockIndex2],
-                    weightMultiplier, false);
+                    weightMultiplier);
 
             this.solverY.addConnectionMinMaxUnknown(
                     fixed1, blockIndex1, this.coordinatesY[blockIndex1],
                     fixed2, blockIndex2, this.coordinatesY[blockIndex2],
-                    weightMultiplier, false);
+                    weightMultiplier);
 
             return;
         }
@@ -84,13 +91,13 @@ public class LinearSolverComplete extends LinearSolver {
                 this.solverX.addConnection(
                         minXFixed, minXIndex, minX,
                         isFixed, blockIndex, x,
-                        weightMultiplier, false);
+                        weightMultiplier);
 
                 if(blockIndex != maxXIndex) {
                     this.solverX.addConnection(
                             isFixed, blockIndex, x,
                             maxXFixed, maxXIndex, maxX,
-                            weightMultiplier, false);
+                            weightMultiplier);
                 }
             }
 
@@ -98,15 +105,21 @@ public class LinearSolverComplete extends LinearSolver {
                 this.solverY.addConnection(
                         minYFixed, minYIndex, minY,
                         isFixed, blockIndex, y,
-                        weightMultiplier, false);
+                        weightMultiplier);
 
                 if(blockIndex != maxYIndex) {
                     this.solverY.addConnection(
                             isFixed, blockIndex, y,
                             maxYFixed, maxYIndex, maxY,
-                            weightMultiplier, false);
+                            weightMultiplier);
                 }
             }
         }
+    }
+
+    @Override
+    public void solve() {
+        this.solverX.solve();
+        this.solverY.solve();
     }
 }

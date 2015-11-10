@@ -5,16 +5,19 @@ import placers.analyticalplacer.AnalyticalPlacer;
 
 public class LinearSolverGradient extends LinearSolver {
 
-    public LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeightFactor, double stepSize) {
+    private DimensionSolverGradient solverX, solverY;
+
+    public LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double stepSize) {
         super(coordinatesX, coordinatesY, numIOBlocks);
 
-        this.solverX = new DimensionSolverGradient(coordinatesX, stepSize, pseudoWeightFactor);
-        this.solverY = new DimensionSolverGradient(coordinatesY, stepSize, pseudoWeightFactor);
+        this.solverX = new DimensionSolverGradient(coordinatesX, pseudoWeight, stepSize);
+        this.solverY = new DimensionSolverGradient(coordinatesY, pseudoWeight, stepSize);
     }
 
     @Override
-    public int getPseudoBlockIndexStart() {
-        return 0;
+    public void addPseudoConnections(int[] legalX, int[] legalY) {
+        this.solverX.setLegal(legalX);
+        this.solverY.setLegal(legalY);
     }
 
     @Override
@@ -31,12 +34,12 @@ public class LinearSolverGradient extends LinearSolver {
             this.solverX.addConnectionMinMaxUnknown(
                     fixed1, blockIndex1, this.coordinatesX[blockIndex1],
                     fixed2, blockIndex2, this.coordinatesX[blockIndex2],
-                    weightMultiplier, false);
+                    weightMultiplier);
 
             this.solverY.addConnectionMinMaxUnknown(
                     fixed1, blockIndex1, this.coordinatesY[blockIndex1],
                     fixed2, blockIndex2, this.coordinatesY[blockIndex2],
-                    weightMultiplier, false);
+                    weightMultiplier);
 
             return;
         }
@@ -78,12 +81,12 @@ public class LinearSolverGradient extends LinearSolver {
         this.solverX.addConnection(
                 minXFixed, minXIndex, minX,
                 maxXFixed, maxXIndex, maxX,
-                weightMultiplier, false);
+                weightMultiplier);
 
         this.solverY.addConnection(
                 minYFixed, minYIndex, minY,
                 maxYFixed, maxYIndex, maxY,
-                weightMultiplier, false);
+                weightMultiplier);
     }
 
 
