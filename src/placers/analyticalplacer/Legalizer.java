@@ -46,7 +46,6 @@ public class Legalizer {
     private List<List<List<Integer>>> blockMatrix;
 
     private double bestCost;
-    boolean lastMaxUtilizationSmallerThanOne;
     boolean firstOneDone;
 
 
@@ -197,14 +196,28 @@ public class Legalizer {
         this.areaPointers = new LegalizerArea[this.width][this.height];
         List<LegalizerArea> areas = new ArrayList<LegalizerArea>();
 
-        for(int x = 1; x < this.width - 1; x++) {
+        int xCenter = this.width / 2;
+        int yCenter = this.height / 2;
+        int maxDimension = Math.max(xCenter, yCenter);
+
+        this.tryNewArea(areas, xCenter, yCenter);
+        for(int centerDist1 = 1; centerDist1 < maxDimension; centerDist1++) {
+            for(int centerDist2 = -centerDist1; centerDist2 < centerDist1; centerDist2++) {
+                this.tryNewArea(areas, xCenter + centerDist1, yCenter + centerDist2);
+                this.tryNewArea(areas, xCenter - centerDist1, yCenter - centerDist2);
+                this.tryNewArea(areas, xCenter + centerDist2, yCenter - centerDist1);
+                this.tryNewArea(areas, xCenter - centerDist2, yCenter + centerDist1);
+            }
+        }
+
+        /*for(int x = 1; x < this.width - 1; x++) {
             for(int y = 1; y < this.height - 1; y++) {
                 if(this.blockMatrix.get(x).get(y).size() >= 1 && this.areaPointers[x][y] == null) {
                     LegalizerArea newArea = this.newArea(x, y);
                     areas.add(newArea);
                 }
             }
-        }
+        }*/
 
         // Legalize all unabsorbed areas
         for(LegalizerArea area : areas) {
@@ -313,7 +326,18 @@ public class Legalizer {
     }
 
 
+    private void tryNewArea(List<LegalizerArea> areas, int x, int y) {
+        if(x > 0 && x < this.width - 1
+                && y > 0 && y < this.height - 1
+                && this.blockMatrix.get(x).get(y).size() >= 1
+                && this.areaPointers[x][y] == null) {
+            LegalizerArea newArea = this.newArea(x, y);
+            areas.add(newArea);
+        }
+    }
+
     private LegalizerArea newArea(int x, int y) {
+
         // left, top, right, bottom
         LegalizerArea area = new LegalizerArea(x, y, this.tileCapacity, this.blockType);
         area.incrementTiles();
@@ -463,10 +487,6 @@ public class Legalizer {
         // If the area is only one tile big: place all the blocks on this tile
         if(coordinates[2] - coordinates[0] < this.blockRepeat && coordinates[3] - coordinates[1] < this.blockHeight) {
 
-            if(blockIndexes.size() > 1) {
-                System.out.println(blockIndexes.size());
-            }
-
             for(Integer blockIndex : blockIndexes) {
                 this.tmpLegalX[blockIndex] = coordinates[0];
                 this.tmpLegalY[blockIndex] = coordinates[1];
@@ -608,7 +628,7 @@ public class Legalizer {
 
         double newCost = this.costCalculator.calculate(this.tmpLegalX, this.tmpLegalY);
 
-        if(newCost < this.bestCost) {
+        if(newCost < this.bestCost && this.tileCapacity <= 1) {
             System.arraycopy(this.tmpLegalX, this.numIOBlocks, this.bestLegalX, this.numIOBlocks, this.numMovableBlocks);
             System.arraycopy(this.tmpLegalY, this.numIOBlocks, this.bestLegalY, this.numIOBlocks, this.numMovableBlocks);
             this.bestCost = newCost;
