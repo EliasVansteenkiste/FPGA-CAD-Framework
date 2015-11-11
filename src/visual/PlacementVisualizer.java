@@ -120,7 +120,7 @@ public class PlacementVisualizer {
         this.placementPanel.setPlacement(this.placements.get(index));
     }
 
-    private void navigate(int step) {
+    void navigate(int step) {
         int numPlacements = this.placements.size();
 
         int newIndex = (this.currentPlacement + step) % numPlacements;
@@ -133,7 +133,7 @@ public class PlacementVisualizer {
 
 
 
-    private class NavigateActionListener implements ActionListener{
+    private class NavigateActionListener implements ActionListener {
 
         private PlacementVisualizer frame;
         private int step;

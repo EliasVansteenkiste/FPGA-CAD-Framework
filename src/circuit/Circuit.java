@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
 import circuit.architecture.Architecture;
@@ -18,8 +17,6 @@ import circuit.block.IOSite;
 import circuit.block.LeafBlock;
 import circuit.block.Site;
 import circuit.block.TimingGraph;
-import circuit.pin.AbstractPin;
-import circuit.pin.GlobalPin;
 
 public class Circuit {
 
@@ -360,18 +357,7 @@ public class Circuit {
         }
     }
 
-    public List<GlobalPin> getGlobalOutputPins() {
-        List<GlobalPin> globalPins = new ArrayList<GlobalPin>();
 
-        for(AbstractBlock block : this.globalBlockList) {
-            List<AbstractPin> pins = block.getOutputPins();
-            for(AbstractPin pin : pins) {
-                globalPins.add((GlobalPin) pin);
-            }
-        }
-
-        return globalPins;
-    }
 
     @Override
     public String toString() {

@@ -14,10 +14,7 @@ import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
 import circuit.block.AbstractBlock;
 import circuit.block.GlobalBlock;
-import circuit.exceptions.FullSiteException;
-import circuit.exceptions.InvalidBlockException;
-import circuit.exceptions.PlacedBlockException;
-import circuit.exceptions.UnplacedBlockException;
+import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 
 import placers.Placer;
@@ -25,7 +22,6 @@ import placers.analyticalplacer.linear_solver.LinearSolver;
 import placers.analyticalplacer.linear_solver.LinearSolverComplete;
 import placers.analyticalplacer.linear_solver.LinearSolverGradient;
 import visual.PlacementVisualizer;
-
 
 public abstract class AnalyticalPlacer extends Placer {
 
@@ -197,7 +193,7 @@ public abstract class AnalyticalPlacer extends Placer {
         this.costCalculator = createCostCalculator();
 
         try {
-            this.legalizer = new Legalizer(
+            this.legalizer = new HeapLegalizer(
                     this.circuit, this.costCalculator,
                     this.blockIndexes,
                     blockTypes, blockTypeIndexStarts,
@@ -246,8 +242,8 @@ public abstract class AnalyticalPlacer extends Placer {
             double maxUtilization = this.maxUtilizationSequence[sequenceIndex];
 
             try {
-                this.legalizer.legalize(maxUtilization, false);
-            } catch(UnplacedBlockException | InvalidBlockException | PlacedBlockException | FullSiteException error) {
+                this.legalizer.legalize(maxUtilization);
+            } catch(PlacementException error) {
                 this.logger.raise(error);
             }
 
@@ -267,7 +263,7 @@ public abstract class AnalyticalPlacer extends Placer {
 
             // Get the costs and print them
             linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-            legalCost = this.legalizer.getBestCost();
+            legalCost = this.legalizer.getCost();
 
             /*this.logger.logf("Iteration %d: pseudoWeightFactor = %f, max utilization = %f, linear cost = %f, legal cost = %f, time = %f\n",
                     iteration, pseudoWeightFactor, maxUtilization);
@@ -285,7 +281,7 @@ public abstract class AnalyticalPlacer extends Placer {
 
         try {
             this.legalizer.updateCircuit();
-        } catch(UnplacedBlockException | InvalidBlockException | PlacedBlockException | FullSiteException error) {
+        } catch(PlacementException error) {
             this.logger.raise(error);
         }
     }

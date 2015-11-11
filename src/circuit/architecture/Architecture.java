@@ -175,7 +175,7 @@ public class Architecture implements Serializable {
 
     private Map<String, Integer> castIntegers(JSONObject subDefinition) {
         @SuppressWarnings("unchecked")
-        Set<String> keys = (Set<String>) subDefinition.keySet();
+        Set<String> keys = subDefinition.keySet();
 
         Map<String, Integer> newSubDefinition = new HashMap<String, Integer>();
 

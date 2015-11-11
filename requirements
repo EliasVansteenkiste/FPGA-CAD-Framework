@@ -1,2 +1,3 @@
 args4j==2.32            # http://args4j.kohsuke.org/
 json-simple==1.1.1      # https://code.google.com/p/json-simple/
+ojalgo=37.1             # http://ojalgo.org/

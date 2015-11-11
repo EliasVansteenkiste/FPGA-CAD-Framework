@@ -7,6 +7,7 @@ import java.util.Map;
 
 import circuit.Circuit;
 import circuit.block.GlobalBlock;
+import circuit.pin.AbstractPin;
 import circuit.pin.GlobalPin;
 
 
@@ -21,56 +22,62 @@ public class EfficientBoundingBoxNetCC {
     public EfficientBoundingBoxNetCC(Circuit circuit) {
         this.toRevert = new GlobalBlock[2]; //Contains the blocks for which the associated boundingBox's might need to be reverted
 
-        List<GlobalPin> pins = circuit.getGlobalOutputPins();
-        int maxNumPins = pins.size();
-
-        this.bbDataArray = new ArrayList<EfficientBoundingBoxData>(maxNumPins);
+        this.bbDataArray = new ArrayList<EfficientBoundingBoxData>();
         this.bbDataMap = new HashMap<GlobalBlock, List<EfficientBoundingBoxData>>();
 
+        // Process all nets by iterating over all net source pins
         this.numPins = 0;
-        for(GlobalPin pin : pins) {
-
-            int numSinks = pin.getNumSinks();
-            if(numSinks > 0) {
-                this.numPins++;
-
-                EfficientBoundingBoxData bbData = new EfficientBoundingBoxData(pin);
-                this.bbDataArray.add(bbData);
-
-                // Process source block
-                if(this.bbDataMap.get(pin.getOwner()) == null) {
-                    this.bbDataMap.put(pin.getOwner(), new ArrayList<EfficientBoundingBoxData>());
-                }
-                // Add the current BoundingBoxData object to the arraylist
-                // We don't need to check if it is already in because this is the first time we add the current BoundingBoxData object
-                this.bbDataMap.get(pin.getOwner()).add(bbData);
-
-                // Process sink blocks
-                for(int i = 0; i < numSinks; i++) {
-                    GlobalPin sink = pin.getSink(i);
-
-                    if(this.bbDataMap.get(sink.getOwner()) == null) {
-                        this.bbDataMap.put(sink.getOwner(), new ArrayList<EfficientBoundingBoxData>());
-                    }
-                    List<EfficientBoundingBoxData> sinkBlockList = this.bbDataMap.get(sink.getOwner());
-                    // Check if the current BoundingBoxData object is already in the arraylist
-                    // This can happen when a single net has two connections to the same block
-                    boolean isAlreadyIn = false;
-                    for(EfficientBoundingBoxData data: sinkBlockList) {
-                        if(data == bbData) {
-                            isAlreadyIn = true;
-                            break;
-                        }
-                    }
-
-                    if(!isAlreadyIn) {
-                        sinkBlockList.add(bbData);
-                    }
-                }
+        for(GlobalBlock block : circuit.getGlobalBlocks()) {
+            for(AbstractPin pin : block.getOutputPins()) {
+                this.processPin((GlobalPin) pin);
             }
         }
 
         this.bbDataArray.trimToSize();
+    }
+
+    private void processPin(GlobalPin pin) {
+
+        int numSinks = pin.getNumSinks();
+        if(numSinks == 0) {
+            return;
+        }
+
+        this.numPins++;
+
+        EfficientBoundingBoxData bbData = new EfficientBoundingBoxData(pin);
+        this.bbDataArray.add(bbData);
+
+        // Process source block
+        if(this.bbDataMap.get(pin.getOwner()) == null) {
+            this.bbDataMap.put(pin.getOwner(), new ArrayList<EfficientBoundingBoxData>());
+        }
+        // Add the current BoundingBoxData object to the arraylist
+        // We don't need to check if it is already in because this is the first time we add the current BoundingBoxData object
+        this.bbDataMap.get(pin.getOwner()).add(bbData);
+
+        // Process sink blocks
+        for(int i = 0; i < numSinks; i++) {
+            GlobalPin sink = pin.getSink(i);
+
+            if(this.bbDataMap.get(sink.getOwner()) == null) {
+                this.bbDataMap.put(sink.getOwner(), new ArrayList<EfficientBoundingBoxData>());
+            }
+            List<EfficientBoundingBoxData> sinkBlockList = this.bbDataMap.get(sink.getOwner());
+            // Check if the current BoundingBoxData object is already in the arraylist
+            // This can happen when a single net has two connections to the same block
+            boolean isAlreadyIn = false;
+            for(EfficientBoundingBoxData data: sinkBlockList) {
+                if(data == bbData) {
+                    isAlreadyIn = true;
+                    break;
+                }
+            }
+
+            if(!isAlreadyIn) {
+                sinkBlockList.add(bbData);
+            }
+        }
     }
 
 
