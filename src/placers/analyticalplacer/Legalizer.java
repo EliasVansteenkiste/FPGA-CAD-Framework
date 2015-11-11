@@ -210,15 +210,6 @@ public class Legalizer {
             }
         }
 
-        /*for(int x = 1; x < this.width - 1; x++) {
-            for(int y = 1; y < this.height - 1; y++) {
-                if(this.blockMatrix.get(x).get(y).size() >= 1 && this.areaPointers[x][y] == null) {
-                    LegalizerArea newArea = this.newArea(x, y);
-                    areas.add(newArea);
-                }
-            }
-        }*/
-
         // Legalize all unabsorbed areas
         for(LegalizerArea area : areas) {
             if(!area.isAbsorbed()) {
