@@ -13,15 +13,11 @@ class Placement {
     private Circuit circuit;
     private int numBlocks;
 
-    boolean overrideCoordinates;
     private Map<GlobalBlock, Coordinate> blocks;
 
 
     Placement(String name, Circuit circuit) {
         this.initializeData(name, circuit);
-        this.overrideCoordinates = false;
-
-        this.blocks = new HashMap<GlobalBlock, Coordinate>();
 
         for(GlobalBlock block : this.circuit.getGlobalBlocks()) {
             this.blocks.put(block, new Coordinate(block.getX(), block.getY()));
@@ -29,13 +25,8 @@ class Placement {
     }
 
 
-    private Placement(String name, Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, int xSize, int ySize) {
-        this.initializeData(name, circuit);
-        this.overrideCoordinates = true;
-    }
-
     Placement(String name, Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, int[] x, int[] y) {
-        this(name, circuit, blockIndexes, x.length, y.length);
+        this.initializeData(name, circuit);
 
         for(Map.Entry<GlobalBlock, Integer> blockIndexEntry : blockIndexes.entrySet()) {
             GlobalBlock block = blockIndexEntry.getKey();
@@ -45,7 +36,7 @@ class Placement {
     }
 
     Placement(String name, Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, double[] x, double[] y) {
-        this(name, circuit, blockIndexes, x.length, y.length);
+        this.initializeData(name, circuit);
 
         for(Map.Entry<GlobalBlock, Integer> blockIndexEntry : blockIndexes.entrySet()) {
             GlobalBlock block = blockIndexEntry.getKey();

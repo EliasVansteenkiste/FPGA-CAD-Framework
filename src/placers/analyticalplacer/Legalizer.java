@@ -99,7 +99,9 @@ abstract class Legalizer {
             int blocksStart = this.blockTypeIndexStarts.get(i);
             int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
-            legalizeBlockType(tileCapacity, blockType, blocksStart, blocksEnd);
+            if(blocksEnd > blocksStart) {
+                legalizeBlockType(tileCapacity, blockType, blocksStart, blocksEnd);
+            }
         }
 
         this.updateBestLegal();

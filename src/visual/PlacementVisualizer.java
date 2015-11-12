@@ -135,17 +135,17 @@ public class PlacementVisualizer {
 
     private class NavigateActionListener implements ActionListener {
 
-        private PlacementVisualizer frame;
+        private PlacementVisualizer vizualizer;
         private int step;
 
-        NavigateActionListener(PlacementVisualizer frame, int step) {
+        NavigateActionListener(PlacementVisualizer vizualizer, int step) {
             this.step = step;
-            this.frame = frame;
+            this.vizualizer = vizualizer;
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            this.frame.navigate(this.step);
+            this.vizualizer.navigate(this.step);
         }
     }
 }

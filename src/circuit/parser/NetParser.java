@@ -172,14 +172,17 @@ public class NetParser {
 
 
 
+    @SuppressWarnings("unused")
     private void processInputLine(String line) {
         this.currentPortType = PortDirection.INPUT;
     }
 
+    @SuppressWarnings("unused")
     private void processOutputLine(String line) {
         this.currentPortType = PortDirection.OUTPUT;
     }
 
+    @SuppressWarnings("unused")
     private void processClockLine(String line) {
         this.currentPortType = null;
     }

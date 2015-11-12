@@ -1,22 +1,19 @@
 package placers.analyticalplacer;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.ojalgo.optimisation.Expression;
-import org.ojalgo.optimisation.ExpressionsBasedModel;
-import org.ojalgo.optimisation.Optimisation;
-import org.ojalgo.optimisation.Variable;
+import lpsolve.LpSolve;
+import lpsolve.LpSolveException;
 
 import circuit.Circuit;
 import circuit.architecture.BlockType;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 
-public class LinearProgrammingLegalizer extends Legalizer {
+public class LpSolveLegalizer extends Legalizer {
 
-    LinearProgrammingLegalizer(
+    LpSolveLegalizer(
             Circuit circuit,
             CostCalculator costCalculator,
             Map<GlobalBlock, Integer> blockIndexes,
@@ -32,6 +29,15 @@ public class LinearProgrammingLegalizer extends Legalizer {
     void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd) {
         // There are numBlocks*numSites binary variables: is a certain block mapped to a certain site?
         // For a given block and site, the variable index is given by (blockIndex * numSites + siteIndex).
+        try {
+            this.legalizeBlockTypeThrowing(tileCapacity, blockType, blocksStart, blocksEnd);
+        } catch(LpSolveException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private void legalizeBlockTypeThrowing(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd) throws LpSolveException {
 
         int numBlocks = blocksEnd - blocksStart;
 
@@ -39,55 +45,75 @@ public class LinearProgrammingLegalizer extends Legalizer {
         int numSites = sites.size();
 
         int numVariables = numBlocks * numSites;
+        int numConstraints = numBlocks + numSites;
 
-        List<Variable> variables = new ArrayList<Variable>(numVariables);
+        LpSolve solver = LpSolve.makeLp(numConstraints, numVariables);
 
+        double[] costFunction = new double[numVariables + 1];
         for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
             double blockX = this.linearX[blockIndex + blocksStart];
             double blockY = this.linearY[blockIndex + blocksStart];
 
+            int variableIndex = blockIndex * numSites;
             for(AbstractSite site : sites) {
                 int siteX = site.getX();
                 int siteY = site.getY();
 
-                String variableName = String.format("%d (%d,%d)", blockIndex, siteX, siteY);
                 double weight = Math.sqrt(Math.pow(blockX - siteX, 2) + Math.pow(blockY - siteY, 2));
 
-                Variable variable = new Variable(variableName).binary().weight(weight);
-                variables.add(variable);
+                costFunction[variableIndex + 1] = weight;
+                variableIndex++;
             }
         }
 
-        ExpressionsBasedModel optimizationModel = new ExpressionsBasedModel();
-        optimizationModel.addVariables(variables);
+        solver.setObjFn(costFunction);
 
+
+        for(int variableIndex = 0; variableIndex < numVariables; variableIndex++) {
+            solver.setBinary(variableIndex + 1, true);
+        }
+
+
+        // Each block must be linked to exactly 1 site
         for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
-            String expressionName = String.format("Block %d", blockIndex);
-            Expression expression = optimizationModel.addExpression(expressionName).level(1);
+            double[] blockConstraint = new double[numVariables + 1];
 
-            List<Variable> blockVariables = variables.subList(blockIndex * numSites, (blockIndex+1) * numSites);
-            expression.setLinearFactorsSimple(blockVariables);
-        }
-
-        for(int siteIndex = 0; siteIndex < numSites; siteIndex++) {
-            String expressionName = String.format("Site %d", siteIndex);
-            Expression expression = optimizationModel.addExpression(expressionName).lower(0).upper(1);
-
-            List<Variable> siteVariables = new ArrayList<Variable>(numBlocks);
-            for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
-                siteVariables.add(variables.get(blockIndex * numSites + siteIndex));
+            for(int siteIndex = 0; siteIndex < numSites; siteIndex++) {
+                int variableIndex = blockIndex * numSites + siteIndex;
+                blockConstraint[variableIndex + 1] = 1;
             }
 
-            expression.setLinearFactorsSimple(siteVariables);
+            solver.addConstraint(blockConstraint, LpSolve.EQ, 1);
         }
 
-        Optimisation.Result optimizationResult = optimizationModel.minimise();
+        // Each site can contain at most 1 block
+        for(int siteIndex = 0; siteIndex < numSites; siteIndex++) {
+            double[] siteConstraint = new double[numVariables + 1];
+
+            for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
+                int variableIndex = blockIndex * numSites + siteIndex;
+                siteConstraint[variableIndex + 1] = 1;
+            }
+
+            solver.addConstraint(siteConstraint, LpSolve.LE, 1);
+        }
+
+
+        solver.setVerbose(LpSolve.IMPORTANT);
+        solver.setScalelimit(1);
+        solver.setScaling(1024);
+
+        solver.setPresolve(1, 0);
+        solver.solve();
+
+        double[] solution = solver.getPtrVariables();
+
         for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
             for(int siteIndex = 0; siteIndex < numSites; siteIndex ++) {
 
                 int variableIndex = blockIndex * numSites + siteIndex;
 
-                if(optimizationResult.doubleValue(variableIndex) > 0) {
+                if(solution[variableIndex] > 0) {
                     AbstractSite legalSite = sites.get(siteIndex);
                     this.tmpLegalX[blockIndex + blocksStart] = legalSite.getX();
                     this.tmpLegalY[blockIndex + blocksStart] = legalSite.getY();

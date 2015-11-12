@@ -59,7 +59,7 @@ public class PlaceParser {
 
             // Bind the site and block to each other
             AbstractSite site = this.circuit.getSite(x, y);
-            ((GlobalBlock) block).setSite(site);
+            block.setSite(site);
         }
 
         reader.close();

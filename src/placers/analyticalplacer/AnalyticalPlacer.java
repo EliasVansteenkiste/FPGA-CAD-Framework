@@ -56,7 +56,7 @@ public abstract class AnalyticalPlacer extends Placer {
         defaultOptions.put("anchor_weight_increase", "0.01");
 
         // The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
-        defaultOptions.put("stop_ratio_linear_legal", "0.99");
+        defaultOptions.put("stop_ratio_linear_legal", "0.95");
 
         // The speed at which the gradient solver moves to the optimal position
         defaultOptions.put("solve_mode", "gradient");
@@ -193,7 +193,7 @@ public abstract class AnalyticalPlacer extends Placer {
         this.costCalculator = createCostCalculator();
 
         try {
-            this.legalizer = new HeapLegalizer(
+            this.legalizer = new GLPKLegalizer(
                     this.circuit, this.costCalculator,
                     this.blockIndexes,
                     blockTypes, blockTypeIndexStarts,
@@ -265,9 +265,6 @@ public abstract class AnalyticalPlacer extends Placer {
             linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
             legalCost = this.legalizer.getCost();
 
-            /*this.logger.logf("Iteration %d: pseudoWeightFactor = %f, max utilization = %f, linear cost = %f, legal cost = %f, time = %f\n",
-                    iteration, pseudoWeightFactor, maxUtilization);
-            System.out.format(", linear cost = %f, legal cost = %f, time = %f\n", linearCost, legalCost, time);*/
             this.logger.logf("%-13d%-17f%-19f%-15f%-14f%f\n", iteration, anchorWeight, maxUtilization, linearCost, legalCost, time);
 
             iteration++;

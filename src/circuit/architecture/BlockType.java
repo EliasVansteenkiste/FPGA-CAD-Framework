@@ -124,6 +124,7 @@ public class BlockType implements Serializable {
     public boolean equals(Object otherObject) {
         if(otherObject instanceof BlockType) {
             return this.equals((BlockType) otherObject);
+
         } else {
             return false;
         }
@@ -142,6 +143,7 @@ public class BlockType implements Serializable {
     public String toString() {
         if(this.modeIndex == null) {
             return this.getName();
+
         } else {
             return this.getName() + "<" + this.getModeName() + ">";
         }

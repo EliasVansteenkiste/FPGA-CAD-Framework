@@ -34,6 +34,8 @@ public class DelayTables implements Serializable {
         this.parseType(reader, "io_to_clb", this.ioToClb);
         this.parseType(reader, "clb_to_io", this.clbToIo);
         this.parseType(reader, "io_to_io", this.ioToIo);
+        
+        reader.close();
     }
 
     private void parseType(BufferedReader reader, String type, List<List<Double>> matrix) throws IOException, InvalidFileFormatException {
