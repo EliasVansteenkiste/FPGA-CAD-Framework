@@ -4,6 +4,9 @@ An FPGA placement framework, including benchmarks
 
 What can I do with this tool flow?
 ===============
+Simulated Annealing Placement
+Analytical Iterative Placement
+Gradient Iterative Placement
 
 License
 ===============
