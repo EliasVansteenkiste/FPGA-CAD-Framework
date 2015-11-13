@@ -1,8 +1,9 @@
-PlacerFramework
+The Java FPGA Placement Framework: An introduction
 ===============
+An FPGA placement framework, including benchmarks
 
-FPGA placement framework, including small benchmarks
-
+What can I do with this tool flow?
+===============
 
 License
 ===============
@@ -42,3 +43,17 @@ In no event shall UGent be liable for (a) any incidental, consequential, or indi
 (12) Applicable Law - This Agreement shall be governed by and construed in accordance with the laws of the Belgium, without regard to its conflicts of law rules. The Commercial courts of Gent, Belgium are exclusively competent.
 
 (13) Assignment - Neither this Agreement nor any of Licensee's rights hereunder shall be assigned, sublicensed, or transferred (in insolvency proceedings, by mergers, acquisitions or otherwise) by Licensee without the written consent of UGent. Any assignment or other transfer which is inconsistent with the foregoing shall be null and void ab initio. UGent may assign all or a portion of its rights and obligations hereunder.
+
+Contact us
+===============
+The Java FPGA Placement Framework is released by Ghent University, ELIS department, Hardware and Embedded Systems (HES) group (http://hes.elis.ugent.be).
+
+If you encounter bugs, want to use the Java FPGA Placement Framework but need support or want to tell us about your results, please contact us. We can be reached at hes@elis.ugent.be
+
+Referencing the TLUT tool flow
+===============
+If you use the TLUT tool flow in your work, please reference in your publications the following paper:
+
+
+
+You may also refer to one of our others papers if you think it is more related. 
