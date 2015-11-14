@@ -19,8 +19,8 @@ public class LinearSolverComplete extends LinearSolver {
         int numIOBlocks = this.getNumIOBlocks();
         int numBlocks = this.coordinatesX.length;
         for(int blockIndex = numIOBlocks; blockIndex < numBlocks; blockIndex++) {
-            this.solverX.addPseudoConnection(blockIndex, this.coordinatesX[blockIndex], legalX[blockIndex]);
-            this.solverY.addPseudoConnection(blockIndex, this.coordinatesY[blockIndex], legalY[blockIndex]);
+            this.solverX.addPseudoConnection(blockIndex, legalX[blockIndex]);
+            this.solverY.addPseudoConnection(blockIndex, legalY[blockIndex]);
         }
     }
 

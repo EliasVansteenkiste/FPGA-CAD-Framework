@@ -35,7 +35,7 @@ public abstract class AnalyticalPlacer extends Placer {
 
         options.add(new Option("max utilization", "comma-separated list of maximum tile capacity for each iteration", "1"));
         options.add(new Option("anchor weight", "starting anchor weight", new Double(0)));
-        options.add(new Option("anchor weight increase", "value that is added to the anchor weight in each iteration", new Double(0.1)));
+        options.add(new Option("anchor weight increase", "value that is added to the anchor weight in each iteration", new Double(0.2)));
 
         options.add(new Option("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.95)));
 

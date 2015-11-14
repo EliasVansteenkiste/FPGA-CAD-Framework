@@ -28,6 +28,9 @@ public class Options {
     void set(String name, String value) {
 
         Option option = this.options.get(name);
+        if(option == null) {
+            throw new IllegalArgumentException(name + " is not a valid option");
+        }
 
         Class<? extends Object> optionClass = option.getType();
 
@@ -47,7 +50,7 @@ public class Options {
             parsedValue = Integer.parseInt(value);
 
         } else if(optionClass.equals(Long.class)) {
-            parsedValue = Integer.parseInt(value);
+            parsedValue = Long.parseLong(value);
 
         } else if(optionClass.equals(Float.class)) {
             parsedValue = Float.parseFloat(value);

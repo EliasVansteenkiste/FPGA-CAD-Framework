@@ -8,7 +8,7 @@ public class Option {
     private String name, description;
     private Required required;
 
-    private Class<? extends Object> type;
+    private Class<? extends Object> classVar;
     private Object defaultValue;
     private Object value;
 
@@ -16,7 +16,7 @@ public class Option {
     public Option(String name, String description, Class<? extends Object> type, Required required) {
         this.name = name;
         this.description = description;
-        this.type = type;
+        this.classVar = type;
         this.required = required;
     }
     public Option(String name, String description, Class<? extends Object> type) {
@@ -28,7 +28,7 @@ public class Option {
     }
 
     public Class<? extends Object> getType() {
-        return this.type;
+        return this.classVar;
     }
 
     public String getName() {
@@ -46,7 +46,7 @@ public class Option {
     }
 
     void setValue(Object value) {
-        if(!value.getClass().equals(this.type)) {
+        if(!value.getClass().equals(this.classVar)) {
             throw new ClassCastException("Incorrect class: " + value.getClass());
         }
 

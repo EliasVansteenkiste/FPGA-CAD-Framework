@@ -26,7 +26,8 @@ Architecture files are currently json-formatted and based on the vpr xml-files.
 
 The command line options can be found by calling interfaces.CLI with the option "--help". The most simple invocation of the toolflow is:
 
-java -cp bin:lib/json-simple-1.1.1.jar interfaces.CLI benchmarks/k6_frac_N10_mem32K_40nm.json benchmarks/or1200.blif --placer wld_ap
+java -cp bin:lib/json-simple-1.1.1.jar interfaces.CLI \
+benchmarks/k6_frac_N10_mem32K_40nm.json benchmarks/or1200.blif --placer wld_ap
 
 
 License

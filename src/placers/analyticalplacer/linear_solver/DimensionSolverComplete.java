@@ -29,8 +29,8 @@ class DimensionSolverComplete extends DimensionSolver {
     }
 
 
-    void addPseudoConnection(int blockIndex, double coordinate, int legalCoordinate) {
-        double weight = this.pseudoWeight / Math.max(Math.abs(coordinate - legalCoordinate), 0.005);
+    void addPseudoConnection(int blockIndex, int legalCoordinate) {
+        double weight = this.pseudoWeight;
         int relativeIndex = blockIndex - this.numIOBlocks;
 
         this.matrix.addElement(relativeIndex, relativeIndex, weight);

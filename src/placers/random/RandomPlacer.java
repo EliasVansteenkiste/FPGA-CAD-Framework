@@ -56,8 +56,6 @@ public class RandomPlacer extends Placer {
 
     @Override
     public void place() {
-        Random random = new Random(100);
-
         List<BlockType> blockTypes = this.circuit.getGlobalBlockTypes();
         for(BlockType blockType : blockTypes) {
 
@@ -70,7 +68,7 @@ public class RandomPlacer extends Placer {
             List<AbstractSite> sites = this.circuit.getSites(blockType);
 
             // Permutate sites
-            Collections.shuffle(sites, random);
+            Collections.shuffle(sites, this.random);
 
             // Assign each block to a site
             int siteIndex = 0;
