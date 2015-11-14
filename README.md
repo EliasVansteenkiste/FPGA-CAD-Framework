@@ -19,7 +19,9 @@ Usage
 
 Some parts of this toolflow require external packages, you can find these in the file "requirements".
 
-To calculate point to point delays, vpr has to be installed in the project folder. When compiling vpr, the macro PRINT_ARRAYS has to be defined in "place/timing_place_lookup.c".
+To calculate point to point delays, vpr is used (see option --vpr_command). When compiling vpr, the macro PRINT_ARRAYS has to be defined in "place/timing_place_lookup.c".
+
+Architecture files are currently json-formatted and based on the vpr xml-files.
 
 The command line options can be found by calling interfaces.CLI with the option "--help"
 

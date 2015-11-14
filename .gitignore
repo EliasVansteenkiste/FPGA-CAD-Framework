@@ -4,8 +4,10 @@ data
 dependencies
 results
 
-benchmarks
+benchmarks/*
 !benchmarks/*.blif
+!benchmarks/*.json
+!benchmarks/*.xml
 
 
 nbproject

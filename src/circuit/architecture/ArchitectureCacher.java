@@ -15,14 +15,15 @@ import circuit.exceptions.InvalidPlatformException;
 
 public class ArchitectureCacher {
 
-    private static final String CACHE_FOLDER = "data/circuit";
-
     private String circuitName;
     private File netFile;
+    private final File cacheFolder = new File("data/cache");
 
     public ArchitectureCacher(String circuitName, File netFile) {
         this.netFile = netFile;
         this.circuitName = circuitName;
+
+        this.cacheFolder.mkdirs();
     }
 
     public void store(Architecture architecture) {
@@ -115,6 +116,6 @@ public class ArchitectureCacher {
 
 
     private File getCachedCircuitFile() {
-        return new File(ArchitectureCacher.CACHE_FOLDER, this.circuitName + ".ser");
+        return new File(this.cacheFolder, this.circuitName + ".ser");
     }
 }

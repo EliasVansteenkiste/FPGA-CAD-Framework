@@ -30,6 +30,7 @@ public class Architecture implements Serializable {
 
     private File architectureFile, architectureFileVPR, blifFile, netFile;
     private String circuitName;
+    private String vprCommand;
 
     private DelayTables delayTables;
     private transient JSONObject blockDefinitions;
@@ -37,9 +38,11 @@ public class Architecture implements Serializable {
     private int ioCapacity;
 
 
-    public Architecture(String circuitName, File architectureFile, File architectureFileVPR, File blifFile, File netFile) {
+    public Architecture(String circuitName, File architectureFile, File architectureFileVPR, String vprCommand, File blifFile, File netFile) {
         this.architectureFile = architectureFile;
         this.architectureFileVPR = architectureFileVPR;
+
+        this.vprCommand = vprCommand;
 
         this.blifFile = blifFile;
         this.netFile = netFile;
@@ -235,8 +238,8 @@ public class Architecture implements Serializable {
 
         // Run vpr
         String command = String.format(
-                "./vpr %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
-                this.architectureFileVPR, this.circuitName, this.blifFile, this.netFile);
+                "%s %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
+                this.vprCommand, this.architectureFileVPR, this.circuitName, this.blifFile, this.netFile);
 
         Process process = null;
         process = Runtime.getRuntime().exec(command);

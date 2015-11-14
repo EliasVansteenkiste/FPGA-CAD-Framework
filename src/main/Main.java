@@ -33,6 +33,8 @@ public class Main {
     private String circuitName;
     private File blifFile, netFile, inputPlaceFile, outputPlaceFile;
     private File architectureFile, architectureFileVPR;
+    private String vprCommand;
+
     private boolean visual;
 
     private Logger logger;
@@ -53,7 +55,8 @@ public class Main {
         options.add(new Option("input place file", "if omitted the initial placement is random", File.class, Required.FALSE));
         options.add(new Option("output place file", "(default: based on the blif file)", File.class, Required.FALSE));
 
-        options.add(new Option("vpr architecture", "XML architecture file; if omitted a xml file in the folder is chosen", File.class, Required.FALSE));
+        options.add(new Option("vpr architecture", "XML architecture file (default: based on the architecture.json file)", File.class, Required.FALSE));
+        options.add(new Option("vpr command", "Path to vpr executable", "./vpr"));
 
         options.add(new Option("visual", "show the placed circuit in a GUI", Boolean.FALSE));
         options.add(new Option("random seed", "seed for randomization", new Long(1)));
@@ -90,10 +93,12 @@ public class Main {
         this.architectureFile = options.getFile("architecture.json");
         this.architectureFileVPR = options.getFile("vpr architecture");
         if(this.architectureFileVPR == null) {
-            this.architectureFileVPR = this.guessArchitectureFileVPR();
+            String path = this.architectureFile.getAbsolutePath().replaceFirst("(.+)\\.json", "$1.xml");
+            this.architectureFileVPR = new File(path);
         }
 
-        this.visual = (Boolean) options.get("visual");
+        this.vprCommand = options.getString("vpr command");
+        this.visual = options.getBoolean("visual");
 
 
         // Check if all input files exist
@@ -105,26 +110,6 @@ public class Main {
         this.checkFileExistence("VPR architecture file", this.architectureFileVPR);
     }
 
-    private File guessArchitectureFileVPR() {
-        File[] files = this.netFile.getParentFile().listFiles();
-        File architectureFile = null;
-
-        for(File file : files) {
-            String path = file.getAbsolutePath();
-            if(path.substring(path.length() - 4).equals(".xml")) {
-                if(architectureFile != null) {
-                    this.logger.raise("Multiple architecture files found in the input folder");
-                }
-                architectureFile = file;
-            }
-        }
-
-        if(architectureFile == null) {
-            this.logger.raise("No architecture file found in the inputfolder");
-        }
-
-        return architectureFile;
-    }
 
     protected void checkFileExistence(String prefix, File file) {
         if(file == null) {
@@ -218,6 +203,7 @@ public class Main {
                     this.circuitName,
                     this.architectureFile,
                     this.architectureFileVPR,
+                    this.vprCommand,
                     this.blifFile,
                     this.netFile);
 
