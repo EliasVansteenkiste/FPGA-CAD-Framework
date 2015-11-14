@@ -9,12 +9,12 @@ import java.util.List;
 import util.Pair;
 
 
-class NewCLIOptions extends Options {
+class CLIOptions extends Options {
 
     private List<String> args;
 
 
-    public NewCLIOptions(Logger logger) {
+    public CLIOptions(Logger logger) {
         super(logger);
     }
 
@@ -118,7 +118,7 @@ class NewCLIOptions extends Options {
         Stream stream = Stream.ERR;
 
         String argValue = this.args.get(argIndex);
-        this.logger.logf(stream, "Incorrect usage of the option \"%s\" at position %d\n\n", argValue, argIndex);
+        this.logger.printf(stream, "Incorrect usage of the option \"%s\" at position %d\n\n", argValue, argIndex);
 
         this.printHelp(stream);
 
@@ -127,18 +127,18 @@ class NewCLIOptions extends Options {
     private void printHelp(Stream stream) {
         OptionList mainOptions = this.getMainOptions();
 
-        this.logger.log(stream, "usage: interfaces.CLI");
+        this.logger.print(stream, "usage: interfaces.CLI");
         this.printRequiredArguments(stream, mainOptions);
-        this.logger.logln(stream, " [options]\n");
+        this.logger.println(stream, " [options]\n");
 
-        this.logger.logln(stream, "General options:");
+        this.logger.println(stream, "General options:");
         this.printOptionalArguments(stream, mainOptions);
 
 
         for(String placerName : this.placerFactory.placers()) {
             OptionList placerOptions = this.placerFactory.initOptions(placerName);
 
-            this.logger.logln(stream, "--placer " + placerName);
+            this.logger.println(stream, "--placer " + placerName);
             this.printRequiredArguments(stream, placerOptions);
 
             this.printOptionalArguments(stream, placerOptions);
@@ -148,7 +148,7 @@ class NewCLIOptions extends Options {
     private void printRequiredArguments(Stream stream, OptionList options) {
         for(String optionName : options.keySet()) {
             if(options.isRequired(optionName)) {
-                this.logger.log(stream, " " + optionName.replace(" ", "_"));
+                this.logger.print(stream, " " + optionName.replace(" ", "_"));
             }
         }
     }
@@ -156,14 +156,22 @@ class NewCLIOptions extends Options {
     private void printOptionalArguments(Stream stream, OptionList options) {
         int maxLength = options.getMaxNameLength();
 
-        String format = String.format("  --%%-%ds   %%s\n", maxLength);
+        String format = String.format("  --%%-%ds   %%s.", maxLength);
         for(String optionName : options.keySet()) {
             if(!options.isRequired(optionName)) {
+                String formattedName = optionName.replace(" ", "_");
                 String optionDescription = options.getDescription(optionName);
-                this.logger.logf(stream, format, optionName.replace(" ", "_"), optionDescription);
+
+                this.logger.printf(stream, format, formattedName, optionDescription);
+
+                Object defaultValue = options.get(optionName);
+                if(defaultValue != null) {
+                    this.logger.print(" Default: " + defaultValue.toString());
+                }
+                this.logger.println();
             }
         }
 
-        this.logger.logln();
+        this.logger.println();
     }
 }

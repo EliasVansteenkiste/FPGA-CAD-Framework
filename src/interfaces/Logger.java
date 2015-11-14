@@ -69,53 +69,53 @@ public class Logger {
     }
 
 
-    public void log(Stream stream, String message) {
+    public void print(Stream stream, String message) {
         PrintWriter writer = this.getWriter(stream);
         writer.print(message);
         writer.flush();
     }
-    private void log(Stream stream, Exception exception) {
+    private void print(Stream stream, Exception exception) {
         PrintWriter writer = this.getWriter(stream);
         exception.printStackTrace(writer);
     }
 
-    public void logln(Stream stream, String message) {
-        this.log(stream, message + "\n");
+    public void println(Stream stream, String message) {
+        this.print(stream, message + "\n");
     }
-    public void logln(Stream stream) {
-        this.log(stream, "\n");
+    public void println(Stream stream) {
+        this.print(stream, "\n");
     }
-    public void logf(Stream stream, String format, Object... args) {
+    public void printf(Stream stream, String format, Object... args) {
         String formattedMessage = String.format(format, args);
-        this.log(stream, formattedMessage);
+        this.print(stream, formattedMessage);
     }
 
 
-    public void log(String message) {
-        this.log(Stream.OUT, message);
+    public void print(String message) {
+        this.print(Stream.OUT, message);
     }
-    public void logln(String message) {
-        this.logln(Stream.OUT, message);
+    public void println(String message) {
+        this.println(Stream.OUT, message);
     }
-    public void logln() {
-        this.logln(Stream.OUT);
+    public void println() {
+        this.println(Stream.OUT);
     }
-    public void logf(String format, Object... args) {
-        this.logf(Stream.OUT, format, args);
+    public void printf(String format, Object... args) {
+        this.printf(Stream.OUT, format, args);
     }
 
 
     public void raise(String message) {
-        this.logln(Stream.ERR, message);
+        this.println(Stream.ERR, message);
         System.exit(1);
     }
     public void raise(Exception exception) {
-        this.log(Stream.ERR, exception);
+        this.print(Stream.ERR, exception);
         System.exit(1);
     }
     public void raise(String message, Exception exception) {
-        this.logln(Stream.ERR, message);
-        this.log(Stream.ERR, exception);
+        this.println(Stream.ERR, message);
+        this.print(Stream.ERR, exception);
         this.raise(exception);
     }
 }

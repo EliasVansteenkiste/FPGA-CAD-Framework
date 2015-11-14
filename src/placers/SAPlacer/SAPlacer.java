@@ -2,7 +2,6 @@ package placers.SAPlacer;
 
 import interfaces.Logger;
 import interfaces.Option;
-import interfaces.Option.Required;
 import interfaces.OptionList;
 
 import java.util.Arrays;
@@ -27,11 +26,11 @@ public abstract class SAPlacer extends Placer {
         options.add(new Option("greedy", "Place greedy", Boolean.FALSE));
         options.add(new Option("detailed", "Place detailed", Boolean.FALSE));
 
-        options.add(new Option("effort level", "Multiplier for the number of swap iterations", new Integer(1)));
+        options.add(new Option("effort level", "Multiplier for the number of swap iterations", new Double(1)));
         options.add(new Option("temperature", "Multiplier for the starting temperature", new Double(1)));
 
-        options.add(new Option("rlim", "Starting maximum distance for a swap", Integer.class, Required.FALSE));
-        options.add(new Option("max rlim", "Maximum rlim for all iterations", Integer.class, Required.FALSE));
+        options.add(new Option("rlim", "Starting maximum distance for a swap", new Integer(-1)));
+        options.add(new Option("max rlim", "Maximum rlim for all iterations", new Integer(-1)));
 
         options.add(new Option("fix pins", "Fix the IO pins", Boolean.TRUE));
     }
@@ -110,7 +109,7 @@ public abstract class SAPlacer extends Placer {
         } else {
             this.calculateInitialTemperature();
 
-            this.logger.logln("Initial temperature: " + this.temperature);
+            this.logger.println("Initial temperature: " + this.temperature);
 
 
             int iteration = 0;
@@ -123,13 +122,13 @@ public abstract class SAPlacer extends Placer {
                 this.updateRlim(alpha);
                 this.updateTemperature(alpha);
 
-                this.logger.logf("Temperature %d = %.9f, Rlim = %d, %s\n",
+                this.logger.printf("Temperature %d = %.9f, Rlim = %d, %s\n",
                         iteration, this.temperature, this.Rlim, this.getStatistics());
 
                 iteration++;
             }
 
-            this.logger.logln("Last temp: " + this.temperature);
+            this.logger.println();
         }
     }
 

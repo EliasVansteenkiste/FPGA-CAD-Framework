@@ -41,14 +41,16 @@ public abstract class Placer {
     private final void printOptions() {
         int maxLength = this.options.getMaxNameLength();
 
-        this.logger.logf("%s options:\n", this.getName());
+        this.logger.printf("%s options:\n", this.getName());
         String format = String.format("%%-%ds| %%s\n", maxLength + 1);
         for(Map.Entry<String, Object> optionEntry : this.options.entrySet()) {
             String optionName = optionEntry.getKey();
             Object optionValue = optionEntry.getValue();
 
-            this.logger.logf(format, optionName, optionValue);
+            this.logger.printf(format, optionName, optionValue);
         }
+
+        this.logger.println();
     }
 
     public abstract String getName();

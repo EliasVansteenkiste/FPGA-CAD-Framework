@@ -7,7 +7,7 @@ public class CLI {
     public static void main(String[] args) {
 
         Logger logger = new Logger();
-        NewCLIOptions options = new NewCLIOptions(logger);
+        CLIOptions options = new CLIOptions(logger);
 
         options.parseArguments(args);
 

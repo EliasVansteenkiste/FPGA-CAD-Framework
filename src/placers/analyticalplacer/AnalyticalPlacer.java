@@ -212,8 +212,8 @@ public abstract class AnalyticalPlacer extends Placer {
         double linearCost, legalCost;
         boolean firstSolve = true;
 
-        this.logger.logln("Iteration    anchor weight    max utilization    linear cost    legal cost    time");
-        this.logger.logln("---------    -------------    ---------------    -----------    ----------    ----");
+        this.logger.println("Iteration    anchor weight    max utilization    linear cost    legal cost    time");
+        this.logger.println("---------    -------------    ---------------    -----------    ----------    ----");
 
         do {
             this.initializePlacementIteration();
@@ -264,7 +264,7 @@ public abstract class AnalyticalPlacer extends Placer {
             linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
             legalCost = this.legalizer.getCost();
 
-            this.logger.logf("%-13d%-17f%-19f%-15f%-14f%f\n", iteration, anchorWeight, maxUtilization, linearCost, legalCost, time);
+            this.logger.printf("%-13d%-17f%-19f%-15f%-14f%f\n", iteration, anchorWeight, maxUtilization, linearCost, legalCost, time);
 
             iteration++;
 
@@ -272,7 +272,7 @@ public abstract class AnalyticalPlacer extends Placer {
             // for the gradient placer, no cost calculation is required
         } while(linearCost / legalCost < this.stopRatioLinearLegal);
 
-        this.logger.logln();
+        this.logger.println();
 
 
         try {

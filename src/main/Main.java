@@ -146,7 +146,7 @@ public class Main {
         this.startTimer(totalString);
 
         this.loadCircuit();
-        this.logger.logln();
+        this.logger.println();
 
 
         // Enable the visualizer
@@ -307,23 +307,23 @@ public class Main {
 
         if(printTime) {
             double placeTime = this.getTime(prefix);
-            this.logger.logf("%s %15s: %f s\n", prefix, "time", placeTime);
+            this.logger.printf("%s %15s: %f s\n", prefix, "time", placeTime);
         }
 
         // Calculate BB cost
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
-        this.logger.logf("%s %15s: %f\n", prefix, "BB cost", totalWLCost);
+        this.logger.printf("%s %15s: %f\n", prefix, "BB cost", totalWLCost);
 
         // Calculate timing cost
         this.circuit.recalculateTimingGraph();
         double totalTimingCost = this.circuit.calculateTimingCost();
         double maxDelay = this.circuit.getMaxDelay();
 
-        this.logger.logf("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
-        this.logger.logf("%s %15s: %f ns\n", prefix, "max delay", maxDelay);
+        this.logger.printf("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
+        this.logger.printf("%s %15s: %f ns\n", prefix, "max delay", maxDelay);
 
-        this.logger.logln();
+        this.logger.println();
     }
 
 
@@ -337,6 +337,6 @@ public class Main {
 
     private void printTimer(String timerName) {
         double placeTime = this.getTime(timerName);
-        this.logger.logf("%s: %f s\n", timerName, placeTime);
+        this.logger.printf("%s: %f s\n", timerName, placeTime);
     }
 }
