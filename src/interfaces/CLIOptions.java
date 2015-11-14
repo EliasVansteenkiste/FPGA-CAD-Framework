@@ -100,30 +100,72 @@ class CLIOptions extends OptionsManager {
         for(String optionName : options.keySet()) {
             if(options.isRequired(optionName)) {
                 String optionValue = this.args.get(argIndex);
+                if(optionValue.substring(0, 2).equals("--")) {
+                    this.printErrorFormat("Exptected required argument \"%s\" at position %d, got \"%s", optionName, argIndex, optionValue);
+                }
+
                 options.set(optionName, optionValue);
                 argIndex++;
             }
         }
 
         while(argIndex < end) {
-            String argName = this.args.get(argIndex).substring(2).replace("_", " ");
+            String argName = this.args.get(argIndex);
+            String optionName = this.argToOption(argName);
             String argValue = this.getArgValue(argIndex);
 
             // The argument is boolean valued, and should be set to 1
             if(argValue == null) {
-                options.set(argName, "1");
+
+                try {
+                    options.set(optionName, true);
+
+                } catch(IllegalArgumentException error) {
+                    this.printErrorFormat("Invalid argument: \"%s\"", argName);
+
+                } catch(ClassCastException error) {
+                    this.printErrorFormat("The argument \"%s\" requires a value", argName);
+                }
+
                 argIndex += 1;
 
             // The argument is differently valued, let the OptionList parse it
             } else {
-                options.set(argName, argValue);
+                try {
+                    options.set(optionName, argValue);
+
+                } catch(NumberFormatException error) {
+                    String type = options.getType(optionName);
+                    this.printErrorFormat("The argument \"%s\" requires a value of type %s, got \"%s\"", argName, type, argValue);
+
+                } catch(IllegalArgumentException error) {
+                    this.printErrorFormat("Invalid argument: \"%s\"", argName);
+                }
+
                 argIndex += 2;
             }
         }
     }
 
+    private String argToOption(String argName) {
+        return argName.substring(2).replace("_", " ");
+    }
+    private String optionToArg(String optionName) {
+        return "--" + optionName.replace(" ", "_");
+    }
 
 
+    private void printErrorFormat(String format, Object... args) {
+        this.printError(String.format(format, args));
+    }
+    private void printError(String message) {
+        Stream stream = Stream.ERR;
+
+        this.logger.println(stream, message + "\n");
+        this.printHelp(stream);
+
+        System.exit(1);
+    }
     private void printError(int argIndex) {
 
         Stream stream = Stream.ERR;
@@ -144,9 +186,10 @@ class CLIOptions extends OptionsManager {
         this.logger.println(stream);
 
         this.logger.println(stream,
-                "The --placer option can be specified zero, one or multipler times.\n"
+                "Attention: the order of arguments matters!\n"
+                + "The --placer option can be specified zero, one or multipler times.\n"
                 + "The chosen placers will be called in the provided order and with the specified options.\n"
-                + "The final placement is written to the --output_place_file.");
+                + "Only the final placement is written to the --output_place_file.");
         this.logger.println(stream);
 
         this.logger.println(stream, "General options:");
@@ -184,7 +227,7 @@ class CLIOptions extends OptionsManager {
 
                 Object defaultValue = options.get(optionName);
                 if(defaultValue != null) {
-                    this.logger.print(" (default: " + defaultValue.toString() + ")");
+                    this.logger.print(stream, " (default: " + defaultValue.toString() + ")");
                 }
                 this.logger.println();
             }

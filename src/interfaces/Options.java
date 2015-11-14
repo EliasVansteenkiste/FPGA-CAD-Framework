@@ -25,13 +25,13 @@ public class Options {
         }
     }
 
-    void set(String name, String value) {
+    void set(String name, Object value) throws IllegalArgumentException, ClassCastException {
+        Option option = this.getOption(name);
+        option.setValue(value);
+    }
 
-        Option option = this.options.get(name);
-        if(option == null) {
-            throw new IllegalArgumentException(name + " is not a valid option");
-        }
-
+    void set(String name, String value) throws NumberFormatException, IllegalArgumentException {
+        Option option = this.getOption(name);
         Class<? extends Object> optionClass = option.getType();
 
         Object parsedValue = null;
@@ -62,48 +62,51 @@ public class Options {
             parsedValue = new File(value);
 
         } else {
-            Exception error = new ClassCastException("Unknown option value class: " + optionClass.getName());
-            this.logger.raise(error);
+            this.logger.raise(new ClassCastException("Option " + name + " has an unkown class: " + optionClass.getName()));
         }
 
         option.setValue(parsedValue);
     }
 
-    public Object get(String name) {
-        try {
-            return this.options.get(name).getValue();
 
-        } catch(OptionNotSetException error) {
-            this.logger.raise(error);
-            return null;
+    private Option getOption(String name) throws IllegalArgumentException {
+        Option option = this.options.get(name);
+        if(option == null) {
+            throw new IllegalArgumentException(name + " is not a valid option");
         }
+
+        return option;
     }
 
-    public Boolean getBoolean(String name) {
+    public Object get(String name) throws OptionNotSetException {
+        return this.options.get(name).getValue();
+    }
+
+    public Boolean getBoolean(String name) throws ClassCastException, OptionNotSetException {
         return (Boolean) this.get(name);
     }
 
-    public Integer getInteger(String name) {
+    public Integer getInteger(String name) throws ClassCastException, OptionNotSetException {
         return (Integer) this.get(name);
     }
 
-    public Long getLong(String name) {
+    public Long getLong(String name) throws ClassCastException, OptionNotSetException {
         return (Long) this.get(name);
     }
 
-    public Float getFloat(String name) {
+    public Float getFloat(String name) throws ClassCastException, OptionNotSetException {
         return (Float) this.get(name);
     }
 
-    public Double getDouble(String name) {
+    public Double getDouble(String name) throws ClassCastException, OptionNotSetException {
         return (Double) this.get(name);
     }
 
-    public String getString(String name) {
+    public String getString(String name) throws ClassCastException, OptionNotSetException {
         return (String) this.get(name);
     }
 
-    public File getFile(String name) {
+    public File getFile(String name) throws ClassCastException, OptionNotSetException {
         return (File) this.get(name);
     }
 
@@ -115,6 +118,11 @@ public class Options {
     public String getDescription(String name) {
         return this.options.get(name).getDescription();
     }
+
+    public String getType(String name) {
+        return this.options.get(name).getType().getName();
+    }
+
 
     public Set<String> keySet() {
         return this.options.keySet();
