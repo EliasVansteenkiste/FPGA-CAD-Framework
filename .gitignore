@@ -2,13 +2,17 @@ bin
 dist
 data
 dependencies
-benchmarks
 results
+
+benchmarks
+!benchmarks/*.blif
+
 
 nbproject
 .project
 .settings
 .classpath
+.metadata
 manifest.mf
 build.xml
 
