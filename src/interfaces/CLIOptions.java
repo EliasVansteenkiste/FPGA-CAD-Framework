@@ -140,7 +140,14 @@ class CLIOptions extends OptionsManager {
 
         this.logger.print(stream, "usage: interfaces.CLI");
         this.printRequiredArguments(stream, mainOptions);
-        this.logger.println(stream, " [options]\n");
+        this.logger.println(stream, " [general_options] [--placer placer_name1 [placer_options] [--placer placer_name2 [placer_options] [...]]]");
+        this.logger.println(stream);
+
+        this.logger.println(stream,
+                "The --placer option can be specified zero, one or multipler times.\n"
+                + "The chosen placers will be called in the provided order and with the specified options.\n"
+                + "The final placement is written to the --output_place_file.");
+        this.logger.println(stream);
 
         this.logger.println(stream, "General options:");
         this.printOptionalArguments(stream, mainOptions);
