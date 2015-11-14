@@ -144,7 +144,7 @@ public class Main {
         // Read the place file
         boolean startFromPlaceFile = (this.inputPlaceFile != null);
         if(startFromPlaceFile) {
-            this.startTimer("parser");
+            this.startTimer("Placement parser");
             PlaceParser placeParser = new PlaceParser(this.circuit, this.inputPlaceFile);
 
             try {
@@ -154,7 +154,7 @@ public class Main {
             }
 
             this.stopTimer();
-            this.printStatistics();
+            this.printStatistics("Placement parser", false);
 
         // Add a random placer with default options at the beginning
         } else {
@@ -239,18 +239,18 @@ public class Main {
 
 
     private void timePlacement(int placerIndex) {
-        String timerName = "placer" + placerIndex;
-        this.startTimer(timerName);
-
         long seed = this.randomSeed;
         Random random = new Random(seed);
 
         Placer placer = this.options.getPlacer(placerIndex, this.circuit, random, this.visualizer);
+        String placerName = placer.getName();
+
+        this.startTimer(placerName);
         placer.initializeData();
         placer.place();
-
         this.stopTimer();
-        this.printStatistics();
+
+        this.printStatistics(placerName, true);
     }
 
 
@@ -286,28 +286,29 @@ public class Main {
         }
     }
 
-    private void printStatistics() {
-        this.printStatistics(this.mostRecentTimerName, true);
-    }
+
     private void printStatistics(String prefix, boolean printTime) {
+
+        this.logger.println(prefix + " results:");
+        String format = "%-11s | %f%s\n";
 
         if(printTime) {
             double placeTime = this.getTime(prefix);
-            this.logger.printf("%s %15s: %f s\n", prefix, "time", placeTime);
+            this.logger.printf(format, "runtime", placeTime, " s");
         }
 
         // Calculate BB cost
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
-        this.logger.printf("%s %15s: %f\n", prefix, "BB cost", totalWLCost);
+        this.logger.printf(format, "BB cost", totalWLCost, "");
 
         // Calculate timing cost
         this.circuit.recalculateTimingGraph();
         double totalTimingCost = this.circuit.calculateTimingCost();
         double maxDelay = this.circuit.getMaxDelay();
 
-        this.logger.printf("%s %15s: %e\n", prefix, "timing cost", totalTimingCost);
-        this.logger.printf("%s %15s: %f ns\n", prefix, "max delay", maxDelay);
+        this.logger.printf(format, "timing cost", totalTimingCost, "");
+        this.logger.printf(format, "max delay", maxDelay, " ns");
 
         this.logger.println();
     }
