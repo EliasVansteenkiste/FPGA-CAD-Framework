@@ -1,8 +1,7 @@
-bin
-dist
-data
-dependencies
-results
+bin/
+dist/
+data/
+lib/
 
 benchmarks/*
 !benchmarks/*.blif
