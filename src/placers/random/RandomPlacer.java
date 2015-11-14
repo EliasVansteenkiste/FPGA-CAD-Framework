@@ -2,7 +2,7 @@ package placers.random;
 
 import interfaces.Logger;
 import interfaces.Option;
-import interfaces.OptionList;
+import interfaces.Options;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,13 +25,13 @@ import visual.PlacementVisualizer;
 
 public class RandomPlacer extends Placer {
 
-    public static void initOptions(OptionList options) {
-        options.add(new Option("categories", "Comma-separated list of block categories that must be placed", ""));
+    public static void initOptions(Options options) {
+        options.add(new Option("categories", "comma-separated list of block categories that must be placed", ""));
     }
 
     private final Set<BlockCategory> categories = new HashSet<>();
 
-    public RandomPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public RandomPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random ,logger, visualizer);
 
         String categoriesString = this.options.getString("categories");

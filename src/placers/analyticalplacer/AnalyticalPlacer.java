@@ -2,7 +2,7 @@ package placers.analyticalplacer;
 
 import interfaces.Logger;
 import interfaces.Option;
-import interfaces.OptionList;
+import interfaces.Options;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,17 +30,17 @@ public abstract class AnalyticalPlacer extends Placer {
 
     protected static enum SolveMode {GRADIENT, COMPLETE};
 
-    public static void initOptions(OptionList options) {
-        options.add(new Option("solve mode", "Either \"complete\" or \"gradient\"", "gradient"));
+    public static void initOptions(Options options) {
+        options.add(new Option("solve mode", "either \"complete\" or \"gradient\"", "gradient"));
 
-        options.add(new Option("max utilization", "Comma-separated list of maximum tile capacity for each iteration", "1"));
-        options.add(new Option("anchor weight", "Starting anchor weight", new Double(0)));
-        options.add(new Option("anchor weight increase", "Value that is added to the anchor weight in each iteration", new Double(0.1)));
+        options.add(new Option("max utilization", "comma-separated list of maximum tile capacity for each iteration", "1"));
+        options.add(new Option("anchor weight", "starting anchor weight", new Double(0)));
+        options.add(new Option("anchor weight increase", "value that is added to the anchor weight in each iteration", new Double(0.1)));
 
-        options.add(new Option("stop ratio", "Ratio between linear and legal cost above which placement should be stopped", new Double(0.95)));
+        options.add(new Option("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.95)));
 
-        options.add(new Option("gradient speed", "Ratio of distance to optimal position that is moved", new Double(0.4)));
-        options.add(new Option("gradient iterations", "Number of gradient steps to take in each outer iteration", new Integer(40)));
+        options.add(new Option("gradient speed", "ratio of distance to optimal position that is moved", new Double(0.4)));
+        options.add(new Option("gradient iterations", "number of gradient steps to take in each outer iteration", new Integer(40)));
     }
 
 
@@ -64,7 +64,7 @@ public abstract class AnalyticalPlacer extends Placer {
 
 
 
-    public AnalyticalPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
 

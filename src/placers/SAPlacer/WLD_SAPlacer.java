@@ -1,7 +1,7 @@
 package placers.SAPlacer;
 
 import interfaces.Logger;
-import interfaces.OptionList;
+import interfaces.Options;
 
 import java.util.Random;
 
@@ -13,14 +13,14 @@ import circuit.Circuit;
 
 public class WLD_SAPlacer extends SAPlacer {
 
-    public static void initOptions(OptionList options) {
+    public static void initOptions(Options options) {
         SAPlacer.initOptions(options);
     }
 
     private EfficientBoundingBoxNetCC calculator;
     private double cachedCost;
 
-    public WLD_SAPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public WLD_SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);

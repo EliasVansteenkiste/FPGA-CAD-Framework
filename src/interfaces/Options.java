@@ -1,76 +1,131 @@
 package interfaces;
 
+import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+public class Options {
 
-import circuit.Circuit;
+    private Logger logger;
 
-import main.Main;
+    private LinkedHashMap<String, Option> options = new LinkedHashMap<String, Option>();
+    private int maxNameLength = 0;
 
-import placers.Placer;
-import visual.PlacementVisualizer;
-
-
-public abstract class Options {
-
-    public enum StartingStage {NET, PLACE};
-
-    protected PlacerFactory placerFactory;
-
-    protected Logger logger;
-
-    private OptionList mainOptions;
-    private List<String> placerNames = new ArrayList<String>();
-    private List<OptionList> placerOptions = new ArrayList<OptionList>();
-
-
-    protected Options(Logger logger) {
+    public Options(Logger logger) {
         this.logger = logger;
-
-        this.placerFactory = new PlacerFactory(this.logger);
-
-        this.mainOptions = new OptionList(this.logger);
-        Main.initOptionList(this.mainOptions);
     }
 
-    public Logger getLogger() {
-        return this.logger;
+    public void add(Option option) {
+        String optionName = option.getName();
+        this.options.put(optionName, option);
+
+        if(optionName.length() > this.maxNameLength) {
+            this.maxNameLength = optionName.length();
+        }
     }
 
-    public OptionList getMainOptions() {
-        return this.mainOptions;
+    void set(String name, String value) {
+
+        Option option = this.options.get(name);
+
+        Class<? extends Object> optionClass = option.getType();
+
+        Object parsedValue = null;
+        if(optionClass.equals(String.class)) {
+            parsedValue = value;
+
+        } else if(optionClass.equals(Boolean.class)) {
+            try {
+                parsedValue = (Integer.parseInt(value) > 0);
+
+            } catch(NumberFormatException e) {
+                parsedValue = Boolean.parseBoolean(value);
+            }
+
+        } else if(optionClass.equals(Integer.class)) {
+            parsedValue = Integer.parseInt(value);
+
+        } else if(optionClass.equals(Long.class)) {
+            parsedValue = Integer.parseInt(value);
+
+        } else if(optionClass.equals(Float.class)) {
+            parsedValue = Float.parseFloat(value);
+
+        } else if(optionClass.equals(Double.class)) {
+            parsedValue = Double.parseDouble(value);
+
+        } else if(optionClass.equals(File.class)) {
+            parsedValue = new File(value);
+
+        } else {
+            Exception error = new ClassCastException("Unknown option value class: " + optionClass.getName());
+            this.logger.raise(error);
+        }
+
+        option.setValue(parsedValue);
     }
 
-    public int getNumPlacers() {
-        return this.placerNames.size();
-    }
-    public Placer getPlacer(int placerIndex, Circuit circuit, Random random, PlacementVisualizer visualizer) {
-        String placerName = this.placerNames.get(placerIndex);
-        OptionList options = this.placerOptions.get(placerIndex);
+    public Object get(String name) {
+        try {
+            return this.options.get(name).getValue();
 
-        return this.placerFactory.newPlacer(placerName, circuit, options, random, visualizer);
-    }
-
-
-    protected OptionList getDefaultOptions(String placerName) {
-        return this.placerFactory.initOptions(placerName);
+        } catch(OptionNotSetException error) {
+            this.logger.raise(error);
+            return null;
+        }
     }
 
-
-
-    public void insertRandomPlacer() {
-        String placerName = "random";
-        this.addPlacer(0, placerName, this.getDefaultOptions(placerName));
+    public Boolean getBoolean(String name) {
+        return (Boolean) this.get(name);
     }
 
-    public void addPlacer(String placerName, OptionList options) {
-        this.addPlacer(this.getNumPlacers(), placerName, options);
+    public Integer getInteger(String name) {
+        return (Integer) this.get(name);
     }
 
-    private void addPlacer(int index, String placerName, OptionList options) {
-        this.placerNames.add(index, placerName);
-        this.placerOptions.add(index, options);
+    public Long getLong(String name) {
+        return (Long) this.get(name);
+    }
+
+    public Float getFloat(String name) {
+        return (Float) this.get(name);
+    }
+
+    public Double getDouble(String name) {
+        return (Double) this.get(name);
+    }
+
+    public String getString(String name) {
+        return (String) this.get(name);
+    }
+
+    public File getFile(String name) {
+        return (File) this.get(name);
+    }
+
+
+    public boolean isRequired(String name) {
+        return this.options.get(name).isRequired();
+    }
+
+    public String getDescription(String name) {
+        return this.options.get(name).getDescription();
+    }
+
+    public Set<String> keySet() {
+        return this.options.keySet();
+    }
+    public Set<Map.Entry<String, Object>> entrySet() {
+        Map<String, Object> values = new LinkedHashMap<String, Object>();
+        for(String optionName : this.options.keySet()) {
+            values.put(optionName, this.get(optionName));
+        }
+
+        return values.entrySet();
+    }
+
+    public int getMaxNameLength() {
+        return this.maxNameLength;
     }
 }

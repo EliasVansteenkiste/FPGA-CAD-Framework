@@ -1,7 +1,7 @@
 package placers;
 
 import interfaces.Logger;
-import interfaces.OptionList;
+import interfaces.Options;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,12 +23,12 @@ public abstract class Placer {
     protected Logger logger;
     protected PlacementVisualizer visualizer;
     protected Circuit circuit;
-    protected OptionList options;
+    protected Options options;
     protected Random random;
 
 
 
-    protected Placer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    protected Placer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         this.circuit = circuit;
         this.options = options;
         this.random = random;

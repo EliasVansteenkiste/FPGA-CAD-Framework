@@ -1,10 +1,10 @@
 package placers.analyticalplacer;
 
-import interfaces.OptionList;
+import interfaces.Options;
 
 public class TD_AnalyticalPlacer  {
 
-    public static void initOptions(OptionList options) {
+    public static void initOptions(Options options) {
         AnalyticalPlacer.initOptions(options);
         // TODO
     }

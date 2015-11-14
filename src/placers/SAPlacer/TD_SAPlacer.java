@@ -2,7 +2,7 @@ package placers.SAPlacer;
 
 import interfaces.Logger;
 import interfaces.Option;
-import interfaces.OptionList;
+import interfaces.Options;
 
 import java.util.Random;
 
@@ -16,12 +16,12 @@ import circuit.block.TimingGraph;
 
 public class TD_SAPlacer extends SAPlacer {
 
-    public static void initOptions(OptionList options) {
+    public static void initOptions(Options options) {
         SAPlacer.initOptions(options);
 
-        options.add(new Option("trade off", "Trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5)));
-        options.add(new Option("criticality exponent", "Exponent to calculate cost of critical connections", new Double(1)));
-        options.add(new Option("recalculate", "Number of swap iterations before a recalculate of the timing graph", new Integer(50000)));
+        options.add(new Option("trade off", "trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5)));
+        options.add(new Option("criticality exponent", "exponent to calculate cost of critical connections", new Double(1)));
+        options.add(new Option("recalculate", "number of swap iterations before a recalculate of the timing graph", new Integer(50000)));
     }
 
     private EfficientBoundingBoxNetCC calculator;
@@ -31,7 +31,7 @@ public class TD_SAPlacer extends SAPlacer {
     private final double tradeOffFactor;
     private final int iterationsBeforeRecalculate;
 
-    public TD_SAPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public TD_SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);

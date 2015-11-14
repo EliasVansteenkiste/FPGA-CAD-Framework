@@ -51,17 +51,17 @@ class PlacerFactory {
     }
 
     private <T extends Placer> Constructor<T> getConstructor(Class<T> placerClass) throws NoSuchMethodException, SecurityException {
-        return placerClass.getConstructor(Circuit.class, OptionList.class, Random.class, Logger.class, PlacementVisualizer.class);
+        return placerClass.getConstructor(Circuit.class, Options.class, Random.class, Logger.class, PlacementVisualizer.class);
     }
 
 
-    public OptionList initOptions(String placerName) {
+    public Options initOptions(String placerName) {
 
-        OptionList options = new OptionList(this.logger);
+        Options options = new Options(this.logger);
 
         try {
             Class<? extends Placer> placerClass = this.getClass(placerName);
-            Method initOptions = placerClass.getMethod("initOptions", OptionList.class);
+            Method initOptions = placerClass.getMethod("initOptions", Options.class);
 
             initOptions.invoke(null, options);
 
@@ -74,7 +74,7 @@ class PlacerFactory {
 
 
 
-    public Placer newPlacer(String placerName, Circuit circuit, OptionList options, Random random, PlacementVisualizer visualizer) {
+    public Placer newPlacer(String placerName, Circuit circuit, Options options, Random random, PlacementVisualizer visualizer) {
         try {
             Class<? extends Placer> placerClass = this.getClass(placerName);
             Constructor<? extends Placer> placerConstructor = this.getConstructor(placerClass);

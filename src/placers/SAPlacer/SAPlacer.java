@@ -2,7 +2,7 @@ package placers.SAPlacer;
 
 import interfaces.Logger;
 import interfaces.Option;
-import interfaces.OptionList;
+import interfaces.Options;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -22,17 +22,17 @@ import visual.PlacementVisualizer;
 
 public abstract class SAPlacer extends Placer {
 
-    public static void initOptions(OptionList options) {
-        options.add(new Option("greedy", "Place greedy", Boolean.FALSE));
-        options.add(new Option("detailed", "Place detailed", Boolean.FALSE));
+    public static void initOptions(Options options) {
+        options.add(new Option("greedy", "place greedy", Boolean.FALSE));
+        options.add(new Option("detailed", "place detailed", Boolean.FALSE));
 
-        options.add(new Option("effort level", "Multiplier for the number of swap iterations", new Double(1)));
-        options.add(new Option("temperature", "Multiplier for the starting temperature", new Double(1)));
+        options.add(new Option("effort level", "multiplier for the number of swap iterations", new Double(1)));
+        options.add(new Option("temperature", "multiplier for the starting temperature", new Double(1)));
 
-        options.add(new Option("rlim", "Starting maximum distance for a swap", new Integer(-1)));
-        options.add(new Option("max rlim", "Maximum rlim for all iterations", new Integer(-1)));
+        options.add(new Option("rlim", "starting maximum distance for a swap", new Integer(-1)));
+        options.add(new Option("max rlim", "maximum rlim for all iterations", new Integer(-1)));
 
-        options.add(new Option("fix pins", "Fix the IO pins", Boolean.TRUE));
+        options.add(new Option("fix pins", "fix the IO pins", Boolean.TRUE));
     }
 
 
@@ -51,7 +51,7 @@ public abstract class SAPlacer extends Placer {
     private double[] deltaCosts;
 
 
-    public SAPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
 

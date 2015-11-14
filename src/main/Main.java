@@ -2,8 +2,8 @@ package main;
 
 import interfaces.Logger;
 import interfaces.Option.Required;
-import interfaces.OptionList;
 import interfaces.Options;
+import interfaces.OptionsManager;
 import interfaces.Option;
 
 import java.io.File;
@@ -36,7 +36,7 @@ public class Main {
     private boolean visual;
 
     private Logger logger;
-    private Options options;
+    private OptionsManager options;
     private PlacementVisualizer visualizer;
 
 
@@ -45,29 +45,29 @@ public class Main {
     private Circuit circuit;
 
 
-    public static void initOptionList(OptionList options) {
-        options.add(new Option("architecture", "The JSON architecture file", File.class));
-        options.add(new Option("blif file", "The blif file", File.class));
+    public static void initOptionList(Options options) {
+        options.add(new Option("architecture.json", "", File.class));
+        options.add(new Option("blif file", "", File.class));
 
-        options.add(new Option("net file", "The net file. Default: based on the blif file.", File.class, Required.FALSE));
-        options.add(new Option("input place file", "The input place file. If omitted the initial placement is random.", File.class, Required.FALSE));
-        options.add(new Option("output place file", "The output place file", File.class, Required.FALSE));
+        options.add(new Option("net file", "(default: based on the blif file)", File.class, Required.FALSE));
+        options.add(new Option("input place file", "if omitted the initial placement is random", File.class, Required.FALSE));
+        options.add(new Option("output place file", "(default: based on the blif file)", File.class, Required.FALSE));
 
-        options.add(new Option("vpr architecture", "The XML architecture file", File.class, Required.FALSE));
+        options.add(new Option("vpr architecture", "XML architecture file; if omitted a xml file in the folder is chosen", File.class, Required.FALSE));
 
-        options.add(new Option("visual", "Show the placed circuit in a GUI", Boolean.FALSE));
-        options.add(new Option("random seed", "Seed for randomization", new Long(1)));
+        options.add(new Option("visual", "show the placed circuit in a GUI", Boolean.FALSE));
+        options.add(new Option("random seed", "seed for randomization", new Long(1)));
     }
 
 
-    public Main(Options options) {
+    public Main(OptionsManager options) {
         this.options = options;
         this.logger = options.getLogger();
 
         this.parseOptions(options.getMainOptions());
     }
 
-    private void parseOptions(OptionList options) {
+    private void parseOptions(Options options) {
 
         this.randomSeed = options.getLong("random seed");
 
@@ -87,7 +87,7 @@ public class Main {
             this.outputPlaceFile = new File(inputFolder, this.circuitName + ".place");
         }
 
-        this.architectureFile = options.getFile("architecture");
+        this.architectureFile = options.getFile("architecture.json");
         this.architectureFileVPR = options.getFile("vpr architecture");
         if(this.architectureFileVPR == null) {
             this.architectureFileVPR = this.guessArchitectureFileVPR();

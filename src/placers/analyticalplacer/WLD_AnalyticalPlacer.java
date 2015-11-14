@@ -1,7 +1,7 @@
 package placers.analyticalplacer;
 
 import interfaces.Logger;
-import interfaces.OptionList;
+import interfaces.Options;
 
 import java.util.Random;
 
@@ -13,7 +13,7 @@ import circuit.Circuit;
 
 public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 
-    public static void initOptions(OptionList options) {
+    public static void initOptions(Options options) {
         AnalyticalPlacer.initOptions(options);
     }
 
@@ -22,7 +22,7 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
         return "WLD Analytical Placer";
     }
 
-    public WLD_AnalyticalPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public WLD_AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
     }
 

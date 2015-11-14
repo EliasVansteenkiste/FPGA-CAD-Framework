@@ -9,7 +9,7 @@ import java.util.List;
 import util.Pair;
 
 
-class CLIOptions extends Options {
+class CLIOptions extends OptionsManager {
 
     private List<String> args;
 
@@ -34,13 +34,13 @@ class CLIOptions extends Options {
         // Get the start positions of the options for the different placers
         List<Pair<String, Integer>> placersAndArgIndexes = this.buildPlacerList();
 
-        OptionList mainOptions = this.getMainOptions();
+        Options mainOptions = this.getMainOptions();
         this.parseArguments(0, placersAndArgIndexes.get(0).getValue(), mainOptions);
 
         int numPlacers = placersAndArgIndexes.size() - 1;
         for(int placerIndex = 0; placerIndex < numPlacers; placerIndex++) {
             String placerName = placersAndArgIndexes.get(placerIndex + 1).getKey();
-            OptionList placerOptions = this.getDefaultOptions(placerName);
+            Options placerOptions = this.getDefaultOptions(placerName);
 
             int argIndexStart = placersAndArgIndexes.get(placerIndex).getValue() + 2;
             int argIndexEnd = placersAndArgIndexes.get(placerIndex + 1).getValue();
@@ -94,8 +94,17 @@ class CLIOptions extends Options {
         return this.args.get(argIndex + 1);
     }
 
-    private void parseArguments(int start, int end, OptionList options) {
+    private void parseArguments(int start, int end, Options options) {
         int argIndex = start;
+
+        for(String optionName : options.keySet()) {
+            if(options.isRequired(optionName)) {
+                String optionValue = this.args.get(argIndex);
+                options.set(optionName, optionValue);
+                argIndex++;
+            }
+        }
+
         while(argIndex < end) {
             String argName = this.args.get(argIndex).substring(2).replace("_", " ");
             String argValue = this.getArgValue(argIndex);
@@ -113,6 +122,8 @@ class CLIOptions extends Options {
         }
     }
 
+
+
     private void printError(int argIndex) {
 
         Stream stream = Stream.ERR;
@@ -125,7 +136,7 @@ class CLIOptions extends Options {
         System.exit(1);
     }
     private void printHelp(Stream stream) {
-        OptionList mainOptions = this.getMainOptions();
+        Options mainOptions = this.getMainOptions();
 
         this.logger.print(stream, "usage: interfaces.CLI");
         this.printRequiredArguments(stream, mainOptions);
@@ -136,7 +147,7 @@ class CLIOptions extends Options {
 
 
         for(String placerName : this.placerFactory.placers()) {
-            OptionList placerOptions = this.placerFactory.initOptions(placerName);
+            Options placerOptions = this.placerFactory.initOptions(placerName);
 
             this.logger.println(stream, "--placer " + placerName);
             this.printRequiredArguments(stream, placerOptions);
@@ -145,7 +156,7 @@ class CLIOptions extends Options {
         }
     }
 
-    private void printRequiredArguments(Stream stream, OptionList options) {
+    private void printRequiredArguments(Stream stream, Options options) {
         for(String optionName : options.keySet()) {
             if(options.isRequired(optionName)) {
                 this.logger.print(stream, " " + optionName.replace(" ", "_"));
@@ -153,10 +164,10 @@ class CLIOptions extends Options {
         }
     }
 
-    private void printOptionalArguments(Stream stream, OptionList options) {
+    private void printOptionalArguments(Stream stream, Options options) {
         int maxLength = options.getMaxNameLength();
 
-        String format = String.format("  --%%-%ds   %%s.", maxLength);
+        String format = String.format("  --%%-%ds   %%s", maxLength);
         for(String optionName : options.keySet()) {
             if(!options.isRequired(optionName)) {
                 String formattedName = optionName.replace(" ", "_");
@@ -166,7 +177,7 @@ class CLIOptions extends Options {
 
                 Object defaultValue = options.get(optionName);
                 if(defaultValue != null) {
-                    this.logger.print(" Default: " + defaultValue.toString());
+                    this.logger.print(" (default: " + defaultValue.toString() + ")");
                 }
                 this.logger.println();
             }
