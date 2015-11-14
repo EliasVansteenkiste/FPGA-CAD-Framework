@@ -75,6 +75,7 @@ class HeapLegalizer extends Legalizer {
         }
     }
 
+
     private void initializeBlockMatrix(int blocksStart, int blocksEnd) {
 
         // Initialize the matrix to contain a linked list at each coordinate

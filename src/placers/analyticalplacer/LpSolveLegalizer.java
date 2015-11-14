@@ -30,14 +30,14 @@ public class LpSolveLegalizer extends Legalizer {
         // There are numBlocks*numSites binary variables: is a certain block mapped to a certain site?
         // For a given block and site, the variable index is given by (blockIndex * numSites + siteIndex).
         try {
-            this.legalizeBlockTypeThrowing(tileCapacity, blockType, blocksStart, blocksEnd);
+            this.legalizeBlockTypeThrowing(blockType, blocksStart, blocksEnd);
         } catch(LpSolveException e) {
             e.printStackTrace();
             System.exit(1);
         }
     }
 
-    private void legalizeBlockTypeThrowing(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd) throws LpSolveException {
+    private void legalizeBlockTypeThrowing(BlockType blockType, int blocksStart, int blocksEnd) throws LpSolveException {
 
         int numBlocks = blocksEnd - blocksStart;
 

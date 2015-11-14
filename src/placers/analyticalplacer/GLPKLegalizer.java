@@ -6,7 +6,6 @@ import org.gnu.glpk.SWIGTYPE_p_double;
 import org.gnu.glpk.SWIGTYPE_p_int;
 import org.gnu.glpk.glp_iocp;
 import org.gnu.glpk.glp_prob;
-import org.gnu.glpk.glp_smcp;
 
 import java.util.List;
 import java.util.Map;
@@ -131,18 +130,12 @@ public class GLPKLegalizer extends Legalizer {
         }
 
 
-        double[] solution = new double[numVariables];
-        for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
-            for(int siteIndex = 0; siteIndex < numSites; siteIndex ++) {
-                int variableIndex = blockIndex * numSites + siteIndex;
-                solution[variableIndex] = GLPK.glp_mip_col_val(lp, variableIndex + 1);
-            }
-        }
 
         // Update tmpLegal arrays
-        int variableIndex = 0;
         for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
             for(int siteIndex = 0; siteIndex < numSites; siteIndex ++) {
+
+                int variableIndex = blockIndex * numSites + siteIndex;
 
                 double value = GLPK.glp_mip_col_val(lp, variableIndex + 1);
                 if(value > 0.5) {
@@ -151,7 +144,6 @@ public class GLPKLegalizer extends Legalizer {
                     this.tmpLegalY[blockIndex + blocksStart] = legalSite.getY();
                     break;
                 }
-                variableIndex++;
             }
         }
 

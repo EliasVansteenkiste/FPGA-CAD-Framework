@@ -69,44 +69,53 @@ public class Logger {
     }
 
 
-
-    public void logToStream(Stream stream, String message) {
+    public void log(Stream stream, String message) {
         PrintWriter writer = this.getWriter(stream);
         writer.print(message);
         writer.flush();
     }
-    public void logToStream(Stream stream, Exception exception) {
-        exception.printStackTrace(this.getWriter(stream));
+    private void log(Stream stream, Exception exception) {
+        PrintWriter writer = this.getWriter(stream);
+        exception.printStackTrace(writer);
     }
 
+    public void logln(Stream stream, String message) {
+        this.log(stream, message + "\n");
+    }
+    public void logln(Stream stream) {
+        this.log(stream, "\n");
+    }
+    public void logf(Stream stream, String format, Object... args) {
+        String formattedMessage = String.format(format, args);
+        this.log(stream, formattedMessage);
+    }
 
 
     public void log(String message) {
-        this.logToStream(Stream.OUT, message);
+        this.log(Stream.OUT, message);
     }
     public void logln(String message) {
-        this.log(message + "\n");
+        this.logln(Stream.OUT, message);
     }
     public void logln() {
-        this.logln("");
+        this.logln(Stream.OUT);
     }
-    public void logf(String message, Object... args) {
-        String formattedMessage = String.format(message, args);
-        this.log(formattedMessage);
+    public void logf(String format, Object... args) {
+        this.logf(Stream.OUT, format, args);
     }
 
 
     public void raise(String message) {
-        this.logToStream(Stream.ERR, message);
+        this.logln(Stream.ERR, message);
         System.exit(1);
     }
     public void raise(Exception exception) {
-        this.logToStream(Stream.ERR, exception);
+        this.log(Stream.ERR, exception);
         System.exit(1);
     }
     public void raise(String message, Exception exception) {
-        this.logToStream(Stream.ERR, message);
-        this.logToStream(Stream.ERR, exception);
+        this.logln(Stream.ERR, message);
+        this.log(Stream.ERR, exception);
         this.raise(exception);
     }
 }

@@ -1,12 +1,15 @@
 package placers.analyticalplacer;
 
 import interfaces.Logger;
+import interfaces.Option;
+import interfaces.OptionList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import circuit.Circuit;
@@ -27,6 +30,20 @@ public abstract class AnalyticalPlacer extends Placer {
 
     protected static enum SolveMode {GRADIENT, COMPLETE};
 
+    public static void initOptions(OptionList options) {
+        options.add(new Option("solve mode", "Either \"complete\" or \"gradient\"", "gradient"));
+
+        options.add(new Option("max utilization", "Comma-separated list of maximum tile capacity for each iteration", "1"));
+        options.add(new Option("anchor weight", "Starting anchor weight", new Double(0)));
+        options.add(new Option("anchor weight increase", "Value that is added to the anchor weight in each iteration", new Double(0.1)));
+
+        options.add(new Option("stop ratio", "Ratio between linear and legal cost above which placement should be stopped", new Double(0.95)));
+
+        options.add(new Option("gradient speed", "Ratio of distance to optimal position that is moved", new Double(0.4)));
+        options.add(new Option("gradient iterations", "Number of gradient steps to take in each outer iteration", new Integer(40)));
+    }
+
+
     private final SolveMode algorithmSolveMode;
 
     private final double[] maxUtilizationSequence;
@@ -45,32 +62,14 @@ public abstract class AnalyticalPlacer extends Placer {
     protected Legalizer legalizer;
 
 
-    static {
-        // Initialize maxUtilizationSequence used by the legalizer
-        defaultOptions.put("max_utilization_sequence", "1");
 
-        // The first anchorWeight factor that will be used in the main solve loop
-        defaultOptions.put("starting_anchor_weight", "0");
 
-        // The amount with which the anchorWeight factor will be multiplied each iteration
-        defaultOptions.put("anchor_weight_increase", "0.01");
+    public AnalyticalPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+        super(circuit, options, random, logger, visualizer);
 
-        // The ratio of linear solutions cost to legal solution cost at which we stop the algorithm
-        defaultOptions.put("stop_ratio_linear_legal", "0.95");
-
-        // The speed at which the gradient solver moves to the optimal position
-        defaultOptions.put("solve_mode", "gradient");
-        defaultOptions.put("gradient_speed", "0.4");
-        defaultOptions.put("gradient_iterations", "40");
-    }
-
-    public AnalyticalPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
-        super(logger, visualizer, circuit, options);
-
-        // Parse options
 
         // Max utilization sequence
-        String maxUtilizationSequenceString = this.options.get("max_utilization_sequence");
+        String maxUtilizationSequenceString = this.options.getString("max utilization");
         String[] maxUtilizationSequenceStrings = maxUtilizationSequenceString.split(",");
         this.maxUtilizationSequence = new double[maxUtilizationSequenceStrings.length];
         for(int i = 0; i < maxUtilizationSequenceStrings.length; i++) {
@@ -78,12 +77,12 @@ public abstract class AnalyticalPlacer extends Placer {
         }
 
         // Anchor weights and stop ratio
-        this.startingAnchorWeight = this.parseDoubleOption("starting_anchor_weight");
-        this.anchorWeightIncrease = this.parseDoubleOption("anchor_weight_increase");
-        this.stopRatioLinearLegal = this.parseDoubleOption("stop_ratio_linear_legal");
+        this.startingAnchorWeight = this.options.getDouble("anchor weight");
+        this.anchorWeightIncrease = this.options.getDouble("anchor weight increase");
+        this.stopRatioLinearLegal = this.options.getDouble("stop ratio");
 
         // Gradient solver
-        String solveModeString = this.parseStringOption("solve_mode");
+        String solveModeString = this.options.getString("solve mode");
         switch (solveModeString) {
             case "gradient":
                 this.algorithmSolveMode = SolveMode.GRADIENT;
@@ -97,8 +96,8 @@ public abstract class AnalyticalPlacer extends Placer {
                 throw new IllegalArgumentException("Unknown solve mode: " + solveModeString);
         }
 
-        this.gradientSpeed = this.parseDoubleOption("gradient_speed");
-        this.gradientIterations = this.parseIntegerOption("gradient_iterations");
+        this.gradientSpeed = this.options.getDouble("gradient speed");
+        this.gradientIterations = this.options.getInteger("gradient iterations");
     }
 
 
@@ -193,7 +192,7 @@ public abstract class AnalyticalPlacer extends Placer {
         this.costCalculator = createCostCalculator();
 
         try {
-            this.legalizer = new GLPKLegalizer(
+            this.legalizer = new HeapLegalizer(
                     this.circuit, this.costCalculator,
                     this.blockIndexes,
                     blockTypes, blockTypeIndexStarts,

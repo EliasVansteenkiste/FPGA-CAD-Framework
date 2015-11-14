@@ -1,9 +1,11 @@
 package placers.SAPlacer;
 
 import interfaces.Logger;
+import interfaces.Option;
+import interfaces.Option.Required;
+import interfaces.OptionList;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Random;
 
 import circuit.Circuit;
@@ -19,57 +21,69 @@ import circuit.exceptions.UnplacedBlockException;
 import placers.Placer;
 import visual.PlacementVisualizer;
 
-public abstract class SAPlacer extends Placer
-{
+public abstract class SAPlacer extends Placer {
 
-    static {
-        defaultOptions.put("effort_level", "1");
-        defaultOptions.put("t_multiplier", "1");
+    public static void initOptions(OptionList options) {
+        options.add(new Option("greedy", "Place greedy", Boolean.FALSE));
+        options.add(new Option("detailed", "Place detailed", Boolean.FALSE));
 
-        defaultOptions.put("detailed", "0");
-        defaultOptions.put("greedy", "0");
-        defaultOptions.put("rlim", "-1");
-        defaultOptions.put("max_rlim", "-1");
+        options.add(new Option("effort level", "Multiplier for the number of swap iterations", new Integer(1)));
+        options.add(new Option("temperature", "Multiplier for the starting temperature", new Double(1)));
 
-        defaultOptions.put("fix_pins", "1");
+        options.add(new Option("rlim", "Starting maximum distance for a swap", Integer.class, Required.FALSE));
+        options.add(new Option("max rlim", "Maximum rlim for all iterations", Integer.class, Required.FALSE));
+
+        options.add(new Option("fix pins", "Fix the IO pins", Boolean.TRUE));
     }
+
 
     private double Rlimd;
     private int Rlim, maxRlim;
     private double temperature;
 
     private final double temperatureMultiplier;
+    private final double temperatureMultiplierGlobalPlacement = 5;
+
     private final boolean fixPins;
     private final boolean greedy, detailed;
-    private final double effortLevel;
     private final int movesPerTemperature;
 
     protected boolean circuitChanged = true;
     private double[] deltaCosts;
 
-    private final double TMultiplierGlobal = 5;
+
+    public SAPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+        super(circuit, options, random, logger, visualizer);
 
 
-    protected Random random;
+        this.greedy = this.options.getBoolean("greedy");
+        this.detailed = this.options.getBoolean("detailed");
 
-    public SAPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
-        super(logger, visualizer, circuit, options);
+        this.fixPins = this.options.getBoolean("fix pins");
 
-        // Get greedy option
-        this.greedy = this.parseBooleanOption("greedy");
+        double effortLevel = this.options.getDouble("effort level");
+        this.movesPerTemperature = (int) (effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), 4.0/3.0));
 
-        // Get detailed option
-        this.detailed = this.parseBooleanOption("detailed");
+        this.temperatureMultiplier = this.options.getDouble("temperature");
 
-        this.fixPins = this.parseBooleanOption("fix_pins");
+        // Set Rlim options
+        int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight());
 
-        // Get inner_num option
-        this.effortLevel = Double.parseDouble(this.options.get("effort_level"));
-        this.movesPerTemperature = (int) (this.effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), 4.0/3.0));
+        int RlimOption = this.options.getInteger("rlim");
+        if(RlimOption == -1) {
+            RlimOption = size;
+        }
 
-        // Get T multiplier option
-        this.temperatureMultiplier = Double.parseDouble(this.options.get("t_multiplier"));
+        int maxRlimOption = this.options.getInteger("max rlim");
+        if(maxRlimOption == -1) {
+            maxRlimOption = size;
+        }
+
+        // Set maxRlim first, because Rlim depends on it
+        this.setMaxRlim(maxRlimOption);
+        this.setRlimd(RlimOption);
     }
+
 
     protected abstract void initializePlace();
     protected abstract void initializeSwapIteration();
@@ -82,28 +96,13 @@ public abstract class SAPlacer extends Placer
 
     @Override
     public void initializeData() {
-        // Get Rlim and maxRlim option
-        int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight());
-
-        int optionMaxRlim = this.parseIntegerOptionWithDefault("max_rlim", size);
-        int optionRlim = this.parseIntegerOptionWithDefault("rlim", size);
-
-        // Set maxRlim first, because Rlim depends on it
-        this.setMaxRlim(optionMaxRlim);
-        this.setRlimd(optionRlim);
+        // Do nothing
     }
 
 
     @Override
     public void place() {
         this.initializePlace();
-
-        this.random = new Random(10);
-
-        //Print parameters
-        this.logger.logln("Effort level: " + this.effortLevel);
-        this.logger.logln("Moves per temperature: " + this.movesPerTemperature);
-
 
         if(this.greedy) {
             this.doSwapIteration();
@@ -147,7 +146,7 @@ public abstract class SAPlacer extends Placer
         int numSamples = this.circuit.getNumGlobalBlocks();
         double stdDev = this.doSwapIteration(numSamples, false);
 
-        return this.temperatureMultiplier * this.TMultiplierGlobal * stdDev;
+        return this.temperatureMultiplier * this.temperatureMultiplierGlobalPlacement * stdDev;
     }
 
     private double calculateInitialTemperatureDetailed() {

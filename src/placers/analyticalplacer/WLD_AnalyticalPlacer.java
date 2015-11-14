@@ -1,8 +1,9 @@
 package placers.analyticalplacer;
 
 import interfaces.Logger;
+import interfaces.OptionList;
 
-import java.util.Map;
+import java.util.Random;
 
 import visual.PlacementVisualizer;
 
@@ -12,10 +13,17 @@ import circuit.Circuit;
 
 public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
 
-    private static final String name = "TD Analytical Placer";
+    public static void initOptions(OptionList options) {
+        AnalyticalPlacer.initOptions(options);
+    }
 
-    public WLD_AnalyticalPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
-        super(logger, visualizer, circuit, options);
+    @Override
+    public String getName() {
+        return "WLD Analytical Placer";
+    }
+
+    public WLD_AnalyticalPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+        super(circuit, options, random, logger, visualizer);
     }
 
     @Override
@@ -33,8 +41,5 @@ public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
         // Do nothing
     }
 
-    @Override
-    public String getName() {
-        return WLD_AnalyticalPlacer.name;
-    }
+
 }

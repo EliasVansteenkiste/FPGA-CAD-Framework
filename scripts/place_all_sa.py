@@ -10,7 +10,7 @@ os.chdir('..')
 architecture = '10fle'
 placer = 'wld_sa'
 place_caller = PlaceCaller(base_folder)
-place_caller.place_all(architecture, placer)
+#place_caller.place_all(architecture, placer)
 
 
 

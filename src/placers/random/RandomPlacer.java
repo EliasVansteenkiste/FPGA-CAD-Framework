@@ -1,12 +1,13 @@
 package placers.random;
 
 import interfaces.Logger;
+import interfaces.Option;
+import interfaces.OptionList;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -24,26 +25,28 @@ import visual.PlacementVisualizer;
 
 public class RandomPlacer extends Placer {
 
-    private static final String name = "Random Placer";
-
-    static {
-        defaultOptions.put("categories", "");
+    public static void initOptions(OptionList options) {
+        options.add(new Option("categories", "Comma-separated list of block categories that must be placed", ""));
     }
 
     private final Set<BlockCategory> categories = new HashSet<>();
 
-    public RandomPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
-        super(logger, visualizer, circuit, options);
+    public RandomPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+        super(circuit, options, random ,logger, visualizer);
 
-        String categoriesString = this.options.get("categories");
+        String categoriesString = this.options.getString("categories");
         Set<String> categoriesStrings = new HashSet<>(Arrays.asList(categoriesString.split(",")));
-        if(categoriesString.length() != 0) {
-            for(BlockCategory category : BlockCategory.values()) {
-                if(categoriesStrings.contains(category.toString())) {
-                    this.categories.add(category);
-                }
+
+        for(BlockCategory category : BlockCategory.values()) {
+            if(categoriesString.length() == 0 || categoriesStrings.contains(category.toString())) {
+                this.categories.add(category);
             }
         }
+    }
+
+    @Override
+    public String getName() {
+        return "Random placer";
     }
 
     @Override
@@ -86,8 +89,5 @@ public class RandomPlacer extends Placer {
         }
     }
 
-    @Override
-    public String getName() {
-        return RandomPlacer.name;
-    }
+
 }

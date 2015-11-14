@@ -50,7 +50,7 @@ public class NetParser {
     private static Pattern internalNetPattern = Pattern.compile("(?<block>\\w+)(?:\\[(?<blockIndex>\\d+)\\])?\\.(?<port>\\w+)\\[(?<portIndex>\\d+)\\]->.*");
 
 
-    public NetParser(Architecture architecture, File file, String circuitName) throws FileNotFoundException {
+    public NetParser(Architecture architecture, String circuitName, File file) throws FileNotFoundException {
         this.architecture = architecture;
         this.circuitName = circuitName;
         this.reader = new BufferedReader(new FileReader(file));

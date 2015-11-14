@@ -2,20 +2,16 @@ package interfaces;
 
 import main.Main;
 
-import options.CLIOptions;
-import options.Options;
-
-
 public class CLI {
 
     public static void main(String[] args) {
+
         Logger logger = new Logger();
+        NewCLIOptions options = new NewCLIOptions(logger);
 
-        CLIOptions cliOptions = new CLIOptions(logger);
-        Options options = cliOptions.parseArguments(args);
+        options.parseArguments(args);
 
-
-        Main main = new Main(logger, options);
+        Main main = new Main(options);
         main.runPlacement();
     }
 }

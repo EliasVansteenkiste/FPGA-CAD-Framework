@@ -1,23 +1,20 @@
 package placers.analyticalplacer;
 
-import interfaces.Logger;
+import interfaces.OptionList;
 
-import java.util.Map;
+public class TD_AnalyticalPlacer  {
 
-import visual.PlacementVisualizer;
-
-import circuit.Circuit;
-import circuit.architecture.BlockType;
-import circuit.block.GlobalBlock;
-import circuit.block.TimingGraph;
-import circuit.block.TimingGraphEntry;
+    public static void initOptions(OptionList options) {
+        AnalyticalPlacer.initOptions(options);
+        // TODO
+    }
 
 
+    public String getName() {
+        return "TD analytical placer";
+    }
 
-
-public class TD_AnalyticalPlacer extends AnalyticalPlacer {
-
-    private static final String name = "TD Analytical Placer";
+    /*private static final String name = "TD Analytical Placer";
 
     private double criticalityExponent;
     private double maxCriticalityThreshold;
@@ -36,8 +33,8 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
         defaultOptions.put("trade_off", "0.5");
     }
 
-    public TD_AnalyticalPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
-        super(logger, visualizer, circuit, options);
+    public TD_AnalyticalPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+        super(circuit, options, random, logger, visualizer);
 
         // Timing driven options
         this.maxCriticalityThreshold = this.parseDoubleOption("max_criticality_threshold");
@@ -138,9 +135,4 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
                     weightMultiplier, this.yMatrix, this.yVector);
         }
     }*/
-
-    @Override
-    public String getName() {
-        return TD_AnalyticalPlacer.name;
-    }
 }

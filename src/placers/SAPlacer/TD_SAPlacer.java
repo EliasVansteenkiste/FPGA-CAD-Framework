@@ -1,8 +1,10 @@
 package placers.SAPlacer;
 
 import interfaces.Logger;
+import interfaces.Option;
+import interfaces.OptionList;
 
-import java.util.Map;
+import java.util.Random;
 
 import visual.PlacementVisualizer;
 
@@ -14,17 +16,12 @@ import circuit.block.TimingGraph;
 
 public class TD_SAPlacer extends SAPlacer {
 
-    private static final String name = "TD Simulated Annealing Placer";
+    public static void initOptions(OptionList options) {
+        SAPlacer.initOptions(options);
 
-    static {
-        //Timing trade off factor: 0.0 = wire-length-driven
-        defaultOptions.put("trade_off_factor", "0.5");
-
-        //Starting criticality exponent
-        defaultOptions.put("criticality_exponent", "1");
-
-        // Number of iterations before recalculating timing information
-        defaultOptions.put("iterations_before_recalculate", "50000");
+        options.add(new Option("trade off", "Trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5)));
+        options.add(new Option("criticality exponent", "Exponent to calculate cost of critical connections", new Double(1)));
+        options.add(new Option("recalculate", "Number of swap iterations before a recalculate of the timing graph", new Integer(50000)));
     }
 
     private EfficientBoundingBoxNetCC calculator;
@@ -34,18 +31,23 @@ public class TD_SAPlacer extends SAPlacer {
     private final double tradeOffFactor;
     private final int iterationsBeforeRecalculate;
 
-    public TD_SAPlacer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
-        super(logger, visualizer, circuit, options);
+    public TD_SAPlacer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
+        super(circuit, options, random, logger, visualizer);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);
         this.timingGraph = circuit.getTimingGraph();
 
 
-        this.tradeOffFactor = Double.parseDouble(this.options.get("trade_off_factor"));
-        this.iterationsBeforeRecalculate = Integer.parseInt(this.options.get("iterations_before_recalculate"));
+        this.tradeOffFactor = this.options.getDouble("trade off");
+        this.iterationsBeforeRecalculate = this.options.getInteger("iterations_before_recalculate");
 
-        double criticalityExponent = Double.parseDouble(this.options.get("criticality_exponent"));
+        double criticalityExponent = this.options.getDouble("criticality_exponent");
         this.timingGraph.setCriticalityExponent(criticalityExponent);
+    }
+
+    @Override
+    public String getName() {
+        return "TD simulated annealing placer";
     }
 
 
@@ -122,10 +124,5 @@ public class TD_SAPlacer extends SAPlacer {
         if(iteration % this.iterationsBeforeRecalculate == 0 && iteration > 0) {
             this.updatePreviousCosts();
         }
-    }
-
-    @Override
-    public String getName() {
-        return TD_SAPlacer.name;
     }
 }

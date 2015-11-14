@@ -12,8 +12,7 @@ import java.util.regex.Pattern;
 import circuit.Circuit;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-import circuit.exceptions.FullSiteException;
-import circuit.exceptions.PlacedBlockException;
+import circuit.exceptions.PlacementException;
 
 public class PlaceParser {
 
@@ -30,7 +29,7 @@ public class PlaceParser {
     }
 
 
-    public void parse() throws BlockNotFoundException, IOException, PlacedBlockException, FullSiteException {
+    public void parse() throws IOException, PlacementException, BlockNotFoundException {
 
         BufferedReader reader = new BufferedReader(new FileReader(this.file));
 

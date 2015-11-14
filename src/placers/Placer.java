@@ -1,11 +1,13 @@
 package placers;
 
 import interfaces.Logger;
+import interfaces.OptionList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import visual.PlacementVisualizer;
 
@@ -21,84 +23,35 @@ public abstract class Placer {
     protected Logger logger;
     protected PlacementVisualizer visualizer;
     protected Circuit circuit;
-    protected Map<String, String> options;
+    protected OptionList options;
+    protected Random random;
 
 
-    protected Placer(Logger logger, PlacementVisualizer visualizer, Circuit circuit, Map<String, String> options) {
-        this.logger = logger;
-        this.visualizer = visualizer;
+
+    protected Placer(Circuit circuit, OptionList options, Random random, Logger logger, PlacementVisualizer visualizer) {
         this.circuit = circuit;
         this.options = options;
+        this.random = random;
+        this.logger = logger;
+        this.visualizer = visualizer;
 
-        this.parseOptions();
+        this.printOptions();
     }
 
-    protected final void parseOptions() {
-        int maxLength = 0;
-        for(Map.Entry<String, String> optionEntry : Placer.defaultOptions.entrySet()) {
-            String key = optionEntry.getKey();
-            String defaultValue = optionEntry.getValue();
-
-            String value = this.options.get(key);
-            if(value == null) {
-                value = defaultValue;
-                this.options.put(key,  value);
-            }
-
-            int length = key.length();
-            if(length > maxLength) {
-                maxLength = length;
-            }
-        }
+    private final void printOptions() {
+        int maxLength = this.options.getMaxNameLength();
 
         this.logger.logf("%s options:\n", this.getName());
         String format = String.format("%%-%ds| %%s\n", maxLength + 1);
-        for(String key : Placer.defaultOptions.keySet()) {
-            String value = this.options.get(key);
-            this.logger.logf(format, key, value);
+        for(Map.Entry<String, Object> optionEntry : this.options.entrySet()) {
+            String optionName = optionEntry.getKey();
+            Object optionValue = optionEntry.getValue();
+
+            this.logger.logf(format, optionName, optionValue);
         }
-
-        this.logger.logln();
-    }
-
-    protected String parseStringOption(String option) {
-        return this.options.get(option);
-    }
-
-    protected boolean parseBooleanOption(String option) {
-        try {
-            return (Integer.parseInt(this.options.get(option)) > 0);
-
-        } catch(NumberFormatException e) {
-            return Boolean.parseBoolean(this.options.get(option));
-        }
-    }
-
-    protected double parseDoubleOption(String option) {
-        return Double.parseDouble(this.options.get(option));
-    }
-    protected int parseIntegerOption(String option) {
-        return Integer.parseInt(this.options.get(option));
-    }
-
-    protected int parseIntegerOptionWithDefault(String option, int defaultValue) {
-        int value = Integer.parseInt(this.options.get(option));
-        if(value == -1) {
-            value = defaultValue;
-        }
-
-        return value;
     }
 
     public abstract String getName();
     public abstract void initializeData();
     public abstract void place();
-
-
-    protected boolean hasOption(String optionName) {
-        return this.options.containsKey(optionName);
-    }
-    protected String getOption(String optionName) {
-        return this.options.get(optionName);
-    }
 }
