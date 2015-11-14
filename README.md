@@ -1,17 +1,31 @@
 The Java FPGA Placement Framework: An introduction
-===============
+==================================================
+
 An FPGA placement framework, including benchmarks
 
+
 What can I do with this tool flow?
-===============
+==================================
+
 Simulated Annealing Placement
 
 Analytical Iterative Placement
 
 Gradient Iterative Placement
 
+
+Usage
+=====
+
+Some parts of this toolflow require external packages, you can find these in the file "requirements".
+
+To calculate point to point delays, vpr has to be installed in the project folder. When compiling vpr, the macro PRINT_ARRAYS has to be defined in "place/timing_place_lookup.c".
+
+The command line options can be found by calling interfaces.CLI with the option "--help"
+
+
 License
-===============
+=======
 
 The Placer Java Framework is licensed by Ghent University. The license is included in all licensed code and in the repository, it is also printed below.
 
