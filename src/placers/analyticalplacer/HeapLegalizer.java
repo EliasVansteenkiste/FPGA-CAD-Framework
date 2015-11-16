@@ -23,7 +23,6 @@ class HeapLegalizer extends Legalizer {
     // These are temporary data structures
     private HeapLegalizerArea[][] areaPointers;
     private List<List<List<Integer>>> blockMatrix;
-    private int[] closestClbColumn;
 
 
     HeapLegalizer(
@@ -36,55 +35,6 @@ class HeapLegalizer extends Legalizer {
             double[] linearY) throws IllegalArgumentException {
 
         super(circuit, costCalculator, blockIndexes, blockTypes, blockTypeIndexStarts, linearX, linearY);
-
-        // Find the first clb column
-        this.closestClbColumn = new int[this.width * 2];
-        int firstClbColumn = -1;
-        for(int column = 1; column < this.width - 1; column++) {
-            BlockCategory columnCategory = this.circuit.getColumnType(column).getCategory();
-
-            if(columnCategory == BlockCategory.CLB) {
-                firstClbColumn = column;
-                break;
-            }
-        }
-
-        int mostRecentClbColumn = firstClbColumn;
-
-        for(int column = firstClbColumn + 1; column < this.width - 1; column++) {
-            BlockCategory columnCategory = this.circuit.getColumnType(column).getCategory();
-
-            if(columnCategory == BlockCategory.CLB) {
-                int start = 2 * mostRecentClbColumn + 2;
-                int boundary = column + mostRecentClbColumn + 1;
-                int end = 2 * column + 2;
-
-                for(int i = start; i < boundary; i++) {
-                    this.closestClbColumn[i] = mostRecentClbColumn;
-                }
-
-                for(int i = boundary; i < end; i++) {
-                    this.closestClbColumn[i] = column;
-                }
-
-                mostRecentClbColumn = column;
-            }
-        }
-
-        int lastClbColumn = mostRecentClbColumn;
-
-        // Fill the beginning and end of the array
-        int firstStart = 2;
-        int firstEnd = 2 * firstClbColumn + 2;
-        for(int i = firstStart; i < firstEnd; i++) {
-            this.closestClbColumn[i] = firstClbColumn;
-        }
-
-        int lastStart = 2 * lastClbColumn * 2;
-        int lastEnd = 2 * this.width;
-        for(int i = lastStart; i < lastEnd; i++) {
-            this.closestClbColumn[i] = lastClbColumn;
-        }
     }
 
 
@@ -185,16 +135,9 @@ class HeapLegalizer extends Legalizer {
                 int row = (int) Math.round(Math.max(Math.min(y, this.height - 2), 1));
 
                 // Get closest column
-                int column = (int) Math.round(x);
-                int right = x > column ? 1 : 0;
-
-                int closestColumn = this.closestClbColumn[2*column + right];
-
-                return this.circuit.getSite(closestColumn, row);
-
                 // Not easy to do this with calculations if there are multiple hardblock types
                 // So just trial and error
-                /*int column = (int) Math.round(x);
+                int column = (int) Math.round(x);
                 int step = 1;
                 int direction = (x > column) ? 1 : -1;
 
@@ -208,7 +151,7 @@ class HeapLegalizer extends Legalizer {
                     direction *= -1;
                 }
 
-                return this.circuit.getSite(column, row);*/
+                return this.circuit.getSite(column, row);
 
 
             // Hardblocks
