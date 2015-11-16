@@ -150,9 +150,6 @@ class CLIOptions extends OptionsManager {
     private String argToOption(String argName) {
         return argName.substring(2).replace("_", " ");
     }
-    private String optionToArg(String optionName) {
-        return "--" + optionName.replace(" ", "_");
-    }
 
 
     private void printErrorFormat(String format, Object... args) {

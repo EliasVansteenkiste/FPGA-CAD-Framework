@@ -86,7 +86,7 @@ abstract class Legalizer {
         System.arraycopy(this.bestLegalY, 0, this.tmpLegalY, 0, this.numBlocks);
     }
 
-    abstract void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd);
+    protected abstract void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd);
 
 
 

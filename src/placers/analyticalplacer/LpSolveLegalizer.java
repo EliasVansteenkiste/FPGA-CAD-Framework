@@ -26,7 +26,7 @@ public class LpSolveLegalizer extends Legalizer {
     }
 
     @Override
-    void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd) {
+    protected void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd) {
         // There are numBlocks*numSites binary variables: is a certain block mapped to a certain site?
         // For a given block and site, the variable index is given by (blockIndex * numSites + siteIndex).
         try {
