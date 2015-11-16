@@ -83,13 +83,10 @@ public class BipartiteLegalizer extends Legalizer {
         int numSites = sites.size();
         int numBlocks = blocksEnd - blocksStart;
 
-        double multiplierX = (this.width - 3) / (this.maxX - this.minX);
-        double multiplierY = (this.height - 3) / (this.maxY - this.minY);
-
         double[][] costMatrix = new double[numBlocks][numSites];
         for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
-            double linearX = (this.linearX[blocksStart + blockIndex] - this.minX) * multiplierX + 1;
-            double linearY = (this.linearY[blocksStart + blockIndex] - this.minY) * multiplierY + 1;
+            double linearX = this.linearX[blocksStart + blockIndex] - this.minX;
+            double linearY = this.linearY[blocksStart + blockIndex] - this.minY;
 
             for(int siteIndex = 0; siteIndex < numSites; siteIndex++) {
                 AbstractSite site = sites.get(siteIndex);
