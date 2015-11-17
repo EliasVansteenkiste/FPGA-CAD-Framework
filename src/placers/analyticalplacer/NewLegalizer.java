@@ -242,7 +242,7 @@ public class NewLegalizer extends Legalizer {
 
             if(direction[1] == 1) {
                 rowStart = area.bottom + this.blockHeight;
-                if(rowStart > this.height - 2) {
+                if(rowStart + this.blockHeight > this.height - 1) {
                     return false;
                 }
 

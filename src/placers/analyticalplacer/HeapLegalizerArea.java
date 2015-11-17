@@ -19,7 +19,7 @@ class HeapLegalizerArea {
 
     private int[][] growDirections = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
     private boolean[] originalDirection = {true, true, true, true};
-    private int growDirectionIndex = 0;
+    private int growDirectionIndex = -1;
 
     HeapLegalizerArea(HeapLegalizerArea a, int[] direction) {
         this.tileCapacity = a.tileCapacity;
@@ -89,7 +89,7 @@ class HeapLegalizerArea {
                 this.left >=1
                 && this.right <= width - 2
                 && this.top >= 1
-                && this.bottom <= height - 2;
+                && this.bottom + this.blockHeight <= height - 1;
     }
 
 

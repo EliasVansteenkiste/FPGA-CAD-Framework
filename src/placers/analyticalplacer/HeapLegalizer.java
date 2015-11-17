@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-
 import circuit.Circuit;
 import circuit.architecture.BlockType;
 import circuit.architecture.BlockCategory;
@@ -52,24 +51,24 @@ class HeapLegalizer extends Legalizer {
         this.areaPointers = new HeapLegalizerArea[this.width][this.height];
         List<HeapLegalizerArea> areas = new ArrayList<HeapLegalizerArea>();
 
-        int xCenter = this.width / 2;
-        int yCenter = this.height / 2;
-        int maxDimension = Math.max(xCenter, yCenter);
 
-        this.tryNewArea(areas, xCenter, yCenter);
+        int centerX = this.width / 2;
+        int centerY = this.height / 2;
+        int maxDimension = Math.max(centerX, centerY);
+
+        this.tryNewArea(areas, centerX, centerY);
         for(int centerDist1 = 1; centerDist1 < maxDimension; centerDist1++) {
             for(int centerDist2 = -centerDist1; centerDist2 < centerDist1; centerDist2++) {
-                this.tryNewArea(areas, xCenter + centerDist1, yCenter + centerDist2);
-                this.tryNewArea(areas, xCenter - centerDist1, yCenter - centerDist2);
-                this.tryNewArea(areas, xCenter + centerDist2, yCenter - centerDist1);
-                this.tryNewArea(areas, xCenter - centerDist2, yCenter + centerDist1);
+                this.tryNewArea(areas, centerX + centerDist1, centerY + centerDist2);
+                this.tryNewArea(areas, centerX - centerDist1, centerY - centerDist2);
+                this.tryNewArea(areas, centerX + centerDist2, centerY - centerDist1);
+                this.tryNewArea(areas, centerX - centerDist2, centerY + centerDist1);
             }
         }
 
         // Legalize all unabsorbed areas
         for(HeapLegalizerArea area : areas) {
             if(!area.isAbsorbed()) {
-                System.out.printf("(%d, %d, %d, %d), %b\n", area.left, area.top, area.right, area.bottom, area.isAbsorbed());
                 this.legalizeArea(area);
             }
         }
@@ -88,14 +87,14 @@ class HeapLegalizer extends Legalizer {
             this.blockMatrix.add(blockColumn);
         }
 
-
         // Loop through all the blocks of the correct block type and add them to their closest position
         for(int index = blocksStart; index < blocksEnd; index++) {
             AbstractSite site = this.getClosestSite(this.linearX[index], this.linearY[index]);
             int x = site.getX();
             int y = site.getY();
 
-            this.blockMatrix.get(x).get(y).add(index);
+            List<Integer> blockIndexes = this.blockMatrix.get(x).get(y);
+            blockIndexes.add(index);
         }
     }
 
