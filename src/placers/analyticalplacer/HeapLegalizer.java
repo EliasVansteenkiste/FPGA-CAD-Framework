@@ -69,6 +69,7 @@ class HeapLegalizer extends Legalizer {
         // Legalize all unabsorbed areas
         for(HeapLegalizerArea area : areas) {
             if(!area.isAbsorbed()) {
+                //System.out.printf("(%d, %d, %d, %d), %b\n", area.left, area.top, area.right, area.bottom, area.isAbsorbed());
                 this.legalizeArea(area);
             }
         }

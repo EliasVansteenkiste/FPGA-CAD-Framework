@@ -92,4 +92,10 @@ class HeapLegalizerArea {
     int getOccupation() {
         return this.blockIndexes.size();
     }
+
+
+    @Override
+    public String toString() {
+        return String.format("[[%d, %d], [%d, %d]]", this.left, this.top, this.right, this.bottom);
+    }
 }
