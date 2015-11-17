@@ -240,6 +240,10 @@ public abstract class AnalyticalPlacer extends Placer {
             int sequenceIndex = Math.min(iteration, this.maxUtilizationSequence.length - 1);
             double maxUtilization = this.maxUtilizationSequence[sequenceIndex];
 
+            if(iteration == 80) {
+                int d = 0;
+            }
+
             try {
                 this.legalizer.legalize(maxUtilization);
             } catch(PlacementException error) {
@@ -275,11 +279,11 @@ public abstract class AnalyticalPlacer extends Placer {
         this.logger.println();
 
 
-        /*try {
+        try {
             this.legalizer.updateCircuit();
         } catch(PlacementException error) {
             this.logger.raise(error);
-        }*/
+        }
     }
 
 

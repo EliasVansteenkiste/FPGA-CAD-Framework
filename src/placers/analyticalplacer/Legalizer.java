@@ -165,6 +165,10 @@ abstract class Legalizer {
             if(block.getCategory() != BlockCategory.IO) {
                 int index = blockEntry.getValue();
 
+                if(x[index] == 39 && y[index] == 62) {
+                    int d = 0;
+                }
+
                 AbstractSite site = this.circuit.getSite(x[index], y[index], true);
                 block.setSite(site);
             }

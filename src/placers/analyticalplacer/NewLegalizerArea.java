@@ -16,6 +16,11 @@ class NewLegalizerArea {
     private int numTiles = 0;
     private List<Integer> blockIndexes = new ArrayList<Integer>();
 
+
+    private int[][] growDirections = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+    private boolean[] originalDirection = {true, true, true, true};
+    private int growDirectionIndex = -1;
+
     NewLegalizerArea(NewLegalizerArea a) {
         this.top = a.top;
         this.bottom = a.bottom;
@@ -82,5 +87,67 @@ class NewLegalizerArea {
     }
     int getOccupation() {
         return this.blockIndexes.size();
+    }
+
+
+    int[] nextGrowDirection() {
+        int[] direction;
+        do {
+            this.growDirectionIndex = (this.growDirectionIndex + 1) % 4;
+            direction = this.growDirections[this.growDirectionIndex];
+        } while(direction[0] == 0 && direction[1] == 0);
+
+        return direction;
+    }
+
+    void grow() {
+        int[] direction = this.growDirections[this.growDirectionIndex];
+        if(direction[1] == 0) {
+            if(direction[0] == 1) {
+                this.right += this.blockRepeat;
+
+            } else {
+                this.left -= this.blockRepeat;
+            }
+
+        } else {
+            if(direction[1] == 1) {
+                this.bottom += this.blockHeight;
+            } else {
+                this.top -= this.blockHeight;
+            }
+        }
+    }
+
+    void disableDirection() {
+        int index = this.growDirectionIndex;
+        int oppositeIndex = (index + 2) % 4;
+
+        if(this.originalDirection[index]) {
+            if(!this.originalDirection[oppositeIndex]) {
+                this.growDirections[oppositeIndex][0] = 0;
+                this.growDirections[oppositeIndex][1] = 0;
+            }
+
+            this.originalDirection[index] = false;
+            this.growDirections[index][0] = this.growDirections[oppositeIndex][0];
+            this.growDirections[index][1] = this.growDirections[oppositeIndex][1];
+
+        } else {
+            this.growDirections[index][0] = 0;
+            this.growDirections[index][1] = 0;
+            this.growDirections[oppositeIndex][0] = 0;
+            this.growDirections[oppositeIndex][1] = 0;
+        }
+
+        // Make sure the replacement for the current grow direction is chosen next,
+        // since growing in the current direction must have failede
+        this.growDirectionIndex--;
+    }
+
+
+    @Override
+    public String toString() {
+        return String.format("[[%d, %d], [%d, %d]", this.left, this.top, this.right, this.bottom);
     }
 }
