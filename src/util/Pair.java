@@ -1,6 +1,6 @@
 package util;
 
-public class Pair<K, V> {
+public class Pair<K extends Comparable<K>, V> implements Comparable<Pair<K, V>> {
 
     private K key;
     private V value;
@@ -22,5 +22,11 @@ public class Pair<K, V> {
     }
     public V getValue() {
         return this.value;
+    }
+
+
+    @Override
+    public int compareTo(Pair<K, V> otherPair) {
+        return this.key.compareTo(otherPair.key);
     }
 }

@@ -192,7 +192,7 @@ public abstract class AnalyticalPlacer extends Placer {
         this.costCalculator = createCostCalculator();
 
         try {
-            this.legalizer = new BipartiteLegalizer(
+            this.legalizer = new HeapLegalizer(
                     this.circuit, this.costCalculator,
                     this.blockIndexes,
                     blockTypes, blockTypeIndexStarts,
@@ -275,11 +275,11 @@ public abstract class AnalyticalPlacer extends Placer {
         this.logger.println();
 
 
-        try {
+        /*try {
             this.legalizer.updateCircuit();
         } catch(PlacementException error) {
             this.logger.raise(error);
-        }
+        }*/
     }
 
 
