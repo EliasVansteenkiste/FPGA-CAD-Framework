@@ -87,13 +87,13 @@ Contributors
 ===============
 Active Contributors
 <ul>
-  <li>Seppe Lenders - Seppe.Lenders@gmail.com</li>
-  <li>Elias Vansteenkiste - Elias.Vansteenkiste@gmail.com</li>
+  <li>Seppe Lenders - <a href="mailto:Seppe.Lenders@gmail.com"> Seppe.Lenders@gmail.com</a></li>
+  <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a><</li>
 </ul>
 
 Past Contributors
 <ul>
-  <li>Arno Messiaen - Arno.Messiaen@gmail.com</li>
+  <li>Arno Messiaen - <a href="mailto:Arno.Messiaen@gmail.com">Arno.Messiaen@gmail.com</a></li>
 </ul>
 
 
