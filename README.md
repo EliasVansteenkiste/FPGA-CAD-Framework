@@ -86,10 +86,14 @@ You may also refer to one of our others papers if you think it is more related.
 Contributors
 ===============
 Active Contributors
-Seppe Lenders - Seppe.Lenders@gmail.com
-Elias Vansteenkiste - Elias.Vansteenkiste@gmail.com
+<ul>
+  <li>Seppe Lenders - Seppe.Lenders@gmail.com</li>
+  <li>Elias Vansteenkiste - Elias.Vansteenkiste@gmail.com</li>
+</ul>
 
 Past Contributors
-Arno Messiaen - Arno.Messiaen@gmail.com
+<ul>
+  <li>Arno Messiaen - Arno.Messiaen@gmail.com</li>
+</ul>
 
 
