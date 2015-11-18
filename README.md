@@ -73,7 +73,7 @@ Contact us
 ===============
 The Java FPGA Placement Framework is released by Ghent University, ELIS department, Hardware and Embedded Systems (HES) group (http://hes.elis.ugent.be).
 
-If you encounter bugs, want to use the Java FPGA Placement Framework but need support or want to tell us about your results, please contact us. We can be reached at hes@elis.ugent.be
+If you encounter bugs, want to use the Java FPGA Placement Framework but need support or want to tell us about your results, please contact us. We can be reached at Elias.Vansteenkiste@gmail.com
 
 Referencing the Java FPGA Placement Framework
 ===============
@@ -82,3 +82,14 @@ If you use the Java FPGA Placement Framework in your work, please reference in y
 
 
 You may also refer to one of our others papers if you think it is more related. 
+
+Contributors
+===============
+Active Contributors
+Seppe Lenders - Seppe.Lenders@gmail.com
+Elias Vansteenkiste - Elias.Vansteenkiste@gmail.com
+
+Past Contributors
+Arno Messiaen - Arno.Messiaen@gmail.com
+
+
