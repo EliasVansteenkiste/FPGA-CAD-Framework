@@ -1,4 +1,4 @@
-The Java FPGA Placement Framework: An introduction
+The FPGA Placement Framework: An introduction
 ==================================================
 
 An FPGA placement framework, including benchmarks
