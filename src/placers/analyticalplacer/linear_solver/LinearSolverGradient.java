@@ -29,17 +29,35 @@ public class LinearSolverGradient extends LinearSolver {
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {
             int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
-            boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
+            boolean fixed1 = this.isFixed(blockIndex1), fixed2 = this.isFixed(blockIndex2);
 
-            this.solverX.addConnectionMinMaxUnknown(
-                    fixed1, blockIndex1, this.coordinatesX[blockIndex1],
-                    fixed2, blockIndex2, this.coordinatesX[blockIndex2],
-                    weightMultiplier);
+            double coordinate1 = this.coordinatesX[blockIndex1];
+            double coordinate2 = this.coordinatesX[blockIndex2];
+            if(coordinate1 < coordinate2) {
+                this.solverX.addConnection(
+                        fixed1, blockIndex1, coordinate1,
+                        fixed2, blockIndex2, coordinate2,
+                        weightMultiplier);
+            } else {
+                this.solverX.addConnection(
+                        fixed2, blockIndex2, coordinate2,
+                        fixed1, blockIndex1, coordinate1,
+                        weightMultiplier);
+            }
 
-            this.solverY.addConnectionMinMaxUnknown(
-                    fixed1, blockIndex1, this.coordinatesY[blockIndex1],
-                    fixed2, blockIndex2, this.coordinatesY[blockIndex2],
-                    weightMultiplier);
+            coordinate1 = this.coordinatesY[blockIndex1];
+            coordinate2 = this.coordinatesY[blockIndex2];
+            if(coordinate1 < coordinate2) {
+                this.solverY.addConnection(
+                        fixed1, blockIndex1, coordinate1,
+                        fixed2, blockIndex2, coordinate2,
+                        weightMultiplier);
+            } else {
+                this.solverY.addConnection(
+                        fixed2, blockIndex2, coordinate2,
+                        fixed1, blockIndex1, coordinate1,
+                        weightMultiplier);
+            }
 
             return;
         }
