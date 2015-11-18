@@ -17,7 +17,7 @@ class HeapLegalizer extends Legalizer {
 
     // Contain the properties of the blockType that is currently being legalized
     private BlockType blockType;
-    private int blockHeight, blockRepeat;
+    private int blockStart, blockRepeat, blockHeight;
 
     // These are temporary data structures
     private HeapLegalizerArea[][] areaPointers;
@@ -40,31 +40,17 @@ class HeapLegalizer extends Legalizer {
     @Override
     protected void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd) {
         this.blockType = blockType;
+
+        this.blockStart = this.blockType.getStart();
         this.blockHeight = this.blockType.getHeight();
         this.blockRepeat = this.blockType.getRepeat();
 
         // Make a matrix that contains the blocks that are closest to each position
         initializeBlockMatrix(blocksStart, blocksEnd);
 
-
         // Build a set of disjunct areas that are not over-utilized
         this.areaPointers = new HeapLegalizerArea[this.width][this.height];
-        List<HeapLegalizerArea> areas = new ArrayList<HeapLegalizerArea>();
-
-
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
-        int maxDimension = Math.max(centerX, centerY);
-
-        this.tryNewArea(areas, centerX, centerY);
-        for(int centerDist1 = 1; centerDist1 < maxDimension; centerDist1++) {
-            for(int centerDist2 = -centerDist1; centerDist2 < centerDist1; centerDist2++) {
-                this.tryNewArea(areas, centerX + centerDist1, centerY + centerDist2);
-                this.tryNewArea(areas, centerX - centerDist1, centerY - centerDist2);
-                this.tryNewArea(areas, centerX + centerDist2, centerY - centerDist1);
-                this.tryNewArea(areas, centerX - centerDist2, centerY + centerDist1);
-            }
-        }
+        List<HeapLegalizerArea> areas = this.growAreas();
 
         // Legalize all unabsorbed areas
         for(HeapLegalizerArea area : areas) {
@@ -93,8 +79,7 @@ class HeapLegalizer extends Legalizer {
             int x = site.getX();
             int y = site.getY();
 
-            List<Integer> blockIndexes = this.blockMatrix.get(x).get(y);
-            blockIndexes.add(index);
+            this.blockMatrix.get(x).get(y).add(index);
         }
     }
 
@@ -171,10 +156,84 @@ class HeapLegalizer extends Legalizer {
     }
 
 
+    private List<HeapLegalizerArea> growAreas() {
+        List<Integer> columns = new ArrayList<Integer>();
+
+        // This dummy element is added to simplify the test inside the while loop
+        columns.add(Integer.MIN_VALUE);
+        for(int column = this.blockStart; column < this.width - 1; column += this.blockRepeat) {
+            if(this.circuit.getColumnType(column).equals(this.blockType)) {
+                columns.add(column);
+            }
+        }
+        int columnStartIndex = columns.size() / 2;
+        int columnEndIndex = (columns.size() + 1) / 2;
+        double centerX = (columns.get(columnStartIndex) + columns.get(columnEndIndex)) / 2.0;
+
+
+        List<Integer> rows = new ArrayList<Integer>();
+        rows.add(Integer.MIN_VALUE);
+        for(int row = 1; row < this.height - this.blockHeight; row += this.blockHeight) {
+            rows.add(row);
+        }
+        int rowStartIndex = rows.size() / 2;
+        int rowEndIndex = (rows.size() + 1) / 2;
+        double centerY = (rows.get(rowStartIndex) + rows.get(rowEndIndex)) / 2.0;
+
+        List<HeapLegalizerArea> areas = new ArrayList<HeapLegalizerArea>();
+
+        // Grow from the center coordinate(s)
+        for(int rowIndex = rowStartIndex; rowIndex <= rowEndIndex; rowIndex++) {
+            for(int columnIndex = columnStartIndex; columnIndex <= columnEndIndex; columnIndex++) {
+                int column = columns.get(columnIndex);
+                int row = rows.get(rowIndex);
+                this.tryNewArea(areas, column, row);
+            }
+        }
+
+        while(columnStartIndex > 1 && rowStartIndex > 1) {
+            // Run over the two closest columns
+            if(centerX - columns.get(columnStartIndex - 1) <= centerY - rows.get(rowStartIndex - 1)) {
+                columnStartIndex--;
+                columnEndIndex++;
+
+                int column1 = columns.get(columnStartIndex);
+                int column2 = columns.get(columnEndIndex);
+                for(int i = (rowEndIndex - rowStartIndex) / 2; i >= 0; i--) {
+                    int row1 = rows.get(rowStartIndex + i);
+                    int row2 = rows.get(rowEndIndex - i);
+
+                    this.tryNewArea(areas, column1, row1);
+                    this.tryNewArea(areas, column1, row2);
+                    this.tryNewArea(areas, column2, row1);
+                    this.tryNewArea(areas, column2, row2);
+                }
+
+            // Run over the two closest rows
+            } else {
+                rowStartIndex--;
+                rowEndIndex++;
+
+                int row1 = rows.get(rowStartIndex);
+                int row2 = rows.get(rowEndIndex);
+                for(int i = (columnEndIndex - columnStartIndex) / 2; i >= 0; i--) {
+                    int column1 = columns.get(columnStartIndex + i);
+                    int column2 = columns.get(columnEndIndex - i);
+
+                    this.tryNewArea(areas, column1, row1);
+                    this.tryNewArea(areas, column1, row2);
+                    this.tryNewArea(areas, column2, row1);
+                    this.tryNewArea(areas, column2, row2);
+                }
+            }
+        }
+
+        return areas;
+    }
+
+
     private void tryNewArea(List<HeapLegalizerArea> areas, int x, int y) {
-        if(x > 0 && x < this.width - 1
-                && y > 0 && y < this.height - 1
-                && this.blockMatrix.get(x).get(y).size() >= 1
+        if(this.blockMatrix.get(x).get(y).size() >= 1
                 && this.areaPointers[x][y] == null) {
             HeapLegalizerArea newArea = this.newArea(x, y);
             areas.add(newArea);
@@ -187,6 +246,7 @@ class HeapLegalizer extends Legalizer {
         HeapLegalizerArea area = new HeapLegalizerArea(x, y, this.tileCapacity, this.blockType);
         area.incrementTiles();
         area.addBlockIndexes(this.blockMatrix.get(x).get(y));
+        this.areaPointers[x][y] = area;
 
         while(area.getOccupation() > area.getCapacity()) {
             int[] direction = area.nextGrowDirection();

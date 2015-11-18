@@ -192,7 +192,7 @@ public abstract class AnalyticalPlacer extends Placer {
         this.costCalculator = createCostCalculator();
 
         try {
-            this.legalizer = new NewLegalizer(
+            this.legalizer = new HeapLegalizer(
                     this.circuit, this.costCalculator,
                     this.blockIndexes,
                     blockTypes, blockTypeIndexStarts,
@@ -239,10 +239,6 @@ public abstract class AnalyticalPlacer extends Placer {
             // Legalize
             int sequenceIndex = Math.min(iteration, this.maxUtilizationSequence.length - 1);
             double maxUtilization = this.maxUtilizationSequence[sequenceIndex];
-
-            if(iteration == 80) {
-                int d = 0;
-            }
 
             try {
                 this.legalizer.legalize(maxUtilization);

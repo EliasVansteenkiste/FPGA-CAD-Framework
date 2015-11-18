@@ -12,15 +12,16 @@ public abstract class AbstractPin {
     private PortType portType;
     private int index;
 
-    private transient AbstractPin source;
-    private transient ArrayList<AbstractPin> sinks;
+    private AbstractPin source, sink;
+    private ArrayList<AbstractPin> sinks;
+    private int numSinks = 0;
 
     public AbstractPin(AbstractBlock owner, PortType portType, int index) {
         this.owner = owner;
         this.portType = portType;
         this.index = index;
 
-        this.sinks = new ArrayList<AbstractPin>();
+        //this.sinks = new ArrayList<AbstractPin>();
     }
 
 
@@ -53,21 +54,52 @@ public abstract class AbstractPin {
     }
 
     public int getNumSinks() {
-        return this.sinks.size();
+        return this.numSinks;
     }
     public List<AbstractPin> getSinks() {
-        return this.sinks;
+        switch(this.numSinks) {
+        case 0:
+            return new ArrayList<AbstractPin>();
+
+        case 1:
+            List<AbstractPin> pins = new ArrayList<AbstractPin>(1);
+            pins.add(this.sink);
+            return pins;
+
+        default:
+            return this.sinks;
+        }
     }
     public AbstractPin getSink(int index) {
-        return this.sinks.get(index);
+        if(this.numSinks == 1) {
+            return this.sink;
+
+        } else {
+            return this.sinks.get(index);
+        }
     }
 
     public void addSink(AbstractPin sink) {
-        this.sinks.add(sink);
+        switch(this.numSinks) {
+        case 0:
+            this.sink = sink;
+            break;
+
+        case 1:
+            this.sinks = new ArrayList<AbstractPin>();
+            this.sinks.add(this.sink);
+
+        default:
+            this.sinks.add(sink);
+        }
+
+        this.numSinks++;
     }
 
     public void compact() {
-        this.sinks.trimToSize();
+        if(this.numSinks > 1) {
+            this.sinks.trimToSize();
+        }
     }
 
 
