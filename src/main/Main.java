@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
@@ -45,6 +46,8 @@ public class Main {
     private Map<String, Timer> timers = new HashMap<String, Timer>();
     private String mostRecentTimerName;
     private Circuit circuit;
+
+    private static Pattern internalNetPattern = Pattern.compile("(?<block>\\w+)(?:\\[(?<blockIndex>\\d+)\\])?\\.(?<port>\\w+)\\[(?<portIndex>\\d+)\\]->.*");
 
 
     public static void initOptionList(Options options) {

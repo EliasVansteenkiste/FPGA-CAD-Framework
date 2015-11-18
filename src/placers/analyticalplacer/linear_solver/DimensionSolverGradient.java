@@ -1,5 +1,8 @@
 package placers.analyticalplacer.linear_solver;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 
 
 class DimensionSolverGradient extends DimensionSolver {
@@ -67,6 +70,14 @@ class DimensionSolverGradient extends DimensionSolver {
     void solve() {
         int numBlocks = this.coordinates.length;
 
+        /*int max = 0;
+        for(int numPositiveNet : this.numPositiveNets) {
+            if(numPositiveNet > max) {
+                max = numPositiveNet;
+            }
+        }
+        System.out.println(max);*/
+
         for(int i = 0; i < numBlocks; i++) {
             /* This calculation is a bit complex. There are 3 coordinates at play:
              * - The current coordinate (C1)
@@ -90,17 +101,25 @@ class DimensionSolverGradient extends DimensionSolver {
             double currentCoordinate = this.coordinates[i];
 
             double netGoal = currentCoordinate;
+            double pseudoWeight = Math.pow(this.pseudoWeight, 1);
             if(direction > 0) {
                 netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
+                //pseudoWeight = Math.pow(pseudoWeight, (this.numPositiveNets[i] + 100) / 50.0);
 
             } else if(direction < 0) {
                 netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
+                //pseudoWeight = Math.pow(pseudoWeight, (this.numNegativeNets[i] + 100) / 50.0);
+
+            } else {
+                continue;
             }
 
+
+
             if(this.firstSolve) {
-                this.coordinates[i] += this.stepSize * ((1 - this.pseudoWeight) * netGoal - currentCoordinate);
+                this.coordinates[i] += this.stepSize * ((1 - pseudoWeight) * netGoal - currentCoordinate);
             } else {
-                this.coordinates[i] += this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
+                this.coordinates[i] += this.stepSize * (netGoal + pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
             }
         }
     }

@@ -1,6 +1,5 @@
 package placers.analyticalplacer;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,8 +11,6 @@ import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 
 public class BipartiteLegalizer extends Legalizer {
-
-    private double minX, maxX, minY, maxY;
 
     BipartiteLegalizer(
             Circuit circuit,
@@ -29,29 +26,7 @@ public class BipartiteLegalizer extends Legalizer {
 
     @Override
     protected void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd) {
-        List<AbstractSite> sites = this.buildSiteArray(blockType);
-
-        this.minX = this.linearX[blocksStart];
-        this.minY = this.linearY[blocksStart];
-        this.maxX = this.minX;
-        this.maxY = this.minY;
-
-        for(int blockIndex = blocksStart + 1; blockIndex < blocksEnd; blockIndex++) {
-            double x = this.linearX[blockIndex];
-            double y = this.linearY[blockIndex];
-
-            if(x < this.minX) {
-                this.minX = x;
-            } else if(x > this.maxX) {
-                this.maxX =x ;
-            }
-
-            if(y < this.minY) {
-                this.minY = y;
-            } else if(y > this.maxY) {
-                this.maxY = y;
-            }
-        }
+        List<AbstractSite> sites = this.circuit.getSites(blockType);
 
         double[][] costMatrix = this.buildCostMatrix(sites, blocksStart, blocksEnd);
 
@@ -61,22 +36,6 @@ public class BipartiteLegalizer extends Legalizer {
         this.updateLegal(sites, solution, blocksStart, blocksEnd);
     }
 
-    private List<AbstractSite> buildSiteArray(BlockType blockType) {
-        List<AbstractSite> sites = new ArrayList<AbstractSite>();
-
-        for(int column = 1; column < this.width - 1; column++) {
-            if(this.circuit.getColumnType(column).equals(blockType)) {
-                for(int row = 1; row < this.height - 1; row++) {
-                    AbstractSite site = this.circuit.getSite(column, row, true);
-                    if(site != null) {
-                        sites.add(site);
-                    }
-                }
-            }
-        }
-
-        return sites;
-    }
 
     private double[][] buildCostMatrix(List<AbstractSite> sites, int blocksStart, int blocksEnd) {
 
@@ -85,8 +44,8 @@ public class BipartiteLegalizer extends Legalizer {
 
         double[][] costMatrix = new double[numBlocks][numSites];
         for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
-            double linearX = this.linearX[blocksStart + blockIndex] - this.minX;
-            double linearY = this.linearY[blocksStart + blockIndex] - this.minY;
+            double linearX = this.linearX[blocksStart + blockIndex];
+            double linearY = this.linearY[blocksStart + blockIndex];
 
             for(int siteIndex = 0; siteIndex < numSites; siteIndex++) {
                 AbstractSite site = sites.get(siteIndex);

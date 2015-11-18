@@ -23,7 +23,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
 
     public AbstractBlock(String name, BlockType blockType, int index) {
-        this.name = name;
+        this.name = new String(name);
         this.blockType = blockType;
         this.category = blockType.getCategory();
         this.index = index;

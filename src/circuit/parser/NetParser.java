@@ -44,9 +44,6 @@ public class NetParser {
     private PortDirection currentPortType;
 
 
-    private static Pattern portPattern = Pattern.compile(".*name=\"(?<name>[^\"]+)\">(?<ports>.+)</port>.*");
-    private static Pattern blockPattern = Pattern.compile(".*name=\"(?<name>[^\"]+)\".+instance=\"(?<type>\\w+)\\[(?<index>\\d+)\\]\"(?:\\s+mode=\"(?<mode>\\w+)?\")?/?>");
-
     private static Pattern internalNetPattern = Pattern.compile("(?<block>\\w+)(?:\\[(?<blockIndex>\\d+)\\])?\\.(?<port>\\w+)\\[(?<portIndex>\\d+)\\]->.*");
 
 
@@ -195,10 +192,13 @@ public class NetParser {
             return;
         }
 
-        Matcher matcher = portPattern.matcher(line);
-        matcher.matches();
-        String name = matcher.group("name");
-        String ports = matcher.group("ports");
+        int nameStart = 12;
+        int nameEnd = line.indexOf("\"", 12);
+        String name = line.substring(nameStart, nameEnd);
+
+        int portsStart = nameEnd + 2;
+        int portsEnd = line.length() - 7;
+        String ports = line.substring(portsStart, portsEnd);
 
         switch(this.currentPortType) {
             case INPUT:
@@ -213,18 +213,32 @@ public class NetParser {
 
 
     private void processBlockLine(String line) {
-        Matcher matcher = blockPattern.matcher(line);
-        matcher.matches();
 
-        String name = matcher.group("name");
-        String type = matcher.group("type");
-        int index = Integer.parseInt(matcher.group("index"));
-        String mode = matcher.group("mode");
+        int nameStart = 13;
+        int nameEnd = line.indexOf("\"", nameStart);
+        String name = line.substring(nameStart, nameEnd);
+
+        int typeStart = nameEnd + 12;
+        int typeEnd = line.indexOf("[", typeStart);
+        String type = line.substring(typeStart, typeEnd);
 
         // Ignore the top-level block
         if(type.equals("FPGA_packed_netlist")) {
             return;
         }
+
+
+        int indexStart = typeEnd + 1;
+        int indexEnd = line.indexOf("]", indexStart);
+        int index = Integer.parseInt(line.substring(indexStart, indexEnd));
+
+
+        int modeStart = indexEnd + 9;
+        int modeEnd = line.length() - 2;
+        String mode = modeStart < modeEnd ? line.substring(modeStart, modeEnd) : null;
+
+
+
 
         BlockType blockType = new BlockType(type, mode);
 
@@ -306,6 +320,7 @@ public class NetParser {
 
 
     private void addNets(List<AbstractPin> sinkPins, String netsString) {
+        //TODO: no regex
         String[] nets = netsString.trim().split("\\s+");
 
         for(int sinkPinIndex = 0; sinkPinIndex < nets.length; sinkPinIndex++) {
@@ -324,7 +339,8 @@ public class NetParser {
 
         AbstractBlock sinkBlock = sinkPin.getOwner();
 
-        Matcher matcher = internalNetPattern.matcher(net);
+
+        /*Matcher matcher = internalNetPattern.matcher(net);
         boolean matches = matcher.matches();
 
 
@@ -349,7 +365,45 @@ public class NetParser {
 
 
             } else {
-                int sourceBlockIndex = Integer.parseInt(sourceBlockIndexString);
+                int sourceBlockIndex = Integer.parseInt(sourceBlockIndexString);*/
+        int separator = net.lastIndexOf("->");
+
+        if(separator != -1) {
+            int pinIndexEnd = separator - 1;
+            int pinIndexStart = net.lastIndexOf("[", pinIndexEnd) + 1;
+            int sourcePinIndex = Integer.parseInt(net.substring(pinIndexStart, pinIndexEnd));
+
+            int portEnd = pinIndexStart - 1;
+            int portStart = net.lastIndexOf(".", portEnd) + 1;
+            String sourcePortName = net.substring(portStart, portEnd);
+
+
+            int blockIndexEnd = portStart - 2;
+            int blockIndexStart = portStart;
+            int sourceBlockIndex = -1;
+
+            if(net.charAt(blockIndexEnd) == ']') {
+                blockIndexStart = net.lastIndexOf("[", blockIndexEnd) + 1;
+                sourceBlockIndex = Integer.parseInt(net.substring(blockIndexStart, blockIndexEnd));
+            }
+
+            int typeEnd = blockIndexStart - 1;
+            int typeStart = 0;
+            String sourceBlockName = net.substring(typeStart, typeEnd);
+
+            BlockType sourceBlockType = new BlockType(sourceBlockName);
+            PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
+
+            // The hardest part: determine the source block
+            AbstractBlock sourceBlock;
+
+            // The net is incident to an input port. It has an input port of the parent block as source.
+            if(sourceBlockIndex == -1) {
+                sourceBlock = ((IntermediateBlock) sinkBlock).getParent();
+
+
+            } else {
+
 
                 // The net is incident to an input port. It has a sibling output port as source.
                 if(sinkPin.isInput()) {
