@@ -44,8 +44,6 @@ class DimensionSolverGradient extends DimensionSolver {
             boolean maxFixed, int maxIndex, double maxCoordinate,
             double weightMultiplier) {
 
-        // isPseudoConnection is always false
-
         double difference = maxCoordinate - minCoordinate;
 
         // TODO: platforming this net size works a bit better than not doing it
