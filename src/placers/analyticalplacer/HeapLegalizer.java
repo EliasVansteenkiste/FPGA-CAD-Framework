@@ -2,6 +2,7 @@ package placers.analyticalplacer;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,11 @@ import circuit.architecture.BlockCategory;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 
+/**
+ * This is approximately the legalizer as proposed in
+ * Heterogeneous Analytical Placement (HeAP).
+ *
+ */
 class HeapLegalizer extends Legalizer {
 
     private static enum Axis {X, Y};
@@ -483,5 +489,22 @@ class HeapLegalizer extends Legalizer {
 
         this.legalizeArea(coordinates1, blocks1, newAxis);
         this.legalizeArea(coordinates2, blocks2, newAxis);
+    }
+
+
+
+
+    class BlockComparator implements Comparator<Integer> {
+
+        private double[] coordinates;
+
+        public BlockComparator(double[] coordinates) {
+            this.coordinates = coordinates;
+        }
+
+        @Override
+        public int compare(Integer index1, Integer index2) {
+            return new Double(this.coordinates[index1]).compareTo(this.coordinates[index2]);
+        }
     }
 }
