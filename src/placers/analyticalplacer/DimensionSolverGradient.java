@@ -1,4 +1,5 @@
-package placers.analyticalplacer.linear_solver;
+package placers.analyticalplacer;
+
 
 class DimensionSolverGradient extends DimensionSolver {
 

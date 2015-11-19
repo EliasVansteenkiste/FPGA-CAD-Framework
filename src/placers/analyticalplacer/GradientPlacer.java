@@ -6,8 +6,6 @@ import interfaces.Options;
 import java.util.List;
 import java.util.Random;
 
-import placers.analyticalplacer.linear_solver.LinearSolver;
-import placers.analyticalplacer.linear_solver.LinearSolverGradient;
 
 import visual.PlacementVisualizer;
 import circuit.Circuit;

@@ -20,7 +20,6 @@ import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 
 import placers.Placer;
-import placers.analyticalplacer.linear_solver.LinearSolver;
 import visual.PlacementVisualizer;
 
 public abstract class AnalyticalAndGradientPlacer extends Placer {

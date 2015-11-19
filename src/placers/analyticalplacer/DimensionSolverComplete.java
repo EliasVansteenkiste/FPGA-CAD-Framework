@@ -1,4 +1,4 @@
-package placers.analyticalplacer.linear_solver;
+package placers.analyticalplacer;
 
 import mathtools.CGSolver;
 import mathtools.Csr;

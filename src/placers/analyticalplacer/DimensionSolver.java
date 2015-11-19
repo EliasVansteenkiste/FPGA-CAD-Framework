@@ -1,6 +1,6 @@
-package placers.analyticalplacer.linear_solver;
+package placers.analyticalplacer;
 
-public abstract class DimensionSolver {
+abstract class DimensionSolver {
 
     void addConnectionMinMaxUnknown(
             boolean fixed1, int index1, double coordinate1,

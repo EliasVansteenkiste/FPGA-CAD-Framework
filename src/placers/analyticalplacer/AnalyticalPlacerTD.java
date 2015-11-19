@@ -8,7 +8,7 @@ import circuit.block.TimingGraph;
 import interfaces.Logger;
 import interfaces.Options;
 
-public class TD_AnalyticalPlacer extends AnalyticalPlacer {
+public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
     public static void initOptions(Options options) {
         AnalyticalPlacer.initOptions(options);
@@ -21,7 +21,7 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
 
     private double tradeOff, criticalityExponent, criticalityThreshold;
 
-    public TD_AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public AnalyticalPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.tradeOff = options.getDouble("trade off");
@@ -34,7 +34,7 @@ public class TD_AnalyticalPlacer extends AnalyticalPlacer {
         TimingGraph timingGraph = this.circuit.getTimingGraph();
         timingGraph.setCriticalityExponent(this.criticalityExponent);
 
-        return new TD_CostCalculator(this.nets, timingGraph, this.tradeOff);
+        return new CostCalculatorTD(this.nets, timingGraph, this.tradeOff);
     }
 
     @Override

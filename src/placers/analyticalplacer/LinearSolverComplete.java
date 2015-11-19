@@ -1,13 +1,12 @@
-package placers.analyticalplacer.linear_solver;
-
-import placers.analyticalplacer.AnalyticalAndGradientPlacer;
+package placers.analyticalplacer;
 
 
-public class LinearSolverComplete extends LinearSolver {
+
+class LinearSolverComplete extends LinearSolver {
 
     private DimensionSolverComplete solverX, solverY;
 
-    public LinearSolverComplete(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double epsilon) {
+    LinearSolverComplete(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double epsilon) {
         super(coordinatesX, coordinatesY, numIOBlocks);
 
         this.solverX = new DimensionSolverComplete(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
@@ -15,7 +14,7 @@ public class LinearSolverComplete extends LinearSolver {
     }
 
     @Override
-    public void addPseudoConnections(int[] legalX, int[] legalY) {
+    void addPseudoConnections(int[] legalX, int[] legalY) {
         int numIOBlocks = this.getNumIOBlocks();
         int numBlocks = this.coordinatesX.length;
         for(int blockIndex = numIOBlocks; blockIndex < numBlocks; blockIndex++) {
@@ -25,7 +24,7 @@ public class LinearSolverComplete extends LinearSolver {
     }
 
     @Override
-    public void processNet(int[] blockIndexes) {
+    void processNet(int[] blockIndexes) {
 
         int numNetBlocks = blockIndexes.length;
         double weightMultiplier = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
@@ -118,7 +117,7 @@ public class LinearSolverComplete extends LinearSolver {
     }
 
     @Override
-    public void solve() {
+    void solve() {
         this.solverX.solve();
         this.solverY.solve();
     }

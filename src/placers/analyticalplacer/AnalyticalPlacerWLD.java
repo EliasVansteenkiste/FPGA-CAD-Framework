@@ -11,15 +11,15 @@ import circuit.Circuit;
 
 
 
-public class WLD_AnalyticalPlacer extends AnalyticalPlacer {
+public class AnalyticalPlacerWLD extends AnalyticalPlacer {
 
-    public WLD_AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public AnalyticalPlacerWLD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
     }
 
     @Override
     protected CostCalculator createCostCalculator() {
-        return new WLD_CostCalculator(this.nets);
+        return new CostCalculatorWLD(this.nets);
     }
 
     @Override

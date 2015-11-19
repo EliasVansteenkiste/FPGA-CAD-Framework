@@ -3,11 +3,11 @@ package placers.analyticalplacer;
 import java.util.List;
 
 
-public class WLD_CostCalculator extends CostCalculator {
+public class CostCalculatorWLD extends CostCalculator {
 
     private List<int[]> nets;
 
-    WLD_CostCalculator(List<int[]> nets) {
+    CostCalculatorWLD(List<int[]> nets) {
         this.nets = nets;
     }
 

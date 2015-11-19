@@ -1,7 +1,7 @@
-package placers.analyticalplacer.linear_solver;
+package placers.analyticalplacer;
 
 
-public abstract class LinearSolver {
+abstract class LinearSolver {
 
     protected double[] coordinatesX, coordinatesY;
     private int numIOBlocks;
@@ -13,9 +13,9 @@ public abstract class LinearSolver {
         this.numIOBlocks = numIOBlocks;
     }
 
-    public abstract void processNet(int[] blockIndexes);
-    public abstract void addPseudoConnections(int[] legalX, int[] legalY);
-    public abstract void solve();
+    abstract void processNet(int[] blockIndexes);
+    abstract void addPseudoConnections(int[] legalX, int[] legalY);
+    abstract void solve();
 
 
     protected boolean isFixed(int blockIndex) {

@@ -6,13 +6,13 @@ import java.util.List;
 import circuit.block.TimingGraph;
 
 
-public class TD_CostCalculator extends WLD_CostCalculator {
+public class CostCalculatorTD extends CostCalculatorWLD {
 
     private TimingGraph timingGraph;
     private double tradeOff;
     private double initialBBCost, initialTDCost;
 
-    TD_CostCalculator(List<int[]> nets, TimingGraph timingGraph, double tradeOff) {
+    CostCalculatorTD(List<int[]> nets, TimingGraph timingGraph, double tradeOff) {
         super(nets);
 
         this.timingGraph = timingGraph;
