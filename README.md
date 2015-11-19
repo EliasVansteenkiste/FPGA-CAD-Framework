@@ -1,17 +1,17 @@
-The Java FPGA Placement Framework: An introduction
+The FPGA Placement Framework: An introduction
 ==================================================
 
-An FPGA placement framework, including benchmarks
+An FPGA placement framework implemented in Java, including benchmarks
 
 
 What can I do with this tool flow?
 ==================================
 
-Simulated Annealing Placement
-
-Analytical Iterative Placement
-
-Gradient Iterative Placement
+<ul>
+  <li>Simulated Annealing Placement</li>
+  <li>Analytical Solver Iterative Placement</li>
+  <li>Steepest Gradient Descent Iterative Placement</li>
+</ul>
 
 
 Usage
@@ -33,7 +33,7 @@ benchmarks/k6_frac_N10_mem32K_40nm.json benchmarks/or1200.blif --placer wld_ap
 License
 =======
 
-The Placer Java Framework is licensed by Ghent University. The license is included in all licensed code and in the repository, it is also printed below.
+The FPGA Placement Framework is licensed by Ghent University. The license is included in all licensed code and in the repository, it is also printed below.
 
 SOFTWARE LICENSE AGREEMENT
 
@@ -43,7 +43,7 @@ By downloading the Licensed Software, or installing Licensed Software, or using 
 
 (1) Licensee warrants and represents that the person accepting this Agreement on behalf of Licensee is its legally authorized representative and is duly authorized to accept agreements of this type on behalf of Licensee and obligate Licensee to the terms and conditions herein. Any breach of this warranty and representation is a material breach of this Agreement and, in such event, this Agreement and the rights granted to Licensee shall terminate automatically.
 
-(2) Definitions - For the purposes of this Agreement, the following terms shall have the following meanings: a) "Software": refers to the computer software supplied with this Agreement named "The Java FPGA Placement Framework" and provided in Python and Java code form. b) "Licensed Software": refers to the Software, and any other computer software and documentation, if any, supplied with this Agreement. c) "Adaptation": refers to any work based on the Licensed Software, including: 1) any work which incorporates all or part of the Licensed Software, 2) any work which includes modifications to the Software, including but not limited to bug fixes, 3) any work which would be regarded as a derivative work of the Software under the Belgian Copyright Law, and 4) any work which is otherwise covered by any of UGent's intellectual property rights in the Licensed Software. d) "Grant Back Software": refers to any 1) modification of the objects distributed as the Software, including but not limited to the addition, deletion, and modification of verbs and properties on the objects, 2) creation of children to the objects distributed as the Software. e) "Copyright Holder": refers to Universiteit Gent - Ghent University, public institution with legal personality, having its administrative offices in Belgium, B-9000 Gent, Sint-Pietersnieuwstraat 25 (herein also referred to as "UGent") f) "Non-Commercial Purpose": refers to use of the Licensed Software solely for the purpose of education or research. "Non-Commercial Purpose" excludes, without limitation, any use of the Software as part of or in connection with a product (including software) or service which is sold, offered for sale, licensed, leased, loaned or rented.
+(2) Definitions - For the purposes of this Agreement, the following terms shall have the following meanings: a) "Software": refers to the computer software supplied with this Agreement named "The FPGA Placement Framework" and provided in Python and Java code form. b) "Licensed Software": refers to the Software, and any other computer software and documentation, if any, supplied with this Agreement. c) "Adaptation": refers to any work based on the Licensed Software, including: 1) any work which incorporates all or part of the Licensed Software, 2) any work which includes modifications to the Software, including but not limited to bug fixes, 3) any work which would be regarded as a derivative work of the Software under the Belgian Copyright Law, and 4) any work which is otherwise covered by any of UGent's intellectual property rights in the Licensed Software. d) "Grant Back Software": refers to any 1) modification of the objects distributed as the Software, including but not limited to the addition, deletion, and modification of verbs and properties on the objects, 2) creation of children to the objects distributed as the Software. e) "Copyright Holder": refers to Universiteit Gent - Ghent University, public institution with legal personality, having its administrative offices in Belgium, B-9000 Gent, Sint-Pietersnieuwstraat 25 (herein also referred to as "UGent") f) "Non-Commercial Purpose": refers to use of the Licensed Software solely for the purpose of education or research. "Non-Commercial Purpose" excludes, without limitation, any use of the Software as part of or in connection with a product (including software) or service which is sold, offered for sale, licensed, leased, loaned or rented.
 
 (3) Adaptations - Licensee may create Adaptations of the Licensed Software only if a. Licensee treats the Adaptations as Licensed Software under this Agreement, and b. the Adaptations include all copyright notices appearing in the Licensed Software, and c. any Adaptations of the Licensed Software do not disable, modify or change the Licensed Software's requirement that an end-user accept the terms and conditions of the license agreement(s) contained in such Licensed Software before use and/or installation and d. any Adaptations of the Licensed Software do not modify or change the terms and conditions of such license agreement(s).
 
@@ -71,13 +71,13 @@ In no event shall UGent be liable for (a) any incidental, consequential, or indi
 
 Contact us
 ===============
-The Java FPGA Placement Framework is released by Ghent University, ELIS department, Hardware and Embedded Systems (HES) group (http://hes.elis.ugent.be).
+The FPGA Placement Framework is released by Ghent University, ELIS department, Hardware and Embedded Systems (HES) group (http://hes.elis.ugent.be).
 
-If you encounter bugs, want to use the Java FPGA Placement Framework but need support or want to tell us about your results, please contact us. We can be reached at Elias.Vansteenkiste@gmail.com
+If you encounter bugs, want to use the FPGA Placement Framework but need support or want to tell us about your results, please contact us. We can be reached at Elias.Vansteenkiste@gmail.com
 
-Referencing the Java FPGA Placement Framework
+Referencing the FPGA Placement Framework
 ===============
-If you use the Java FPGA Placement Framework in your work, please reference in your publications the following paper:
+If you use the FPGA Placement Framework in your work, please reference in your publications the following paper:
 
 
 
@@ -86,10 +86,14 @@ You may also refer to one of our others papers if you think it is more related.
 Contributors
 ===============
 Active Contributors
-Seppe Lenders - Seppe.Lenders@gmail.com
-Elias Vansteenkiste - Elias.Vansteenkiste@gmail.com
+<ul>
+  <li>Seppe Lenders - <a href="mailto:Seppe.Lenders@gmail.com"> Seppe.Lenders@gmail.com</a></li>
+  <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
+</ul>
 
 Past Contributors
-Arno Messiaen - Arno.Messiaen@gmail.com
+<ul>
+  <li>Arno Messiaen - <a href="mailto:Arno.Messiaen@gmail.com">Arno.Messiaen@gmail.com</a></li>
+</ul>
 
 
