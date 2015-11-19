@@ -92,7 +92,12 @@ public class Options {
     }
 
     public Object get(String name) throws OptionNotSetException {
-        return this.options.get(name).getValue();
+        Option option = this.options.get(name);
+        if(option == null) {
+            throw new OptionNotSetException(name);
+        }
+        
+        return option.getValue();
     }
 
     public Boolean getBoolean(String name) throws ClassCastException, OptionNotSetException {

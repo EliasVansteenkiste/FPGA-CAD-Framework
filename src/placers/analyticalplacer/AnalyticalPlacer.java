@@ -17,11 +17,11 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     public static void initOptions(Options options) {
         options.add("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.9));
-        options.add("anchor weight", "starting anchor weight", new Double(0));
+        options.add("anchor weight", "starting anchor weight", new Double(0.1));
         options.add("anchor weight multiplier", "multiplier to increase the anchor weight in each iteration", new Double(0.2));
     }
 
-    private double stopRatio, anchorWeight, anchorWeightIncrease;
+    private double stopRatio, anchorWeight, anchorWeightMultiplier;
     private CostCalculator costCalculator;
     private double linearCost, legalCost;
 
@@ -31,7 +31,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.stopRatio = options.getDouble("stop ratio");
 
         this.anchorWeight = options.getDouble("anchor weight");
-        this.anchorWeightIncrease = options.getDouble("anchor weight increase");
+        this.anchorWeightMultiplier = options.getDouble("anchor weight multiplier");
     }
 
     protected abstract CostCalculator createCostCalculator();
@@ -47,7 +47,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         boolean firstSolve = (iteration == 0);
 
         if(!firstSolve) {
-            this.anchorWeight *= this.anchorWeightIncrease;
+            this.anchorWeight *= this.anchorWeightMultiplier;
         }
 
         int innerIterations = firstSolve ? 5 : 1;
@@ -74,6 +74,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void printStatistics(int iteration, double time) {
-        this.logger.printf("%-13d%-17f%-19f%-15f%-14f%f\n", iteration, this.anchorWeight, this.linearCost, this.legalCost, time);
+        this.logger.printf("%-13d%-17f%-15f%-14f%f\n", iteration, this.anchorWeight, this.linearCost, this.legalCost, time);
     }
 }
