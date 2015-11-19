@@ -39,8 +39,8 @@ public abstract class AnalyticalPlacer extends Placer {
 
         options.add(new Option("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.95)));
 
-        options.add(new Option("gradient speed", "ratio of distance to optimal position that is moved", new Double(0.4)));
-        options.add(new Option("gradient iterations", "number of gradient steps to take in each outer iteration", new Integer(40)));
+        options.add(new Option("gradient step size", "ratio of distance to optimal position that is moved", new Double(0.4)));
+        options.add(new Option("gradient effort level", "number of gradient steps to take in each outer iteration", new Integer(40)));
     }
 
 
