@@ -13,7 +13,7 @@ import circuit.block.TimingGraph;
 
 
 
-public class TD_SAPlacer extends SAPlacer {
+public class SAPlacerTD extends SAPlacer {
 
     public static void initOptions(Options options) {
         SAPlacer.initOptions(options);
@@ -30,7 +30,7 @@ public class TD_SAPlacer extends SAPlacer {
     private final double tradeOffFactor;
     private final int iterationsBeforeRecalculate;
 
-    public TD_SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public SAPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);

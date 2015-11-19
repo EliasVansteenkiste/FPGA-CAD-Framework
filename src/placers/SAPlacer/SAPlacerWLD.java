@@ -11,7 +11,7 @@ import circuit.Circuit;
 
 
 
-public class WLD_SAPlacer extends SAPlacer {
+public class SAPlacerWLD extends SAPlacer {
 
     public static void initOptions(Options options) {
         SAPlacer.initOptions(options);
@@ -20,7 +20,7 @@ public class WLD_SAPlacer extends SAPlacer {
     private EfficientBoundingBoxNetCC calculator;
     private double cachedCost;
 
-    public WLD_SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public SAPlacerWLD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);

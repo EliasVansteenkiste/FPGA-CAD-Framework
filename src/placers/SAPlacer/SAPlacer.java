@@ -19,7 +19,7 @@ import circuit.exceptions.UnplacedBlockException;
 import placers.Placer;
 import visual.PlacementVisualizer;
 
-public abstract class SAPlacer extends Placer {
+abstract class SAPlacer extends Placer {
 
     public static void initOptions(Options options) {
         options.add("greedy", "place greedy", Boolean.FALSE);
@@ -50,7 +50,7 @@ public abstract class SAPlacer extends Placer {
     private double[] deltaCosts;
 
 
-    public SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    protected SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
 

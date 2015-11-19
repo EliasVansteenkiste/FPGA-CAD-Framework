@@ -7,10 +7,7 @@ import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.pin.GlobalPin;
 
-
-
-public class EfficientBoundingBoxData
-{
+class EfficientBoundingBoxData {
 
     private double weight;
     private GlobalBlock[] blocks;
@@ -37,8 +34,7 @@ public class EfficientBoundingBoxData
     private int boundingBox_old;
 
 
-    public EfficientBoundingBoxData(GlobalPin pin)
-    {
+    public EfficientBoundingBoxData(GlobalPin pin) {
         Set<GlobalBlock> blockSet = new HashSet<GlobalBlock>();
         blockSet.add(pin.getOwner());
 

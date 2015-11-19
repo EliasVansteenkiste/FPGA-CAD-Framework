@@ -21,11 +21,11 @@ class PlacerFactory {
     static {
         PlacerFactory.placers.put("random", "placers.random.RandomPlacer");
 
-        PlacerFactory.placers.put("wld_sa", "placers.SAPlacer.WLD_SAPlacer");
-        PlacerFactory.placers.put("td_sa", "placers.SAPlacer.TD_SAPlacer");
+        PlacerFactory.placers.put("wld_sa", "placers.SAPlacer.SAPlacerWLD");
+        PlacerFactory.placers.put("td_sa", "placers.SAPlacer.SAPlacerTD");
 
-        PlacerFactory.placers.put("wld_gp", "placers.analyticalplacer.WLD_GradientPlacer");
-        PlacerFactory.placers.put("wld_gp", "placers.analyticalplacer.WLD_AnalyticalPlacer");
+        PlacerFactory.placers.put("wld_gp", "placers.analyticalplacer.GradientPlacerWLD");
+        PlacerFactory.placers.put("wld_ap", "placers.analyticalplacer.AnalyticalPlacerWLD");
     }
 
 
