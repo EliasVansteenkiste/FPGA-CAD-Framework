@@ -1,7 +1,6 @@
 package placers.analyticalplacer;
 
 import interfaces.Logger;
-import interfaces.Option;
 import interfaces.Options;
 
 import java.util.ArrayList;
@@ -22,87 +21,32 @@ import circuit.pin.AbstractPin;
 
 import placers.Placer;
 import placers.analyticalplacer.linear_solver.LinearSolver;
-import placers.analyticalplacer.linear_solver.LinearSolverComplete;
-import placers.analyticalplacer.linear_solver.LinearSolverGradient;
 import visual.PlacementVisualizer;
 
 public abstract class AnalyticalPlacer extends Placer {
 
-    protected static enum SolveMode {GRADIENT, COMPLETE};
-
-    public static void initOptions(Options options) {
-        options.add(new Option("solve mode", "either \"complete\" or \"gradient\"", "gradient"));
-
-        options.add(new Option("max utilization", "comma-separated list of maximum tile capacity for each iteration", "1"));
-        options.add(new Option("anchor weight", "starting anchor weight", new Double(0)));
-        options.add(new Option("anchor weight increase", "value that is added to the anchor weight in each iteration", new Double(0.2)));
-
-        options.add(new Option("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.95)));
-
-        options.add(new Option("gradient step size", "ratio of distance to optimal position that is moved", new Double(0.4)));
-        options.add(new Option("gradient effort level", "number of gradient steps to take in each outer iteration", new Integer(40)));
-    }
-
-
-    private final SolveMode algorithmSolveMode;
-
-    private final double[] maxUtilizationSequence;
-    private final double startingAnchorWeight, anchorWeightIncrease, stopRatioLinearLegal;
-    private final int gradientIterations;
-    private double gradientSpeed;
-
     protected final Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
     protected final List<int[]> nets = new ArrayList<>();
-    private int numBlocks, numIOBlocks;
+    protected int numBlocks, numIOBlocks;
 
-    private double[] linearX, linearY;
-    private LinearSolver solver;
-
-    private CostCalculator costCalculator;
-    protected Legalizer legalizer;
+    protected double[] linearX, linearY;
+    private Legalizer legalizer;
 
 
 
 
     public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
-
-
-        // Max utilization sequence
-        String maxUtilizationSequenceString = this.options.getString("max utilization");
-        String[] maxUtilizationSequenceStrings = maxUtilizationSequenceString.split(",");
-        this.maxUtilizationSequence = new double[maxUtilizationSequenceStrings.length];
-        for(int i = 0; i < maxUtilizationSequenceStrings.length; i++) {
-            this.maxUtilizationSequence[i] = Double.parseDouble(maxUtilizationSequenceStrings[i]);
-        }
-
-        // Anchor weights and stop ratio
-        this.startingAnchorWeight = this.options.getDouble("anchor weight");
-        this.anchorWeightIncrease = this.options.getDouble("anchor weight increase");
-        this.stopRatioLinearLegal = this.options.getDouble("stop ratio");
-
-        // Gradient solver
-        String solveModeString = this.options.getString("solve mode");
-        switch (solveModeString) {
-            case "gradient":
-                this.algorithmSolveMode = SolveMode.GRADIENT;
-                break;
-
-            case "complete":
-                this.algorithmSolveMode = SolveMode.COMPLETE;
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown solve mode: " + solveModeString);
-        }
-
-        this.gradientSpeed = this.options.getDouble("gradient speed");
-        this.gradientIterations = this.options.getInteger("gradient iterations");
     }
 
 
-    protected abstract CostCalculator createCostCalculator();
-    protected abstract void initializePlacementIteration();
+    protected abstract Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts);
+
+    protected abstract void solve(int iteration);
+    protected abstract boolean stopCondition();
+
+    protected abstract void printStatisticsHeader();
+    protected abstract void printStatistics(int iteration, double time);
 
 
     @Override
@@ -189,18 +133,7 @@ public abstract class AnalyticalPlacer extends Placer {
             }
         }
 
-        this.costCalculator = createCostCalculator();
-
-        try {
-            this.legalizer = new HeapLegalizer(
-                    this.circuit, this.costCalculator,
-                    this.blockIndexes,
-                    blockTypes, blockTypeIndexStarts,
-                    this.linearX, this.linearY);
-
-        } catch(IllegalArgumentException error) {
-            this.logger.raise(error);
-        }
+        this.legalizer = createLegalizer(blockTypes, blockTypeIndexStarts);
     }
 
 
@@ -208,37 +141,19 @@ public abstract class AnalyticalPlacer extends Placer {
     public void place() {
 
         int iteration = 0;
-        double anchorWeight = this.startingAnchorWeight;
-        double linearCost, legalCost;
-        boolean firstSolve = true;
+        boolean isLastIteration = false;
 
-        this.logger.println("Iteration    anchor weight    max utilization    linear cost    legal cost    time");
-        this.logger.println("---------    -------------    ---------------    -----------    ----------    ----");
+        // This is fixed, because making it dynamic doesn't improve results
+        // But HeapLegalizer still supports other values for maxUtilization
+        double maxUtilization = 1;
 
-        do {
-            this.initializePlacementIteration();
+        this.printStatisticsHeader();
+
+        while(!isLastIteration) {
+            double timerBegin = System.nanoTime();
 
             // Solve linear
-            double timerBegin = System.nanoTime();
-            if(this.algorithmSolveMode == SolveMode.COMPLETE) {
-                if(firstSolve) {
-                    for(int i = 0; i < 5; i++) {
-                        this.solveLinearComplete(true, anchorWeight);
-                    }
-                } else {
-                    this.solveLinearComplete(false, anchorWeight);
-                }
-
-            } else {
-                int iterations = firstSolve ? 4 * this.gradientIterations : this.gradientIterations;
-                for(int i = 0; i < iterations; i++) {
-                    this.solveLinearGradient(firstSolve, anchorWeight);
-                }
-            }
-
-            // Legalize
-            int sequenceIndex = Math.min(iteration, this.maxUtilizationSequence.length - 1);
-            double maxUtilization = this.maxUtilizationSequence[sequenceIndex];
+            this.solve(iteration);
 
             try {
                 this.legalizer.legalize(maxUtilization);
@@ -246,11 +161,12 @@ public abstract class AnalyticalPlacer extends Placer {
                 this.logger.raise(error);
             }
 
-            anchorWeight += this.anchorWeightIncrease;
-            firstSolve = false;
+            isLastIteration = this.stopCondition();
 
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
+
+            this.printStatistics(iteration, time);
 
             // Update the visualizer
             this.visualizer.addPlacement(
@@ -260,17 +176,8 @@ public abstract class AnalyticalPlacer extends Placer {
                     String.format("iteration %d: legal", iteration),
                     this.blockIndexes, this.legalizer.getAnchorsX(), this.legalizer.getAnchorsY());
 
-            // Get the costs and print them
-            linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-            legalCost = this.legalizer.getCost();
-
-            this.logger.printf("%-13d%-17f%-19f%-15f%-14f%f\n", iteration, anchorWeight, maxUtilization, linearCost, legalCost, time);
-
             iteration++;
-
-            // TODO: make the stop criterion placer dependent
-            // for the gradient placer, no cost calculation is required
-        } while(linearCost / legalCost < this.stopRatioLinearLegal);
+        }
 
         this.logger.println();
 
@@ -283,43 +190,31 @@ public abstract class AnalyticalPlacer extends Placer {
     }
 
 
-    // These two methods only exist to be able to profile the "complete" part
-    // of the execution to the "gradient" part.
-    private void solveLinearComplete(boolean firstSolve, double pseudoWeight) {
-        double epsilon = 0.0001;
-        this.solver = new LinearSolverComplete(this.linearX, this.linearY, this.numIOBlocks, pseudoWeight, epsilon);
-        this.solveLinear(firstSolve);
-    }
-    private void solveLinearGradient(boolean firstSolve, double pseudoWeight) {
-        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, pseudoWeight, this.gradientSpeed);
-        this.solveLinear(firstSolve);
-    }
-
     /*
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
-    private void solveLinear(boolean firstSolve) {
+    protected void solveLinear(LinearSolver solver, boolean addPseudoNets) {
 
         // Add connections between blocks that are connected by a net
-        this.processNets();
+        this.processNets(solver);
 
         // Add pseudo connections
-        if(!firstSolve) {
-            this.solver.addPseudoConnections(
+        if(addPseudoNets) {
+            solver.addPseudoConnections(
                     this.legalizer.getAnchorsX(),
                     this.legalizer.getAnchorsY());
         }
 
 
         // Solve and save result
-        this.solver.solve();
+        solver.solve();
     }
 
 
-    protected void processNets() {
+    private void processNets(LinearSolver solver) {
         for(int[] net : this.nets) {
-            this.solver.processNet(net);
+            solver.processNet(net);
         }
     }
 

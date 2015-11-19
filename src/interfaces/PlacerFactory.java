@@ -24,8 +24,7 @@ class PlacerFactory {
         PlacerFactory.placers.put("wld_sa", "placers.SAPlacer.WLD_SAPlacer");
         PlacerFactory.placers.put("td_sa", "placers.SAPlacer.TD_SAPlacer");
 
-        PlacerFactory.placers.put("wld_ap", "placers.analyticalplacer.WLD_AnalyticalPlacer");
-        PlacerFactory.placers.put("td_ap", "placers.analyticalplacer.TD_AnalyticalPlacer");
+        PlacerFactory.placers.put("wld_gp", "placers.analyticalplacer.GradientPlacer");
     }
 
 

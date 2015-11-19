@@ -15,6 +15,7 @@ abstract class Legalizer {
     protected Circuit circuit;
     protected int width, height;
 
+    private boolean storeBest;
     private CostCalculator costCalculator;
 
     private Map<GlobalBlock, Integer> blockIndexes;
@@ -44,6 +45,8 @@ abstract class Legalizer {
         this.height = this.circuit.getHeight();
 
         this.blockIndexes = blockIndexes;
+
+        this.storeBest = (costCalculator != null);
         this.costCalculator = costCalculator;
 
 
@@ -69,21 +72,21 @@ abstract class Legalizer {
 
         this.bestCost = Double.MAX_VALUE;
 
-        // Initialize the best solution with IO positions
-        this.bestLegalX = new int[this.numBlocks];
-        this.bestLegalY = new int[this.numBlocks];
-
-        for(int i = 0; i < this.numIOBlocks; i++) {
-            this.bestLegalX[i] = (int) this.linearX[i];
-            this.bestLegalY[i] = (int) this.linearY[i];
-        }
-
         // Initialize the temporary solution with IO positions
         this.tmpLegalX = new int[this.numBlocks];
         this.tmpLegalY = new int[this.numBlocks];
 
-        System.arraycopy(this.bestLegalX, 0, this.tmpLegalX, 0, this.numBlocks);
-        System.arraycopy(this.bestLegalY, 0, this.tmpLegalY, 0, this.numBlocks);
+        for(int i = 0; i < this.numIOBlocks; i++) {
+            this.tmpLegalX[i] = (int) this.linearX[i];
+            this.tmpLegalY[i] = (int) this.linearY[i];
+        }
+
+        // Initialize the best solution with IO positions
+        this.bestLegalX = new int[this.numBlocks];
+        this.bestLegalY = new int[this.numBlocks];
+
+        System.arraycopy(this.tmpLegalX, 0, this.bestLegalX, 0, this.numBlocks);
+        System.arraycopy(this.tmpLegalY, 0, this.bestLegalY, 0, this.numBlocks);
     }
 
     protected abstract void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd);
@@ -104,7 +107,9 @@ abstract class Legalizer {
             }
         }
 
-        this.updateBestLegal();
+        if(this.storeBest) {
+            this.updateBestLegal();
+        }
     }
 
 
@@ -135,10 +140,10 @@ abstract class Legalizer {
     }
 
     int[] getLegalX() {
-        return this.bestLegalX;
+        return this.storeBest ? this.bestLegalX : this.tmpLegalX;
     }
     int[] getLegalY() {
-        return this.bestLegalY;
+        return this.storeBest ? this.bestLegalY : this.tmpLegalY;
     }
     int[] getAnchorsX() {
         return this.tmpLegalX;
@@ -148,7 +153,7 @@ abstract class Legalizer {
     }
 
     void updateCircuit() throws PlacementException {
-        this.updateCircuit(this.bestLegalX, this.bestLegalY);
+        this.updateCircuit(this.getLegalX(), this.getLegalY());
     }
     void updateCircuit(int[] x, int[] y) throws PlacementException {
         //Clear all previous locations
