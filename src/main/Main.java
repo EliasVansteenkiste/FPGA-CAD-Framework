@@ -1,10 +1,9 @@
 package main;
 
 import interfaces.Logger;
-import interfaces.Option.Required;
 import interfaces.Options;
+import interfaces.Options.Required;
 import interfaces.OptionsManager;
-import interfaces.Option;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,7 +11,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.regex.Pattern;
 
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
@@ -47,22 +45,20 @@ public class Main {
     private String mostRecentTimerName;
     private Circuit circuit;
 
-    private static Pattern internalNetPattern = Pattern.compile("(?<block>\\w+)(?:\\[(?<blockIndex>\\d+)\\])?\\.(?<port>\\w+)\\[(?<portIndex>\\d+)\\]->.*");
-
 
     public static void initOptionList(Options options) {
-        options.add(new Option("architecture.json", "", File.class));
-        options.add(new Option("blif file", "", File.class));
+        options.add("architecture.json", "", File.class);
+        options.add("blif file", "", File.class);
 
-        options.add(new Option("net file", "(default: based on the blif file)", File.class, Required.FALSE));
-        options.add(new Option("input place file", "if omitted the initial placement is random", File.class, Required.FALSE));
-        options.add(new Option("output place file", "(default: based on the blif file)", File.class, Required.FALSE));
+        options.add("net file", "(default: based on the blif file)", File.class, Required.FALSE);
+        options.add("input place file", "if omitted the initial placement is random", File.class, Required.FALSE);
+        options.add("output place file", "(default: based on the blif file)", File.class, Required.FALSE);
 
-        options.add(new Option("vpr architecture", "XML architecture file (default: based on the architecture.json file)", File.class, Required.FALSE));
-        options.add(new Option("vpr command", "Path to vpr executable", "./vpr"));
+        options.add("vpr architecture", "XML architecture file (default: based on the architecture.json file)", File.class, Required.FALSE);
+        options.add("vpr command", "Path to vpr executable", "./vpr");
 
-        options.add(new Option("visual", "show the placed circuit in a GUI", Boolean.FALSE));
-        options.add(new Option("random seed", "seed for randomization", new Long(1)));
+        options.add("visual", "show the placed circuit in a GUI", Boolean.FALSE);
+        options.add("random seed", "seed for randomization", new Long(1));
     }
 
 

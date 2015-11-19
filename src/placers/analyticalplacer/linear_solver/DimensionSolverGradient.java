@@ -1,10 +1,5 @@
 package placers.analyticalplacer.linear_solver;
 
-import java.util.Arrays;
-import java.util.Collections;
-
-
-
 class DimensionSolverGradient extends DimensionSolver {
 
     private final double[] coordinates;
@@ -47,7 +42,7 @@ class DimensionSolverGradient extends DimensionSolver {
         double difference = maxCoordinate - minCoordinate;
 
         // TODO: platforming this net size works a bit better than not doing it
-        // but the optimal maximal value isn't clear
+        // but the optimal maximal value isn't found yet
         double netSize = 20 * difference / (10 + difference);
         double weight = netSize == 0 ? 0 : weightMultiplier;
 

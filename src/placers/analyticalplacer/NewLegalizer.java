@@ -69,10 +69,6 @@ public class NewLegalizer extends Legalizer {
             for(int y = 1; y < this.height - 1; y += this.blockHeight) {
                 for(int blockIndex : this.blockMatrix.get(x).get(y)) {
 
-                    if(blockIndex == 3054 || blockIndex == 3051) {
-                        int d = 0;
-                    }
-
                     this.tmpLegalX[blockIndex] = x;
                     this.tmpLegalY[blockIndex] = y;
                 }
@@ -297,10 +293,6 @@ public class NewLegalizer extends Legalizer {
                 }
 
                 for(int y = coordinates[1]; y <= coordinates[3]; y += this.blockHeight) {
-                    if((x == 39 || x == 40) && y == 62) {
-                        int d = 0;
-                    }
-
                     this.blockMatrix.get(x).get(y).clear();
                 }
             }
@@ -310,9 +302,7 @@ public class NewLegalizer extends Legalizer {
         // If the area is only one tile big: place all the blocks on this tile
         } else if(smallestPossibleX && smallestPossibleY) {
             int x = coordinates[0], y = coordinates[1];
-            if((x == 39 || x == 40) && y == 62) {
-                int d = 0;
-            }
+
             this.blockMatrix.get(x).get(y).clear();
 
             for(Integer blockIndex : blockIndexes) {
@@ -336,9 +326,6 @@ public class NewLegalizer extends Legalizer {
                 }
 
                 for(int y = coordinates[1]; y <= coordinates[3]; y += this.blockHeight) {
-                    if((x == 39 || x == 40) && y == 62) {
-                        int d = 0;
-                    }
                     this.blockMatrix.get(x).get(y).clear();
 
                     double distance = Math.pow(linearX - x, 2) + Math.pow(linearY - y, 2);

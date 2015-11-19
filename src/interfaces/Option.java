@@ -1,9 +1,8 @@
 package interfaces;
 
-public class Option {
+import interfaces.Options.Required;
 
-    public enum Required {TRUE, FALSE};
-
+class Option {
 
     private String name, description;
     private Required required;
@@ -13,31 +12,31 @@ public class Option {
     private Object value;
 
 
-    public Option(String name, String description, Class<? extends Object> type, Required required) {
+    Option(String name, String description, Class<? extends Object> type, Required required) {
         this.name = name;
         this.description = description;
         this.classVar = type;
         this.required = required;
     }
-    public Option(String name, String description, Class<? extends Object> type) {
+    Option(String name, String description, Class<? extends Object> type) {
         this(name, description, type, Required.TRUE);
     }
-    public Option(String name, String description, Object defaultValue) {
+    Option(String name, String description, Object defaultValue) {
         this(name, description, defaultValue.getClass(), Required.FALSE);
         this.defaultValue = defaultValue;
     }
 
-    public Class<? extends Object> getType() {
+    Class<? extends Object> getType() {
         return this.classVar;
     }
 
-    public String getName() {
+    String getName() {
         return this.name;
     }
-    public String getDescription() {
+    String getDescription() {
         return this.description;
     }
-    public boolean isRequired() {
+    boolean isRequired() {
         return this.required == Required.TRUE;
     }
 

@@ -7,6 +7,8 @@ import java.util.Set;
 
 public class Options {
 
+    public enum Required {TRUE, FALSE};
+
     private Logger logger;
 
     private LinkedHashMap<String, Option> options = new LinkedHashMap<String, Option>();
@@ -16,10 +18,21 @@ public class Options {
         this.logger = logger;
     }
 
-    public void add(Option option) {
+    public void add(String optionName, String description, Object defaultValue) {
+        this.add(new Option(optionName, description, defaultValue));
+    }
+    public void add(String optionName, String description, Class<? extends Object> classVar) {
+        this.add(new Option(optionName, description, classVar));
+    }
+    public void add(String optionName, String description, Class<? extends Object> classVar, Required required) {
+        this.add(new Option(optionName, description, classVar, required));
+    }
+
+    private void add(Option option) {
         String optionName = option.getName();
         this.options.put(optionName, option);
 
+        // Remember the longest option length, useful for printing all options
         if(optionName.length() > this.maxNameLength) {
             this.maxNameLength = optionName.length();
         }

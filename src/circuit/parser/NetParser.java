@@ -11,8 +11,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import circuit.Circuit;
 import circuit.architecture.Architecture;
@@ -42,9 +40,6 @@ public class NetParser {
 
     private enum PortDirection {INPUT, OUTPUT};
     private PortDirection currentPortType;
-
-
-    private static Pattern internalNetPattern = Pattern.compile("(?<block>\\w+)(?:\\[(?<blockIndex>\\d+)\\])?\\.(?<port>\\w+)\\[(?<portIndex>\\d+)\\]->.*");
 
 
     public NetParser(Architecture architecture, String circuitName, File file) throws FileNotFoundException {

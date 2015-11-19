@@ -1,7 +1,6 @@
 package placers.SAPlacer;
 
 import interfaces.Logger;
-import interfaces.Option;
 import interfaces.Options;
 
 import java.util.Arrays;
@@ -23,16 +22,16 @@ import visual.PlacementVisualizer;
 public abstract class SAPlacer extends Placer {
 
     public static void initOptions(Options options) {
-        options.add(new Option("greedy", "place greedy", Boolean.FALSE));
-        options.add(new Option("detailed", "place detailed", Boolean.FALSE));
+        options.add("greedy", "place greedy", Boolean.FALSE);
+        options.add("detailed", "place detailed", Boolean.FALSE);
 
-        options.add(new Option("effort level", "multiplier for the number of swap iterations", new Double(1)));
-        options.add(new Option("temperature", "multiplier for the starting temperature", new Double(1)));
+        options.add("effort level", "multiplier for the number of swap iterations", new Double(1));
+        options.add("temperature", "multiplier for the starting temperature", new Double(1));
 
-        options.add(new Option("rlim", "starting maximum distance for a swap", new Integer(-1)));
-        options.add(new Option("max rlim", "maximum rlim for all iterations", new Integer(-1)));
+        options.add("rlim", "starting maximum distance for a swap", new Integer(-1));
+        options.add("max rlim", "maximum rlim for all iterations", new Integer(-1));
 
-        options.add(new Option("fix pins", "fix the IO pins", Boolean.TRUE));
+        options.add("fix pins", "fix the IO pins", Boolean.TRUE);
     }
 
 

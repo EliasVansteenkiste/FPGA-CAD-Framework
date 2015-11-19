@@ -1,7 +1,6 @@
 package placers.SAPlacer;
 
 import interfaces.Logger;
-import interfaces.Option;
 import interfaces.Options;
 
 import java.util.Random;
@@ -19,9 +18,9 @@ public class TD_SAPlacer extends SAPlacer {
     public static void initOptions(Options options) {
         SAPlacer.initOptions(options);
 
-        options.add(new Option("trade off", "trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5)));
-        options.add(new Option("criticality exponent", "exponent to calculate cost of critical connections", new Double(1)));
-        options.add(new Option("recalculate", "number of swap iterations before a recalculate of the timing graph", new Integer(50000)));
+        options.add("trade off", "trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5));
+        options.add("criticality exponent", "exponent to calculate cost of critical connections", new Double(1));
+        options.add("recalculate", "number of swap iterations before a recalculate of the timing graph", new Integer(50000));
     }
 
     private EfficientBoundingBoxNetCC calculator;

@@ -44,7 +44,7 @@ public class WLD_CostCalculator extends CostCalculator {
                 }
             }
 
-            cost += ((maxX - minX + 1) + (maxY - minY + 1)) * AnalyticalPlacer.getWeight(numNetBlocks);
+            cost += ((maxX - minX + 1) + (maxY - minY + 1)) * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
         }
 
         return cost / 100;

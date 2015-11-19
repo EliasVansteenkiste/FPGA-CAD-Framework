@@ -1,6 +1,6 @@
 package placers.analyticalplacer.linear_solver;
 
-import placers.analyticalplacer.AnalyticalPlacer;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer;
 
 
 public class LinearSolverComplete extends LinearSolver {
@@ -28,7 +28,7 @@ public class LinearSolverComplete extends LinearSolver {
     public void processNet(int[] blockIndexes) {
 
         int numNetBlocks = blockIndexes.length;
-        double weightMultiplier = AnalyticalPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
+        double weightMultiplier = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
 
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {

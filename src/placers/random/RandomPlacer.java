@@ -1,7 +1,6 @@
 package placers.random;
 
 import interfaces.Logger;
-import interfaces.Option;
 import interfaces.Options;
 
 import java.util.Arrays;
@@ -26,7 +25,7 @@ import visual.PlacementVisualizer;
 public class RandomPlacer extends Placer {
 
     public static void initOptions(Options options) {
-        options.add(new Option("categories", "comma-separated list of block categories that must be placed", ""));
+        options.add("categories", "comma-separated list of block categories that must be placed", "");
     }
 
     private final Set<BlockCategory> categories = new HashSet<>();
