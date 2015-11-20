@@ -48,6 +48,12 @@ public class PortTypeData implements Serializable {
         this.portStarts.add(portStart);
     }
 
+
+    void checkPorts(int blockTypeIndex, Map<String, Integer> inputs, Map<String, Integer> outputs) {
+
+    }
+
+
     void setNumInputPorts(int blockTypeIndex, int numInputPorts) {
         int numPorts = this.ports.size();
         for(int i = 0; i <= blockTypeIndex - numPorts; i++) {
@@ -143,6 +149,10 @@ public class PortTypeData implements Serializable {
 
 
     void setSetupTime(int blockTypeIndex, int portTypeIndex, double delay) {
+        // This method can be used both to set the setup time ("T_setup" in architecture files)
+        // and clock to port time ("T_clock_to_Q")
+        // Which of the two it is, depends on whether the port is an input or output
+
         int id = this.uniqueId(blockTypeIndex, portTypeIndex);
         this.delays.get(id).set(id, delay);
     }
@@ -197,7 +207,7 @@ public class PortTypeData implements Serializable {
     }
 
 
-    private int uniqueId(int blockTypeIndex, int portTypeIndex) {
+    int uniqueId(int blockTypeIndex, int portTypeIndex) {
         return blockTypeIndex * this.maxPortIndex + portTypeIndex;
     }
 }

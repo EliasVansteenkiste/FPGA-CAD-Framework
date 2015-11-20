@@ -1,6 +1,5 @@
 {
     "io_capacity": 8,
-    "wire_delay": 100e-12,
 
     "blocks": {
         "io": {

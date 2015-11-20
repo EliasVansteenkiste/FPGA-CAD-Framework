@@ -1,4 +1,4 @@
-package circuit.parser;
+package circuit.io;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -12,18 +12,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.Architecture;
 import circuit.architecture.ArchitectureCacher;
+import circuit.architecture.parseException;
 import circuit.exceptions.InvalidFileFormatException;
 import circuit.exceptions.PlacementException;
-import circuit.parser.BlockNotFoundException;
-import circuit.parser.NetParser;
-import circuit.parser.PlaceDumper;
-import circuit.parser.PlaceParser;
+import circuit.io.BlockNotFoundException;
+import circuit.io.NetParser;
+import circuit.io.PlaceDumper;
+import circuit.io.PlaceParser;
 
 public class Main {
 
@@ -31,7 +36,7 @@ public class Main {
 
     private String circuitName;
     private File blifFile, netFile, inputPlaceFile, outputPlaceFile;
-    private File architectureFile, architectureFileVPR;
+    private File architectureFile;
     private String vprCommand;
 
     private boolean visual;
@@ -47,14 +52,13 @@ public class Main {
 
 
     public static void initOptionList(Options options) {
-        options.add("architecture.json", "", File.class);
+        options.add("architecture.xml", "", File.class);
         options.add("blif file", "", File.class);
 
         options.add("net file", "(default: based on the blif file)", File.class, Required.FALSE);
         options.add("input place file", "if omitted the initial placement is random", File.class, Required.FALSE);
         options.add("output place file", "(default: based on the blif file)", File.class, Required.FALSE);
 
-        options.add("vpr architecture", "XML architecture file (default: based on the architecture.json file)", File.class, Required.FALSE);
         options.add("vpr command", "Path to vpr executable", "./vpr");
 
         options.add("visual", "show the placed circuit in a GUI", Boolean.FALSE);
@@ -89,12 +93,7 @@ public class Main {
             this.outputPlaceFile = new File(inputFolder, this.circuitName + ".place");
         }
 
-        this.architectureFile = options.getFile("architecture.json");
-        this.architectureFileVPR = options.getFile("vpr architecture");
-        if(this.architectureFileVPR == null) {
-            String path = this.architectureFile.getAbsolutePath().replaceFirst("(.+)\\.json", "$1.xml");
-            this.architectureFileVPR = new File(path);
-        }
+        this.architectureFile = options.getFile("architecture.xml");
 
         this.vprCommand = options.getString("vpr command");
         this.visual = options.getBoolean("visual");
@@ -106,7 +105,6 @@ public class Main {
         this.checkFileExistence("Input place file", this.inputPlaceFile);
 
         this.checkFileExistence("Architecture file", this.architectureFile);
-        this.checkFileExistence("VPR architecture file", this.architectureFileVPR);
     }
 
 
@@ -173,7 +171,7 @@ public class Main {
                     this.circuit,
                     this.netFile,
                     this.outputPlaceFile,
-                    this.architectureFileVPR);
+                    this.architectureFile);
 
             try {
                 placeDumper.dump();
@@ -201,14 +199,13 @@ public class Main {
             architecture = new Architecture(
                     this.circuitName,
                     this.architectureFile,
-                    this.architectureFileVPR,
                     this.vprCommand,
                     this.blifFile,
                     this.netFile);
 
             try {
                 architecture.parse();
-            } catch(IOException | InvalidFileFormatException | InterruptedException error) {
+            } catch(IOException | InvalidFileFormatException | InterruptedException | parseException | ParserConfigurationException | SAXException error) {
                 this.logger.raise("Failed to parse architecture file or delay tables", error);
             }
 

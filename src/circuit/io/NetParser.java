@@ -1,4 +1,4 @@
-package circuit.parser;
+package circuit.io;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -220,6 +220,12 @@ public class NetParser {
         // Ignore the top-level block
         if(type.equals("FPGA_packed_netlist")) {
             return;
+
+        // Luts are not defined in the arch file, and don't seem to
+        // be useful for anything really. We just ignore them.
+        } else if(type.equals("lut")) {
+            this.blockStack.push(null);
+            return;
         }
 
 
@@ -285,6 +291,12 @@ public class NetParser {
             // Remove this block and its outputs from the stacks
             AbstractBlock block = this.blockStack.pop();
 
+            // If the block equals null, it means it is a lut block
+            // We ignore these
+            if(block == null) {
+                return;
+            }
+
             Map<String, String> outputs = this.outputsStack.pop();
             processPortsHashMap(block, outputs);
 
@@ -315,7 +327,7 @@ public class NetParser {
 
 
     private void addNets(List<AbstractPin> sinkPins, String netsString) {
-        //TODO: no regex
+        //TODO: no regex?
         String[] nets = netsString.trim().split("\\s+");
 
         for(int sinkPinIndex = 0; sinkPinIndex < nets.length; sinkPinIndex++) {
@@ -334,33 +346,6 @@ public class NetParser {
 
         AbstractBlock sinkBlock = sinkPin.getOwner();
 
-
-        /*Matcher matcher = internalNetPattern.matcher(net);
-        boolean matches = matcher.matches();
-
-
-        if(matches) {
-            String sourceBlockTypeString = matcher.group("block");
-            BlockType sourceBlockType = new BlockType(sourceBlockTypeString);
-
-            String sourcePortName = matcher.group("port");
-            PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
-
-
-            String sourceBlockIndexString = matcher.group("blockIndex");
-            int sourcePinIndex = Integer.parseInt(matcher.group("portIndex"));
-
-
-            // The hardest part: determine the source block
-            AbstractBlock sourceBlock;
-
-            // The net is incident to an input port. It has an input port of the parent block as source.
-            if(sourceBlockIndexString == null) {
-                sourceBlock = ((IntermediateBlock) sinkBlock).getParent();
-
-
-            } else {
-                int sourceBlockIndex = Integer.parseInt(sourceBlockIndexString);*/
         int separator = net.lastIndexOf("->");
 
         if(separator != -1) {

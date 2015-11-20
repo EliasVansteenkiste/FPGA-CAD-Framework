@@ -1,4 +1,4 @@
-package circuit.parser;
+package circuit.io;
 
 import java.io.BufferedReader;
 import java.io.File;

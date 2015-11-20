@@ -35,15 +35,15 @@ class CLIOptions extends OptionsManager {
         List<Pair<String, Integer>> placersAndArgIndexes = this.buildPlacerList();
 
         Options mainOptions = this.getMainOptions();
-        this.parseArguments(0, placersAndArgIndexes.get(0).getValue(), mainOptions);
+        this.parseArguments(0, placersAndArgIndexes.get(0).getSecond(), mainOptions);
 
         int numPlacers = placersAndArgIndexes.size() - 1;
         for(int placerIndex = 0; placerIndex < numPlacers; placerIndex++) {
-            String placerName = placersAndArgIndexes.get(placerIndex + 1).getKey();
+            String placerName = placersAndArgIndexes.get(placerIndex + 1).getFirst();
             Options placerOptions = this.getDefaultOptions(placerName);
 
-            int argIndexStart = placersAndArgIndexes.get(placerIndex).getValue() + 2;
-            int argIndexEnd = placersAndArgIndexes.get(placerIndex + 1).getValue();
+            int argIndexStart = placersAndArgIndexes.get(placerIndex).getSecond() + 2;
+            int argIndexEnd = placersAndArgIndexes.get(placerIndex + 1).getSecond();
 
             this.parseArguments(
                     argIndexStart,

@@ -1,4 +1,4 @@
-package circuit.parser;
+package circuit.io;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -11,9 +11,6 @@ import java.util.Map;
 import circuit.Circuit;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-
-
-
 
 public class PlaceDumper {
 

@@ -1,32 +1,32 @@
 package util;
 
-public class Pair<K extends Comparable<K>, V> implements Comparable<Pair<K, V>> {
+public class Pair<F extends Comparable<F>, S> implements Comparable<Pair<F, S>> {
 
-    private K key;
-    private V value;
+    private F first;
+    private S second;
 
-    public Pair(K key, V value) {
-        this.key = key;
-        this.value = value;
+    public Pair(F first, S second) {
+        this.first = first;
+        this.second = second;
     }
 
-    public void setKey(K key) {
-        this.key = key;
+    public void setFirst(F first) {
+        this.first = first;
     }
-    public void setValue(V value) {
-        this.value = value;
+    public void setSecond(S second) {
+        this.second = second;
     }
 
-    public K getKey() {
-        return this.key;
+    public F getFirst() {
+        return this.first;
     }
-    public V getValue() {
-        return this.value;
+    public S getSecond() {
+        return this.second;
     }
 
 
     @Override
-    public int compareTo(Pair<K, V> otherPair) {
-        return this.key.compareTo(otherPair.key);
+    public int compareTo(Pair<F, S> otherPair) {
+        return this.first.compareTo(otherPair.first);
     }
 }

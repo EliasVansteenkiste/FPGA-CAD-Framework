@@ -4,6 +4,6 @@ public enum BlockCategory {
     IO,
     CLB,
     HARDBLOCK,
-    LOCAL,
+    INTERMEDIATE,
     LEAF
 }

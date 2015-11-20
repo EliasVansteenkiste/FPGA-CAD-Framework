@@ -3,7 +3,7 @@ package circuit.architecture;
 import java.io.Serializable;
 
 
-public class PortType implements Serializable {
+public class PortType implements Serializable, Comparable<PortType> {
 
     private static final long serialVersionUID = 8336333602345751378L;
 
@@ -61,5 +61,20 @@ public class PortType implements Serializable {
     }
     public boolean isInput() {
         return this.portTypeIndex < PortTypeData.getInstance().getNumInputPorts(this.blockTypeIndex);
+    }
+
+
+    private int uniqueId() {
+        return PortTypeData.getInstance().uniqueId(this.blockTypeIndex, this.portTypeIndex);
+    }
+
+    @Override
+    public int compareTo(PortType otherPortType) {
+        return Integer.compare(this.uniqueId(), otherPortType.uniqueId());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s.%s", new BlockType(this.blockTypeIndex).toString(), this.getName());
     }
 }

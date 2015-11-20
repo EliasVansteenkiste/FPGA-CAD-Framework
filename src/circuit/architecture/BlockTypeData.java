@@ -55,12 +55,17 @@ class BlockTypeData implements Serializable {
     }
 
 
-    void addType(String typeName, String categoryName, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
+    boolean addType(String typeName, BlockCategory category, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
+        // Return false if the block type already exists
+
+        if(this.types.get(typeName) != null) {
+            return false;
+        }
+
         int typeIndex = this.typeNames.size();
         this.typeNames.add(typeName);
         this.types.put(typeName, typeIndex);
 
-        BlockCategory category = this.getCategoryFromString(categoryName);
         this.categories.add(category);
         this.blockTypesPerCategory.get(category.ordinal()).add(new BlockType(typeName));
 
@@ -77,33 +82,16 @@ class BlockTypeData implements Serializable {
         PortTypeData.getInstance().setNumInputPorts(typeIndex, inputs.size());
         PortTypeData.getInstance().addPorts(typeIndex, inputs);
         PortTypeData.getInstance().addPorts(typeIndex, outputs);
-    }
 
-    private BlockCategory getCategoryFromString(String categoryName) {
-        switch(categoryName) {
-        case "io":
-            return BlockCategory.IO;
-
-        case "clb":
-            return BlockCategory.CLB;
-
-        case "hardblock":
-            return BlockCategory.HARDBLOCK;
-
-        case "local":
-            return BlockCategory.LOCAL;
-
-        case "leaf":
-            return BlockCategory.LEAF;
-
-        default:
-            return null;
-        }
+        return true;
     }
 
 
     void addMode(String typeName, String modeName, Map<String, Integer> children) {
         int typeIndex = this.types.get(typeName);
+
+        // Make sure this mode doesn't exist yet
+        assert(this.modes.get(typeIndex).get(modeName) == null);
 
         int modeIndex = this.modeNames.get(typeIndex).size();
         this.modeNames.get(typeIndex).add(modeName);
@@ -183,7 +171,7 @@ class BlockTypeData implements Serializable {
     }
     boolean isGlobal(int typeIndex) {
         BlockCategory category = this.getCategory(typeIndex);
-        return category != BlockCategory.LOCAL && category != BlockCategory.LEAF;
+        return category != BlockCategory.INTERMEDIATE && category != BlockCategory.LEAF;
     }
     boolean isLeaf(int typeIndex) {
         BlockCategory category = this.getCategory(typeIndex);
