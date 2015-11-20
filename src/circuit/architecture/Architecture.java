@@ -398,6 +398,9 @@ public class Architecture implements Serializable {
 
             double delay = Double.parseDouble(delayConstantElement.getAttribute("max"));
 
+            // ASM: the element with blif_model .input is located directly under the
+            // global input block type
+            // PortTypeData uses this assumption to set the clock setup time
             this.delays.add(new Triplet<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
         }
     }

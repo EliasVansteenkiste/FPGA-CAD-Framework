@@ -49,11 +49,6 @@ public class PortTypeData implements Serializable {
     }
 
 
-    void checkPorts(int blockTypeIndex, Map<String, Integer> inputs, Map<String, Integer> outputs) {
-
-    }
-
-
     void setNumInputPorts(int blockTypeIndex, int numInputPorts) {
         int numPorts = this.ports.size();
         for(int i = 0; i <= blockTypeIndex - numPorts; i++) {
@@ -176,6 +171,11 @@ public class PortTypeData implements Serializable {
         int sinkId = this.uniqueId(sinkBlockTypeIndex, sinkPortTypeIndex);
 
         this.delays.get(sourceId).set(sinkId, delay);
+
+        BlockType sinkBlockType = new BlockType(sinkBlockTypeIndex);
+        if(sinkBlockType.getCategory() == BlockCategory.IO) {
+            this.setClockSetupTime(delay);
+        }
     }
     public double getDelay(
             int sourceBlockTypeIndex, int sourcePortTypeIndex,
