@@ -18,7 +18,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     public static void initOptions(Options options) {
         options.add("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.9));
         options.add("anchor weight", "starting anchor weight", new Double(0.1));
-        options.add("anchor weight multiplier", "multiplier to increase the anchor weight in each iteration", new Double(0.2));
+        options.add("anchor weight multiplier", "multiplier to increase the anchor weight in each iteration", new Double(1.1));
     }
 
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
@@ -52,7 +52,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         int innerIterations = firstSolve ? 5 : 1;
         for(int i = 0; i < innerIterations; i++) {
-            LinearSolver solver = new LinearSolverComplete(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, AnalyticalPlacer.EPSILON);
+            LinearSolver solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, AnalyticalPlacer.EPSILON);
             this.solveLinearIteration(solver, !firstSolve);
         }
     }

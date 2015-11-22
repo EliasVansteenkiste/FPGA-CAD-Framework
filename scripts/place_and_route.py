@@ -15,6 +15,100 @@ def silentremove(filename):
             raise # re-raise exception if a different error occured
 
 
+class NewCaller:
+
+    stats_metrics = ['Runtime', 'BB cost', 'Max delay']
+    stats_pattern = r'.*time\s+|\s+(?P<runtime>[0-9.e+-]+).*BB cost\s+|\s+(?P<bb_cost>[0-9.e+-]+).*max delay\s+|\s+(?P<max_delay>[0-9.e+-]+)'
+
+    def __init(self, base_folder, circuits=None):
+        self.base_folder = base_folder
+        if not self.base_folder.endswith('/'):
+            self.base_folder ++ '/'
+
+        if len(circuits) is None:
+            this.circuits = circuits
+
+        else:
+            this.circuits = glob.glob(base_folder + '*.net')
+
+
+    def call(self, command):
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Return output
+        out, err = p.communicate()
+        return out.decode('utf-8'), err.decode('utf-8')
+
+
+    def call_all_circuits(self, command):
+
+        stats_pattern = re.compile(self.stats_regex, re.DOTALL)
+        self.results = {}
+
+        for circuit in this.circuits:
+            circuit_command = command.format(circuit)
+
+            out, err = self.call(command)
+            self.post_process_circuit(circuit)
+
+            if err:
+                print('There was a problem with circuit "{0}":'.format(circuit))
+                print(err)
+                sys.exit(1)
+
+            # Get and print statistics
+            match = stats_pattern.search(out)
+
+            if match is None:
+                print(out)
+                print("Failed to match pattern: " + self.stats_regex)
+                sys.exit(1)
+
+            result = {}
+            for metric in self.metrics:
+                group_name = metric.lower().replace(' ', '_')
+                result[metric] = match.group(group_name)
+
+            results[circuit] = result
+
+
+    def save_results(self, filename):
+        _file = open(output_file, 'w')
+        csv_writer = csv.writer(_file)
+
+        for circuit in sorted(self.results):
+            result = self.results[circuit]
+
+            row = [circuit]
+            for column in self.stats_columns:
+                group_name = column.lower().replace(' ', '_')
+                row.append(match.group(group_name))
+
+            csv_writer.writerow(row)
+            _file.flush()
+
+        _file.close()
+
+
+    def get_geomeans(self):
+        geomeans = []
+        for metric in self.metrics:
+            geomeans.append(self.get_geomean(metric))
+
+    def get_geomean(self, metric, circuits=None):
+        if circuits is None:
+            circuits = self.circuits
+
+        metric_results = []
+        for circuit in circuits:
+            metric_results.append(self.results[circuit][metric])
+
+        return math.geomean(metric_results)
+
+
+
+
+
 class Caller:
     circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
 

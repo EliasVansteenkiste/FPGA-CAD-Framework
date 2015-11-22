@@ -13,7 +13,8 @@ abstract class LinearSolver {
         this.numIOBlocks = numIOBlocks;
     }
 
-    abstract void processNet(int[] blockIndexes);
+    abstract void processNetWLD(int[] blockIndexes);
+    //abstract void processNetTD(int[] blockIndexes);
     abstract void addPseudoConnections(int[] legalX, int[] legalY);
     abstract void solve();
 

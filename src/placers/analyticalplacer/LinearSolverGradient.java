@@ -18,7 +18,7 @@ class LinearSolverGradient extends LinearSolver {
     }
 
     @Override
-    void processNet(int[] blockIndexes) {
+    void processNetWLD(int[] blockIndexes) {
         int numNetBlocks = blockIndexes.length;
 
         double weightMultiplier = AnalyticalAndGradientPlacer.getWeight(numNetBlocks);

@@ -2,15 +2,15 @@ package placers.analyticalplacer;
 
 
 
-class LinearSolverComplete extends LinearSolver {
+class LinearSolverAnalytical extends LinearSolver {
 
-    private DimensionSolverComplete solverX, solverY;
+    private DimensionSolverAnalytical solverX, solverY;
 
-    LinearSolverComplete(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double epsilon) {
+    LinearSolverAnalytical(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double epsilon) {
         super(coordinatesX, coordinatesY, numIOBlocks);
 
-        this.solverX = new DimensionSolverComplete(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
-        this.solverY = new DimensionSolverComplete(coordinatesY, numIOBlocks, pseudoWeight, epsilon);
+        this.solverX = new DimensionSolverAnalytical(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
+        this.solverY = new DimensionSolverAnalytical(coordinatesY, numIOBlocks, pseudoWeight, epsilon);
     }
 
     @Override
@@ -24,7 +24,7 @@ class LinearSolverComplete extends LinearSolver {
     }
 
     @Override
-    void processNet(int[] blockIndexes) {
+    void processNetWLD(int[] blockIndexes) {
 
         int numNetBlocks = blockIndexes.length;
         double weightMultiplier = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);

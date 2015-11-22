@@ -4,7 +4,7 @@ import mathtools.CGSolver;
 import mathtools.Csr;
 
 
-class DimensionSolverComplete extends DimensionSolver {
+class DimensionSolverAnalytical extends DimensionSolver {
 
     private final double[] coordinates;
     private final Csr matrix;
@@ -15,7 +15,7 @@ class DimensionSolverComplete extends DimensionSolver {
     private final double epsilon;
 
 
-    DimensionSolverComplete(double[] coordinates, int numIOBlocks, double pseudoWeight, double epsilon) {
+    DimensionSolverAnalytical(double[] coordinates, int numIOBlocks, double pseudoWeight, double epsilon) {
         this.coordinates = coordinates;
         this.numIOBlocks = numIOBlocks;
 

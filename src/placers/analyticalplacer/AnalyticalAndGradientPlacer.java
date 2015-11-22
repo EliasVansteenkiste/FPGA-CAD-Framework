@@ -213,7 +213,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     private void processNets(LinearSolver solver) {
         for(int[] net : this.nets) {
-            solver.processNet(net);
+            solver.processNetWLD(net);
             // TODO: add a solver.processNetTimingDriven(net), or something like that
         }
     }
