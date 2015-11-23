@@ -52,6 +52,7 @@ class Caller:
         self.command = command
 
         for circuit in self.circuits:
+            print('  ' + circuit)
             out, err = self.call_circuit(command, circuit)
 
             if err:
@@ -167,6 +168,8 @@ class ParameterSweeper:
 
         self.callers = []
         for option_set in self.option_sets:
+            print('Options: ' + ' '.join(option_set))
+
             options = fixed_options + option_set
             caller = PlaceCaller(self.architecture, self.circuits_folder, self.circuits)
             caller.place_all(options)
