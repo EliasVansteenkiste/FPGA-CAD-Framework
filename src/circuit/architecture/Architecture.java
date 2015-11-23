@@ -414,7 +414,7 @@ public class Architecture implements Serializable {
             break;
 
         default:
-            System.out.println("Implicit children unknown: " + blockElement.getAttribute("class"));
+            System.out.println("Failed to add implicit children for block type: " + blockElement.getAttribute("class"));
             System.exit(1);
         }
     }
@@ -426,7 +426,7 @@ public class Architecture implements Serializable {
         Map<String, Integer> outputPorts = this.getPorts(blockElement, "output");
         String lutName = blockElement.getAttribute("name") + ".lut";
 
-        BlockTypeData.getInstance().addType(lutName, BlockCategory.LEAF, 1, 1, 1, true, inputPorts, outputPorts);
+        BlockTypeData.getInstance().addType(lutName, BlockCategory.LEAF, 1, 1, 1, false, inputPorts, outputPorts);
         BlockTypeData.getInstance().addMode(lutName, "", new HashMap<String, Integer>());
 
         // Process delays
