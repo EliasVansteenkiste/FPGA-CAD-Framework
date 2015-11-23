@@ -1,1 +1,1 @@
-javac -d bin -cp "src" src/interfaces/CLI.java
+find src -type f -name "*.java" -print | xargs javac -d bin
