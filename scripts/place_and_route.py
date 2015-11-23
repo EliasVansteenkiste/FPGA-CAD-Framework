@@ -3,6 +3,7 @@ import subprocess
 import errno
 from scipy import stats
 import copy
+import itertools
 
 import re
 import csv
@@ -70,27 +71,25 @@ class Caller:
 
 
     def save_results(self, filename):
+        rows = self.get_results()
+        rows.append([])
+        rows.append(['geomeans'] + self.get_geomeans())
+
         _file = open(filename, 'w')
         csv_writer = csv.writer(_file)
-
-        results = self.get_results()
-        results.append([])
-        results.append(self.get_geomeans())
-
-        csv_writer.writerows(results)
-
+        csv_writer.writerows(rows)
         _file.close()
 
 
-    def get_results(self):
-        results = []
+    def get_command(self):
+        return ' '.join(self.command)
 
-        # Print the header
-        num_metrics = len(self.metrics)
-        row = [''] * (1 + num_metrics)
-        row.append(' '.join(self.command))
-        results.append(row)
-        results.append(['benchmark'] + self.metrics)
+    def get_metrics(self):
+        return self.metrics
+
+
+    def get_results(self):
+        results = [['benchmark'] + self.metrics + [self.get_command()]]
 
         # Print the results for each circuit
         for circuit in sorted(self.results):
@@ -106,11 +105,7 @@ class Caller:
 
 
     def get_geomeans(self):
-        geomeans = ['geomeans']
-        for metric in self.metrics:
-            geomeans.append(self.get_geomean(metric))
-
-        return geomeans
+        return [self.get_geomean(metric) for metric in self.metrics]
 
     def get_geomean(self, metric, circuits=None):
         if circuits is None:
@@ -130,7 +125,7 @@ class PlaceCaller(Caller):
     stats_regex = r'.*time\s+\|\s+(?P<runtime>[0-9.e+-]+).*BB cost\s+\|\s+(?P<bb_cost>[0-9.e+-]+).*max delay\s+\|\s+(?P<max_delay>[0-9.e+-]+)'
 
     def __init__(self, architecture, circuits_folder, circuits):
-        super().__init__(circuits)
+        Caller.__init__(self, circuits)
 
         self.architecture = architecture
         self.circuit = os.path.join(circuits_folder, '{circuit}.blif')
@@ -155,3 +150,56 @@ class PlaceCaller(Caller):
         ] + options
 
 
+class ParameterSweeper:
+
+    def __init__(self, architecture, circuits_folder, circuits):
+        self.architecture = architecture
+        self.circuits_folder = circuits_folder
+        self.circuits = circuits
+
+    def sweep(self, fixed_options, variable_options):
+        self.build_option_sets(variable_options)
+
+        self.callers = []
+        for option_set in self.option_sets:
+            options = fixed_options + option_set
+            caller = PlaceCaller(self.architecture, self.circuits_folder, self.circuits)
+            caller.place_all(options)
+            callers.append(caller)
+
+
+    def save_results(self, filename):
+        rows = [[''] + self.callers[0].get_metrics()]
+        for i in range(len(self.callers)):
+            row = []
+            row.append(' '.join(self.option_sets[i]))
+            row.append(self.callers[i].get_geomeans())
+            rows.append(row)
+
+        rows += [[], []]
+
+        for caller in self.callers:
+            rows += caller.get_results()
+            rows.append([])
+
+        _file = open(filename, 'w')
+        csv_writer = csv.writer(_file)
+        csv_writer.writerows(rows)
+        _file.close()
+
+
+    def build_option_sets(self, option_ranges):
+        self.option_sets = []
+
+        option_names = option_ranges.keys()
+        option_values = itertools.product(*option_ranges.values())
+
+        self.option_sets = []
+        for option_value in option_values:
+            option_set = []
+            for i in range(len(option_names)):
+                option_set += [option_names[i], str(option_value[i])]
+
+            self.option_sets.append(option_set)
+
+        print(self.option_sets)
