@@ -1,7 +1,7 @@
 import subprocess
 
 import errno
-from scipy import stats
+import numpy
 import copy
 import itertools
 
@@ -20,6 +20,9 @@ def silentremove(filename):
     except OSError as e:
         if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
             raise # re-raise exception if a different error occured
+
+def geomean(values):
+    return pow(numpy.prod(values), 1.0 / len(values))
 
 
 class Caller:
@@ -115,7 +118,7 @@ class Caller:
         for circuit in circuits:
             metric_results.append(self.results[circuit][metric])
 
-        return stats.gmean(metric_results)
+        return geomean(metric_results)
 
 
 
