@@ -80,10 +80,12 @@ public class Logger {
     }
 
     public void println(Stream stream, String message) {
-        this.print(stream, message + "\n");
+        PrintWriter writer = this.getWriter(stream);
+        writer.println(message);
+        writer.flush();
     }
     public void println(Stream stream) {
-        this.print(stream, "\n");
+        this.println(stream, "");
     }
     public void printf(Stream stream, String format, Object... args) {
         String formattedMessage = String.format(format, args);

@@ -191,14 +191,16 @@ class HeapLegalizer extends Legalizer {
 
         // Grow from the center coordinate(s)
         for(int rowIndex = rowStartIndex; rowIndex <= rowEndIndex; rowIndex++) {
+            int row = rows.get(rowIndex);
+
             for(int columnIndex = columnStartIndex; columnIndex <= columnEndIndex; columnIndex++) {
                 int column = columns.get(columnIndex);
-                int row = rows.get(rowIndex);
+
                 this.tryNewArea(areas, column, row);
             }
         }
 
-        while(columnStartIndex > 1 && rowStartIndex > 1) {
+        while(columnStartIndex > 1 || rowStartIndex > 1) {
             // Run over the two closest columns
             if(centerX - columns.get(columnStartIndex - 1) <= centerY - rows.get(rowStartIndex - 1)) {
                 columnStartIndex--;

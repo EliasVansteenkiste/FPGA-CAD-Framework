@@ -16,8 +16,7 @@ import circuit.architecture.BlockCategory;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-import circuit.exceptions.FullSiteException;
-import circuit.exceptions.PlacedBlockException;
+import circuit.exceptions.PlacementException;
 
 import placers.Placer;
 import visual.PlacementVisualizer;
@@ -54,7 +53,7 @@ public class RandomPlacer extends Placer {
     }
 
     @Override
-    public void place() {
+    public void place() throws PlacementException {
         List<BlockType> blockTypes = this.circuit.getGlobalBlockTypes();
         for(BlockType blockType : blockTypes) {
 
@@ -75,11 +74,7 @@ public class RandomPlacer extends Placer {
                 AbstractSite site = sites.get(siteIndex);
                 GlobalBlock block = (GlobalBlock) abstractBlock;
 
-                try {
-                    block.setSite(site);
-                } catch(PlacedBlockException | FullSiteException error) {
-                    this.logger.raise(error);
-                }
+                block.setSite(site);
 
                 siteIndex++;
             }

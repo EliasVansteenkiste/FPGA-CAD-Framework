@@ -10,10 +10,7 @@ import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-import circuit.exceptions.FullSiteException;
-import circuit.exceptions.InvalidBlockException;
-import circuit.exceptions.PlacedBlockException;
-import circuit.exceptions.UnplacedBlockException;
+import circuit.exceptions.PlacementException;
 
 
 import placers.Placer;
@@ -99,7 +96,7 @@ abstract class SAPlacer extends Placer {
 
 
     @Override
-    public void place() {
+    public void place() throws PlacementException {
         this.initializePlace();
 
         if(this.greedy) {
@@ -132,7 +129,7 @@ abstract class SAPlacer extends Placer {
     }
 
 
-    private void calculateInitialTemperature() {
+    private void calculateInitialTemperature() throws PlacementException {
         if(this.detailed) {
             this.temperature = this.calculateInitialTemperatureDetailed();
         } else {
@@ -140,14 +137,14 @@ abstract class SAPlacer extends Placer {
         }
     }
 
-    private double calculateInitialTemperatureGlobal() {
+    private double calculateInitialTemperatureGlobal() throws PlacementException {
         int numSamples = this.circuit.getNumGlobalBlocks();
         double stdDev = this.doSwapIteration(numSamples, false);
 
         return this.temperatureMultiplier * this.temperatureMultiplierGlobalPlacement * stdDev;
     }
 
-    private double calculateInitialTemperatureDetailed() {
+    private double calculateInitialTemperatureDetailed() throws PlacementException {
         // Use the method described in "Temperature Measurement and
         // Equilibrium Dynamics of Simulated Annealing Placements"
 
@@ -219,11 +216,11 @@ abstract class SAPlacer extends Placer {
 
 
 
-    private int doSwapIteration() {
+    private int doSwapIteration() throws PlacementException {
         return (int) this.doSwapIteration(this.movesPerTemperature, true);
     }
 
-    private double doSwapIteration(int moves, boolean pushThrough) {
+    private double doSwapIteration(int moves, boolean pushThrough) throws PlacementException {
 
         this.initializeSwapIteration();
 
@@ -249,11 +246,7 @@ abstract class SAPlacer extends Placer {
                 if(pushThrough) {
                     if(deltaCost <= 0 || (this.greedy == false && this.random.nextDouble() < Math.exp(-deltaCost / this.temperature))) {
 
-                        try {
-                            swap.apply();
-                        } catch(UnplacedBlockException | InvalidBlockException | PlacedBlockException | FullSiteException error) {
-                            this.logger.raise(error);
-                        }
+                        swap.apply();
                         numSwaps++;
 
                         this.pushThrough(i);

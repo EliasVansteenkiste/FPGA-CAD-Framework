@@ -154,6 +154,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             // Solve linear
             this.solveLinear(iteration);
 
+            if(iteration == 33) {
+                int d = 0;
+            }
+
             try {
                 this.legalizer.legalize(maxUtilization);
             } catch(PlacementException error) {

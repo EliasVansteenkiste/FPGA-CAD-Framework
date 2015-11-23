@@ -168,7 +168,7 @@ class CLIOptions extends OptionsManager {
         Stream stream = Stream.ERR;
 
         String argValue = this.args.get(argIndex);
-        this.logger.printf(stream, "Incorrect usage of the option \"%s\" at position %d\n\n", argValue, argIndex);
+        this.logger.printf(stream, "Incorrect usage of the option \"%s\" at position %d%n%n", argValue, argIndex);
 
         this.printHelp(stream);
 
@@ -182,11 +182,10 @@ class CLIOptions extends OptionsManager {
         this.logger.println(stream, " [general_options] [--placer placer_name1 [placer_options] [--placer placer_name2 [placer_options] [...]]]");
         this.logger.println(stream);
 
-        this.logger.println(stream,
-                "Attention: the order of arguments matters!\n"
-                + "The --placer option can be specified zero, one or multipler times.\n"
-                + "The chosen placers will be called in the provided order and with the specified options.\n"
-                + "Only the final placement is written to the --output_place_file.");
+        this.logger.println(stream, "Attention: the order of arguments matters!");
+        this.logger.println(stream, "The --placer option can be specified zero, one or multipler times.");
+        this.logger.println(stream, "The chosen placers will be called in the provided order and with the specified options.");
+        this.logger.println(stream, "Only the final placement is written to the --output_place_file.");
         this.logger.println(stream);
 
         this.logger.println(stream, "General options:");
@@ -214,19 +213,16 @@ class CLIOptions extends OptionsManager {
     private void printOptionalArguments(Stream stream, Options options) {
         int maxLength = options.getMaxNameLength();
 
-        String format = String.format("  --%%-%ds   %%s", maxLength);
+        String format = String.format("  --%%-%ds   %%s%%s%n", maxLength);
         for(String optionName : options.keySet()) {
             if(!options.isRequired(optionName)) {
                 String formattedName = optionName.replace(" ", "_");
                 String optionDescription = options.getDescription(optionName);
 
-                this.logger.printf(stream, format, formattedName, optionDescription);
-
                 Object defaultValue = options.get(optionName);
-                if(defaultValue != null) {
-                    this.logger.print(stream, " (default: " + defaultValue.toString() + ")");
-                }
-                this.logger.println();
+                String defaultString = defaultValue == null ? "" : String.format(" (default: %s)", defaultValue.toString());
+
+                this.logger.printf(stream, format, formattedName, optionDescription, defaultString);
             }
         }
 

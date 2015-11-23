@@ -4,10 +4,7 @@ import java.util.Random;
 
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-import circuit.exceptions.FullSiteException;
-import circuit.exceptions.InvalidBlockException;
-import circuit.exceptions.PlacedBlockException;
-import circuit.exceptions.UnplacedBlockException;
+import circuit.exceptions.PlacementException;
 
 
 
@@ -41,7 +38,7 @@ public class Swap {
     }
 
 
-    public void apply() throws UnplacedBlockException, InvalidBlockException, PlacedBlockException, FullSiteException {
+    public void apply() throws PlacementException {
         this.block1.removeSite();
 
         if(this.block2 != null) {

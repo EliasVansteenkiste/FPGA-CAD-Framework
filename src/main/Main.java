@@ -243,7 +243,11 @@ public class Main {
 
         this.startTimer(placerName);
         placer.initializeData();
-        placer.place();
+        try {
+            placer.place();
+        } catch(PlacementException error) {
+            this.logger.raise(error);
+        }
         this.stopTimer();
 
         this.printStatistics(placerName, true);

@@ -12,6 +12,7 @@ import java.util.Random;
 import visual.PlacementVisualizer;
 
 import circuit.Circuit;
+import circuit.exceptions.PlacementException;
 
 
 
@@ -55,5 +56,5 @@ public abstract class Placer {
 
     public abstract String getName();
     public abstract void initializeData();
-    public abstract void place();
+    public abstract void place() throws PlacementException;
 }
