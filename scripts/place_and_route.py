@@ -1,7 +1,6 @@
 import subprocess
 
 import errno
-import numpy
 import copy
 import itertools
 
@@ -22,7 +21,10 @@ def silentremove(filename):
             raise # re-raise exception if a different error occured
 
 def geomean(values):
-    return pow(numpy.prod(values), 1.0 / len(values))
+    prod = 1
+    for value in values:
+        prod *= value
+    return pow(value, 1.0 / len(values))
 
 
 class Caller:
