@@ -121,7 +121,7 @@ class Caller:
 
 class PlaceCaller(Caller):
 
-    metrics = ['Runtime', 'BB cost', 'Max delay']
+    metrics = ['runtime', 'BB cost', 'max delay']
     stats_regex = r'.*time\s+\|\s+(?P<runtime>[0-9.e+-]+).*BB cost\s+\|\s+(?P<bb_cost>[0-9.e+-]+).*max delay\s+\|\s+(?P<max_delay>[0-9.e+-]+)'
 
     def __init__(self, architecture, circuits_folder, circuits):
@@ -165,18 +165,14 @@ class ParameterSweeper:
             options = fixed_options + option_set
             caller = PlaceCaller(self.architecture, self.circuits_folder, self.circuits)
             caller.place_all(options)
-            callers.append(caller)
+            self.callers.append(caller)
 
 
     def save_results(self, filename):
-        rows = [[''] + self.callers[0].get_metrics()]
-        for i in range(len(self.callers)):
-            row = []
-            row.append(' '.join(self.option_sets[i]))
-            row.append(self.callers[i].get_geomeans())
-            rows.append(row)
-
-        rows += [[], []]
+        rows = self.get_pareto_table('BB cost')
+        rows.append([])
+        rows += self.get_pareto_table('max delay')
+        rows += [''] * 2
 
         for caller in self.callers:
             rows += caller.get_results()
@@ -186,6 +182,17 @@ class ParameterSweeper:
         csv_writer = csv.writer(_file)
         csv_writer.writerows(rows)
         _file.close()
+
+
+    def get_pareto_table(self, metric):
+        rows = [[metric] + [' '.join(option_set) for option_set in self.option_sets]]
+        for i in range(len(self.callers)):
+            row = [self.callers[i].get_geomean('runtime')]
+            row += [''] * i
+            row.append(self.callers[i].get_geomean(metric))
+            rows.append(row)
+
+        return rows
 
 
     def build_option_sets(self, option_ranges):
@@ -201,5 +208,3 @@ class ParameterSweeper:
                 option_set += [option_names[i], str(option_value[i])]
 
             self.option_sets.append(option_set)
-
-        print(self.option_sets)

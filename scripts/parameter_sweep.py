@@ -26,3 +26,4 @@ variable_options = {
 os.chdir('..')
 sweeper = ParameterSweeper(architecture, circuits_folder, circuits)
 sweeper.sweep(fixed_options, variable_options)
+sweeper.save_results('test.csv')
