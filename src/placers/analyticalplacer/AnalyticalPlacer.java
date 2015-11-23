@@ -17,7 +17,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     public static void initOptions(Options options) {
         options.add("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.9));
-        options.add("anchor weight", "starting anchor weight", new Double(0.1));
+        options.add("anchor weight", "starting anchor weight", new Double(0.3));
         options.add("anchor weight multiplier", "multiplier to increase the anchor weight in each iteration", new Double(1.1));
     }
 

@@ -30,6 +30,7 @@ class BlockTypeData implements Serializable {
 
     private List<BlockCategory> categories = new ArrayList<BlockCategory>();
     private List<List<BlockType>> blockTypesPerCategory = new ArrayList<List<BlockType>>();
+    private List<BlockType> blockTypesWithModes = new ArrayList<BlockType>();
 
     private List<Integer> heights = new ArrayList<Integer>();
     private List<Integer> columnStarts = new ArrayList<Integer>();
@@ -98,6 +99,9 @@ class BlockTypeData implements Serializable {
         this.modes.get(typeIndex).put(modeName, modeIndex);
 
         this.children.get(typeIndex).add(children);
+
+        BlockType blockType = new BlockType(typeName, modeName);
+        this.blockTypesWithModes.add(blockType);
     }
 
 
@@ -159,6 +163,10 @@ class BlockTypeData implements Serializable {
 
     List<BlockType> getBlockTypes(BlockCategory category) {
         return this.blockTypesPerCategory.get(category.ordinal());
+    }
+
+    List<BlockType> getBlockTypesWithModes() {
+        return this.blockTypesWithModes;
     }
 
 

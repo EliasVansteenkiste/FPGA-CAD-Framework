@@ -67,6 +67,9 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
         }
 
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            if(block.getName().equals("top.fpu_mul+x6_mul.mul_r2+u5^FF_NODE~29416")) {
+                int d = 0;
+            }
             this.traverseFromSource(block);
         }
     }

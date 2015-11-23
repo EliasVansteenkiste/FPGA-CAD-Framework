@@ -59,7 +59,7 @@ public class Circuit {
 
 
     private void loadBlocks() {
-        for(BlockType blockType : BlockType.getAllBlockTypes()) {
+        for(BlockType blockType : BlockType.getBlockTypes()) {
             if(!this.blocks.containsKey(blockType)) {
                 this.blocks.put(blockType, new ArrayList<AbstractBlock>(0));
             }
