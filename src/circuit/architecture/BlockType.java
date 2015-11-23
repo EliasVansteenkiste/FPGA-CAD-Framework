@@ -15,12 +15,15 @@ public class BlockType implements Serializable {
 
     private static final long serialVersionUID = 7705884820007183572L;
 
-    public static List<BlockType> getAllBlockTypes() {
+    public static List<BlockType> getBlockTypes() {
         List<BlockType> types = new ArrayList<BlockType>();
         for(BlockCategory category : BlockCategory.values()) {
             types.addAll(BlockType.getBlockTypes(category));
         }
         return types;
+    }
+    public static List<BlockType> getBlockTypesWithModes() {
+        return BlockTypeData.getInstance().getBlockTypesWithModes();
     }
     public static List<BlockType> getGlobalBlockTypes() {
         List<BlockType> types = new ArrayList<BlockType>();

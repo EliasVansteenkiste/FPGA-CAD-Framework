@@ -220,12 +220,6 @@ public class NetParser {
         // Ignore the top-level block
         if(type.equals("FPGA_packed_netlist")) {
             return;
-
-        // Luts are not defined in the arch file, and don't seem to
-        // be useful for anything really. We just ignore them.
-        } else if(type.equals("lut")) {
-            this.blockStack.push(null);
-            return;
         }
 
 
@@ -240,7 +234,10 @@ public class NetParser {
 
 
 
-
+        if(this.architecture.isImplicitBlock(type)) {
+            String parentBlockTypeName = this.blockStack.getFirst().getType().getName();
+            type = this.architecture.getImplicitBlockName(parentBlockTypeName, type);
+        }
         BlockType blockType = new BlockType(type, mode);
 
 
@@ -290,12 +287,6 @@ public class NetParser {
         } else {
             // Remove this block and its outputs from the stacks
             AbstractBlock block = this.blockStack.pop();
-
-            // If the block equals null, it means it is a lut block
-            // We ignore these
-            if(block == null) {
-                return;
-            }
 
             Map<String, String> outputs = this.outputsStack.pop();
             processPortsHashMap(block, outputs);
@@ -370,6 +361,11 @@ public class NetParser {
             int typeEnd = blockIndexStart - 1;
             int typeStart = 0;
             String sourceBlockName = net.substring(typeStart, typeEnd);
+
+            if(this.architecture.isImplicitBlock(sourceBlockName)) {
+                String parentBlockTypeName = sinkBlock.getType().getName();
+                sourceBlockName = this.architecture.getImplicitBlockName(parentBlockTypeName, sourceBlockName);
+            }
 
             BlockType sourceBlockType = new BlockType(sourceBlockName);
             PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
