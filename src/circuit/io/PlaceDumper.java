@@ -32,6 +32,8 @@ public class PlaceDumper {
 
 
     public void dump() throws IOException {
+        this.placeFile.getParentFile().mkdirs();
+
         PrintWriter writer = null;
         writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile)));
 

@@ -1,7 +1,7 @@
 import subprocess
 
 import errno
-import numpy
+from scipy import stats
 import copy
 
 import re
@@ -53,7 +53,7 @@ class Caller:
                 print('There was a problem with circuit "{0}"'.format(circuit))
                 sys.exit(1)
 
-            # Get and print statistics
+            # Get and save statistics
             match = stats_pattern.search(out)
 
             if match is None:
@@ -64,45 +64,49 @@ class Caller:
             result = {}
             for metric in self.metrics:
                 group_name = metric.lower().replace(' ', '_')
-                result[metric] = match.group(group_name)
+                result[metric] = float(match.group(group_name))
 
-            results[circuit] = result
+            self.results[circuit] = result
 
 
-    def save_results(self, filename, append=False):
-        if append:
-            mode = 'a'
-        else:
-            mode = 'w'
-
-        _file = open(output_file, 'w')
+    def save_results(self, filename):
+        _file = open(filename, 'w')
         csv_writer = csv.writer(_file)
+
+        results = self.get_results()
+        results.append([])
+        results.append(self.get_geomeans())
+
+        csv_writer.writerows(results)
+
+        _file.close()
+
+
+    def get_results(self):
+        results = []
 
         # Print the header
         num_metrics = len(self.metrics)
         row = [''] * (1 + num_metrics)
         row.append(' '.join(self.command))
-        csv_file.writerow(row)
-        csv_file.writerow(['benchmark'] + self.metrics)
+        results.append(row)
+        results.append(['benchmark'] + self.metrics)
 
-        # Print the results for each
+        # Print the results for each circuit
         for circuit in sorted(self.results):
             result = self.results[circuit]
 
             row = [circuit]
-            for column in self.stats_columns:
-                group_name = column.lower().replace(' ', '_')
-                row.append(match.group(group_name))
+            for metric in self.metrics:
+                row.append(result[metric])
 
-            csv_writer.writerow(row)
-            _file.flush()
+            results.append(row)
 
-        csv_writer.writerow([])
-        _file.close()
+        return results
 
 
     def get_geomeans(self):
-        geomeans = []
+        geomeans = ['geomeans']
         for metric in self.metrics:
             geomeans.append(self.get_geomean(metric))
 
@@ -116,14 +120,14 @@ class Caller:
         for circuit in circuits:
             metric_results.append(self.results[circuit][metric])
 
-        return numpy.gmean(metric_results)
+        return stats.gmean(metric_results)
 
 
 
 class PlaceCaller(Caller):
 
-    stats_metrics = ['Runtime', 'BB cost', 'Max delay']
-    stats_regex = r'.*time\s+|\s+(?P<runtime>[0-9.e+-]+).*BB cost\s+|\s+(?P<bb_cost>[0-9.e+-]+).*max delay\s+|\s+(?P<max_delay>[0-9.e+-]+)'
+    metrics = ['Runtime', 'BB cost', 'Max delay']
+    stats_regex = r'.*time\s+\|\s+(?P<runtime>[0-9.e+-]+).*BB cost\s+\|\s+(?P<bb_cost>[0-9.e+-]+).*max delay\s+\|\s+(?P<max_delay>[0-9.e+-]+)'
 
     def __init__(self, architecture, circuits_folder, circuits):
         super().__init__(circuits)
@@ -131,20 +135,23 @@ class PlaceCaller(Caller):
         self.architecture = architecture
         self.circuit = os.path.join(circuits_folder, '{circuit}.blif')
 
-    def place_all(self, options, results_file):
 
-        command = [
+    def place_all(self, options):
+        command = self.build_command(self.architecture, self.circuit, options)
+
+        self.call_all_circuits(command)
+
+        shutil.rmtree('tmp')
+
+
+    def build_command(self, architecture, circuit, options):
+        return [
             'java',
             '-cp', 'bin',
             'interfaces.CLI',
-            self.architecture,
-            self.circuit,
+            architecture,
+            circuit,
             '--output_place_file', 'tmp/{circuit}.place'
-        ]
+        ] + options
 
-        command += options
 
-        self.call_all_circuits(command)
-        self.save_results(results_file)
-
-        shutil.rmtree('tmp')
