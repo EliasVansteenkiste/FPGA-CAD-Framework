@@ -24,7 +24,7 @@ def geomean(values):
     prod = 1
     for value in values:
         prod *= value
-    return pow(value, 1.0 / len(values))
+    return pow(prod, 1.0 / len(values))
 
 
 class Caller:
