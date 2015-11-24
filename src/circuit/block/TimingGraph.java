@@ -131,21 +131,19 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
         this.criticalityExponent = criticalityExponent;
     }
 
-    public void recalculateAllSlackCriticalities() {
-        this.maxDelay = this.calculateArrivalTimes();
+    public void recalculateAllSlacksCriticalities(boolean recalculateWireDelays) {
+        this.calculateArrivalTimes(recalculateWireDelays);
         this.calculateRequiredTimes();
-
-        for(LeafBlock block : this.circuit.getLeafBlocks()) {
-            block.calculateCriticalities(this.maxDelay, this.criticalityExponent);
-        }
     }
 
-    private double calculateArrivalTimes() {
+    public void calculateArrivalTimes(boolean recalculateWireDelays) {
+
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
             block.resetTiming();
-            block.calculateSinkWireDelays();
+            if(recalculateWireDelays) {
+                block.calculateSinkWireDelays();
+            }
         }
-
 
         Stack<LeafBlock> todo = new Stack<LeafBlock>();
 
@@ -159,13 +157,13 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
         }
 
 
-        double maxDelay = 0;
+        this.maxDelay = 0;
         while(todo.size() > 0) {
             LeafBlock currentBlock = todo.pop();
 
             double arrivalTime = currentBlock.calculateArrivalTime();
-            if(arrivalTime > maxDelay) {
-                maxDelay = arrivalTime;
+            if(arrivalTime > this.maxDelay) {
+                this.maxDelay = arrivalTime;
             }
 
             if(!currentBlock.isClocked()) {
@@ -177,11 +175,9 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
                 }
             }
         }
-
-        return maxDelay;
     }
 
-    private void calculateRequiredTimes() {
+    public void calculateRequiredTimes() {
         Stack<LeafBlock> todo = new Stack<LeafBlock>();
 
         for(LeafBlock endBlock : this.endPointBlocks) {
@@ -208,6 +204,11 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
                     }
                 }
             }
+        }
+
+
+        for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            block.calculateCriticalities(this.maxDelay, this.criticalityExponent);
         }
     }
 

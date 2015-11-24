@@ -2,8 +2,7 @@ package placers.analyticalplacer;
 
 import java.util.List;
 
-
-public class CostCalculatorWLD extends CostCalculator {
+class CostCalculatorWLD extends CostCalculator {
 
     private List<int[]> nets;
 
@@ -11,10 +10,6 @@ public class CostCalculatorWLD extends CostCalculator {
         this.nets = nets;
     }
 
-    @Override
-    boolean requiresCircuitUpdate() {
-        return false;
-    }
 
     @Override
     protected double calculate() {

@@ -1,5 +1,11 @@
 package placers.analyticalplacer;
 
+import java.util.List;
+
+import circuit.block.TimingEdge;
+
+import util.Pair;
+
 
 
 class LinearSolverAnalytical extends LinearSolver {
@@ -34,15 +40,33 @@ class LinearSolverAnalytical extends LinearSolver {
             int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
             boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
 
-            this.solverX.addConnectionMinMaxUnknown(
-                    fixed1, blockIndex1, this.coordinatesX[blockIndex1],
-                    fixed2, blockIndex2, this.coordinatesX[blockIndex2],
-                    weightMultiplier);
+            double coordinate1 = this.coordinatesX[blockIndex1];
+            double coordinate2 = this.coordinatesX[blockIndex2];
+            if(coordinate1 < coordinate2) {
+                this.solverX.addConnection(
+                        fixed1, blockIndex1, coordinate1,
+                        fixed2, blockIndex2, coordinate2,
+                        weightMultiplier);
+            } else {
+                this.solverX.addConnection(
+                        fixed2, blockIndex2, coordinate2,
+                        fixed1, blockIndex1, coordinate1,
+                        weightMultiplier);
+            }
 
-            this.solverY.addConnectionMinMaxUnknown(
-                    fixed1, blockIndex1, this.coordinatesY[blockIndex1],
-                    fixed2, blockIndex2, this.coordinatesY[blockIndex2],
-                    weightMultiplier);
+            coordinate1 = this.coordinatesY[blockIndex1];
+            coordinate2 = this.coordinatesY[blockIndex2];
+            if(coordinate1 < coordinate2) {
+                this.solverY.addConnection(
+                        fixed1, blockIndex1, coordinate1,
+                        fixed2, blockIndex2, coordinate2,
+                        weightMultiplier);
+            } else {
+                this.solverY.addConnection(
+                        fixed2, blockIndex2, coordinate2,
+                        fixed1, blockIndex1, coordinate1,
+                        weightMultiplier);
+            }
 
             return;
         }
@@ -113,6 +137,57 @@ class LinearSolverAnalytical extends LinearSolver {
                             weightMultiplier);
                 }
             }
+        }
+    }
+
+    @Override
+    void processNetTD(List<Pair<Integer, TimingEdge>> net) {
+        int numPins = net.size();
+        int sourceIndex = net.get(0).getFirst();
+
+        for(int i = 1; i < numPins; i++) {
+            Pair<Integer, TimingEdge> entry = net.get(i);
+            double criticality = entry.getSecond().getCriticality();
+
+            if(criticality > 0.8) {
+                int sinkIndex = entry.getFirst();
+                double weightMultiplier = 2.0 / numPins * criticality;
+
+                this.processConnectionTD(sourceIndex, sinkIndex, weightMultiplier);
+            }
+        }
+    }
+
+    void processConnectionTD(int sourceIndex, int sinkIndex, double weightMultiplier) {
+        boolean sourceFixed = this.isFixed(sourceIndex);
+        boolean sinkFixed = this.isFixed(sinkIndex);
+
+        double sourceCoordinate = this.coordinatesX[sourceIndex];
+        double sinkCoordinate = this.coordinatesX[sinkIndex];
+        if(sourceCoordinate < sinkCoordinate) {
+            this.solverX.addConnection(
+                    sourceFixed, sourceIndex, sourceCoordinate,
+                    sinkFixed, sinkIndex, sinkCoordinate,
+                    weightMultiplier);
+        } else {
+            this.solverX.addConnection(
+                    sinkFixed, sinkIndex, sinkCoordinate,
+                    sourceFixed, sourceIndex, sourceCoordinate,
+                    weightMultiplier);
+        }
+
+        sourceCoordinate = this.coordinatesY[sourceIndex];
+        sinkCoordinate = this.coordinatesY[sinkIndex];
+        if(sourceCoordinate < sinkCoordinate) {
+            this.solverY.addConnection(
+                    sourceFixed, sourceIndex, sourceCoordinate,
+                    sinkFixed, sinkIndex, sinkCoordinate,
+                    weightMultiplier);
+        } else {
+            this.solverY.addConnection(
+                    sinkFixed, sinkIndex, sinkCoordinate,
+                    sourceFixed, sourceIndex, sourceCoordinate,
+                    weightMultiplier);
         }
     }
 

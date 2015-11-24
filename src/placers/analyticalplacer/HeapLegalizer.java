@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import circuit.Circuit;
 import circuit.architecture.BlockType;
 import circuit.architecture.BlockCategory;
 import circuit.block.AbstractSite;
-import circuit.block.GlobalBlock;
 
 /**
  * This is approximately the legalizer as proposed in
@@ -32,14 +30,12 @@ class HeapLegalizer extends Legalizer {
 
     HeapLegalizer(
             Circuit circuit,
-            CostCalculator costCalculator,
-            Map<GlobalBlock, Integer> blockIndexes,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
             double[] linearY) throws IllegalArgumentException {
 
-        super(circuit, costCalculator, blockIndexes, blockTypes, blockTypeIndexStarts, linearX, linearY);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY);
     }
 
 
@@ -363,8 +359,8 @@ class HeapLegalizer extends Legalizer {
         if(coordinates[2] - coordinates[0] < this.blockRepeat && coordinates[3] - coordinates[1] < this.blockHeight) {
 
             for(Integer blockIndex : blockIndexes) {
-                this.tmpLegalX[blockIndex] = coordinates[0];
-                this.tmpLegalY[blockIndex] = coordinates[1];
+                this.legalX[blockIndex] = coordinates[0];
+                this.legalY[blockIndex] = coordinates[1];
             }
 
             return;
@@ -395,8 +391,8 @@ class HeapLegalizer extends Legalizer {
                 }
             }
 
-            this.tmpLegalX[blockIndex] = minX;
-            this.tmpLegalY[blockIndex] = minY;
+            this.legalX[blockIndex] = minX;
+            this.legalY[blockIndex] = minY;
             return;
 
         } else if(coordinates[2] - coordinates[0] < this.blockRepeat && axis == Axis.X) {

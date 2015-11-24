@@ -15,22 +15,29 @@ import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
 import circuit.block.AbstractBlock;
+import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
+import circuit.block.LeafBlock;
+import circuit.block.TimingEdge;
 import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 
 import placers.Placer;
+import util.Pair;
 import visual.PlacementVisualizer;
 
 public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected final Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
     protected final List<int[]> nets = new ArrayList<>();
+    protected final List<List<Pair<Integer,TimingEdge>>> timingNets = new ArrayList<>();
     protected int numBlocks, numIOBlocks;
 
     protected double[] linearX, linearY;
-    protected Legalizer legalizer;
+    protected int[] legalX, legalY;
 
+    protected Legalizer legalizer;
+    private boolean timingDriven;
 
 
 
@@ -39,9 +46,11 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
 
+    protected abstract boolean isTimingDriven();
     protected abstract Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts);
 
     protected abstract void solveLinear(int iteration);
+    protected abstract void solveLegal(int iteration);
     protected abstract boolean stopCondition();
 
     protected abstract void printStatisticsHeader();
@@ -73,6 +82,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         // Add all blocks
         this.linearX = new double[this.numBlocks];
         this.linearY = new double[this.numBlocks];
+        this.legalX = new int[this.numBlocks];
+        this.legalY = new int[this.numBlocks];
 
         List<Integer> blockTypeIndexStarts = new ArrayList<>();
         int blockIndex = 0;
@@ -84,6 +95,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
                 this.linearX[blockIndex] = block.getX();
                 this.linearY[blockIndex] = block.getY();
+                this.legalX[blockIndex] = block.getX();
+                this.legalY[blockIndex] = block.getY();
 
                 this.blockIndexes.put(block, blockIndex);
                 blockIndex++;
@@ -132,6 +145,33 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
 
+        // Add all timing nets
+        this.timingDriven = this.isTimingDriven();
+        if(this.timingDriven) {
+            for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
+                int sourceIndex = this.blockIndexes.get(sourceGlobalBlock);
+
+                for(LeafBlock sourceLeafBlock : sourceGlobalBlock.getLeafBlocks()) {
+
+                    List<Pair<Integer, TimingEdge>> net = new ArrayList<>();
+                    net.add(new Pair<Integer, TimingEdge>(sourceIndex, null));
+
+                    int numSinks = sourceLeafBlock.getNumSinks();
+                    for(int i = 0; i < numSinks; i++) {
+                        TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(i);
+
+                        GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(i).getGlobalParent();
+                        int sinkIndex = this.blockIndexes.get(sinkGlobalBlock);
+
+                        net.add(new Pair<Integer, TimingEdge>(sinkIndex, timingEdge));
+                    }
+
+                    this.timingNets.add(net);
+                }
+            }
+        }
+
+
         this.legalizer = createLegalizer(blockTypes, blockTypeIndexStarts);
     }
 
@@ -142,10 +182,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         int iteration = 0;
         boolean isLastIteration = false;
 
-        // This is fixed, because making it dynamic doesn't improve results
-        // But HeapLegalizer still supports other values for maxUtilization
-        double maxUtilization = 1;
-
         this.printStatisticsHeader();
 
         while(!isLastIteration) {
@@ -153,16 +189,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             // Solve linear
             this.solveLinear(iteration);
-
-            if(iteration == 33) {
-                int d = 0;
-            }
-
-            try {
-                this.legalizer.legalize(maxUtilization);
-            } catch(PlacementException error) {
-                this.logger.raise(error);
-            }
+            this.solveLegal(iteration);
 
             isLastIteration = this.stopCondition();
 
@@ -177,7 +204,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     this.blockIndexes, this.linearX, this.linearY);
             this.visualizer.addPlacement(
                     String.format("iteration %d: legal", iteration),
-                    this.blockIndexes, this.legalizer.getAnchorsX(), this.legalizer.getAnchorsY());
+                    this.blockIndexes, this.legalX, this.legalY);
 
             iteration++;
         }
@@ -186,7 +213,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
         try {
-            this.legalizer.updateCircuit();
+            this.updateCircuit();
         } catch(PlacementException error) {
             this.logger.raise(error);
         }
@@ -200,26 +227,59 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected void solveLinearIteration(LinearSolver solver, boolean addPseudoNets) {
 
         // Add connections between blocks that are connected by a net
-        this.processNets(solver);
+        this.processNetsWLD(solver);
+
+        this.processNetsTD(solver);
 
         // Add pseudo connections
         if(addPseudoNets) {
-            solver.addPseudoConnections(
-                    this.legalizer.getAnchorsX(),
-                    this.legalizer.getAnchorsY());
+            // this.legalX and this.legalY store the solution with the lowest cost
+            // For anchors, the last (possibly suboptimal) solution usually works better
+            solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
         }
-
 
         // Solve and save result
         solver.solve();
     }
 
 
-    private void processNets(LinearSolver solver) {
+    private void processNetsWLD(LinearSolver solver) {
         for(int[] net : this.nets) {
             solver.processNetWLD(net);
-            // TODO: add a solver.processNetTimingDriven(net), or something like that
         }
+    }
+
+    private void processNetsTD(LinearSolver solver) {
+        // If the Placer is not timing driven, this.timingNets is empty
+        for(List<Pair<Integer, TimingEdge>> net : this.timingNets) {
+            solver.processNetTD(net);
+        }
+    }
+
+
+
+    protected void updateCircuit() throws PlacementException {
+        //Clear all previous locations
+        for(GlobalBlock block : this.blockIndexes.keySet()) {
+            if(block.getCategory() != BlockCategory.IO) {
+                block.removeSite();
+            }
+        }
+
+        // Update locations
+        for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
+            GlobalBlock block = blockEntry.getKey();
+
+            if(block.getCategory() != BlockCategory.IO) {
+                int index = blockEntry.getValue();
+
+
+                AbstractSite site = this.circuit.getSite(this.legalX[index], this.legalY[index], true);
+                block.setSite(site);
+            }
+        }
+
+        this.circuit.getTimingGraph().recalculateAllSlacksCriticalities(true);
     }
 
 

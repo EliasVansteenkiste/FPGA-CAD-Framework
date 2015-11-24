@@ -18,12 +18,17 @@ public class AnalyticalPlacerWLD extends AnalyticalPlacer {
     }
 
     @Override
-    protected CostCalculator createCostCalculator() {
-        return new CostCalculatorWLD(this.nets);
+    protected boolean isTimingDriven() {
+        return false;
     }
 
     @Override
     public String getName() {
         return "Wirelength driven analytical placer";
+    }
+
+    @Override
+    protected CostCalculator createCostCalculator() {
+        return new CostCalculatorWLD(this.nets);
     }
 }

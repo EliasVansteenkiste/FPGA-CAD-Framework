@@ -10,6 +10,7 @@ import java.util.Random;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.BlockType;
+import circuit.exceptions.PlacementException;
 
 public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
@@ -21,9 +22,11 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         options.add("anchor weight multiplier", "multiplier to increase the anchor weight in each iteration", new Double(1.1));
     }
 
+
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
     private CostCalculator costCalculator;
-    private double linearCost, legalCost;
+    private double linearCost, legalCost = Double.MAX_VALUE;
+    private int numMovableBlocks;
 
     public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
@@ -34,12 +37,21 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightMultiplier = options.getDouble("anchor weight multiplier");
     }
 
+
     protected abstract CostCalculator createCostCalculator();
 
     @Override
-    protected Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts) {
+    public void initializeData() {
+        super.initializeData();
+
+        this.numMovableBlocks = this.numBlocks - this.numIOBlocks;
+
         this.costCalculator = this.createCostCalculator();
-        return new HeapLegalizer(this.circuit, this.costCalculator, this.blockIndexes, blockTypes, blockTypeIndexStarts, this.linearX, this.linearY);
+    }
+
+    @Override
+    protected Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts) {
+        return new HeapLegalizer(this.circuit, blockTypes, blockTypeIndexStarts, this.linearX, this.linearY);
     }
 
     @Override
@@ -55,13 +67,36 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
             LinearSolver solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, AnalyticalPlacer.EPSILON);
             this.solveLinearIteration(solver, !firstSolve);
         }
+
+        this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+    }
+
+    @Override
+    protected void solveLegal(int iteration) {
+        // This is fixed, because making it dynamic doesn't improve results
+        // But HeapLegalizer still supports other values for maxUtilization
+        double maxUtilization = 1;
+
+        try {
+            this.legalizer.legalize(maxUtilization);
+        } catch(PlacementException error) {
+            this.logger.raise(error);
+        }
+
+        int[] tmpLegalX = this.legalizer.getLegalX();
+        int[] tmpLegalY = this.legalizer.getLegalY();
+        double tmpLegalCost = this.costCalculator.calculate(tmpLegalX, tmpLegalY);
+
+        if(tmpLegalCost < this.legalCost) {
+            this.legalCost = tmpLegalCost;
+
+            System.arraycopy(tmpLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, this.numMovableBlocks);
+            System.arraycopy(tmpLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, this.numMovableBlocks);
+        }
     }
 
     @Override
     protected boolean stopCondition() {
-        this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-        this.legalCost = this.legalizer.getCost();
-
         return this.linearCost / this.legalCost > this.stopRatio;
     }
 

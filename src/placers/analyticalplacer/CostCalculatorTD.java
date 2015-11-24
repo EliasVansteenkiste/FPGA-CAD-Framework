@@ -1,46 +1,67 @@
 package placers.analyticalplacer;
 
-
 import java.util.List;
+import java.util.Map;
 
+import circuit.Circuit;
+import circuit.architecture.BlockCategory;
+import circuit.architecture.DelayTables;
+import circuit.block.GlobalBlock;
+import circuit.block.TimingEdge;
 import circuit.block.TimingGraph;
 
+import util.Pair;
 
-public class CostCalculatorTD extends CostCalculatorWLD {
+class CostCalculatorTD extends CostCalculator {
 
     private TimingGraph timingGraph;
-    private double tradeOff;
-    private double initialBBCost, initialTDCost;
+    private DelayTables delayTables;
+    private BlockCategory[] blockCategories;
 
-    CostCalculatorTD(List<int[]> nets, TimingGraph timingGraph, double tradeOff) {
-        super(nets);
+    private List<List<Pair<Integer, TimingEdge>>> timingNets;
 
-        this.timingGraph = timingGraph;
-        this.tradeOff = tradeOff;
-    }
+    CostCalculatorTD(Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, List<List<Pair<Integer, TimingEdge>>> timingNets) {
+        this.timingGraph = circuit.getTimingGraph();
+        this.delayTables = circuit.getArchitecture().getDelayTables();
 
-    @Override
-    boolean requiresCircuitUpdate() {
-        return true;
+        this.blockCategories = new BlockCategory[blockIndexes.size()];
+        for(Map.Entry<GlobalBlock, Integer> blockEntry : blockIndexes.entrySet()) {
+            BlockCategory category = blockEntry.getKey().getCategory();
+            int index = blockEntry.getValue();
+
+            this.blockCategories[index] = category;
+        }
+
+        this.timingNets = timingNets;
     }
 
     @Override
     protected double calculate() {
+        for(List<Pair<Integer, TimingEdge>> net : this.timingNets) {
+            int sourceIndex = net.get(0).getFirst();
+            BlockCategory sourceCategory = this.blockCategories[sourceIndex];
+            double sourceX = this.getX(sourceIndex);
+            double sourceY = this.getY(sourceIndex);
 
-        this.timingGraph.recalculateAllSlackCriticalities();
-        double TDCost = this.timingGraph.calculateTotalCost();
+            int numPins = net.size();
+            for(int i = 1; i < numPins; i++) {
+                Pair<Integer, TimingEdge> entry = net.get(i);
 
-        double BBCost = super.calculate();
+                int sinkIndex = entry.getFirst();
+                BlockCategory sinkCategory = this.blockCategories[sinkIndex];
 
-        if(this.initialBBCost == 0) {
-            this.initialBBCost = BBCost;
-            this.initialTDCost = TDCost;
-            return Double.MAX_VALUE / 10;
+                double sinkX = this.getX(sinkIndex);
+                double sinkY = this.getY(sinkIndex);
+                int deltaX = (int) Math.abs(sinkX - sourceX);
+                int deltaY = (int) Math.abs(sinkY - sourceY);
+                double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
 
-        } else {
-            return
-                    this.tradeOff         * TDCost / this.initialTDCost
-                    + (1 - this.tradeOff) * BBCost / this.initialBBCost;
+                TimingEdge timingEdge = entry.getSecond();
+                timingEdge.setWireDelay(wireDelay);
+            }
         }
+
+        this.timingGraph.calculateArrivalTimes(false);
+        return this.timingGraph.getMaxDelay();
     }
 }

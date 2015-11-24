@@ -15,6 +15,11 @@ public class GradientPlacerWLD extends GradientPlacer {
     }
 
     @Override
+    protected boolean isTimingDriven() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return "Wirelength driven gradient descent placer";
     }

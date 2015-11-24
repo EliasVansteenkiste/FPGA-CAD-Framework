@@ -5,6 +5,7 @@ import java.util.Random;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.block.TimingGraph;
+import circuit.exceptions.PlacementException;
 import interfaces.Logger;
 import interfaces.Options;
 
@@ -13,28 +14,49 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
     public static void initOptions(Options options) {
         AnalyticalPlacer.initOptions(options);
 
-        options.add("trade off", "trade of between wirelength and timing cost (0 = wirelength driven)", new Double(0.5));
         options.add("criticality exponent", "criticality exponent of connections", new Double(1));
         options.add("criticality threshold", "minimal criticality for adding extra constraints", new Double(0.8));
     }
 
 
-    private double tradeOff, criticalityExponent, criticalityThreshold;
+    private double criticalityExponent, criticalityThreshold;
+    private TimingGraph timingGraph;
 
     public AnalyticalPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
-        this.tradeOff = options.getDouble("trade off");
         this.criticalityExponent = options.getDouble("criticality exponent");
         this.criticalityThreshold = options.getDouble("criticality threshold");
+
+        this.timingGraph = this.circuit.getTimingGraph();
+        this.timingGraph.setCriticalityExponent(this.criticalityExponent);
+        this.timingGraph.recalculateAllSlacksCriticalities(true);
     }
+
 
     @Override
     protected CostCalculator createCostCalculator() {
-        TimingGraph timingGraph = this.circuit.getTimingGraph();
-        timingGraph.setCriticalityExponent(this.criticalityExponent);
+        //return new CostCalculatorWLD(this.nets);
+        return new CostCalculatorTD(this.circuit, this.blockIndexes, this.timingNets);
+    }
 
-        return new CostCalculatorTD(this.nets, timingGraph, this.tradeOff);
+
+    @Override
+    protected void solveLinear(int iteration) {
+        /*try {
+            this.updateCircuit();
+        } catch(PlacementException error) {
+            this.logger.raise(error);
+        }
+        this.circuit.getTimingGraph().recalculateAllSlacksCriticalities(true);*/
+
+        super.solveLinear(iteration);
+    }
+
+
+    @Override
+    protected boolean isTimingDriven() {
+        return true;
     }
 
     @Override

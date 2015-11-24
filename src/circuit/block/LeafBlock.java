@@ -76,39 +76,32 @@ public class LeafBlock extends IntermediateBlock {
     }
 
 
-    int getNumSources() {
-        return this.numSources;
-    }
-    int getNumSinks() {
-        return this.numSinks;
-    }
-
-    LeafBlock getSource(int i) {
-        return this.sourceBlocks.get(i);
-    }
-    LeafBlock getSink(int i) {
-        return this.sinkBlocks.get(i);
-    }
-
     List<LeafBlock> getSources() {
         return this.sourceBlocks;
     }
-    List<TimingEdge> getSourceEdges() {
-        return this.sourceEdges;
+    List<LeafBlock> getSinks() {
+        return this.sinkBlocks;
+    }
+
+    int getNumSources() {
+        return this.numSources;
+    }
+    public int getNumSinks() {
+        return this.numSinks;
+    }
+
+    LeafBlock getSource(int index) {
+        return this.sourceBlocks.get(index);
+    }
+    public LeafBlock getSink(int index) {
+        return this.sinkBlocks.get(index);
     }
 
     TimingEdge getSourceEdge(int i) {
         return this.sourceEdges.get(i);
     }
-    TimingEdge getSinkEdge(int i) {
+    public TimingEdge getSinkEdge(int i) {
         return this.sinkEdges.get(i);
-    }
-
-    List<LeafBlock> getSinks() {
-        return this.sinkBlocks;
-    }
-    List<TimingEdge> getSinkEdges() {
-        return this.sinkEdges;
     }
 
 

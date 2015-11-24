@@ -1,5 +1,11 @@
 package placers.analyticalplacer;
 
+import java.util.List;
+
+import circuit.block.TimingEdge;
+
+import util.Pair;
+
 
 abstract class LinearSolver {
 
@@ -14,7 +20,7 @@ abstract class LinearSolver {
     }
 
     abstract void processNetWLD(int[] blockIndexes);
-    //abstract void processNetTD(int[] blockIndexes);
+    abstract void processNetTD(List<Pair<Integer, TimingEdge>> net);
     abstract void addPseudoConnections(int[] legalX, int[] legalY);
     abstract void solve();
 

@@ -1,12 +1,12 @@
 package circuit.block;
 
-class TimingEdge {
+public class TimingEdge {
 
     private double fixedDelay, totalDelay, criticality;
     private transient double stagedTotalDelay;
 
 
-    public TimingEdge(double fixedDelay) {
+    TimingEdge(double fixedDelay) {
         this.fixedDelay = fixedDelay;
     }
 
@@ -14,7 +14,7 @@ class TimingEdge {
     public double getFixedDelay() {
         return this.fixedDelay;
     }
-    public void setFixedDelay(double fixedDelay) {
+    void setFixedDelay(double fixedDelay) {
         this.fixedDelay = fixedDelay;
     }
 
@@ -25,22 +25,22 @@ class TimingEdge {
         this.totalDelay = this.fixedDelay + wireDelay;
     }
 
-    public double getStagedTotalDelay() {
+    double getStagedTotalDelay() {
         return this.stagedTotalDelay;
     }
-    public void setStagedWireDelay(double stagedWireDelay) {
+    void setStagedWireDelay(double stagedWireDelay) {
         this.stagedTotalDelay = this.fixedDelay + stagedWireDelay;
     }
 
     public double getCriticality() {
         return this.criticality;
     }
-    public void setCriticality(double criticality) {
+    void setCriticality(double criticality) {
         this.criticality = criticality;
     }
 
 
-    public void pushThrough() {
+    void pushThrough() {
         this.totalDelay = this.stagedTotalDelay;
     }
 
