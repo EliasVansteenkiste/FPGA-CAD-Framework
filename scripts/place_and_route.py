@@ -4,6 +4,7 @@ import errno
 from scipy import stats
 import copy
 import itertools
+import random
 
 import re
 import csv
@@ -28,10 +29,10 @@ class Caller:
         self.circuits = circuits.split(' ')
 
 
-    def call_circuit(self, command, circuit):
+    def call_circuit(self, command, circuit, seed):
         circuit_command = copy.deepcopy(command)
         for i in range(len(circuit_command)):
-            circuit_command[i] = circuit_command[i].replace('{circuit}', circuit)
+            circuit_command[i] = circuit_command[i].replace('{circuit}', circuit).replace('{seed}', str(seed))
 
         p = subprocess.Popen(circuit_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -40,14 +41,27 @@ class Caller:
         return out.decode('utf-8'), err.decode('utf-8')
 
 
-    def call_all_circuits(self, command):
+    def call_all_circuits(self, command, num_random_seeds):
 
-        stats_pattern = re.compile(self.stats_regex, re.DOTALL)
         self.results = {}
+        for circuit in self.circuits:
+            self.results[circuit] = {}
+            for metric in self.metrics:
+                self.results[circuit][metric] = []
+
+        random.seed(1)
+        self.seeds = [random.randrange(2**31 - 1) for i in range(num_random_seeds)]
+        for seed in self.seeds:
+            self.call_all_circuits_with_seed(command, seed)
+
+
+    def call_all_circuits_with_seed(self, command, seed):
+        stats_pattern = re.compile(self.stats_regex, re.DOTALL)
         self.command = command
 
         for circuit in self.circuits:
-            out, err = self.call_circuit(command, circuit)
+            print('  ' + circuit)
+            out, err = self.call_circuit(command, circuit, seed)
 
             if err:
                 print(err)
@@ -62,12 +76,9 @@ class Caller:
                 print('Failed to match pattern: {0}'.format(self.stats_regex))
                 sys.exit(1)
 
-            result = {}
             for metric in self.metrics:
                 group_name = metric.lower().replace(' ', '_')
-                result[metric] = float(match.group(group_name))
-
-            self.results[circuit] = result
+                self.results[circuit][metric].append(float(match.group(group_name)))
 
 
     def save_results(self, filename):
@@ -87,17 +98,18 @@ class Caller:
     def get_metrics(self):
         return self.metrics
 
+    def get_seeds(self):
+        return self.seeds
+
 
     def get_results(self):
         results = [['benchmark'] + self.metrics + [self.get_command()]]
 
         # Print the results for each circuit
         for circuit in sorted(self.results):
-            result = self.results[circuit]
-
             row = [circuit]
             for metric in self.metrics:
-                row.append(result[metric])
+                row.append(geomean(self.results[circuit][metric]))
 
             results.append(row)
 
@@ -107,13 +119,10 @@ class Caller:
     def get_geomeans(self):
         return [self.get_geomean(metric) for metric in self.metrics]
 
-    def get_geomean(self, metric, circuits=None):
-        if circuits is None:
-            circuits = self.circuits
-
+    def get_geomean(self, metric):
         metric_results = []
-        for circuit in circuits:
-            metric_results.append(self.results[circuit][metric])
+        for circuit in self.circuits:
+            metric_results += self.results[circuit][metric]
 
         return stats.gmean(metric_results)
 
@@ -131,10 +140,10 @@ class PlaceCaller(Caller):
         self.circuit = os.path.join(circuits_folder, '{circuit}.blif')
 
 
-    def place_all(self, options):
+    def place_all(self, options, num_random_seeds):
         command = self.build_command(self.architecture, self.circuit, options)
 
-        self.call_all_circuits(command)
+        self.call_all_circuits(command, num_random_seeds)
 
         shutil.rmtree('tmp')
 
@@ -146,7 +155,8 @@ class PlaceCaller(Caller):
             'interfaces.CLI',
             architecture,
             circuit,
-            '--output_place_file', 'tmp/{circuit}.place'
+            '--output_place_file', 'tmp/{circuit}.place',
+            '--random_seed', '{seed}'
         ] + options
 
 
@@ -157,20 +167,24 @@ class ParameterSweeper:
         self.circuits_folder = circuits_folder
         self.circuits = circuits
 
-    def sweep(self, fixed_options, variable_options):
+    def sweep(self, fixed_options, variable_options, num_random_seeds):
         self.build_option_sets(variable_options)
 
         self.callers = []
         for option_set in self.option_sets:
             options = fixed_options + option_set
             caller = PlaceCaller(self.architecture, self.circuits_folder, self.circuits)
-            caller.place_all(options)
+            caller.place_all(options, num_random_seeds)
             self.callers.append(caller)
 
 
     def save_results(self, filename):
-        rows = self.get_pareto_table('BB cost')
+        seeds_string = ', '.join(str(seed) for seed in self.callers[0].get_seeds())
+        rows = [['Random seeds: ' + seeds_string]]
+
+        rows += self.get_pareto_table('BB cost')
         rows.append([])
+
         rows += self.get_pareto_table('max delay')
         rows += [''] * 2
 
