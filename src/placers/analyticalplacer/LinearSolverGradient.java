@@ -1,5 +1,10 @@
 package placers.analyticalplacer;
 
+import java.util.List;
+
+import util.Pair;
+import circuit.block.TimingEdge;
+
 class LinearSolverGradient extends LinearSolver {
 
     private DimensionSolverGradient solverX, solverY;
@@ -102,6 +107,12 @@ class LinearSolverGradient extends LinearSolver {
                 minYFixed, minYIndex, minY,
                 maxYFixed, maxYIndex, maxY,
                 weightMultiplier);
+    }
+
+    @Override
+    void processNetTD(List<Pair<Integer, TimingEdge>> net) {
+        // TODO: implement
+
     }
 
 

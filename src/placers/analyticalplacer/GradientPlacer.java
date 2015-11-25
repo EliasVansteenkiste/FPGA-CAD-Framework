@@ -39,7 +39,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts) {
-        return new HeapLegalizer(this.circuit, null, this.blockIndexes, blockTypes, blockTypeIndexStarts, this.linearX, this.linearY);
+        return new HeapLegalizer(this.circuit, blockTypes, blockTypeIndexStarts, this.linearX, this.linearY);
     }
 
 
@@ -59,6 +59,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             LinearSolver solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.gradientSpeed);
             this.solveLinearIteration(solver, !firstSolve);
         }
+    }
+
+    @Override
+    protected void solveLegal(int iteration) {
+        // TODO: implement
     }
 
 

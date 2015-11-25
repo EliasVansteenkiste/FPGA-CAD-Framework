@@ -57,7 +57,7 @@ public class SAPlacerTD extends SAPlacer {
 
     @Override
     protected void initializeSwapIteration() {
-        this.timingGraph.recalculateAllSlackCriticalities();
+        this.timingGraph.recalculateAllSlacksCriticalities(true);
 
         this.updatePreviousCosts();
     }

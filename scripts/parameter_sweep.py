@@ -18,10 +18,12 @@ variable_options = {
     '--anchor_weight_multiplier': [1.05, 1.1, 1.15, 1.2, 1.3],
 }
 
+num_random_seeds = 4
+
 ##########################################
 # Place all ciruits and sweep parameters #
 ##########################################
 os.chdir('..')
 sweeper = ParameterSweeper(architecture, circuits_folder, circuits)
-sweeper.sweep(fixed_options, variable_options, 4)
+sweeper.sweep(fixed_options, variable_options, num_random_seeds)
 sweeper.save_results('sweep.csv')

@@ -62,6 +62,12 @@ class CostCalculatorTD extends CostCalculator {
         }
 
         this.timingGraph.calculateArrivalTimes(false);
+
+        // If the provided solution is legal: update the slacks in the timing graph
+        if(this.isInts()) {
+            this.timingGraph.calculateRequiredTimes();
+        }
+
         return this.timingGraph.getMaxDelay();
     }
 }

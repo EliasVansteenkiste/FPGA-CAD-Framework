@@ -37,4 +37,8 @@ abstract class CostCalculator {
             return this.doubleY[index];
         }
     }
+
+    protected boolean isInts() {
+        return this.ints;
+    }
 }

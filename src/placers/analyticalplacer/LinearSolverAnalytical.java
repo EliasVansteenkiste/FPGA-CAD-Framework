@@ -11,9 +11,11 @@ import util.Pair;
 class LinearSolverAnalytical extends LinearSolver {
 
     private DimensionSolverAnalytical solverX, solverY;
+    private double criticalityThreshold;
 
-    LinearSolverAnalytical(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double epsilon) {
+    LinearSolverAnalytical(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double criticalityThreshold, double epsilon) {
         super(coordinatesX, coordinatesY, numIOBlocks);
+        this.criticalityThreshold = criticalityThreshold;
 
         this.solverX = new DimensionSolverAnalytical(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
         this.solverY = new DimensionSolverAnalytical(coordinatesY, numIOBlocks, pseudoWeight, epsilon);
@@ -149,7 +151,7 @@ class LinearSolverAnalytical extends LinearSolver {
             Pair<Integer, TimingEdge> entry = net.get(i);
             double criticality = entry.getSecond().getCriticality();
 
-            if(criticality > 0.8) {
+            if(criticality > this.criticalityThreshold) {
                 int sinkIndex = entry.getFirst();
                 double weightMultiplier = 2.0 / numPins * criticality;
 

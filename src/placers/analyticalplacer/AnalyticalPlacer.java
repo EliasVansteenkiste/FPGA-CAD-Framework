@@ -24,6 +24,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
 
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
+    protected double criticalityThreshold; // This is only used by AnalyticalPlacerTD
     private CostCalculator costCalculator;
     private double linearCost, legalCost = Double.MAX_VALUE;
     private int numMovableBlocks;
@@ -64,7 +65,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         int innerIterations = firstSolve ? 5 : 1;
         for(int i = 0; i < innerIterations; i++) {
-            LinearSolver solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, AnalyticalPlacer.EPSILON);
+            LinearSolver solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, AnalyticalPlacer.EPSILON);
             this.solveLinearIteration(solver, !firstSolve);
         }
 
@@ -86,6 +87,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         int[] tmpLegalX = this.legalizer.getLegalX();
         int[] tmpLegalY = this.legalizer.getLegalY();
         double tmpLegalCost = this.costCalculator.calculate(tmpLegalX, tmpLegalY);
+        //this.costCalculator.calculate(new int[this.numBlocks], new int[this.numBlocks]);
 
         if(tmpLegalCost < this.legalCost) {
             this.legalCost = tmpLegalCost;

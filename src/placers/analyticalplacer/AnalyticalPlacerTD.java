@@ -5,7 +5,6 @@ import java.util.Random;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.block.TimingGraph;
-import circuit.exceptions.PlacementException;
 import interfaces.Logger;
 import interfaces.Options;
 
@@ -19,7 +18,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
     }
 
 
-    private double criticalityExponent, criticalityThreshold;
+    private double criticalityExponent;
     private TimingGraph timingGraph;
 
     public AnalyticalPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
@@ -36,21 +35,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
     @Override
     protected CostCalculator createCostCalculator() {
-        //return new CostCalculatorWLD(this.nets);
         return new CostCalculatorTD(this.circuit, this.blockIndexes, this.timingNets);
-    }
-
-
-    @Override
-    protected void solveLinear(int iteration) {
-        /*try {
-            this.updateCircuit();
-        } catch(PlacementException error) {
-            this.logger.raise(error);
-        }
-        this.circuit.getTimingGraph().recalculateAllSlacksCriticalities(true);*/
-
-        super.solveLinear(iteration);
     }
 
 
