@@ -152,28 +152,30 @@ class CLIOptions extends OptionsManager {
     }
 
 
+    private void printError(int argIndex) {
+        String argValue = this.args.get(argIndex);
+        this.printErrorFormat("Incorrect usage of the option \"%s\" at position %d%n%n", argValue, argIndex);
+    }
+
     private void printErrorFormat(String format, Object... args) {
         this.printError(String.format(format, args));
     }
     private void printError(String message) {
         Stream stream = Stream.ERR;
 
+        int numArgs = this.args.size();
+        StringBuilder command = new StringBuilder(this.args.get(0));
+        for(int i = 1; i < numArgs; i++) {
+            command.append(" " + this.args.get(i));
+        }
+
+        this.logger.printf(stream, "Got arguments: %s\n\n", command.toString());
         this.logger.println(stream, message + "\n");
         this.printHelp(stream);
 
         System.exit(1);
     }
-    private void printError(int argIndex) {
 
-        Stream stream = Stream.ERR;
-
-        String argValue = this.args.get(argIndex);
-        this.logger.printf(stream, "Incorrect usage of the option \"%s\" at position %d%n%n", argValue, argIndex);
-
-        this.printHelp(stream);
-
-        System.exit(1);
-    }
     private void printHelp(Stream stream) {
         Options mainOptions = this.getMainOptions();
 
