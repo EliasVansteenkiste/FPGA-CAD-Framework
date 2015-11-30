@@ -36,7 +36,7 @@ class LinearSolverGradient extends LinearSolver {
 
     @Override
     void processNetWLD(int[] blockIndexes) {
-        /*int numNetBlocks = blockIndexes.length;
+        int numNetBlocks = blockIndexes.length;
 
         double weight = (1 - this.timingTradeoff) * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
@@ -86,7 +86,7 @@ class LinearSolverGradient extends LinearSolver {
 
         // Add connections between the min and max block
         this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight);
-        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);*/
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);
 
         /*int numNetBlocks = blockIndexes.length;
         double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
