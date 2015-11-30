@@ -211,8 +211,8 @@ class LinearSolverGradient extends LinearSolver {
         }
 
         meanCriticality = Math.pow(meanCriticality, 1.0 / (numNetBlocks - 1));
-        this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, 0.0 + weight * meanCriticality);
-        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, 0.0 + weight * meanCriticality);
+        this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, 0.5 + weight * maxCriticality);
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, 0.5 + weight * maxCriticality);
 
 
         /*int numNetBlocks = net.size();
