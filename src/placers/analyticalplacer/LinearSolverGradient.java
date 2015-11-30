@@ -36,7 +36,7 @@ class LinearSolverGradient extends LinearSolver {
 
     @Override
     void processNetWLD(int[] blockIndexes) {
-        int numNetBlocks = blockIndexes.length;
+        /*int numNetBlocks = blockIndexes.length;
 
         double weight = (1 - this.timingTradeoff) * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
@@ -86,7 +86,7 @@ class LinearSolverGradient extends LinearSolver {
 
         // Add connections between the min and max block
         this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight);
-        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);*/
 
         /*int numNetBlocks = blockIndexes.length;
         double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
@@ -144,7 +144,7 @@ class LinearSolverGradient extends LinearSolver {
 
     @Override
     void processNetTD(List<Pair<Integer, TimingEdge>> net) {
-        int numPins = net.size();
+        /*int numPins = net.size();
         int sourceIndex = net.get(0).getFirst();
 
         for(int i = 1; i < numPins; i++) {
@@ -168,9 +168,9 @@ class LinearSolverGradient extends LinearSolver {
                 sinkCoordinate = (1 - sinkFactor) * sourceCoordinate + sinkFactor * this.coordinatesY[sinkIndex];
                 this.solverY.addConnectionMinMaxUnknown(sourceIndex, sinkIndex, sinkCoordinate - sourceCoordinate, weight);
             }
-        }
+        }*/
 
-        /*int numNetBlocks = net.size();
+        int numNetBlocks = net.size();
         double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
 
@@ -209,7 +209,7 @@ class LinearSolverGradient extends LinearSolver {
         }
 
         this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight * maxCriticality);
-        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight * maxCriticality);*/
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight * maxCriticality);
 
 
         /*int numNetBlocks = net.size();
