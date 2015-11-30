@@ -21,7 +21,7 @@ public class GradientPlacerTD extends GradientPlacer {
     private double criticalityExponent;
     private TimingGraph timingGraph;
     private CostCalculatorTD costCalculator;
-    private double minCost;
+    private double latestCost, minCost;
 
     public GradientPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
@@ -33,6 +33,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
         this.minCost = Double.MAX_VALUE;
     }
+
 
     @Override
     public void initializeData() {
@@ -53,13 +54,25 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void updateLegal() {
-        double cost = this.costCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
-        System.out.println(cost);
-        if(cost < this.minCost) {
-            this.minCost = cost;
+        this.latestCost = this.costCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+        if(this.latestCost < this.minCost) {
+            this.minCost = this.latestCost;
             super.updateLegal();
         }
     }
+
+
+    @Override
+    protected void printStatisticsHeader() {
+        this.logger.println("Iteration    max delay    anchor weight    time");
+        this.logger.println("---------    ---------    -------------    ----");
+    }
+
+    @Override
+    protected void printStatistics(int iteration, double time) {
+        this.logger.printf("%-9d    %-13f    %-9f    %f\n", iteration, this.anchorWeight, this.latestCost, time);
+    }
+
 
     @Override
     public String getName() {

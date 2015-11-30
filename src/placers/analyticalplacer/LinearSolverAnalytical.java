@@ -153,9 +153,9 @@ class LinearSolverAnalytical extends LinearSolver {
 
             if(criticality > this.criticalityThreshold) {
                 int sinkIndex = entry.getFirst();
-                double weightMultiplier = 2.0 / numPins * criticality;
+                double weight = 2.0 / numPins * criticality;
 
-                this.processConnectionTD(sourceIndex, sinkIndex, weightMultiplier);
+                this.processConnectionTD(sourceIndex, sinkIndex, weight);
             }
         }
     }

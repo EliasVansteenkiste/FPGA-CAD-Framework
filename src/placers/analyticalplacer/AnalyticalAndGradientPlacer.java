@@ -166,7 +166,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                         net.add(new Pair<Integer, TimingEdge>(sinkIndex, timingEdge));
                     }
 
-                    this.timingNets.add(net);
+                    if(numSinks > 0) {
+                        this.timingNets.add(net);
+                    }
                 }
             }
         }

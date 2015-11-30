@@ -1,12 +1,12 @@
 package util;
 
-public class Triplet<F extends Comparable<F>, S, T> implements Comparable<Triplet<F, S, T>> {
+public class Triple<F extends Comparable<F>, S, T> implements Comparable<Triple<F, S, T>> {
 
     private F first;
     private S second;
     private T third;
 
-    public Triplet(F first, S second, T third) {
+    public Triple(F first, S second, T third) {
         this.first = first;
         this.second = second;
         this.third = third;
@@ -33,7 +33,12 @@ public class Triplet<F extends Comparable<F>, S, T> implements Comparable<Triple
     }
 
     @Override
-    public int compareTo(Triplet<F, S, T> otherTriplet) {
+    public int compareTo(Triple<F, S, T> otherTriplet) {
         return this.first.compareTo(otherTriplet.first);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("(%s, %s, %s)", this.first, this.second, this.third);
     }
 }

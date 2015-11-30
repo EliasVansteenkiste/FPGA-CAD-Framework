@@ -26,7 +26,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private final int gradientIterations;
     private double gradientSpeed;
     protected double criticalityThreshold; // Only used by GradientPlacerTD
-    private double anchorWeight, anchorWeightIncrease;
+    protected double anchorWeight;
+    private double anchorWeightIncrease;
+    private LinearSolverGradient solver;
 
     public GradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
@@ -41,6 +43,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts) {
+        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, this.gradientSpeed);
         return new HeapLegalizer(this.circuit, blockTypes, blockTypeIndexStarts, this.linearX, this.linearY);
     }
 
@@ -54,8 +57,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         int innerIterations = iteration == 0 ? 4 * this.gradientIterations : this.gradientIterations;
 
+        //this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, this.gradientSpeed);
         for(int i = 0; i < innerIterations; i++) {
-            LinearSolver solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, this.gradientSpeed);
+            solver.reset(this.anchorWeight);
             this.solveLinearIteration(solver, iteration);
         }
     }
@@ -114,6 +118,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void printStatistics(int iteration, double time) {
-        this.logger.printf("%-13d%-17f%f\n", iteration, this.anchorWeight, time);
+        this.logger.printf("%-9d    %-13f    %f\n", iteration, this.anchorWeight, time);
     }
 }

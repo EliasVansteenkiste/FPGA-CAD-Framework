@@ -29,4 +29,9 @@ public class Pair<F extends Comparable<F>, S> implements Comparable<Pair<F, S>> 
     public int compareTo(Pair<F, S> otherPair) {
         return this.first.compareTo(otherPair.first);
     }
+
+    @Override
+    public String toString() {
+        return String.format("(%s, %s)", this.first, this.second);
+    }
 }

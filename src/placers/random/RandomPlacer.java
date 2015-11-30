@@ -79,6 +79,8 @@ public class RandomPlacer extends Placer {
                 siteIndex++;
             }
         }
+
+        this.visualizer.addPlacement("Random placement");
     }
 
 

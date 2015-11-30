@@ -7,7 +7,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import util.Pair;
-import util.Triplet;
+import util.Triple;
 
 import circuit.exceptions.InvalidFileFormatException;
 
@@ -53,7 +53,7 @@ public class Architecture implements Serializable {
 
     private transient Map<String, Boolean> modelIsClocked = new HashMap<>();
     private transient List<Pair<PortType, Double>> setupTimes = new ArrayList<>();
-    private transient List<Triplet<PortType, PortType, Double>> delays = new ArrayList<>();
+    private transient List<Triple<PortType, PortType, Double>> delays = new ArrayList<>();
 
     private DelayTables delayTables;
 
@@ -440,7 +440,7 @@ public class Architecture implements Serializable {
         int index = delays[0].length() > 0 ? 0 : 1;
         double delay = Double.parseDouble(delays[index]);
 
-        this.delays.add(new Triplet<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+        this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
     }
 
 
@@ -478,7 +478,7 @@ public class Architecture implements Serializable {
 
             double delay = Double.parseDouble(setupElement.getAttribute("value"));
 
-            this.delays.add(new Triplet<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+            this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
         }
 
         // Process clock to port times
@@ -493,7 +493,7 @@ public class Architecture implements Serializable {
 
             double delay = Double.parseDouble(clockToPortElement.getAttribute("max"));
 
-            this.delays.add(new Triplet<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+            this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
         }
     }
 
@@ -539,7 +539,7 @@ public class Architecture implements Serializable {
             // ASM: the element with blif_model .input is located directly under the
             // global input block type
             // PortTypeData uses this assumption to set the clock setup time
-            this.delays.add(new Triplet<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+            this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
         }
     }
 
@@ -552,7 +552,7 @@ public class Architecture implements Serializable {
             portType.setSetupTime(delay);
         }
 
-        for(Triplet<PortType, PortType, Double> delayEntry : this.delays) {
+        for(Triple<PortType, PortType, Double> delayEntry : this.delays) {
             PortType sourcePortType = delayEntry.getFirst();
             PortType sinkPortType = delayEntry.getSecond();
             double delay = delayEntry.getThird();
