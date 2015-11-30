@@ -28,6 +28,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double criticalityThreshold; // Only used by GradientPlacerTD
     protected double anchorWeight;
     private double anchorWeightIncrease;
+    protected double maxUtilization;
     private LinearSolverGradient solver;
 
     public GradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
@@ -90,10 +91,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected void solveLegal(int iteration) {
         // This is fixed, because making it dynamic doesn't improve results
         // But HeapLegalizer still supports other values for maxUtilization
-        double maxUtilization = 1;
+        //this.maxUtilization = Math.max(4.5 - 5 * this.anchorWeight, 1);
+        this.maxUtilization = Math.min(this.numBlocks, Math.max(1, 0.8 / this.anchorWeight));
+        System.out.println(this.maxUtilization);
 
         try {
-            this.legalizer.legalize(maxUtilization);
+            this.legalizer.legalize(this.maxUtilization);
         } catch(PlacementException error) {
             this.logger.raise(error);
         }

@@ -55,7 +55,7 @@ public class GradientPlacerTD extends GradientPlacer {
     @Override
     protected void updateLegal() {
         this.latestCost = this.costCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
-        if(this.latestCost < this.minCost) {
+        if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
             this.minCost = this.latestCost;
             super.updateLegal();
         }

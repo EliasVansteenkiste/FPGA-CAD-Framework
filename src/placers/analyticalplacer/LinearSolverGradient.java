@@ -12,8 +12,6 @@ class LinearSolverGradient extends LinearSolver {
     private double criticalityThreshold;
     private double timingTradeoff;
 
-    private double avDiff = 0;
-
     LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double criticalityThreshold, double stepSize) {
         super(coordinatesX, coordinatesY, numIOBlocks);
 
@@ -38,7 +36,7 @@ class LinearSolverGradient extends LinearSolver {
 
     @Override
     void processNetWLD(int[] blockIndexes) {
-        int numNetBlocks = blockIndexes.length;
+        /*int numNetBlocks = blockIndexes.length;
 
         double weight = (1 - this.timingTradeoff) * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
@@ -88,7 +86,7 @@ class LinearSolverGradient extends LinearSolver {
 
         // Add connections between the min and max block
         this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight);
-        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);*/
 
         /*int numNetBlocks = blockIndexes.length;
         double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
@@ -173,6 +171,48 @@ class LinearSolverGradient extends LinearSolver {
         }*/
 
         int numNetBlocks = net.size();
+        double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
+
+
+        int initialBlockIndex = net.get(0).getFirst();
+        double minX = this.coordinatesX[initialBlockIndex], maxX = this.coordinatesX[initialBlockIndex],
+               minY = this.coordinatesY[initialBlockIndex], maxY = this.coordinatesY[initialBlockIndex];
+        int minXIndex = initialBlockIndex, maxXIndex = initialBlockIndex,
+            minYIndex = initialBlockIndex, maxYIndex = initialBlockIndex;
+        double maxCriticality = 0;
+
+        for(int i = 1; i < numNetBlocks; i++) {
+            Pair<Integer, TimingEdge> sinkEntry = net.get(i);
+            int blockIndex = sinkEntry.getFirst();
+            double criticality = sinkEntry.getSecond().getCriticality();
+            double x = this.coordinatesX[blockIndex], y = this.coordinatesY[blockIndex];
+
+            if(x < minX) {
+                minX = x;
+                minXIndex = blockIndex;
+            } else if(x > maxX) {
+                maxX = x;
+                maxXIndex = blockIndex;
+            }
+
+            if(y < minY) {
+                minY = y;
+                minYIndex = blockIndex;
+            } else if(y > maxY) {
+                maxY = y;
+                maxYIndex = blockIndex;
+            }
+
+            if(criticality > maxCriticality) {
+                maxCriticality = criticality;
+            }
+        }
+
+        this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight * maxCriticality);
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight * maxCriticality);
+
+
+        /*int numNetBlocks = net.size();
         double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
 
 
@@ -199,19 +239,19 @@ class LinearSolverGradient extends LinearSolver {
         meanCriticality = Math.pow(meanCriticality, 1.0 / numNetBlocks);
         // TODO: check if total criticality works better than mean criticality
 
-        this.solverX.addConnectionMinMaxUnknown(sourceIndex, -1, centerX - sourceX, weight);
-        this.solverY.addConnectionMinMaxUnknown(sourceIndex, -1, centerY - sourceY, weight);
+        this.solverX.addConnectionMinMaxUnknown(sourceIndex, -1, centerX - sourceX, weight * meanCriticality);
+        this.solverY.addConnectionMinMaxUnknown(sourceIndex, -1, centerY - sourceY, weight * meanCriticality);
 
         for(int i = 1; i < numNetBlocks; i++) {
             Pair<Integer, TimingEdge> sinkEntry = net.get(i);
             int sinkIndex = sinkEntry.getFirst();
             double criticality = sinkEntry.getSecond().getCriticality();
 
-            this.solverX.addConnectionMinMaxUnknown(sinkIndex, -1, centerX - this.coordinatesX[sinkIndex], weight);
-            this.solverY.addConnectionMinMaxUnknown(sinkIndex, -1, centerY - this.coordinatesY[sinkIndex], weight);
+            this.solverX.addConnectionMinMaxUnknown(sinkIndex, -1, centerX - this.coordinatesX[sinkIndex], weight * criticality);
+            this.solverY.addConnectionMinMaxUnknown(sinkIndex, -1, centerY - this.coordinatesY[sinkIndex], weight * criticality);
 
             this.avDiff += (centerX - this.coordinatesX[sinkIndex]);
-        }
+        }*/
     }
 
 
