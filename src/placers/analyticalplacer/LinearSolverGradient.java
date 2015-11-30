@@ -179,7 +179,7 @@ class LinearSolverGradient extends LinearSolver {
                minY = this.coordinatesY[initialBlockIndex], maxY = this.coordinatesY[initialBlockIndex];
         int minXIndex = initialBlockIndex, maxXIndex = initialBlockIndex,
             minYIndex = initialBlockIndex, maxYIndex = initialBlockIndex;
-        double maxCriticality = 0;
+        double maxCriticality = 0, meanCriticality = 1;
 
         for(int i = 1; i < numNetBlocks; i++) {
             Pair<Integer, TimingEdge> sinkEntry = net.get(i);
@@ -206,10 +206,13 @@ class LinearSolverGradient extends LinearSolver {
             if(criticality > maxCriticality) {
                 maxCriticality = criticality;
             }
+
+            meanCriticality *= criticality;
         }
 
-        this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight * maxCriticality);
-        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight * maxCriticality);
+        meanCriticality = Math.pow(meanCriticality, 1.0 / (numNetBlocks - 1));
+        this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, 0.0 + weight * meanCriticality);
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, 0.0 + weight * meanCriticality);
 
 
         /*int numNetBlocks = net.size();
