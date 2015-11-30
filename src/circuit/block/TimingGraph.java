@@ -131,13 +131,23 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
         this.criticalityExponent = criticalityExponent;
     }
 
+
+    public void reset() {
+        for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            int numSinks = block.getNumSinks();
+            for(int i = 0; i < numSinks; i++) {
+                block.getSinkEdge(i).setWireDelay(0);
+            }
+        }
+    }
+
+
     public void recalculateAllSlacksCriticalities(boolean recalculateWireDelays) {
         this.calculateArrivalTimes(recalculateWireDelays);
         this.calculateRequiredTimes();
     }
 
     public void calculateArrivalTimes(boolean recalculateWireDelays) {
-
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
             block.resetTiming();
             if(recalculateWireDelays) {

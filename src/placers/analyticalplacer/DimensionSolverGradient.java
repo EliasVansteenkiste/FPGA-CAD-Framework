@@ -1,7 +1,7 @@
 package placers.analyticalplacer;
 
 
-class DimensionSolverGradient extends DimensionSolver {
+class DimensionSolverGradient {
 
     private final double[] coordinates;
 
@@ -34,18 +34,18 @@ class DimensionSolverGradient extends DimensionSolver {
         this.firstSolve = false;
     }
 
-    @Override
-    void addConnection(
-            boolean minFixed, int minIndex, double minCoordinate,
-            boolean maxFixed, int maxIndex, double maxCoordinate,
-            double weightMultiplier) {
-
-        double difference = maxCoordinate - minCoordinate;
+    void addConnectionMinMaxUnknown(int index1, int index2, double coorDifference, double weight) {
+        if(coorDifference > 0) {
+            this.addConnection(index1, index2, coorDifference, weight);
+        } else {
+            this.addConnection(index2, index1, -coorDifference, weight);
+        }
+    }
+    void addConnection(int minIndex, int maxIndex, double coorDifference, double weight) {
 
         // TODO: platforming this net size works a bit better than not doing it
         // but the optimal maximal value isn't found yet
-        double netSize = 20 * difference / (10 + difference);
-        double weight = netSize == 0 ? 0 : weightMultiplier;
+        double netSize = 20 * coorDifference / (10 + coorDifference);
 
         if(minIndex >= 0) {
             this.totalPositiveNetSize[minIndex] += netSize;
@@ -60,17 +60,8 @@ class DimensionSolverGradient extends DimensionSolver {
         }
     }
 
-    @Override
     void solve() {
         int numBlocks = this.coordinates.length;
-
-        /*int max = 0;
-        for(int numPositiveNet : this.numPositiveNets) {
-            if(numPositiveNet > max) {
-                max = numPositiveNet;
-            }
-        }
-        System.out.println(max);*/
 
         for(int i = 0; i < numBlocks; i++) {
             /* This calculation is a bit complex. There are 3 coordinates at play:
@@ -95,25 +86,21 @@ class DimensionSolverGradient extends DimensionSolver {
             double currentCoordinate = this.coordinates[i];
 
             double netGoal = currentCoordinate;
-            double pseudoWeight = Math.pow(this.pseudoWeight, 1);
-            if(direction > 0) {
+            if(direction > 0.000001) {
                 netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
-                //pseudoWeight = Math.pow(pseudoWeight, (this.numPositiveNets[i] + 100) / 50.0);
 
-            } else if(direction < 0) {
+            } else if(direction < -0.000001) {
                 netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
-                //pseudoWeight = Math.pow(pseudoWeight, (this.numNegativeNets[i] + 100) / 50.0);
 
             } else {
                 continue;
             }
 
-
-
             if(this.firstSolve) {
-                this.coordinates[i] += this.stepSize * ((1 - pseudoWeight) * netGoal - currentCoordinate);
+                this.coordinates[i] += this.stepSize * (netGoal - currentCoordinate);
+
             } else {
-                this.coordinates[i] += this.stepSize * (netGoal + pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
+                this.coordinates[i] += this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
             }
         }
     }

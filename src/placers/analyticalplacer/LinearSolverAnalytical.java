@@ -160,7 +160,7 @@ class LinearSolverAnalytical extends LinearSolver {
         }
     }
 
-    void processConnectionTD(int sourceIndex, int sinkIndex, double weightMultiplier) {
+    private void processConnectionTD(int sourceIndex, int sinkIndex, double weightMultiplier) {
         boolean sourceFixed = this.isFixed(sourceIndex);
         boolean sinkFixed = this.isFixed(sinkIndex);
 

@@ -10,12 +10,13 @@ import java.util.Random;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.BlockType;
+import circuit.exceptions.PlacementException;
 
 public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     public static void initOptions(Options options) {
         options.add("anchor weight", "starting anchor weight", new Double(0));
-        options.add("anchor weight increase", "value that is added to the anchor weight in each iteration", new Double(0.2));
+        options.add("anchor weight increase", "value that is added to the anchor weight in each iteration", new Double(0.01));
 
         options.add("gradient step size", "ratio of distance to optimal position that is moved", new Double(0.4));
         options.add("gradient effort level", "number of gradient steps to take in each outer iteration", new Integer(40));
@@ -24,6 +25,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     private final int gradientIterations;
     private double gradientSpeed;
+    protected double criticalityThreshold; // Only used by GradientPlacerTD
     private double anchorWeight, anchorWeightIncrease;
 
     public GradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
@@ -46,24 +48,53 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void solveLinear(int iteration) {
-
-        boolean firstSolve = (iteration == 0);
-
-        if(!firstSolve) {
+        if(iteration > 0) {
             this.anchorWeight += this.anchorWeightIncrease;
         }
 
         int innerIterations = iteration == 0 ? 4 * this.gradientIterations : this.gradientIterations;
 
         for(int i = 0; i < innerIterations; i++) {
-            LinearSolver solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.gradientSpeed);
-            this.solveLinearIteration(solver, !firstSolve);
+            LinearSolver solver = new LinearSolverGradient(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, this.gradientSpeed);
+            this.solveLinearIteration(solver, iteration);
         }
+    }
+
+    /*
+     * Build and solve the linear system ==> recalculates linearX and linearY
+     * If it is the first time we solve the linear system ==> don't take pseudonets into account
+     */
+    protected void solveLinearIteration(LinearSolver solver, int iteration) {
+
+        // Add connections between blocks that are connected by a net
+        this.processNetsWLD(solver);
+
+        this.processNetsTD(solver);
+
+        // Add pseudo connections
+        if(iteration > 0) {
+            // this.legalX and this.legalY store the solution with the lowest cost
+            // For anchors, the last (possibly suboptimal) solution usually works better
+            solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+        }
+
+        // Solve and save result
+        solver.solve();
     }
 
     @Override
     protected void solveLegal(int iteration) {
-        // TODO: implement
+        // This is fixed, because making it dynamic doesn't improve results
+        // But HeapLegalizer still supports other values for maxUtilization
+        double maxUtilization = 1;
+
+        try {
+            this.legalizer.legalize(maxUtilization);
+        } catch(PlacementException error) {
+            this.logger.raise(error);
+        }
+
+        this.updateLegal();
     }
 
 

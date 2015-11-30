@@ -8,9 +8,15 @@ import circuit.block.TimingEdge;
 class LinearSolverGradient extends LinearSolver {
 
     private DimensionSolverGradient solverX, solverY;
+    private double criticalityThreshold;
+    private double timingTradeoff;
 
-    LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double stepSize) {
+    LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double criticalityThreshold, double stepSize) {
         super(coordinatesX, coordinatesY, numIOBlocks);
+
+        this.criticalityThreshold = criticalityThreshold;
+        this.timingTradeoff = pseudoWeight;
+        //this.timingTradeoff = 0.5;
 
         this.solverX = new DimensionSolverGradient(coordinatesX, pseudoWeight, stepSize);
         this.solverY = new DimensionSolverGradient(coordinatesY, pseudoWeight, stepSize);
@@ -26,40 +32,19 @@ class LinearSolverGradient extends LinearSolver {
     void processNetWLD(int[] blockIndexes) {
         int numNetBlocks = blockIndexes.length;
 
-        double weightMultiplier = AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
+        double weight = (1 - this.timingTradeoff) * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {
             int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
-            boolean fixed1 = this.isFixed(blockIndex1), fixed2 = this.isFixed(blockIndex2);
 
             double coordinate1 = this.coordinatesX[blockIndex1];
             double coordinate2 = this.coordinatesX[blockIndex2];
-            if(coordinate1 < coordinate2) {
-                this.solverX.addConnection(
-                        fixed1, blockIndex1, coordinate1,
-                        fixed2, blockIndex2, coordinate2,
-                        weightMultiplier);
-            } else {
-                this.solverX.addConnection(
-                        fixed2, blockIndex2, coordinate2,
-                        fixed1, blockIndex1, coordinate1,
-                        weightMultiplier);
-            }
+            this.solverX.addConnectionMinMaxUnknown(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
 
             coordinate1 = this.coordinatesY[blockIndex1];
             coordinate2 = this.coordinatesY[blockIndex2];
-            if(coordinate1 < coordinate2) {
-                this.solverY.addConnection(
-                        fixed1, blockIndex1, coordinate1,
-                        fixed2, blockIndex2, coordinate2,
-                        weightMultiplier);
-            } else {
-                this.solverY.addConnection(
-                        fixed2, blockIndex2, coordinate2,
-                        fixed1, blockIndex1, coordinate1,
-                        weightMultiplier);
-            }
+            this.solverY.addConnectionMinMaxUnknown(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
 
             return;
         }
@@ -93,26 +78,39 @@ class LinearSolverGradient extends LinearSolver {
             }
         }
 
-
-        boolean minXFixed = isFixed(minXIndex), maxXFixed = isFixed(maxXIndex),
-                minYFixed = isFixed(minYIndex), maxYFixed = isFixed(maxYIndex);
-
         // Add connections between the min and max block
-        this.solverX.addConnection(
-                minXFixed, minXIndex, minX,
-                maxXFixed, maxXIndex, maxX,
-                weightMultiplier);
-
-        this.solverY.addConnection(
-                minYFixed, minYIndex, minY,
-                maxYFixed, maxYIndex, maxY,
-                weightMultiplier);
+        this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight);
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);
     }
+
 
     @Override
     void processNetTD(List<Pair<Integer, TimingEdge>> net) {
-        // TODO: implement
+        int numPins = net.size();
+        int sourceIndex = net.get(0).getFirst();
 
+        for(int i = 1; i < numPins; i++) {
+            Pair<Integer, TimingEdge> entry = net.get(i);
+            double criticality = entry.getSecond().getCriticality();
+
+            if(criticality > this.criticalityThreshold || true) {
+                int sinkIndex = entry.getFirst();
+                double weight = 2.0 / numPins * criticality;
+
+                double sourceCoordinate = this.coordinatesX[sourceIndex];
+                double sinkCoordinate = this.coordinatesX[sinkIndex];
+
+                //double sinkFactor = Math.min(this.timingTradeoff * 2, 1);
+                double sinkFactor = 0.5;
+                sinkCoordinate = (1 - sinkFactor) * sourceCoordinate + sinkFactor * this.coordinatesX[sinkIndex];
+                this.solverX.addConnectionMinMaxUnknown(sourceIndex, sinkIndex, sinkCoordinate - sourceCoordinate, weight);
+
+                sourceCoordinate = this.coordinatesY[sourceIndex];
+                sinkCoordinate = this.coordinatesY[sinkIndex];
+                sinkCoordinate = (1 - sinkFactor) * sourceCoordinate + sinkFactor * this.coordinatesY[sinkIndex];
+                this.solverY.addConnectionMinMaxUnknown(sourceIndex, sinkIndex, sinkCoordinate - sourceCoordinate, weight);
+            }
+        }
     }
 
 

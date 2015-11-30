@@ -220,42 +220,28 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
 
-    /*
-     * Build and solve the linear system ==> recalculates linearX and linearY
-     * If it is the first time we solve the linear system ==> don't take pseudonets into account
-     */
-    protected void solveLinearIteration(LinearSolver solver, boolean addPseudoNets) {
-
-        // Add connections between blocks that are connected by a net
-        this.processNetsWLD(solver);
-
-        this.processNetsTD(solver);
-
-        // Add pseudo connections
-        if(addPseudoNets) {
-            // this.legalX and this.legalY store the solution with the lowest cost
-            // For anchors, the last (possibly suboptimal) solution usually works better
-            solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
-        }
-
-        // Solve and save result
-        solver.solve();
-    }
-
-
-    private void processNetsWLD(LinearSolver solver) {
+    protected void processNetsWLD(LinearSolver solver) {
         for(int[] net : this.nets) {
             solver.processNetWLD(net);
         }
     }
 
-    private void processNetsTD(LinearSolver solver) {
+    protected void processNetsTD(LinearSolver solver) {
         // If the Placer is not timing driven, this.timingNets is empty
         for(List<Pair<Integer, TimingEdge>> net : this.timingNets) {
             solver.processNetTD(net);
         }
     }
 
+
+    protected void updateLegal() {
+        int numMovableBlocks = this.numBlocks - this.numIOBlocks;
+        int[] tmpLegalX = this.legalizer.getLegalX();
+        int[] tmpLegalY = this.legalizer.getLegalY();
+
+        System.arraycopy(tmpLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, numMovableBlocks);
+        System.arraycopy(tmpLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, numMovableBlocks);
+    }
 
 
     protected void updateCircuit() throws PlacementException {

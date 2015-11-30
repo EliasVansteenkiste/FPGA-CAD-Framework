@@ -27,7 +27,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     protected double criticalityThreshold; // This is only used by AnalyticalPlacerTD
     private CostCalculator costCalculator;
     private double linearCost, legalCost = Double.MAX_VALUE;
-    private int numMovableBlocks;
 
     public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
@@ -45,8 +44,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     public void initializeData() {
         super.initializeData();
 
-        this.numMovableBlocks = this.numBlocks - this.numIOBlocks;
-
         this.costCalculator = this.createCostCalculator();
     }
 
@@ -57,19 +54,39 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void solveLinear(int iteration) {
-        boolean firstSolve = (iteration == 0);
-
-        if(!firstSolve) {
+        if(iteration > 0) {
             this.anchorWeight *= this.anchorWeightMultiplier;
         }
 
-        int innerIterations = firstSolve ? 5 : 1;
+        int innerIterations = iteration == 0 ? 5 : 1;
         for(int i = 0; i < innerIterations; i++) {
             LinearSolver solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, AnalyticalPlacer.EPSILON);
-            this.solveLinearIteration(solver, !firstSolve);
+            this.solveLinearIteration(solver, iteration);
         }
 
         this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+    }
+
+    /*
+     * Build and solve the linear system ==> recalculates linearX and linearY
+     * If it is the first time we solve the linear system ==> don't take pseudonets into account
+     */
+    protected void solveLinearIteration(LinearSolver solver, int iteration) {
+
+        // Add connections between blocks that are connected by a net
+        this.processNetsWLD(solver);
+
+        this.processNetsTD(solver);
+
+        // Add pseudo connections
+        if(iteration > 0) {
+            // this.legalX and this.legalY store the solution with the lowest cost
+            // For anchors, the last (possibly suboptimal) solution usually works better
+            solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+        }
+
+        // Solve and save result
+        solver.solve();
     }
 
     @Override
@@ -91,9 +108,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         if(tmpLegalCost < this.legalCost) {
             this.legalCost = tmpLegalCost;
-
-            System.arraycopy(tmpLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, this.numMovableBlocks);
-            System.arraycopy(tmpLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, this.numMovableBlocks);
+            this.updateLegal();
         }
     }
 

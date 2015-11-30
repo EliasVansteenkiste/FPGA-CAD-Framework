@@ -4,7 +4,7 @@ import mathtools.CGSolver;
 import mathtools.Csr;
 
 
-class DimensionSolverAnalytical extends DimensionSolver {
+class DimensionSolverAnalytical {
 
     private final double[] coordinates;
     private final Csr matrix;
@@ -37,7 +37,7 @@ class DimensionSolverAnalytical extends DimensionSolver {
         this.vector[relativeIndex] += weight * legalCoordinate;
     }
 
-    @Override
+
     void addConnection(
             boolean minFixed, int minIndex, double minCoordinate,
             boolean maxFixed, int maxIndex, double maxCoordinate,
@@ -65,7 +65,6 @@ class DimensionSolverAnalytical extends DimensionSolver {
         }
     }
 
-    @Override
     void solve() {
         this.matrix.prepareArrays();
         CGSolver solver = new CGSolver(this.matrix, this.vector);

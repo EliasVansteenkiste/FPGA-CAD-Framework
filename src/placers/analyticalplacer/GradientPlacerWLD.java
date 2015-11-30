@@ -20,6 +20,12 @@ public class GradientPlacerWLD extends GradientPlacer {
     }
 
     @Override
+    protected void updateLegal() {
+        this.legalX = this.legalizer.getLegalX();
+        this.legalY = this.legalizer.getLegalY();
+    }
+
+    @Override
     public String getName() {
         return "Wirelength driven gradient descent placer";
     }
