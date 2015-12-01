@@ -122,7 +122,7 @@ class DimensionSolverGradient {
             } else {
                 newSpeed = this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
             }
-            this.speeds[i] = 0.7 * this.speeds[i] + 0.3 * newSpeed;
+            this.speeds[i] = 0 * this.speeds[i] + 1 * newSpeed;
 
             this.coordinates[i] += this.speeds[i];
         }
