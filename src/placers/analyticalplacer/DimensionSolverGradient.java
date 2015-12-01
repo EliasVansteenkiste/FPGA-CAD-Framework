@@ -11,24 +11,22 @@ class DimensionSolverGradient {
 
     private final double[] speeds;
 
-    private double pseudoWeight;
+    private double pseudoWeight = 0;
+    private boolean legalIsSet = false;
     private int[] legalCoordinates;
-    private boolean firstSolve;
 
-    DimensionSolverGradient(double[] coordinates, double pseudoWeight, double stepSize) {
+
+    DimensionSolverGradient(double[] coordinates, double stepSize) {
         this.coordinates = coordinates;
-        this.pseudoWeight = pseudoWeight;
         this.stepSize = stepSize;
 
         int numBlocks = coordinates.length;
 
         this.speeds = new double[numBlocks];
-
-        this.firstSolve = true;
     }
 
 
-    void reset(double pseudoWeight) {
+    void initializeIteration(double pseudoWeight) {
         this.pseudoWeight = pseudoWeight;
 
         int numBlocks = this.coordinates.length;
@@ -41,7 +39,7 @@ class DimensionSolverGradient {
 
     void setLegal(int[] legal) {
         this.legalCoordinates = legal;
-        this.firstSolve = false;
+        this.legalIsSet = true;
     }
 
     void addConnectionMinMaxUnknown(int index1, int index2, double coorDifference, double weight) {
@@ -117,13 +115,14 @@ class DimensionSolverGradient {
             }*/
 
             double newSpeed;
-            if(this.firstSolve) {
-                newSpeed = this.stepSize * (netGoal - currentCoordinate);
-            } else {
+            if(this.legalIsSet) {
                 newSpeed = this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
-            }
-            this.speeds[i] = 0 * this.speeds[i] + 1 * newSpeed;
 
+            } else {
+                newSpeed = this.stepSize * (netGoal - currentCoordinate);
+            }
+
+            this.speeds[i] = 0.7 * this.speeds[i] + 0.3 * newSpeed;
             this.coordinates[i] += this.speeds[i];
         }
     }

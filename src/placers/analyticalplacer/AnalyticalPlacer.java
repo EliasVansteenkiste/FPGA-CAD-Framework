@@ -3,13 +3,11 @@ package placers.analyticalplacer;
 import interfaces.Logger;
 import interfaces.Options;
 
-import java.util.List;
 import java.util.Random;
 
 
 import visual.PlacementVisualizer;
 import circuit.Circuit;
-import circuit.architecture.BlockType;
 import circuit.exceptions.PlacementException;
 
 public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
@@ -48,8 +46,8 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts) {
-        return new HeapLegalizer(this.circuit, blockTypes, blockTypeIndexStarts, this.linearX, this.linearY);
+    protected Legalizer createLegalizer() {
+        return new HeapLegalizer(this.circuit, this.blockTypes, this.blockTypeIndexStarts, this.linearX, this.linearY);
     }
 
     @Override

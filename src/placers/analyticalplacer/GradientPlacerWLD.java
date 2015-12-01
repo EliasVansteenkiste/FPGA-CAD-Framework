@@ -20,9 +20,10 @@ public class GradientPlacerWLD extends GradientPlacer {
     }
 
     @Override
-    protected void updateLegal() {
-        this.legalX = this.legalizer.getLegalX();
-        this.legalY = this.legalizer.getLegalY();
+    protected void updateLegalIfNeeded() {
+        // This placer always accepts the latest solution.
+        // No cost has to be calculated, so this is faster.
+        this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
     }
 
     @Override

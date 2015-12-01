@@ -5,11 +5,9 @@ import interfaces.Options;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import circuit.Circuit;
 import circuit.architecture.BlockCategory;
@@ -17,37 +15,26 @@ import circuit.architecture.BlockType;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-import circuit.block.LeafBlock;
-import circuit.block.TimingEdge;
 import circuit.exceptions.PlacementException;
-import circuit.pin.AbstractPin;
 
 import placers.Placer;
-import util.Pair;
 import visual.PlacementVisualizer;
 
 public abstract class AnalyticalAndGradientPlacer extends Placer {
 
+    protected List<BlockType> blockTypes;
+    protected List<Integer> blockTypeIndexStarts;
     protected final Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
-    protected final List<int[]> nets = new ArrayList<>();
-    protected final List<List<Pair<Integer,TimingEdge>>> timingNets = new ArrayList<>();
+
     protected int numBlocks, numIOBlocks;
 
     protected double[] linearX, linearY;
-    protected int[] legalX, legalY;
-
-    protected Legalizer legalizer;
-    private boolean timingDriven;
-
+    private int[] legalX, legalY;
 
 
     public AnalyticalAndGradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
     }
-
-
-    protected abstract boolean isTimingDriven();
-    protected abstract Legalizer createLegalizer(List<BlockType> blockTypes, List<Integer> blockTypeIndexStarts);
 
     protected abstract void solveLinear(int iteration);
     protected abstract void solveLegal(int iteration);
@@ -68,12 +55,14 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
         // Make a list of all block types, with IO blocks first
+        this.blockTypes = new ArrayList<>();
+
         BlockType ioBlockType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
-        List<BlockType> blockTypes = new ArrayList<>();
-        blockTypes.add(ioBlockType);
+        this.blockTypes.add(ioBlockType);
+
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
             if(!blockType.equals(ioBlockType)) {
-                blockTypes.add(blockType);
+                this.blockTypes.add(blockType);
             }
         }
 
@@ -85,11 +74,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.legalX = new int[this.numBlocks];
         this.legalY = new int[this.numBlocks];
 
-        List<Integer> blockTypeIndexStarts = new ArrayList<>();
-        int blockIndex = 0;
-        blockTypeIndexStarts.add(0);
+        this.blockTypeIndexStarts = new ArrayList<>();
+        this.blockTypeIndexStarts.add(0);
 
-        for(BlockType blockType : blockTypes) {
+        int blockIndex = 0;
+
+        for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
             for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
                 GlobalBlock block = (GlobalBlock) abstractBlock;
 
@@ -102,79 +92,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 blockIndex++;
             }
 
-            blockTypeIndexStarts.add(blockIndex);
+            this.blockTypeIndexStarts.add(blockIndex);
         }
 
-        this.numIOBlocks = blockTypeIndexStarts.get(1);
-
-
-
-        // Add all nets
-        // Loop through all net sources
-        for(GlobalBlock sourceBlock : this.circuit.getGlobalBlocks()) {
-            for(AbstractPin sourcePin : sourceBlock.getOutputPins()) {
-
-                // Build a set of all blocks connected to the net
-                Set<GlobalBlock> netBlocks = new HashSet<>();
-                netBlocks.add((GlobalBlock) sourcePin.getOwner());
-
-                for(AbstractPin pin : sourcePin.getSinks()) {
-                    netBlocks.add((GlobalBlock) pin.getOwner());
-                }
-
-                // Make a list of the block indexes
-                int numNetBlocks = netBlocks.size();
-
-                // Ignore nets of size 1
-                // Due to this, the WLD costcalculator (which uses these nets
-                // for speedup) is not entirely accurate, but that doesn't
-                // matter, because we use the same (inaccurate) costcalculator
-                // to calculate both the linear and legal cost, so the deviation
-                // cancels out.
-                if(numNetBlocks > 1) {
-                    int[] netBlockIndexes = new int[numNetBlocks];
-                    int i = 0;
-                    for(GlobalBlock netBlock : netBlocks) {
-                        netBlockIndexes[i] = this.blockIndexes.get(netBlock);
-                        i++;
-                    }
-
-                    // Add this "net" to the list of nets
-                    this.nets.add(netBlockIndexes);
-                }
-            }
-        }
-
-        // Add all timing nets
-        this.timingDriven = this.isTimingDriven();
-        if(this.timingDriven) {
-            for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
-                int sourceIndex = this.blockIndexes.get(sourceGlobalBlock);
-
-                for(LeafBlock sourceLeafBlock : sourceGlobalBlock.getLeafBlocks()) {
-
-                    List<Pair<Integer, TimingEdge>> net = new ArrayList<>();
-                    net.add(new Pair<Integer, TimingEdge>(sourceIndex, null));
-
-                    int numSinks = sourceLeafBlock.getNumSinks();
-                    for(int i = 0; i < numSinks; i++) {
-                        TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(i);
-
-                        GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(i).getGlobalParent();
-                        int sinkIndex = this.blockIndexes.get(sinkGlobalBlock);
-
-                        net.add(new Pair<Integer, TimingEdge>(sinkIndex, timingEdge));
-                    }
-
-                    if(numSinks > 0) {
-                        this.timingNets.add(net);
-                    }
-                }
-            }
-        }
-
-
-        this.legalizer = createLegalizer(blockTypes, blockTypeIndexStarts);
+        this.numIOBlocks = this.blockTypeIndexStarts.get(1);
     }
 
 
@@ -222,27 +143,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
 
-    protected void processNetsWLD(LinearSolver solver) {
-        for(int[] net : this.nets) {
-            solver.processNetWLD(net);
-        }
-    }
 
-    protected void processNetsTD(LinearSolver solver) {
-        // If the Placer is not timing driven, this.timingNets is empty
-        for(List<Pair<Integer, TimingEdge>> net : this.timingNets) {
-            solver.processNetTD(net);
-        }
-    }
-
-
-    protected void updateLegal() {
+    protected void updateLegal(int[] newLegalX, int[] newLegalY) {
         int numMovableBlocks = this.numBlocks - this.numIOBlocks;
-        int[] tmpLegalX = this.legalizer.getLegalX();
-        int[] tmpLegalY = this.legalizer.getLegalY();
 
-        System.arraycopy(tmpLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, numMovableBlocks);
-        System.arraycopy(tmpLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, numMovableBlocks);
+        System.arraycopy(newLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, numMovableBlocks);
+        System.arraycopy(newLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, numMovableBlocks);
     }
 
 

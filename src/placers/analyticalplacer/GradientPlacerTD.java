@@ -27,7 +27,6 @@ public class GradientPlacerTD extends GradientPlacer {
         super(circuit, options, random, logger, visualizer);
 
         this.criticalityExponent = options.getDouble("criticality exponent");
-        this.criticalityThreshold = options.getDouble("criticality threshold");
 
         this.timingGraph = this.circuit.getTimingGraph();
 
@@ -43,7 +42,11 @@ public class GradientPlacerTD extends GradientPlacer {
         this.timingGraph.setCriticalityExponent(this.criticalityExponent);
         this.timingGraph.recalculateAllSlacksCriticalities(false);
 
-        this.costCalculator = new CostCalculatorTD(this.circuit, this.blockIndexes, this.timingNets);
+        this.costCalculator = new CostCalculatorTD(
+                this.circuit,
+                this.blockIndexes,
+                this.netBlockIndexes,
+                this.netTimingEdges);
     }
 
     @Override
@@ -53,11 +56,14 @@ public class GradientPlacerTD extends GradientPlacer {
 
 
     @Override
-    protected void updateLegal() {
-        this.latestCost = this.costCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+    protected void updateLegalIfNeeded() {
+        int[] newLegalX = this.legalizer.getLegalX();
+        int[] newLegalY = this.legalizer.getLegalY();
+
+        this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY);
         if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
             this.minCost = this.latestCost;
-            super.updateLegal();
+            super.updateLegal(newLegalX, newLegalY);
         }
     }
 

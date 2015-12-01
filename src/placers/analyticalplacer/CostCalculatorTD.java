@@ -10,17 +10,22 @@ import circuit.block.GlobalBlock;
 import circuit.block.TimingEdge;
 import circuit.block.TimingGraph;
 
-import util.Pair;
-
 class CostCalculatorTD extends CostCalculator {
 
     private TimingGraph timingGraph;
     private DelayTables delayTables;
     private BlockCategory[] blockCategories;
 
-    private List<List<Pair<Integer, TimingEdge>>> timingNets;
+    private List<int[]> netBlockIndexes;
+    private List<TimingEdge[]> netTimingEdges;
 
-    CostCalculatorTD(Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, List<List<Pair<Integer, TimingEdge>>> timingNets) {
+
+    CostCalculatorTD(
+            Circuit circuit,
+            Map<GlobalBlock, Integer> blockIndexes,
+            List<int[]> netBlockIndexes,
+            List<TimingEdge[]> netTimingEdges) {
+
         this.timingGraph = circuit.getTimingGraph();
         this.delayTables = circuit.getArchitecture().getDelayTables();
 
@@ -32,22 +37,27 @@ class CostCalculatorTD extends CostCalculator {
             this.blockCategories[index] = category;
         }
 
-        this.timingNets = timingNets;
+        this.netBlockIndexes = netBlockIndexes;
+        this.netTimingEdges = netTimingEdges;
     }
+
 
     @Override
     protected double calculate() {
-        for(List<Pair<Integer, TimingEdge>> net : this.timingNets) {
-            int sourceIndex = net.get(0).getFirst();
+        int numNets = this.netBlockIndexes.size();
+        for(int netIndex = 0; netIndex < numNets; netIndex ++) {
+
+            int[] blockIndexes = this.netBlockIndexes.get(netIndex);
+            TimingEdge[] timingEdges = this.netTimingEdges.get(netIndex);
+
+            int sourceIndex = blockIndexes[0];
             BlockCategory sourceCategory = this.blockCategories[sourceIndex];
             double sourceX = this.getX(sourceIndex);
             double sourceY = this.getY(sourceIndex);
 
-            int numPins = net.size();
-            for(int i = 1; i < numPins; i++) {
-                Pair<Integer, TimingEdge> entry = net.get(i);
-
-                int sinkIndex = entry.getFirst();
+            int numPins = timingEdges.length;
+            for(int i = 0; i < numPins; i++) {
+                int sinkIndex = blockIndexes[i + 1];
                 BlockCategory sinkCategory = this.blockCategories[sinkIndex];
 
                 double sinkX = this.getX(sinkIndex);
@@ -56,7 +66,7 @@ class CostCalculatorTD extends CostCalculator {
                 int deltaY = (int) Math.abs(sinkY - sourceY);
                 double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
 
-                TimingEdge timingEdge = entry.getSecond();
+                TimingEdge timingEdge = timingEdges[i];
                 timingEdge.setWireDelay(wireDelay);
             }
         }
