@@ -35,7 +35,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
     @Override
     protected CostCalculator createCostCalculator() {
-        return new CostCalculatorTD(this.circuit, this.blockIndexes, this.timingNets);
+        return new CostCalculatorTD(this.circuit, this.blockIndexes, this.netBlockIndexes, this.netTimingEdges);
     }
 
 

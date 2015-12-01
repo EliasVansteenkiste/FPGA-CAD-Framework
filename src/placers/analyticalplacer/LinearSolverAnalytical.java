@@ -1,37 +1,44 @@
 package placers.analyticalplacer;
 
-import java.util.List;
-
 import circuit.block.TimingEdge;
 
-import util.Pair;
+class LinearSolverAnalytical {
 
-
-
-class LinearSolverAnalytical extends LinearSolver {
+    private double[] coordinatesX, coordinatesY;
+    private int numIOBlocks;
 
     private DimensionSolverAnalytical solverX, solverY;
     private double criticalityThreshold;
 
-    LinearSolverAnalytical(double[] coordinatesX, double[] coordinatesY, int numIOBlocks, double pseudoWeight, double criticalityThreshold, double epsilon) {
-        super(coordinatesX, coordinatesY, numIOBlocks);
+    LinearSolverAnalytical(
+            double[] coordinatesX,
+            double[] coordinatesY,
+            int numIOBlocks,
+            double pseudoWeight,
+            double criticalityThreshold,
+            double epsilon) {
+
+        this.coordinatesX = coordinatesX;
+        this.coordinatesY = coordinatesY;
+
+        this.numIOBlocks = numIOBlocks;
+
         this.criticalityThreshold = criticalityThreshold;
 
         this.solverX = new DimensionSolverAnalytical(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
         this.solverY = new DimensionSolverAnalytical(coordinatesY, numIOBlocks, pseudoWeight, epsilon);
     }
 
-    @Override
+
     void addPseudoConnections(int[] legalX, int[] legalY) {
-        int numIOBlocks = this.getNumIOBlocks();
         int numBlocks = this.coordinatesX.length;
-        for(int blockIndex = numIOBlocks; blockIndex < numBlocks; blockIndex++) {
+        for(int blockIndex = this.numIOBlocks; blockIndex < numBlocks; blockIndex++) {
             this.solverX.addPseudoConnection(blockIndex, legalX[blockIndex]);
             this.solverY.addPseudoConnection(blockIndex, legalY[blockIndex]);
         }
     }
 
-    @Override
+
     void processNetWLD(int[] blockIndexes) {
 
         int numNetBlocks = blockIndexes.length;
@@ -142,18 +149,17 @@ class LinearSolverAnalytical extends LinearSolver {
         }
     }
 
-    @Override
-    void processNetTD(List<Pair<Integer, TimingEdge>> net) {
-        int numPins = net.size();
-        int sourceIndex = net.get(0).getFirst();
 
-        for(int i = 1; i < numPins; i++) {
-            Pair<Integer, TimingEdge> entry = net.get(i);
-            double criticality = entry.getSecond().getCriticality();
+    void processNetTD(int[] blockIndexes, TimingEdge[] timingEdges) {
+        int numSinks = timingEdges.length;
+        int sourceIndex = blockIndexes[0];
+
+        for(int i = 0; i < numSinks; i++) {
+            double criticality = timingEdges[i].getCriticality();
 
             if(criticality > this.criticalityThreshold) {
-                int sinkIndex = entry.getFirst();
-                double weight = 2.0 / numPins * criticality;
+                int sinkIndex = blockIndexes[i + 1];
+                double weight = 2.0 / numSinks * criticality;
 
                 this.processConnectionTD(sourceIndex, sinkIndex, weight);
             }
@@ -193,7 +199,11 @@ class LinearSolverAnalytical extends LinearSolver {
         }
     }
 
-    @Override
+
+    private boolean isFixed(int blockIndex) {
+        return blockIndex < this.numIOBlocks;
+    }
+
     void solve() {
         this.solverX.solve();
         this.solverY.solve();

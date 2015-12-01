@@ -5,7 +5,6 @@ import interfaces.Options;
 
 import java.util.Random;
 
-
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.exceptions.PlacementException;
@@ -23,8 +22,14 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
     protected double criticalityThreshold; // This is only used by AnalyticalPlacerTD
-    private CostCalculator costCalculator;
+
     private double linearCost, legalCost = Double.MAX_VALUE;
+
+    private HeapLegalizer legalizer;
+    private CostCalculator costCalculator;
+
+
+
 
     public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
@@ -42,13 +47,10 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     public void initializeData() {
         super.initializeData();
 
+        this.legalizer = new HeapLegalizer(this.circuit, this.blockTypes, this.blockTypeIndexStarts, this.linearX, this.linearY);
         this.costCalculator = this.createCostCalculator();
     }
 
-    @Override
-    protected Legalizer createLegalizer() {
-        return new HeapLegalizer(this.circuit, this.blockTypes, this.blockTypeIndexStarts, this.linearX, this.linearY);
-    }
 
     @Override
     protected void solveLinear(int iteration) {
@@ -58,7 +60,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         int innerIterations = iteration == 0 ? 5 : 1;
         for(int i = 0; i < innerIterations; i++) {
-            LinearSolver solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, AnalyticalPlacer.EPSILON);
+            LinearSolverAnalytical solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, AnalyticalPlacer.EPSILON);
             this.solveLinearIteration(solver, iteration);
         }
 
@@ -69,7 +71,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
-    protected void solveLinearIteration(LinearSolver solver, int iteration) {
+    protected void solveLinearIteration(LinearSolverAnalytical solver, int iteration) {
 
         // Add connections between blocks that are connected by a net
         this.processNetsWLD(solver);
@@ -87,6 +89,20 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         solver.solve();
     }
 
+    protected void processNetsWLD(LinearSolverAnalytical solver) {
+        for(int[] net : this.netUniqueBlockIndexes) {
+            solver.processNetWLD(net);
+        }
+    }
+
+    protected void processNetsTD(LinearSolverAnalytical solver) {
+        // If the Placer is not timing driven, this.timingNets is empty
+        int numNets = this.netBlockIndexes.size();
+        for(int netIndex = 0; netIndex < numNets; netIndex++) {
+            solver.processNetTD(this.netBlockIndexes.get(netIndex), this.netTimingEdges.get(netIndex));
+        }
+    }
+
     @Override
     protected void solveLegal(int iteration) {
         // This is fixed, because making it dynamic doesn't improve results
@@ -99,14 +115,13 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
             this.logger.raise(error);
         }
 
-        int[] tmpLegalX = this.legalizer.getLegalX();
-        int[] tmpLegalY = this.legalizer.getLegalY();
-        double tmpLegalCost = this.costCalculator.calculate(tmpLegalX, tmpLegalY);
-        //this.costCalculator.calculate(new int[this.numBlocks], new int[this.numBlocks]);
+        int[] newLegalX = this.legalizer.getLegalX();
+        int[] newLegalY = this.legalizer.getLegalY();
+        double tmpLegalCost = this.costCalculator.calculate(newLegalX, newLegalY);
 
         if(tmpLegalCost < this.legalCost) {
             this.legalCost = tmpLegalCost;
-            this.updateLegal();
+            this.updateLegal(newLegalX, newLegalY);
         }
     }
 

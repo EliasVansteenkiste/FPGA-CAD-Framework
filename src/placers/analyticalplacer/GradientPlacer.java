@@ -3,18 +3,11 @@ package placers.analyticalplacer;
 import interfaces.Logger;
 import interfaces.Options;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
-import java.util.Set;
-
 
 import visual.PlacementVisualizer;
 import circuit.Circuit;
-import circuit.block.GlobalBlock;
-import circuit.block.LeafBlock;
 import circuit.block.TimingEdge;
 import circuit.exceptions.PlacementException;
 
@@ -44,17 +37,16 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
 
-    private final int gradientIterations;
-    private double gradientSpeed;
+
     protected double anchorWeight;
     private double anchorWeightIncrease;
+    private double stepSize;
+    private final int gradientIterations;
     protected double maxUtilization;
 
     protected HeapLegalizer legalizer;
     private LinearSolverGradient solver;
 
-    protected List<int[]> netBlockIndexes, netUniqueBlockIndexes;
-    protected List<TimingEdge[]> netTimingEdges;
 
     public GradientPlacer(
             Circuit circuit,
@@ -68,11 +60,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeight = this.options.getDouble("anchor weight");
         this.anchorWeightIncrease = this.options.getDouble("anchor weight increase");
 
-        this.gradientSpeed = this.options.getDouble("step size");
+        this.stepSize = this.options.getDouble("step size");
         this.gradientIterations = this.options.getInteger("effort level");
     }
 
-    protected abstract boolean isTimingDriven();
     protected abstract void updateLegalIfNeeded();
 
 
@@ -80,72 +71,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     public void initializeData() {
         super.initializeData();
 
-        this.netBlockIndexes = new ArrayList<int[]>();
-        this.netUniqueBlockIndexes = new ArrayList<int[]>();
-        this.netTimingEdges = new ArrayList<TimingEdge[]>();
 
-        // Add all nets
-        // If the algorithm is timing driven: also store all the TimingEdges
-        // in each net.
-        boolean timingDriven = this.isTimingDriven();
-
-        for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
-            int sourceBlockIndex = this.blockIndexes.get(sourceGlobalBlock);
-
-            for(LeafBlock sourceLeafBlock : sourceGlobalBlock.getLeafBlocks()) {
-                int numSinks = sourceLeafBlock.getNumSinks();
-
-                Set<Integer> blockIndexesSet = new HashSet<>();
-                blockIndexesSet.add(sourceBlockIndex);
-
-                int[] blockIndexes = new int[numSinks + 1];
-                blockIndexes[0] = sourceBlockIndex;
-
-                TimingEdge[] timingEdges = new TimingEdge[numSinks];
-
-                for(int i = 0; i < numSinks; i++) {
-                    GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(i).getGlobalParent();
-                    int sinkBlockIndex = this.blockIndexes.get(sinkGlobalBlock);
-
-                    blockIndexesSet.add(sinkBlockIndex);
-                    blockIndexes[i + 1] = sinkBlockIndex;
-
-                    TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(i);
-                    timingEdges[i] = timingEdge;
-                }
-
-
-                /* Don't add nets which connect only one global block.
-                 * Due to this, the WLD costcalculator is not entirely
-                 * accurate, but that doesn't matter, because we use
-                 * the same (inaccurate) costcalculator to calculate
-                 * both the linear and legal cost, so the deviation
-                 * cancels out.
-                 */
-                int numUniqueBlocks = blockIndexesSet.size();
-                if(numUniqueBlocks > 1) {
-                    int[] uniqueBlockIndexes = new int[numUniqueBlocks];
-                    int i = 0;
-                    for(Integer blockIndex : blockIndexesSet) {
-                        uniqueBlockIndexes[i] = blockIndex;
-                        i++;
-                    }
-
-                    this.netUniqueBlockIndexes.add(uniqueBlockIndexes);
-
-                    // We only need all the blocks and their timing edges if
-                    // the algorithm is timing driven
-                    if(timingDriven) {
-                        this.netTimingEdges.add(timingEdges);
-                        this.netBlockIndexes.add(blockIndexes);
-                    }
-                }
-            }
-        }
-
-        this.solver = new LinearSolverGradient(
-                this.linearX, this.linearY,
-                this.numIOBlocks, this.gradientSpeed);
+        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.stepSize);
 
         this.legalizer = new HeapLegalizer(
                 this.circuit,
