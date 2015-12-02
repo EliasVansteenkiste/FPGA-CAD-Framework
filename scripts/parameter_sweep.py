@@ -2,6 +2,7 @@
 
 from place_and_route import ParameterSweeper
 import os
+import subprocess
 
 ###############
 # Set options #
