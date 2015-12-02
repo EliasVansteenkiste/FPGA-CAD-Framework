@@ -27,7 +27,7 @@ Architecture files are currently json-formatted and based on the vpr xml-files.
 The command line options can be found by calling interfaces.CLI with the option "--help". The most simple invocation of the toolflow is:
 
 java -cp bin:lib/json-simple-1.1.1.jar interfaces.CLI \
-benchmarks/k6_frac_N10_mem32K_40nm.json benchmarks/or1200.blif --placer wld_ap
+benchmarks/k6_frac_N10_mem32K_40nm.xml benchmarks/or1200.blif --placer wld_ap
 
 
 License
@@ -81,7 +81,7 @@ If you use the FPGA Placement Framework in your work, please reference in your p
 
 
 
-You may also refer to one of our others papers if you think it is more related. 
+You may also refer to one of our others papers if you think it is more related.
 
 Contributors
 ===============
