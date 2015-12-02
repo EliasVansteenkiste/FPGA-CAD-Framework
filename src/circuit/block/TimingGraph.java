@@ -5,7 +5,9 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Stack;
 
 import circuit.Circuit;
@@ -14,6 +16,7 @@ import circuit.architecture.BlockCategory;
 import circuit.pin.AbstractPin;
 
 import placers.SAPlacer.Swap;
+import util.Triple;
 
 public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
 
@@ -72,10 +75,9 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
     }
 
     private void traverseFromSource(LeafBlock pathSource) {
+        LinkedList<Triple<Integer, AbstractPin, Double>> stack = new LinkedList<>();
 
-        Stack<AbstractPin> pinStack = new Stack<AbstractPin>();
-        Stack<Double> delayStack = new Stack<Double>();
-
+        int sourcePinIndex = 0;
         for(AbstractPin outputPin : pathSource.getOutputPins()) {
             double setupDelay = 0;
             if(pathSource.isClocked()) {
@@ -86,16 +88,24 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
                 }
             }
 
-            pinStack.push(outputPin);
-            delayStack.push(setupDelay);
+            // Insert elements at the bottom of the stack, so that the output pins of
+            // the source block will be processed in ascending order. This is necessary
+            // for the method addSink().
+            stack.addLast(new Triple<Integer, AbstractPin, Double>(sourcePinIndex, outputPin, setupDelay));
+
+            sourcePinIndex++;
         }
 
-        while(pinStack.size() > 0) {
-            AbstractPin currentPin = pinStack.pop();
-            double currentDelay = delayStack.pop();
+        while(stack.size() > 0) {
+            Triple<Integer, AbstractPin, Double> entry = stack.pop();
+            int currentSourcePinIndex = entry.getFirst();
+            AbstractPin currentPin = entry.getSecond();
+            double currentDelay = entry.getThird();
+
 
             AbstractBlock owner = currentPin.getOwner();
 
+            // The pin is the input of a leaf block, so a timing graph node
             if(currentPin.isInput() && owner.isLeaf()) {
                 LeafBlock pathSink = ((LeafBlock) owner);
 
@@ -108,18 +118,16 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
                     endDelay = currentPin.getPortType().getDelay(outputPins.get(0).getPortType());
                 }
 
-                pathSource.addSink(pathSink, currentDelay + endDelay);
+                pathSource.addSink(currentSourcePinIndex, pathSink, currentDelay + endDelay);
 
-                // The block has children: proceed with the sinks of the current
-                // pin
+            // The block has children: proceed with the sinks of the current pin
             } else {
                 for(AbstractPin sinkPin : currentPin.getSinks()) {
                     if(sinkPin != null) {
                         double sourceSinkDelay = currentPin.getPortType().getDelay(sinkPin.getPortType());
                         double totalDelay = currentDelay + sourceSinkDelay;
 
-                        pinStack.push(sinkPin);
-                        delayStack.push(totalDelay);
+                        stack.push(new Triple<Integer, AbstractPin, Double>(currentSourcePinIndex, sinkPin, totalDelay));
                     }
                 }
             }

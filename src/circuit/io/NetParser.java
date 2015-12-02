@@ -125,12 +125,6 @@ public class NetParser {
         }
 
 
-        for(List<AbstractBlock> blocksOfType : this.blocks.values()) {
-            for(AbstractBlock block : blocksOfType) {
-                block.compact();
-            }
-        }
-
         Circuit circuit = new Circuit(this.circuitName, this.architecture, this.blocks);
         circuit.buildDataStructures();
 

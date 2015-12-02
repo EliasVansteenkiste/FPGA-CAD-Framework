@@ -55,6 +55,13 @@ public class Circuit {
         this.loadBlocks();
 
         this.timingGraph.build();
+
+
+        for(List<AbstractBlock> blocksOfType : this.blocks.values()) {
+            for(AbstractBlock block : blocksOfType) {
+                block.compact();
+            }
+        }
     }
 
 

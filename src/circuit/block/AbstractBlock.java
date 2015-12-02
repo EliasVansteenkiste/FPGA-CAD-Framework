@@ -109,6 +109,14 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     }
 
 
+    public int numInputPins() {
+        int[] pinRange = this.blockType.getInputPortRange();
+        return pinRange[1] - pinRange[0];
+    }
+    public int numOutputPins() {
+        int[] pinRange = this.blockType.getOutputPortRange();
+        return pinRange[1] - pinRange[0];
+    }
 
     public List<AbstractPin> getInputPins() {
         int[] pinRange = this.blockType.getInputPortRange();

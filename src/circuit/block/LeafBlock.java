@@ -14,9 +14,13 @@ public class LeafBlock extends IntermediateBlock {
 
     private ArrayList<LeafBlock> sourceBlocks = new ArrayList<LeafBlock>();
     private ArrayList<LeafBlock> sinkBlocks = new ArrayList<LeafBlock>();
+    private int numSources = 0;
+
     private ArrayList<TimingEdge> sourceEdges = new ArrayList<TimingEdge>();
     private ArrayList<TimingEdge> sinkEdges = new ArrayList<TimingEdge>();
-    private int numSources = 0, numSinks = 0;
+    private int[] sinkEdgesPinStarts;
+    private int currentPinIndex;
+    private int numSinks = 0;
 
     private double arrivalTime, requiredTime;
     private int numProcessedSources, numProcessedSinks;
@@ -28,6 +32,10 @@ public class LeafBlock extends IntermediateBlock {
         this.delayTables = delayTables;
         this.globalParent = globalParent;
         this.globalParent.addLeaf(this);
+
+        this.sinkEdgesPinStarts = new int[this.numOutputPins() + 1];
+        this.sinkEdgesPinStarts[0] = 0;
+        this.currentPinIndex = 0;
     }
 
     @Override
@@ -36,6 +44,11 @@ public class LeafBlock extends IntermediateBlock {
         this.sinkBlocks.trimToSize();
         this.sourceEdges.trimToSize();
         this.sinkEdges.trimToSize();
+
+        int numOutputPins = this.numOutputPins();
+        for(; this.currentPinIndex < numOutputPins; this.currentPinIndex++) {
+            this.sinkEdgesPinStarts[this.currentPinIndex + 1] = this.numSinks;
+        }
     }
 
     public GlobalBlock getGlobalParent() {
@@ -50,23 +63,36 @@ public class LeafBlock extends IntermediateBlock {
     }
 
 
-    void addSink(LeafBlock sink, double fixedDelay) {
-        int sinkIndex = this.sinkBlocks.indexOf(sink);
+    public int[] getSinkRange(int pinIndex) {
+        int[] range = new int[2];
+        range[0] = this.sinkEdgesPinStarts[pinIndex];
+        range[1] = this.sinkEdgesPinStarts[pinIndex + 1];
+        return range;
+    }
 
-        if(sinkIndex == -1) {
-            TimingEdge edge = new TimingEdge(fixedDelay);
-            sink.addSource(this, edge);
 
-            this.sinkBlocks.add(sink);
-            this.sinkEdges.add(edge);
-            this.numSinks++;
+    void addSink(int pinIndex, LeafBlock sink, double fixedDelay) throws IllegalArgumentException {
+        /*
+         * This method assumes that pinIndex is always smaller or equal
+         * to the smalles pinIndex encountered so far. In other words:
+         * sinks must be added in ascending order of output pin index.
+         */
+        if(pinIndex < this.currentPinIndex) {
+            throw new IllegalArgumentException("sink was not added in ascending pin index order");
 
         } else {
-            TimingEdge edge = this.sinkEdges.get(sinkIndex);
-            if(fixedDelay > edge.getFixedDelay()) {
-                edge.setFixedDelay(fixedDelay);
+            for(; this.currentPinIndex < pinIndex; this.currentPinIndex++) {
+                this.sinkEdgesPinStarts[this.currentPinIndex + 1] = this.numSinks;
             }
         }
+
+
+        TimingEdge edge = new TimingEdge(fixedDelay);
+        sink.addSource(this, edge);
+
+        this.sinkBlocks.add(sink);
+        this.sinkEdges.add(edge);
+        this.numSinks++;
     }
 
     void addSource(LeafBlock source, TimingEdge edge) {
@@ -82,12 +108,20 @@ public class LeafBlock extends IntermediateBlock {
     List<LeafBlock> getSinks() {
         return this.sinkBlocks;
     }
+    public List<LeafBlock> getSinks(int pinIndex) {
+        int[] sinkRange = this.getSinkRange(pinIndex);
+        return this.sinkBlocks.subList(sinkRange[0], sinkRange[1]);
+    }
 
     int getNumSources() {
         return this.numSources;
     }
     public int getNumSinks() {
         return this.numSinks;
+    }
+    public int getNumSinks(int pinIndex) {
+        int[] sinkRange = this.getSinkRange(pinIndex);
+        return sinkRange[1] - sinkRange[0];
     }
 
     LeafBlock getSource(int index) {

@@ -120,55 +120,74 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         // a net (duplicates are allowed) and the corresponding timing edge
         boolean timingDriven = this.isTimingDriven();
 
+        // Loop through all leaf blocks
         for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
             int sourceBlockIndex = this.blockIndexes.get(sourceGlobalBlock);
 
             for(LeafBlock sourceLeafBlock : sourceGlobalBlock.getLeafBlocks()) {
-                int numSinks = sourceLeafBlock.getNumSinks();
 
-                Set<Integer> blockIndexesSet = new HashSet<>();
-                blockIndexesSet.add(sourceBlockIndex);
+                // Loop through the output pins of the leaf block
+                int numOutputPins = sourceLeafBlock.numOutputPins();
+                for(int pinIndex = 0; pinIndex < numOutputPins; pinIndex++) {
 
-                int[] blockIndexes = new int[numSinks + 1];
-                blockIndexes[0] = sourceBlockIndex;
+                    /* For each output pin, build the net that has that pin as its
+                     * source. We build the following data structures:
+                     *   - uniqueBlockIndexes: a list of the global blocks in the net
+                     *     in no particular order. Duplicates are removed.
+                     *   - blockIndexes: a list of the blocks in the net. Duplicates
+                     *     are allowed if a block is connected multiple times to the
+                     *     same net. blockIndexes[0] is the net source.
+                     *   - timingEdges: the timing edges that correspond to the blocks
+                     *     in blockIndexes. The edge at timingEdges[i] corresponds to
+                     *     the block at blockIndexes[i + 1].
+                     */
 
-                TimingEdge[] timingEdges = new TimingEdge[numSinks];
+                    int[] sinkRange = sourceLeafBlock.getSinkRange(pinIndex);
+                    int numSinks = sinkRange[1] - sinkRange[0];
 
-                for(int i = 0; i < numSinks; i++) {
-                    GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(i).getGlobalParent();
-                    int sinkBlockIndex = this.blockIndexes.get(sinkGlobalBlock);
+                    int[] blockIndexes = new int[numSinks + 1];
+                    TimingEdge[] timingEdges = new TimingEdge[numSinks];
+                    Set<Integer> blockIndexesSet = new HashSet<>();
 
-                    blockIndexesSet.add(sinkBlockIndex);
-                    blockIndexes[i + 1] = sinkBlockIndex;
+                    blockIndexes[0] = sourceBlockIndex;
+                    blockIndexesSet.add(sourceBlockIndex);
 
-                    TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(i);
-                    timingEdges[i] = timingEdge;
-                }
+                    for(int i = 0; i < numSinks; i++) {
+                        GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(i + sinkRange[0]).getGlobalParent();
+                        int sinkBlockIndex = this.blockIndexes.get(sinkGlobalBlock);
 
+                        blockIndexesSet.add(sinkBlockIndex);
+                        blockIndexes[i + 1] = sinkBlockIndex;
 
-                /* Don't add nets which connect only one global block.
-                 * Due to this, the WLD costcalculator is not entirely
-                 * accurate, but that doesn't matter, because we use
-                 * the same (inaccurate) costcalculator to calculate
-                 * both the linear and legal cost, so the deviation
-                 * cancels out.
-                 */
-                int numUniqueBlocks = blockIndexesSet.size();
-                if(numUniqueBlocks > 1) {
-                    int[] uniqueBlockIndexes = new int[numUniqueBlocks];
-                    int i = 0;
-                    for(Integer blockIndex : blockIndexesSet) {
-                        uniqueBlockIndexes[i] = blockIndex;
-                        i++;
+                        TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(i + sinkRange[0]);
+                        timingEdges[i] = timingEdge;
                     }
 
-                    this.netUniqueBlockIndexes.add(uniqueBlockIndexes);
 
-                    // We only need the complete list of blocks and their
-                    // timing edges if the algorithm is timing driven
-                    if(timingDriven) {
-                        this.netTimingEdges.add(timingEdges);
-                        this.netBlockIndexes.add(blockIndexes);
+                    /* Don't add nets which connect only one global block.
+                     * Due to this, the WLD costcalculator is not entirely
+                     * accurate, but that doesn't matter, because we use
+                     * the same (inaccurate) costcalculator to calculate
+                     * both the linear and legal cost, so the deviation
+                     * cancels out.
+                     */
+                    int numUniqueBlocks = blockIndexesSet.size();
+                    if(numUniqueBlocks > 1) {
+                        int[] uniqueBlockIndexes = new int[numUniqueBlocks];
+                        int i = 0;
+                        for(Integer blockIndex : blockIndexesSet) {
+                            uniqueBlockIndexes[i] = blockIndex;
+                            i++;
+                        }
+
+                        this.netUniqueBlockIndexes.add(uniqueBlockIndexes);
+
+                        // We only need the complete list of blocks and their
+                        // timing edges if the algorithm is timing driven
+                        if(timingDriven) {
+                            this.netTimingEdges.add(timingEdges);
+                            this.netBlockIndexes.add(blockIndexes);
+                        }
                     }
                 }
             }
