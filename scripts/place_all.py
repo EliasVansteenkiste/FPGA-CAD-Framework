@@ -19,6 +19,7 @@ num_random_seeds = 4
 # Place all ciruits #
 #####################
 os.chdir('..')
+subprocess.call(['./compile.sh'])
 place_caller = PlaceCaller(architecture, circuits_folder, circuits)
 place_caller.place_all(options, num_random_seeds)
 place_caller.save_results(results_file)

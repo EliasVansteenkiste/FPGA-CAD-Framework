@@ -24,6 +24,7 @@ num_random_seeds = 4
 # Place all ciruits and sweep parameters #
 ##########################################
 os.chdir('..')
+subprocess.call(['./compile.sh'])
 sweeper = ParameterSweeper(architecture, circuits_folder, circuits)
 sweeper.sweep(fixed_options, variable_options, num_random_seeds)
 sweeper.save_results('sweep.csv')
