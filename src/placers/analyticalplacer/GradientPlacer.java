@@ -44,6 +44,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private final int gradientIterations;
     protected double maxUtilization;
 
+    private double[] netCriticalities;
+
     protected HeapLegalizer legalizer;
     private LinearSolverGradient solver;
 
@@ -64,7 +66,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.gradientIterations = this.options.getInteger("effort level");
     }
 
-    protected abstract void updateLegalIfNeeded();
+    protected abstract void updateLegalIfNeeded(int iteration);
 
 
     @Override
@@ -78,6 +80,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.circuit,
                 this.blockTypes, this.blockTypeIndexStarts,
                 this.linearX, this.linearY);
+
+        int numNets = this.netUniqueBlockIndexes.size();
+        this.netCriticalities = new double[numNets];
+        Arrays.fill(this.netCriticalities, 1);
     }
 
 
@@ -89,41 +95,35 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
 
         // Cache the max criticality of each net
-        double[] netCriticalities = this.getNetCriticalities();
+        if(this.isTimingDriven() && iteration % 1 == 0) {
+            this.updateNetCriticalities();
+        }
 
         int innerIterations = iteration == 0 ? 4 * this.gradientIterations : this.gradientIterations;
 
         for(int i = 0; i < innerIterations; i++) {
-            this.solveLinearIteration(iteration, netCriticalities);
+            this.solveLinearIteration(iteration);
         }
     }
 
 
-    private double[] getNetCriticalities() {
+    private void updateNetCriticalities() {
         int numNets = this.netUniqueBlockIndexes.size();
-        double[] netCriticalities = new double[numNets];
 
-        if(this.isTimingDriven()) {
-            for(int netIndex = 0; netIndex < numNets; netIndex++) {
-                TimingEdge[] edges = this.netTimingEdges.get(netIndex);
-                int numEdges = edges.length;
+        for(int netIndex = 0; netIndex < numNets; netIndex++) {
+            TimingEdge[] edges = this.netTimingEdges.get(netIndex);
+            int numEdges = edges.length;
 
-                double maxCriticality = edges[0].getCriticality();
-                for(int edgeIndex = 1; edgeIndex < numEdges; edgeIndex++) {
-                    double criticality = edges[edgeIndex].getCriticality();
-                    if(criticality > maxCriticality) {
-                        maxCriticality = criticality;
-                    }
+            double maxCriticality = edges[0].getCriticality();
+            for(int edgeIndex = 1; edgeIndex < numEdges; edgeIndex++) {
+                double criticality = edges[edgeIndex].getCriticality();
+                if(criticality > maxCriticality) {
+                    maxCriticality = criticality;
                 }
-
-                netCriticalities[netIndex] = maxCriticality;
             }
 
-        } else {
-            Arrays.fill(netCriticalities, 1);
+            this.netCriticalities[netIndex] = maxCriticality;
         }
-
-        return netCriticalities;
     }
 
 
@@ -131,13 +131,13 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
-    protected void solveLinearIteration(int iteration, double[] netCriticalities) {
+    protected void solveLinearIteration(int iteration) {
 
         // Reset the solver
         this.solver.initializeIteration(this.anchorWeight);
 
         // Process nets
-        this.processNets(netCriticalities);
+        this.processNets();
 
         // Add pseudo connections
         if(iteration > 0) {
@@ -150,11 +150,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.solver.solve();
     }
 
-    private void processNets(double[] netCriticalities) {
+    private void processNets() {
         int numNets = this.netUniqueBlockIndexes.size();
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             int[] blockIndexes = this.netUniqueBlockIndexes.get(netIndex);
-            double criticality = netCriticalities[netIndex];
+            double criticality = this.netCriticalities[netIndex];
 
             this.solver.processNet(blockIndexes, criticality);
         }
@@ -172,7 +172,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             this.logger.raise(error);
         }
 
-        this.updateLegalIfNeeded();
+        this.updateLegalIfNeeded(iteration);
     }
 
 

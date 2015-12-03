@@ -56,14 +56,16 @@ public class GradientPlacerTD extends GradientPlacer {
 
 
     @Override
-    protected void updateLegalIfNeeded() {
-        int[] newLegalX = this.legalizer.getLegalX();
-        int[] newLegalY = this.legalizer.getLegalY();
+    protected void updateLegalIfNeeded(int iteration) {
+        if(iteration % 1 == 0) {
+            int[] newLegalX = this.legalizer.getLegalX();
+            int[] newLegalY = this.legalizer.getLegalY();
 
-        this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY);
-        if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
-            this.minCost = this.latestCost;
-            super.updateLegal(newLegalX, newLegalY);
+            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY);
+            if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
+                this.minCost = this.latestCost;
+                super.updateLegal(newLegalX, newLegalY);
+            }
         }
     }
 
