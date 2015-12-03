@@ -248,7 +248,14 @@ class HeapLegalizer extends Legalizer {
     private HeapLegalizerArea newArea(int x, int y) {
 
         // left, top, right, bottom
-        HeapLegalizerArea area = new HeapLegalizerArea(x, y, this.tileCapacity, this.blockType);
+        HeapLegalizerArea area = new HeapLegalizerArea(
+                new BlockComparator(this.linearX),
+                new BlockComparator(this.linearY),
+                x,
+                y,
+                this.tileCapacity,
+                this.blockType);
+
         area.incrementTiles();
         area.addBlockIndexes(this.blockMatrix.get(x).get(y));
         this.areaPointers[x][y] = area;
@@ -345,14 +352,14 @@ class HeapLegalizer extends Legalizer {
 
 
     private void legalizeArea(HeapLegalizerArea area) {
-        List<Integer> blockIndexes = area.getBlockIndexes();
+        TwoDimLinkedList<Integer> blockIndexes = area.getBlockIndexes();
         int[] coordinates = {area.left, area.top, area.right, area.bottom};
         this.legalizeArea(coordinates, blockIndexes, Axis.X);
     }
 
     private void legalizeArea(
             int[] coordinates,
-            List<Integer> blockIndexes,
+            TwoDimLinkedList<Integer> blockIndexes,
             Axis axis) {
 
         // If the area is only one tile big: place all the blocks on this tile
@@ -451,8 +458,6 @@ class HeapLegalizer extends Legalizer {
                 coordinates2[0] = coordinates[0] + (numColumns / 2) * this.blockRepeat;
             }
 
-            Collections.sort(blockIndexes, new BlockComparator(this.linearX));
-
             newAxis = Axis.Y;
 
         } else {
@@ -474,19 +479,37 @@ class HeapLegalizer extends Legalizer {
                 coordinates2[1] = coordinates[1] + (numRows / 2) * this.blockHeight;
             }
 
-            Collections.sort(blockIndexes, new BlockComparator(this.linearY));
-
             newAxis = Axis.X;
         }
 
-
         // Split blocks in two lists with a ratio approx. equal to area split
-        int split = (int) Math.ceil(splitRatio * blockIndexes.size());
-        List<Integer> blocks1 = new ArrayList<>(blockIndexes.subList(0, split));
-        List<Integer> blocks2 = new ArrayList<>(blockIndexes.subList(split, blockIndexes.size()));
+        int splitIndex = (int) Math.ceil(splitRatio * blockIndexes.size());
+        TwoDimLinkedList<Integer> otherBlockIndexes;
+        if(axis == Axis.X) {
+            otherBlockIndexes = blockIndexes.splitX(splitIndex);
+        } else {
+            otherBlockIndexes = blockIndexes.splitY(splitIndex);
+        }
 
-        this.legalizeArea(coordinates1, blocks1, newAxis);
-        this.legalizeArea(coordinates2, blocks2, newAxis);
+        boolean found = false;
+        for(Integer blockIndex : blockIndexes) {
+            if(blockIndex == 1386) {
+                found = true;
+                break;
+            }
+        }
+        for(Integer blockIndex : otherBlockIndexes) {
+            if(blockIndex == 1386) {
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            found = true;
+        }
+
+        this.legalizeArea(coordinates1, blockIndexes, newAxis);
+        this.legalizeArea(coordinates2, otherBlockIndexes, newAxis);
     }
 
 

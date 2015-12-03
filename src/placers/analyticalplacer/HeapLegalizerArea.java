@@ -1,7 +1,7 @@
 package placers.analyticalplacer;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Comparator;
 
 import circuit.architecture.BlockType;
 
@@ -15,13 +15,23 @@ class HeapLegalizerArea {
     private int blockHeight, blockRepeat;
 
     private int numTiles = 0;
-    private List<Integer> blockIndexes = new ArrayList<Integer>();
+    private TwoDimLinkedList<Integer> blockIndexes;
 
     private int[][] growDirections = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
     private boolean[] originalDirection = {true, true, true, true};
     private int growDirectionIndex = -1;
 
+    private HeapLegalizerArea(Comparator<Integer> comparatorX, Comparator<Integer> comparatorY) {
+        // Thanks to this two-dimensionally linked list, we
+        // don't have to sort the list of blocks after each
+        // area split: the block list is splitted and resorted
+        // in linear time.
+        this.blockIndexes = new TwoDimLinkedList<Integer>(comparatorX, comparatorY);
+    }
+
     HeapLegalizerArea(HeapLegalizerArea a, int[] direction) {
+        this(a.blockIndexes.getComparatorX(), a.blockIndexes.getComparatorY());
+
         this.tileCapacity = a.tileCapacity;
         this.blockHeight = a.blockHeight;
         this.blockRepeat = a.blockRepeat;
@@ -36,7 +46,9 @@ class HeapLegalizerArea {
         this.grow(direction);
     }
 
-    HeapLegalizerArea(int x, int y, double tileCapacity, BlockType blockType) {
+    HeapLegalizerArea(Comparator<Integer> comparatorX, Comparator<Integer> comparatorY, int x, int y, double tileCapacity, BlockType blockType) {
+        this(comparatorX, comparatorY);
+
         this.left = x;
         this.right = x;
         this.top = y;
@@ -73,10 +85,10 @@ class HeapLegalizerArea {
     }
 
 
-    void addBlockIndexes(List<Integer> blockIndexes) {
+    void addBlockIndexes(Collection<Integer> blockIndexes) {
         this.blockIndexes.addAll(blockIndexes);
     }
-    List<Integer> getBlockIndexes() {
+    TwoDimLinkedList<Integer> getBlockIndexes() {
         return this.blockIndexes;
     }
     int getOccupation() {
