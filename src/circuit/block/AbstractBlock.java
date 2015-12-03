@@ -17,6 +17,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     private BlockType blockType;
     private BlockCategory category;
     private int index;
+    private boolean clocked;
 
     private List<IntermediateBlock> children;
     private List<AbstractPin> pins;
@@ -28,6 +29,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         this.category = blockType.getCategory();
         this.index = index;
 
+        this.clocked = blockType.isClocked();
 
         int numChildren = blockType.getNumChildren();
         this.children = new ArrayList<IntermediateBlock>(Collections.nCopies(numChildren, (IntermediateBlock) null));
@@ -105,7 +107,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
 
     public boolean isClocked() {
-        return this.blockType.isClocked();
+        return this.clocked;
     }
 
 

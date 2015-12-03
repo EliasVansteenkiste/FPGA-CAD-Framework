@@ -44,6 +44,20 @@ class CostCalculatorTD extends CostCalculator {
 
     @Override
     protected double calculate() {
+        this.updateDelays();
+
+        this.timingGraph.calculateArrivalTimes(false);
+
+        // If the provided solution is legal: update the slacks in the timing graph
+        if(this.isInts()) {
+            this.timingGraph.calculateRequiredTimes();
+        }
+
+        return this.timingGraph.getMaxDelay();
+    }
+
+
+    private void updateDelays() {
         int numNets = this.netBlockIndexes.size();
         for(int netIndex = 0; netIndex < numNets; netIndex ++) {
 
@@ -70,14 +84,5 @@ class CostCalculatorTD extends CostCalculator {
                 timingEdge.setWireDelay(wireDelay);
             }
         }
-
-        this.timingGraph.calculateArrivalTimes(false);
-
-        // If the provided solution is legal: update the slacks in the timing graph
-        if(this.isInts()) {
-            this.timingGraph.calculateRequiredTimes();
-        }
-
-        return this.timingGraph.getMaxDelay();
     }
 }
