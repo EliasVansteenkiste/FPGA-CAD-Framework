@@ -300,20 +300,7 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
 
     }
 
-    private class IterableX implements Iterable<E> {
 
-        private Node<E> first;
-
-        IterableX(Node<E> first) {
-            this.first = first;
-        }
-
-        @Override
-        public Iterator<E> iterator() {
-            return new IteratorX(this.first);
-        }
-
-    }
     private class IteratorX implements Iterator<E> {
 
         private Node<E> cursor;
@@ -331,46 +318,6 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
         public E next() {
             E value = this.cursor.item;
             this.cursor = this.cursor.nextX;
-            return value;
-        }
-
-        @Override
-        public void remove() {
-            // Not implemented
-        }
-    }
-
-    private class IterableY implements Iterable<E> {
-
-        private Node<E> first;
-
-        IterableY(Node<E> first) {
-            this.first = first;
-        }
-
-        @Override
-        public Iterator<E> iterator() {
-            return new IteratorY(this.first);
-        }
-
-    }
-    private class IteratorY implements Iterator<E> {
-
-        private Node<E> cursor;
-
-        IteratorY(Node<E> first) {
-            this.cursor = first;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return this.cursor != null;
-        }
-
-        @Override
-        public E next() {
-            E value = this.cursor.item;
-            this.cursor = this.cursor.nextY;
             return value;
         }
 
