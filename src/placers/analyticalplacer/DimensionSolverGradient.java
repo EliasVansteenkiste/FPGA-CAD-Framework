@@ -42,31 +42,20 @@ class DimensionSolverGradient {
         this.legalIsSet = true;
     }
 
-    void addConnectionMinMaxUnknown(int index1, int index2, double coorDifference, double weight) {
 
-        if(coorDifference > 0) {
-            this.addConnection(index1, index2, coorDifference, weight);
-        } else if(coorDifference < 0) {
-            this.addConnection(index2, index1, -coorDifference, weight);
-        }
-    }
     void addConnection(int minIndex, int maxIndex, double coorDifference, double weight) {
 
         // TODO: platforming this net size works a bit better than not doing it
         // but the optimal maximal value isn't found yet
         double netSize = 20 * coorDifference / (10 + coorDifference);
 
-        if(minIndex >= 0) {
-            this.totalPositiveNetSize[minIndex] += netSize;
-            this.numPositiveNets[minIndex] += 1;
-            this.directions[minIndex] += weight;
-        }
+        this.totalPositiveNetSize[minIndex] += netSize;
+        this.numPositiveNets[minIndex] += 1;
+        this.directions[minIndex] += weight;
 
-        if(maxIndex >= 0) {
-            this.totalNegativeNetSize[maxIndex] += netSize;
-            this.numNegativeNets[maxIndex] += 1;
-            this.directions[maxIndex] -= weight;
-        }
+        this.totalNegativeNetSize[maxIndex] += netSize;
+        this.numNegativeNets[maxIndex] += 1;
+        this.directions[maxIndex] -= weight;
     }
 
     void solve() {

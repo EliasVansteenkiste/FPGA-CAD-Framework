@@ -36,11 +36,19 @@ class LinearSolverGradient {
 
             double coordinate1 = this.coordinatesX[blockIndex1];
             double coordinate2 = this.coordinatesX[blockIndex2];
-            this.solverX.addConnectionMinMaxUnknown(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
+            if(coordinate1 < coordinate2) {
+                this.solverX.addConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
+            } else {
+                this.solverX.addConnection(blockIndex2, blockIndex1, coordinate1 - coordinate2, weight);
+            }
 
             coordinate1 = this.coordinatesY[blockIndex1];
             coordinate2 = this.coordinatesY[blockIndex2];
-            this.solverY.addConnectionMinMaxUnknown(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
+            if(coordinate1 < coordinate2) {
+                this.solverY.addConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
+            } else {
+                this.solverY.addConnection(blockIndex2, blockIndex1, coordinate1 - coordinate2, weight);
+            }
 
             return;
         }
