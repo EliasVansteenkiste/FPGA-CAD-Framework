@@ -165,7 +165,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected void solveLegal(int iteration) {
         // TODO: optimize this
         this.maxUtilization = Math.min(this.numBlocks, Math.max(1, 0.8 / this.anchorWeight));
-        this.maxUtilization = 1;
 
         try {
             this.legalizer.legalize(this.maxUtilization);
