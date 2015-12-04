@@ -31,6 +31,9 @@ public class TimingEdge {
     void setStagedWireDelay(double stagedWireDelay) {
         this.stagedTotalDelay = this.fixedDelay + stagedWireDelay;
     }
+    void resetStagedDelay() {
+        this.stagedTotalDelay = this.totalDelay;
+    }
 
     public double getCriticality() {
         return this.criticality;

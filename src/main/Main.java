@@ -290,7 +290,7 @@ public class Main {
     private void printStatistics(String prefix, boolean printTime) {
 
         this.logger.println(prefix + " results:");
-        String format = "%-11s | %f%s\n";
+        String format = "%-11s | %g%s\n";
 
         if(printTime) {
             double placeTime = this.getTime(prefix);

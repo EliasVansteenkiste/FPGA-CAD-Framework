@@ -339,7 +339,7 @@ abstract class SAPlacer extends Placer {
     }
     protected final void setRlimd(double Rlimd) {
         this.Rlimd = Rlimd;
-        this.Rlim = (int) Math.round(this.Rlimd);
+        this.Rlim = Math.min(this.maxRlim, (int) Math.round(this.Rlimd));
     }
 
 

@@ -38,7 +38,6 @@ public class GradientPlacerTD extends GradientPlacer {
     public void initializeData() {
         super.initializeData();
 
-        this.timingGraph.reset();
         this.timingGraph.setCriticalityExponent(this.criticalityExponent);
         this.timingGraph.recalculateAllSlacksCriticalities(false);
 
@@ -57,6 +56,8 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void updateLegalIfNeeded(int iteration) {
+        // TODO: this shouldn't happen every iteration, maybe near the
+        // end of the algorithm we can skip some iterations?
         if(iteration % 1 == 0) {
             int[] newLegalX = this.legalizer.getLegalX();
             int[] newLegalY = this.legalizer.getLegalY();

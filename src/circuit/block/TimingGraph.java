@@ -12,6 +12,7 @@ import java.util.Stack;
 import circuit.Circuit;
 import circuit.architecture.PortType;
 import circuit.architecture.BlockCategory;
+import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 
 import placers.SAPlacer.Swap;
@@ -243,29 +244,51 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
         return totalCost;
     }
 
+
     public double calculateDeltaCost(Swap swap) {
         double cost = 0;
 
         this.affectedBlocks.clear();
 
-        List<LeafBlock> nodes1 = swap.getBlock1().getLeafBlocks();
-        this.affectedBlocks.addAll(nodes1);
-        cost += this.calculateDeltaCost(nodes1, swap.getSite2());
+
+        // Switch the positions of the blocks
+        try {
+            swap.apply();
+        } catch(PlacementException e) {
+            e.printStackTrace();
+        }
+
+        GlobalBlock block1 = swap.getBlock1();
+        GlobalBlock block2 = swap.getBlock2();
+
+        {
+            List<LeafBlock> nodes1 = block1.getLeafBlocks();
+            this.affectedBlocks.addAll(nodes1);
+            cost += this.calculateDeltaCost(nodes1, block2);
+        }
 
         if(swap.getBlock2() != null) {
-            List<LeafBlock> nodes2 = swap.getBlock2().getLeafBlocks();
+            List<LeafBlock> nodes2 = block2.getLeafBlocks();
             this.affectedBlocks.addAll(nodes2);
-            cost += this.calculateDeltaCost(nodes2, swap.getSite1());
+            cost += this.calculateDeltaCost(nodes2, block1);
+        }
+
+
+        // Put the blocks back in their original position
+        try {
+            swap.undoApply();
+        } catch(PlacementException e) {
+            e.printStackTrace();
         }
 
         return cost;
     }
 
-    private double calculateDeltaCost(List<LeafBlock> blocks, AbstractSite site) {
+    private double calculateDeltaCost(List<LeafBlock> blocks, GlobalBlock otherBlock) {
         double cost = 0;
 
         for(LeafBlock block : blocks) {
-            cost += block.calculateDeltaCost(site.getX(), site.getY());
+            cost += block.calculateDeltaCost(otherBlock);
         }
 
         return cost;

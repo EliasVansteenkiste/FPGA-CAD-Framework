@@ -49,6 +49,17 @@ public class Swap {
         this.block1.setSite(this.site2);
     }
 
+    public void undoApply() throws PlacementException {
+        this.block1.removeSite();
+
+        if(this.block2 != null) {
+            this.block2.removeSite();
+            this.block2.setSite(this.site2);
+        }
+
+        this.block1.setSite(this.site1);
+    }
+
 
     @Override
     public String toString() {

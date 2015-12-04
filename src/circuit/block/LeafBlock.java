@@ -215,12 +215,8 @@ public class LeafBlock extends IntermediateBlock {
     }
 
     private double calculateWireDelay(LeafBlock otherBlock) {
-        return this.calculateWireDelay(otherBlock, this.getX(), this.getY());
-    }
-
-    private double calculateWireDelay(LeafBlock otherBlock, int newX, int newY) {
-        int deltaX = Math.abs(newX - otherBlock.getX());
-        int deltaY = Math.abs(newY - otherBlock.getY());
+        int deltaX = Math.abs(this.getX() - otherBlock.getX());
+        int deltaY = Math.abs(this.getY() - otherBlock.getY());
 
         BlockCategory fromCategory = this.globalParent.getCategory();
         BlockCategory toCategory = otherBlock.globalParent.getCategory();
@@ -253,13 +249,18 @@ public class LeafBlock extends IntermediateBlock {
         return cost;
     }
 
-    double calculateDeltaCost(int newX, int newY) {
+    double calculateDeltaCost(GlobalBlock otherBlock) {
+        /*
+         * When this method is called, we assume that this block the
+         * block with which this block will be swapped, already have
+         * their positions updated (temporarily).
+         */
         double cost = 0;
 
         int sinkIndex = 0;
         for(LeafBlock sink : this.sinkBlocks) {
             TimingEdge edge = this.sinkEdges.get(sinkIndex);
-            cost += this.calculateDeltaCost(newX, newY, sink, edge);
+            cost += this.calculateDeltaCost(sink, edge);
 
             sinkIndex++;
         }
@@ -269,21 +270,27 @@ public class LeafBlock extends IntermediateBlock {
             // Only calculate the delta cost if the source is not in the block where we would swap to
             // This is necessary to avoid double counting: the other swap block also calculates delta
             // costs of all sink edges
-            if(source.getX() != newX || source.getY() != newY) {
+            if(source.getGlobalParent() != otherBlock) {
                 TimingEdge edge = this.sourceEdges.get(sourceIndex);
-
-                cost += this.calculateDeltaCost(newX, newY, source, edge);
+                cost += this.calculateDeltaCost(source, edge);
             }
+
             sourceIndex++;
         }
 
         return cost;
     }
 
-    private double calculateDeltaCost(int newX, int newY, LeafBlock otherBlock, TimingEdge edge) {
-        double wireDelay = this.calculateWireDelay(otherBlock, newX, newY);
-        edge.setStagedWireDelay(wireDelay);
-        return edge.getCriticality() * (edge.getStagedTotalDelay() - edge.getTotalDelay());
+    private double calculateDeltaCost(LeafBlock otherBlock, TimingEdge edge) {
+        if(otherBlock.globalParent == this.globalParent) {
+            edge.resetStagedDelay();
+            return 0;
+
+        } else {
+            double wireDelay = this.calculateWireDelay(otherBlock);
+            edge.setStagedWireDelay(wireDelay);
+            return edge.getCriticality() * (edge.getStagedTotalDelay() - edge.getTotalDelay());
+        }
     }
 
 

@@ -38,10 +38,14 @@ public class SAPlacerTD extends SAPlacer {
 
 
         this.tradeOffFactor = this.options.getDouble("trade off");
-        this.iterationsBeforeRecalculate = this.options.getInteger("iterations_before_recalculate");
+        this.iterationsBeforeRecalculate = this.options.getInteger("recalculate");
 
-        double criticalityExponent = this.options.getDouble("criticality_exponent");
+        double criticalityExponent = this.options.getDouble("criticality exponent");
+
         this.timingGraph.setCriticalityExponent(criticalityExponent);
+
+        this.timingGraph.recalculateAllSlacksCriticalities(true);
+        System.out.println(this.timingGraph.calculateTotalCost());
     }
 
     @Override
