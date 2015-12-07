@@ -5,21 +5,21 @@ abstract class CostCalculator {
     private int[] intX, intY;
     private double[] doubleX, doubleY;
 
-    protected abstract double calculate();
+    protected abstract double calculate(boolean recalculateCriticalities);
 
-    double calculate(int[] x, int[] y) {
+    double calculate(int[] x, int[] y, boolean recalculateCriticalities) {
         this.intX = x;
         this.intY = y;
         this.ints = true;
 
-        return this.calculate();
+        return this.calculate(recalculateCriticalities);
     }
     double calculate(double[] x, double[] y) {
         this.doubleX = x;
         this.doubleY = y;
         this.ints = false;
 
-        return this.calculate();
+        return this.calculate(true);
     }
 
 
