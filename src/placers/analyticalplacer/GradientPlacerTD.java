@@ -39,13 +39,19 @@ public class GradientPlacerTD extends GradientPlacer {
         super.initializeData();
 
         this.timingGraph.setCriticalityExponent(this.criticalityExponent);
-        this.timingGraph.recalculateAllSlacksCriticalities(false);
 
         this.costCalculator = new CostCalculatorTD(
                 this.circuit,
                 this.blockIndexes,
                 this.netBlockIndexes,
                 this.netTimingEdges);
+
+        // DEBUG
+        /*int[] x = new int[this.blockIndexes.size()];
+        int[] y = new int[this.blockIndexes.size()];
+
+        this.costCalculator.calculate(x, y);
+        this.timingGraph.calculateCriticalities();*/
     }
 
     @Override
@@ -79,7 +85,8 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void printStatistics(int iteration, double time) {
-        this.logger.printf("%-9d    %-13f    %-9f    %f\n", iteration, this.anchorWeight, this.latestCost, time);
+        String iterationString = iteration + (this.latestCost == this.minCost ? "+" : " ");
+        this.logger.printf("%-9s    %-13f    %-9f    %f\n", iterationString, this.anchorWeight, this.latestCost, time);
     }
 
 

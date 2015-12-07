@@ -140,20 +140,32 @@ public class LeafBlock extends IntermediateBlock {
 
 
     double calculateArrivalTime() {
+
+        double maxArrivalTime = this.arrivalTime;
+
         for(int sourceIndex = 0; sourceIndex < this.numSources; sourceIndex++) {
             LeafBlock source = this.sourceBlocks.get(sourceIndex);
             TimingEdge edge = this.sourceEdges.get(sourceIndex);
 
-            double sourceArrivalTime = source.isClocked() ? 0 : source.arrivalTime;
+            double sourceArrivalTime = source.arrivalTime;
             double delay = edge.getTotalDelay();
 
             double arrivalTime = sourceArrivalTime + delay;
-            if(arrivalTime > this.arrivalTime) {
-                this.arrivalTime = arrivalTime;
+
+            if(arrivalTime > maxArrivalTime) {
+                maxArrivalTime = arrivalTime;
             }
         }
 
-        return this.arrivalTime;
+        // We don't store the arrival time for clocked blocks.
+        // When using the clocked block as a sink, we never need to
+        // know the arrival time. When using the block as a source,
+        // the arrival time is 0. So we just leave it to 0.
+        if(!this.isClocked()) {
+            this.arrivalTime = maxArrivalTime;
+        }
+
+        return maxArrivalTime;
     }
 
     double getArrivalTime() {
@@ -164,21 +176,34 @@ public class LeafBlock extends IntermediateBlock {
         this.requiredTime = requiredTime;
     }
 
-    double calculateRequiredTime(double maxDelay) {
+    double calculateRequiredTime() {
+
+        double minRequiredTime = Double.MAX_VALUE;
+
         for(int sinkIndex = 0; sinkIndex < this.numSinks; sinkIndex++) {
             LeafBlock sink = this.sinkBlocks.get(sinkIndex);
             TimingEdge edge = this.sinkEdges.get(sinkIndex);
 
-            double sinkRequiredTime = sink.isClocked() ? maxDelay : sink.requiredTime;
+            double sinkRequiredTime = sink.requiredTime;
             double delay = edge.getTotalDelay();
 
             double requiredTime = sinkRequiredTime - delay;
-            if(requiredTime < this.requiredTime) {
-                this.requiredTime = requiredTime;
+            if(requiredTime < minRequiredTime) {
+                minRequiredTime = requiredTime;
             }
         }
 
-        return this.requiredTime;
+        // We don't store the arrival time for clocked blocks.
+        // When using the clocked block as a source, we never need to
+        // know the required time. When using the block as a sink,
+        // the arrival time is equal to maxDelay, and has been set
+        // manually by the timing graph. So we just leave it to that
+        // value.
+        if(!this.isClocked()) {
+            this.requiredTime = minRequiredTime;
+        }
+
+        return minRequiredTime;
     }
 
 

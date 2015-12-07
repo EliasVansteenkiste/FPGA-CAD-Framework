@@ -25,6 +25,7 @@ public class SAPlacerTD extends SAPlacer {
 
     private EfficientBoundingBoxNetCC calculator;
     private final TimingGraph timingGraph;
+    private final double criticalityExponent;
     private double cachedBBCost, cachedTDCost, previousBBCost, previousTDCost;
 
     private final double tradeOffFactor;
@@ -39,13 +40,14 @@ public class SAPlacerTD extends SAPlacer {
 
         this.tradeOffFactor = this.options.getDouble("trade off");
         this.iterationsBeforeRecalculate = this.options.getInteger("recalculate");
+        this.criticalityExponent = this.options.getDouble("criticality exponent");
+    }
 
-        double criticalityExponent = this.options.getDouble("criticality exponent");
+    @Override
+    public void initializeData() {
+        super.initializeData();
 
-        this.timingGraph.setCriticalityExponent(criticalityExponent);
-
-        this.timingGraph.recalculateAllSlacksCriticalities(true);
-        System.out.println(this.timingGraph.calculateTotalCost());
+        this.timingGraph.setCriticalityExponent(this.criticalityExponent);
     }
 
     @Override

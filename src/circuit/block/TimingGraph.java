@@ -137,6 +137,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
 
     public void setCriticalityExponent(double criticalityExponent) {
         this.criticalityExponent = criticalityExponent;
+        this.calculateCriticalities();
     }
 
 
@@ -153,6 +154,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
     public void recalculateAllSlacksCriticalities(boolean recalculateWireDelays) {
         this.calculateArrivalTimes(recalculateWireDelays);
         this.calculateRequiredTimes();
+        this.calculateCriticalities();
     }
 
     public void calculateArrivalTimes(boolean recalculateWireDelays) {
@@ -213,7 +215,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
             LeafBlock currentBlock = todo.pop();
 
             if(!currentBlock.isClocked()) {
-                currentBlock.calculateRequiredTime(this.maxDelay);
+                currentBlock.calculateRequiredTime();
 
                 for(LeafBlock source : currentBlock.getSources()) {
                     source.incrementProcessedSinks();
@@ -223,8 +225,9 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
                 }
             }
         }
+    }
 
-
+    public void calculateCriticalities() {
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
             block.calculateCriticalities(this.maxDelay, this.criticalityExponent);
         }

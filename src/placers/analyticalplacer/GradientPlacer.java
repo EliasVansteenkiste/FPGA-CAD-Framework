@@ -15,7 +15,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     public static void initOptions(Options options) {
         options.add(
-                "anchor weight",
+                "anchor weight start",
                 "starting anchor weight",
                 new Double(0));
 
@@ -23,6 +23,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 "anchor weight increase",
                 "value that is added to the anchor weight in each iteration",
                 new Double(0.01));
+
+        options.add("anchor weight stop",
+                "anchor weight at which the placement is finished",
+                new Double(0.9));
 
 
         options.add(
@@ -39,12 +43,13 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     protected double anchorWeight;
-    private double anchorWeightIncrease;
+    private double anchorWeightIncrease, anchorWeightStop;
     private double stepSize;
     private final int gradientIterations;
     protected double maxUtilization;
 
     private double[] netCriticalities;
+    private double[][] debugCriticalities;
 
     protected HeapLegalizer legalizer;
     private LinearSolverGradient solver;
@@ -59,11 +64,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         super(circuit, options, random, logger, visualizer);
 
-        this.anchorWeight = this.options.getDouble("anchor weight");
+        this.anchorWeight = this.options.getDouble("anchor weight start");
         this.anchorWeightIncrease = this.options.getDouble("anchor weight increase");
+        this.anchorWeightStop = this.options.getDouble("anchor weight stop");
 
         this.stepSize = this.options.getDouble("step size");
         this.gradientIterations = this.options.getInteger("effort level");
+
+        this.debugCriticalities = new double[91][];
     }
 
     protected abstract void updateLegalIfNeeded(int iteration);
@@ -97,6 +105,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         // Cache the max criticality of each net
         if(this.isTimingDriven() && iteration % 1 == 0) {
             this.updateNetCriticalities();
+
+            // DEBUG
+            this.debugCriticalities[iteration] = new double[this.netCriticalities.length];
+            System.arraycopy(this.netCriticalities, 0, this.debugCriticalities[iteration], 0, this.netCriticalities.length);
         }
 
         int innerIterations = iteration == 0 ? 4 * this.gradientIterations : this.gradientIterations;
@@ -179,20 +191,21 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected boolean stopCondition() {
-        return this.anchorWeight > 0.9;
-    }
+        // DEBUG
+        if(this.anchorWeight > 0.9) {
+            for(int i = 0; i < this.netCriticalities.length; i++) {
+                StringBuilder line = new StringBuilder();
+                String prefix = "";
+                for(int iteration = 0; iteration < 91; iteration++) {
+                    line.append(prefix);
+                    prefix = ",";
+                    line.append(this.debugCriticalities[iteration][i]);
+                }
 
+                //this.logger.println(line.toString());
+            }
+        }
 
-
-
-    @Override
-    protected void printStatisticsHeader() {
-        this.logger.println("Iteration    anchor weight    max utilization    time");
-        this.logger.println("---------    -------------    ---------------    ----");
-    }
-
-    @Override
-    protected void printStatistics(int iteration, double time) {
-        this.logger.printf("%-9d    %-13f    %-15f    %f\n", iteration, this.anchorWeight, this.maxUtilization, time);
+        return this.anchorWeight > this.anchorWeightStop;
     }
 }

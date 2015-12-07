@@ -26,6 +26,19 @@ public class GradientPlacerWLD extends GradientPlacer {
         this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
     }
 
+
+    @Override
+    protected void printStatisticsHeader() {
+        this.logger.println("Iteration    anchor weight    max utilization    time");
+        this.logger.println("---------    -------------    ---------------    ----");
+    }
+
+    @Override
+    protected void printStatistics(int iteration, double time) {
+        this.logger.printf("%-9d    %-13f    %-15f    %f\n", iteration, this.anchorWeight, this.maxUtilization, time);
+    }
+
+
     @Override
     public String getName() {
         return "Wirelength driven gradient descent placer";
