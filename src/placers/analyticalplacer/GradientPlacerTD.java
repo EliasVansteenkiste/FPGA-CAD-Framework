@@ -68,7 +68,7 @@ public class GradientPlacerTD extends GradientPlacer {
             int[] newLegalX = this.legalizer.getLegalX();
             int[] newLegalY = this.legalizer.getLegalY();
 
-            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, iteration > 100);
+            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, iteration > 0);
             if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
                 this.minCost = this.latestCost;
                 super.updateLegal(newLegalX, newLegalY);

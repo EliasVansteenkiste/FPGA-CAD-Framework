@@ -117,7 +117,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         int[] newLegalX = this.legalizer.getLegalX();
         int[] newLegalY = this.legalizer.getLegalY();
-        double tmpLegalCost = this.costCalculator.calculate(newLegalX, newLegalY);
+        double tmpLegalCost = this.costCalculator.calculate(newLegalX, newLegalY, true);
 
         if(tmpLegalCost < this.legalCost) {
             this.legalCost = tmpLegalCost;

@@ -12,7 +12,7 @@ class CostCalculatorWLD extends CostCalculator {
 
 
     @Override
-    protected double calculate() {
+    protected double calculate(boolean tmp) {
         double cost = 0.0;
 
         for(int[] blockIndexes : this.nets) {
