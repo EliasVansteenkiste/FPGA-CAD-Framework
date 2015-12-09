@@ -56,8 +56,9 @@ class Caller:
 
         random.seed(1)
         self.seeds = [random.randrange(2**31 - 1) for i in range(num_random_seeds)]
-        for seed in self.seeds:
-            self.call_all_circuits_with_seed(command, seed)
+        for iteration in range(len(seeds)):
+            print('  iteration ' + str(iteration))
+            self.call_all_circuits_with_seed(command, self.seeds[iteration])
 
 
     def call_all_circuits_with_seed(self, command, seed):
@@ -65,7 +66,7 @@ class Caller:
         self.command = command
 
         for circuit in self.circuits:
-            print('  ' + circuit)
+            print('    ' + circuit)
             out, err = self.call_circuit(command, circuit, seed)
 
             if err:

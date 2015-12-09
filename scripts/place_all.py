@@ -13,11 +13,14 @@ circuits_folder = 'benchmarks/'
 #circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
 circuits = 'bgm mcml LU32PEEng LU8PEEng stereovision2 stereovision1'
 
+# options = [
+#     ['--placer', 'wld_ap'],
+#     ['--placer', 'td_ap'],
+#     ['--placer', 'wld_gp'],
+#     ['--placer', 'td_gp', '--criticality_exponent', '4']
+# ]
 options = [
-    ['--placer', 'wld_ap'],
-    ['--placer', 'td_ap'],
-    ['--placer', 'wld_gp'],
-    ['--placer', 'td_gp', '--criticality_exponent', '4']
+    ['--placer', 'td_gp']
 ]
 num_random_seeds = 8
 
