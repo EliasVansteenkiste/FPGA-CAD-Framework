@@ -56,7 +56,7 @@ class Caller:
 
         random.seed(1)
         self.seeds = [random.randrange(2**31 - 1) for i in range(num_random_seeds)]
-        for iteration in range(len(seeds)):
+        for iteration in range(len(self.seeds)):
             print('  iteration ' + str(iteration))
             self.call_all_circuits_with_seed(command, self.seeds[iteration])
 
