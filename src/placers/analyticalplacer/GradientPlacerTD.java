@@ -8,6 +8,7 @@ import java.util.Random;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.block.TimingGraph;
+import circuit.exceptions.PlacementException;
 
 public class GradientPlacerTD extends GradientPlacer {
 
@@ -68,10 +69,10 @@ public class GradientPlacerTD extends GradientPlacer {
             int[] newLegalX = this.legalizer.getLegalX();
             int[] newLegalY = this.legalizer.getLegalY();
 
-            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, iteration > 0);
+            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, iteration == 0);
             if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
                 this.minCost = this.latestCost;
-                super.updateLegal(newLegalX, newLegalY);
+                this.updateLegal(newLegalX, newLegalY);
             }
         }
     }
@@ -79,8 +80,8 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void printStatisticsHeader() {
-        this.logger.println("Iteration    max delay    anchor weight    time");
-        this.logger.println("---------    ---------    -------------    ----");
+        this.logger.println("Iteration    anchor weight    max delay    time");
+        this.logger.println("---------    -------------    ---------    ----");
     }
 
     @Override
