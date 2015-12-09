@@ -17,17 +17,20 @@ public class GradientPlacerTD extends GradientPlacer {
 
         options.add("criticality exponent", "criticality exponent of connections", new Double(3));
         options.add("criticality threshold", "minimal criticality for adding extra constraints", new Double(0.5));
+        options.add("recalculate criticalities", "period of the iterations in which the criticalities are recalculated", new Integer(1));
     }
 
     private double criticalityExponent;
     private TimingGraph timingGraph;
     private CostCalculatorTD costCalculator;
     private double latestCost, minCost;
+    private int recalculateCriticalitiesPeriod;
 
     public GradientPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.criticalityExponent = options.getDouble("criticality exponent");
+        this.recalculateCriticalitiesPeriod = options.getInteger("recalculate criticalities");
 
         this.timingGraph = this.circuit.getTimingGraph();
 
@@ -46,13 +49,6 @@ public class GradientPlacerTD extends GradientPlacer {
                 this.blockIndexes,
                 this.netBlockIndexes,
                 this.netTimingEdges);
-
-        // DEBUG
-        /*int[] x = new int[this.blockIndexes.size()];
-        int[] y = new int[this.blockIndexes.size()];
-
-        this.costCalculator.calculate(x, y);
-        this.timingGraph.calculateCriticalities();*/
     }
 
     @Override
@@ -65,16 +61,17 @@ public class GradientPlacerTD extends GradientPlacer {
     protected void updateLegalIfNeeded(int iteration) {
         // TODO: this shouldn't happen every iteration, maybe near the
         // end of the algorithm we can skip some iterations?
-        if(iteration % 1 == 0) {
-            int[] newLegalX = this.legalizer.getLegalX();
-            int[] newLegalY = this.legalizer.getLegalY();
+        int[] newLegalX = this.legalizer.getLegalX();
+        int[] newLegalY = this.legalizer.getLegalY();
 
-            boolean recalculate = iteration % 2 == 0;
-            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, recalculate);
-            if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
-                this.minCost = this.latestCost;
-                this.updateLegal(newLegalX, newLegalY);
-            }
+        //boolean recalculate = (iteration < 20 && iteration % this.recalculateCriticalitiesPeriod == 0) || (iteration >= 20 && iteration % (this.recalculateCriticalitiesPeriod + 1) == 0);
+        int mod = iteration / 20 + 1;
+        boolean recalculate = (iteration % mod == 0);
+        this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, recalculate);
+
+        if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
+            this.minCost = this.latestCost;
+            this.updateLegal(newLegalX, newLegalY);
         }
     }
 
