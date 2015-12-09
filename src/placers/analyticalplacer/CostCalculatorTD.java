@@ -49,11 +49,9 @@ class CostCalculatorTD extends CostCalculator {
         this.timingGraph.calculateArrivalTimes(false);
 
         // If the provided solution is legal: update the criticalities in the timing graph
-        if(this.isInts()) {
+        if(this.isInts() && recalculateCriticalities) {
             this.timingGraph.calculateRequiredTimes();
-            if(recalculateCriticalities) {
-                this.timingGraph.calculateCriticalities();
-            }
+            this.timingGraph.calculateCriticalities();
         }
 
         return this.timingGraph.getMaxDelay();
