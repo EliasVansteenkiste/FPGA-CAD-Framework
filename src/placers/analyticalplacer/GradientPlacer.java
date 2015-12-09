@@ -192,7 +192,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected boolean stopCondition() {
         // DEBUG
-        if(this.anchorWeight > this.anchorWeightStop) {
+        /*if(this.anchorWeight > this.anchorWeightStop) {
             for(int i = 0; i < this.netCriticalities.length; i++) {
                 StringBuilder line = new StringBuilder();
                 String prefix = "";
@@ -204,7 +204,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
                 this.logger.println(line.toString());
             }
-        }
+        }*/
 
         return this.anchorWeight > this.anchorWeightStop;
     }

@@ -70,7 +70,7 @@ public class Main {
     public Main(OptionsManager options) {
         this.options = options;
         this.logger = options.getLogger();
-        this.logger.setLocation(Stream.OUT, "tmp.csv");
+        //this.logger.setLocation(Stream.OUT, "tmp.csv");
 
         this.parseOptions(options.getMainOptions());
     }
