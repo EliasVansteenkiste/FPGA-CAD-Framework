@@ -69,11 +69,13 @@ public class GradientPlacerTD extends GradientPlacer {
             int[] newLegalX = this.legalizer.getLegalX();
             int[] newLegalY = this.legalizer.getLegalY();
 
-            boolean recalculateCriticalities = iteration < 20;
-            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, recalculateCriticalities);
+            this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, false);
             if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
                 this.minCost = this.latestCost;
                 this.updateLegal(newLegalX, newLegalY);
+
+                this.timingGraph.calculateRequiredTimes();
+                this.timingGraph.calculateCriticalities();
             }
         }
     }
