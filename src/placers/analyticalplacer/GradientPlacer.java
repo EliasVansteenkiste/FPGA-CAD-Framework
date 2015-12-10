@@ -20,7 +20,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Double(0));
 
         options.add(
-                "anchor weight increase",
+                "anchor weight step",
                 "value that is added to the anchor weight in each iteration",
                 new Double(0.01));
 
@@ -43,7 +43,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     protected double anchorWeight;
-    private double anchorWeightIncrease, anchorWeightStop;
+    protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
     private double stepSize;
     private final int gradientIterations;
     protected double maxUtilization;
@@ -64,9 +64,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         super(circuit, options, random, logger, visualizer);
 
-        this.anchorWeight = this.options.getDouble("anchor weight start");
-        this.anchorWeightIncrease = this.options.getDouble("anchor weight increase");
+        this.anchorWeightStart = this.options.getDouble("anchor weight start");
+        this.anchorWeightStep = this.options.getDouble("anchor weight step");
         this.anchorWeightStop = this.options.getDouble("anchor weight stop");
+        this.anchorWeight = this.anchorWeightStart;
 
         this.stepSize = this.options.getDouble("step size");
         this.gradientIterations = this.options.getInteger("effort level");
@@ -99,7 +100,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected void solveLinear(int iteration) {
         if(iteration > 0) {
-            this.anchorWeight += this.anchorWeightIncrease;
+            this.anchorWeight += this.anchorWeightStep;
         }
 
         // Cache the max criticality of each net
