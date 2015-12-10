@@ -15,11 +15,12 @@ import shutil
 
 
 def silentremove(filename):
-    try:
+    if os.path.isdir(filename):
+        shutil.rmtree(filename)
+
+    elif os.path.isfile(filename):
         os.remove(filename)
-    except OSError as e:
-        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
-            raise # re-raise exception if a different error occured
+
 
 def geomean(values):
     prod = 1
@@ -34,10 +35,15 @@ class Caller:
         self.circuits = circuits.split(' ')
 
 
-    def call_circuit(self, command, circuit, seed):
+    def call_circuit(self, command, circuit, iteration, seed):
         circuit_command = copy.deepcopy(command)
         for i in range(len(circuit_command)):
-            circuit_command[i] = circuit_command[i].replace('{circuit}', circuit).replace('{seed}', str(seed))
+            circuit_command[i] = (
+                circuit_command[i]
+                .replace('{circuit}', circuit)
+                .replace('{seed}', str(seed))
+                .replace('{iteration}', str(iteration))
+            )
 
         p = subprocess.Popen(circuit_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -58,16 +64,16 @@ class Caller:
         self.seeds = [random.randrange(2**31 - 1) for i in range(num_random_seeds)]
         for iteration in range(len(self.seeds)):
             print('  iteration ' + str(iteration))
-            self.call_all_circuits_with_seed(command, self.seeds[iteration])
+            self.call_all_circuits_with_seed(command, iteration, self.seeds[iteration])
 
 
-    def call_all_circuits_with_seed(self, command, seed):
+    def call_all_circuits_with_seed(self, command, iteration, seed):
         stats_pattern = re.compile(self.stats_regex, re.DOTALL)
         self.command = command
 
         for circuit in self.circuits:
             print('    ' + circuit)
-            out, err = self.call_circuit(command, circuit, seed)
+            out, err = self.call_circuit(command, circuit, iteration, seed)
 
             if err:
                 print(err)
@@ -134,38 +140,6 @@ class Caller:
 
 
 
-class PlaceCallerVPR(Caller):
-
-    metrics = ['runtime', 'BB cost', 'max delay']
-    stats_regex = r'Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns.*bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<runtime>[0-9.e+-]+) seconds'
-
-    def __init__(self, architecture, circuits_folder, circuits):
-        Caller.__init__(self, circuits)
-
-        self.architecture = architecture
-        self.circuits_folder = circuits_folder
-
-
-    def place_all(self, options, num_random_seeds):
-        command = self.build_command(self.architecture, self.circuits_folder, options)
-
-        self.call_all_circuits(command, num_random_seeds)
-
-        silentremove('tmp')
-        silentremove('lookup_dump.echo')
-
-
-    def build_command(self, architecture, circuits_folder, options):
-        return [
-            './vpr',
-            architecture,
-            '{circuit}',
-            '--place',
-            '--blif_file', os.path.join(circuits_folder, '{circuit}.blif'),
-            '--net_file', os.path.join(circuits_folder, '{circuit}.net'),
-            '--place_file', 'tmp'
-        ] + options
-
 
 class PlaceCaller(Caller):
 
@@ -184,7 +158,7 @@ class PlaceCaller(Caller):
 
         self.call_all_circuits(command, num_random_seeds)
 
-        shutil.rmtree('tmp')
+        silentremove('tmp')
 
 
     def build_command(self, architecture, circuit, options):
@@ -197,6 +171,64 @@ class PlaceCaller(Caller):
             '--output_place_file', 'tmp/{circuit}.place',
             '--random_seed', '{seed}'
         ] + options
+
+
+
+
+class StatisticsCaller(PlaceCaller):
+    metrics = ['BB cost', 'max delay']
+    stats_regex = r'.*BB cost\s+\|\s+(?P<bb_cost>[0-9.e+-]+).*max delay\s+\|\s+(?P<max_delay>[0-9.e+-]+)'
+
+
+
+
+class PlaceCallerVPR(Caller):
+
+    metrics = ['runtime', 'BB cost', 'max delay']
+    stats_regex = r'Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns.*bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<runtime>[0-9.e+-]+) seconds'
+
+    def __init__(self, architecture, circuits_folder, circuits):
+        Caller.__init__(self, circuits)
+
+        self.architecture = architecture
+        self.circuits_folder = circuits_folder
+
+        self.statistics_caller = StatisticsCaller(architecture, circuits_folder, circuits)
+
+
+    def place_all(self, options, num_random_seeds):
+        command = self.build_command(self.architecture, self.circuits_folder, options)
+
+        self.call_all_circuits(command, num_random_seeds)
+
+        silentremove('lookup_dump.echo')
+
+        statistics_options = [
+            '--input_place_file', os.path.join(self.circuits_folder, '{circuit}{iteration}.place')
+        ]
+        self.statistics_caller.place_all(statistics_options, num_random_seeds)
+
+
+    def build_command(self, architecture, circuits_folder, options):
+        return [
+            './vpr',
+            architecture,
+            '{circuit}',
+            '--place',
+            '--blif_file', os.path.join(circuits_folder, '{circuit}.blif'),
+            '--net_file', os.path.join(circuits_folder, '{circuit}.net'),
+            '--place_file', os.path.join(circuits_folder, '{circuit}{iteration}.place')
+        ] + options
+
+
+    def save_results(self, filename):
+        Caller.save_results(self, filename)
+
+        split = os.path.splitext(filename)
+        statistics_filename = split[0] + '_statistics' + split[1]
+        self.statistics_caller.save_results(statistics_filename)
+
+
 
 
 class ParameterSweeper:
