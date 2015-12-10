@@ -133,6 +133,9 @@ public class Architecture implements Serializable {
 
     private void processBlockElement(Element blockElement) throws parseException {
         String blockName = blockElement.getAttribute("name");
+        if(blockName.equals("mult_36x36")) {
+            int d = 0;
+        }
 
         boolean isGlobal = this.isGlobal(blockElement);
         boolean isLeaf = this.isLeaf(blockElement);
@@ -366,6 +369,7 @@ public class Architecture implements Serializable {
                     // ASM: Leafs have 1 unnamed mode without children
                     returnModes.add("");
                     returnChildren.add(new HashMap<String, Integer>());
+                    returnModeElements.add(blockElement);
             }
 
             return;
@@ -525,21 +529,35 @@ public class Architecture implements Serializable {
 
 
     private void cacheDelays(Element modeElement) {
-        Element interconnectElement = this.getFirstChild(modeElement, "interconnect");
 
-        NodeList delayConstantNodes = interconnectElement.getElementsByTagName("delay_constant");
-        for(int i = 0; i < delayConstantNodes.getLength(); i++) {
-            Element delayConstantElement = (Element) delayConstantNodes.item(i);
+        // ASM: delays are defined in a delay_constant tag. These tags are children of
+        // one of the next elements:
+        //   - modeElement itself
+        //   - child <interconnect> elements of modeElement
+        //   - child <direct> elements of modeElement
+        // One exception are luts: the lut delays are defined in a delay_matrix element.
+        // See addImplicitLut().
 
-            PortType sourcePortType = this.getPortType(delayConstantElement.getAttribute("in_port"));
-            PortType sinkPortType = this.getPortType(delayConstantElement.getAttribute("out_port"));
+        List<Element> elements = new ArrayList<Element>();
+        elements.add(modeElement);
+        elements.addAll(this.getChildElementsByTagName(modeElement, "interconnect"));
+        elements.addAll(this.getChildElementsByTagName(modeElement, "direct"));
 
-            double delay = Double.parseDouble(delayConstantElement.getAttribute("max"));
+        for(Element element : elements) {
+            NodeList delayConstantNodes = element.getElementsByTagName("delay_constant");
+            for(int i = 0; i < delayConstantNodes.getLength(); i++) {
+                Element delayConstantElement = (Element) delayConstantNodes.item(i);
 
-            // ASM: the element with blif_model .input is located directly under the
-            // global input block type
-            // PortTypeData uses this assumption to set the clock setup time
-            this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+                PortType sourcePortType = this.getPortType(delayConstantElement.getAttribute("in_port"));
+                PortType sinkPortType = this.getPortType(delayConstantElement.getAttribute("out_port"));
+
+                double delay = Double.parseDouble(delayConstantElement.getAttribute("max"));
+
+                // ASM: the element with blif_model .input is located directly under the
+                // global input block type
+                // PortTypeData uses this assumption to set the clock setup time
+                this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+            }
         }
     }
 
