@@ -133,9 +133,6 @@ public class Architecture implements Serializable {
 
     private void processBlockElement(Element blockElement) throws parseException {
         String blockName = blockElement.getAttribute("name");
-        if(blockName.equals("mult_36x36")) {
-            int d = 0;
-        }
 
         boolean isGlobal = this.isGlobal(blockElement);
         boolean isLeaf = this.isLeaf(blockElement);
