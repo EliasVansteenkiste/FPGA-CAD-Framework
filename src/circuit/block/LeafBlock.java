@@ -276,9 +276,9 @@ public class LeafBlock extends IntermediateBlock {
 
     double calculateDeltaCost(GlobalBlock otherBlock) {
         /*
-         * When this method is called, we assume that this block the
-         * block with which this block will be swapped, already have
-         * their positions updated (temporarily).
+         * When this method is called, we assume that this block and
+         * the block with which this block will be swapped, already
+         * have their positions updated (temporarily).
          */
         double cost = 0;
 

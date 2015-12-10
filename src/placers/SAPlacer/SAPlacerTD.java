@@ -19,13 +19,14 @@ public class SAPlacerTD extends SAPlacer {
         SAPlacer.initOptions(options);
 
         options.add("trade off", "trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5));
-        options.add("criticality exponent", "exponent to calculate cost of critical connections", new Double(1));
+        options.add("criticality exponent start", "exponent to calculate criticality of connections at start of anneal", new Double(1));
+        options.add("criticality exponent end", "exponent to calculate criticality of connections at end of anneal", new Double(8));
         options.add("recalculate", "number of swap iterations before a recalculate of the timing graph", new Integer(50000));
     }
 
     private EfficientBoundingBoxNetCC calculator;
     private final TimingGraph timingGraph;
-    private final double criticalityExponent;
+    private final double criticalityExponentStart, criticalityExponentEnd;
     private double cachedBBCost, cachedTDCost, previousBBCost, previousTDCost;
 
     private final double tradeOffFactor;
@@ -40,14 +41,14 @@ public class SAPlacerTD extends SAPlacer {
 
         this.tradeOffFactor = this.options.getDouble("trade off");
         this.iterationsBeforeRecalculate = this.options.getInteger("recalculate");
-        this.criticalityExponent = this.options.getDouble("criticality exponent");
+
+        this.criticalityExponentStart = this.options.getDouble("criticality exponent start");
+        this.criticalityExponentEnd = this.options.getDouble("criticality exponent end");
     }
 
     @Override
     public void initializeData() {
         super.initializeData();
-
-        this.timingGraph.setCriticalityExponent(this.criticalityExponent);
     }
 
     @Override
@@ -63,6 +64,11 @@ public class SAPlacerTD extends SAPlacer {
 
     @Override
     protected void initializeSwapIteration() {
+        double criticalityExponent = this.criticalityExponentStart +
+                (1 - (this.Rlimd - 1) / (this.initialRlim - 1))
+                * (this.criticalityExponentEnd - this.criticalityExponentStart);
+
+        this.timingGraph.setCriticalityExponent(criticalityExponent);
         this.timingGraph.recalculateAllSlacksCriticalities(true);
 
         this.updatePreviousCosts();
@@ -117,6 +123,7 @@ public class SAPlacerTD extends SAPlacer {
         this.timingGraph.pushThrough();
 
         if(iteration % this.iterationsBeforeRecalculate == 0 && iteration > 0) {
+            this.timingGraph.recalculateAllSlacksCriticalities(false);
             this.updatePreviousCosts();
         }
     }
@@ -127,6 +134,7 @@ public class SAPlacerTD extends SAPlacer {
         this.timingGraph.revert();
 
         if(iteration % this.iterationsBeforeRecalculate == 0 && iteration > 0) {
+            this.timingGraph.recalculateAllSlacksCriticalities(false);
             this.updatePreviousCosts();
         }
     }

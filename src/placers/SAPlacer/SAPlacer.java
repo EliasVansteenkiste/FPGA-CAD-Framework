@@ -32,8 +32,8 @@ abstract class SAPlacer extends Placer {
     }
 
 
-    private double Rlimd;
-    private int Rlim, maxRlim;
+    protected double Rlimd;
+    protected int Rlim, initialRlim, maxRlim;
     private double temperature;
 
     private final double temperatureMultiplier;
@@ -66,13 +66,15 @@ abstract class SAPlacer extends Placer {
 
         int RlimOption = this.options.getInteger("rlim");
         if(RlimOption == -1) {
-            RlimOption = size;
+            RlimOption = size - 1;
         }
 
         int maxRlimOption = this.options.getInteger("max rlim");
         if(maxRlimOption == -1) {
-            maxRlimOption = size;
+            maxRlimOption = size - 1;
         }
+
+        this.initialRlim = RlimOption;
 
         // Set maxRlim first, because Rlim depends on it
         this.setMaxRlim(maxRlimOption);

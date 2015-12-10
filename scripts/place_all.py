@@ -22,7 +22,7 @@ circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8P
 options = [
     ['--placer', 'td_sa']
 ]
-num_random_seeds = 1
+num_random_seeds = 3
 
 
 #####################

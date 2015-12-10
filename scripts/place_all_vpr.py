@@ -13,7 +13,7 @@ circuits_folder = 'benchmarks/'
 circuits = 'bgm blob_merge boundtop ch_intrinsics diffeq1 diffeq2 LU32PEEng LU8PEEng mcml mkDelayWorker32B mkPktMerge mkSMAdapter4B or1200 raygentop sha stereovision0 stereovision1 stereovision2 stereovision3'
 
 options = []
-num_random_seeds = 1
+num_random_seeds = 3
 
 
 #####################
