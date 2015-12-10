@@ -1,7 +1,6 @@
 package main;
 
 import interfaces.Logger;
-import interfaces.Logger.Stream;
 import interfaces.Options;
 import interfaces.Options.Required;
 import interfaces.OptionsManager;
@@ -70,7 +69,6 @@ public class Main {
     public Main(OptionsManager options) {
         this.options = options;
         this.logger = options.getLogger();
-        //this.logger.setLocation(Stream.OUT, "tmp.csv");
 
         this.parseOptions(options.getMainOptions());
     }

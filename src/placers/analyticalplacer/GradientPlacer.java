@@ -49,7 +49,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double maxUtilization;
 
     private double[] netCriticalities;
-    private double[][] debugCriticalities;
 
     protected HeapLegalizer legalizer;
     private LinearSolverGradient solver;
@@ -71,8 +70,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.stepSize = this.options.getDouble("step size");
         this.gradientIterations = this.options.getInteger("effort level");
-
-        this.debugCriticalities = new double[91][];
     }
 
     protected abstract void updateLegalIfNeeded(int iteration);
@@ -106,10 +103,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         // Cache the max criticality of each net
         if(this.isTimingDriven() && iteration % 1 == 0) {
             this.updateNetCriticalities();
-
-            // DEBUG
-            this.debugCriticalities[iteration] = new double[this.netCriticalities.length];
-            System.arraycopy(this.netCriticalities, 0, this.debugCriticalities[iteration], 0, this.netCriticalities.length);
         }
 
         int innerIterations = iteration == 0 ? 4 * this.gradientIterations : this.gradientIterations;
@@ -192,21 +185,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected boolean stopCondition() {
-        // DEBUG
-        /*if(this.anchorWeight > this.anchorWeightStop) {
-            for(int i = 0; i < this.netCriticalities.length; i++) {
-                StringBuilder line = new StringBuilder();
-                String prefix = "";
-                for(int iteration = 0; iteration < 91; iteration++) {
-                    line.append(prefix);
-                    prefix = ",";
-                    line.append(this.debugCriticalities[iteration][i]);
-                }
-
-                this.logger.println(line.toString());
-            }
-        }*/
-
         return this.anchorWeight > this.anchorWeightStop;
     }
 }

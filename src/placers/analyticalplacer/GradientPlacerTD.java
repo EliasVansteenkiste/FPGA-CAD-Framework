@@ -8,7 +8,6 @@ import java.util.Random;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.block.TimingGraph;
-import circuit.exceptions.PlacementException;
 
 public class GradientPlacerTD extends GradientPlacer {
 
