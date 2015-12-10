@@ -24,10 +24,12 @@ options = [
 ]
 num_random_seeds = 8
 
+
 #####################
 # Place all ciruits #
 #####################
 os.chdir('..')
+print('Compiling...')
 subprocess.call(['./compile.sh'])
 
 for i in range(len(options)):

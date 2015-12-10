@@ -134,6 +134,39 @@ class Caller:
 
 
 
+class PlaceCallerVPR(Caller):
+
+    metrics = ['runtime', 'BB cost', 'max delay']
+    stats_regex = r'Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns.*bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<runtime>[0-9.e+-]+) seconds'
+
+    def __init__(self, architecture, circuits_folder, circuits):
+        Caller.__init__(self, circuits)
+
+        self.architecture = architecture
+        self.circuits_folder = circuits_folder
+
+
+    def place_all(self, options, num_random_seeds):
+        command = self.build_command(self.architecture, self.circuits_folder, options)
+
+        self.call_all_circuits(command, num_random_seeds)
+
+        silentremove('tmp')
+        silentremove('lookup_dump.echo')
+
+
+    def build_command(self, architecture, circuits_folder, options):
+        return [
+            './vpr',
+            architecture,
+            '{circuit}',
+            '--place',
+            '--blif_file', os.path.join(circuits_folder, '{circuit}.blif'),
+            '--net_file', os.path.join(circuits_folder, '{circuit}.net'),
+            '--place_file', 'tmp'
+        ] + options
+
+
 class PlaceCaller(Caller):
 
     metrics = ['runtime', 'BB cost', 'max delay']
