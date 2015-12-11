@@ -126,6 +126,10 @@ abstract class SAPlacer extends Placer {
                 iteration++;
             }
 
+            // Finish with a greedy iteration
+            this.temperature = 0;
+            this.doSwapIteration();
+
             this.logger.println();
         }
     }
