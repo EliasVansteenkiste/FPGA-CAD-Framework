@@ -21,7 +21,7 @@ public class SAPlacerTD extends SAPlacer {
         options.add("trade off", "trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5));
         options.add("criticality exponent start", "exponent to calculate criticality of connections at start of anneal", new Double(1));
         options.add("criticality exponent end", "exponent to calculate criticality of connections at end of anneal", new Double(8));
-        options.add("recalculate", "number of swap iterations before a recalculate of the timing graph", new Integer(50000));
+        options.add("inner loop recalculates", "number of times the criticalities should be recalculated in the inner loop", new Integer(0));
     }
 
     private EfficientBoundingBoxNetCC calculator;
@@ -40,7 +40,12 @@ public class SAPlacerTD extends SAPlacer {
 
 
         this.tradeOffFactor = this.options.getDouble("trade off");
-        this.iterationsBeforeRecalculate = this.options.getInteger("recalculate");
+        int numRecalculates = this.options.getInteger("inner loop recalculates");
+        if(numRecalculates == 0) {
+            this.iterationsBeforeRecalculate = this.movesPerTemperature + 1;
+        } else {
+            this.iterationsBeforeRecalculate = this.movesPerTemperature / numRecalculates;
+        }
 
         this.criticalityExponentStart = this.options.getDouble("criticality exponent start");
         this.criticalityExponentEnd = this.options.getDouble("criticality exponent end");

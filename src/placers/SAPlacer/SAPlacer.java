@@ -41,7 +41,7 @@ abstract class SAPlacer extends Placer {
 
     private final boolean fixPins;
     private final boolean greedy, detailed;
-    private final int movesPerTemperature;
+    protected final int movesPerTemperature;
 
     protected boolean circuitChanged = true;
     private double[] deltaCosts;
