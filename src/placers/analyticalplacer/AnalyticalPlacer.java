@@ -13,10 +13,26 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     private static final double EPSILON = 0.005;
 
+    private static final String
+        O_STOP_RATIO = "stop ratio",
+        O_ANCHOR_WEIGHT = "anchor weight",
+        O_ANCHOR_WEIGHT_MULTIPLIER = "anchor weight multiplier";
+
     public static void initOptions(Options options) {
-        options.add("stop ratio", "ratio between linear and legal cost above which placement should be stopped", new Double(0.9));
-        options.add("anchor weight", "starting anchor weight", new Double(0.3));
-        options.add("anchor weight multiplier", "multiplier to increase the anchor weight in each iteration", new Double(1.1));
+        options.add(
+                O_STOP_RATIO,
+                "ratio between linear and legal cost above which placement should be stopped",
+                new Double(0.9));
+
+        options.add(
+                O_ANCHOR_WEIGHT,
+                "starting anchor weight",
+                new Double(0.3));
+
+        options.add(
+                O_ANCHOR_WEIGHT_MULTIPLIER,
+                "multiplier to increase the anchor weight in each iteration",
+                new Double(1.1));
     }
 
 
@@ -29,15 +45,13 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     private CostCalculator costCalculator;
 
 
-
-
     public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
-        this.stopRatio = options.getDouble("stop ratio");
+        this.stopRatio = options.getDouble(O_STOP_RATIO);
 
-        this.anchorWeight = options.getDouble("anchor weight");
-        this.anchorWeightMultiplier = options.getDouble("anchor weight multiplier");
+        this.anchorWeight = options.getDouble(O_ANCHOR_WEIGHT);
+        this.anchorWeightMultiplier = options.getDouble(O_ANCHOR_WEIGHT_MULTIPLIER);
     }
 
 
@@ -47,8 +61,12 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     public void initializeData() {
         super.initializeData();
 
+        this.startTimer(timerInitializeData);
+
         this.legalizer = new HeapLegalizer(this.circuit, this.blockTypes, this.blockTypeIndexStarts, this.linearX, this.linearY);
         this.costCalculator = this.createCostCalculator();
+
+        this.stopTimer(timerInitializeData);
     }
 
 

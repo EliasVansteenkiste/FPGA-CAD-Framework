@@ -18,17 +18,53 @@ import visual.PlacementVisualizer;
 
 abstract class SAPlacer extends Placer {
 
+    private static final String
+        O_GREEDY = "greedy",
+        O_DETAILED = "detailed",
+        O_EFFORT_LEVEL = "effort level",
+        O_TEMPERATURE = "temperature",
+        O_RLIM = "rlim",
+        O_MAX_RLIM = "max rlim",
+        O_FIX_IO_PINS = "fix io pins";
+
     public static void initOptions(Options options) {
-        options.add("greedy", "place greedy", Boolean.FALSE);
-        options.add("detailed", "place detailed", Boolean.FALSE);
+        options.add(
+                O_GREEDY,
+                "place greedy",
+                Boolean.FALSE);
 
-        options.add("effort level", "multiplier for the number of swap iterations", new Double(1));
-        options.add("temperature", "multiplier for the starting temperature", new Double(1));
+        options.add(
+                O_DETAILED,
+                "place detailed",
+                Boolean.FALSE);
 
-        options.add("rlim", "starting maximum distance for a swap", new Integer(-1));
-        options.add("max rlim", "maximum rlim for all iterations", new Integer(-1));
 
-        options.add("fix pins", "fix the IO pins", Boolean.TRUE);
+        options.add(
+                O_EFFORT_LEVEL,
+                "multiplier for the number of swap iterations",
+                new Double(1));
+
+        options.add(
+                O_TEMPERATURE,
+                "multiplier for the starting temperature",
+                new Double(1));
+
+
+        options.add(
+                O_RLIM,
+                "maximum distance for a swap at start of placement",
+                new Integer(-1));
+
+        options.add(
+                O_MAX_RLIM,
+                "maximum rlim for all iterations",
+                new Integer(-1));
+
+
+        options.add(
+                O_FIX_IO_PINS,
+                "fix the IO pins",
+                Boolean.TRUE);
     }
 
 
@@ -51,25 +87,25 @@ abstract class SAPlacer extends Placer {
         super(circuit, options, random, logger, visualizer);
 
 
-        this.greedy = this.options.getBoolean("greedy");
-        this.detailed = this.options.getBoolean("detailed");
+        this.greedy = this.options.getBoolean(O_GREEDY);
+        this.detailed = this.options.getBoolean(O_DETAILED);
 
-        this.fixPins = this.options.getBoolean("fix pins");
+        this.fixPins = this.options.getBoolean(O_FIX_IO_PINS);
 
-        double effortLevel = this.options.getDouble("effort level");
+        double effortLevel = this.options.getDouble(O_EFFORT_LEVEL);
         this.movesPerTemperature = (int) (effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), 4.0/3.0));
 
-        this.temperatureMultiplier = this.options.getDouble("temperature");
+        this.temperatureMultiplier = this.options.getDouble(O_TEMPERATURE);
 
         // Set Rlim options
         int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight());
 
-        int RlimOption = this.options.getInteger("rlim");
+        int RlimOption = this.options.getInteger(O_RLIM);
         if(RlimOption == -1) {
             RlimOption = size - 1;
         }
 
-        int maxRlimOption = this.options.getInteger("max rlim");
+        int maxRlimOption = this.options.getInteger(O_MAX_RLIM);
         if(maxRlimOption == -1) {
             maxRlimOption = size - 1;
         }

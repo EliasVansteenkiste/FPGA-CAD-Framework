@@ -13,29 +13,37 @@ import circuit.exceptions.PlacementException;
 
 public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
+    private static final String
+        O_ANCHOR_WEIGHT_START = "anchor weight start",
+        O_ANCHOR_WEIGHT_STEP = "anchor weight step",
+        O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
+        O_STEP_SIZE = "step size",
+        O_EFFORT_LEVEL = "effort level";
+
     public static void initOptions(Options options) {
         options.add(
-                "anchor weight start",
+                O_ANCHOR_WEIGHT_START,
                 "starting anchor weight",
                 new Double(0));
 
         options.add(
-                "anchor weight step",
+                O_ANCHOR_WEIGHT_STEP,
                 "value that is added to the anchor weight in each iteration",
                 new Double(0.01));
 
-        options.add("anchor weight stop",
+        options.add(
+                O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished",
                 new Double(0.9));
 
 
         options.add(
-                "step size",
+                O_STEP_SIZE,
                 "ratio of distance to optimal position that is moved",
                 new Double(0.4));
 
         options.add(
-                "effort level",
+                O_EFFORT_LEVEL,
                 "number of gradient steps to take in each outer iteration",
                 new Integer(40));
     }
@@ -63,13 +71,13 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         super(circuit, options, random, logger, visualizer);
 
-        this.anchorWeightStart = this.options.getDouble("anchor weight start");
-        this.anchorWeightStep = this.options.getDouble("anchor weight step");
-        this.anchorWeightStop = this.options.getDouble("anchor weight stop");
+        this.anchorWeightStart = this.options.getDouble(O_ANCHOR_WEIGHT_START);
+        this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
+        this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
-        this.stepSize = this.options.getDouble("step size");
-        this.gradientIterations = this.options.getInteger("effort level");
+        this.stepSize = this.options.getDouble(O_STEP_SIZE);
+        this.gradientIterations = this.options.getInteger(O_EFFORT_LEVEL);
     }
 
     protected abstract void updateLegalIfNeeded(int iteration);

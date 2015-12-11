@@ -23,8 +23,11 @@ import visual.PlacementVisualizer;
 
 public class RandomPlacer extends Placer {
 
+    private static final String
+        O_CATEGORIES = "categories";
+
     public static void initOptions(Options options) {
-        options.add("categories", "comma-separated list of block categories that must be placed", "");
+        options.add(O_CATEGORIES, "comma-separated list of block categories that must be placed", "");
     }
 
     private final Set<BlockCategory> categories = new HashSet<>();
@@ -32,7 +35,7 @@ public class RandomPlacer extends Placer {
     public RandomPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random ,logger, visualizer);
 
-        String categoriesString = this.options.getString("categories");
+        String categoriesString = this.options.getString(O_CATEGORIES);
         Set<String> categoriesStrings = new HashSet<>(Arrays.asList(categoriesString.split(",")));
 
         for(BlockCategory category : BlockCategory.values()) {

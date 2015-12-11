@@ -15,13 +15,34 @@ import circuit.block.TimingGraph;
 
 public class SAPlacerTD extends SAPlacer {
 
+    private static final String
+        O_TRADE_OFF = "trade off",
+        O_CRITICALITY_EXPONENT_START = "criticality exponent start",
+        O_CRITICALITY_EXPONENT_END = "criticality exponent end",
+        O_INNER_LOOP_RECALCULATES = "inner loop recalculates";
+
     public static void initOptions(Options options) {
         SAPlacer.initOptions(options);
 
-        options.add("trade off", "trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD", new Double(0.5));
-        options.add("criticality exponent start", "exponent to calculate criticality of connections at start of anneal", new Double(1));
-        options.add("criticality exponent end", "exponent to calculate criticality of connections at end of anneal", new Double(8));
-        options.add("inner loop recalculates", "number of times the criticalities should be recalculated in the inner loop", new Integer(0));
+        options.add(
+                O_TRADE_OFF,
+                "trade off between wirelength and timing cost optimization: 0 is pure WLD, 1 is pure TD",
+                new Double(0.5));
+
+        options.add(
+                O_CRITICALITY_EXPONENT_START,
+                "exponent to calculate criticality of connections at start of anneal",
+                new Double(1));
+
+        options.add(
+                O_CRITICALITY_EXPONENT_END,
+                "exponent to calculate criticality of connections at end of anneal",
+                new Double(8));
+
+        options.add(
+                O_INNER_LOOP_RECALCULATES,
+                "number of times the criticalities should be recalculated in the inner loop",
+                new Integer(0));
     }
 
     private EfficientBoundingBoxNetCC calculator;
@@ -39,16 +60,16 @@ public class SAPlacerTD extends SAPlacer {
         this.timingGraph = circuit.getTimingGraph();
 
 
-        this.tradeOffFactor = this.options.getDouble("trade off");
-        int numRecalculates = this.options.getInteger("inner loop recalculates");
+        this.tradeOffFactor = this.options.getDouble(O_TRADE_OFF);
+        int numRecalculates = this.options.getInteger(O_INNER_LOOP_RECALCULATES);
         if(numRecalculates == 0) {
             this.iterationsBeforeRecalculate = this.movesPerTemperature + 1;
         } else {
             this.iterationsBeforeRecalculate = this.movesPerTemperature / numRecalculates;
         }
 
-        this.criticalityExponentStart = this.options.getDouble("criticality exponent start");
-        this.criticalityExponentEnd = this.options.getDouble("criticality exponent end");
+        this.criticalityExponentStart = this.options.getDouble(O_CRITICALITY_EXPONENT_START);
+        this.criticalityExponentEnd = this.options.getDouble(O_CRITICALITY_EXPONENT_END);
     }
 
     @Override

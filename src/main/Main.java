@@ -18,6 +18,7 @@ import org.xml.sax.SAXException;
 
 import placers.Placer;
 import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import util.Timer;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.Architecture;
@@ -249,6 +250,8 @@ public class Main {
             this.logger.raise(error);
         }
         this.stopTimer();
+
+        placer.printRuntimeBreakdown();
 
         this.printStatistics(placerName, true);
     }
