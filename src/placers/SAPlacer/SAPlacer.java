@@ -120,18 +120,25 @@ abstract class SAPlacer extends Placer {
                 this.updateRlim(alpha);
                 this.updateTemperature(alpha);
 
-                this.logger.printf("Temperature %d = %.9f, Rlim = %d, %s\n",
-                        iteration, this.temperature, this.Rlim, this.getStatistics());
+                this.printStatistics(iteration);
 
                 iteration++;
             }
 
             // Finish with a greedy iteration
             this.temperature = 0;
+            this.setRlimd(3);
             this.doSwapIteration();
+            this.printStatistics(iteration);
+
 
             this.logger.println();
         }
+    }
+
+    private void printStatistics(int iteration) {
+        this.logger.printf("Temperature %d = %.9f, Rlim = %d, %s\n",
+                iteration, this.temperature, this.Rlim, this.getStatistics());
     }
 
 
