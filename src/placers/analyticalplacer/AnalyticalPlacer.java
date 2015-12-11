@@ -35,12 +35,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 new Double(1.1));
     }
 
-    private static final String
-        T_BUILD_LINEAR = "build linear system",
-        T_SOLVE_LINEAR = "solve linear system",
-        T_CALCULATE_COST = "calculate cost",
-        T_LEGALIZE = "legalize";
-
 
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
     protected double criticalityThreshold; // This is only used by AnalyticalPlacerTD

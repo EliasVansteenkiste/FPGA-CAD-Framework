@@ -40,7 +40,11 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected final static String
         T_INITIALIZE_DATA = "initialize data",
-        T_UPDATE_CIRCUIT = "update circuit";
+        T_UPDATE_CIRCUIT = "update circuit",
+        T_BUILD_LINEAR = "build linear system",
+        T_SOLVE_LINEAR = "solve linear system",
+        T_CALCULATE_COST = "calculate cost",
+        T_LEGALIZE = "legalize";
 
 
     public AnalyticalAndGradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {

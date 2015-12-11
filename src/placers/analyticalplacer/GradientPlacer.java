@@ -49,7 +49,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
 
-
     protected double anchorWeight;
     protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
     private double stepSize;
@@ -87,6 +86,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     public void initializeData() {
         super.initializeData();
 
+        this.startTimer(T_INITIALIZE_DATA);
 
         this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.stepSize);
 
@@ -98,6 +98,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         int numNets = this.netUniqueBlockIndexes.size();
         this.netCriticalities = new double[numNets];
         Arrays.fill(this.netCriticalities, 1);
+
+        this.stopTimer(T_INITIALIZE_DATA);
     }
 
 
@@ -109,9 +111,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
 
         // Cache the max criticality of each net
+        this.startTimer(T_BUILD_LINEAR);
         if(this.isTimingDriven() && iteration % 1 == 0) {
             this.updateNetCriticalities();
         }
+        this.stopTimer(T_BUILD_LINEAR);
 
         int innerIterations = iteration == 0 ? 4 * this.gradientIterations : this.gradientIterations;
 
@@ -147,6 +151,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
      */
     protected void solveLinearIteration(int iteration) {
 
+        this.startTimer(T_BUILD_LINEAR);
+
         // Reset the solver
         this.solver.initializeIteration(this.anchorWeight);
 
@@ -160,15 +166,21 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             this.solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
         }
 
+        this.stopTimer(T_BUILD_LINEAR);
+
         // Solve and save result
+        this.startTimer(T_SOLVE_LINEAR);
         this.solver.solve();
+        this.stopTimer(T_SOLVE_LINEAR);
     }
 
     private void processNets() {
         int numNets = this.netUniqueBlockIndexes.size();
+        boolean timingDriven = this.isTimingDriven();
+
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             int[] blockIndexes = this.netUniqueBlockIndexes.get(netIndex);
-            double criticality = this.netCriticalities[netIndex];
+            double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
 
             this.solver.processNet(blockIndexes, criticality);
         }
@@ -177,17 +189,22 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void solveLegal(int iteration) {
+
         // TODO: optimize this
         this.maxUtilization = Math.min(this.numBlocks, Math.max(1, 0.8 / this.anchorWeight));
         this.maxUtilization = 1;
 
+        this.startTimer(T_LEGALIZE);
         try {
             this.legalizer.legalize(this.maxUtilization);
         } catch(PlacementException error) {
             this.logger.raise(error);
         }
+        this.stopTimer(T_LEGALIZE);
 
+        this.startTimer(T_UPDATE_CIRCUIT);
         this.updateLegalIfNeeded(iteration);
+        this.stopTimer(T_UPDATE_CIRCUIT);
     }
 
 
