@@ -117,7 +117,6 @@ public class Logger {
     }
     public void raise(String message, Exception exception) {
         this.println(Stream.ERR, message);
-        this.print(Stream.ERR, exception);
         this.raise(exception);
     }
 }

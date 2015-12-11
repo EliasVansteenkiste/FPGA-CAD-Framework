@@ -7,6 +7,10 @@ abstract class CostCalculator {
 
     protected abstract double calculate(boolean recalculateCriticalities);
 
+
+    double calculate(int[] x, int[] y) {
+        return this.calculate(x, y, true);
+    }
     double calculate(int[] x, int[] y, boolean recalculateCriticalities) {
         this.intX = x;
         this.intY = y;
@@ -14,6 +18,7 @@ abstract class CostCalculator {
 
         return this.calculate(recalculateCriticalities);
     }
+
     double calculate(double[] x, double[] y) {
         this.doubleX = x;
         this.doubleY = y;

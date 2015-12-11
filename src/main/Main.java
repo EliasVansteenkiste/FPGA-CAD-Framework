@@ -260,7 +260,7 @@ public class Main {
     private void startTimer(String name) {
         this.mostRecentTimerName = name;
 
-        Timer timer = new Timer(this.logger);
+        Timer timer = new Timer();
         this.timers.put(name, timer);
         timer.start();
     }
@@ -274,7 +274,11 @@ public class Main {
         if(timer == null) {
             this.logger.raise("Timer hasn't been initialized: " + name);
         } else {
-            timer.stop();
+            try {
+                timer.stop();
+            } catch(IllegalStateException error) {
+                this.logger.raise("There was a problem with timer \"" + name + "\":", error);
+            }
         }
     }
 
@@ -284,8 +288,17 @@ public class Main {
         if(timer == null) {
             this.logger.raise("Timer hasn't been initialized: " + name);
             return -1;
+
         } else {
-            return timer.getTime();
+            double time = 0;
+            try {
+                time = timer.getTime();
+
+            } catch(IllegalStateException error) {
+                this.logger.raise("There was a problem with timer \"" + name + "\":", error);
+            }
+
+            return time;
         }
     }
 

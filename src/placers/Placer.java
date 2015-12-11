@@ -59,25 +59,33 @@ public abstract class Placer {
         this.logger.println();
     }
 
-
-    protected void addTimer(String name) {
-        if(this.timers.get(name) != null) {
-            this.logger.raise("Timer has already been added: " + name);
-
-        } else {
-            this.timers.put(name, new Timer(this.logger));
+    protected void startTimer(String name) {
+        if(!this.timers.containsKey(name)) {
+            this.timers.put(name, new Timer());
 
             if(name.length() > this.maxTimerNameLength) {
                 this.maxTimerNameLength = name.length();
             }
         }
-    }
 
-    protected void startTimer(String name) {
-        this.timers.get(name).start();
+        try {
+            this.timers.get(name).start();
+        } catch(IllegalStateException error) {
+            this.logger.raise("There was a problem with timer \"" + name + "\":", error);
+        }
     }
     protected void stopTimer(String name) {
-        this.timers.get(name).stop();
+        if(this.timers.containsKey(name)) {
+
+            try {
+                this.timers.get(name).stop();
+            } catch(IllegalStateException error) {
+                this.logger.raise("There was a problem with timer \"" + name + "\":", error);
+            }
+
+        } else {
+            this.logger.raise("Timer hasn't been initialized: " + name);
+        }
     }
 
     public void printRuntimeBreakdown() {
@@ -85,14 +93,19 @@ public abstract class Placer {
             this.logger.printf("%s runtime breakdown:\n", this.getName());
 
             String totalName = "total";
-            double totalTime = 0;
             int maxLength = Math.max(this.maxTimerNameLength, totalName.length());
-
-
             String format = String.format("%%-%ds| %%f\n", maxLength + 1);
+
+            double totalTime = 0;
             for(Map.Entry<String, Timer> timerEntry : this.timers.entrySet()) {
                 String name = timerEntry.getKey();
-                Double time = timerEntry.getValue().getTime();
+
+                double time = 0;
+                try {
+                    time = timerEntry.getValue().getTime();
+                } catch(IllegalStateException error) {
+                    this.logger.raise("There was a problem with timer \"" + name + "\":", error);
+                }
                 totalTime += time;
 
                 this.logger.printf(format, name, time);

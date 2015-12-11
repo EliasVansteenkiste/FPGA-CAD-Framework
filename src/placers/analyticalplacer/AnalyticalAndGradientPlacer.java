@@ -38,13 +38,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected List<int[]> netBlockIndexes, netUniqueBlockIndexes;
     protected List<TimingEdge[]> netTimingEdges;
 
-    protected final static String timerInitializeData = "initialize data";
+    protected final static String
+        T_INITIALIZE_DATA = "initialize data",
+        T_UPDATE_CIRCUIT = "update circuit";
 
 
     public AnalyticalAndGradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
-
-        this.addTimer(timerInitializeData);
     }
 
 
@@ -61,7 +61,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     @Override
     public void initializeData() {
 
-        this.startTimer(timerInitializeData);
+        this.startTimer(T_INITIALIZE_DATA);
 
         // Get number of blocks
         int numBlocksCounter = 0;
@@ -200,7 +200,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
 
-        this.stopTimer(timerInitializeData);
+        this.stopTimer(T_INITIALIZE_DATA);
     }
 
 
@@ -240,11 +240,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.logger.println();
 
 
+        this.startTimer(T_UPDATE_CIRCUIT);
         try {
             this.updateCircuit();
         } catch(PlacementException error) {
             this.logger.raise(error);
         }
+        this.stopTimer(T_UPDATE_CIRCUIT);
     }
 
 

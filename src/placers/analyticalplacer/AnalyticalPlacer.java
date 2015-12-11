@@ -35,6 +35,12 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 new Double(1.1));
     }
 
+    private static final String
+        T_BUILD_LINEAR = "build linear system",
+        T_SOLVE_LINEAR = "solve linear system",
+        T_CALCULATE_COST = "calculate cost",
+        T_LEGALIZE = "legalize";
+
 
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
     protected double criticalityThreshold; // This is only used by AnalyticalPlacerTD
@@ -57,21 +63,23 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     protected abstract CostCalculator createCostCalculator();
 
+
     @Override
     public void initializeData() {
         super.initializeData();
 
-        this.startTimer(timerInitializeData);
+        this.startTimer(T_INITIALIZE_DATA);
 
         this.legalizer = new HeapLegalizer(this.circuit, this.blockTypes, this.blockTypeIndexStarts, this.linearX, this.linearY);
         this.costCalculator = this.createCostCalculator();
 
-        this.stopTimer(timerInitializeData);
+        this.stopTimer(T_INITIALIZE_DATA);
     }
 
 
     @Override
     protected void solveLinear(int iteration) {
+
         if(iteration > 0) {
             this.anchorWeight *= this.anchorWeightMultiplier;
         }
@@ -82,7 +90,9 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
             this.solveLinearIteration(solver, iteration);
         }
 
+        this.startTimer(T_CALCULATE_COST);
         this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+        this.stopTimer(T_CALCULATE_COST);
     }
 
     /*
@@ -90,6 +100,8 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
     protected void solveLinearIteration(LinearSolverAnalytical solver, int iteration) {
+
+        this.startTimer(T_BUILD_LINEAR);
 
         // Add connections between blocks that are connected by a net
         this.processNetsWLD(solver);
@@ -103,8 +115,13 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
             solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
         }
 
+        this.stopTimer(T_BUILD_LINEAR);
+
+
         // Solve and save result
+        this.startTimer(T_SOLVE_LINEAR);
         solver.solve();
+        this.stopTimer(T_SOLVE_LINEAR);
     }
 
     protected void processNetsWLD(LinearSolverAnalytical solver) {
@@ -127,20 +144,27 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         // But HeapLegalizer still supports other values for maxUtilization
         double maxUtilization = 1;
 
+        this.startTimer(T_LEGALIZE);
         try {
             this.legalizer.legalize(maxUtilization);
         } catch(PlacementException error) {
             this.logger.raise(error);
         }
+        this.stopTimer(T_LEGALIZE);
 
+
+        this.startTimer(T_CALCULATE_COST);
         int[] newLegalX = this.legalizer.getLegalX();
         int[] newLegalY = this.legalizer.getLegalY();
-        double tmpLegalCost = this.costCalculator.calculate(newLegalX, newLegalY, true);
+        double tmpLegalCost = this.costCalculator.calculate(newLegalX, newLegalY);
+        this.stopTimer(T_CALCULATE_COST);
 
+        this.startTimer(T_UPDATE_CIRCUIT);
         if(tmpLegalCost < this.legalCost) {
             this.legalCost = tmpLegalCost;
             this.updateLegal(newLegalX, newLegalY);
         }
+        this.stopTimer(T_UPDATE_CIRCUIT);
     }
 
     @Override
