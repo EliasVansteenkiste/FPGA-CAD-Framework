@@ -47,6 +47,10 @@ public class Architecture implements Serializable {
 
     private static final double FILL_GRADE = 1;
 
+    private boolean autoSize;
+    private int width, height;
+    private double autoRatio;
+
     private File architectureFile, blifFile, netFile;
     private String circuitName;
     private transient String vprCommand;
@@ -78,6 +82,9 @@ public class Architecture implements Serializable {
         Document xmlDocument = xmlBuilder.parse(this.architectureFile);
         Element root = xmlDocument.getDocumentElement();
 
+        // Get the architecture size (fixed or automatic)
+        this.processLayout(root);
+
         // Store the models to know which ones are clocked
         this.processModels(root);
 
@@ -92,6 +99,20 @@ public class Architecture implements Serializable {
 
         // Build the delay matrixes
         this.buildDelayMatrixes();
+    }
+
+
+    private void processLayout(Element root) {
+        Element layoutElement = this.getFirstChild(root, "layout");
+
+        this.autoSize = layoutElement.hasAttribute("auto");
+        if(this.autoSize) {
+            this.autoRatio = Double.parseDouble(layoutElement.getAttribute("auto"));
+
+        } else {
+            this.width = Integer.parseInt(layoutElement.getAttribute("width"));
+            this.height = Integer.parseInt(layoutElement.getAttribute("height"));
+        }
     }
 
 
@@ -664,6 +685,20 @@ public class Architecture implements Serializable {
         Files.deleteIfExists(new File(path).toPath());
     }
 
+
+
+    public boolean isAutoSized() {
+        return this.autoSize;
+    }
+    public double getAutoRatio() {
+        return this.autoRatio;
+    }
+    public int getWidht() {
+        return this.width;
+    }
+    public int getHeight() {
+        return this.height;
+    }
 
     public DelayTables getDelayTables() {
         return this.delayTables;
