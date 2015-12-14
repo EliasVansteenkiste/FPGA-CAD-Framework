@@ -54,11 +54,10 @@ public class Circuit {
     }
 
 
-    public void buildDataStructures() {
+    public void initializeData() {
         this.loadBlocks();
 
         this.timingGraph.build();
-
 
         for(List<AbstractBlock> blocksOfType : this.blocks.values()) {
             for(AbstractBlock block : blocksOfType) {
@@ -177,7 +176,7 @@ public class Circuit {
 
 
             // Check if the architecture is large enough
-            int ioCapacity = (this.width + this.height - 2) * 2 * this.architecture.getIoCapacity();
+            int ioCapacity = (this.width + this.height - 4) * 2 * this.architecture.getIoCapacity();
             if(ioCapacity >= this.getBlocks(ioType).size()) {
                 bigEnough = true;
 
@@ -400,7 +399,7 @@ public class Circuit {
         if(blockType.equals(ioType)) {
             int size = this.width;
             int ioCapacity = this.architecture.getIoCapacity();
-            sites = new ArrayList<AbstractSite>((size - 1) * 4);
+            sites = new ArrayList<AbstractSite>((size - 1) * 4 * ioCapacity);
 
             for(int i = 1; i < size - 1; i++) {
                 for(int n = 0; n < ioCapacity; n++) {

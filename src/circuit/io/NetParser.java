@@ -126,7 +126,7 @@ public class NetParser {
 
 
         Circuit circuit = new Circuit(this.circuitName, this.architecture, this.blocks);
-        circuit.buildDataStructures();
+        circuit.initializeData();
 
         return circuit;
     }
