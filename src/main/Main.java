@@ -27,6 +27,7 @@ import circuit.architecture.parseException;
 import circuit.exceptions.InvalidFileFormatException;
 import circuit.exceptions.PlacementException;
 import circuit.io.BlockNotFoundException;
+import circuit.io.IllegalSizeException;
 import circuit.io.NetParser;
 import circuit.io.PlaceDumper;
 import circuit.io.PlaceParser;
@@ -147,7 +148,8 @@ public class Main {
 
             try {
                 placeParser.parse();
-            } catch(IOException | BlockNotFoundException | PlacementException error) {
+
+            } catch(IOException | BlockNotFoundException | PlacementException | IllegalSizeException error) {
                 this.logger.raise("Something went wrong while parsing the place file", error);
             }
 

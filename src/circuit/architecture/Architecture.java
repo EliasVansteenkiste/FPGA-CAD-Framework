@@ -32,20 +32,22 @@ import javax.xml.parsers.ParserConfigurationException;
  * We make a lot of assumptions while parsing an architecture XML file.
  * I tried to document these assumptions by commenting them with the
  * prefix ASM.
+ * First assumption: the architecture file is entirely valid. No checks
+ * on duplicate or illegal values are made in this parser.
+ *
+ * Only a subset of the VPR architecture specs is supported.
+ * TODO: document this subset.
  *
  * This parser does not store interconnections. We just assume that all
- * connections in the net file are legal. Should someonse ever want to
+ * connections in the net file are legal. Should someone ever want to
  * write a packer, then this feature has to be implemented.
  *
- * ASM: block types have unique names. There is no need to check parent blocks
- * to find out the exact type of the block.
- *
+ * ASM: block types have unique names. Two blocks with the same type
+ * are exactly equal, regardless of their parent block(s)
  */
 public class Architecture implements Serializable {
 
     private static final long serialVersionUID = -5436935126902935000L;
-
-    private static final double FILL_GRADE = 1;
 
     private boolean autoSize;
     private int width, height;
@@ -165,32 +167,53 @@ public class Architecture implements Serializable {
 
         // ASM: IO blocks are around the perimeter, HARDBLOCKs are in columns,
         // CLB blocks fill the rest of the FPGA
-        int start = 1, repeat = 1, height = 1;
+        int start = -1, repeat = -1, height = -1, priority = -1;
 
 
         if(isLeaf) {
             blockCategory = BlockCategory.LEAF;
 
-        } else if(isGlobal) {
+        } else if(!isGlobal) {
+            blockCategory = BlockCategory.INTERMEDIATE;
+
+        } else {
+            // Get some extra properties that relate to the placement
+            // of global blocks
+
             blockCategory = this.getGlobalBlockCategory(blockElement);
 
             if(blockCategory == BlockCategory.IO) {
+                // ASM: io blocks are always placed around the perimeter of the
+                // architecture, ie. "<loc type="perimeter">" is set.
+                // This assumption is used throughout this entire placement suite.
+                // Many changes will have to be made in the different algorithms
+                // in order to resolve this assumption.
                 this.ioCapacity = Integer.parseInt(blockElement.getAttribute("capacity"));
 
-            } else if(blockCategory == BlockCategory.HARDBLOCK) {
-                height = Integer.parseInt(blockElement.getAttribute("height"));
+            } else {
+                if(blockElement.hasAttribute("height")) {
+                    height = Integer.parseInt(blockElement.getAttribute("height"));
+                } else {
+                    height = 1;
+                }
 
                 Element gridLocationsElement = this.getFirstChild(blockElement, "gridlocations");
                 Element locElement = this.getFirstChild(gridLocationsElement, "loc");
 
-                start = Integer.parseInt(locElement.getAttribute("start"));
-                repeat = Integer.parseInt(locElement.getAttribute("repeat"));
+                String type = locElement.getAttribute("type");
+                if(type.equals("fill")) {
+                    start = 1;
+                    repeat = 1;
+
+                } else {
+                    start = Integer.parseInt(locElement.getAttribute("start"));
+                    repeat = Integer.parseInt(locElement.getAttribute("repeat"));
+                }
+
+                priority = Integer.parseInt(locElement.getAttribute("priority"));
             }
 
-        } else {
-            blockCategory = BlockCategory.INTERMEDIATE;
         }
-
 
         // Build maps of inputs and outputs
         Map<String, Integer> inputs = this.getPorts(blockElement, "input");
@@ -204,7 +227,16 @@ public class Architecture implements Serializable {
         this.getModesAndChildren(blockElement, modeElements, childElements, modes, children);
 
 
-        boolean success = BlockTypeData.getInstance().addType(blockName, blockCategory, height, start, repeat, isClocked, inputs, outputs);
+        boolean success = BlockTypeData.getInstance().addType(
+                blockName,
+                blockCategory,
+                height,
+                start,
+                repeat,
+                priority,
+                isClocked,
+                inputs,
+                outputs);
 
         // Flipflops are defined twice in some arch files, this is no problem
         // If any other blocks are defined more than once, we'd like to know it
@@ -448,7 +480,17 @@ public class Architecture implements Serializable {
         Map<String, Integer> outputPorts = this.getPorts(blockElement, "output");
         String lutName = blockElement.getAttribute("name") + ".lut";
 
-        BlockTypeData.getInstance().addType(lutName, BlockCategory.LEAF, 1, 1, 1, false, inputPorts, outputPorts);
+        BlockTypeData.getInstance().addType(
+                lutName,
+                BlockCategory.LEAF,
+                -1,
+                -1,
+                -1,
+                -1,
+                false,
+                inputPorts,
+                outputPorts);
+
         BlockTypeData.getInstance().addMode(lutName, "", new HashMap<String, Integer>());
 
         // Process delays
@@ -484,7 +526,16 @@ public class Architecture implements Serializable {
         String memorySliceName = this.getImplicitBlockName(blockElement.getAttribute("name"), "memory_slice");
 
         // ASM: memory slices are clocked
-        BlockTypeData.getInstance().addType(memorySliceName, BlockCategory.LEAF, 1, 1, 1, true, inputPorts, outputPorts);
+        BlockTypeData.getInstance().addType(
+                memorySliceName,
+                BlockCategory.LEAF,
+                -1,
+                -1,
+                -1,
+                -1,
+                true,
+                inputPorts,
+                outputPorts);
         BlockTypeData.getInstance().addMode(memorySliceName, "", new HashMap<String, Integer>());
 
 
@@ -693,7 +744,7 @@ public class Architecture implements Serializable {
     public double getAutoRatio() {
         return this.autoRatio;
     }
-    public int getWidht() {
+    public int getWidth() {
         return this.width;
     }
     public int getHeight() {
@@ -708,10 +759,6 @@ public class Architecture implements Serializable {
 
     public int getIoCapacity() {
         return this.ioCapacity;
-    }
-
-    public double getFillGrade() {
-        return Architecture.FILL_GRADE;
     }
 
 

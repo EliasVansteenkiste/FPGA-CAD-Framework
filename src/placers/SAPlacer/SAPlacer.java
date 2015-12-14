@@ -98,7 +98,7 @@ abstract class SAPlacer extends Placer {
         this.temperatureMultiplier = this.options.getDouble(O_TEMPERATURE);
 
         // Set Rlim options
-        int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight());
+        int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight()) - 2;
 
         int RlimOption = this.options.getInteger(O_RLIM);
         if(RlimOption == -1) {

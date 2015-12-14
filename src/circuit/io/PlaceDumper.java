@@ -53,8 +53,8 @@ public class PlaceDumper {
         Map<AbstractSite, Integer> siteOccupations = new HashMap<AbstractSite, Integer>();
         for(GlobalBlock block : this.circuit.getGlobalBlocks()) {
             AbstractSite site = block.getSite();
-            int x = site.getX();
-            int y = site.getY();
+            int x = site.getColumn();
+            int y = site.getRow();
             int index = block.getIndex();
 
             int z;

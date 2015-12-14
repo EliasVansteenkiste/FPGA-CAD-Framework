@@ -104,10 +104,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
                     GlobalBlock block = (GlobalBlock) abstractBlock;
 
-                    this.linearX[blockIndex] = block.getX();
-                    this.linearY[blockIndex] = block.getY();
-                    this.legalX[blockIndex] = block.getX();
-                    this.legalY[blockIndex] = block.getY();
+                    this.linearX[blockIndex] = block.getColumn();
+                    this.linearY[blockIndex] = block.getRow();
+                    this.legalX[blockIndex] = block.getColumn();
+                    this.legalY[blockIndex] = block.getRow();
 
                     this.blockIndexes.put(block, blockIndex);
                     blockIndex++;

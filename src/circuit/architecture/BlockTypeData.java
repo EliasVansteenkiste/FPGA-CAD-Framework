@@ -35,6 +35,7 @@ class BlockTypeData implements Serializable {
     private List<Integer> heights = new ArrayList<Integer>();
     private List<Integer> columnStarts = new ArrayList<Integer>();
     private List<Integer> columnRepeats = new ArrayList<Integer>();
+    private List<Integer> priorities = new ArrayList<Integer>();
 
     private List<Boolean> clocked = new ArrayList<Boolean>();
 
@@ -56,9 +57,18 @@ class BlockTypeData implements Serializable {
     }
 
 
-    boolean addType(String typeName, BlockCategory category, int height, int start, int repeat, boolean clocked, Map<String, Integer> inputs, Map<String, Integer> outputs) {
-        // Return false if the block type already exists
+    boolean addType(
+            String typeName,
+            BlockCategory category,
+            int height,
+            int start,
+            int repeat,
+            int priority,
+            boolean clocked,
+            Map<String, Integer> inputs,
+            Map<String, Integer> outputs) {
 
+        // Return false if the block type already exists
         if(this.types.get(typeName) != null) {
             return false;
         }
@@ -73,6 +83,7 @@ class BlockTypeData implements Serializable {
         this.heights.add(height);
         this.columnStarts.add(start);
         this.columnRepeats.add(repeat);
+        this.priorities.add(priority);
 
         this.clocked.add(clocked);
 
@@ -194,6 +205,9 @@ class BlockTypeData implements Serializable {
     }
     int getRepeat(int typeIndex) {
         return this.columnRepeats.get(typeIndex);
+    }
+    int getPriority(int typeIndex) {
+        return this.priorities.get(typeIndex);
     }
 
     String getModeName(int typeIndex, int modeIndex) {

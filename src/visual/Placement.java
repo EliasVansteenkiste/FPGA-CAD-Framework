@@ -20,7 +20,7 @@ class Placement {
         this.initializeData(name, circuit);
 
         for(GlobalBlock block : this.circuit.getGlobalBlocks()) {
-            this.blocks.put(block, new Coordinate(block.getX(), block.getY()));
+            this.blocks.put(block, new Coordinate(block.getColumn(), block.getRow()));
         }
     }
 

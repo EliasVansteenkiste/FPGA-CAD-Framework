@@ -56,10 +56,10 @@ public class LeafBlock extends IntermediateBlock {
     }
 
     public int getX() {
-        return this.globalParent.getX();
+        return this.globalParent.getColumn();
     }
     public int getY() {
-        return this.globalParent.getY();
+        return this.globalParent.getRow();
     }
 
 

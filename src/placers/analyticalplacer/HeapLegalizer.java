@@ -78,8 +78,8 @@ class HeapLegalizer extends Legalizer {
         // Loop through all the blocks of the correct block type and add them to their closest position
         for(int index = blocksStart; index < blocksEnd; index++) {
             AbstractSite site = this.getClosestSite(this.linearX[index], this.linearY[index]);
-            int x = site.getX();
-            int y = site.getY();
+            int x = site.getColumn();
+            int y = site.getRow();
 
             this.blockMatrix.get(x).get(y).add(index);
         }

@@ -85,6 +85,9 @@ public class BlockType implements Serializable {
     public int getRepeat() {
         return BlockTypeData.getInstance().getRepeat(this.typeIndex);
     }
+    public int getPriority() {
+        return BlockTypeData.getInstance().getPriority(this.typeIndex);
+    }
 
     public String getModeName() {
         return BlockTypeData.getInstance().getModeName(this.typeIndex, this.modeIndex);

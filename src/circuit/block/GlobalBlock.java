@@ -24,11 +24,11 @@ public class GlobalBlock extends AbstractBlock {
         return this.site;
     }
 
-    public int getX() {
-        return this.site.getX();
+    public int getColumn() {
+        return this.site.getColumn();
     }
-    public int getY() {
-        return this.site.getY();
+    public int getRow() {
+        return this.site.getRow();
     }
 
 

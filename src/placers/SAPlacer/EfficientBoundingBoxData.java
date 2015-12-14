@@ -62,47 +62,47 @@ class EfficientBoundingBoxData {
     public double calculateDeltaCost(GlobalBlock block, AbstractSite newSite) {
         double originalBB = this.boundingBox;
 
-        if((block.getX() == this.min_x && this.nb_min_x == 1 && newSite.getX() > this.min_x)
-                || (block.getX() == this.max_x && this.nb_max_x == 1 && newSite.getX() < this.max_x)
-                || (block.getY() == this.min_y && this.nb_min_y == 1 && newSite.getY() > this.min_y)
-                || (block.getY() == this.max_y && this.nb_max_y == 1 && newSite.getY() < this.max_y)) {
+        if((block.getColumn() == this.min_x && this.nb_min_x == 1 && newSite.getColumn() > this.min_x)
+                || (block.getColumn() == this.max_x && this.nb_max_x == 1 && newSite.getColumn() < this.max_x)
+                || (block.getRow() == this.min_y && this.nb_min_y == 1 && newSite.getRow() > this.min_y)
+                || (block.getRow() == this.max_y && this.nb_max_y == 1 && newSite.getRow() < this.max_y)) {
 
             calculateBoundingBoxFromScratch(block, newSite);
 
         } else {
-            if(newSite.getX() < this.min_x) {
-                this.min_x = newSite.getX();
+            if(newSite.getColumn() < this.min_x) {
+                this.min_x = newSite.getColumn();
                 this.nb_min_x = 1;
-            } else if(newSite.getX() == this.min_x && block.getX() != this.min_x) {
+            } else if(newSite.getColumn() == this.min_x && block.getColumn() != this.min_x) {
                 this.nb_min_x++;
-            } else if(newSite.getX() > this.min_x && block.getX() == this.min_x) {
+            } else if(newSite.getColumn() > this.min_x && block.getColumn() == this.min_x) {
                 this.nb_min_x--;
             }
 
-            if(newSite.getX() > this.max_x) {
-                this.max_x = newSite.getX();
+            if(newSite.getColumn() > this.max_x) {
+                this.max_x = newSite.getColumn();
                 this.nb_max_x = 1;
-            } else if(newSite.getX() == this.max_x && block.getX() != this.max_x) {
+            } else if(newSite.getColumn() == this.max_x && block.getColumn() != this.max_x) {
                 this.nb_max_x++;
-            } else if(newSite.getX() < this.max_x && block.getX() == this.max_x) {
+            } else if(newSite.getColumn() < this.max_x && block.getColumn() == this.max_x) {
                 this.nb_max_x--;
             }
 
-            if(newSite.getY() < this.min_y) {
-                this.min_y = newSite.getY();
+            if(newSite.getRow() < this.min_y) {
+                this.min_y = newSite.getRow();
                 this.nb_min_y = 1;
-            } else if(newSite.getY() == this.min_y && block.getY() != this.min_y) {
+            } else if(newSite.getRow() == this.min_y && block.getRow() != this.min_y) {
                 this.nb_min_y++;
-            } else if(newSite.getY() > this.min_y && block.getY() == this.min_y) {
+            } else if(newSite.getRow() > this.min_y && block.getRow() == this.min_y) {
                 this.nb_min_y--;
             }
 
-            if(newSite.getY() > this.max_y) {
-                this.max_y = newSite.getY();
+            if(newSite.getRow() > this.max_y) {
+                this.max_y = newSite.getRow();
                 this.nb_max_y = 1;
-            } else if(newSite.getY() == this.max_y && block.getY() != this.max_y) {
+            } else if(newSite.getRow() == this.max_y && block.getRow() != this.max_y) {
                 this.nb_max_y++;
-            } else if(newSite.getY() < this.max_y && block.getY() == this.max_y) {
+            } else if(newSite.getRow() < this.max_y && block.getRow() == this.max_y) {
                 this.nb_max_y--;
             }
         }
@@ -181,31 +181,31 @@ class EfficientBoundingBoxData {
             }
 
 
-            if(site.getX() < this.min_x) {
-                this.min_x = site.getX();
+            if(site.getColumn() < this.min_x) {
+                this.min_x = site.getColumn();
                 this.nb_min_x = 1;
-            } else if(site.getX() == this.min_x){
+            } else if(site.getColumn() == this.min_x){
                 this.nb_min_x++;
             }
 
-            if(site.getX() > this.max_x) {
-                this.max_x = site.getX();
+            if(site.getColumn() > this.max_x) {
+                this.max_x = site.getColumn();
                 this.nb_max_x = 1;
-            } else if(site.getX() == this.max_x) {
+            } else if(site.getColumn() == this.max_x) {
                 this.nb_max_x++;
             }
 
-            if(site.getY() < this.min_y) {
-                this.min_y = site.getY();
+            if(site.getRow() < this.min_y) {
+                this.min_y = site.getRow();
                 this.nb_min_y = 1;
-            } else if(site.getY() == this.min_y) {
+            } else if(site.getRow() == this.min_y) {
                 this.nb_min_y++;
             }
 
-            if(site.getY() > this.max_y) {
-                this.max_y = site.getY();
+            if(site.getRow() > this.max_y) {
+                this.max_y = site.getRow();
                 this.nb_max_y = 1;
-            } else if(site.getY() == this.max_y) {
+            } else if(site.getRow() == this.max_y) {
                 this.nb_max_y++;
             }
         }
