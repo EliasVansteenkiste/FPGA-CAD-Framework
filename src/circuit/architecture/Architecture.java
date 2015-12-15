@@ -91,6 +91,7 @@ public class Architecture implements Serializable {
         this.processModels(root);
 
         // The device, switchlist and segmentlist tags are ignored: we leave these complex calculations to VPR
+        // Proceed with complexblocklist
         this.processBlocks(root);
 
         // Cache some frequently used data
@@ -478,7 +479,7 @@ public class Architecture implements Serializable {
         // A lut has exactly the same ports as its parent lut5/lut6/... block
         Map<String, Integer> inputPorts = this.getPorts(blockElement, "input");
         Map<String, Integer> outputPorts = this.getPorts(blockElement, "output");
-        String lutName = blockElement.getAttribute("name") + ".lut";
+        String lutName = this.getImplicitBlockName(blockElement.getAttribute("name"), "lut");
 
         BlockTypeData.getInstance().addType(
                 lutName,
@@ -766,7 +767,6 @@ public class Architecture implements Serializable {
         return blockTypeName.equals("lut") || blockTypeName.equals("memory_slice");
     }
     public String getImplicitBlockName(String parentBlockTypeName, String blockTypeName) {
-        // TODO: make sure every method uses this, by changing . to // or something
         return parentBlockTypeName + "." + blockTypeName;
     }
 

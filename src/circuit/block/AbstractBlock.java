@@ -76,10 +76,6 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         return this.index;
     }
 
-    public boolean isFixed() {
-        return false;
-    }
-
     public boolean isGlobal() {
         return this.getType().isGlobal();
     }

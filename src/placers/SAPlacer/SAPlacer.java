@@ -285,32 +285,26 @@ abstract class SAPlacer extends Placer {
 
         for (int i = 0; i < moves; i++) {
             Swap swap = this.findSwap(this.Rlim);
+            double deltaCost = this.getDeltaCost(swap);
 
-            if((swap.getBlock1() == null || !swap.getBlock1().isFixed())
-                    && (swap.getBlock2() == null || !swap.getBlock2().isFixed())) {
+            if(pushThrough) {
+                if(deltaCost <= 0 || (this.greedy == false && this.random.nextDouble() < Math.exp(-deltaCost / this.temperature))) {
 
-                double deltaCost = this.getDeltaCost(swap);
+                    swap.apply();
+                    numSwaps++;
 
-
-                if(pushThrough) {
-                    if(deltaCost <= 0 || (this.greedy == false && this.random.nextDouble() < Math.exp(-deltaCost / this.temperature))) {
-
-                        swap.apply();
-                        numSwaps++;
-
-                        this.pushThrough(i);
-                        this.circuitChanged = true;
-
-                    } else {
-                        this.revert(i);
-                    }
+                    this.pushThrough(i);
+                    this.circuitChanged = true;
 
                 } else {
                     this.revert(i);
-                    this.deltaCosts[i] = deltaCost;
-                    sumDeltaCost += deltaCost;
-                    quadSumDeltaCost += deltaCost * deltaCost;
                 }
+
+            } else {
+                this.revert(i);
+                this.deltaCosts[i] = deltaCost;
+                sumDeltaCost += deltaCost;
+                quadSumDeltaCost += deltaCost * deltaCost;
             }
         }
 
