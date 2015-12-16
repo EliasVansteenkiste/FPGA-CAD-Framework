@@ -60,6 +60,7 @@ public class Architecture implements Serializable {
     private transient Map<String, Boolean> modelIsClocked = new HashMap<>();
     private transient List<Pair<PortType, Double>> setupTimes = new ArrayList<>();
     private transient List<Triple<PortType, PortType, Double>> delays = new ArrayList<>();
+    private transient Map<String, int[]> directs = new HashMap<>();
 
     private DelayTables delayTables;
 
@@ -77,7 +78,7 @@ public class Architecture implements Serializable {
         this.circuitName = circuitName;
     }
 
-    public void parse() throws parseException, IOException, InvalidFileFormatException, InterruptedException, ParserConfigurationException, SAXException {
+    public void parse() throws ParseException, IOException, InvalidFileFormatException, InterruptedException, ParserConfigurationException, SAXException {
 
         // Build a XML root
         DocumentBuilder xmlBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -91,7 +92,10 @@ public class Architecture implements Serializable {
         this.processModels(root);
 
         // The device, switchlist and segmentlist tags are ignored: we leave these complex calculations to VPR
-        // Proceed with complexblocklist
+        // Proceed with directlist
+        this.processDirects(root);
+
+        // Get all the complex block types and their ports and delays
         this.processBlocks(root);
 
         // Cache some frequently used data
@@ -103,6 +107,7 @@ public class Architecture implements Serializable {
         // Build the delay matrixes
         this.buildDelayMatrixes();
     }
+
 
 
     private void processLayout(Element root) {
@@ -117,6 +122,7 @@ public class Architecture implements Serializable {
             this.height = Integer.parseInt(layoutElement.getAttribute("height"));
         }
     }
+
 
 
     private void processModels(Element root) {
@@ -146,7 +152,40 @@ public class Architecture implements Serializable {
     }
 
 
-    private void processBlocks(Element root) throws parseException {
+
+    private void processDirects(Element root) {
+        Element directsElement = this.getFirstChild(root, "directlist");
+        if(directsElement == null) {
+            return;
+        }
+
+        List<Element> directElements = this.getChildElementsByTagName(directsElement, "direct");
+        for(Element directElement : directElements) {
+
+            String[] fromPort = directElement.getAttribute("from_pin").split("\\.");
+            String[] toPort = directElement.getAttribute("to_pin").split("\\.");
+
+            int offsetX = Integer.parseInt(directElement.getAttribute("x_offset"));
+            int offsetY = Integer.parseInt(directElement.getAttribute("y_offset"));
+            int offsetZ = Integer.parseInt(directElement.getAttribute("z_offset"));
+
+            // ASM: macro's can only extend in the y direction
+            assert(offsetZ == 0 && offsetX == 0);
+            assert(fromPort[0].equals(toPort[0]));
+
+            String id = this.getDirectId(fromPort[0], fromPort[1], toPort[1]);
+            int[] offsets = {offsetX, offsetY};
+            this.directs.put(id, offsets);
+        }
+    }
+
+    private String getDirectId(String blockName, String portNameFrom, String portNameTo) {
+        return String.format("%s.%s-%s", blockName, portNameFrom, portNameTo);
+    }
+
+
+
+    private void processBlocks(Element root) throws ParseException {
         Element blockListElement = this.getFirstChild(root, "complexblocklist");
         List<Element> blockElements = this.getChildElementsByTagName(blockListElement, "pb_type");
 
@@ -155,7 +194,7 @@ public class Architecture implements Serializable {
         }
     }
 
-    private void processBlockElement(Element blockElement) throws parseException {
+    private void processBlockElement(Element blockElement) throws ParseException {
         String blockName = blockElement.getAttribute("name");
 
         boolean isGlobal = this.isGlobal(blockElement);
@@ -188,7 +227,7 @@ public class Architecture implements Serializable {
                 // architecture, ie. "<loc type="perimeter">" is set.
                 // This assumption is used throughout this entire placement suite.
                 // Many changes will have to be made in the different algorithms
-                // in order to resolve this assumption.
+                // in order to get rid of this assumption.
                 this.ioCapacity = Integer.parseInt(blockElement.getAttribute("capacity"));
 
             } else {
@@ -241,14 +280,26 @@ public class Architecture implements Serializable {
 
         // Flipflops are defined twice in some arch files, this is no problem
         // If any other blocks are defined more than once, we'd like to know it
-        if(!success) {
-            if(!blockName.equals("ff")) {
-                System.err.println("Duplicate block type detected in architecture file: " + blockName);
-            }
+        assert(blockName.equals("ff") || success);
 
-            return;
+        // Set the carry chain, if there is one
+        Pair<PortType, PortType> direct = this.getDirect(blockElement);
+
+        if(direct != null) {
+            PortType carryFromPort = direct.getFirst();
+            PortType carryToPort = direct.getSecond();
+            BlockType blockType = carryFromPort.getBlockType();
+
+            String directId = this.getDirectId(
+                    blockType.getName(),
+                    carryFromPort.getName(),
+                    carryToPort.getName());
+            int[] offsets = this.directs.get(directId);
+
+            PortTypeData.getInstance().setCarryPorts(carryFromPort, carryToPort, offsets[0], offsets[1]);
         }
 
+        // Add the different modes
         for(int i = 0; i < modes.size(); i++) {
             BlockTypeData.getInstance().addMode(blockName, modes.get(i), children.get(i));
         }
@@ -317,7 +368,7 @@ public class Architecture implements Serializable {
     }
 
 
-    private BlockCategory getGlobalBlockCategory(Element blockElement) throws parseException {
+    private BlockCategory getGlobalBlockCategory(Element blockElement) throws ParseException {
         // Descend down until a leaf block is found
         // Use this leaf block to determine the block category
         Element childElement = blockElement;
@@ -346,7 +397,7 @@ public class Architecture implements Serializable {
                 return BlockCategory.HARDBLOCK;
 
             default:
-                throw new parseException("Unknown model type: " + model);
+                throw new ParseException("Unknown model type: " + model);
         }
     }
 
@@ -450,6 +501,45 @@ public class Architecture implements Serializable {
 
             returnModes.add(modeElement.getAttribute("name"));
             returnChildren.add(modeChildren);
+        }
+    }
+
+
+    private Pair<PortType, PortType> getDirect(Element blockElement) {
+        String blockName = blockElement.getAttribute("name");
+        PortType carryFromPort = null, carryToPort = null;
+
+        Element fcElement = this.getFirstChild(blockElement, "fc");
+        if(fcElement == null) {
+            return null;
+        }
+
+        List<Element> pinElements = this.getChildElementsByTagName(fcElement, "pin");
+        for(Element pinElement : pinElements) {
+            double fcVal = Double.parseDouble(pinElement.getAttribute("fc_val"));
+
+            if(fcVal == 0) {
+                String portName = pinElement.getAttribute("name");
+                PortType portType = new PortType(blockName, portName);
+
+                if(portType.isInput()) {
+                    assert(carryToPort == null);
+                    carryToPort = portType;
+
+                } else {
+                    assert(carryFromPort == null);
+                    carryFromPort = portType;
+                }
+            }
+        }
+
+        // carryInput and carryOutput must simultaneously be set
+        // or be null
+        assert(carryFromPort != null ^ carryToPort != null);
+        if(carryFromPort == null) {
+            return null;
+        } else {
+            return new Pair<PortType, PortType>(carryFromPort, carryToPort);
         }
     }
 
@@ -764,6 +854,7 @@ public class Architecture implements Serializable {
 
 
     public boolean isImplicitBlock(String blockTypeName) {
+        // ASM: lut and memory_slice are the only possible implicit blocks
         return blockTypeName.equals("lut") || blockTypeName.equals("memory_slice");
     }
     public String getImplicitBlockName(String parentBlockTypeName, String blockTypeName) {

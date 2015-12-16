@@ -8,7 +8,7 @@ import circuit.block.AbstractBlock;
 
 public abstract class AbstractPin {
 
-    private AbstractBlock owner;
+    protected AbstractBlock owner;
     private PortType portType;
     private int index;
 
@@ -20,8 +20,6 @@ public abstract class AbstractPin {
         this.owner = owner;
         this.portType = portType;
         this.index = index;
-
-        //this.sinks = new ArrayList<AbstractPin>();
     }
 
 

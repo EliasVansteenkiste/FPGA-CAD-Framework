@@ -21,6 +21,15 @@ public class PortType implements Serializable, Comparable<PortType> {
         this.portTypeIndex = PortTypeData.getInstance().getTypeIndex(this.blockTypeIndex, portName);
     }
 
+    BlockType getBlockType() {
+        return new BlockType(this.blockTypeIndex);
+    }
+    int getBlockTypeIndex() {
+        return this.blockTypeIndex;
+    }
+    int getPortTypeIndex() {
+        return this.portTypeIndex;
+    }
 
     void setSetupTime(double delay) {
         PortTypeData.getInstance().setSetupTime(this.blockTypeIndex, this.portTypeIndex, delay);
@@ -44,7 +53,6 @@ public class PortType implements Serializable, Comparable<PortType> {
                 this.blockTypeIndex, this.portTypeIndex,
                 sinkType.blockTypeIndex, sinkType.portTypeIndex);
     }
-
 
 
     public String getName() {

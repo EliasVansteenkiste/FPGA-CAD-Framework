@@ -23,7 +23,7 @@ import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.Architecture;
 import circuit.architecture.ArchitectureCacher;
-import circuit.architecture.parseException;
+import circuit.architecture.ParseException;
 import circuit.exceptions.InvalidFileFormatException;
 import circuit.exceptions.PlacementException;
 import circuit.io.BlockNotFoundException;
@@ -208,7 +208,7 @@ public class Main {
 
             try {
                 architecture.parse();
-            } catch(IOException | InvalidFileFormatException | InterruptedException | parseException | ParserConfigurationException | SAXException error) {
+            } catch(IOException | InvalidFileFormatException | InterruptedException | ParseException | ParserConfigurationException | SAXException error) {
                 this.logger.raise("Failed to parse architecture file or delay tables", error);
             }
 

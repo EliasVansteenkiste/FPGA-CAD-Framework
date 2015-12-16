@@ -9,6 +9,7 @@ import circuit.exceptions.FullSiteException;
 import circuit.exceptions.InvalidBlockException;
 import circuit.exceptions.PlacedBlockException;
 import circuit.exceptions.UnplacedBlockException;
+import circuit.pin.AbstractPin;
 import circuit.pin.GlobalPin;
 
 public class GlobalBlock extends AbstractBlock {
@@ -16,8 +17,17 @@ public class GlobalBlock extends AbstractBlock {
     private AbstractSite site;
     private ArrayList<LeafBlock> leafs = new ArrayList<LeafBlock>();
 
+    private AbstractPin carryInput, carryOutput;
+    private int carryOffsetX, carryOffsetY;
+
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
+
+        this.carryInput = this.getPin(type.getCarryToPort(), 0);
+        this.carryOutput = this.getPin(type.getCarryFromPort(), 0);
+
+        this.carryOffsetX = type.getCarryOffsetX();
+        this.carryOffsetY = type.getCarryOffsetY();
     }
 
     public AbstractSite getSite() {

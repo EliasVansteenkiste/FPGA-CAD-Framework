@@ -124,6 +124,20 @@ public class BlockType implements Serializable {
     }
 
 
+    public PortType getCarryFromPort() {
+        return PortTypeData.getInstance().getCarryFromPort(this.typeIndex);
+    }
+    public PortType getCarryToPort() {
+        return PortTypeData.getInstance().getCarryToPort(this.typeIndex);
+    }
+    public int getCarryOffsetX() {
+        return PortTypeData.getInstance().getCarryOffsetX(this.typeIndex);
+    }
+    public int getCarryOffsetY() {
+        return PortTypeData.getInstance().getCarryOffsetY(this.typeIndex);
+    }
+
+
     // To compare block types, we only compare the type, and not the mode.
 
     @Override

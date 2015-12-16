@@ -22,7 +22,6 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     private List<IntermediateBlock> children;
     private List<AbstractPin> pins;
 
-
     public AbstractBlock(String name, BlockType blockType, int index) {
         this.name = new String(name);
         this.blockType = blockType;

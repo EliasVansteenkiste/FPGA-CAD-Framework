@@ -12,6 +12,6 @@ public class LocalPin extends AbstractPin {
 
     @Override
     public IntermediateBlock getOwner() {
-        return (IntermediateBlock) super.getOwner();
+        return (IntermediateBlock) this.owner;
     }
 }
