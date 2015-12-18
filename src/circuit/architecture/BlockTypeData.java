@@ -101,9 +101,7 @@ class BlockTypeData implements Serializable {
         this.modes.add(new HashMap<String, Integer>());
         this.children.add(new ArrayList<Map<BlockType, Integer>>());
 
-        PortTypeData.getInstance().setNumInputPorts(typeIndex, inputs.size());
-        PortTypeData.getInstance().addPorts(typeIndex, inputs);
-        PortTypeData.getInstance().addPorts(typeIndex, outputs);
+        PortTypeData.getInstance().addPorts(typeIndex, inputs, outputs);
 
         return newBlockType;
     }
