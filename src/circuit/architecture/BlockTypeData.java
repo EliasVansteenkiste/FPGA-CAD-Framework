@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import util.Triple;
+
 class BlockTypeData implements Serializable {
     /**
      * This is a singleton class. It should be serialized explicitly!
@@ -25,28 +27,28 @@ class BlockTypeData implements Serializable {
 
 
 
-    private Map<String, Integer> types = new HashMap<String, Integer>();
-    private List<String> typeNames = new ArrayList<String>();
+    private Map<Triple<Integer, Integer, String>, Integer> types = new HashMap<>();
+    private List<String> typeNames = new ArrayList<>();
 
-    private List<BlockCategory> categories = new ArrayList<BlockCategory>();
-    private List<List<BlockType>> blockTypesPerCategory = new ArrayList<List<BlockType>>();
-    private List<BlockType> blockTypesWithModes = new ArrayList<BlockType>();
+    private List<BlockCategory> categories = new ArrayList<>();
+    private List<List<BlockType>> blockTypesPerCategory = new ArrayList<>();
+    private List<BlockType> blockTypesWithModes = new ArrayList<>();
 
-    private List<Integer> heights = new ArrayList<Integer>();
-    private List<Integer> columnStarts = new ArrayList<Integer>();
-    private List<Integer> columnRepeats = new ArrayList<Integer>();
-    private List<Integer> priorities = new ArrayList<Integer>();
+    private List<Integer> heights = new ArrayList<>();
+    private List<Integer> columnStarts = new ArrayList<>();
+    private List<Integer> columnRepeats = new ArrayList<>();
+    private List<Integer> priorities = new ArrayList<>();
 
-    private List<Boolean> clocked = new ArrayList<Boolean>();
+    private List<Boolean> clocked = new ArrayList<>();
 
 
-    private List<Map<String, Integer>> modes = new ArrayList<Map<String, Integer>>();
-    private List<List<String>> modeNames = new ArrayList<List<String>>();
-    private List<List<Map<String, Integer>>> children = new ArrayList<List<Map<String, Integer>>>();
+    private List<Map<String, Integer>> modes = new ArrayList<>();
+    private List<List<String>> modeNames = new ArrayList<>();
+    private List<List<Map<BlockType, Integer>>> children = new ArrayList<>();
 
-    private List<List<List<Integer>>> childStarts = new ArrayList<List<List<Integer>>>();
-    private List<List<List<Integer>>> childEnds = new ArrayList<List<List<Integer>>>();
-    private List<List<Integer>> numChildren = new ArrayList<List<Integer>>();
+    private List<List<List<Integer>>> childStarts = new ArrayList<>();
+    private List<List<List<Integer>>> childEnds = new ArrayList<>();
+    private List<List<Integer>> numChildren = new ArrayList<>();
 
 
 
@@ -57,7 +59,8 @@ class BlockTypeData implements Serializable {
     }
 
 
-    boolean addType(
+    BlockType addType(
+            BlockType parentBlockType,
             String typeName,
             BlockCategory category,
             int height,
@@ -69,16 +72,23 @@ class BlockTypeData implements Serializable {
             Map<String, Integer> outputs) {
 
         // Return false if the block type already exists
-        if(this.types.get(typeName) != null) {
-            return false;
-        }
+        assert(this.types.get(typeName) == null);
 
         int typeIndex = this.typeNames.size();
         this.typeNames.add(typeName);
-        this.types.put(typeName, typeIndex);
+
+        int parentTypeIndex = parentBlockType == null ? -1 : parentBlockType.getTypeIndex();
+        int parentModeIndex = parentBlockType == null ? -1 : parentBlockType.getModeIndex();
+        Triple<Integer, Integer, String> key = new Triple<>(
+                parentTypeIndex,
+                parentModeIndex,
+                typeName);
+        this.types.put(key, typeIndex);
+
+        BlockType newBlockType = new BlockType(parentBlockType, typeName);
 
         this.categories.add(category);
-        this.blockTypesPerCategory.get(category.ordinal()).add(new BlockType(typeName));
+        this.blockTypesPerCategory.get(category.ordinal()).add(newBlockType);
 
         this.heights.add(height);
         this.columnStarts.add(start);
@@ -89,18 +99,18 @@ class BlockTypeData implements Serializable {
 
         this.modeNames.add(new ArrayList<String>());
         this.modes.add(new HashMap<String, Integer>());
-        this.children.add(new ArrayList<Map<String, Integer>>());
+        this.children.add(new ArrayList<Map<BlockType, Integer>>());
 
         PortTypeData.getInstance().setNumInputPorts(typeIndex, inputs.size());
         PortTypeData.getInstance().addPorts(typeIndex, inputs);
         PortTypeData.getInstance().addPorts(typeIndex, outputs);
 
-        return true;
+        return newBlockType;
     }
 
 
-    void addMode(String typeName, String modeName, Map<String, Integer> children) {
-        int typeIndex = this.types.get(typeName);
+    BlockType addMode(BlockType blockType, String modeName) {
+        int typeIndex = blockType.getTypeIndex();
 
         // Make sure this mode doesn't exist yet
         assert(this.modes.get(typeIndex).get(modeName) == null);
@@ -109,10 +119,18 @@ class BlockTypeData implements Serializable {
         this.modeNames.get(typeIndex).add(modeName);
         this.modes.get(typeIndex).put(modeName, modeIndex);
 
-        this.children.get(typeIndex).add(children);
+        this.children.get(typeIndex).add(new HashMap<BlockType, Integer>());
 
-        BlockType blockType = new BlockType(typeName, modeName);
-        this.blockTypesWithModes.add(blockType);
+        BlockType newBlockType = new BlockType(typeIndex, modeName);
+        this.blockTypesWithModes.add(newBlockType);
+
+        return newBlockType;
+    }
+
+    void addChild(BlockType blockType, BlockType childBlockType, int numChildren) {
+        int typeIndex = blockType.getTypeIndex();
+        int modeIndex = blockType.getModeIndex();
+        this.children.get(typeIndex).get(modeIndex).put(childBlockType, numChildren);
     }
 
 
@@ -129,7 +147,7 @@ class BlockTypeData implements Serializable {
     private void cacheChildren() {
         int numTypes = this.types.size();
         for(int typeIndex = 0; typeIndex < numTypes; typeIndex++) {
-            List<Map<String, Integer>> typeChildren = this.children.get(typeIndex);
+            List<Map<BlockType, Integer>> typeChildren = this.children.get(typeIndex);
             List<List<Integer>> typeChildStarts = new ArrayList<List<Integer>>();
             List<List<Integer>> typeChildEnds = new ArrayList<List<Integer>>();
             List<Integer> typeNumChildren = new ArrayList<Integer>();
@@ -140,9 +158,9 @@ class BlockTypeData implements Serializable {
                 typeChildEnds.add(new ArrayList<Integer>(Collections.nCopies(numTypes, (Integer) null)));
                 int numChildren = 0;
 
-                for(Map.Entry<String, Integer> childEntry : typeChildren.get(modeIndex).entrySet()) {
-                    String childName = childEntry.getKey();
-                    int childTypeIndex = this.types.get(childName);
+                for(Map.Entry<BlockType, Integer> childEntry : typeChildren.get(modeIndex).entrySet()) {
+                    String childName = childEntry.getKey().getName();
+                    int childTypeIndex = this.types.get(new Triple<>(typeIndex, modeIndex, childName));
                     int childCount = childEntry.getValue();
 
                     typeChildStarts.get(modeIndex).set(childTypeIndex, numChildren);
@@ -161,8 +179,17 @@ class BlockTypeData implements Serializable {
 
 
 
-    int getTypeIndex(String typeName) {
-        return this.types.get(typeName);
+    int getTypeIndex(BlockType parentBlockType, String typeName) {
+
+        int parentTypeIndex = parentBlockType == null ? -1 : parentBlockType.getTypeIndex();
+        int parentModeIndex = parentBlockType == null ? -1 : parentBlockType.getModeIndex();
+
+        Triple<Integer, Integer, String> key = new Triple<>(
+                parentTypeIndex,
+                parentModeIndex,
+                typeName);
+
+        return this.types.get(key);
     }
 
     int getModeIndex(int typeIndex, String argumentModeName) {
@@ -212,9 +239,6 @@ class BlockTypeData implements Serializable {
 
     String getModeName(int typeIndex, int modeIndex) {
         return this.modeNames.get(typeIndex).get(modeIndex);
-    }
-    Map<String, Integer> getChildren(int typeIndex, int modeIndex) {
-        return this.children.get(typeIndex).get(modeIndex);
     }
 
     boolean isClocked(int typeIndex) {

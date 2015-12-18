@@ -17,8 +17,10 @@ import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.block.IOSite;
 import circuit.block.LeafBlock;
+import circuit.block.Macro;
 import circuit.block.Site;
 import circuit.block.TimingGraph;
+import circuit.pin.GlobalPin;
 
 public class Circuit {
 
@@ -36,6 +38,7 @@ public class Circuit {
     private List<BlockType> leafBlockTypes;
     private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
     private List<LeafBlock> leafBlockList = new ArrayList<LeafBlock>();
+    private List<Macro> macros = new ArrayList<Macro>();
 
     private List<BlockType> columns;
     private Map<BlockType, List<Integer>> columnsPerBlockType;
@@ -89,8 +92,40 @@ public class Circuit {
             this.leafBlockList.addAll(blocksOfType);
         }
 
+        this.buildMacros();
+
         this.createColumns();
         this.createSites();
+    }
+
+    private void buildMacros() {
+        for(BlockType blockType : this.globalBlockTypes) {
+
+            // Skip block types that don't have a carry chain
+            if(blockType.getCarryFromPort() == null) {
+                continue;
+            }
+
+            for(AbstractBlock abstractBlock : this.blocks.get(blockType)) {
+                GlobalBlock block = (GlobalBlock) abstractBlock;
+                GlobalPin carryIn = block.getCarryIn();
+                GlobalPin carryOut = block.getCarryOut();
+
+                if(carryIn.getSource() == null && carryOut.getNumSinks() > 0) {
+                    List<GlobalBlock> macroBlocks = new ArrayList<>();
+                    do {
+                        assert(carryOut.getNumSinks() == 1);
+                        macroBlocks.add(block);
+                        block = carryOut.getSink(0).getOwner();
+                        carryOut = block.getCarryOut();
+
+                    } while(carryOut.getNumSinks() != 0);
+
+                    Macro macro = new Macro(macroBlocks);
+                    this.macros.add(macro);
+                }
+            }
+        }
     }
 
 

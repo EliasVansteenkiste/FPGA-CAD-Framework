@@ -14,7 +14,7 @@ import circuit.pin.AbstractPin;
 public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
     private String name;
-    private BlockType blockType;
+    protected BlockType blockType;
     private BlockCategory category;
     private int index;
     private boolean clocked;

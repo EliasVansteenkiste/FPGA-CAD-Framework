@@ -9,7 +9,6 @@ import circuit.exceptions.FullSiteException;
 import circuit.exceptions.InvalidBlockException;
 import circuit.exceptions.PlacedBlockException;
 import circuit.exceptions.UnplacedBlockException;
-import circuit.pin.AbstractPin;
 import circuit.pin.GlobalPin;
 
 public class GlobalBlock extends AbstractBlock {
@@ -17,17 +16,11 @@ public class GlobalBlock extends AbstractBlock {
     private AbstractSite site;
     private ArrayList<LeafBlock> leafs = new ArrayList<LeafBlock>();
 
-    private AbstractPin carryInput, carryOutput;
-    private int carryOffsetX, carryOffsetY;
+    private Macro macro;
+    private int macroOffsetY = 0;
 
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
-
-        this.carryInput = this.getPin(type.getCarryToPort(), 0);
-        this.carryOutput = this.getPin(type.getCarryFromPort(), 0);
-
-        this.carryOffsetX = type.getCarryOffsetX();
-        this.carryOffsetY = type.getCarryOffsetY();
     }
 
     public AbstractSite getSite() {
@@ -41,6 +34,29 @@ public class GlobalBlock extends AbstractBlock {
         return this.site.getRow();
     }
 
+    public boolean hasCarry() {
+        return this.blockType.getCarryFromPort() != null;
+    }
+    public GlobalPin getCarryIn() {
+        return (GlobalPin) this.getPin(this.blockType.getCarryToPort(), 0);
+    }
+    public GlobalPin getCarryOut() {
+        return (GlobalPin) this.getPin(this.blockType.getCarryFromPort(), 0);
+    }
+
+    public void setMacro(Macro macro, int offsetY) {
+        this.macro = macro;
+        this.macroOffsetY = offsetY;
+    }
+    public Macro getMacro() {
+        return this.macro;
+    }
+    public int getMacroOffsetY() {
+        return this.macroOffsetY;
+    }
+    public boolean isInMacro() {
+        return this.macro != null;
+    }
 
     public void removeSite() throws UnplacedBlockException, InvalidBlockException {
         if(this.site == null) {

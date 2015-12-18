@@ -3,10 +3,9 @@ package circuit.architecture;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
-public class BlockType implements Serializable {
+public class BlockType implements Serializable, Comparable<BlockType> {
 
     /**
      * For a big part, this is a wrapper class around the BlockTypeData singleton.
@@ -44,23 +43,31 @@ public class BlockType implements Serializable {
 
     private Integer typeIndex, modeIndex;
 
-    public BlockType(String typeName) {
-        this.typeIndex = BlockTypeData.getInstance().getTypeIndex(typeName);
+    public BlockType(BlockType parentBlockType, String typeName) {
+        this.typeIndex = BlockTypeData.getInstance().getTypeIndex(parentBlockType, typeName);
         this.modeIndex = null;
     }
+    public BlockType(BlockType parentBlockType, String typeName, String modeName) {
+        this.typeIndex = BlockTypeData.getInstance().getTypeIndex(parentBlockType, typeName);
+        this.modeIndex = BlockTypeData.getInstance().getModeIndex(this.typeIndex, modeName);
+    }
+
     BlockType(int typeIndex) {
         this.typeIndex = typeIndex;
         this.modeIndex = null;
     }
-    public BlockType(String typeName, String modeName) {
-        this.typeIndex = BlockTypeData.getInstance().getTypeIndex(typeName);
+    BlockType(int typeIndex, String modeName) {
+        this.typeIndex = typeIndex;
         this.modeIndex = BlockTypeData.getInstance().getModeIndex(this.typeIndex, modeName);
     }
 
 
 
-    int getIndex() {
+    int getTypeIndex() {
         return this.typeIndex;
+    }
+    int getModeIndex() {
+        return this.modeIndex;
     }
 
     public String getName() {
@@ -91,9 +98,6 @@ public class BlockType implements Serializable {
 
     public String getModeName() {
         return BlockTypeData.getInstance().getModeName(this.typeIndex, this.modeIndex);
-    }
-    public Map<String, Integer> getChildren() {
-        return BlockTypeData.getInstance().getChildren(this.typeIndex, this.modeIndex);
     }
 
     public boolean isClocked() {
@@ -130,15 +134,16 @@ public class BlockType implements Serializable {
     public PortType getCarryToPort() {
         return PortTypeData.getInstance().getCarryToPort(this.typeIndex);
     }
-    public int getCarryOffsetX() {
-        return PortTypeData.getInstance().getCarryOffsetX(this.typeIndex);
-    }
     public int getCarryOffsetY() {
         return PortTypeData.getInstance().getCarryOffsetY(this.typeIndex);
     }
 
 
     // To compare block types, we only compare the type, and not the mode.
+    @Override
+    public int compareTo(BlockType otherBlockType) {
+        return Integer.compare(this.typeIndex, otherBlockType.typeIndex);
+    }
 
     @Override
     public boolean equals(Object otherObject) {

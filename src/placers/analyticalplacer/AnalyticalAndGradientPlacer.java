@@ -89,7 +89,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
 
-        // Add all blocks
+        // Add all global blocks
         this.linearX = new double[this.numBlocks];
         this.linearY = new double[this.numBlocks];
         this.legalX = new int[this.numBlocks];

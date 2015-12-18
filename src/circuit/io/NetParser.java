@@ -227,12 +227,8 @@ public class NetParser {
         String mode = modeStart < modeEnd ? line.substring(modeStart, modeEnd) : null;
 
 
-
-        if(this.architecture.isImplicitBlock(type)) {
-            String parentBlockTypeName = this.blockStack.getFirst().getType().getName();
-            type = this.architecture.getImplicitBlockName(parentBlockTypeName, type);
-        }
-        BlockType blockType = new BlockType(type, mode);
+        BlockType parentBlockType = this.blockStack.isEmpty() ? null : this.blockStack.peek().getType();
+        BlockType blockType = new BlockType(parentBlockType, type, mode);
 
 
         AbstractBlock newBlock;
@@ -258,7 +254,7 @@ public class NetParser {
 
 
         if(!this.blocks.containsKey(blockType)) {
-            BlockType emptyModeType = new BlockType(blockType.getName());
+            BlockType emptyModeType = new BlockType(parentBlockType, blockType.getName());
             this.blocks.put(emptyModeType, new ArrayList<AbstractBlock>());
         }
         this.blocks.get(blockType).add(newBlock);
@@ -356,42 +352,34 @@ public class NetParser {
             int typeStart = 0;
             String sourceBlockName = net.substring(typeStart, typeEnd);
 
-            if(this.architecture.isImplicitBlock(sourceBlockName)) {
-                String parentBlockTypeName = sinkBlock.getType().getName();
-                sourceBlockName = this.architecture.getImplicitBlockName(parentBlockTypeName, sourceBlockName);
-            }
+            //BlockType sourceBlockType = new BlockType(sourceBlockName);
+            //PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
 
-            BlockType sourceBlockType = new BlockType(sourceBlockName);
-            PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
-
-            // The hardest part: determine the source block
+            // Determine the source block
             AbstractBlock sourceBlock;
+
 
             // The net is incident to an input port. It has an input port of the parent block as source.
             if(sourceBlockIndex == -1) {
                 sourceBlock = ((IntermediateBlock) sinkBlock).getParent();
 
+            // The net is incident to an input port. It has a sibling's output port as source.
+            } else if(sinkPin.isInput()) {
+                AbstractBlock parent = ((IntermediateBlock) sinkBlock).getParent();
+                BlockType sourceBlockType = new BlockType(parent.getType(), sourceBlockName);
+                sourceBlock = parent.getChild(sourceBlockType, sourceBlockIndex);
 
+            // The net is incident to an output port. It has an input port of itself as source
+            } else if(sinkBlock.getType().getName().equals(sourceBlockName)) {
+                sourceBlock = sinkBlock;
+
+            // The net is incident to an output port. It has a child's output port as source
             } else {
-
-
-                // The net is incident to an input port. It has a sibling output port as source.
-                if(sinkPin.isInput()) {
-                    AbstractBlock parent = ((IntermediateBlock) sinkBlock).getParent();
-                    sourceBlock = parent.getChild(sourceBlockType, sourceBlockIndex);
-
-
-                // The net is incident to an output port. It has either a child output port as source
-                // or an input port of itself.
-                } else {
-                    if(sinkBlock.getType().equals(sourceBlockType)) {
-                        sourceBlock = sinkBlock;
-                    } else {
-                        sourceBlock = sinkBlock.getChild(sourceBlockType, sourceBlockIndex);
-                    }
-                }
+                BlockType sourceBlockType = new BlockType(sinkBlock.getType(), sourceBlockName);
+                sourceBlock = sinkBlock.getChild(sourceBlockType, sourceBlockIndex);
             }
 
+            PortType sourcePortType = new PortType(sourceBlock.getType(), sourcePortName);
             AbstractPin sourcePin = sourceBlock.getPin(sourcePortType, sourcePinIndex);
             sourcePin.addSink(sinkPin);
             sinkPin.setSource(sourcePin);

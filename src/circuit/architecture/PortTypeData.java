@@ -33,7 +33,6 @@ public class PortTypeData implements Serializable {
 
     private List<Integer> carryFromPorts = new ArrayList<Integer>();
     private List<Integer> carryToPorts = new ArrayList<Integer>();
-    private List<Integer> carryOffsetsX = new ArrayList<Integer>();
     private List<Integer> carryOffsetsY = new ArrayList<Integer>();
 
     private List<List<Double>> delays = new ArrayList<List<Double>>();
@@ -54,7 +53,6 @@ public class PortTypeData implements Serializable {
 
         this.carryFromPorts.add(null);
         this.carryToPorts.add(null);
-        this.carryOffsetsX.add(null);
         this.carryOffsetsY.add(null);
     }
 
@@ -101,14 +99,13 @@ public class PortTypeData implements Serializable {
     }
 
 
-    void setCarryPorts(PortType carryFromPort, PortType carryToPort, int carryOffsetX, int carryOffsetY) {
+    void setCarryPorts(PortType carryFromPort, PortType carryToPort, int carryOffsetY) {
         int blockTypeIndex = carryToPort.getBlockTypeIndex();
         int fromPortTypeIndex = carryFromPort.getPortTypeIndex();
         int toPortTypeIndex = carryToPort.getPortTypeIndex();
 
         this.carryFromPorts.set(blockTypeIndex, fromPortTypeIndex);
         this.carryToPorts.set(blockTypeIndex, toPortTypeIndex);
-        this.carryOffsetsX.set(blockTypeIndex, carryOffsetX);
         this.carryOffsetsY.set(blockTypeIndex, carryOffsetY);
     }
 
@@ -171,9 +168,6 @@ public class PortTypeData implements Serializable {
     PortType getCarryToPort(int blockTypeIndex) {
         Integer portTypeIndex = this.carryToPorts.get(blockTypeIndex);
         return portTypeIndex == null ? null : this.portTypes.get(blockTypeIndex).get(portTypeIndex);
-    }
-    int getCarryOffsetX(int blockTypeIndex) {
-        return this.carryOffsetsX.get(blockTypeIndex);
     }
     int getCarryOffsetY(int blockTypeIndex) {
         return this.carryOffsetsY.get(blockTypeIndex);

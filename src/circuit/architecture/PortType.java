@@ -10,11 +10,8 @@ public class PortType implements Serializable, Comparable<PortType> {
     private int blockTypeIndex, portTypeIndex;
 
 
-    public PortType(String blockTypeName, String portName) {
-        this(new BlockType(blockTypeName), portName);
-    }
     public PortType(BlockType blockType, String portName) {
-        this(blockType.getIndex(), portName);
+        this(blockType.getTypeIndex(), portName);
     }
     PortType(int blockTypeIndex, String portName) {
         this.blockTypeIndex = blockTypeIndex;
