@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -389,36 +390,41 @@ public class Architecture implements Serializable {
 
 
     private BlockCategory getGlobalBlockCategory(Element blockElement) throws ParseException {
-        // Descend down until a leaf block is found
-        // Use this leaf block to determine the block category
-        Element childElement = blockElement;
+        // Check if this block type should fill the FPGA
+        // If it does, we call this the CLB type (there can
+        // only be one clb type in an architecture)
+        Element locElement = this.getFirstChild(this.getFirstChild(blockElement, "gridlocations"), "loc");
+        String type = locElement.getAttribute("type");
 
-        while(!childElement.hasAttribute("blif_model")) {
-            Element newChildElement = this.getFirstChild(childElement, "pb_type");
-            if(newChildElement == null) {
-                childElement = this.getFirstChild(childElement, "mode");
-            } else {
-                childElement = newChildElement;
+        if(type.equals("fill")) {
+            return BlockCategory.CLB;
+        }
+
+        // Descend down until a leaf block is found
+        // If the leaf block has has blif_model .input or
+        // .output, this is the io block type (there can
+        // only be one io type in an architecture)
+        Stack<Element> elements = new Stack<Element>();
+        elements.add(blockElement);
+
+        while(elements.size() > 0) {
+            Element element = elements.pop();
+
+            String blifModel = element.getAttribute("blif_model");
+            if(blifModel.equals(".input") || blifModel.equals(".output")) {
+                return BlockCategory.IO;
+            }
+
+
+            List<Element> modeElements = this.getChildElementsByTagName(element, "mode");
+            modeElements.add(element);
+
+            for(Element modeElement : modeElements) {
+                elements.addAll(this.getChildElementsByTagName(modeElement, "pb_type"));
             }
         }
 
-        String model = childElement.getAttribute("blif_model").split(" ")[0];
-
-        switch(model) {
-            case ".input":
-            case ".output":
-                return BlockCategory.IO;
-
-            case ".names":
-            case ".latch":
-                return BlockCategory.CLB;
-
-            case ".subckt":
-                return BlockCategory.HARDBLOCK;
-
-            default:
-                throw new ParseException("Unknown model type: " + model);
-        }
+        return BlockCategory.HARDBLOCK;
     }
 
 

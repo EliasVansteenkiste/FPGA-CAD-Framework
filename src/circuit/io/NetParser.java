@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Stack;
 
 import circuit.Circuit;
@@ -397,28 +398,30 @@ public class NetParser {
         } else {
             String sourceName = net;
 
-            AbstractPin sourcePin = this.sourcePins.get(sourceName);
-            AbstractBlock parent = sourcePin.getOwner().getParent();
+            Stack<AbstractPin> sourcePins = new Stack<>();
+            sourcePins.add(this.sourcePins.get(sourceName));
 
+            AbstractPin globalSourcePin = null;
+            while(true) {
+                AbstractPin sourcePin = sourcePins.pop();
+                AbstractBlock parent = sourcePin.getOwner().getParent();
 
-            while(parent != null) {
-                int numPins = sourcePin.getNumSinks();
-                AbstractPin nextSourcePin = null;
-
-                for(int i = 0; i < numPins; i++) {
-                    AbstractPin pin = sourcePin.getSink(i);
-                    if(pin.getOwner() == parent) {
-                        nextSourcePin = pin;
-                        break;
-                    }
+                if(parent == null) {
+                    globalSourcePin = sourcePin;
+                    break;
                 }
 
-                sourcePin = nextSourcePin;
-                parent = sourcePin.getOwner().getParent();
+                int numSinks = sourcePin.getNumSinks();
+                for(int i = 0; i < numSinks; i++) {
+                    AbstractPin pin = sourcePin.getSink(i);
+                    if(pin.getOwner() == parent) {
+                        sourcePins.add(pin);
+                    }
+                }
             }
 
-            sourcePin.addSink(sinkPin);
-            sinkPin.setSource(sourcePin);
+            globalSourcePin.addSink(sinkPin);
+            sinkPin.setSource(globalSourcePin);
         }
     }
 }
