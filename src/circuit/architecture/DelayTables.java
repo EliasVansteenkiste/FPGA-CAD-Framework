@@ -22,6 +22,8 @@ public class DelayTables implements Serializable {
             clbToIo = new ArrayList<>(),
             clbToClb = new ArrayList<>();
 
+    public DelayTables() {}
+
     public DelayTables(File file) {
         this.file = file;
     }
@@ -89,7 +91,7 @@ public class DelayTables implements Serializable {
     }
 
 
-    public List<List<Double>> getTable(BlockCategory fromCategory, BlockCategory toCategory) {
+    private List<List<Double>> getTable(BlockCategory fromCategory, BlockCategory toCategory) {
         if(fromCategory == BlockCategory.IO) {
             if(toCategory == BlockCategory.IO) {
                 return this.ioToIo;
@@ -106,7 +108,7 @@ public class DelayTables implements Serializable {
     }
 
     public double getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
-        if(deltaX == 0 && deltaY == 0) {
+        if(deltaX == 0 && deltaY == 0 || this.file == null) {
             return 0;
         }
 

@@ -320,19 +320,21 @@ public class Circuit {
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
         int ioCapacity = this.architecture.getIoCapacity();
 
-        int size = this.width;
-        for(int i = 1; i < size - 1; i++) {
+        for(int i = 1; i < this.height - 1; i++) {
             this.sites[0][i] = new IOSite(0, i, ioType, ioCapacity);
-            this.sites[i][size-1] = new IOSite(i, size-1, ioType, ioCapacity);
-            this.sites[size-1][size-1-i] = new IOSite(size-1, size-1-i, ioType, ioCapacity);
-            this.sites[size-1-i][0] = new IOSite(size-1-i, 0, ioType, ioCapacity);
+            this.sites[this.width - 1][i] = new IOSite(this.width - 1, i, ioType, ioCapacity);
+        }
+
+        for(int i = 1; i < this.width - 1; i++) {
+            this.sites[i][0] = new IOSite(i, 0, ioType, ioCapacity);
+            this.sites[i][this.height - 1] = new IOSite(i, this.height - 1, ioType, ioCapacity);
         }
 
         for(int column = 1; column < this.width - 1; column++) {
             BlockType blockType = this.columns.get(column);
 
             int blockHeight = blockType.getHeight();
-            for(int row = 1; row < size - blockHeight; row += blockHeight) {
+            for(int row = 1; row < this.height - blockHeight; row += blockHeight) {
                 this.sites[column][row] = new Site(column, row, blockType);
             }
         }
@@ -432,16 +434,18 @@ public class Circuit {
         List<AbstractSite> sites;
 
         if(blockType.equals(ioType)) {
-            int size = this.width;
             int ioCapacity = this.architecture.getIoCapacity();
-            sites = new ArrayList<AbstractSite>((size - 1) * 4 * ioCapacity);
+            sites = new ArrayList<AbstractSite>((this.width + this.height - 2) * 2 * ioCapacity);
 
-            for(int i = 1; i < size - 1; i++) {
-                for(int n = 0; n < ioCapacity; n++) {
+            for(int n = 0; n < ioCapacity; n++) {
+                for(int i = 1; i < this.height - 1; i++) {
                     sites.add(this.sites[0][i]);
-                    sites.add(this.sites[i][size-1]);
-                    sites.add(this.sites[size-1][size-1-i]);
-                    sites.add(this.sites[size-1-i][0]);
+                    sites.add(this.sites[this.width - 1][i]);
+                }
+
+                for(int i = 1; i < this.width - 1; i++) {
+                    sites.add(this.sites[i][0]);
+                    sites.add(this.sites[i][this.height - 1]);
                 }
             }
 

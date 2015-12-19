@@ -106,7 +106,8 @@ public class Architecture implements Serializable {
         this.processDelays();
 
         // Build the delay matrixes
-        this.buildDelayMatrixes();
+        //this.buildDelayMatrixes();
+        this.buildDummyDelayMatrixes();
     }
 
 
@@ -236,12 +237,10 @@ public class Architecture implements Serializable {
 
             } else {
 
-                start = 1;
-                repeat = 1;
-                height = 1;
-
                 if(blockElement.hasAttribute("height")) {
                     height = Integer.parseInt(blockElement.getAttribute("height"));
+                } else {
+                    height = 1;
                 }
 
                 Element gridLocationsElement = this.getFirstChild(blockElement, "gridlocations");
@@ -254,9 +253,24 @@ public class Architecture implements Serializable {
 
                 if(type.equals("col")) {
                     start = Integer.parseInt(locElement.getAttribute("start"));
+
                     if(locElement.hasAttribute("repeat")) {
                         repeat = Integer.parseInt(locElement.getAttribute("repeat"));
+                    } else {
+                        repeat = -1;
+
+                        // If start is 0 and repeat is -1, the column calculation in Circuit.java fails
+                        assert(start != 0);
                     }
+
+
+
+                } else if(type.equals("fill")) {
+                    start = 0;
+                    repeat = 1;
+
+                } else {
+                    assert(false);
                 }
             }
 
@@ -847,6 +861,9 @@ public class Architecture implements Serializable {
 
 
 
+    private void buildDummyDelayMatrixes() {
+        this.delayTables = new DelayTables();
+    }
 
     private void buildDelayMatrixes() throws IOException, InvalidFileFormatException, InterruptedException {
         // For this method to work, the macro PRINT_ARRAYS should be defined
