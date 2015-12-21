@@ -92,13 +92,13 @@ public class Circuit {
             this.leafBlockList.addAll(blocksOfType);
         }
 
-        this.buildMacros();
+        this.loadMacros();
 
         this.createColumns();
         this.createSites();
     }
 
-    private void buildMacros() {
+    private void loadMacros() {
         for(BlockType blockType : this.globalBlockTypes) {
 
             // Skip block types that don't have a carry chain
@@ -113,13 +113,13 @@ public class Circuit {
 
                 if(carryIn.getSource() == null && carryOut.getNumSinks() > 0) {
                     List<GlobalBlock> macroBlocks = new ArrayList<>();
-                    do {
-                        assert(carryOut.getNumSinks() == 1);
-                        macroBlocks.add(block);
+                    macroBlocks.add(block);
+
+                    while(carryOut.getNumSinks() != 0) {
                         block = carryOut.getSink(0).getOwner();
                         carryOut = block.getCarryOut();
-
-                    } while(carryOut.getNumSinks() != 0);
+                        macroBlocks.add(block);
+                    }
 
                     Macro macro = new Macro(macroBlocks);
                     this.macros.add(macro);
