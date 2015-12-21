@@ -1,6 +1,10 @@
 package util;
 
-public class Pair<F extends Comparable<F>, S> implements Comparable<Pair<F, S>> {
+import java.io.Serializable;
+
+public class Pair<F extends Comparable<F>, S> implements Comparable<Pair<F, S>>, Serializable {
+
+    private static final long serialVersionUID = 8521307827779345129L;
 
     private F first;
     private S second;

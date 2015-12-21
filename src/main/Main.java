@@ -215,7 +215,6 @@ public class Main {
             this.stopAndPrintTimer();
         }
 
-
         // Parse net file
         this.startTimer("Net file parsing");
         try {

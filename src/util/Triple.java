@@ -1,6 +1,10 @@
 package util;
 
-public class Triple<F extends Comparable<F>, S, T> implements Comparable<Triple<F, S, T>> {
+import java.io.Serializable;
+
+public class Triple<F extends Comparable<F>, S, T> implements Comparable<Triple<F, S, T>>, Serializable {
+
+    private static final long serialVersionUID = 4434847305741889772L;
 
     private F first;
     private S second;

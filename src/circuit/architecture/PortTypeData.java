@@ -2,7 +2,6 @@ package circuit.architecture;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,8 @@ public class PortTypeData implements Serializable {
     private List<Integer> blockTypeIndexes = new ArrayList<>();
     private List<PortType> portTypes = new ArrayList<>();
 
+    private Map<Long, Double> delays = new HashMap<>();
+
     // These lists contain one element for each block type
     private List<Map<String, Integer>> ports = new ArrayList<>();
     private List<Integer> firstInputPorts = new ArrayList<>();
@@ -41,7 +42,7 @@ public class PortTypeData implements Serializable {
     private List<Integer> carryToPorts = new ArrayList<>();
     private List<Integer> carryOffsetsY = new ArrayList<>();
 
-    private List<List<Double>> delays = new ArrayList<>();
+    private int numPortTypes;
     private double inputSetupTime;
 
 
@@ -121,11 +122,7 @@ public class PortTypeData implements Serializable {
 
     void postProcess() {
         this.firstInputPorts.add(this.portTypes.size());
-
-        int numPorts = this.portNames.size();
-        for(int i = 0; i < numPorts; i++) {
-            this.delays.add(new ArrayList<Double>(Collections.nCopies(numPorts, 0.0)));
-        }
+        this.numPortTypes = this.portTypes.size();
     }
 
 
@@ -180,16 +177,6 @@ public class PortTypeData implements Serializable {
     }
 
 
-    void setSetupTime(int portTypeIndex, double delay) {
-        // This method can be used both to set the setup time ("T_setup" in architecture files)
-        // and clock to port time ("T_clock_to_Q")
-        // Which of the two it is, depends on whether the port is an input or output
-
-        this.delays.get(portTypeIndex).set(portTypeIndex, delay);
-    }
-    double getSetupTime(int portTypeIndex) {
-        return this.delays.get(portTypeIndex).get(portTypeIndex);
-    }
 
     void setClockSetupTime(double delay) {
         this.inputSetupTime = delay;
@@ -198,11 +185,27 @@ public class PortTypeData implements Serializable {
         return this.inputSetupTime;
     }
 
+    void setSetupTime(int portTypeIndex, double delay) {
+        // This method can be used both to set the setup time ("T_setup" in architecture files)
+        // and clock to port time ("T_clock_to_Q")
+        // Which of the two it is, depends on whether the port is an input or output
+
+        this.setDelay(portTypeIndex, portTypeIndex, delay);
+    }
+    double getSetupTime(int portTypeIndex) {
+        return this.getDelay(portTypeIndex, portTypeIndex);
+    }
+
     void setDelay(int sourcePortTypeIndex, int sinkPortTypeIndex, double delay) {
-        this.delays.get(sourcePortTypeIndex).set(sinkPortTypeIndex, delay);
+        this.delays.put(this.delayId(sourcePortTypeIndex, sinkPortTypeIndex), delay);
     }
     public double getDelay(int sourcePortTypeIndex, int sinkPortTypeIndex) {
-        return this.delays.get(sourcePortTypeIndex).get(sinkPortTypeIndex);
+        Double delay = this.delays.get(this.delayId(sourcePortTypeIndex, sinkPortTypeIndex));
+        return delay == null ? 0 : delay;
+    }
+
+    private long delayId(int sourcePortTypeIndex, int sinkPortTypeIndex) {
+        return this.numPortTypes * sourcePortTypeIndex + sinkPortTypeIndex;
     }
 
 
