@@ -69,7 +69,8 @@ class BlockTypeData implements Serializable {
             int priority,
             boolean clocked,
             Map<String, Integer> inputs,
-            Map<String, Integer> outputs) {
+            Map<String, Integer> outputs,
+            Map<String, Integer> clocks) {
 
         // Return false if the block type already exists
         assert(this.types.get(typeName) == null);
@@ -101,7 +102,7 @@ class BlockTypeData implements Serializable {
         this.modes.add(new HashMap<String, Integer>());
         this.children.add(new ArrayList<Map<BlockType, Integer>>());
 
-        PortTypeData.getInstance().addPorts(typeIndex, inputs, outputs);
+        PortTypeData.getInstance().addPorts(typeIndex, inputs, outputs, clocks);
 
         return newBlockType;
     }

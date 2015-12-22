@@ -122,6 +122,9 @@ public class BlockType implements Serializable, Comparable<BlockType> {
     public int[] getOutputPortRange() {
         return PortTypeData.getInstance().getOutputPortRange(this.typeIndex);
     }
+    public int[] getClockPortRange() {
+        return PortTypeData.getInstance().getClockPortRange(this.typeIndex);
+    }
 
     public List<PortType> getPortTypes() {
         return PortTypeData.getInstance().getPortTypes(this.typeIndex);

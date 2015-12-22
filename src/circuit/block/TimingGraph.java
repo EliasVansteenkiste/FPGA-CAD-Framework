@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 import circuit.Circuit;
@@ -23,6 +25,8 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
     private static final long serialVersionUID = 5056732903629079227L;
 
     private Circuit circuit;
+
+    private Map<String, Double> clocks = new HashMap<>();
 
     private transient ArrayList<LeafBlock> endPointBlocks;
     private transient List<LeafBlock> affectedBlocks;
@@ -75,17 +79,14 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
     }
 
     private void traverseFromSource(LeafBlock pathSource) {
+        double setupDelay = this.getSetupTime(pathSource);
+
         LinkedList<Triple<Integer, AbstractPin, Double>> stack = new LinkedList<>();
 
         int sourcePinIndex = 0;
         for(AbstractPin outputPin : pathSource.getOutputPins()) {
-            double setupDelay = 0;
             if(pathSource.isClocked()) {
-                setupDelay = outputPin.getPortType().getSetupTime();
-
-                if(pathSource.getGlobalParent().getCategory() != BlockCategory.IO) {
-                    setupDelay += PortType.getClockSetupTime();
-                }
+                setupDelay += outputPin.getPortType().getSetupTime();
             }
 
             // Insert elements at the bottom of the stack, so that the output pins of
@@ -132,6 +133,32 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
                 }
             }
         }
+    }
+
+    private double getSetupTime(LeafBlock block) {
+        List<AbstractPin> clockPins = block.getClockPins();
+        if(clockPins.size() == 0) {
+            return 0;
+        }
+
+        assert(clockPins.size() == 1);
+        AbstractPin clockPin = clockPins.get(0);
+        double delay = 0;
+
+        while(true) {
+            AbstractPin previousClockPin = clockPin.getSource();
+            if(previousClockPin == null) {
+                break;
+            }
+
+            delay += previousClockPin.getPortType().getDelay(clockPin.getPortType());
+            clockPin = previousClockPin;
+        }
+
+        String clockName = clockPin.getOwner().getName();
+        this.clocks.put(clockName, delay);
+
+        return delay;
     }
 
 

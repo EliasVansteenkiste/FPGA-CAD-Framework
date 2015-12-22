@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Stack;
 
 import circuit.Circuit;
@@ -36,10 +35,11 @@ public class NetParser {
     private LinkedList<AbstractBlock> blockStack;
     private Stack<TupleBlockMap> inputsStack;
     private Stack<Map<String, String>> outputsStack;
+    private Stack<Map<String, String>> clocksStack;
 
     private Map<String, AbstractPin> sourcePins;
 
-    private enum PortDirection {INPUT, OUTPUT};
+    private enum PortDirection {INPUT, OUTPUT, CLOCK};
     private PortDirection currentPortType;
 
 
@@ -62,6 +62,7 @@ public class NetParser {
         this.blockStack = new LinkedList<AbstractBlock>();
         this.inputsStack = new Stack<TupleBlockMap>();
         this.outputsStack = new Stack<Map<String, String>>();
+        this.clocksStack = new Stack<Map<String, String>>();
 
 
         // sourcePins contains the names of the outputs of leaf blocks and
@@ -171,7 +172,7 @@ public class NetParser {
 
     @SuppressWarnings("unused")
     private void processClockLine(String line) {
-        this.currentPortType = null;
+        this.currentPortType = PortDirection.CLOCK;
     }
 
 
@@ -197,6 +198,10 @@ public class NetParser {
 
             case OUTPUT:
                 this.outputsStack.peek().put(name, ports);
+                break;
+
+            case CLOCK:
+                this.clocksStack.peek().put(name, ports);
                 break;
         }
     }
@@ -252,6 +257,7 @@ public class NetParser {
         this.blockStack.push(newBlock);
         this.inputsStack.push(new TupleBlockMap(newBlock));
         this.outputsStack.push(new HashMap<String, String>());
+        this.clocksStack.push(new HashMap<String, String>());
 
 
         if(!this.blocks.containsKey(blockType)) {
@@ -269,12 +275,15 @@ public class NetParser {
             while(this.inputsStack.size() > 0) {
                 TupleBlockMap globalTuple = this.inputsStack.pop();
                 AbstractBlock globalBlock = globalTuple.getBlock();
-                Map<String, String> inputs = globalTuple.getMap();
 
+                Map<String, String> inputs = globalTuple.getMap();
                 processPortsHashMap(globalBlock, inputs);
+
+                Map<String, String> clocks = this.clocksStack.pop();
+                processPortsHashMap(globalBlock, clocks);
             }
 
-        // This is
+        // This is a regular block, global, local or leaf
         } else {
             // Remove this block and its outputs from the stacks
             AbstractBlock block = this.blockStack.pop();
@@ -288,9 +297,12 @@ public class NetParser {
             while(this.inputsStack.peek().getBlock() != block) {
                 TupleBlockMap childTuple = this.inputsStack.pop();
                 AbstractBlock childBlock = childTuple.getBlock();
-                Map<String, String> inputs = childTuple.getMap();
 
+                Map<String, String> inputs = childTuple.getMap();
                 processPortsHashMap(childBlock, inputs);
+
+                Map<String, String> clocks = this.clocksStack.pop();
+                processPortsHashMap(childBlock, clocks);
             }
         }
     }

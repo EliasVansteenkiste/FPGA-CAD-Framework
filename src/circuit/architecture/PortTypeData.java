@@ -28,80 +28,87 @@ public class PortTypeData implements Serializable {
     private List<String> portNames = new ArrayList<>();
     private List<Integer> blockTypeIndexes = new ArrayList<>();
     private List<PortType> portTypes = new ArrayList<>();
+    //private List<Integer> portEnds = new ArrayList<>();
+    private List<int[]> portRanges = new ArrayList<>();
 
     private Map<Long, Double> delays = new HashMap<>();
 
     // These lists contain one element for each block type
     private List<Map<String, Integer>> ports = new ArrayList<>();
-    private List<Integer> firstInputPorts = new ArrayList<>();
-    private List<Integer> firstOutputPorts = new ArrayList<>();
-    private List<Integer> numInputPorts = new ArrayList<>();
-    private List<List<Integer>> portStarts = new ArrayList<>();
+    private List<Integer> lastInputPorts = new ArrayList<>();
+    private List<Integer> lastOutputPorts = new ArrayList<>();
+    private List<Integer> lastClockPorts = new ArrayList<>();
 
     private List<Integer> carryFromPorts = new ArrayList<>();
     private List<Integer> carryToPorts = new ArrayList<>();
     private List<Integer> carryOffsetsY = new ArrayList<>();
 
     private int numPortTypes;
-    private double inputSetupTime;
 
+    private PortTypeData() {
+        this.lastInputPorts.add(-1);
+        this.lastOutputPorts.add(-1);
+        this.lastClockPorts.add(-1);
+    }
 
-
-    void addPorts(int blockTypeIndex, Map<String, Integer> inputPorts, Map<String, Integer> outputPorts) {
+    void addPorts(
+            int blockTypeIndex,
+            Map<String, Integer> inputPorts,
+            Map<String, Integer> outputPorts,
+            Map<String, Integer> clockPorts) {
 
         int currentNumBlocks = this.ports.size();
         for(int i = currentNumBlocks; i <= blockTypeIndex; i++) {
             this.addBlockType();
         }
 
-        assert(this.firstInputPorts.get(blockTypeIndex) == null);
-        assert(this.firstOutputPorts.get(blockTypeIndex) == null);
+        assert(this.lastInputPorts.get(blockTypeIndex + 1) == null);
+        assert(this.lastOutputPorts.get(blockTypeIndex + 1) == null);
+        assert(this.lastClockPorts.get(blockTypeIndex + 1) == null);
 
-        this.numInputPorts.set(blockTypeIndex, inputPorts.size());
 
-        this.firstInputPorts.set(blockTypeIndex, this.portTypes.size());
-        this.addPorts(blockTypeIndex, inputPorts);
+        int numPins = this.addPorts(blockTypeIndex, inputPorts, 0);
+        this.lastInputPorts.set(blockTypeIndex + 1, this.portTypes.size() - 1);
 
-        this.firstOutputPorts.set(blockTypeIndex, this.portTypes.size());
-        this.addPorts(blockTypeIndex, outputPorts);
+        numPins = this.addPorts(blockTypeIndex, outputPorts, numPins);
+        this.lastOutputPorts.set(blockTypeIndex + 1, this.portTypes.size() - 1);
+
+        this.addPorts(blockTypeIndex, clockPorts, numPins);
+        this.lastClockPorts.set(blockTypeIndex + 1, this.portTypes.size() - 1);
     }
 
     void addBlockType() {
         this.ports.add(new HashMap<String, Integer>());
-        this.firstInputPorts.add(null);
-        this.firstOutputPorts.add(null);
-        this.numInputPorts.add(null);
-
-        ArrayList<Integer> portStart = new ArrayList<Integer>();
-        portStart.add(0);
-        this.portStarts.add(portStart);
+        this.lastInputPorts.add(null);
+        this.lastOutputPorts.add(null);
+        this.lastClockPorts.add(null);
 
         this.carryFromPorts.add(null);
         this.carryToPorts.add(null);
         this.carryOffsetsY.add(null);
     }
 
-    private void addPorts(int blockTypeIndex, Map<String, Integer> ports) {
+    private int addPorts(int blockTypeIndex, Map<String, Integer> ports, int numPins) {
 
         Map<String, Integer> blockTypePorts = this.ports.get(blockTypeIndex);
-        List<Integer> portStart = this.portStarts.get(blockTypeIndex);
-
-        int totalNumPins = portStart.get(portStart.size() - 1);
 
         for(Map.Entry<String, Integer> port : ports.entrySet()) {
             String portName = port.getKey();
-            Integer numPins = port.getValue();
+            Integer numPortPins = port.getValue();
 
             this.portNames.add(portName);
-            totalNumPins += numPins;
-            portStart.add(totalNumPins);
 
+            int[] portRange = {numPins, numPins + numPortPins};
+            numPins += numPortPins;
+            this.portRanges.add(portRange);
 
             blockTypePorts.put(portName, this.portTypes.size());
 
             this.blockTypeIndexes.add(blockTypeIndex);
             this.portTypes.add(new PortType(blockTypeIndex, portName));
         }
+
+        return numPins;
     }
 
 
@@ -121,7 +128,6 @@ public class PortTypeData implements Serializable {
 
 
     void postProcess() {
-        this.firstInputPorts.add(this.portTypes.size());
         this.numPortTypes = this.portTypes.size();
     }
 
@@ -137,30 +143,41 @@ public class PortTypeData implements Serializable {
 
     List<PortType> getPortTypes(int blockTypeIndex) {
         return this.portTypes.subList(
-                this.firstInputPorts.get(blockTypeIndex),
-                this.firstInputPorts.get(blockTypeIndex + 1));
+                this.lastClockPorts.get(blockTypeIndex) + 1,
+                this.lastClockPorts.get(blockTypeIndex + 1) + 1);
     }
 
     int getNumPins(int blockTypeIndex) {
-        List<Integer> typePortStarts = this.portStarts.get(blockTypeIndex);
-        return typePortStarts.get(typePortStarts.size() - 1);
+        return this.portRanges.get(this.lastClockPorts.get(blockTypeIndex + 1))[1];
     }
 
     int[] getInputPortRange(int blockTypeIndex) {
-        int numInputPorts = this.numInputPorts.get(blockTypeIndex);
-        int numInputPins = this.portStarts.get(blockTypeIndex).get(numInputPorts);
+        int firstInputPort = this.lastClockPorts.get(blockTypeIndex) + 1;
+        int lastInputPort = this.lastInputPorts.get(blockTypeIndex + 1);
 
-        int[] portRange = {0, numInputPins};
-        return portRange;
+        return getPortRange(firstInputPort, lastInputPort);
     }
     int[] getOutputPortRange(int blockTypeIndex) {
-        int numInputPorts = this.numInputPorts.get(blockTypeIndex);
+        int firstOutputPort = this.lastInputPorts.get(blockTypeIndex + 1) + 1;
+        int lastOutputPort = this.lastOutputPorts.get(blockTypeIndex + 1);
 
-        List<Integer> typePortStarts = this.portStarts.get(blockTypeIndex);
-        int numInputPins = typePortStarts.get(numInputPorts);
-        int numPins = typePortStarts.get(typePortStarts.size() - 1);
+        return getPortRange(firstOutputPort, lastOutputPort);
+    }
+    int[] getClockPortRange(int blockTypeIndex) {
+        int firstClockPort = this.lastOutputPorts.get(blockTypeIndex + 1) + 1;
+        int lastClockPort = this.lastClockPorts.get(blockTypeIndex + 1);
 
-        int[] portRange = {numInputPins, numPins};
+        return getPortRange(firstClockPort, lastClockPort);
+    }
+
+    private int[] getPortRange(int firstPort, int lastPort) {
+        int[] portRange = {0, 0};
+
+        if(firstPort <= lastPort) {
+            portRange[0] = this.portRanges.get(firstPort)[0];
+            portRange[1] = this.portRanges.get(lastPort)[1];
+        }
+
         return portRange;
     }
 
@@ -177,13 +194,6 @@ public class PortTypeData implements Serializable {
     }
 
 
-
-    void setClockSetupTime(double delay) {
-        this.inputSetupTime = delay;
-    }
-    double getClockSetupTime() {
-        return this.inputSetupTime;
-    }
 
     void setSetupTime(int portTypeIndex, double delay) {
         // This method can be used both to set the setup time ("T_setup" in architecture files)
@@ -215,23 +225,21 @@ public class PortTypeData implements Serializable {
     }
 
     int[] getRange(int portTypeIndex) {
-        int blockTypeIndex = this.blockTypeIndexes.get(portTypeIndex);
-        List<Integer> typePortStarts = this.portStarts.get(blockTypeIndex);
-
-        int relativePortTypeIndex = portTypeIndex - this.firstInputPorts.get(blockTypeIndex);
-        int portStart = typePortStarts.get(relativePortTypeIndex);
-        int portEnd = typePortStarts.get(relativePortTypeIndex + 1);
-
-        int[] portRange = {portStart, portEnd};
-        return portRange;
-    }
-
-    int getNumInputPorts(int blockTypeIndex) {
-        return this.numInputPorts.get(blockTypeIndex);
+        return this.portRanges.get(portTypeIndex);
     }
 
     boolean isInput(int portTypeIndex) {
         int blockTypeIndex = this.blockTypeIndexes.get(portTypeIndex);
-        return portTypeIndex < this.firstOutputPorts.get(blockTypeIndex);
+        return portTypeIndex <= this.lastInputPorts.get(blockTypeIndex + 1);
+    }
+    boolean isOutput(int portTypeIndex) {
+        int blockTypeIndex = this.blockTypeIndexes.get(portTypeIndex);
+        return
+                portTypeIndex > this.lastInputPorts.get(blockTypeIndex + 1)
+                && portTypeIndex <= this.lastOutputPorts.get(blockTypeIndex + 1);
+    }
+    boolean isClock(int portTypeIndex) {
+        int blockTypeIndex = this.blockTypeIndexes.get(portTypeIndex);
+        return portTypeIndex > this.lastOutputPorts.get(blockTypeIndex + 1);
     }
 }

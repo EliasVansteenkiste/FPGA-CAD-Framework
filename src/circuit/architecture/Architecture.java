@@ -279,6 +279,7 @@ public class Architecture implements Serializable {
         // Build maps of inputs and outputs
         Map<String, Integer> inputs = this.getPorts(blockElement, "input");
         Map<String, Integer> outputs = this.getPorts(blockElement, "output");
+        Map<String, Integer> clockPorts = this.getPorts(blockElement, "clock");
 
         BlockType blockType = BlockTypeData.getInstance().addType(
                 parentBlockType,
@@ -290,7 +291,8 @@ public class Architecture implements Serializable {
                 priority,
                 isClocked,
                 inputs,
-                outputs);
+                outputs,
+                clockPorts);
 
         // If block type is null, this means that there are two block
         // types in the architecture file that we cannot differentiate.
@@ -613,6 +615,7 @@ public class Architecture implements Serializable {
         // A lut has exactly the same ports as its parent lut5/lut6/... block
         Map<String, Integer> inputPorts = this.getPorts(parentBlockElement, "input");
         Map<String, Integer> outputPorts = this.getPorts(parentBlockElement, "output");
+        Map<String, Integer> clockPorts = this.getPorts(parentBlockElement, "clock");
         String lutName = "lut";
 
         BlockType lutBlockType = BlockTypeData.getInstance().addType(
@@ -625,7 +628,8 @@ public class Architecture implements Serializable {
                 -1,
                 false,
                 inputPorts,
-                outputPorts);
+                outputPorts,
+                clockPorts);
 
         // A lut has one unnamed mode without children
         BlockTypeData.getInstance().addMode(lutBlockType, "");
@@ -648,20 +652,25 @@ public class Architecture implements Serializable {
     }
 
 
-    private BlockType addImplicitMemorySlice(BlockType parentBlockType, Element blockElement) {
-        Map<String, Integer> inputPorts = this.getPorts(blockElement, "input");
-        for(Element inputElement : this.getChildElementsByTagName(blockElement, "input")) {
+    private BlockType addImplicitMemorySlice(BlockType parentBlockType, Element parentBlockElement) {
+        // The memory slice has exactly the same ports as its parent,
+        // except there is only one data_in and data_out
+
+        Map<String, Integer> inputPorts = this.getPorts(parentBlockElement, "input");
+        for(Element inputElement : this.getChildElementsByTagName(parentBlockElement, "input")) {
             if(inputElement.getAttribute("port_class").startsWith("data_in")) {
                 inputPorts.put(inputElement.getAttribute("name"), 1);
             }
         }
 
-        Map<String, Integer> outputPorts = this.getPorts(blockElement, "output");
-        for(Element outputElement : this.getChildElementsByTagName(blockElement, "output")) {
+        Map<String, Integer> outputPorts = this.getPorts(parentBlockElement, "output");
+        for(Element outputElement : this.getChildElementsByTagName(parentBlockElement, "output")) {
             if(outputElement.getAttribute("port_class").startsWith("data_out")) {
                 inputPorts.put(outputElement.getAttribute("name"), 1);
             }
         }
+
+        Map<String, Integer> clockPorts = this.getPorts(parentBlockElement, "clock");
 
         String memorySliceName = "memory_slice";
 
@@ -676,7 +685,8 @@ public class Architecture implements Serializable {
                 -1,
                 true,
                 inputPorts,
-                outputPorts);
+                outputPorts,
+                clockPorts);
 
         // Add the new memory type as a child of the parent type
         BlockTypeData.getInstance().addChild(parentBlockType, memoryBlockType, 1);
@@ -687,7 +697,7 @@ public class Architecture implements Serializable {
 
         // Process setup times
         // These are added as delays between the parent and child element
-        List<Element> setupElements = this.getChildElementsByTagName(blockElement, "T_setup");
+        List<Element> setupElements = this.getChildElementsByTagName(parentBlockElement, "T_setup");
         for(Element setupElement : setupElements) {
             String sourcePortName = setupElement.getAttribute("port").split("\\.")[1];
             PortType sourcePortType = new PortType(parentBlockType, sourcePortName);
@@ -699,7 +709,7 @@ public class Architecture implements Serializable {
 
         // Process clock to port times
         // These are added as delays between the child and parent element
-        List<Element> clockToPortElements = this.getChildElementsByTagName(blockElement, "T_clock_to_Q");
+        List<Element> clockToPortElements = this.getChildElementsByTagName(parentBlockElement, "T_clock_to_Q");
         for(Element clockToPortElement : clockToPortElements) {
             String sinkPortName = clockToPortElement.getAttribute("port").split("\\.")[1];
             PortType sourcePortType = new PortType(memoryBlockType, sinkPortName);
@@ -770,12 +780,6 @@ public class Architecture implements Serializable {
                 for(String sourcePort : sourcePorts) {
                     for(String sinkPort : sinkPorts) {
                         this.cacheDelay(blockTypes, sourcePort, sinkPort, delay);
-
-                        // ASM: the element with blif_model .input is located directly under the
-                        // global input block type
-                        // PortTypeData uses this assumption to set the clock setup time
-                        // TODO: this assumption is invalid for titan arch
-                        //this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
                     }
                 }
             }

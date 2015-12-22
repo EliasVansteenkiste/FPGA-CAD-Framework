@@ -114,6 +114,10 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         int[] pinRange = this.blockType.getOutputPortRange();
         return pinRange[1] - pinRange[0];
     }
+    public int numClockPins() {
+        int[] pinRange = this.blockType.getClockPortRange();
+        return pinRange[1] - pinRange[0];
+    }
 
     public List<AbstractPin> getInputPins() {
         int[] pinRange = this.blockType.getInputPortRange();
@@ -121,6 +125,10 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     }
     public List<AbstractPin> getOutputPins() {
         int[] pinRange = this.blockType.getOutputPortRange();
+        return this.getPins(pinRange);
+    }
+    public List<AbstractPin> getClockPins() {
+        int[] pinRange = this.blockType.getClockPortRange();
         return this.getPins(pinRange);
     }
 

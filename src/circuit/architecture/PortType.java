@@ -31,10 +31,6 @@ public class PortType implements Serializable, Comparable<PortType> {
         return PortTypeData.getInstance().getSetupTime(this.typeIndex);
     }
 
-    public static double getClockSetupTime() {
-        return PortTypeData.getInstance().getClockSetupTime();
-    }
-
     void setDelay(PortType sinkType, double delay) {
         PortTypeData.getInstance().setDelay(this.typeIndex, sinkType.typeIndex, delay);
     }
@@ -52,12 +48,16 @@ public class PortType implements Serializable, Comparable<PortType> {
     }
 
 
-    public boolean isOutput() {
-        return !this.isInput();
-    }
     public boolean isInput() {
         return PortTypeData.getInstance().isInput(this.typeIndex);
     }
+    public boolean isOutput() {
+        return PortTypeData.getInstance().isOutput(this.typeIndex);
+    }
+    public boolean isClock() {
+        return PortTypeData.getInstance().isClock(this.typeIndex);
+    }
+
 
 
     @Override
