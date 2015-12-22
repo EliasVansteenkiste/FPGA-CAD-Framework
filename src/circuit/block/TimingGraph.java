@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.Stack;
 
 import circuit.Circuit;
-import circuit.architecture.PortType;
-import circuit.architecture.BlockCategory;
 import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 
@@ -26,7 +24,8 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
 
     private Circuit circuit;
 
-    private Map<String, Double> clocks = new HashMap<>();
+    // A list of clock domains, along with their unique id and delay
+    private Map<String, Integer> clocks = new HashMap<>();
 
     private transient ArrayList<LeafBlock> endPointBlocks;
     private transient List<LeafBlock> affectedBlocks;
@@ -141,7 +140,9 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
             return 0;
         }
 
+        // A leaf block can only have 1 clock
         assert(clockPins.size() == 1);
+
         AbstractPin clockPin = clockPins.get(0);
         double delay = 0;
 
@@ -156,7 +157,16 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
         }
 
         String clockName = clockPin.getOwner().getName();
-        this.clocks.put(clockName, delay);
+
+        int clockDomain = -1;
+        if(this.clocks.containsKey(clockName)) {
+            clockDomain = this.clocks.get(clockName);
+        } else {
+            clockDomain = this.clocks.size();
+            this.clocks.put(clockName, clockDomain);
+        }
+
+        block.setClockDomain(clockDomain);
 
         return delay;
     }

@@ -16,6 +16,8 @@ public class LeafBlock extends IntermediateBlock {
     private ArrayList<LeafBlock> sinkBlocks = new ArrayList<LeafBlock>();
     private int numSources = 0;
 
+    private int clockDomain = -1;
+
     private ArrayList<TimingEdge> sourceEdges = new ArrayList<TimingEdge>();
     private ArrayList<TimingEdge> sinkEdges = new ArrayList<TimingEdge>();
     private int[] sinkEdgesPinStarts;
@@ -60,6 +62,14 @@ public class LeafBlock extends IntermediateBlock {
     }
     public int getY() {
         return this.globalParent.getRow();
+    }
+
+
+    public void setClockDomain(int clockDomain) {
+        this.clockDomain = clockDomain;
+    }
+    public int getClockDomain() {
+        return this.clockDomain;
     }
 
 
