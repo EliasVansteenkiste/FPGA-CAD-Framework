@@ -35,6 +35,7 @@ public abstract class AbstractSite {
     abstract void addBlock(GlobalBlock block) throws FullSiteException;
     public abstract void removeBlock(GlobalBlock block) throws InvalidBlockException;
     public abstract void clear();
+    public abstract boolean isFull();
 
     public abstract Collection<GlobalBlock> getBlocks();
 

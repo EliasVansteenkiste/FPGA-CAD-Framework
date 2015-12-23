@@ -44,7 +44,7 @@ public class IOSite extends AbstractSite {
 
     @Override
     void addBlock(GlobalBlock block) throws FullSiteException {
-        if(this.blocks.size() == this.capacity) {
+        if(this.isFull()) {
             throw new FullSiteException();
         }
 
@@ -62,6 +62,12 @@ public class IOSite extends AbstractSite {
     @Override
     public void clear() {
         this.blocks.clear();
+    }
+
+
+    @Override
+    public boolean isFull( ) {
+        return this.blocks.size() >= this.capacity;
     }
 
 

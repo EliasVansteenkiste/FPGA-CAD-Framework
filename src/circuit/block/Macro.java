@@ -7,6 +7,7 @@ import java.util.List;
 public class Macro {
 
     private List<GlobalBlock> blocks = new ArrayList<GlobalBlock>();
+    private int blockSpace;
     private int height;
 
     public Macro(List<GlobalBlock> blocks) {
@@ -19,17 +20,17 @@ public class Macro {
         this.blocks.addAll(blocks);
 
         // Sort the blocks based on their y coordinate (increasing order)
-        int offsetIncrease = blocks.get(0).getType().getCarryOffsetY();
-        if(offsetIncrease < 0) {
+        this.blockSpace = blocks.get(0).getType().getCarryOffsetY();
+        if(this.blockSpace < 0) {
             Collections.reverse(this.blocks);
-            offsetIncrease = -offsetIncrease;
+            this.blockSpace = -this.blockSpace;
         }
 
         // Set the offset on all the blocks
         int offset = 0;
         for(GlobalBlock block : this.blocks) {
             block.setMacro(this, offset);
-            offset += offsetIncrease;
+            offset += this.blockSpace;
         }
 
         this.height = offset;
@@ -38,10 +39,25 @@ public class Macro {
     public int getMinRow() {
         return this.blocks.get(0).getRow();
     }
+    public int getMaxRow() {
+        return this.getMinRow() + this.height;
+    }
+
+    public int getBlockSpace() {
+        return this.blockSpace;
+    }
     public int getHeight() {
         return this.height;
     }
-    public int getMaxRow() {
-        return this.getMinRow() + this.height;
+
+
+    public int getNumBlocks() {
+        return this.blocks.size();
+    }
+    public List<GlobalBlock> getBlocks() {
+        return this.blocks;
+    }
+    public GlobalBlock getBlock(int index) {
+        return this.blocks.get(index);
     }
 }

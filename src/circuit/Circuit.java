@@ -369,6 +369,10 @@ public class Circuit {
         return this.leafBlockList;
     }
 
+    public List<Macro> getMacros() {
+        return this.macros;
+    }
+
 
 
     public String getName() {

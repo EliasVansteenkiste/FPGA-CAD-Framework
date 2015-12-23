@@ -28,7 +28,7 @@ public class Site extends AbstractSite {
 
     @Override
     void addBlock(GlobalBlock block) throws FullSiteException {
-        if(this.block != null) {
+        if(this.isFull()) {
             throw new FullSiteException();
         }
 
@@ -47,6 +47,11 @@ public class Site extends AbstractSite {
     @Override
     public void clear() {
         this.block = null;
+    }
+
+    @Override
+    public boolean isFull() {
+        return this.block != null;
     }
 
     @Override
