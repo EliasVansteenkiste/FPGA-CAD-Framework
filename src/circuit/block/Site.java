@@ -1,5 +1,6 @@
 package circuit.block;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
@@ -56,6 +57,10 @@ public class Site extends AbstractSite {
 
     @Override
     public Collection<GlobalBlock> getBlocks() {
-        return Arrays.asList(this.block);
+        if(this.block == null) {
+            return new ArrayList<GlobalBlock>();
+        } else {
+            return Arrays.asList(this.block);
+        }
     }
 }

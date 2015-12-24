@@ -8,6 +8,7 @@ import java.util.Random;
 
 import circuit.Circuit;
 import circuit.architecture.BlockCategory;
+import circuit.architecture.BlockType;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.exceptions.PlacementException;
@@ -325,25 +326,56 @@ abstract class SAPlacer extends Placer {
 
 
     protected Swap findSwap(int Rlim) {
-        GlobalBlock fromBlock = null;
-        AbstractSite toSite = null;
-        do {
-            // Find a suitable block
+        while(true) {
+            // Find a suitable from block
+            GlobalBlock fromBlock = null;
             do {
                 fromBlock = this.circuit.getRandomBlock(this.random);
             } while(this.isFixed(fromBlock));
 
+            BlockType blockType = fromBlock.getType();
+
+            int freeBelow = 0, freeAbove = 0;
+            if(fromBlock.isInMacro()) {
+                freeBelow = fromBlock.getMacroOffsetY();
+                freeAbove = fromBlock.getMacro().getHeight() - fromBlock.getMacroOffsetY();
+            }
+
+            int column = fromBlock.getColumn();
+            int row = fromBlock.getRow();
+            int minRow = Math.max(1 + freeBelow, row - Rlim);
+            int maxRow = Math.min(this.circuit.getHeight() - 2 - freeAbove, row + Rlim);
+
             // Find a suitable site near this block
-            do {
-                toSite = this.circuit.getRandomSite(fromBlock, Rlim, this.random);
-            } while(toSite != null && fromBlock.getSite() == toSite);
+            int maxTries = Math.min(4 * Rlim * Rlim / fromBlock.getType().getHeight(), 10);
+            for(int tries = 0; tries < maxTries; tries++) {
+                AbstractSite toSite = this.circuit.getRandomSite(blockType, column, Rlim, minRow, maxRow, this.random);
 
-            // If toSite == null, this means there are no suitable blocks near the block
-            // Try another block
-        } while(toSite == null);
+                // If toSite is null, no swap is possible with this fromBlock
+                // Go find another fromBlock
+                if(toSite == null) {
+                    break;
 
-        Swap swap = new Swap(fromBlock, toSite, this.random);
-        return swap;
+                // Check if toSite contains fromBlock
+                } else if(!fromBlock.getSite().equals(toSite)) {
+
+                    // Make sure toSite doesn't contain a block that is in a macro
+                    // (This is also not supported in VPR)
+                    boolean inMacro = false;
+                    for(GlobalBlock block : toSite.getBlocks()) {
+                        if(block.isInMacro()) {
+                            inMacro = true;
+                            break;
+                        }
+                    }
+
+                    if(!inMacro) {
+                        Swap swap = new Swap(fromBlock, toSite, this.random);
+                        return swap;
+                    }
+                }
+            }
+        }
     }
 
     private boolean isFixed(GlobalBlock block) {

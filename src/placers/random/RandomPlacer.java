@@ -50,7 +50,7 @@ public class RandomPlacer extends Placer {
 
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
             List<AbstractSite> typeSites = this.circuit.getSites(blockType);
-            Collections.shuffle(typeSites);
+            Collections.shuffle(typeSites, this.random);
 
             sites.put(blockType, typeSites);
             nextSiteIndexes.put(blockType, 0);

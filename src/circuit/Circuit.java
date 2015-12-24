@@ -474,27 +474,27 @@ public class Circuit {
         return this.globalBlockList.get(index);
     }
 
-    public AbstractSite getRandomSite(GlobalBlock block, int distance, Random random) {
+    public AbstractSite getRandomSite(
+            BlockType blockType,
+            int column,
+            int columnDistance,
+            int minRow,
+            int maxRow,
+            Random random) {
 
-        BlockType blockType = block.getType();
         int blockHeight = blockType.getHeight();
         int blockRepeat = blockType.getRepeat();
-        if(distance < blockHeight && distance < blockRepeat) {
+        if(maxRow - minRow < blockHeight && columnDistance < blockRepeat) {
             return null;
         }
 
         // Get a random column
-        int column = block.getColumn();
-        List<Integer> candidateColumns = this.nearbyColumns.get(column).get(distance);
+        List<Integer> candidateColumns = this.nearbyColumns.get(column).get(columnDistance);
         int randomColumn = candidateColumns.get(random.nextInt(candidateColumns.size()));
 
         // Get a random row
-        int row = block.getRow();
-        int rowIndex = (row - 1) / blockHeight;
-        int rowIndexDistance = distance / blockHeight;
-
-        int minRowIndex = Math.max(rowIndex - rowIndexDistance, 0);
-        int maxRowIndex = Math.min(rowIndex + rowIndexDistance + 1, (this.height - 2) / blockHeight);
+        int minRowIndex = (int) Math.ceil((minRow - 1.0) / blockHeight);
+        int maxRowIndex = (maxRow - 1) / blockHeight;
 
         int randomRow = 1 + blockHeight * (minRowIndex + random.nextInt(maxRowIndex - minRowIndex));
 
