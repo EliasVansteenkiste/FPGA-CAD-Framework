@@ -1,69 +1,94 @@
 package placers.SAPlacer;
 
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
-import circuit.block.AbstractSite;
+import circuit.Circuit;
 import circuit.block.GlobalBlock;
+import circuit.block.Macro;
+import circuit.block.Site;
 import circuit.exceptions.PlacementException;
 
-
-
 public class Swap {
-    private GlobalBlock block1;
-    private GlobalBlock block2;
-    private AbstractSite site1;
-    private AbstractSite site2;
 
-    public Swap(GlobalBlock block, AbstractSite site, Random random) {
-        this.block1 = block;
-        this.site1 = block.getSite();
+    private boolean applied = false;
+    private List<Site> sites1 = new ArrayList<>(), sites2 = new ArrayList<>();
 
-        this.block2 = site.getRandomBlock(random);
-        this.site2 = site;
+    public Swap(Circuit circuit, GlobalBlock block, Site site) {
+        if(block.isInMacro()) {
+            // block has to be the FIRST block in the macro
+            Macro macro = block.getMacro();
+
+            int column1 = block.getColumn();
+            int column2 = site.getColumn();
+
+            int minRow1 = block.getRow();
+            int minRow2 = site.getRow();
+
+            int macroHeight = macro.getHeight();
+            int blockSpace = macro.getBlockSpace();
+            for(int offset = 0; offset <= macroHeight; offset += blockSpace) {
+                this.sites1.add((Site) circuit.getSite(column1, minRow1 + offset));
+                this.sites2.add((Site) circuit.getSite(column2, minRow2 + offset));
+            }
+
+        } else {
+            this.sites1.add((Site) block.getSite());
+            this.sites2.add(site);
+        }
     }
 
-
-    public GlobalBlock getBlock1() {
-        return this.block1;
-    }
-    public GlobalBlock getBlock2() {
-        return this.block2;
+    public int getNumBlocks() {
+        return this.sites1.size();
     }
 
-    public AbstractSite getSite1() {
-        return this.site1;
+    public GlobalBlock getBlock1(int index) {
+        return this.sites1.get(index).getBlock();
     }
-    public AbstractSite getSite2() {
-        return this.site2;
+    public GlobalBlock getBlock2(int index) {
+        return this.sites2.get(index).getBlock();
+    }
+
+    public Site getSite1(int index) {
+        return this.sites1.get(index);
+    }
+    public Site getSite2(int index) {
+        return this.sites2.get(index);
     }
 
 
     public void apply() throws PlacementException {
-        this.block1.removeSite();
-
-        if(this.block2 != null) {
-            this.block2.removeSite();
-            this.block2.setSite(this.site1);
+        if(!this.applied) {
+            this.swap();
+            this.applied = true;
         }
-
-        this.block1.setSite(this.site2);
     }
 
     public void undoApply() throws PlacementException {
-        this.block1.removeSite();
-
-        if(this.block2 != null) {
-            this.block2.removeSite();
-            this.block2.setSite(this.site2);
+        if(this.applied) {
+            this.swap();
+            this.applied = false;
         }
-
-        this.block1.setSite(this.site1);
     }
 
 
-    @Override
-    public String toString() {
-        return "block " + this.block1 + " on site " + this.site1
-                + ", block" + this.block2 + " on site " + this.site2;
+    private void swap() throws PlacementException {
+        int numBlocks = this.getNumBlocks();
+        for(int i = 0; i < numBlocks; i++) {
+            Site site1 = this.sites1.get(i);
+            GlobalBlock block1 = site1.getBlock();
+
+            Site site2 = this.sites2.get(i);
+            GlobalBlock block2 = site2.getBlock();
+
+            block1.removeSite();
+
+            if(block2 != null) {
+                block2.removeSite();
+                block2.setSite(site1);
+            }
+
+            block1.setSite(site2);
+        }
     }
 }

@@ -298,19 +298,15 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
             e.printStackTrace();
         }
 
-        GlobalBlock block1 = swap.getBlock1();
-        GlobalBlock block2 = swap.getBlock2();
+        int numBlocks = swap.getNumBlocks();
+        for(int i = 0; i < numBlocks; i++) {
+            GlobalBlock block1 = swap.getBlock1(i);
+            GlobalBlock block2 = swap.getBlock2(i);
 
-        {
-            List<LeafBlock> nodes1 = block1.getLeafBlocks();
-            this.affectedBlocks.addAll(nodes1);
-            cost += this.calculateDeltaCost(nodes1, block2);
-        }
-
-        if(swap.getBlock2() != null) {
-            List<LeafBlock> nodes2 = block2.getLeafBlocks();
-            this.affectedBlocks.addAll(nodes2);
-            cost += this.calculateDeltaCost(nodes2, block1);
+            cost += this.calculateDeltaCost(block1, block2);
+            if(block2 != null) {
+                cost += this.calculateDeltaCost(block2, block1);
+            }
         }
 
 
@@ -324,11 +320,13 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
         return cost;
     }
 
-    private double calculateDeltaCost(List<LeafBlock> blocks, GlobalBlock otherBlock) {
-        double cost = 0;
+    private double calculateDeltaCost(GlobalBlock block1, GlobalBlock block2) {
+        List<LeafBlock> nodes1 = block1.getLeafBlocks();
+        this.affectedBlocks.addAll(nodes1);
 
-        for(LeafBlock block : blocks) {
-            cost += block.calculateDeltaCost(otherBlock);
+        double cost = 0;
+        for(LeafBlock node : nodes1) {
+            cost += node.calculateDeltaCost(block2);
         }
 
         return cost;

@@ -7,6 +7,7 @@ import java.util.Map;
 
 import circuit.Circuit;
 import circuit.block.GlobalBlock;
+import circuit.block.Site;
 import circuit.pin.AbstractPin;
 import circuit.pin.GlobalPin;
 
@@ -17,10 +18,11 @@ public class EfficientBoundingBoxNetCC {
     private Map<GlobalBlock, List<EfficientBoundingBoxData>> bbDataMap;
     private ArrayList<EfficientBoundingBoxData> bbDataArray;
     private int numPins;
-    private GlobalBlock[] toRevert;
+
+    // Contains the blocks for which the associated boundingBox's might need to be reverted
+    private List<GlobalBlock> toRevert = new ArrayList<>();
 
     public EfficientBoundingBoxNetCC(Circuit circuit) {
-        this.toRevert = new GlobalBlock[2]; //Contains the blocks for which the associated boundingBox's might need to be reverted
 
         this.bbDataArray = new ArrayList<EfficientBoundingBoxData>();
         this.bbDataMap = new HashMap<GlobalBlock, List<EfficientBoundingBoxData>>();
@@ -96,31 +98,41 @@ public class EfficientBoundingBoxNetCC {
 
 
     public double calculateDeltaCost(Swap swap) {
-        double totalDeltaCost = 0.0;
+        this.toRevert.clear();
 
-        this.toRevert[0] = swap.getBlock1();
-        if(this.toRevert[0] != null) {
-            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[0]);
-            if(bbDataList != null) {
-                for(EfficientBoundingBoxData bbData: bbDataList) {
-                    bbData.saveState();
-                    totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[0], swap.getSite2());
-                }
+        double deltaCost = 0;
+
+        int numBlocks = swap.getNumBlocks();
+        for(int i = 0; i < numBlocks; i++) {
+            Site site1 = swap.getSite1(i);
+            GlobalBlock block1 = site1.getBlock();
+
+            Site site2 = swap.getSite2(i);
+            GlobalBlock block2 = site2.getBlock();
+
+            deltaCost += this.addToRevert(block1, site2);
+            if(block2 != null) {
+                deltaCost += this.addToRevert(block2, site1);
             }
         }
 
-        this.toRevert[1] = swap.getBlock2();
-        if(this.toRevert[1] != null) {
-            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[1]);
-            if(bbDataList != null) {
-                for(EfficientBoundingBoxData bbData: bbDataList) {
-                    bbData.saveState();
-                    totalDeltaCost += bbData.calculateDeltaCost(this.toRevert[1], swap.getBlock1().getSite());
-                }
+        return deltaCost;
+    }
+
+    private double addToRevert(GlobalBlock block, Site site) {
+        this.toRevert.add(block);
+
+        double deltaCost = 0;
+
+        List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(block);
+        if(bbDataList != null) {
+            for(EfficientBoundingBoxData bbData: bbDataList) {
+                bbData.saveState();
+                deltaCost += bbData.calculateDeltaCost(block, site);
             }
         }
 
-        return totalDeltaCost;
+        return deltaCost;
     }
 
 
@@ -132,17 +144,8 @@ public class EfficientBoundingBoxNetCC {
 
 
     public void revert() {
-        if(this.toRevert[0] != null) {
-            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[0]);
-            if(bbDataList != null) {
-                for(EfficientBoundingBoxData bbData: bbDataList) {
-                    bbData.revert();
-                }
-            }
-        }
-
-        if(this.toRevert[1] != null) {
-            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[1]);
+        for(GlobalBlock block : this.toRevert) {
+            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(block);
             if(bbDataList != null) {
                 for(EfficientBoundingBoxData bbData: bbDataList) {
                     bbData.revert();
@@ -153,17 +156,8 @@ public class EfficientBoundingBoxNetCC {
 
 
     public void pushThrough() {
-        if(this.toRevert[0] != null) {
-            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[0]);
-            if(bbDataList != null) {
-                for(EfficientBoundingBoxData bbData: bbDataList) {
-                    bbData.pushThrough();
-                }
-            }
-        }
-
-        if(this.toRevert[1] != null) {
-            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(this.toRevert[1]);
+        for(GlobalBlock block : this.toRevert) {
+            List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(block);
             if(bbDataList != null) {
                 for(EfficientBoundingBoxData bbData: bbDataList) {
                     bbData.pushThrough();

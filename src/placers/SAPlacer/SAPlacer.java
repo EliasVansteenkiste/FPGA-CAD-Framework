@@ -9,8 +9,8 @@ import java.util.Random;
 import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
-import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
+import circuit.block.Site;
 import circuit.exceptions.PlacementException;
 
 
@@ -335,21 +335,21 @@ abstract class SAPlacer extends Placer {
 
             BlockType blockType = fromBlock.getType();
 
-            int freeBelow = 0, freeAbove = 0;
+            int freeAbove = 0;
             if(fromBlock.isInMacro()) {
-                freeBelow = fromBlock.getMacroOffsetY();
-                freeAbove = fromBlock.getMacro().getHeight() - fromBlock.getMacroOffsetY();
+                fromBlock = fromBlock.getMacro().getBlock(0);
+                freeAbove = fromBlock.getMacro().getHeight() - 1;
             }
 
             int column = fromBlock.getColumn();
             int row = fromBlock.getRow();
-            int minRow = Math.max(1 + freeBelow, row - Rlim);
+            int minRow = Math.max(1, row - Rlim);
             int maxRow = Math.min(this.circuit.getHeight() - 2 - freeAbove, row + Rlim);
 
             // Find a suitable site near this block
             int maxTries = Math.min(4 * Rlim * Rlim / fromBlock.getType().getHeight(), 10);
             for(int tries = 0; tries < maxTries; tries++) {
-                AbstractSite toSite = this.circuit.getRandomSite(blockType, column, Rlim, minRow, maxRow, this.random);
+                Site toSite = (Site) this.circuit.getRandomSite(blockType, column, Rlim, minRow, maxRow, this.random);
 
                 // If toSite is null, no swap is possible with this fromBlock
                 // Go find another fromBlock
@@ -361,16 +361,16 @@ abstract class SAPlacer extends Placer {
 
                     // Make sure toSite doesn't contain a block that is in a macro
                     // (This is also not supported in VPR)
-                    boolean inMacro = false;
+                    boolean toBlockInMacro = false;
                     for(GlobalBlock block : toSite.getBlocks()) {
                         if(block.isInMacro()) {
-                            inMacro = true;
+                            toBlockInMacro = true;
                             break;
                         }
                     }
 
-                    if(!inMacro) {
-                        Swap swap = new Swap(fromBlock, toSite, this.random);
+                    if(!toBlockInMacro) {
+                        Swap swap = new Swap(this.circuit, fromBlock, toSite);
                         return swap;
                     }
                 }
