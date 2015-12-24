@@ -484,7 +484,12 @@ public class Circuit {
 
         int blockHeight = blockType.getHeight();
         int blockRepeat = blockType.getRepeat();
-        if(maxRow - minRow < blockHeight && columnDistance < blockRepeat) {
+
+        // Get a random row
+        int minRowIndex = (int) Math.ceil((minRow - 1.0) / blockHeight);
+        int maxRowIndex = (maxRow - 1) / blockHeight;
+
+        if(maxRowIndex == minRowIndex && columnDistance < blockRepeat) {
             return null;
         }
 
@@ -493,10 +498,7 @@ public class Circuit {
         int randomColumn = candidateColumns.get(random.nextInt(candidateColumns.size()));
 
         // Get a random row
-        int minRowIndex = (int) Math.ceil((minRow - 1.0) / blockHeight);
-        int maxRowIndex = (maxRow - 1) / blockHeight;
-
-        int randomRow = 1 + blockHeight * (minRowIndex + random.nextInt(maxRowIndex - minRowIndex));
+        int randomRow = 1 + blockHeight * (minRowIndex + random.nextInt(maxRowIndex + 1 - minRowIndex));
 
         // Return the site found at the random row and column
         return this.getSite(randomColumn, randomRow, false);
