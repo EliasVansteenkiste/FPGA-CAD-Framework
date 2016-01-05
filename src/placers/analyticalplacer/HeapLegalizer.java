@@ -484,7 +484,7 @@ class HeapLegalizer extends Legalizer {
         int capacity2 = capacity - capacity1;
 
 
-        int splitIndex = (int) Math.round(capacity1 * blockIndexes.size() / (double) capacity);
+        int splitIndex = (int) Math.ceil(capacity1 * blockIndexes.size() / (double) capacity);
         TwoDimLinkedList<Integer> otherBlockIndexes = blockIndexes.split(splitIndex, axis);
 
         this.legalizeArea(coordinates1, capacity1, blockIndexes, newAxis);
