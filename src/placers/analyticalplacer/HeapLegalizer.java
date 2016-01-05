@@ -353,17 +353,31 @@ class HeapLegalizer extends Legalizer {
     private void legalizeArea(HeapLegalizerArea area) {
         TwoDimLinkedList<Integer> blockIndexes = area.getBlockIndexes();
         int[] coordinates = {area.left, area.top, area.right, area.bottom};
-        this.legalizeArea(coordinates, blockIndexes, Axis.X);
+
+        int capacity = 0;
+        int columnHeight = (area.bottom - area.top) / this.blockHeight + 1;
+        for(int column = area.left; column <= area.right; column += this.blockRepeat) {
+            if(this.circuit.getColumnType(column) == this.blockType) {
+                capacity += columnHeight;
+            }
+        }
+
+        this.legalizeArea(coordinates, capacity, blockIndexes, Axis.X);
     }
 
     private void legalizeArea(
             int[] coordinates,
+            int capacity,
             TwoDimLinkedList<Integer> blockIndexes,
             Axis axis) {
 
-        // If the area is only one tile big: place all the blocks on this tile
-        if(coordinates[2] - coordinates[0] < this.blockRepeat && coordinates[3] - coordinates[1] < this.blockHeight) {
+        if(blockIndexes.size() == 0) {
+            return;
 
+        // If the area is only one tile big: place all the blocks on this tile
+        } else if(
+                coordinates[2] - coordinates[0] < this.blockRepeat
+                && coordinates[3] - coordinates[1] < this.blockHeight) {
             for(Integer blockIndex : blockIndexes) {
                 this.legalX[blockIndex] = coordinates[0];
                 this.legalY[blockIndex] = coordinates[1];
@@ -371,9 +385,7 @@ class HeapLegalizer extends Legalizer {
 
             return;
 
-        } else if(blockIndexes.size() == 0) {
-            return;
-
+        // If there is only one block left: find the closest site in the area
         } else if(blockIndexes.size() == 1) {
             for(int blockIndex : blockIndexes) {
                 double linearX = this.linearX[blockIndex];
@@ -404,11 +416,11 @@ class HeapLegalizer extends Legalizer {
             return;
 
         } else if(coordinates[2] - coordinates[0] < this.blockRepeat && axis == Axis.X) {
-            this.legalizeArea(coordinates, blockIndexes, Axis.Y);
+            this.legalizeArea(coordinates, capacity, blockIndexes, Axis.Y);
             return;
 
         } else if(coordinates[3] - coordinates[1] < this.blockHeight && axis == Axis.Y) {
-            this.legalizeArea(coordinates, blockIndexes, Axis.X);
+            this.legalizeArea(coordinates, capacity, blockIndexes, Axis.X);
             return;
         }
 
@@ -418,94 +430,65 @@ class HeapLegalizer extends Legalizer {
         System.arraycopy(coordinates, 0, coordinates1, 0, 4);
         System.arraycopy(coordinates, 0, coordinates2, 0, 4);
 
-        double splitRatio;
+        int splitPosition = -1, capacity1;
         Axis newAxis;
 
         if(axis == Axis.X) {
 
+            int columnHeight = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
+            int numColumns = capacity / columnHeight;
+            int numColumnsLeft;
+
             // If the blockType is CLB
             if(this.blockType.getCategory() == BlockCategory.CLB) {
-                int numClbColumns = 0;
+                numColumnsLeft = 0;
                 for(int column = coordinates[0]; column <= coordinates[2]; column++) {
                     if(this.circuit.getColumnType(column).getCategory() == BlockCategory.CLB) {
-                        numClbColumns++;
-                    }
-                }
-
-                int splitColumn = -1;
-                int halfNumClbColumns = 0;
-                for(int column = coordinates[0]; column <= coordinates[2]; column++) {
-                    if(this.circuit.getColumnType(column).getCategory() == BlockCategory.CLB) {
-                        halfNumClbColumns++;
+                        numColumnsLeft++;
                     }
 
-                    if(halfNumClbColumns >= numClbColumns / 2) {
-                        splitColumn = column;
+                    if(numColumnsLeft >= numColumns / 2) {
+                        splitPosition = column + 1;
                         break;
                     }
                 }
 
-                splitRatio = halfNumClbColumns / (double) numClbColumns;
-
-                coordinates1[2] = splitColumn;
-                coordinates2[0] = splitColumn + 1;
-
             // Else: it's a hardblock
             } else {
-                int numColumns = (coordinates[2] - coordinates[0]) / this.blockRepeat + 1;
-                splitRatio = (numColumns / 2) / (double) numColumns;
-
-                coordinates1[2] = coordinates[0] + (numColumns / 2 - 1) * this.blockRepeat;
-                coordinates2[0] = coordinates[0] + (numColumns / 2) * this.blockRepeat;
+                numColumnsLeft = numColumns / 2;
+                splitPosition = coordinates[0] + numColumnsLeft * this.blockRepeat;
             }
+
+            capacity1 = numColumnsLeft * columnHeight;
+            coordinates1[2] = splitPosition - this.blockRepeat;
+            coordinates2[0] = splitPosition;
 
             newAxis = Axis.Y;
 
+
         } else {
 
-            // If the blockType is CLB
-            if(this.blockRepeat == 1) {
-                int splitRow = (coordinates[1] + coordinates[3]) / 2;
-                splitRatio = (splitRow - coordinates[1] + 1) / (double) (coordinates[3] - coordinates[1] + 1);
+            int numRows = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
+            int numRowsTop = numRows / 2;
 
-                coordinates1[3] = splitRow;
-                coordinates2[1] = splitRow + 1;
+            int rowWidth = capacity / numRows;
+            capacity1 = numRowsTop * rowWidth;
 
-            // Else: it's a hardblock
-            } else {
-                int numRows = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
-                splitRatio = (numRows / 2) / (double) numRows;
-
-                coordinates1[3] = coordinates[1] + (numRows / 2 - 1) * this.blockHeight;
-                coordinates2[1] = coordinates[1] + (numRows / 2) * this.blockHeight;
-            }
+            splitPosition = coordinates[1] + (numRowsTop) * this.blockHeight;
+            coordinates1[3] = splitPosition - this.blockHeight;
+            coordinates2[1] = splitPosition;
 
             newAxis = Axis.X;
         }
 
-        // Split blocks in two lists with a ratio approx. equal to area split
-        int splitIndex = (int) Math.ceil(splitRatio * blockIndexes.size());
+        int capacity2 = capacity - capacity1;
+
+
+        int splitIndex = (capacity1 * blockIndexes.size()) / capacity;
         TwoDimLinkedList<Integer> otherBlockIndexes = blockIndexes.split(splitIndex, axis);
 
-        boolean found = false;
-        for(Integer blockIndex : blockIndexes) {
-            if(blockIndex == 1386) {
-                found = true;
-                break;
-            }
-        }
-        for(Integer blockIndex : otherBlockIndexes) {
-            if(blockIndex == 1386) {
-                found = true;
-                break;
-            }
-        }
-        if(!found) {
-            found = true;
-        }
-
-        this.legalizeArea(coordinates1, blockIndexes, newAxis);
-        this.legalizeArea(coordinates2, otherBlockIndexes, newAxis);
+        this.legalizeArea(coordinates1, capacity1, blockIndexes, newAxis);
+        this.legalizeArea(coordinates2, capacity2, otherBlockIndexes, newAxis);
     }
 
 
