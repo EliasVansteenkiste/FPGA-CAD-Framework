@@ -51,6 +51,7 @@ public class TimingGraph implements Iterable<TimingGraphEntry>, Serializable {
 
 
     public void build() {
+
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
             boolean isClocked = block.isClocked();
 

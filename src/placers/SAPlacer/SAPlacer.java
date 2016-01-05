@@ -361,15 +361,19 @@ abstract class SAPlacer extends Placer {
 
                     // Make sure toSite doesn't contain a block that is in a macro
                     // (This is also not supported in VPR)
-                    boolean toBlockInMacro = false;
-                    for(GlobalBlock block : toSite.getBlocks()) {
-                        if(block.isInMacro()) {
-                            toBlockInMacro = true;
+                    boolean toBlocksInMacro = false;
+                    int toColumn = toSite.getColumn();
+                    int toMinRow = toSite.getRow();
+                    int toMaxRow = toMinRow + freeAbove;
+                    for(int toRow = toMinRow; toRow <= toMaxRow; toRow++) {
+                        GlobalBlock toBlock = ((Site) this.circuit.getSite(toColumn, toRow)).getBlock();
+                        if(toBlock != null && toBlock.isInMacro()) {
+                            toBlocksInMacro = true;
                             break;
                         }
                     }
 
-                    if(!toBlockInMacro) {
+                    if(!toBlocksInMacro) {
                         Swap swap = new Swap(this.circuit, fromBlock, toSite);
                         return swap;
                     }

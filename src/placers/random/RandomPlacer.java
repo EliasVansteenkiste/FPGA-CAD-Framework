@@ -95,9 +95,8 @@ public class RandomPlacer extends Placer {
 
             // Check if all the sites are legal and free
             for(int row = lastRow; row > firstRow; row -= blockSpace) {
-                AbstractSite site = this.circuit.getSite(column, row);
-                if(site == null || !blockType.equals(site.getType()) || site.isFull()) {
-                    free  = false;
+                if(illegalSite(blockType, column, row)) {
+                    free = false;
                     break;
                 }
             }
@@ -122,6 +121,19 @@ public class RandomPlacer extends Placer {
                 sites.set(randomIndex, tmp);
             }
         }
+    }
+
+    private boolean illegalSite(BlockType blockType, int column, int row) {
+        if(row >= this.circuit.getHeight()) {
+            return true;
+        }
+
+        AbstractSite site = this.circuit.getSite(column, row);
+        if(site == null || !site.getType().equals(blockType) || site.isFull()) {
+            return true;
+        }
+
+        return false;
     }
 
     private int placeBlocks(List<AbstractBlock> blocks, List<AbstractSite> sites, int nextSiteIndex) throws PlacedBlockException, FullSiteException {

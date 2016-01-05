@@ -267,7 +267,7 @@ public class Architecture implements Serializable {
 
                 } else if(type.equals("fill")) {
                     start = 0;
-                    repeat = 1;
+                    repeat = Integer.MAX_VALUE;
 
                 } else {
                     assert(false);

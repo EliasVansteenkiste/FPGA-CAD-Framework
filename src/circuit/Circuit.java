@@ -186,23 +186,25 @@ public class Circuit {
 
             // Enlarge the architecture by at most 1 block in each
             // dimension
+            // VPR does this really strange: I would expect that the if clause is
+            // inverted (if(autoRatio < 1)), maybe this is a bug?
             previousWidth = this.width;
             if(autoRatio >= 1) {
-                this.width = size;
-                this.height = (int) Math.round(this.width / autoRatio);
+                this.height = size;
+                this.width = (int) Math.round((this.height - 2) * autoRatio) + 2;
 
             } else {
-                this.height = size;
-                this.width = (int) Math.round(this.height * autoRatio);
+                this.width = size;
+                this.height = (int) Math.round((this.width - 2) / autoRatio) + 2;
             }
 
-            // If a column was added: check which block type that column contains
-            if(this.width > previousWidth) {
-                int column = this.width - 2;
-
+            // If columns have been added: check which block type those columns contain
+            for(int column = previousWidth - 1; column < this.width - 1; column++) {
                 for(int blockTypeIndex = 0; blockTypeIndex < blockTypes.size(); blockTypeIndex++) {
                     BlockType blockType = blockTypes.get(blockTypeIndex);
-                    if(column % blockType.getRepeat() == blockType.getStart() || blockType.getRepeat() == 1) {
+                    int repeat = blockType.getRepeat();
+                    int start = blockType.getStart();
+                    if(column % repeat == start || repeat == -1 && column == start) {
                         numColumnsPerType[blockTypeIndex] += 1;
                         break;
                     }
@@ -239,7 +241,9 @@ public class Circuit {
         this.columns.add(ioType);
         for(int column = 1; column < this.width - 1; column++) {
             for(BlockType blockType : blockTypes) {
-                if(column % blockType.getRepeat() == blockType.getStart() || blockType.getRepeat() == 1) {
+                int repeat = blockType.getRepeat();
+                int start = blockType.getStart();
+                if(column % repeat == start || repeat == -1 && column == start) {
                     this.columns.add(blockType);
                     break;
                 }

@@ -27,7 +27,7 @@ public class Swap {
 
             int macroHeight = macro.getHeight();
             int blockSpace = macro.getBlockSpace();
-            for(int offset = 0; offset <= macroHeight; offset += blockSpace) {
+            for(int offset = 0; offset < macroHeight; offset += blockSpace) {
                 this.sites1.add((Site) circuit.getSite(column1, minRow1 + offset));
                 this.sites2.add((Site) circuit.getSite(column2, minRow2 + offset));
             }
