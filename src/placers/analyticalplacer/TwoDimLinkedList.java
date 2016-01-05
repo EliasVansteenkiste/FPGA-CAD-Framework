@@ -1,9 +1,11 @@
 package placers.analyticalplacer;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * A linked list that is sorted in two dimensions.
@@ -13,39 +15,54 @@ import java.util.Iterator;
  */
 class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
 
-    private NodeComparator<E> comparatorX, comparatorY;
-    private Node<E> firstX, firstY;
+    enum Axis {
+        X, Y;
+        static final int size = Axis.values().length;
+    };
+
+    private List<NodeComparator<E>> comparator = new ArrayList<>(Axis.size);
+    private List<Node<E>> first = new ArrayList<>(Axis.size);
     private int size = 0;
     private boolean sorted = true;
 
 
-    TwoDimLinkedList(Comparator<E> comparatorX, Comparator<E> comparatorY) {
-        this.comparatorX = new NodeComparator<E>(comparatorX);
-        this.comparatorY = new NodeComparator<E>(comparatorY);
+    private TwoDimLinkedList() {
+        for(int i = 0; i < Axis.size; i++) {
+            this.first.add(null);
+        }
     }
-    private TwoDimLinkedList(TwoDimLinkedList<E> list) {
-        this.comparatorX = list.comparatorX;
-        this.comparatorY = list.comparatorY;
+
+    TwoDimLinkedList(Comparator<E> comparatorX, Comparator<E> comparatorY) {
+        this();
+
+        this.comparator.add(0, new NodeComparator<E>(comparatorX));
+        this.comparator.add(1, new NodeComparator<E>(comparatorY));
+    }
+    TwoDimLinkedList(TwoDimLinkedList<E> list) {
+        this();
+
+        this.comparator = new ArrayList<NodeComparator<E>>(list.comparator);
     }
 
     int size() {
         return this.size;
     }
 
-    Comparator<E> getComparatorX() {
-        return this.comparatorX.itemComparator;
+    private Node<E> first(int axisOrdinal) {
+        return this.first.get(axisOrdinal);
     }
-    Comparator<E> getComparatorY() {
-        return this.comparatorY.itemComparator;
+    private void first(int axisOrdinal, Node<E> value) {
+        this.first.set(axisOrdinal, value);
     }
+
 
     void add(E value) {
-        Node<E> newNode = new Node<>(value, this.firstX, this.firstY);
+        Node<E> newNode = new Node<>(value, this.first);
+        for(int i = 0; i < Axis.size; i++) {
+            this.first(i, newNode);
+        }
 
-        this.firstX = newNode;
-        this.firstY = newNode;
         this.size++;
-
         this.sorted = false;
     }
 
@@ -55,83 +72,46 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
         }
     }
 
-    E get(int getIndex) {
-        if(getIndex >= this.size) {
-            throw new IndexOutOfBoundsException();
-        }
-
-        if(!this.sorted) {
-            this.sort();
-        }
-
-        int index = 0;
-        for(E value : this) {
-            if(index == getIndex) {
-                return value;
-            }
-            index++;
-        }
-
-        // Can never happen
-        return null;
-    }
-
     private void sort() {
 
         // Make a list of all nodes in this list
-        @SuppressWarnings("unchecked")
-        Node<E>[] array = new Node[this.size];
-        {
-            int i = 0;
-            for(Node<E> node = this.firstX; node != null; node = node.nextX) {
-                array[i++] = node;
+        List<Node<E>> array = new ArrayList<>(this.size);
+        for(Node<E> node = this.first(0); node != null; node = node.next(0)) {
+            array.add(node);
+        }
+
+        // Sort along the two axises and update linked lists
+        for(int axisOrdinal = 0; axisOrdinal < Axis.size; axisOrdinal++) {
+            Collections.sort(array, this.comparator.get(axisOrdinal));
+
+            this.first(axisOrdinal, array.get(0));
+            for(int i = 1; i < this.size; i++) {
+                array.get(i - 1).next(axisOrdinal, array.get(i));
             }
+            array.get(this.size - 1).next(axisOrdinal, null);
         }
-
-        // Sort along X-axis and update linked list
-        Arrays.sort(array, this.comparatorX);
-
-        this.firstX = array[0];
-        for(int i = 1; i < this.size; i++) {
-            array[i - 1].nextX = array[i];
-        }
-        array[this.size - 1].nextX = null;
-
-
-
-        // Sort along Y-axis and update the linked list
-        Arrays.sort(array, this.comparatorY);
-
-        this.firstY = array[0];
-        for(int i = 1; i < this.size; i++) {
-            array[i - 1].nextY = array[i];
-        }
-        array[this.size - 1].nextY = null;
-
 
         this.sorted = true;
     }
 
 
-    /*Iterable<E> iteratorX() {
-        if(!this.sorted) {
-            this.sort();
+    int indexOf(E element, Axis axis) {
+        int axisOrdinal = axis.ordinal();
+        Comparator<E> itemComparator = this.comparator.get(axisOrdinal).itemComparator;;
+
+        Node<E> cursor = this.first(axisOrdinal);
+        for(int i = 0; i < this.size; i++) {
+            if(itemComparator.compare(cursor.item, element) >= 0) {
+                return i;
+            }
+            cursor = cursor.next(axisOrdinal);
         }
 
-        return new IterableX(this.firstX);
+        return this.size;
     }
-    Iterable<E> iteratorY() {
-        if(!this.sorted) {
-            this.sort();
-        }
-
-        return new IterableY(this.firstY);
-    }*/
 
 
-
-
-    TwoDimLinkedList<E> splitX(int splitIndex) {
+    TwoDimLinkedList<E> split(int splitIndex, Axis axis) {
         if(splitIndex > this.size) {
             throw new IndexOutOfBoundsException();
         }
@@ -140,148 +120,103 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
             this.sort();
         }
 
-        TwoDimLinkedList<E> newList = new TwoDimLinkedList<E>(this);
-        newList.size = this.size - splitIndex;
-        this.size = splitIndex;
-
-
-        Node<E> cursor = this.firstX, previousCursor = null;
-
-        // Mark the first splitIndex nodes as "not splitted"
-        for(int index = 0; index < splitIndex; index++) {
-            cursor.split = false;
-            previousCursor = cursor;
-            cursor = cursor.nextX;
-        }
-
-        // Choose the node at position splitIndex as the first
-        // X node of the new list
-        if(previousCursor != null) {
-            previousCursor.nextX = null;
-        }
-        newList.firstX = cursor;
-
-        // Mark the rest of the nodes as "splitted"
-        while(cursor != null) {
-            cursor.split = true;
-            cursor = cursor.nextX;
-        }
-
-
-        // Create two dummy nodes as the first Y node of the
-        // created lists
-        cursor = this.firstY;
-        this.firstY = new Node<E>(null, null, null);
-        newList.firstY = new Node<E>(null, null, null);
-        Node<E> thisLastY = this.firstY;
-        Node<E> newListLastY = newList.firstY;
-        while(cursor != null) {
-            if(cursor.split) {
-                newListLastY.nextY = cursor;
-                newListLastY = cursor;
-
-            } else {
-                thisLastY.nextY = cursor;
-                thisLastY = cursor;
-            }
-
-            cursor = cursor.nextY;
-        }
-
-        thisLastY.nextY = null;
-        newListLastY.nextY = null;
-        this.firstY = this.firstY.nextY;
-        newList.firstY = newList.firstY.nextY;
-
-        return newList;
-    }
-
-
-    // Sorry, duplicate code again
-    TwoDimLinkedList<E> splitY(int splitIndex) {
-        if(splitIndex > this.size) {
-            throw new IndexOutOfBoundsException();
-        }
-
-        if(!this.sorted) {
-            this.sort();
-        }
 
         TwoDimLinkedList<E> newList = new TwoDimLinkedList<E>(this);
         newList.size = this.size - splitIndex;
         this.size = splitIndex;
 
-
-        Node<E> cursor = this.firstY, previousCursor = null;
+        int axisOrdinal = axis.ordinal();
+        Node<E> cursor = this.first(axisOrdinal), previousCursor = null;
 
         // Mark the first splitIndex nodes as "not splitted"
         for(int index = 0; index < splitIndex; index++) {
             cursor.split = false;
             previousCursor = cursor;
-            cursor = cursor.nextY;
+            cursor = cursor.next(axisOrdinal);
         }
 
         // Choose the node at position splitIndex as the first
         // X node of the new list
         if(previousCursor != null) {
-            previousCursor.nextY = null;
+            previousCursor.next(axisOrdinal, null);
         }
-        newList.firstY = cursor;
+        newList.first(axisOrdinal, cursor);
 
         // Mark the rest of the nodes as "splitted"
         while(cursor != null) {
             cursor.split = true;
-            cursor = cursor.nextY;
+            cursor = cursor.next(axisOrdinal);
         }
 
 
-        // Create two dummy nodes as the first X node of the
-        // created lists
-        cursor = this.firstX;
-        this.firstX = new Node<E>(null, null, null);
-        newList.firstX = new Node<E>(null, null, null);
-        Node<E> thisLastX = this.firstX;
-        Node<E> newListLastX = newList.firstX;
+        // Switch to the other axis: update the linked list
+        // for that axis as well
+        axisOrdinal = 1 - axisOrdinal;
+
+        // Create two dummy nodes
+        cursor = this.first(axisOrdinal);
+        this.first(axisOrdinal, new Node<E>(null));
+        newList.first(axisOrdinal, new Node<E>(null));
+        Node<E> thisLast = this.first(axisOrdinal);
+        Node<E> newListLast = newList.first(axisOrdinal);
+
         while(cursor != null) {
             if(cursor.split) {
-                newListLastX.nextX = cursor;
-                newListLastX = cursor;
+                newListLast.next(axisOrdinal, cursor);
+                newListLast = cursor;
 
             } else {
-                thisLastX.nextX = cursor;
-                thisLastX = cursor;
+                thisLast.next(axisOrdinal, cursor);
+                thisLast = cursor;
             }
 
-            cursor = cursor.nextX;
+            cursor = cursor.next(axisOrdinal);
         }
 
-        thisLastX.nextX = null;
-        newListLastX.nextX = null;
-        this.firstX = this.firstX.nextX;
-        newList.firstX = newList.firstX.nextX;
+        // Remove the dummy nodes
+        thisLast.next(axisOrdinal, null);
+        newListLast.next(axisOrdinal, null);
+        this.first(axisOrdinal, this.first(axisOrdinal).next(axisOrdinal));
+        newList.first(axisOrdinal, newList.first(axisOrdinal).next(axisOrdinal));
 
         return newList;
     }
+
 
 
     // It never really matters in which order we iterate
     // over the list. Just take the x direction.
     @Override
     public Iterator<E> iterator() {
-        return new IteratorX(this.firstX);
+        return new IteratorX(this.first(Axis.X.ordinal()));
     }
 
 
 
     private class Node<P> {
         P item;
-        Node<P> nextX, nextY;
+        List<Node<P>> next;
         boolean split;
 
-        Node(P item, Node<P> nextX, Node<P> nextY) {
+        Node(P item) {
             this.item = item;
-            this.nextX = nextX;
-            this.nextY = nextY;
+
+            this.next = new ArrayList<>();
+            for(int i = 0; i < Axis.size; i++) {
+                this.next.add(null);
+            }
+        }
+
+        Node(P item, List<Node<P>> next) {
+            this.item = item;
+            this.next = new ArrayList<Node<P>>(next);
+        }
+
+        Node<P> next(int axisOrdinal) {
+            return this.next.get(axisOrdinal);
+        }
+        void next(int axisOrdinal, Node<P> value) {
+            this.next.set(axisOrdinal, value);
         }
     }
 
@@ -317,7 +252,7 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
         @Override
         public E next() {
             E value = this.cursor.item;
-            this.cursor = this.cursor.nextX;
+            this.cursor = this.cursor.next(Axis.X.ordinal());
             return value;
         }
 

@@ -92,8 +92,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.legalizer = new HeapLegalizer(
                 this.circuit,
-                this.blockTypes, this.blockTypeIndexStarts,
-                this.linearX, this.linearY);
+                this.blockTypes,
+                this.blockTypeIndexStarts,
+                this.linearX,
+                this.linearY);
 
         int numNets = this.netUniqueBlockIndexes.size();
         this.netCriticalities = new double[numNets];
