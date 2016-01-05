@@ -243,7 +243,9 @@ public class Circuit {
     }
 
 
-
+    /*****************
+     * Default stuff *
+     *****************/
     public String getName() {
         return this.name;
     }
@@ -262,10 +264,10 @@ public class Circuit {
         return this.columns.get(x);
     }
 
-    /*
+    /**
      * Return the site at coordinate (x, y). If allowNull is false,
-     * return the site that overlaps coordinate (x, y) but may not
-     * start at that position.
+     * return the site that overlaps coordinate (x, y) but possibly
+     * doesn't start at that position.
      */
     public AbstractSite getSite(int x, int y) {
         return this.getSite(x, y, false);
@@ -301,7 +303,18 @@ public class Circuit {
         return this.blocks.get(blockType);
     }
 
+    public int getCapacity(BlockType blockType) {
+        BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
+        if(blockType.equals(ioType)) {
+            return (this.height + this.width - 4) * 2;
 
+        } else {
+            int numColumns = this.columnsPerBlockType.get(blockType).size();
+            int columnHeight = (this.height - 2) / blockType.getHeight();
+
+            return numColumns * columnHeight;
+        }
+    }
     public List<AbstractSite> getSites(BlockType blockType) {
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
         List<AbstractSite> sites;

@@ -30,7 +30,7 @@ class HeapLegalizerArea {
     }
 
     HeapLegalizerArea(HeapLegalizerArea a, int[] direction) {
-        this(a.blockIndexes.getComparatorX(), a.blockIndexes.getComparatorY());
+        this.blockIndexes = new TwoDimLinkedList<Integer>(a.blockIndexes);
 
         this.tileCapacity = a.tileCapacity;
         this.blockHeight = a.blockHeight;

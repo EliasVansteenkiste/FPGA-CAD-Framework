@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import placers.analyticalplacer.TwoDimLinkedList.Axis;
+
 import circuit.Circuit;
 import circuit.architecture.BlockType;
 import circuit.architecture.BlockCategory;
@@ -15,8 +17,6 @@ import circuit.block.AbstractSite;
  *
  */
 class HeapLegalizer extends Legalizer {
-
-    private static enum Axis {X, Y};
 
     // Contain the properties of the blockType that is currently being legalized
     private BlockType blockType;
@@ -375,30 +375,32 @@ class HeapLegalizer extends Legalizer {
             return;
 
         } else if(blockIndexes.size() == 1) {
-            int blockIndex = blockIndexes.get(0);
-            double linearX = this.linearX[blockIndex];
-            double linearY = this.linearY[blockIndex];
+            for(int blockIndex : blockIndexes) {
+                double linearX = this.linearX[blockIndex];
+                double linearY = this.linearY[blockIndex];
 
-            double minDistance = Double.MAX_VALUE;
-            int minX = -1, minY = -1;
+                double minDistance = Double.MAX_VALUE;
+                int minX = -1, minY = -1;
 
-            for(int x = coordinates[0]; x <= coordinates[2]; x += this.blockRepeat) {
-                if(!this.circuit.getColumnType(x).equals(this.blockType)) {
-                    continue;
-                }
+                for(int x = coordinates[0]; x <= coordinates[2]; x += this.blockRepeat) {
+                    if(!this.circuit.getColumnType(x).equals(this.blockType)) {
+                        continue;
+                    }
 
-                for(int y = coordinates[1]; y <= coordinates[3]; y += this.blockHeight) {
-                    double distance = Math.pow(linearX - x, 2) + Math.pow(linearY - y, 2);
-                    if(distance < minDistance) {
-                        minDistance = distance;
-                        minX = x;
-                        minY = y;
+                    for(int y = coordinates[1]; y <= coordinates[3]; y += this.blockHeight) {
+                        double distance = Math.pow(linearX - x, 2) + Math.pow(linearY - y, 2);
+                        if(distance < minDistance) {
+                            minDistance = distance;
+                            minX = x;
+                            minY = y;
+                        }
                     }
                 }
+
+                this.legalX[blockIndex] = minX;
+                this.legalY[blockIndex] = minY;
             }
 
-            this.legalX[blockIndex] = minX;
-            this.legalY[blockIndex] = minY;
             return;
 
         } else if(coordinates[2] - coordinates[0] < this.blockRepeat && axis == Axis.X) {
@@ -483,12 +485,7 @@ class HeapLegalizer extends Legalizer {
 
         // Split blocks in two lists with a ratio approx. equal to area split
         int splitIndex = (int) Math.ceil(splitRatio * blockIndexes.size());
-        TwoDimLinkedList<Integer> otherBlockIndexes;
-        if(axis == Axis.X) {
-            otherBlockIndexes = blockIndexes.splitX(splitIndex);
-        } else {
-            otherBlockIndexes = blockIndexes.splitY(splitIndex);
-        }
+        TwoDimLinkedList<Integer> otherBlockIndexes = blockIndexes.split(splitIndex, axis);
 
         boolean found = false;
         for(Integer blockIndex : blockIndexes) {
@@ -514,7 +511,7 @@ class HeapLegalizer extends Legalizer {
 
 
 
-    class BlockComparator implements Comparator<Integer> {
+    private class BlockComparator implements Comparator<Integer> {
 
         private double[] coordinates;
 

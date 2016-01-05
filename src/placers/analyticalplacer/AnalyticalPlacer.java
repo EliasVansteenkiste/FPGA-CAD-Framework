@@ -41,7 +41,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     private double linearCost, legalCost = Double.MAX_VALUE;
 
-    private HeapLegalizer legalizer;
+    private Legalizer legalizer;
     private CostCalculator costCalculator;
 
 
@@ -64,7 +64,13 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new HeapLegalizer(this.circuit, this.blockTypes, this.blockTypeIndexStarts, this.linearX, this.linearY);
+        this.legalizer = new HeapLegalizer(
+                this.circuit,
+                this.blockTypes,
+                this.blockTypeIndexStarts,
+                this.linearX,
+                this.linearY);
+
         this.costCalculator = this.createCostCalculator();
 
         this.stopTimer(T_INITIALIZE_DATA);
