@@ -391,7 +391,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
 
         private boolean equals(NetBlock otherNetBlock) {
-            return this.blockIndex == otherNetBlock.blockIndex && this.offset == otherNetBlock.blockIndex;
+            return this.blockIndex == otherNetBlock.blockIndex && this.offset == otherNetBlock.offset;
         }
 
         @Override
