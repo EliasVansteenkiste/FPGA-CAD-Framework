@@ -1,6 +1,9 @@
 package placers.analyticalplacer;
 
-import circuit.block.TimingEdge;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.Net;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNet;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNetBlock;
 
 class LinearSolverAnalytical {
 
@@ -39,58 +42,60 @@ class LinearSolverAnalytical {
     }
 
 
-    void processNetWLD(int[] blockIndexes) {
+    void processNetWLD(Net net) {
 
-        int numNetBlocks = blockIndexes.length;
-        double weightMultiplier = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
+        int numNetBlocks = net.blocks.length;
+        double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
 
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {
-            int blockIndex1 = blockIndexes[0], blockIndex2 = blockIndexes[1];
-            boolean fixed1 = isFixed(blockIndex1), fixed2 = isFixed(blockIndex2);
+            NetBlock block1 = net.blocks[0],
+                     block2 = net.blocks[1];
+            int blockIndex1 = block1.blockIndex,
+                blockIndex2 = block2.blockIndex;
+            int offset1 = block1.offset,
+                offset2 = block2.offset;
+            boolean fixed1 = isFixed(blockIndex1),
+                    fixed2 = isFixed(blockIndex2);
 
-            double coordinate1 = this.coordinatesX[blockIndex1];
-            double coordinate2 = this.coordinatesX[blockIndex2];
-            if(coordinate1 < coordinate2) {
-                this.solverX.addConnection(
-                        fixed1, blockIndex1, coordinate1,
-                        fixed2, blockIndex2, coordinate2,
-                        weightMultiplier);
-            } else {
-                this.solverX.addConnection(
-                        fixed2, blockIndex2, coordinate2,
-                        fixed1, blockIndex1, coordinate1,
-                        weightMultiplier);
-            }
 
-            coordinate1 = this.coordinatesY[blockIndex1];
-            coordinate2 = this.coordinatesY[blockIndex2];
-            if(coordinate1 < coordinate2) {
-                this.solverY.addConnection(
-                        fixed1, blockIndex1, coordinate1,
-                        fixed2, blockIndex2, coordinate2,
-                        weightMultiplier);
-            } else {
-                this.solverY.addConnection(
-                        fixed2, blockIndex2, coordinate2,
-                        fixed1, blockIndex1, coordinate1,
-                        weightMultiplier);
-            }
+            this.solverX.addConnection(
+                    fixed1, blockIndex1, this.coordinatesX[blockIndex1], 0,
+                    fixed2, blockIndex2, this.coordinatesX[blockIndex2], 0,
+                    weight);
+
+            this.solverY.addConnection(
+                    fixed1, blockIndex1, this.coordinatesY[blockIndex1] + offset1, offset1,
+                    fixed2, blockIndex2, this.coordinatesY[blockIndex2] + offset2, offset2,
+                    weight);
 
             return;
         }
 
 
         // For bigger nets, we have to find the min and max block
-        int initialBlockIndex = blockIndexes[0];
-        double minX = this.coordinatesX[initialBlockIndex], maxX = this.coordinatesX[initialBlockIndex],
-               minY = this.coordinatesY[initialBlockIndex], maxY = this.coordinatesY[initialBlockIndex];
-        int minXIndex = initialBlockIndex, maxXIndex = initialBlockIndex,
-            minYIndex = initialBlockIndex, maxYIndex = initialBlockIndex;
+        NetBlock initialNetBlock = net.blocks[0];
+
+        int initialBlockIndex = initialNetBlock.blockIndex;
+        int minXIndex = initialBlockIndex,
+            maxXIndex = initialBlockIndex,
+            minYIndex = initialBlockIndex,
+            maxYIndex = initialBlockIndex;
+
+        int initialOffset = initialNetBlock.offset;
+        int minYOffset = initialOffset,
+            maxYOffset = initialOffset;
+
+        double minX = this.coordinatesX[minXIndex],
+               maxX = this.coordinatesX[maxXIndex],
+               minY = this.coordinatesY[minYIndex] + minYOffset,
+               maxY = this.coordinatesY[maxYIndex] + maxYOffset;
 
         for(int i = 1; i < numNetBlocks; i++) {
-            int blockIndex = blockIndexes[i];
-            double x = this.coordinatesX[blockIndex], y = this.coordinatesY[blockIndex];
+            NetBlock block = net.blocks[i];
+            int blockIndex = block.blockIndex;
+            double x = this.coordinatesX[blockIndex],
+                   y = this.coordinatesY[blockIndex] + block.offset;
 
             if(x < minX) {
                 minX = x;
@@ -109,93 +114,77 @@ class LinearSolverAnalytical {
             }
         }
 
-
         boolean minXFixed = this.isFixed(minXIndex), maxXFixed = isFixed(maxXIndex),
                 minYFixed = this.isFixed(minYIndex), maxYFixed = isFixed(maxYIndex);
 
         // Add connections from the min and max block to every block inside the net
         for(int i = 0; i < numNetBlocks; i++) {
-            int blockIndex = blockIndexes[i];
+            NetBlock block = net.blocks[i];
+            int blockIndex = block.blockIndex;
+            int offset = block.offset;
+
             boolean isFixed = this.isFixed(blockIndex);
-            double x = this.coordinatesX[blockIndex], y = this.coordinatesY[blockIndex];
+            double x = this.coordinatesX[blockIndex],
+                   y = this.coordinatesY[blockIndex] + offset;
 
             if(blockIndex != minXIndex) {
                 this.solverX.addConnection(
-                        minXFixed, minXIndex, minX,
-                        isFixed, blockIndex, x,
-                        weightMultiplier);
+                        minXFixed, minXIndex, minX, 0,
+                        isFixed, blockIndex, x, 0,
+                        weight);
 
                 if(blockIndex != maxXIndex) {
                     this.solverX.addConnection(
-                            isFixed, blockIndex, x,
-                            maxXFixed, maxXIndex, maxX,
-                            weightMultiplier);
+                            maxXFixed, maxXIndex, maxX, 0,
+                            isFixed, blockIndex, x, 0,
+                            weight);
                 }
             }
 
             if(blockIndex != minYIndex) {
                 this.solverY.addConnection(
-                        minYFixed, minYIndex, minY,
-                        isFixed, blockIndex, y,
-                        weightMultiplier);
+                        minYFixed, minYIndex, minY, minYOffset,
+                        isFixed, blockIndex, y, offset,
+                        weight);
 
                 if(blockIndex != maxYIndex) {
                     this.solverY.addConnection(
-                            isFixed, blockIndex, y,
-                            maxYFixed, maxYIndex, maxY,
-                            weightMultiplier);
+                            maxYFixed, maxYIndex, maxY, maxYOffset,
+                            isFixed, blockIndex, y, offset,
+                            weight);
                 }
             }
         }
     }
 
 
-    void processNetTD(int[] blockIndexes, TimingEdge[] timingEdges) {
-        int numSinks = timingEdges.length;
-        int sourceIndex = blockIndexes[0];
+    void processNetTD(TimingNet net) {
+        int numSinks = net.sinks.length;
+        int sourceIndex = net.source.blockIndex;
+        int sourceOffset = net.source.offset;
 
-        for(int i = 0; i < numSinks; i++) {
-            double criticality = timingEdges[i].getCriticality();
+        for(TimingNetBlock sink : net.sinks) {
+            double criticality = sink.timingEdge.getCriticality();
 
             if(criticality > this.criticalityThreshold) {
-                int sinkIndex = blockIndexes[i + 1];
                 double weight = 2.0 / numSinks * criticality;
 
-                this.processConnectionTD(sourceIndex, sinkIndex, weight);
+                int sinkIndex = sink.blockIndex;
+                int sinkOffset = sink.offset;
+
+                boolean sourceFixed = this.isFixed(sourceIndex);
+                boolean sinkFixed = this.isFixed(sinkIndex);
+
+                this.solverX.addConnection(
+                        sourceFixed, sourceIndex, this.coordinatesX[sourceIndex], 0,
+                        sinkFixed, sinkIndex, this.coordinatesX[sinkIndex], 0,
+                        weight);
+
+                this.solverY.addConnection(
+                        sourceFixed, sourceIndex, this.coordinatesY[sourceIndex] + sourceOffset, sourceOffset,
+                        sinkFixed, sinkIndex, this.coordinatesY[sinkIndex] + sinkOffset, sinkOffset,
+                        weight);
             }
-        }
-    }
-
-    private void processConnectionTD(int sourceIndex, int sinkIndex, double weightMultiplier) {
-        boolean sourceFixed = this.isFixed(sourceIndex);
-        boolean sinkFixed = this.isFixed(sinkIndex);
-
-        double sourceCoordinate = this.coordinatesX[sourceIndex];
-        double sinkCoordinate = this.coordinatesX[sinkIndex];
-        if(sourceCoordinate < sinkCoordinate) {
-            this.solverX.addConnection(
-                    sourceFixed, sourceIndex, sourceCoordinate,
-                    sinkFixed, sinkIndex, sinkCoordinate,
-                    weightMultiplier);
-        } else {
-            this.solverX.addConnection(
-                    sinkFixed, sinkIndex, sinkCoordinate,
-                    sourceFixed, sourceIndex, sourceCoordinate,
-                    weightMultiplier);
-        }
-
-        sourceCoordinate = this.coordinatesY[sourceIndex];
-        sinkCoordinate = this.coordinatesY[sinkIndex];
-        if(sourceCoordinate < sinkCoordinate) {
-            this.solverY.addConnection(
-                    sourceFixed, sourceIndex, sourceCoordinate,
-                    sinkFixed, sinkIndex, sinkCoordinate,
-                    weightMultiplier);
-        } else {
-            this.solverY.addConnection(
-                    sinkFixed, sinkIndex, sinkCoordinate,
-                    sourceFixed, sourceIndex, sourceCoordinate,
-                    weightMultiplier);
         }
     }
 

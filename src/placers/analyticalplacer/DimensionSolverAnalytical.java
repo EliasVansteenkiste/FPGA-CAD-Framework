@@ -39,29 +39,29 @@ class DimensionSolverAnalytical {
 
 
     void addConnection(
-            boolean minFixed, int minIndex, double minCoordinate,
-            boolean maxFixed, int maxIndex, double maxCoordinate,
+            boolean fixed1, int index1, double coordinate1, int offset1,
+            boolean fixed2, int index2, double coordinate2, int offset2,
             double weightMultiplier) {
 
-        double weight = weightMultiplier / Math.max(maxCoordinate - minCoordinate, 0.005);
-        int minRelativeIndex = minIndex - this.numIOBlocks;
-        int maxRelativeIndex = maxIndex - this.numIOBlocks;
+        double weight = weightMultiplier / Math.max(Math.abs(coordinate1 - coordinate2), 0.005);
+        int relativeIndex1 = index1 - this.numIOBlocks;
+        int relativeIndex2 = index2 - this.numIOBlocks;
 
-        if(minFixed) {
-            if(!maxFixed) {
-                this.matrix.addElement(maxRelativeIndex, maxRelativeIndex, weight);
-                this.vector[maxRelativeIndex] += weight * minCoordinate;
+        if(fixed1) {
+            if(!fixed2) {
+                this.matrix.addElement(relativeIndex2, relativeIndex2, weight);
+                this.vector[relativeIndex2] += weight * (coordinate1 - offset2);
             }
 
-        } else if(maxFixed) {
-            this.matrix.addElement(minRelativeIndex, minRelativeIndex, weight);
-            this.vector[minRelativeIndex] += weight * maxCoordinate;
+        } else if(fixed2) {
+            this.matrix.addElement(relativeIndex1, relativeIndex1, weight);
+            this.vector[relativeIndex1] += weight * (coordinate2 - offset1);
 
         } else {
-            this.matrix.addElement(minRelativeIndex, minRelativeIndex, weight);
-            this.matrix.addElement(minRelativeIndex, maxRelativeIndex, -weight);
-            this.matrix.addElement(maxRelativeIndex, minRelativeIndex, -weight);
-            this.matrix.addElement(maxRelativeIndex, maxRelativeIndex, weight);
+            this.matrix.addElement(relativeIndex1, relativeIndex1, weight);
+            this.matrix.addElement(relativeIndex1, relativeIndex2, -weight);
+            this.matrix.addElement(relativeIndex2, relativeIndex1, -weight);
+            this.matrix.addElement(relativeIndex2, relativeIndex2, weight);
         }
     }
 

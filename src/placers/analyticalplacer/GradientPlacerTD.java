@@ -50,7 +50,7 @@ public class GradientPlacerTD extends GradientPlacer {
         this.costCalculator = new CostCalculatorTD(
                 this.circuit,
                 this.blockIndexes,
-                this.netBlockIndexes,
+                this.timingNets,
                 this.netTimingEdges);
 
 

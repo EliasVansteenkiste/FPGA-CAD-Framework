@@ -97,7 +97,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.linearX,
                 this.linearY);
 
-        int numNets = this.netUniqueBlockIndexes.size();
+        int numNets = this.nets.size();
         this.netCriticalities = new double[numNets];
         Arrays.fill(this.netCriticalities, 1);
 
@@ -128,7 +128,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     private void updateNetCriticalities() {
-        int numNets = this.netUniqueBlockIndexes.size();
+        int numNets = this.nets.size();
 
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             TimingEdge[] edges = this.netTimingEdges.get(netIndex);
@@ -177,11 +177,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     private void processNets() {
-        int numNets = this.netUniqueBlockIndexes.size();
+        int numNets = this.nets.size();
         boolean timingDriven = this.isTimingDriven();
 
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            int[] blockIndexes = this.netUniqueBlockIndexes.get(netIndex);
+            int[] blockIndexes = this.nets.get(netIndex);
             double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
 
             this.solver.processNet(blockIndexes, criticality);

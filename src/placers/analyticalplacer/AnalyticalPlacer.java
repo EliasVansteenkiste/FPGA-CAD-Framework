@@ -86,7 +86,13 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         int innerIterations = iteration == 0 ? 5 : 1;
         for(int i = 0; i < innerIterations; i++) {
-            LinearSolverAnalytical solver = new LinearSolverAnalytical(this.linearX, this.linearY, this.numIOBlocks, this.anchorWeight, this.criticalityThreshold, AnalyticalPlacer.EPSILON);
+            LinearSolverAnalytical solver = new LinearSolverAnalytical(
+                    this.linearX,
+                    this.linearY,
+                    this.numIOBlocks,
+                    this.anchorWeight,
+                    this.criticalityThreshold,
+                    AnalyticalPlacer.EPSILON);
             this.solveLinearIteration(solver, iteration);
         }
 
@@ -125,16 +131,16 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     protected void processNetsWLD(LinearSolverAnalytical solver) {
-        for(int[] net : this.netUniqueBlockIndexes) {
+        for(Net net : this.nets) {
             solver.processNetWLD(net);
         }
     }
 
     protected void processNetsTD(LinearSolverAnalytical solver) {
         // If the Placer is not timing driven, this.timingNets is empty
-        int numNets = this.netBlockIndexes.size();
+        int numNets = this.timingNets.size();
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            solver.processNetTD(this.netBlockIndexes.get(netIndex), this.netTimingEdges.get(netIndex));
+            solver.processNetTD(this.timingNets.get(netIndex));
         }
     }
 

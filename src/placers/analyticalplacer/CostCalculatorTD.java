@@ -3,11 +3,14 @@ package placers.analyticalplacer;
 import java.util.List;
 import java.util.Map;
 
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNet;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNetBlock;
+
 import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.architecture.DelayTables;
 import circuit.block.GlobalBlock;
-import circuit.block.TimingEdge;
 import circuit.block.TimingGraph;
 
 class CostCalculatorTD extends CostCalculator {
@@ -16,29 +19,26 @@ class CostCalculatorTD extends CostCalculator {
     private DelayTables delayTables;
     private BlockCategory[] blockCategories;
 
-    private List<int[]> netBlockIndexes;
-    private List<TimingEdge[]> netTimingEdges;
+    private List<TimingNet> nets;
 
 
     CostCalculatorTD(
             Circuit circuit,
-            Map<GlobalBlock, Integer> blockIndexes,
-            List<int[]> netBlockIndexes,
-            List<TimingEdge[]> netTimingEdges) {
+            Map<GlobalBlock, NetBlock> netBlocks,
+            List<TimingNet> nets) {
 
         this.timingGraph = circuit.getTimingGraph();
         this.delayTables = circuit.getArchitecture().getDelayTables();
 
-        this.blockCategories = new BlockCategory[blockIndexes.size()];
-        for(Map.Entry<GlobalBlock, Integer> blockEntry : blockIndexes.entrySet()) {
+        this.blockCategories = new BlockCategory[netBlocks.size()];
+        for(Map.Entry<GlobalBlock, NetBlock> blockEntry : netBlocks.entrySet()) {
             BlockCategory category = blockEntry.getKey().getCategory();
-            int index = blockEntry.getValue();
+            int index = blockEntry.getValue().blockIndex;
 
             this.blockCategories[index] = category;
         }
 
-        this.netBlockIndexes = netBlockIndexes;
-        this.netTimingEdges = netTimingEdges;
+        this.nets = nets;
     }
 
 
@@ -59,30 +59,25 @@ class CostCalculatorTD extends CostCalculator {
 
 
     private void updateDelays() {
-        int numNets = this.netBlockIndexes.size();
-        for(int netIndex = 0; netIndex < numNets; netIndex ++) {
-
-            int[] blockIndexes = this.netBlockIndexes.get(netIndex);
-            TimingEdge[] timingEdges = this.netTimingEdges.get(netIndex);
-
-            int sourceIndex = blockIndexes[0];
+        for(TimingNet net : this.nets) {
+            int sourceIndex = net.source.blockIndex;
             BlockCategory sourceCategory = this.blockCategories[sourceIndex];
+
             double sourceX = this.getX(sourceIndex);
             double sourceY = this.getY(sourceIndex);
 
-            int numPins = timingEdges.length;
-            for(int i = 0; i < numPins; i++) {
-                int sinkIndex = blockIndexes[i + 1];
+            for(TimingNetBlock sink : net.sinks) {
+                int sinkIndex = sink.blockIndex;
                 BlockCategory sinkCategory = this.blockCategories[sinkIndex];
 
                 double sinkX = this.getX(sinkIndex);
                 double sinkY = this.getY(sinkIndex);
+
                 int deltaX = (int) Math.abs(sinkX - sourceX);
                 int deltaY = (int) Math.abs(sinkY - sourceY);
                 double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
 
-                TimingEdge timingEdge = timingEdges[i];
-                timingEdge.setWireDelay(wireDelay);
+                sink.timingEdge.setWireDelay(wireDelay);
             }
         }
     }

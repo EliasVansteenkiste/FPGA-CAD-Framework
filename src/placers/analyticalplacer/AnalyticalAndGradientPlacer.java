@@ -18,6 +18,7 @@ import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.block.LeafBlock;
+import circuit.block.Macro;
 import circuit.block.TimingEdge;
 import circuit.exceptions.PlacementException;
 
@@ -28,15 +29,15 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected List<BlockType> blockTypes;
     protected List<Integer> blockTypeIndexStarts;
-    protected final Map<GlobalBlock, Integer> blockIndexes = new HashMap<>();
+    protected final Map<GlobalBlock, NetBlock> netBlocks = new HashMap<>();
 
-    protected int numBlocks, numIOBlocks;
+    protected int numIOBlocks, numMovableBlocks;
 
     protected double[] linearX, linearY;
     private int[] legalX, legalY;
 
-    protected List<int[]> netBlockIndexes, netUniqueBlockIndexes;
-    protected List<TimingEdge[]> netTimingEdges;
+    protected List<Net> nets;
+    protected List<TimingNet> timingNets;
 
     protected final static String
         T_INITIALIZE_DATA = "initialize data",
@@ -67,12 +68,15 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        // Get number of blocks
-        int numBlocksCounter = 0;
+        // Count the number of blocks
+        // A macro counts as 1 block
+        int numBlocks = 0;
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
-            numBlocksCounter += this.circuit.getBlocks(blockType).size();
+            numBlocks += this.circuit.getBlocks(blockType).size();
         }
-        this.numBlocks = numBlocksCounter;
+        for(Macro macro : this.circuit.getMacros()) {
+            numBlocks -= macro.getNumBlocks() - 1;
+        }
 
 
         // Make a list of all block types, with IO blocks first
@@ -89,122 +93,134 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
 
-        // Add all global blocks
-        this.linearX = new double[this.numBlocks];
-        this.linearY = new double[this.numBlocks];
-        this.legalX = new int[this.numBlocks];
-        this.legalY = new int[this.numBlocks];
+        // Add all global blocks, in the order of 'blockTypes'
+        this.linearX = new double[numBlocks];
+        this.linearY = new double[numBlocks];
+        this.legalX = new int[numBlocks];
+        this.legalY = new int[numBlocks];
 
         this.blockTypeIndexStarts = new ArrayList<>();
         this.blockTypeIndexStarts.add(0);
 
-        { // I want to be able to use the variable blockIndex later on as well
-            int blockIndex = 0;
-            for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
-                for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
-                    GlobalBlock block = (GlobalBlock) abstractBlock;
+        List<GlobalBlock> macroBlocks = new ArrayList<>();
 
-                    this.linearX[blockIndex] = block.getColumn();
-                    this.linearY[blockIndex] = block.getRow();
-                    this.legalX[blockIndex] = block.getColumn();
-                    this.legalY[blockIndex] = block.getRow();
+        int blockCounter = 0;
+        for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
+            for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
+                GlobalBlock block = (GlobalBlock) abstractBlock;
 
-                    this.blockIndexes.put(block, blockIndex);
-                    blockIndex++;
+                // Blocks that are the first block of a macro (or that aren't
+                // in a macro) should get a movable position.
+                if(!block.isInMacro() || block.getMacroOffsetY() == 0) {
+                    int column = block.getColumn();
+                    int row = block.getRow();
+
+                    this.linearX[blockCounter] = column;
+                    this.linearY[blockCounter] = row;
+                    this.legalX[blockCounter] = column;
+                    this.legalY[blockCounter] = row;
+
+                    this.netBlocks.put(block, new NetBlock(blockCounter, 0));
+                    blockCounter++;
+
+                // The position of other blocks will be calculated
+                // using the macro source.
+                } else {
+                    macroBlocks.add(block);
                 }
-
-                this.blockTypeIndexStarts.add(blockIndex);
             }
+
+            this.blockTypeIndexStarts.add(blockCounter);
+        }
+
+        // Blocks that are not a macro source have an index that is greater
+        // than this.numBlocks. These blocks don't have an own location.
+        // To find their location, we use a MacroSource object. The
+        // MacroSource object at position i corresponds to the block with
+        // index i + this.numBlocks.
+        for(GlobalBlock block : macroBlocks) {
+            GlobalBlock macroSource = block.getMacro().getBlock(0);
+            int sourceIndex = this.netBlocks.get(macroSource).blockIndex;
+            int offset = block.getMacroOffsetY();
+
+            this.netBlocks.put(block, new NetBlock(sourceIndex, offset));
+            blockCounter++;
         }
 
         this.numIOBlocks = this.blockTypeIndexStarts.get(1);
 
-
-        this.netBlockIndexes = new ArrayList<int[]>();
-        this.netUniqueBlockIndexes = new ArrayList<int[]>();
-        this.netTimingEdges = new ArrayList<TimingEdge[]>();
 
 
         // Add all nets
         // A net is simply a list of unique block indexes
         // If the algorithm is timing driven, we also store all the blocks in
         // a net (duplicates are allowed) and the corresponding timing edge
-        boolean timingDriven = this.isTimingDriven();
+        this.nets = new ArrayList<Net>();
+        this.timingNets = new ArrayList<TimingNet>();
+
+
+        /* For each global output pin, build the net that has that pin as
+         * its source. We build the following data structures:
+         *   - uniqueBlockIndexes: a list of the global blocks in the net
+         *     in no particular order. Duplicates are removed.
+         *   - blockIndexes: a list of the blocks in the net. Duplicates
+         *     are allowed if a block is connected multiple times to the
+         *     same net. blockIndexes[0] is the net source.
+         *   - timingEdges: the timing edges that correspond to the blocks
+         *     in blockIndexes. The edge at timingEdges[i] corresponds to
+         *     the block at blockIndexes[i + 1].
+         */
 
         // Loop through all leaf blocks
         for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
-            int sourceBlockIndex = this.blockIndexes.get(sourceGlobalBlock);
+            NetBlock sourceBlock = this.netBlocks.get(sourceGlobalBlock);
 
             for(LeafBlock sourceLeafBlock : sourceGlobalBlock.getLeafBlocks()) {
 
                 // Loop through the output pins of the leaf block
                 int numOutputPins = sourceLeafBlock.numOutputPins();
                 for(int pinIndex = 0; pinIndex < numOutputPins; pinIndex++) {
-
-                    /* For each output pin, build the net that has that pin as its
-                     * source. We build the following data structures:
-                     *   - uniqueBlockIndexes: a list of the global blocks in the net
-                     *     in no particular order. Duplicates are removed.
-                     *   - blockIndexes: a list of the blocks in the net. Duplicates
-                     *     are allowed if a block is connected multiple times to the
-                     *     same net. blockIndexes[0] is the net source.
-                     *   - timingEdges: the timing edges that correspond to the blocks
-                     *     in blockIndexes. The edge at timingEdges[i] corresponds to
-                     *     the block at blockIndexes[i + 1].
-                     */
-
-                    int[] sinkRange = sourceLeafBlock.getSinkRange(pinIndex);
-                    int numSinks = sinkRange[1] - sinkRange[0];
-
-                    int[] blockIndexes = new int[numSinks + 1];
-                    TimingEdge[] timingEdges = new TimingEdge[numSinks];
-                    Set<Integer> blockIndexesSet = new HashSet<>();
-
-                    blockIndexes[0] = sourceBlockIndex;
-                    blockIndexesSet.add(sourceBlockIndex);
-
-                    for(int i = 0; i < numSinks; i++) {
-                        GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(i + sinkRange[0]).getGlobalParent();
-                        int sinkBlockIndex = this.blockIndexes.get(sinkGlobalBlock);
-
-                        blockIndexesSet.add(sinkBlockIndex);
-                        blockIndexes[i + 1] = sinkBlockIndex;
-
-                        TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(i + sinkRange[0]);
-                        timingEdges[i] = timingEdge;
-                    }
-
-
-                    /* Don't add nets which connect only one global block.
-                     * Due to this, the WLD costcalculator is not entirely
-                     * accurate, but that doesn't matter, because we use
-                     * the same (inaccurate) costcalculator to calculate
-                     * both the linear and legal cost, so the deviation
-                     * cancels out.
-                     */
-                    int numUniqueBlocks = blockIndexesSet.size();
-                    if(numUniqueBlocks > 1) {
-                        int[] uniqueBlockIndexes = new int[numUniqueBlocks];
-                        int i = 0;
-                        for(Integer blockIndex : blockIndexesSet) {
-                            uniqueBlockIndexes[i] = blockIndex;
-                            i++;
-                        }
-
-                        this.netUniqueBlockIndexes.add(uniqueBlockIndexes);
-
-                        // We only need the complete list of blocks and their
-                        // timing edges if the algorithm is timing driven
-                        if(timingDriven) {
-                            this.netTimingEdges.add(timingEdges);
-                            this.netBlockIndexes.add(blockIndexes);
-                        }
-                    }
+                    this.addNet(sourceBlock, sourceLeafBlock, pinIndex);
                 }
             }
         }
 
         this.stopTimer(T_INITIALIZE_DATA);
+    }
+
+    private void addNet(NetBlock sourceBlock, LeafBlock sourceLeafBlock, int pinIndex) {
+        int[] sinkRange = sourceLeafBlock.getSinkRange(pinIndex);
+        int numSinks = sinkRange[1] - sinkRange[0];
+
+        TimingNet timingNet = new TimingNet(sourceBlock, numSinks);
+        for(int i = 0; i < numSinks; i++) {
+            TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(sinkRange[0] + i);
+            GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(sinkRange[0] + i).getGlobalParent();
+            NetBlock sinkBlock = this.netBlocks.get(sinkGlobalBlock);
+
+            timingNet.sinks[i] = new TimingNetBlock(sinkBlock, timingEdge);
+        }
+
+        Net net = new Net(timingNet);
+
+
+        /* Don't add nets which connect only one global block.
+         * Due to this, the WLD costcalculator is not entirely
+         * accurate, but that doesn't matter, because we use
+         * the same (inaccurate) costcalculator to calculate
+         * both the linear and legal cost, so the deviation
+         * cancels out.
+         */
+        int numUniqueBlocks = net.blocks.length;
+        if(numUniqueBlocks > 1) {
+            this.nets.add(net);
+
+            // We only need the complete list of blocks and their
+            // timing edges if the algorithm is timing driven
+            if(this.isTimingDriven()) {
+                this.timingNets.add(timingNet);
+            }
+        }
     }
 
 
@@ -231,12 +247,14 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.printStatistics(iteration, time);
 
             // Update the visualizer
-            this.visualizer.addPlacement(
+            // TODO: get this to work again
+            /*this.visualizer.addPlacement(
                     String.format("iteration %d: linear", iteration),
-                    this.blockIndexes, this.linearX, this.linearY);
+                    this.blocks, this.linearX, this.linearY);
             this.visualizer.addPlacement(
                     String.format("iteration %d: legal", iteration),
-                    this.blockIndexes, this.legalX, this.legalY);
+                    this.blocks, this.legalX, this.legalY);
+                    */
 
             iteration++;
         }
@@ -256,7 +274,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
     protected void updateLegal(int[] newLegalX, int[] newLegalY) {
-        int numMovableBlocks = this.numBlocks - this.numIOBlocks;
+        int numMovableBlocks = this.legalX.length - this.numIOBlocks;
 
         System.arraycopy(newLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, numMovableBlocks);
         System.arraycopy(newLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, numMovableBlocks);
@@ -265,21 +283,25 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected void updateCircuit() throws PlacementException {
         //Clear all previous locations
-        for(GlobalBlock block : this.blockIndexes.keySet()) {
+        for(GlobalBlock block : this.netBlocks.keySet()) {
             if(block.getCategory() != BlockCategory.IO) {
                 block.removeSite();
             }
         }
 
         // Update locations
-        for(Map.Entry<GlobalBlock, Integer> blockEntry : this.blockIndexes.entrySet()) {
+        for(Map.Entry<GlobalBlock, NetBlock> blockEntry : this.netBlocks.entrySet()) {
             GlobalBlock block = blockEntry.getKey();
 
             if(block.getCategory() != BlockCategory.IO) {
-                int index = blockEntry.getValue();
+                NetBlock netBlock = blockEntry.getValue();
+                int index = netBlock.blockIndex;
+                int offset = netBlock.offset;
 
+                int column = this.legalX[index];
+                int row = this.legalY[index] + offset;
 
-                AbstractSite site = this.circuit.getSite(this.legalX[index], this.legalY[index], true);
+                AbstractSite site = this.circuit.getSite(column, row, true);
                 block.setSite(site);
             }
         }
@@ -341,6 +363,81 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             case 49:
             case 50: return (size-45) * (2.7933-2.6625) / 5 + 2.6625;
             default: return (size-50) * 0.02616 + 2.7933;
+        }
+    }
+
+
+
+    class NetBlock {
+        final int blockIndex;
+        final int offset;
+
+        NetBlock(int blockIndex, int offset) {
+            this.blockIndex = blockIndex;
+            this.offset = offset;
+        }
+
+        NetBlock(TimingNetBlock timingNetBlock) {
+            this(timingNetBlock.blockIndex, timingNetBlock.offset);
+        }
+
+        @Override
+        public boolean equals(Object otherObject) {
+            if(!(otherObject instanceof NetBlock)) {
+                return false;
+            } else {
+                return this.equals((NetBlock) otherObject);
+            }
+        }
+
+        private boolean equals(NetBlock otherNetBlock) {
+            return this.blockIndex == otherNetBlock.blockIndex && this.offset == otherNetBlock.blockIndex;
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * this.blockIndex + this.offset;
+        }
+    }
+
+    class TimingNetBlock {
+        final int blockIndex;
+        final int offset;
+        final TimingEdge timingEdge;
+
+        TimingNetBlock(int blockIndex, int offset, TimingEdge timingEdge) {
+            this.blockIndex = blockIndex;
+            this.offset = offset;
+            this.timingEdge = timingEdge;
+        }
+
+        TimingNetBlock(NetBlock block, TimingEdge timingEdge) {
+            this(block.blockIndex, block.offset, timingEdge);
+        }
+    }
+
+    class Net {
+        final NetBlock[] blocks;
+
+        Net(TimingNet timingNet) {
+            Set<NetBlock> netBlocks = new HashSet<>();
+            netBlocks.add(timingNet.source);
+            for(TimingNetBlock timingNetBlock : timingNet.sinks) {
+                netBlocks.add(new NetBlock(timingNetBlock));
+            }
+
+            this.blocks = new NetBlock[netBlocks.size()];
+            netBlocks.toArray(this.blocks);
+        }
+    }
+
+    class TimingNet {
+        final NetBlock source;
+        final TimingNetBlock[] sinks;
+
+        TimingNet(NetBlock source, int numSinks) {
+            this.source = source;
+            this.sinks = new TimingNetBlock[numSinks];
         }
     }
 }

@@ -29,6 +29,6 @@ public class AnalyticalPlacerWLD extends AnalyticalPlacer {
 
     @Override
     protected CostCalculator createCostCalculator() {
-        return new CostCalculatorWLD(this.netUniqueBlockIndexes);
+        return new CostCalculatorWLD(this.nets);
     }
 }

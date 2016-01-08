@@ -2,11 +2,14 @@ package placers.analyticalplacer;
 
 import java.util.List;
 
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.Net;
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
+
 class CostCalculatorWLD extends CostCalculator {
 
-    private List<int[]> nets;
+    private List<Net> nets;
 
-    CostCalculatorWLD(List<int[]> nets) {
+    CostCalculatorWLD(List<Net> nets) {
         this.nets = nets;
     }
 
@@ -15,16 +18,21 @@ class CostCalculatorWLD extends CostCalculator {
     protected double calculate(boolean tmp) {
         double cost = 0.0;
 
-        for(int[] blockIndexes : this.nets) {
-            int numNetBlocks = blockIndexes.length;
+        for(Net net : this.nets) {
+            int numNetBlocks = net.blocks.length;
 
-            int initialBlockIndex = blockIndexes[0];
-            double minX = getX(initialBlockIndex), minY = getY(initialBlockIndex);
-            double maxX = minX, maxY = minY;
+            NetBlock initialBlock = net.blocks[0];
+            int initialBlockIndex = initialBlock.blockIndex;
+            double minX = getX(initialBlockIndex),
+                   minY = getY(initialBlockIndex) + initialBlock.offset;
+            double maxX = minX,
+                   maxY = minY;
 
             for(int i = 1; i < numNetBlocks; i++) {
-                int blockIndex = blockIndexes[i];
-                double x = getX(blockIndex), y = getY(blockIndex);
+                NetBlock block = net.blocks[i];
+                int blockIndex = block.blockIndex;
+                double x = getX(blockIndex),
+                       y = getY(blockIndex) + block.offset;
 
                 if(x < minX) {
                     minX = x;
