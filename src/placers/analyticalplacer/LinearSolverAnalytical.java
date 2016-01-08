@@ -88,8 +88,8 @@ class LinearSolverAnalytical {
 
         double minX = this.coordinatesX[minXIndex],
                maxX = this.coordinatesX[maxXIndex],
-               minY = this.coordinatesY[minYIndex] + minYOffset,
-               maxY = this.coordinatesY[maxYIndex] + maxYOffset;
+               minY = this.coordinatesY[minYIndex] + initialOffset,
+               maxY = this.coordinatesY[maxYIndex] + initialOffset;
 
         for(int i = 1; i < numNetBlocks; i++) {
             NetBlock block = net.blocks[i];

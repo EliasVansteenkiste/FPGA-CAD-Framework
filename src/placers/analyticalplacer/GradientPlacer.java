@@ -8,7 +8,6 @@ import java.util.Random;
 
 import visual.PlacementVisualizer;
 import circuit.Circuit;
-import circuit.block.TimingEdge;
 import circuit.exceptions.PlacementException;
 
 public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
@@ -129,20 +128,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     private void updateNetCriticalities() {
         int numNets = this.nets.size();
-
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            TimingEdge[] edges = this.netTimingEdges.get(netIndex);
-            int numEdges = edges.length;
-
-            double maxCriticality = edges[0].getCriticality();
-            for(int edgeIndex = 1; edgeIndex < numEdges; edgeIndex++) {
-                double criticality = edges[edgeIndex].getCriticality();
-                if(criticality > maxCriticality) {
-                    maxCriticality = criticality;
-                }
-            }
-
-            this.netCriticalities[netIndex] = maxCriticality;
+            TimingNet net = this.timingNets.get(netIndex);
+            this.netCriticalities[netIndex] = net.getCriticality();
         }
     }
 
@@ -181,10 +169,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         boolean timingDriven = this.isTimingDriven();
 
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            int[] blockIndexes = this.nets.get(netIndex);
+            Net net = this.nets.get(netIndex);
             double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
 
-            this.solver.processNet(blockIndexes, criticality);
+            this.solver.processNet(net, criticality);
         }
     }
 
@@ -193,7 +181,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected void solveLegal(int iteration) {
 
         // TODO: optimize this
-        this.maxUtilization = Math.min(this.numBlocks, Math.max(1, 0.8 / this.anchorWeight));
+        //this.maxUtilization = Math.min(this.numBlocks, Math.max(1, 0.8 / this.anchorWeight));
         this.maxUtilization = 1;
 
         this.startTimer(T_LEGALIZE);

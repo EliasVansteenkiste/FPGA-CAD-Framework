@@ -49,9 +49,8 @@ public class GradientPlacerTD extends GradientPlacer {
 
         this.costCalculator = new CostCalculatorTD(
                 this.circuit,
-                this.blockIndexes,
-                this.timingNets,
-                this.netTimingEdges);
+                this.netBlocks,
+                this.timingNets);
 
 
         int numIterations = (int) ((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep);
