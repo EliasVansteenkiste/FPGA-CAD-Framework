@@ -37,6 +37,17 @@ class HeapLegalizer extends Legalizer {
             int[] heights) throws IllegalArgumentException {
 
         super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, heights);
+
+
+        // Initialize the matrix to contain a linked list at each coordinate
+        this.blockMatrix = new ArrayList<List<List<Integer>>>(this.width);
+        for(int column = 0; column < this.width; column++) {
+            List<List<Integer>> blockColumn = new ArrayList<List<Integer>>(this.height);
+            for(int row = 0; row < this.height; row++) {
+                blockColumn.add(new ArrayList<Integer>());
+            }
+            this.blockMatrix.add(blockColumn);
+        }
     }
 
 
@@ -67,23 +78,20 @@ class HeapLegalizer extends Legalizer {
 
     private void initializeBlockMatrix(int blocksStart, int blocksEnd) {
 
-        // Initialize the matrix to contain a linked list at each coordinate
-        this.blockMatrix = new ArrayList<List<List<Integer>>>(this.width);
-        for(int x = 0; x < this.width; x++) {
-            List<List<Integer>> blockColumn = new ArrayList<List<Integer>>(this.height);
-            for(int y = 0; y < this.height; y++) {
-                blockColumn.add(new ArrayList<Integer>());
+        // Clear the block matrix
+        for(int column = 0; column < this.width; column++) {
+            for(int row = 0; row < this.height; row++) {
+                this.blockMatrix.get(column).get(row).clear();
             }
-            this.blockMatrix.add(blockColumn);
         }
 
         // Loop through all the blocks of the correct block type and add them to their closest position
         for(int index = blocksStart; index < blocksEnd; index++) {
             AbstractSite site = this.getClosestSite(this.linearX[index], this.linearY[index]);
-            int x = site.getColumn();
-            int y = site.getRow();
+            int column = site.getColumn();
+            int row = site.getRow();
 
-            this.blockMatrix.get(x).get(y).add(index);
+            this.blockMatrix.get(column).get(row).add(index);
         }
     }
 
