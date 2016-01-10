@@ -33,9 +33,10 @@ class HeapLegalizer extends Legalizer {
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
-            double[] linearY) throws IllegalArgumentException {
+            double[] linearY,
+            int[] heights) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, heights);
     }
 
 

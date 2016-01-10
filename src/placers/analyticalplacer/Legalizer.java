@@ -20,13 +20,15 @@ abstract class Legalizer {
 
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
+    protected int[] heights;
 
     Legalizer(
             Circuit circuit,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
-            double[] linearY) {
+            double[] linearY,
+            int[] heights) {
 
         // Store easy stuff
         this.circuit = circuit;
@@ -47,6 +49,7 @@ abstract class Legalizer {
         // Store linear solution (this array is updated by the linear solver
         this.linearX = linearX;
         this.linearY = linearY;
+        this.heights = heights;
 
         // Cache the number of blocks
         this.numBlocks = linearX.length;
