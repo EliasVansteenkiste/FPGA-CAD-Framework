@@ -39,8 +39,8 @@ class LinearSolverGradient {
                      block2 = net.blocks[1];
             int blockIndex1 = block1.blockIndex,
                 blockIndex2 = block2.blockIndex;
-            int offset1 = block1.offset,
-                offset2 = block2.offset;
+            double offset1 = block1.offset,
+                   offset2 = block2.offset;
 
             double coordinate1 = this.coordinatesX[blockIndex1],
                    coordinate2 = this.coordinatesX[blockIndex2];
@@ -71,9 +71,9 @@ class LinearSolverGradient {
             minYIndex = initialBlockIndex,
             maxYIndex = initialBlockIndex;
 
-        int initialOffset = initialNetBlock.offset;
-        int minYOffset = initialOffset,
-            maxYOffset = initialOffset;
+        double initialOffset = initialNetBlock.offset;
+        double minYOffset = initialOffset,
+               maxYOffset = initialOffset;
 
         double minX = this.coordinatesX[minXIndex],
                maxX = this.coordinatesX[maxXIndex],

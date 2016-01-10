@@ -4,6 +4,7 @@ import interfaces.Logger;
 import interfaces.Options;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +36,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected double[] linearX, linearY;
     private int[] legalX, legalY;
+    protected int[] heights;
 
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
@@ -115,12 +117,18 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     int column = block.getColumn();
                     int row = block.getRow();
 
-                    this.linearX[blockCounter] = column;
-                    this.linearY[blockCounter] = row;
-                    this.legalX[blockCounter] = column;
-                    this.legalY[blockCounter] = row;
+                    int height = block.isInMacro() ? block.getMacro().getHeight() : 1;
+                    // The offset is measured in half blocks from the center of the macro
+                    // For the legal position of macro's with an even number of blocks,
+                    // the position is rounded down
+                    double offset = (1 - height) / 2.0;
 
-                    this.netBlocks.put(block, new NetBlock(blockCounter, 0));
+                    this.linearX[blockCounter] = column;
+                    this.linearY[blockCounter] = row - offset;
+                    this.legalX[blockCounter] = column;
+                    this.legalY[blockCounter] = row + (int) Math.floor(-offset);
+
+                    this.netBlocks.put(block, new NetBlock(blockCounter, offset));
                     blockCounter++;
 
                 // The position of other blocks will be calculated
@@ -133,17 +141,17 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.blockTypeIndexStarts.add(blockCounter);
         }
 
-        // Blocks that are not a macro source have an index that is greater
-        // than this.numBlocks. These blocks don't have an own location.
-        // To find their location, we use a MacroSource object. The
-        // MacroSource object at position i corresponds to the block with
-        // index i + this.numBlocks.
+
+        this.heights = new int[numBlocks];
+        Arrays.fill(this.heights, 1);
+
         for(GlobalBlock block : macroBlocks) {
             GlobalBlock macroSource = block.getMacro().getBlock(0);
             int sourceIndex = this.netBlocks.get(macroSource).blockIndex;
-            int offset = block.getMacroOffsetY();
+            int offset = 1 - block.getMacro().getHeight() + block.getMacroOffsetY();
 
             this.netBlocks.put(block, new NetBlock(sourceIndex, offset));
+            this.heights[sourceIndex] = Math.max(this.heights[sourceIndex], offset + 1);
             blockCounter++;
         }
 
@@ -296,10 +304,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             if(block.getCategory() != BlockCategory.IO) {
                 NetBlock netBlock = blockEntry.getValue();
                 int index = netBlock.blockIndex;
-                int offset = netBlock.offset;
+                double offset = netBlock.offset;
 
                 int column = this.legalX[index];
-                int row = this.legalY[index] + offset;
+                int row = this.legalY[index] + (int) Math.ceil(offset);
 
                 AbstractSite site = this.circuit.getSite(column, row, true);
                 block.setSite(site);
@@ -370,9 +378,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     class NetBlock {
         final int blockIndex;
-        final int offset;
+        final double offset;
 
-        NetBlock(int blockIndex, int offset) {
+        NetBlock(int blockIndex, double offset) {
             this.blockIndex = blockIndex;
             this.offset = offset;
         }
@@ -396,16 +404,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         @Override
         public int hashCode() {
-            return 31 * this.blockIndex + this.offset;
+            return 31 * this.blockIndex + (int) (2 * this.offset);
         }
     }
 
     class TimingNetBlock {
         final int blockIndex;
-        final int offset;
+        final double offset;
         final TimingEdge timingEdge;
 
-        TimingNetBlock(int blockIndex, int offset, TimingEdge timingEdge) {
+        TimingNetBlock(int blockIndex, double offset, TimingEdge timingEdge) {
             this.blockIndex = blockIndex;
             this.offset = offset;
             this.timingEdge = timingEdge;

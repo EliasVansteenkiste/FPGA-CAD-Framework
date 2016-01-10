@@ -39,8 +39,8 @@ class DimensionSolverAnalytical {
 
 
     void addConnection(
-            boolean fixed1, int index1, double coordinate1, int offset1,
-            boolean fixed2, int index2, double coordinate2, int offset2,
+            boolean fixed1, int index1, double coordinate1, double offset1,
+            boolean fixed2, int index2, double coordinate2, double offset2,
             double weightMultiplier) {
 
         double weight = weightMultiplier / Math.max(Math.abs(coordinate1 - coordinate2), 0.005);

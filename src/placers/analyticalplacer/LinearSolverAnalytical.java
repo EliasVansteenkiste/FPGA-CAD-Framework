@@ -53,8 +53,8 @@ class LinearSolverAnalytical {
                      block2 = net.blocks[1];
             int blockIndex1 = block1.blockIndex,
                 blockIndex2 = block2.blockIndex;
-            int offset1 = block1.offset,
-                offset2 = block2.offset;
+            double offset1 = block1.offset,
+                   offset2 = block2.offset;
             boolean fixed1 = isFixed(blockIndex1),
                     fixed2 = isFixed(blockIndex2);
 
@@ -82,9 +82,9 @@ class LinearSolverAnalytical {
             minYIndex = initialBlockIndex,
             maxYIndex = initialBlockIndex;
 
-        int initialOffset = initialNetBlock.offset;
-        int minYOffset = initialOffset,
-            maxYOffset = initialOffset;
+        double initialOffset = initialNetBlock.offset;
+        double minYOffset = initialOffset,
+               maxYOffset = initialOffset;
 
         double minX = this.coordinatesX[minXIndex],
                maxX = this.coordinatesX[maxXIndex],
@@ -121,7 +121,7 @@ class LinearSolverAnalytical {
         for(int i = 0; i < numNetBlocks; i++) {
             NetBlock block = net.blocks[i];
             int blockIndex = block.blockIndex;
-            int offset = block.offset;
+            double offset = block.offset;
 
             boolean isFixed = this.isFixed(blockIndex);
             double x = this.coordinatesX[blockIndex],
@@ -161,7 +161,7 @@ class LinearSolverAnalytical {
     void processNetTD(TimingNet net) {
         int numSinks = net.sinks.length;
         int sourceIndex = net.source.blockIndex;
-        int sourceOffset = net.source.offset;
+        double sourceOffset = net.source.offset;
 
         for(TimingNetBlock sink : net.sinks) {
             double criticality = sink.timingEdge.getCriticality();
@@ -170,7 +170,7 @@ class LinearSolverAnalytical {
                 double weight = 2.0 / numSinks * criticality;
 
                 int sinkIndex = sink.blockIndex;
-                int sinkOffset = sink.offset;
+                double sinkOffset = sink.offset;
 
                 boolean sourceFixed = this.isFixed(sourceIndex);
                 boolean sinkFixed = this.isFixed(sinkIndex);
