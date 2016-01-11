@@ -90,7 +90,10 @@ class Caller:
 
             for metric in self.metrics:
                 group_name = metric.lower().replace(' ', '_')
-                self.results[circuit][metric].append(float(match.group(group_name)))
+                result = match.group(group_name)
+                if result:
+                    result = float(result)
+                self.results[circuit][metric].append(result)
 
 
     def save_results(self, filename):
@@ -185,7 +188,7 @@ class StatisticsCaller(PlaceCaller):
 class PlaceCallerVPR(Caller):
 
     metrics = ['runtime', 'BB cost', 'max delay']
-    stats_regex = r'Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns.*bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<runtime>[0-9.e+-]+) seconds'
+    stats_regex = r'(Placement estimated critical path delay: (?P<max_delay>[0-9.e+-]+) ns.*)?bb_cost: (?P<bb_cost>[0-9.e+-]+),.*Placement took (?P<runtime>[0-9.e+-]+) seconds'
 
     def __init__(self, architecture, circuits_folder, circuits):
         Caller.__init__(self, circuits)
