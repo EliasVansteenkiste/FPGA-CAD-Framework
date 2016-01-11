@@ -1,7 +1,6 @@
 package placers.analyticalplacer;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import placers.analyticalplacer.TwoDimLinkedList.Axis;
@@ -266,8 +265,8 @@ class HeapLegalizer extends Legalizer {
 
         // left, top, right, bottom
         Area area = new Area(
-                new BlockComparator(this.linearX),
-                new BlockComparator(this.linearY),
+                this.linearX,
+                this.linearY,
                 x,
                 y,
                 this.tileCapacity,
@@ -366,7 +365,7 @@ class HeapLegalizer extends Legalizer {
             for(LegalizerBlock block : this.blockMatrix.get(column).get(row)) {
                 // Add this block to the area if it is the root of a macro
                 if(block.offset == 0) {
-                    area.addBlock(block.blockIndex);
+                    area.addBlock(block);
                 }
 
                 // If this is a macro:
@@ -382,7 +381,7 @@ class HeapLegalizer extends Legalizer {
 
 
     private void legalizeArea(Area area) {
-        TwoDimLinkedList<Integer> blockIndexes = area.getBlockIndexes();
+        TwoDimLinkedList blockIndexes = area.getBlockIndexes();
         int[] coordinates = {area.left, area.bottom, area.right, area.top};
 
         int capacity = 0;
@@ -399,7 +398,12 @@ class HeapLegalizer extends Legalizer {
     private void legalizeArea(
             int[] coordinates,
             int capacity,
-            TwoDimLinkedList<Integer> blockIndexes) {
+            TwoDimLinkedList blockIndexes) {
+
+        int sizeX = coordinates[2] - coordinates[0],
+            sizeY = coordinates[3] - coordinates[1];
+        int columnHeight = sizeY / this.blockHeight + 1;
+        int numColumns = capacity / columnHeight;
 
         if(blockIndexes.size() == 0) {
             return;
@@ -409,13 +413,14 @@ class HeapLegalizer extends Legalizer {
 
             // Get the block index of the one contained block
             // (This for loop always does exactly one iteration)
-            for(Integer blockIndex : blockIndexes) {
-                this.legalY[blockIndex] = coordinates[1];
+            for(LegalizerBlock block : blockIndexes) {
+                this.legalY[block.blockIndex] = coordinates[1];
 
                 // Find the first column of the correct type
                 for(int column = coordinates[0]; column <= coordinates[2]; column++) {
                     if(this.circuit.getColumnType(column).equals(this.blockType)) {
-                        this.legalX[blockIndex] = column;
+                        this.legalX[block.blockIndex] = column;
+                        break;
                     }
                 }
             }
@@ -424,20 +429,26 @@ class HeapLegalizer extends Legalizer {
 
         // If there is only one block left: find the closest site in the area
         } else if(blockIndexes.size() == 1) {
-            for(int blockIndex : blockIndexes) {
-                this.placeBlock(blockIndex, coordinates);
+            for(LegalizerBlock block : blockIndexes) {
+                this.placeBlock(block, coordinates);
             }
 
             return;
 
-        }
+        } /*else if(numColumns == 1) {
+            // Find the first column of the correct type
+            for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+                if(this.circuit.getColumnType(column).equals(this.blockType)) {
+                    int row = coordinates[1];
+                    for(LegalizerBlock block : blockIndexes) {
+                        int d = 0;
+                    }
+                }
+            }
+        }*/
 
 
         // Choose which axis to split along
-        int sizeX = coordinates[2] - coordinates[0],
-            sizeY = coordinates[3] - coordinates[1];
-        int columnHeight = sizeY / this.blockHeight + 1;
-        int numColumns = capacity / columnHeight;
 
         Axis axis;
         if(sizeX >= sizeY && numColumns > 1) {
@@ -485,12 +496,18 @@ class HeapLegalizer extends Legalizer {
         } else {
 
             int numRows = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
-            int numRowsTop = numRows / 2;
+            int numRowsBottom = numRows / 2;
+
+            // TODO
+            /*if(blockIndexes.maxHeight() > numRowsBottom) {
+
+            }*/
+
 
             int rowWidth = capacity / numRows;
-            capacity1 = numRowsTop * rowWidth;
+            capacity1 = numRowsBottom * rowWidth;
 
-            splitPosition = coordinates[1] + (numRowsTop) * this.blockHeight;
+            splitPosition = coordinates[1] + (numRowsBottom) * this.blockHeight;
             coordinates1[3] = splitPosition - this.blockHeight;
             coordinates2[1] = splitPosition;
         }
@@ -499,40 +516,53 @@ class HeapLegalizer extends Legalizer {
 
 
         int splitIndex = (int) Math.ceil(capacity1 * blockIndexes.size() / (double) capacity);
-        TwoDimLinkedList<Integer> otherBlockIndexes = blockIndexes.split(splitIndex, axis);
+        TwoDimLinkedList otherBlockIndexes = blockIndexes.split(splitIndex, axis);
 
         this.legalizeArea(coordinates1, capacity1, blockIndexes);
         this.legalizeArea(coordinates2, capacity2, otherBlockIndexes);
     }
 
-    private void placeBlock(int blockIndex, int[] coordinates) {
+    private void placeBlock(LegalizerBlock block, int[] coordinates) {
+        int blockIndex = block.blockIndex;
         double linearX = this.linearX[blockIndex];
         double linearY = this.linearY[blockIndex];
 
-        double minDistance = Double.MAX_VALUE;
-        int minX = -1, minY = -1;
+        // Find the closest row
+        int macroHeight = block.macroHeight;
+        if(macroHeight % 2 == 0) {
+            linearY -= 0.5;
+        }
+        int row = (int) Math.round(linearY);
 
-        for(int x = coordinates[0]; x <= coordinates[2]; x += this.blockRepeat) {
-            if(!this.circuit.getColumnType(x).equals(this.blockType)) {
-                continue;
-            }
+        // Make sure the row fits in the coordinates
+        if(row - (macroHeight - 1) / 2 < coordinates[1]) {
+            row = coordinates[1] + (macroHeight - 1) / 2;
+        } else if(row + macroHeight / 2 > coordinates[3]) {
+            row = coordinates[3] - macroHeight / 2;
+        }
+        this.legalY[blockIndex] = row;
 
-            for(int y = coordinates[1]; y <= coordinates[3]; y += this.blockHeight) {
-                double distance = Math.pow(linearX - x, 2) + Math.pow(linearY - y, 2);
-                if(distance < minDistance) {
-                    minDistance = distance;
-                    minX = x;
-                    minY = y;
-                }
-            }
+        // Find the closest column
+        int column = (int) Math.round(linearX);
+        int direction = linearX > column ? 1 : -1;
+
+        while(this.badColumn(column, coordinates)) {
+            column += direction;
+            direction = -(direction + (int) Math.signum(direction));
         }
 
-        this.legalX[blockIndex] = minX;
-        this.legalY[blockIndex] = minY;
+        this.legalX[blockIndex] = column;
+    }
+
+    private boolean badColumn(int column, int[] coordinates) {
+        return
+                !this.circuit.getColumnType(column).equals(this.blockType)
+                || column < coordinates[0]
+                || column > coordinates[2];
     }
 
 
-    private class LegalizerBlock {
+    class LegalizerBlock {
         int blockIndex;
         int offset;
         int macroHeight;
@@ -555,14 +585,14 @@ class HeapLegalizer extends Legalizer {
         private int areaBlockHeight, areaBlockRepeat;
 
         private int numTiles = 0;
-        private TwoDimLinkedList<Integer> blockIndexes;
+        private TwoDimLinkedList blockIndexes;
 
         private int[][] growDirections = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
         private boolean[] originalDirection = {true, true, true, true};
         private int growDirectionIndex = -1;
 
         Area(Area a, int[] direction) {
-            this.blockIndexes = new TwoDimLinkedList<Integer>(a.blockIndexes);
+            this.blockIndexes = new TwoDimLinkedList(a.blockIndexes);
 
             this.areaTileCapacity = a.areaTileCapacity;
             this.areaBlockHeight = a.areaBlockHeight;
@@ -578,12 +608,12 @@ class HeapLegalizer extends Legalizer {
             this.grow(direction);
         }
 
-        Area(Comparator<Integer> comparatorX, Comparator<Integer> comparatorY, int column, int row, double tileCapacity, BlockType blockType) {
+        Area(double[] linearX, double[] linearY, int column, int row, double tileCapacity, BlockType blockType) {
             // Thanks to this two-dimensionally linked list, we
             // don't have to sort the list of blocks after each
             // area split: the block list is splitted and resorted
             // in linear time.
-            this.blockIndexes = new TwoDimLinkedList<Integer>(comparatorX, comparatorY);
+            this.blockIndexes = new TwoDimLinkedList(linearX, linearY);
 
             this.areaTileCapacity = tileCapacity;
             this.areaBlockHeight = blockType.getHeight();
@@ -615,10 +645,10 @@ class HeapLegalizer extends Legalizer {
         }
 
 
-        void addBlock(int blockIndex) {
-            this.blockIndexes.add(blockIndex);
+        void addBlock(LegalizerBlock block) {
+            this.blockIndexes.add(block);
         }
-        TwoDimLinkedList<Integer> getBlockIndexes() {
+        TwoDimLinkedList getBlockIndexes() {
             return this.blockIndexes;
         }
         int getOccupation() {
@@ -696,20 +726,6 @@ class HeapLegalizer extends Legalizer {
         @Override
         public String toString() {
             return String.format("[[%d, %d], [%d, %d]", this.left, this.bottom, this.right, this.top);
-        }
-    }
-
-    private class BlockComparator implements Comparator<Integer> {
-
-        private double[] coordinates;
-
-        public BlockComparator(double[] coordinates) {
-            this.coordinates = coordinates;
-        }
-
-        @Override
-        public int compare(Integer index1, Integer index2) {
-            return new Double(this.coordinates[index1]).compareTo(this.coordinates[index2]);
         }
     }
 }

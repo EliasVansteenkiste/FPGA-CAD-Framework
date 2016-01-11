@@ -7,21 +7,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 
+import placers.analyticalplacer.HeapLegalizer.LegalizerBlock;
+
 /**
  * A linked list that is sorted in two dimensions.
  * A special operation is efficiently splitting the
  * linked list along one dimension, resulting in two
  * correctly sorted TwoDimLinkedLists.
  */
-class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
+class TwoDimLinkedList implements Iterable<LegalizerBlock> {
 
     enum Axis {
         X, Y;
         static final int size = Axis.values().length;
     };
 
-    private List<NodeComparator<E>> comparator = new ArrayList<>(Axis.size);
-    private List<Node<E>> first = new ArrayList<>(Axis.size);
+    private List<NodeComparator> comparator = new ArrayList<>(Axis.size);
+    private List<Node> first = new ArrayList<>(Axis.size);
+    private int maxHeight = 0;
     private int size = 0;
     private boolean sorted = true;
 
@@ -32,32 +35,32 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
         }
     }
 
-    TwoDimLinkedList(Comparator<E> comparatorX, Comparator<E> comparatorY) {
+    TwoDimLinkedList(double[] coordinatesX, double[] coordinatesY) {
         this();
 
-        this.comparator.add(0, new NodeComparator<E>(comparatorX));
-        this.comparator.add(1, new NodeComparator<E>(comparatorY));
+        this.comparator.add(0, new NodeComparator(coordinatesX));
+        this.comparator.add(1, new NodeComparator(coordinatesY));
     }
-    TwoDimLinkedList(TwoDimLinkedList<E> list) {
+    TwoDimLinkedList(TwoDimLinkedList list) {
         this();
 
-        this.comparator = new ArrayList<NodeComparator<E>>(list.comparator);
+        this.comparator = new ArrayList<NodeComparator>(list.comparator);
     }
 
     int size() {
         return this.size;
     }
 
-    private Node<E> first(int axisOrdinal) {
+    private Node first(int axisOrdinal) {
         return this.first.get(axisOrdinal);
     }
-    private void first(int axisOrdinal, Node<E> value) {
+    private void first(int axisOrdinal, Node value) {
         this.first.set(axisOrdinal, value);
     }
 
 
-    void add(E value) {
-        Node<E> newNode = new Node<>(value, this.first);
+    void add(LegalizerBlock block) {
+        Node newNode = new Node(block, this.first);
         for(int i = 0; i < Axis.size; i++) {
             this.first(i, newNode);
         }
@@ -66,17 +69,17 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
         this.sorted = false;
     }
 
-    void addAll(Collection<E> values) {
-        for(E value : values) {
-            this.add(value);
+    void addAll(Collection<LegalizerBlock> blocks) {
+        for(LegalizerBlock block : blocks) {
+            this.add(block);
         }
     }
 
     private void sort() {
 
         // Make a list of all nodes in this list
-        List<Node<E>> array = new ArrayList<>(this.size);
-        for(Node<E> node = this.first(0); node != null; node = node.next(0)) {
+        List<Node> array = new ArrayList<>(this.size);
+        for(Node node = this.first(0); node != null; node = node.next(0)) {
             array.add(node);
         }
 
@@ -95,23 +98,7 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
     }
 
 
-    int indexOf(E element, Axis axis) {
-        int axisOrdinal = axis.ordinal();
-        Comparator<E> itemComparator = this.comparator.get(axisOrdinal).itemComparator;;
-
-        Node<E> cursor = this.first(axisOrdinal);
-        for(int i = 0; i < this.size; i++) {
-            if(itemComparator.compare(cursor.item, element) >= 0) {
-                return i;
-            }
-            cursor = cursor.next(axisOrdinal);
-        }
-
-        return this.size;
-    }
-
-
-    TwoDimLinkedList<E> split(int splitIndex, Axis axis) {
+    TwoDimLinkedList split(int splitIndex, Axis axis) {
         if(splitIndex > this.size) {
             throw new IndexOutOfBoundsException();
         }
@@ -121,12 +108,12 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
         }
 
 
-        TwoDimLinkedList<E> newList = new TwoDimLinkedList<E>(this);
+        TwoDimLinkedList newList = new TwoDimLinkedList(this);
         newList.size = this.size - splitIndex;
         this.size = splitIndex;
 
         int axisOrdinal = axis.ordinal();
-        Node<E> cursor = this.first(axisOrdinal), previousCursor = null;
+        Node cursor = this.first(axisOrdinal), previousCursor = null;
 
         // Mark the first splitIndex nodes as "not splitted"
         for(int index = 0; index < splitIndex; index++) {
@@ -155,10 +142,10 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
 
         // Create two dummy nodes
         cursor = this.first(axisOrdinal);
-        this.first(axisOrdinal, new Node<E>(null));
-        newList.first(axisOrdinal, new Node<E>(null));
-        Node<E> thisLast = this.first(axisOrdinal);
-        Node<E> newListLast = newList.first(axisOrdinal);
+        this.first(axisOrdinal, new Node(null));
+        newList.first(axisOrdinal, new Node(null));
+        Node thisLast = this.first(axisOrdinal);
+        Node newListLast = newList.first(axisOrdinal);
 
         while(cursor != null) {
             if(cursor.split) {
@@ -184,63 +171,62 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
 
 
 
-    // It never really matters in which order we iterate
-    // over the list. Just take the x direction.
+    // Iterating happens according to the Y dimension
     @Override
-    public Iterator<E> iterator() {
-        return new IteratorX(this.first(Axis.X.ordinal()));
+    public Iterator<LegalizerBlock> iterator() {
+        return new IteratorY(this.first(Axis.Y.ordinal()));
     }
 
 
 
-    private class Node<P> {
-        P item;
-        List<Node<P>> next;
+    private class Node {
+        LegalizerBlock block;
+        List<Node> nextNode;
         boolean split;
 
-        Node(P item) {
-            this.item = item;
+        Node(LegalizerBlock item) {
+            this.block = item;
 
-            this.next = new ArrayList<>();
+            this.nextNode = new ArrayList<>();
             for(int i = 0; i < Axis.size; i++) {
-                this.next.add(null);
+                this.nextNode.add(null);
             }
         }
 
-        Node(P item, List<Node<P>> next) {
-            this.item = item;
-            this.next = new ArrayList<Node<P>>(next);
+        Node(LegalizerBlock item, List<Node> next) {
+            this.block = item;
+            this.nextNode = new ArrayList<Node>(next);
         }
 
-        Node<P> next(int axisOrdinal) {
-            return this.next.get(axisOrdinal);
+        Node next(int axisOrdinal) {
+            return this.nextNode.get(axisOrdinal);
         }
-        void next(int axisOrdinal, Node<P> value) {
-            this.next.set(axisOrdinal, value);
+        void next(int axisOrdinal, Node value) {
+            this.nextNode.set(axisOrdinal, value);
         }
     }
 
-    private class NodeComparator<P> implements Comparator<Node<P>> {
+    private class NodeComparator implements Comparator<Node> {
 
-        Comparator<P> itemComparator;
+        private double[] coordinates;
 
-        NodeComparator(Comparator<P> itemComparator) {
-            this.itemComparator = itemComparator;
+        NodeComparator(double[] coordinates) {
+            this.coordinates = coordinates;
         }
 
         @Override
-        public int compare(Node<P> node1, Node<P> node2) {
-            return this.itemComparator.compare(node1.item, node2.item);
+        public int compare(Node node1, Node node2) {
+            return Double.compare(this.coordinates[node1.block.blockIndex], this.coordinates[node2.block.blockIndex]);
         }
 
     }
 
 
-    private class IteratorX implements Iterator<E> {
+    private class IteratorY implements Iterator<LegalizerBlock> {
 
-        private Node<E> cursor;
+        private Node cursor;
 
-        IteratorX(Node<E> first) {
+        IteratorY(Node first) {
             this.cursor = first;
         }
 
@@ -250,9 +236,9 @@ class TwoDimLinkedList<E extends Comparable<E>> implements Iterable<E> {
         }
 
         @Override
-        public E next() {
-            E value = this.cursor.item;
-            this.cursor = this.cursor.next(Axis.X.ordinal());
+        public LegalizerBlock next() {
+            LegalizerBlock value = this.cursor.block;
+            this.cursor = this.cursor.next(Axis.Y.ordinal());
             return value;
         }
 
