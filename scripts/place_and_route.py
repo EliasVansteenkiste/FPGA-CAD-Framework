@@ -222,7 +222,7 @@ class PlaceCallerVPR(Caller):
 
 
     def save_results(self, filename):
-        #Caller.save_results(self, filename)
+        Caller.save_results(self, filename)
 
         split = os.path.splitext(filename)
         statistics_filename = split[0] + '_statistics' + split[1]
