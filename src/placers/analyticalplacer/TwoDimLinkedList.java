@@ -128,6 +128,9 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         this.numBlocks = 0;
         newList.numBlocks = 0;
 
+        this.maxHeight = 0;
+        newList.maxHeight = 0;
+
 
         // Split the list according to the given dimension
         int axisOrdinal = axis.ordinal();
@@ -141,6 +144,9 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
             if(splittedSize + height <= splitIndex) {
                 cursor.split = false;
                 this.numBlocks++;
+                if(height > this.maxHeight) {
+                    this.maxHeight = height;
+                }
 
                 this.cursor.next(axisOrdinal, cursor);
                 this.cursor = cursor;
@@ -150,6 +156,9 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
             } else {
                 cursor.split = true;
                 newList.numBlocks++;
+                if(height > newList.maxHeight) {
+                    newList.maxHeight = height;
+                }
 
                 newList.cursor.next(axisOrdinal, cursor);
                 newList.cursor = cursor;
