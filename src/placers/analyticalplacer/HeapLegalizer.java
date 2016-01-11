@@ -623,6 +623,22 @@ class HeapLegalizer extends Legalizer {
     }
 
 
+    private class SimpleArea {
+
+        int left, right, bottom, top;
+
+        SimpleArea(int left, int right, int bottom, int top) {
+            this.left = left;
+            this.right = right;
+            this.bottom = bottom;
+            this.top = top;
+        }
+
+        SimpleArea(SimpleArea area) {
+            this(area.left, area.right, area.bottom, area.top);
+        }
+    }
+
     private class Area {
 
         int bottom, top, left, right;
