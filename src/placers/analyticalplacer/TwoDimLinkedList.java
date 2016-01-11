@@ -24,8 +24,10 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
 
     private List<NodeComparator> comparator = new ArrayList<>(Axis.size);
     private List<Node> first = new ArrayList<>(Axis.size);
+    private Node cursor;
+
     private int maxHeight = 0;
-    private int size = 0;
+    private int numBlocks = 0, size = 0;
     private boolean sorted = true;
 
 
@@ -50,6 +52,9 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
     int size() {
         return this.size;
     }
+    int numBlocks() {
+        return this.numBlocks;
+    }
 
     private Node first(int axisOrdinal) {
         return this.first.get(axisOrdinal);
@@ -65,7 +70,14 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
             this.first(i, newNode);
         }
 
-        this.size++;
+        this.numBlocks++;
+
+        int height = block.macroHeight;
+        if(height > this.maxHeight) {
+            this.maxHeight = height;
+        }
+        this.size += height;
+
         this.sorted = false;
     }
 
@@ -107,66 +119,98 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
             this.sort();
         }
 
-
+        // Make a new list, and set the sizes
         TwoDimLinkedList newList = new TwoDimLinkedList(this);
+
         newList.size = this.size - splitIndex;
         this.size = splitIndex;
 
+        this.numBlocks = 0;
+        newList.numBlocks = 0;
+
+
+        // Split the list according to the given dimension
         int axisOrdinal = axis.ordinal();
-        Node cursor = this.first(axisOrdinal), previousCursor = null;
+        Node cursor = this.initializeSplit(newList, axisOrdinal);
 
-        // Mark the first splitIndex nodes as "not splitted"
-        for(int index = 0; index < splitIndex; index++) {
-            cursor.split = false;
-            previousCursor = cursor;
-            cursor = cursor.next(axisOrdinal);
-        }
-
-        // Choose the node at position splitIndex as the first
-        // X node of the new list
-        if(previousCursor != null) {
-            previousCursor.next(axisOrdinal, null);
-        }
-        newList.first(axisOrdinal, cursor);
-
-        // Mark the rest of the nodes as "splitted"
+        // Build the two lists on the split dimension
+        int splittedSize = 0;
         while(cursor != null) {
-            cursor.split = true;
-            cursor = cursor.next(axisOrdinal);
-        }
+            int height = cursor.block.macroHeight;
 
+            if(splittedSize + height <= splitIndex) {
+                cursor.split = false;
+                this.numBlocks++;
 
-        // Switch to the other axis: update the linked list
-        // for that axis as well
-        axisOrdinal = 1 - axisOrdinal;
+                this.cursor.next(axisOrdinal, cursor);
+                this.cursor = cursor;
 
-        // Create two dummy nodes
-        cursor = this.first(axisOrdinal);
-        this.first(axisOrdinal, new Node(null));
-        newList.first(axisOrdinal, new Node(null));
-        Node thisLast = this.first(axisOrdinal);
-        Node newListLast = newList.first(axisOrdinal);
-
-        while(cursor != null) {
-            if(cursor.split) {
-                newListLast.next(axisOrdinal, cursor);
-                newListLast = cursor;
+                splittedSize += height;
 
             } else {
-                thisLast.next(axisOrdinal, cursor);
-                thisLast = cursor;
+                cursor.split = true;
+                newList.numBlocks++;
+
+                newList.cursor.next(axisOrdinal, cursor);
+                newList.cursor = cursor;
             }
 
             cursor = cursor.next(axisOrdinal);
         }
 
-        // Remove the dummy nodes
-        thisLast.next(axisOrdinal, null);
-        newListLast.next(axisOrdinal, null);
-        this.first(axisOrdinal, this.first(axisOrdinal).next(axisOrdinal));
-        newList.first(axisOrdinal, newList.first(axisOrdinal).next(axisOrdinal));
+        this.finishSplit(newList, axisOrdinal);
+
+
+
+        // Switch to the other axis: update the linked lists
+        // for that axis as well
+        axisOrdinal = 1 - axisOrdinal;
+        cursor = this.initializeSplit(newList, axisOrdinal);
+
+        while(cursor != null) {
+            if(cursor.split) {
+                newList.cursor.next(axisOrdinal, cursor);
+                newList.cursor = cursor;
+
+            } else {
+                this.cursor.next(axisOrdinal, cursor);
+                this.cursor = cursor;
+            }
+
+            cursor = cursor.next(axisOrdinal);
+        }
+
+        this.finishSplit(newList, axisOrdinal);
 
         return newList;
+    }
+
+    private Node initializeSplit(TwoDimLinkedList newList, int axisOrdinal) {
+        // Get the current first node
+        Node cursor = this.first(axisOrdinal);
+
+        // Make a dummy first node in the two list
+        this.cursor = new Node(null);
+        newList.cursor = new Node(null);
+
+        this.first(axisOrdinal, this.cursor);
+        newList.first(axisOrdinal, newList.cursor);
+
+        return cursor;
+    }
+
+    private void finishSplit(TwoDimLinkedList newList, int axisOrdinal) {
+        // Mark the last nodes
+        this.cursor.next(axisOrdinal, null);
+        newList.cursor.next(axisOrdinal, null);
+
+        // Remove the dummy nodes
+        this.removeFirst(axisOrdinal);
+        newList.removeFirst(axisOrdinal);
+    }
+
+    private void removeFirst(int axisOrdinal) {
+        this.first(axisOrdinal, this.first(axisOrdinal).next(axisOrdinal));
     }
 
 
@@ -224,21 +268,21 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
 
     private class IteratorY implements Iterator<LegalizerBlock> {
 
-        private Node cursor;
+        private Node iterCursor;
 
         IteratorY(Node first) {
-            this.cursor = first;
+            this.iterCursor = first;
         }
 
         @Override
         public boolean hasNext() {
-            return this.cursor != null;
+            return this.iterCursor != null;
         }
 
         @Override
         public LegalizerBlock next() {
-            LegalizerBlock value = this.cursor.block;
-            this.cursor = this.cursor.next(Axis.Y.ordinal());
+            LegalizerBlock value = this.iterCursor.block;
+            this.iterCursor = this.iterCursor.next(Axis.Y.ordinal());
             return value;
         }
 

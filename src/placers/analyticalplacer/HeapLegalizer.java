@@ -428,24 +428,23 @@ class HeapLegalizer extends Legalizer {
             return;
 
         // If there is only one block left: find the closest site in the area
-        } else if(blockIndexes.size() == 1) {
+        } else if(blockIndexes.numBlocks() == 1) {
             for(LegalizerBlock block : blockIndexes) {
                 this.placeBlock(block, coordinates);
             }
 
             return;
 
-        } /*else if(numColumns == 1) {
+        } else if(numColumns == 1) {
             // Find the first column of the correct type
             for(int column = coordinates[0]; column <= coordinates[2]; column++) {
                 if(this.circuit.getColumnType(column).equals(this.blockType)) {
-                    int row = coordinates[1];
-                    for(LegalizerBlock block : blockIndexes) {
-                        int d = 0;
-                    }
+                    this.placeBlocksInColumn(blockIndexes, column, coordinates[1], coordinates[3]);
+
+                    break;
                 }
             }
-        }*/
+        }
 
 
         // Choose which axis to split along
@@ -498,7 +497,7 @@ class HeapLegalizer extends Legalizer {
             int numRows = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
             int numRowsBottom = numRows / 2;
 
-            // TODO
+            // TODO: split horizontally into three parts
             /*if(blockIndexes.maxHeight() > numRowsBottom) {
 
             }*/
@@ -552,6 +551,22 @@ class HeapLegalizer extends Legalizer {
         }
 
         this.legalX[blockIndex] = column;
+    }
+
+    private void placeBlocksInColumn(TwoDimLinkedList blocks, int column, int rowStart, int rowEnd) {
+        double y = rowStart;
+        double cellsPerRow = blocks.size() / (double) (rowEnd - rowStart + 1);
+
+        for(LegalizerBlock block : blocks) {
+            int blockIndex = block.blockIndex;
+            int height = block.macroHeight;
+
+            int row = (int) Math.round(y + (height - 1) / 2);
+            this.legalX[blockIndex] = column;
+            this.legalY[blockIndex] = row;
+
+            y += cellsPerRow * height;
+        }
     }
 
     private boolean badColumn(int column, int[] coordinates) {

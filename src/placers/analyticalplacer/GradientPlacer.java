@@ -94,7 +94,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.blockTypes,
                 this.blockTypeIndexStarts,
                 this.linearX,
-                this.linearY);
+                this.linearY,
+                this.heights);
 
         int numNets = this.nets.size();
         this.netCriticalities = new double[numNets];
