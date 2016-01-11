@@ -107,7 +107,7 @@ public class Architecture implements Serializable {
 
         // Build the delay matrixes
         //this.buildDelayMatrixes();
-        this.buildDummyDelayMatrixes();
+        this.buildDelayMatrixes();
     }
 
 
@@ -640,7 +640,8 @@ public class Architecture implements Serializable {
         // ASM: all delays are equal and type is "max"
         String sourcePortName = delayMatrixElement.getAttribute("in_port").split("\\.")[1];
         PortType sourcePortType = new PortType(lutBlockType, sourcePortName);
-        PortType sinkPortType = new PortType(lutBlockType, "in");
+        String sinkPortName = delayMatrixElement.getAttribute("out_port").split("\\.")[1];
+        PortType sinkPortType = new PortType(lutBlockType, sinkPortName);
 
         String[] delays = delayMatrixElement.getTextContent().split("\\s+");
         int index = delays[0].length() > 0 ? 0 : 1;
@@ -756,6 +757,7 @@ public class Architecture implements Serializable {
          * one of the next elements:
          *   - modeElement
          *   - modeElement - <interconnect> - <direct>
+         *   - modeElement - <interconnect> - <complete>
          *   - modeElement - <interconnect> - <mux>
          *   - child <direct> elements of modeElement
          * One exception are luts: the lut delays are defined in a delay_matrix element.
@@ -767,6 +769,7 @@ public class Architecture implements Serializable {
         Element interconnectElement = this.getFirstChild(modeElement, "interconnect");
         if(interconnectElement != null) {
             elements.addAll(this.getChildElementsByTagName(interconnectElement, "direct"));
+            elements.addAll(this.getChildElementsByTagName(interconnectElement, "complete"));
             elements.addAll(this.getChildElementsByTagName(interconnectElement, "mux"));
         }
 
