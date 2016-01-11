@@ -26,7 +26,7 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
     private List<Node> first = new ArrayList<>(Axis.size);
     private Node cursor;
 
-    private int maxHeight = 0;
+    private int maxHeight = 0, maxIndex = -1;
     private int numBlocks = 0, size = 0;
     private boolean sorted = true;
 
@@ -56,6 +56,13 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         return this.numBlocks;
     }
 
+    int maxHeight() {
+        return this.maxHeight;
+    }
+    int maxIndex() {
+        return this.maxIndex;
+    }
+
     private Node first(int axisOrdinal) {
         return this.first.get(axisOrdinal);
     }
@@ -75,6 +82,7 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         int height = block.macroHeight;
         if(height > this.maxHeight) {
             this.maxHeight = height;
+            this.maxIndex = this.size;
         }
         this.size += height;
 
@@ -122,8 +130,8 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         // Make a new list, and set the sizes
         TwoDimLinkedList newList = new TwoDimLinkedList(this);
 
-        newList.size = this.size - splitIndex;
-        this.size = splitIndex;
+        this.size = 0;
+        newList.size = 0;
 
         this.numBlocks = 0;
         newList.numBlocks = 0;
@@ -131,34 +139,40 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         this.maxHeight = 0;
         newList.maxHeight = 0;
 
+        this.maxIndex = -1;
+        newList.maxIndex = -1;
+
 
         // Split the list according to the given dimension
         int axisOrdinal = axis.ordinal();
         Node cursor = this.initializeSplit(newList, axisOrdinal);
 
         // Build the two lists on the split dimension
-        int splittedSize = 0;
         while(cursor != null) {
             int height = cursor.block.macroHeight;
 
-            if(splittedSize + height <= splitIndex) {
+            if(this.size + height <= splitIndex) {
                 cursor.split = false;
+
                 this.numBlocks++;
                 if(height > this.maxHeight) {
                     this.maxHeight = height;
+                    this.maxIndex = this.size;
                 }
+                this.size += height;
 
                 this.cursor.next(axisOrdinal, cursor);
                 this.cursor = cursor;
 
-                splittedSize += height;
-
             } else {
                 cursor.split = true;
+
                 newList.numBlocks++;
                 if(height > newList.maxHeight) {
                     newList.maxHeight = height;
+                    newList.maxIndex = newList.size;
                 }
+                newList.size += height;
 
                 newList.cursor.next(axisOrdinal, cursor);
                 newList.cursor = cursor;

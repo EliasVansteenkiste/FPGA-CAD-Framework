@@ -381,7 +381,7 @@ class HeapLegalizer extends Legalizer {
 
 
     private void legalizeArea(Area area) {
-        TwoDimLinkedList blockIndexes = area.getBlockIndexes();
+        TwoDimLinkedList blocks = area.getBlockIndexes();
         int[] coordinates = {area.left, area.bottom, area.right, area.top};
 
         int capacity = 0;
@@ -392,20 +392,20 @@ class HeapLegalizer extends Legalizer {
             }
         }
 
-        this.legalizeArea(coordinates, capacity, blockIndexes);
+        this.legalizeArea(coordinates, capacity, blocks);
     }
 
     private void legalizeArea(
             int[] coordinates,
             int capacity,
-            TwoDimLinkedList blockIndexes) {
+            TwoDimLinkedList blocks) {
 
         int sizeX = coordinates[2] - coordinates[0],
             sizeY = coordinates[3] - coordinates[1];
         int columnHeight = sizeY / this.blockHeight + 1;
         int numColumns = capacity / columnHeight;
 
-        if(blockIndexes.size() == 0) {
+        if(blocks.size() == 0) {
             return;
 
         // If the area is only one tile big: place all the blocks on this tile
@@ -413,7 +413,7 @@ class HeapLegalizer extends Legalizer {
 
             // Get the block index of the one contained block
             // (This for loop always does exactly one iteration)
-            for(LegalizerBlock block : blockIndexes) {
+            for(LegalizerBlock block : blocks) {
                 this.legalY[block.blockIndex] = coordinates[1];
 
                 // Find the first column of the correct type
@@ -428,8 +428,8 @@ class HeapLegalizer extends Legalizer {
             return;
 
         // If there is only one block left: find the closest site in the area
-        } else if(blockIndexes.numBlocks() == 1) {
-            for(LegalizerBlock block : blockIndexes) {
+        } else if(blocks.numBlocks() == 1) {
+            for(LegalizerBlock block : blocks) {
                 this.placeBlock(block, coordinates);
             }
 
@@ -439,7 +439,7 @@ class HeapLegalizer extends Legalizer {
             // Find the first column of the correct type
             for(int column = coordinates[0]; column <= coordinates[2]; column++) {
                 if(this.circuit.getColumnType(column).equals(this.blockType)) {
-                    this.placeBlocksInColumn(blockIndexes, column, coordinates[1], coordinates[3]);
+                    this.placeBlocksInColumn(blocks, column, coordinates[1], coordinates[3]);
 
                     break;
                 }
@@ -497,27 +497,60 @@ class HeapLegalizer extends Legalizer {
             int numRows = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
             int numRowsBottom = numRows / 2;
 
-            // TODO: split horizontally into three parts
-            /*if(blockIndexes.maxHeight() > numRowsBottom) {
+            if(blocks.maxHeight() <= numRowsBottom) {
+                capacity1 = numRowsBottom * numColumns;
+                splitPosition = coordinates[1] + (numRowsBottom) * this.blockHeight;
 
-            }*/
+                coordinates1[3] = splitPosition - this.blockHeight;
+                coordinates2[1] = splitPosition;
+
+            // If there is a macro that is higher than half of the
+            // current area size
+            } else {
+                // We are gonna split the area into three parts, along the X axis:
+                // - multiple columns to the left of the high block
+                // - one column that contains the high block
+                // - multiple columns to the right of the high block
+
+                // First split the left part of, and do a recursive call.
+                // The high block is then in the first column of the second area.
+                // Then split this one column off and do a recursive call.
+
+                axis = Axis.X;
+                int maxIndex = blocks.maxIndex();
+                int columnIndex = numColumns * maxIndex / blocks.size();
+
+                if(columnIndex > 0) {
+                    capacity1 = (columnIndex * numRows * blocks.size()) / capacity;
+                } else {
+                    capacity1 = (numRows * blocks.size()) / capacity;
+                }
 
 
-            int rowWidth = capacity / numRows;
-            capacity1 = numRowsBottom * rowWidth;
+                // Find the column that contains the high block
+                int columnCounter = 0;
+                for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+                    if(this.circuit.getColumnType(column).equals(this.blockType)) {
+                        if(columnCounter == columnIndex) {
+                            splitPosition = column;
+                            break;
+                        }
+                        columnCounter++;
+                    }
+                }
 
-            splitPosition = coordinates[1] + (numRowsBottom) * this.blockHeight;
-            coordinates1[3] = splitPosition - this.blockHeight;
-            coordinates2[1] = splitPosition;
+                coordinates1[2] = splitPosition - this.blockRepeat;
+                coordinates2[0] = splitPosition;
+            }
         }
 
         int capacity2 = capacity - capacity1;
 
 
-        int splitIndex = (int) Math.ceil(capacity1 * blockIndexes.size() / (double) capacity);
-        TwoDimLinkedList otherBlockIndexes = blockIndexes.split(splitIndex, axis);
+        int splitIndex = (int) Math.ceil(capacity1 * blocks.size() / (double) capacity);
+        TwoDimLinkedList otherBlockIndexes = blocks.split(splitIndex, axis);
 
-        this.legalizeArea(coordinates1, capacity1, blockIndexes);
+        this.legalizeArea(coordinates1, capacity1, blocks);
         this.legalizeArea(coordinates2, capacity2, otherBlockIndexes);
     }
 

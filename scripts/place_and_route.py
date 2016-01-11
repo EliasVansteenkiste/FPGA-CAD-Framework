@@ -91,9 +91,10 @@ class Caller:
             for metric in self.metrics:
                 group_name = metric.lower().replace(' ', '_')
                 result = match.group(group_name)
-                if result:
-                    result = float(result)
-                self.results[circuit][metric].append(result)
+                if not result:
+                    result = 0
+
+                self.results[circuit][metric].append(float(result))
 
 
     def save_results(self, filename):
