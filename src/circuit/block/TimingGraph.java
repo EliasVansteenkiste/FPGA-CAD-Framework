@@ -304,7 +304,9 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
             GlobalBlock block1 = swap.getBlock1(i);
             GlobalBlock block2 = swap.getBlock2(i);
 
-            cost += this.calculateDeltaCost(block1, block2);
+            if(block1 != null) {
+                cost += this.calculateDeltaCost(block1, block2);
+            }
             if(block2 != null) {
                 cost += this.calculateDeltaCost(block2, block1);
             }

@@ -81,14 +81,19 @@ public class Swap {
             Site site2 = this.sites2.get(i);
             GlobalBlock block2 = site2.getBlock();
 
-            block1.removeSite();
+
+            if(block1 != null) {
+                block1.removeSite();
+            }
 
             if(block2 != null) {
                 block2.removeSite();
                 block2.setSite(site1);
             }
 
-            block1.setSite(site2);
+            if(block1 != null) {
+                block1.setSite(site2);
+            }
         }
     }
 }
