@@ -199,7 +199,7 @@ class PlaceCallerVPR(Caller):
     def place_all(self, options, num_random_seeds):
         command = self.build_command(self.architecture, self.circuits_folder, options)
 
-        #self.call_all_circuits(command, num_random_seeds)
+        self.call_all_circuits(command, num_random_seeds)
 
         silentremove('lookup_dump.echo')
 
