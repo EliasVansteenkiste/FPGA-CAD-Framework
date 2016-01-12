@@ -154,10 +154,11 @@ abstract class SAPlacer extends Placer {
                 int numSwaps = this.doSwapIteration();
                 double alpha = ((double) numSwaps) / this.movesPerTemperature;
 
+                double previousTemperature = this.temperature;
                 this.updateRlim(alpha);
-                this.updateTemperature(alpha);
+                double gamma = this.updateTemperature(alpha);
 
-                this.printStatistics(iteration);
+                this.printStatistics(iteration, previousTemperature, alpha, gamma);
 
                 iteration++;
             }
@@ -165,17 +166,18 @@ abstract class SAPlacer extends Placer {
             // Finish with a greedy iteration
             this.temperature = 0;
             this.setRlimd(3);
-            this.doSwapIteration();
-            this.printStatistics(iteration);
+            int numSwaps = this.doSwapIteration();
+            double alpha = ((double) numSwaps) / this.movesPerTemperature;
+            this.printStatistics(iteration, this.temperature, alpha, 0);
 
 
             this.logger.println();
         }
     }
 
-    private void printStatistics(int iteration) {
-        this.logger.printf("Temperature %d = %.9f, Rlim = %d, %s\n",
-                iteration, this.temperature, this.Rlim, this.getStatistics());
+    private void printStatistics(int iteration, double temperature, double alpha, double gamma) {
+        this.logger.printf("Temperature %d = %.9f, Rlim = %d, alpha = %f, gamma = %f, %s\n",
+                iteration, temperature, this.Rlim, alpha, gamma, this.getStatistics());
     }
 
 
@@ -332,7 +334,8 @@ abstract class SAPlacer extends Placer {
             do {
                 fromBlock = this.circuit.getRandomBlock(this.random);
             } while(this.isFixed(fromBlock));
-
+            // DEBUG
+            fromBlock = this.circuit.getSite(26, 20).getRandomBlock(this.random);
             BlockType blockType = fromBlock.getType();
 
             int freeAbove = 0;
@@ -389,20 +392,22 @@ abstract class SAPlacer extends Placer {
 
 
 
-    protected final void updateTemperature(double alpha) {
+    protected final double updateTemperature(double alpha) {
         double gamma;
 
         if (alpha > 0.96) {
             gamma = 0.5;
         } else if (alpha > 0.8) {
             gamma = 0.9;
-        } else if (alpha > 0.15) {
+        } else if (alpha > 0.15  || this.Rlimd > 1) {
             gamma = 0.95;
         } else {
             gamma = 0.8;
         }
 
         this.temperature *= gamma;
+
+        return gamma;
     }
 
 
