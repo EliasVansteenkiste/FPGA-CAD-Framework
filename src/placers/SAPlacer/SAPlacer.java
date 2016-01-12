@@ -166,13 +166,10 @@ abstract class SAPlacer extends Placer {
     public void place() throws PlacementException {
         this.initializePlace();
 
-        if(this.greedy) {
-            this.doSwapIteration();
+        int iteration = 0;
 
-        } else {
+        if(!this.greedy) {
             this.calculateInitialTemperature();
-
-            int iteration = 0;
 
             // Do placement
             while(this.temperature > 0.005 * this.getCost() / this.circuit.getNumGlobalBlocks()) {
@@ -188,16 +185,17 @@ abstract class SAPlacer extends Placer {
                 iteration++;
             }
 
-            // Finish with a greedy iteration
-            this.temperature = 0;
             this.Rlimd = 3;
-            int numSwaps = this.doSwapIteration();
-            double alpha = ((double) numSwaps) / this.movesPerTemperature;
-            this.printStatistics(iteration, this.temperature, alpha, 0.0);
-
-
-            this.logger.println();
         }
+
+        // Finish with a greedy iteration
+        this.temperature = 0;
+        int numSwaps = this.doSwapIteration();
+        double alpha = ((double) numSwaps) / this.movesPerTemperature;
+        this.printStatistics(iteration, this.temperature, alpha, 0.0);
+
+
+        this.logger.println();
     }
 
 

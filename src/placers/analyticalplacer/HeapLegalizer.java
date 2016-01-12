@@ -575,7 +575,7 @@ class HeapLegalizer extends Legalizer {
         double y = rowStart;
 
         int blocksSize = blocks.size();
-        int numRows = rowEnd - rowStart + 1;
+        int numRows = (rowEnd - rowStart) / this.blockHeight + 1;
         double rowsPerCell = numRows / blocksSize;
 
         for(LegalizerBlock block : blocks.blocksY()) {
@@ -586,7 +586,7 @@ class HeapLegalizer extends Legalizer {
             this.legalX[blockIndex] = column;
             this.legalY[blockIndex] = row;
 
-            y += rowsPerCell * height;
+            y += rowsPerCell * height * this.blockHeight;
         }
     }
 

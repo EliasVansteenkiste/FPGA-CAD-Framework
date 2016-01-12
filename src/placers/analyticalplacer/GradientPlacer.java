@@ -222,7 +222,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         stats.add(Integer.toString(iteration));
         stats.add(String.format("%.2f", this.anchorWeight));
-        stats.add(String.format(".3g", this.maxUtilization));
+        stats.add(String.format("%.3g", this.maxUtilization));
         this.addStats(stats);
         stats.add(String.format("%.3g", time));
 
