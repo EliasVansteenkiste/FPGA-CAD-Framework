@@ -194,8 +194,8 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.printStats(
                 Integer.toString(iteration),
                 String.format("%.2f", this.anchorWeight),
-                String.format("%.4g", this.linearCost),
-                String.format("%.4g", this.legalCost),
+                String.format("%.5g", this.linearCost),
+                String.format("%.5g", this.legalCost),
                 String.format("%.3g", time));
     }
 }

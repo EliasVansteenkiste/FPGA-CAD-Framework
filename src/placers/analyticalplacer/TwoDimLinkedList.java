@@ -15,7 +15,7 @@ import placers.analyticalplacer.HeapLegalizer.LegalizerBlock;
  * linked list along one dimension, resulting in two
  * correctly sorted TwoDimLinkedLists.
  */
-class TwoDimLinkedList implements Iterable<LegalizerBlock> {
+class TwoDimLinkedList {
 
     enum Axis {
         X, Y;
@@ -26,7 +26,7 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
     private List<Node> first = new ArrayList<>(Axis.size);
     private Node cursor;
 
-    private int maxHeight = 0, maxIndex = -1;
+    private int maxHeight;
     private int numBlocks = 0, size = 0;
     private boolean sorted = true;
 
@@ -56,11 +56,27 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         return this.numBlocks;
     }
 
+    LegalizerBlock getFirst(Axis axis) {
+        return this.first(axis.ordinal()).block;
+    }
+
     int maxHeight() {
         return this.maxHeight;
     }
-    int maxIndex() {
-        return this.maxIndex;
+
+    int maxIndex(Axis axis) {
+        int index = 0;
+        for(LegalizerBlock block : this.blocks(axis)) {
+            int macroHeight = block.macroHeight;
+
+            if(macroHeight == this.maxHeight) {
+                return index;
+            }
+
+            index += macroHeight;
+        }
+
+        return -1;
     }
 
     private Node first(int axisOrdinal) {
@@ -82,7 +98,6 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         int height = block.macroHeight;
         if(height > this.maxHeight) {
             this.maxHeight = height;
-            this.maxIndex = this.size;
         }
         this.size += height;
 
@@ -103,15 +118,19 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
             array.add(node);
         }
 
-        // Sort along the two axises and update linked lists
+        // Sort along the two axes and update linked lists
         for(int axisOrdinal = 0; axisOrdinal < Axis.size; axisOrdinal++) {
             Collections.sort(array, this.comparator.get(axisOrdinal));
 
-            this.first(axisOrdinal, array.get(0));
-            for(int i = 1; i < this.size; i++) {
-                array.get(i - 1).next(axisOrdinal, array.get(i));
+            Node previousNode = array.get(0), node;
+            this.first(axisOrdinal, previousNode);
+
+            for(int i = 1; i < this.numBlocks; i++) {
+                node = array.get(i);
+                previousNode.next(axisOrdinal, node);
+                previousNode = node;
             }
-            array.get(this.size - 1).next(axisOrdinal, null);
+            previousNode.next(axisOrdinal, null);
         }
 
         this.sorted = true;
@@ -139,9 +158,6 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         this.maxHeight = 0;
         newList.maxHeight = 0;
 
-        this.maxIndex = -1;
-        newList.maxIndex = -1;
-
 
         // Split the list according to the given dimension
         int axisOrdinal = axis.ordinal();
@@ -152,26 +168,24 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
             int height = cursor.block.macroHeight;
 
             if(this.size + height <= splitIndex) {
-                cursor.split = false;
-
-                this.numBlocks++;
                 if(height > this.maxHeight) {
                     this.maxHeight = height;
-                    this.maxIndex = this.size;
                 }
+
+                cursor.split = false;
+                this.numBlocks++;
                 this.size += height;
 
                 this.cursor.next(axisOrdinal, cursor);
                 this.cursor = cursor;
 
             } else {
-                cursor.split = true;
-
-                newList.numBlocks++;
                 if(height > newList.maxHeight) {
                     newList.maxHeight = height;
-                    newList.maxIndex = newList.size;
                 }
+
+                cursor.split = true;
+                newList.numBlocks++;
                 newList.size += height;
 
                 newList.cursor.next(axisOrdinal, cursor);
@@ -238,10 +252,23 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
 
 
 
-    // Iterating happens according to the Y dimension
-    @Override
-    public Iterator<LegalizerBlock> iterator() {
-        return new IteratorY(this.first(Axis.Y.ordinal()));
+    public Iterable<LegalizerBlock> blocksX() {
+        return this.blocks(Axis.X);
+    }
+    public Iterable<LegalizerBlock> blocksY() {
+        return this.blocks(Axis.Y);
+    }
+
+    private Iterable<LegalizerBlock> blocks(Axis axis) {
+        final int axisOrdinal = axis.ordinal();
+        final Node first = this.first(axisOrdinal);
+
+        return new Iterable<LegalizerBlock>() {
+            @Override
+            public Iterator<LegalizerBlock> iterator() {
+                return new DimIterator(first, axisOrdinal);
+            }
+        };
     }
 
 
@@ -289,12 +316,14 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
     }
 
 
-    private class IteratorY implements Iterator<LegalizerBlock> {
+    private class DimIterator implements Iterator<LegalizerBlock> {
 
         private Node iterCursor;
+        private int axisOrdinal;
 
-        IteratorY(Node first) {
+        DimIterator(Node first, int axisOrdinal) {
             this.iterCursor = first;
+            this.axisOrdinal = axisOrdinal;
         }
 
         @Override
@@ -305,13 +334,13 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
         @Override
         public LegalizerBlock next() {
             LegalizerBlock value = this.iterCursor.block;
-            this.iterCursor = this.iterCursor.next(Axis.Y.ordinal());
+            this.iterCursor = this.iterCursor.next(this.axisOrdinal);
             return value;
         }
 
         @Override
         public void remove() {
-            // Not implemented
+            // Not supported
         }
     }
 }

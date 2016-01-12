@@ -1,6 +1,1 @@
 json-simple==1.1.1      # https://code.google.com/p/json-simple/
-
-These are only used for experimental ILP solving:
-glpk-java==1.0.37       # http://glpk-java.sourceforge.net/
-lpsolve55j              # http://lpsolve.sourceforge.net/5.5/Java/README.html
-ojalgo=37.1             # http://ojalgo.org/

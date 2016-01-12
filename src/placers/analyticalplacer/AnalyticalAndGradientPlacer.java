@@ -119,7 +119,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     int height = block.isInMacro() ? block.getMacro().getHeight() : 1;
                     // The offset is measured in half blocks from the center of the macro
                     // For the legal position of macro's with an even number of blocks,
-                    // the position is rounded down
+                    // the position of the macro is rounded down
                     double offset = (1 - height) / 2.0;
 
                     this.linearX[blockCounter] = column;
@@ -147,10 +147,11 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         for(GlobalBlock block : macroBlocks) {
             GlobalBlock macroSource = block.getMacro().getBlock(0);
             int sourceIndex = this.netBlocks.get(macroSource).blockIndex;
-            int offset = 1 - block.getMacro().getHeight() + block.getMacroOffsetY();
+            int macroHeight = block.getMacro().getHeight();
+            int offset = (1 - macroHeight) / 2 + block.getMacroOffsetY();
 
             this.netBlocks.put(block, new NetBlock(sourceIndex, offset));
-            this.heights[sourceIndex] = Math.max(this.heights[sourceIndex], offset + 1);
+            this.heights[sourceIndex] = Math.max(this.heights[sourceIndex], macroHeight + 1);
             blockCounter++;
         }
 
@@ -302,6 +303,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 NetBlock netBlock = blockEntry.getValue();
                 int index = netBlock.blockIndex;
                 double offset = netBlock.offset;
+
+                if(index == 1497) {
+                    int d = 0;
+                }
 
                 int column = this.legalX[index];
                 int row = this.legalY[index] + (int) Math.ceil(offset);

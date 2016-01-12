@@ -24,8 +24,6 @@ import circuit.Circuit;
 import circuit.architecture.Architecture;
 import circuit.architecture.ArchitectureCacher;
 import circuit.architecture.ParseException;
-import circuit.block.GlobalBlock;
-import circuit.block.LeafBlock;
 import circuit.exceptions.InvalidFileFormatException;
 import circuit.exceptions.PlacementException;
 import circuit.io.BlockNotFoundException;
