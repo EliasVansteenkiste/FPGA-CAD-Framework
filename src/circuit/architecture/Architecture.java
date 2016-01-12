@@ -107,7 +107,7 @@ public class Architecture implements Serializable {
 
         // Build the delay matrixes
         //this.buildDelayMatrixes();
-        this.buildDelayMatrixes();
+        this.buildDummyDelayMatrixes();
     }
 
 
@@ -777,12 +777,14 @@ public class Architecture implements Serializable {
             for(Element delayConstantElement : this.getChildElementsByTagName(element, "delay_constant")) {
 
                 double delay = Double.parseDouble(delayConstantElement.getAttribute("max"));
-                String[] sourcePorts = delayConstantElement.getAttribute("in_port").split("\\s+");;
+                String[] sourcePorts = delayConstantElement.getAttribute("in_port").split("\\s+");
                 String[] sinkPorts = delayConstantElement.getAttribute("out_port").split("\\s+");
 
                 for(String sourcePort : sourcePorts) {
                     for(String sinkPort : sinkPorts) {
-                        this.cacheDelay(blockTypes, sourcePort, sinkPort, delay);
+                        if(!(sourcePort.length() == 0 || sinkPort.length() == 0)) {
+                            this.cacheDelay(blockTypes, sourcePort, sinkPort, delay);
+                        }
                     }
                 }
             }

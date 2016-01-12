@@ -334,8 +334,7 @@ abstract class SAPlacer extends Placer {
             do {
                 fromBlock = this.circuit.getRandomBlock(this.random);
             } while(this.isFixed(fromBlock));
-            // DEBUG
-            fromBlock = this.circuit.getSite(26, 20).getRandomBlock(this.random);
+
             BlockType blockType = fromBlock.getType();
 
             int freeAbove = 0;
