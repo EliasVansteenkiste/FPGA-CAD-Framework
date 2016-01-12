@@ -451,7 +451,7 @@ class HeapLegalizer extends Legalizer {
         // Choose which axis to split along
 
         Axis axis;
-        if(sizeX >= sizeY && numColumns > 1) {
+        if(sizeX / (double) this.blockRepeat >= sizeY / (double) this.blockHeight) {
             axis = Axis.X;
         } else {
             axis = Axis.Y;
