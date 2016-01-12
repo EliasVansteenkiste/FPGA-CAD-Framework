@@ -3,6 +3,7 @@ package placers.analyticalplacer;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.List;
 import java.util.Random;
 
 import visual.PlacementVisualizer;
@@ -101,15 +102,15 @@ public class GradientPlacerTD extends GradientPlacer {
 
 
     @Override
-    protected void printStatisticsHeader() {
-        this.logger.println("Iteration    anchor weight    max delay    time");
-        this.logger.println("---------    -------------    ---------    ----");
+    protected void addStatTitlesGP(List<String> titles) {
+        titles.add("max delay");
+        titles.add("best iteration");
     }
 
     @Override
-    protected void printStatistics(int iteration, double time) {
-        String iterationString = iteration + (this.latestCost == this.minCost ? "+" : " ");
-        this.logger.printf("%-9s    %-13f    %-9f    %f\n", iterationString, this.anchorWeight, this.latestCost, time);
+    protected void addStats(List<String> stats) {
+        stats.add(String.format("%.4g", this.latestCost));
+        stats.add(this.latestCost == this.minCost ? "yes" : "");
     }
 
 

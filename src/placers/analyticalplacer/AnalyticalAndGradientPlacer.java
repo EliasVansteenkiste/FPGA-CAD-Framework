@@ -61,7 +61,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void solveLegal(int iteration);
     protected abstract boolean stopCondition();
 
-    protected abstract void printStatisticsHeader();
     protected abstract void printStatistics(int iteration, double time);
 
 
@@ -237,8 +236,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         int iteration = 0;
         boolean isLastIteration = false;
-
-        this.printStatisticsHeader();
 
         while(!isLastIteration) {
             double timerBegin = System.nanoTime();

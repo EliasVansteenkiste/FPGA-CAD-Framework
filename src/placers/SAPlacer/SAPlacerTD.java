@@ -3,6 +3,7 @@ package placers.SAPlacer;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.List;
 import java.util.Random;
 
 import visual.PlacementVisualizer;
@@ -109,11 +110,17 @@ public class SAPlacerTD extends SAPlacer {
 
 
     @Override
-    protected String getStatistics() {
-        this.getCost();
-        return "WL cost = " + this.cachedBBCost
-                + ", T cost = " + this.cachedTDCost
-                + ", delay = " + this.timingGraph.getMaxDelay();
+    protected void addStatisticsTitlesSA(List<String> titles) {
+        titles.add("BB cost");
+        titles.add("timing cost");
+        titles.add("max delay");
+    }
+
+    @Override
+    protected void addStats(List<String> stats) {
+        stats.add(String.format("%.5g", this.cachedBBCost));
+        stats.add(String.format("%.4g", this.cachedTDCost));
+        stats.add(String.format("%.5g", this.timingGraph.getMaxDelay()));
     }
 
 

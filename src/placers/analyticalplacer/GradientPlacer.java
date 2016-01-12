@@ -3,7 +3,9 @@ package placers.analyticalplacer;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import visual.PlacementVisualizer;
@@ -58,6 +60,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     protected HeapLegalizer legalizer;
     private LinearSolverGradient solver;
+
+
+    protected abstract void addStatTitlesGP(List<String> titles);
+    protected abstract void addStats(List<String> stats);
 
 
     public GradientPlacer(
@@ -196,6 +202,31 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_UPDATE_CIRCUIT);
         this.updateLegalIfNeeded(iteration);
         this.stopTimer(T_UPDATE_CIRCUIT);
+    }
+
+
+    @Override
+    protected void addStatTitles(List<String> titles) {
+        titles.add("iteration");
+        titles.add("anchor weight");
+        titles.add("max utilization");
+
+        this.addStatTitlesGP(titles);
+
+        titles.add("time");
+    }
+
+    @Override
+    protected void printStatistics(int iteration, double time) {
+        List<String> stats = new ArrayList<>();
+
+        stats.add(Integer.toString(iteration));
+        stats.add(String.format("%.2f", this.anchorWeight));
+        stats.add(String.format(".3g", this.maxUtilization));
+        this.addStats(stats);
+        stats.add(String.format("%.3g", time));
+
+        this.printStats(stats.toArray(new String[0]));
     }
 
 

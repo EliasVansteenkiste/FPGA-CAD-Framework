@@ -43,6 +43,11 @@ public class RandomPlacer extends Placer {
     }
 
     @Override
+    protected void addStatTitles(List<String> titles) {
+        // Do nothing
+    }
+
+    @Override
     public void place() throws PlacementException {
 
         Map<BlockType, List<AbstractSite>> sites = new HashMap<>();

@@ -3,6 +3,7 @@ package placers.analyticalplacer;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.List;
 import java.util.Random;
 
 import visual.PlacementVisualizer;
@@ -28,14 +29,13 @@ public class GradientPlacerWLD extends GradientPlacer {
 
 
     @Override
-    protected void printStatisticsHeader() {
-        this.logger.println("Iteration    anchor weight    max utilization    time");
-        this.logger.println("---------    -------------    ---------------    ----");
+    protected void addStatTitlesGP(List<String> titles) {
+        // Do nothing
     }
 
     @Override
-    protected void printStatistics(int iteration, double time) {
-        this.logger.printf("%-9d    %-13f    %-15f    %f\n", iteration, this.anchorWeight, this.maxUtilization, time);
+    protected void addStats(List<String> stats) {
+        // Do nothing
     }
 
 

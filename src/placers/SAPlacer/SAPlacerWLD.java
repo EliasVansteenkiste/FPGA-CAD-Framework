@@ -3,6 +3,7 @@ package placers.SAPlacer;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.List;
 import java.util.Random;
 
 import visual.PlacementVisualizer;
@@ -38,11 +39,17 @@ public class SAPlacerWLD extends SAPlacer {
 
     @Override
     protected void initializeSwapIteration() {
+        // Do nothing
     }
 
     @Override
-    protected String getStatistics() {
-        return "cost = " + this.getCost();
+    protected void addStatisticsTitlesSA(List<String> titles) {
+        titles.add("cost");
+    }
+
+    @Override
+    protected void addStats(List<String> stats) {
+        stats.add(String.format("%.5g", this.getCost()));
     }
 
     @Override

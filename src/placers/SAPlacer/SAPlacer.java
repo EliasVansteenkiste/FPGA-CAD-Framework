@@ -3,7 +3,9 @@ package placers.SAPlacer;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import circuit.Circuit;
@@ -70,7 +72,7 @@ abstract class SAPlacer extends Placer {
 
 
     protected double Rlimd;
-    protected int Rlim, initialRlim, maxRlim;
+    protected int initialRlim, maxRlim;
     private double temperature;
 
     private final double temperatureMultiplier;
@@ -113,15 +115,16 @@ abstract class SAPlacer extends Placer {
 
         this.initialRlim = RlimOption;
 
-        // Set maxRlim first, because Rlim depends on it
-        this.setMaxRlim(maxRlimOption);
-        this.setRlimd(RlimOption);
+        this.maxRlim = maxRlimOption;
+        this.Rlimd = Math.min(RlimOption, this.maxRlim);
     }
 
 
+    protected abstract void addStatisticsTitlesSA(List<String> titles);
+    protected abstract void addStats(List<String> statistics);
+
     protected abstract void initializePlace();
     protected abstract void initializeSwapIteration();
-    protected abstract String getStatistics();
     protected abstract double getCost();
     protected abstract double getDeltaCost(Swap swap);
     protected abstract void pushThrough(int iteration);
@@ -131,6 +134,31 @@ abstract class SAPlacer extends Placer {
     @Override
     public void initializeData() {
         // Do nothing
+    }
+
+    @Override
+    protected void addStatTitles(List<String> titles) {
+        titles.add("iteration");
+        titles.add("temperature");
+        titles.add("rlim");
+        titles.add("succes rate");
+        titles.add("t multiplier");
+
+        this.addStatisticsTitlesSA(titles);
+    }
+
+    private void printStatistics(Integer iteration, Double temperature, Double succesRate, Double gamma) {
+        List<String> stats = new ArrayList<>();
+
+        stats.add(iteration.toString());
+        stats.add(String.format("%.4g", temperature));
+        stats.add(String.format("%.3g", this.Rlimd));
+        stats.add(String.format("%.3f", succesRate));
+        stats.add(gamma.toString());
+
+        this.addStats(stats);
+
+        this.printStats(stats.toArray(new String[0]));
     }
 
 
@@ -143,9 +171,6 @@ abstract class SAPlacer extends Placer {
 
         } else {
             this.calculateInitialTemperature();
-
-            this.logger.println("Initial temperature: " + this.temperature);
-
 
             int iteration = 0;
 
@@ -165,19 +190,14 @@ abstract class SAPlacer extends Placer {
 
             // Finish with a greedy iteration
             this.temperature = 0;
-            this.setRlimd(3);
+            this.Rlimd = 3;
             int numSwaps = this.doSwapIteration();
             double alpha = ((double) numSwaps) / this.movesPerTemperature;
-            this.printStatistics(iteration, this.temperature, alpha, 0);
+            this.printStatistics(iteration, this.temperature, alpha, 0.0);
 
 
             this.logger.println();
         }
-    }
-
-    private void printStatistics(int iteration, double temperature, double alpha, double gamma) {
-        this.logger.printf("Temperature %d = %.9f, Rlim = %d, alpha = %f, gamma = %f, %s\n",
-                iteration, temperature, this.Rlim, alpha, gamma, this.getStatistics());
     }
 
 
@@ -285,9 +305,10 @@ abstract class SAPlacer extends Placer {
             this.deltaCosts = new double[moves];
         }
 
+        int intRlim = (int) Math.round(this.Rlimd);
 
         for (int i = 0; i < moves; i++) {
-            Swap swap = this.findSwap(this.Rlim);
+            Swap swap = this.findSwap(intRlim);
             double deltaCost = this.getDeltaCost(swap);
 
             if(pushThrough) {
@@ -410,37 +431,13 @@ abstract class SAPlacer extends Placer {
     }
 
 
-    protected final int getRlim() {
-        return this.Rlim;
-    }
-    protected final double getRlimd() {
-        return this.Rlimd;
-    }
-
     protected final void setMaxRlim(int maxRlim) {
         this.maxRlim = maxRlim;
     }
-    protected final void setRlimd(double Rlimd) {
-        this.Rlimd = Rlimd;
-        this.Rlim = Math.min(this.maxRlim, (int) Math.round(this.Rlimd));
-    }
-
 
     protected final void updateRlim(double alpha) {
-        this.updateRlim(alpha, this.maxRlim);
-    }
+        this.Rlimd *= (1 - 0.44 + alpha);
 
-    protected final void updateRlim(double alpha, int maxValue) {
-        double newRlimd = this.Rlimd * (1 - 0.44 + alpha);
-
-        if(newRlimd > maxValue) {
-            newRlimd = maxValue;
-        }
-
-        if(newRlimd < 1) {
-            newRlimd = 1;
-        }
-
-        this.setRlimd(newRlimd);
+        this.Rlimd = Math.max(Math.min(this.Rlimd, this.maxRlim), 1);
     }
 }

@@ -3,6 +3,7 @@ package placers.analyticalplacer;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.List;
 import java.util.Random;
 
 import visual.PlacementVisualizer;
@@ -180,14 +181,21 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void printStatisticsHeader() {
-        this.logger.println("Iteration    anchor weight    linear cost    legal cost    time");
-        this.logger.println("---------    -------------    -----------    ----------    ----");
-
+    protected void addStatTitles(List<String> titles) {
+        titles.add("iteration");
+        titles.add("anchor weight");
+        titles.add("linear cost");
+        titles.add("legal cost");
+        titles.add("time");
     }
 
     @Override
     protected void printStatistics(int iteration, double time) {
-        this.logger.printf("%-13d%-17f%-15f%-14f%f\n", iteration, this.anchorWeight, this.linearCost, this.legalCost, time);
+        this.printStats(
+                Integer.toString(iteration),
+                String.format("%.2f", this.anchorWeight),
+                String.format("%.4g", this.linearCost),
+                String.format("%.4g", this.legalCost),
+                String.format("%.3g", time));
     }
 }
