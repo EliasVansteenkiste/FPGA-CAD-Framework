@@ -382,8 +382,9 @@ class HeapLegalizer extends Legalizer {
 
     private void legalizeArea(Area area) {
         TwoDimLinkedList blocks = area.getBlockIndexes();
-        int[] coordinates = {area.left, area.bottom, area.right, area.top};
+        SplittingArea splittingArea = new SplittingArea(area);
 
+        // Calculate the capacity of the area
         int capacity = 0;
         int columnHeight = (area.top - area.bottom) / this.blockHeight + 1;
         for(int column = area.left; column <= area.right; column += this.blockRepeat) {
@@ -392,18 +393,18 @@ class HeapLegalizer extends Legalizer {
             }
         }
 
-        this.legalizeArea(coordinates, capacity, blocks);
+        this.legalizeArea(splittingArea, capacity, blocks);
     }
 
     private void legalizeArea(
-            int[] coordinates,
+            SplittingArea area,
             int capacity,
             TwoDimLinkedList blocks) {
 
-        int sizeX = coordinates[2] - coordinates[0],
-            sizeY = coordinates[3] - coordinates[1];
-        int columnHeight = sizeY / this.blockHeight + 1;
-        int numColumns = capacity / columnHeight;
+        int sizeX = area.right - area.left + 1,
+            sizeY = area.top - area.bottom + 1;
+        int numRows = (sizeY - 1) / this.blockHeight + 1;
+        int numColumns = capacity / numRows;
 
         if(blocks.size() == 0) {
             return;
@@ -414,10 +415,10 @@ class HeapLegalizer extends Legalizer {
             // Get the block index of the one contained block
             // (This for loop always does exactly one iteration)
             for(LegalizerBlock block : blocks) {
-                this.legalY[block.blockIndex] = coordinates[1];
+                this.legalY[block.blockIndex] = area.bottom;
 
                 // Find the first column of the correct type
-                for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+                for(int column = area.left; column <= area.right; column++) {
                     if(this.circuit.getColumnType(column).equals(this.blockType)) {
                         this.legalX[block.blockIndex] = column;
                         break;
@@ -430,16 +431,16 @@ class HeapLegalizer extends Legalizer {
         // If there is only one block left: find the closest site in the area
         } else if(blocks.numBlocks() == 1) {
             for(LegalizerBlock block : blocks) {
-                this.placeBlock(block, coordinates);
+                this.placeBlock(block, area);
             }
 
             return;
 
         } else if(numColumns == 1) {
             // Find the first column of the correct type
-            for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+            for(int column = area.left; column <= area.right; column++) {
                 if(this.circuit.getColumnType(column).equals(this.blockType)) {
-                    this.placeBlocksInColumn(blocks, column, coordinates[1], coordinates[3]);
+                    this.placeBlocksInColumn(blocks, column, area.bottom, area.top);
 
                     break;
                 }
@@ -458,9 +459,8 @@ class HeapLegalizer extends Legalizer {
 
         // Split area along axis and store ratio between the two subareas
         // Sort blocks along axis
-        int[] coordinates1 = new int[4], coordinates2 = new int[4];
-        System.arraycopy(coordinates, 0, coordinates1, 0, 4);
-        System.arraycopy(coordinates, 0, coordinates2, 0, 4);
+        SplittingArea area1 = new SplittingArea(area);
+        SplittingArea area2;
 
         int splitPosition = -1, capacity1;
 
@@ -470,7 +470,7 @@ class HeapLegalizer extends Legalizer {
             // If the blockType is CLB
             if(this.blockCategory == BlockCategory.CLB) {
                 numColumnsLeft = 0;
-                for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+                for(int column = area.left; column <= area.right; column++) {
                     if(this.circuit.getColumnType(column).equals(this.blockType)) {
                         numColumnsLeft++;
                     }
@@ -484,25 +484,22 @@ class HeapLegalizer extends Legalizer {
             // Else: it's a hardblock
             } else {
                 numColumnsLeft = numColumns / 2;
-                splitPosition = coordinates[0] + numColumnsLeft * this.blockRepeat;
+                splitPosition = area.left + numColumnsLeft * this.blockRepeat;
             }
 
-            capacity1 = numColumnsLeft * columnHeight;
-            coordinates1[2] = splitPosition - this.blockRepeat;
-            coordinates2[0] = splitPosition;
+            capacity1 = numColumnsLeft * numRows;
+            area2 = area1.splitHorizontal(splitPosition, this.blockRepeat);
 
 
         } else {
 
-            int numRows = (coordinates[3] - coordinates[1]) / this.blockHeight + 1;
             int numRowsBottom = numRows / 2;
 
             if(blocks.maxHeight() <= numRowsBottom) {
                 capacity1 = numRowsBottom * numColumns;
-                splitPosition = coordinates[1] + (numRowsBottom) * this.blockHeight;
+                splitPosition = area.bottom + (numRowsBottom) * this.blockHeight;
 
-                coordinates1[3] = splitPosition - this.blockHeight;
-                coordinates2[1] = splitPosition;
+                area2 = area1.splitVertical(splitPosition, this.blockHeight);
 
             // If there is a macro that is higher than half of the
             // current area size
@@ -529,7 +526,7 @@ class HeapLegalizer extends Legalizer {
 
                 // Find the column that contains the high block
                 int columnCounter = 0;
-                for(int column = coordinates[0]; column <= coordinates[2]; column++) {
+                for(int column = area.left; column <= area.right; column++) {
                     if(this.circuit.getColumnType(column).equals(this.blockType)) {
                         if(columnCounter == columnIndex) {
                             splitPosition = column;
@@ -539,8 +536,7 @@ class HeapLegalizer extends Legalizer {
                     }
                 }
 
-                coordinates1[2] = splitPosition - this.blockRepeat;
-                coordinates2[0] = splitPosition;
+                area2 = area1.splitHorizontal(splitPosition, this.blockRepeat);
             }
         }
 
@@ -550,11 +546,11 @@ class HeapLegalizer extends Legalizer {
         int splitIndex = (int) Math.ceil(capacity1 * blocks.size() / (double) capacity);
         TwoDimLinkedList otherBlockIndexes = blocks.split(splitIndex, axis);
 
-        this.legalizeArea(coordinates1, capacity1, blocks);
-        this.legalizeArea(coordinates2, capacity2, otherBlockIndexes);
+        this.legalizeArea(area1, capacity1, blocks);
+        this.legalizeArea(area2, capacity2, otherBlockIndexes);
     }
 
-    private void placeBlock(LegalizerBlock block, int[] coordinates) {
+    private void placeBlock(LegalizerBlock block, SplittingArea area) {
         int blockIndex = block.blockIndex;
         double linearX = this.linearX[blockIndex];
         double linearY = this.linearY[blockIndex];
@@ -567,20 +563,28 @@ class HeapLegalizer extends Legalizer {
         int row = (int) Math.round(linearY);
 
         // Make sure the row fits in the coordinates
-        if(row - (macroHeight - 1) / 2 < coordinates[1]) {
-            row = coordinates[1] + (macroHeight - 1) / 2;
-        } else if(row + macroHeight / 2 > coordinates[3]) {
-            row = coordinates[3] - macroHeight / 2;
+        if(row - (macroHeight - 1) / 2 < area.bottom) {
+            row = area.bottom + (macroHeight - 1) / 2;
+        } else if(row + macroHeight / 2 > area.top) {
+            row = area.top - macroHeight / 2;
         }
         this.legalY[blockIndex] = row;
 
         // Find the closest column
         int column = (int) Math.round(linearX);
-        int direction = linearX > column ? 1 : -1;
 
-        while(this.badColumn(column, coordinates)) {
-            column += direction;
-            direction = -(direction + (int) Math.signum(direction));
+        if(column > area.left && column < area.right) {
+            int direction = linearX > column ? 1 : -1;
+            while(this.badColumn(column, area)) {
+                column += direction;
+                direction = -(direction + (int) Math.signum(direction));
+            }
+
+        } else {
+            int direction = column <= area.left ? 1 : -1;
+            while(this.badColumn(column, area)) {
+                column += direction;
+            }
         }
 
         this.legalX[blockIndex] = column;
@@ -602,11 +606,11 @@ class HeapLegalizer extends Legalizer {
         }
     }
 
-    private boolean badColumn(int column, int[] coordinates) {
+    private boolean badColumn(int column, SplittingArea area) {
         return
                 !this.circuit.getColumnType(column).equals(this.blockType)
-                || column < coordinates[0]
-                || column > coordinates[2];
+                || column < area.left
+                || column > area.right;
     }
 
 
@@ -623,19 +627,42 @@ class HeapLegalizer extends Legalizer {
     }
 
 
-    private class SimpleArea {
+    private class SplittingArea {
 
         int left, right, bottom, top;
 
-        SimpleArea(int left, int right, int bottom, int top) {
+        SplittingArea(int left, int right, int bottom, int top) {
             this.left = left;
             this.right = right;
             this.bottom = bottom;
             this.top = top;
         }
 
-        SimpleArea(SimpleArea area) {
+        SplittingArea(Area area) {
             this(area.left, area.right, area.bottom, area.top);
+        }
+
+        SplittingArea(SplittingArea area) {
+            this(area.left, area.right, area.bottom, area.top);
+        }
+
+        SplittingArea splitHorizontal(int split, int space) {
+            SplittingArea newArea = new SplittingArea(split, this.right, this.bottom, this.top);
+            this.right = split - space;
+
+            return newArea;
+        }
+
+        SplittingArea splitVertical(int split, int space) {
+            SplittingArea newArea = new SplittingArea(this.left, this.right, split, this.top);
+            this.top = split - space;
+
+            return newArea;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("h: [%d, %d], v: [%d, %d]", this.left, this.right, this.bottom, this.top);
         }
     }
 

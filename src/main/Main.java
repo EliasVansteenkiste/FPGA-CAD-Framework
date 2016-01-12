@@ -24,6 +24,8 @@ import circuit.Circuit;
 import circuit.architecture.Architecture;
 import circuit.architecture.ArchitectureCacher;
 import circuit.architecture.ParseException;
+import circuit.block.GlobalBlock;
+import circuit.block.LeafBlock;
 import circuit.exceptions.InvalidFileFormatException;
 import circuit.exceptions.PlacementException;
 import circuit.io.BlockNotFoundException;
@@ -326,6 +328,15 @@ public class Main {
 
         this.logger.printf(format, "timing cost", totalTimingCost, "");
         this.logger.printf(format, "max delay", maxDelay, " ns");
+
+        for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            if(block.getName().equals("sparc_exu:exu|sparc_exu_byp:bypass|dff_s:rcc_data_dff|q[4]")) {
+                int d = 0;
+            }
+            if(block.getName().equals("sparc_exu:exu|sparc_exu_byp:bypass|dff_s:rs1_data_dff|q[5]")) {
+                int d = 0;
+            }
+        }
 
         this.logger.println();
     }
