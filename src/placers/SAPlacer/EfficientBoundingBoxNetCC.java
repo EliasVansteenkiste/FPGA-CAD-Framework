@@ -40,8 +40,9 @@ public class EfficientBoundingBoxNetCC {
 
     private void processPin(GlobalPin pin) {
 
+        // Dont't count pins without sinks, or pins that feed clocks
         int numSinks = pin.getNumSinks();
-        if(numSinks == 0) {
+        if(numSinks == 0 || pin.getSink(0).getPortType().isClock()) {
             return;
         }
 
