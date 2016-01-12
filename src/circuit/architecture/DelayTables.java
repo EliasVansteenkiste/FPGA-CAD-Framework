@@ -15,12 +15,17 @@ public class DelayTables implements Serializable {
 
     private static final long serialVersionUID = 3516264508719006250L;
 
+    private boolean dummyTables = false;
     private transient File file;
     private List<List<Double>>
             ioToIo = new ArrayList<>(),
             ioToClb = new ArrayList<>(),
             clbToIo = new ArrayList<>(),
             clbToClb = new ArrayList<>();
+
+    public DelayTables() {
+        this.dummyTables = true;
+    }
 
     public DelayTables(File file) {
         this.file = file;
@@ -34,7 +39,7 @@ public class DelayTables implements Serializable {
         this.parseType(reader, "io_to_clb", this.ioToClb);
         this.parseType(reader, "clb_to_io", this.clbToIo);
         this.parseType(reader, "io_to_io", this.ioToIo);
-        
+
         reader.close();
     }
 
@@ -89,7 +94,7 @@ public class DelayTables implements Serializable {
     }
 
 
-    public List<List<Double>> getTable(BlockCategory fromCategory, BlockCategory toCategory) {
+    private List<List<Double>> getTable(BlockCategory fromCategory, BlockCategory toCategory) {
         if(fromCategory == BlockCategory.IO) {
             if(toCategory == BlockCategory.IO) {
                 return this.ioToIo;
@@ -106,7 +111,7 @@ public class DelayTables implements Serializable {
     }
 
     public double getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
-        if(deltaX == 0 && deltaY == 0) {
+        if(deltaX == 0 && deltaY == 0 || this.dummyTables) {
             return 0;
         }
 

@@ -91,7 +91,8 @@ public class Architecture implements Serializable {
         this.processDelays();
 
         // Build the delay matrixes
-        this.buildDelayMatrixes();
+        //this.buildDelayMatrixes();
+        this.buildDummyDelayMatrixes();
     }
 
 
@@ -628,6 +629,9 @@ public class Architecture implements Serializable {
 
 
 
+    private void buildDummyDelayMatrixes() {
+        this.delayTables = new DelayTables();
+    }
 
     private void buildDelayMatrixes() throws IOException, InvalidFileFormatException, InterruptedException {
         // For this method to work, the macro PRINT_ARRAYS should be defined
