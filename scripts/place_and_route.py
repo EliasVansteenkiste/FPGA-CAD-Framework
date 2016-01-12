@@ -221,7 +221,8 @@ class PlaceCallerVPR(Caller):
             '--place',
             '--blif_file', os.path.join(circuits_folder, '{circuit}.blif'),
             '--net_file', os.path.join(circuits_folder, '{circuit}.net'),
-            '--place_file', os.path.join(circuits_folder, '{circuit}{iteration}.place')
+            '--place_file', os.path.join(circuits_folder, '{circuit}{iteration}.place'),
+            '--fix_pins', 'random'
         ] + options
 
 
