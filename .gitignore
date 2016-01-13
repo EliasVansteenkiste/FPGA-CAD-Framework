@@ -4,6 +4,7 @@ data/
 lib/
 
 benchmarks/*
+benchmarks_titan
 !benchmarks/*.blif
 !benchmarks/*.json
 !benchmarks/*.xml
