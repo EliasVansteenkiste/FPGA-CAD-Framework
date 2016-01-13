@@ -61,7 +61,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private LinearSolverGradient solver;
 
 
-    private int[] netStarts;
+    private int[] netEnds;
     private int[] netBlockIndexes;
     private float[] netBlockOffsets;
 
@@ -117,11 +117,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             netBlockSize += this.nets.get(i).blocks.length;
         }
 
-        this.netStarts = new int[numNets + 1];
+        this.netEnds = new int[numNets];
         this.netBlockIndexes = new int[netBlockSize];
         this.netBlockOffsets = new float[netBlockSize];
 
-        this.netStarts[0] = 0;
         int netBlockCounter = 0;
         for(int netCounter = 0; netCounter < numNets; netCounter++) {
             Net net = this.nets.get(netCounter);
@@ -133,7 +132,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 netBlockCounter++;
             }
 
-            this.netStarts[netCounter + 1] = netBlockCounter;
+            this.netEnds[netCounter] = netBlockCounter;
         }
 
 
@@ -209,13 +208,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     private void processNets() {
-        int numNets = this.netStarts.length - 1;
+        int numNets = this.netEnds.length - 1;
         boolean timingDriven = this.isTimingDriven();
 
+        int netStart, netEnd = 0;
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
-            int netStart = this.netStarts[netIndex];
-            int netEnd = this.netStarts[netIndex + 1];
+
+            netStart = netEnd;
+            netEnd = this.netEnds[netIndex];
 
             this.solver.processNet(netStart, netEnd, criticality);
         }
