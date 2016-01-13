@@ -120,7 +120,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     // The offset is measured in half blocks from the center of the macro
                     // For the legal position of macro's with an even number of blocks,
                     // the position of the macro is rounded down
-                    double offset = (1 - height) / 2.0;
+                    float offset = (1 - height) / 2f;
 
                     this.linearX[blockCounter] = column;
                     this.linearY[blockCounter] = row - offset;
@@ -302,11 +302,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             if(block.getCategory() != BlockCategory.IO) {
                 NetBlock netBlock = blockEntry.getValue();
                 int index = netBlock.blockIndex;
-                double offset = netBlock.offset;
-
-                if(index == 1497) {
-                    int d = 0;
-                }
+                float offset = netBlock.offset;
 
                 int column = this.legalX[index];
                 int row = this.legalY[index] + (int) Math.ceil(offset);
@@ -380,9 +376,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     class NetBlock {
         final int blockIndex;
-        final double offset;
+        final float offset;
 
-        NetBlock(int blockIndex, double offset) {
+        NetBlock(int blockIndex, float offset) {
             this.blockIndex = blockIndex;
             this.offset = offset;
         }
@@ -412,10 +408,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     class TimingNetBlock {
         final int blockIndex;
-        final double offset;
+        final float offset;
         final TimingEdge timingEdge;
 
-        TimingNetBlock(int blockIndex, double offset, TimingEdge timingEdge) {
+        TimingNetBlock(int blockIndex, float offset, TimingEdge timingEdge) {
             this.blockIndex = blockIndex;
             this.offset = offset;
             this.timingEdge = timingEdge;

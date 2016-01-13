@@ -4,7 +4,6 @@ import interfaces.Logger;
 import interfaces.Options;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -62,6 +61,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private LinearSolverGradient solver;
 
 
+    private int[] netStarts;
+    private int[] netBlockIndexes;
+    private float[] netBlockOffsets;
+
+
     protected abstract void addStatTitlesGP(List<String> titles);
     protected abstract void addStats(List<String> stats);
 
@@ -93,8 +97,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.solver = new LinearSolverGradient(this.linearX, this.linearY, this.stepSize);
-
         this.legalizer = new HeapLegalizer(
                 this.circuit,
                 this.blockTypes,
@@ -105,7 +107,42 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         int numNets = this.nets.size();
         this.netCriticalities = new double[numNets];
-        Arrays.fill(this.netCriticalities, 1);
+
+
+        // Juggling with objects is too slow (I profiled this,
+        // the speedup is around 40%)
+        // Build some good ol' arrays of primitive types
+        int netBlockSize = 0;
+        for(int i = 0; i < numNets; i++) {
+            netBlockSize += this.nets.get(i).blocks.length;
+        }
+
+        this.netStarts = new int[numNets + 1];
+        this.netBlockIndexes = new int[netBlockSize];
+        this.netBlockOffsets = new float[netBlockSize];
+
+        this.netStarts[0] = 0;
+        int netBlockCounter = 0;
+        for(int netCounter = 0; netCounter < numNets; netCounter++) {
+            Net net = this.nets.get(netCounter);
+
+            for(NetBlock block : net.blocks) {
+                this.netBlockIndexes[netBlockCounter] = block.blockIndex;
+                this.netBlockOffsets[netBlockCounter] = block.offset;
+
+                netBlockCounter++;
+            }
+
+            this.netStarts[netCounter + 1] = netBlockCounter;
+        }
+
+
+        this.solver = new LinearSolverGradient(
+                this.linearX,
+                this.linearY,
+                this.netBlockIndexes,
+                this.netBlockOffsets,
+                this.stepSize);
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
@@ -172,14 +209,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     private void processNets() {
-        int numNets = this.nets.size();
+        int numNets = this.netStarts.length - 1;
         boolean timingDriven = this.isTimingDriven();
 
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            Net net = this.nets.get(netIndex);
             double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
+            int netStart = this.netStarts[netIndex];
+            int netEnd = this.netStarts[netIndex + 1];
 
-            this.solver.processNet(net, criticality);
+            this.solver.processNet(netStart, netEnd, criticality);
         }
     }
 

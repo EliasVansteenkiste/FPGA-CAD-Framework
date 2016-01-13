@@ -1,17 +1,25 @@
 package placers.analyticalplacer;
 
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.Net;
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
-
 class LinearSolverGradient {
 
     private double[] coordinatesX, coordinatesY;
+    private int[] netBlockIndexes;
+    private float[] netBlockOffsets;
 
     private DimensionSolverGradient solverX, solverY;
 
-    LinearSolverGradient(double[] coordinatesX, double[] coordinatesY, double stepSize) {
+    LinearSolverGradient(
+            double[] coordinatesX,
+            double[] coordinatesY,
+            int[] netBlockIndexes,
+            float[] netBlockOffsets,
+            double stepSize) {
+
         this.coordinatesX = coordinatesX;
         this.coordinatesY = coordinatesY;
+
+        this.netBlockIndexes = netBlockIndexes;
+        this.netBlockOffsets = netBlockOffsets;
 
         this.solverX = new DimensionSolverGradient(coordinatesX, stepSize);
         this.solverY = new DimensionSolverGradient(coordinatesY, stepSize);
@@ -28,19 +36,16 @@ class LinearSolverGradient {
         this.solverY.setLegal(legalY);
     }
 
-    void processNet(Net net, double criticality) {
-        int numNetBlocks = net.blocks.length;
-
+    void processNet(int netStart, int netEnd, double criticality) {
+        int numNetBlocks = netStart - netEnd;
         double weight = criticality * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {
-            NetBlock block1 = net.blocks[0],
-                     block2 = net.blocks[1];
-            int blockIndex1 = block1.blockIndex,
-                blockIndex2 = block2.blockIndex;
-            double offset1 = block1.offset,
-                   offset2 = block2.offset;
+            int blockIndex1 = this.netBlockIndexes[netStart],
+                blockIndex2 = this.netBlockIndexes[netStart + 1];
+            double offset1 = this.netBlockOffsets[netStart],
+                   offset2 = this.netBlockOffsets[netStart + 1];
 
             double coordinate1 = this.coordinatesX[blockIndex1],
                    coordinate2 = this.coordinatesX[blockIndex2];
@@ -63,28 +68,23 @@ class LinearSolverGradient {
 
 
         // For bigger nets, we have to find the min and max block
-        NetBlock initialNetBlock = net.blocks[0];
+        int minXIndex = this.netBlockIndexes[netStart],
+            maxXIndex = this.netBlockIndexes[netStart],
+            minYIndex = this.netBlockIndexes[netStart],
+            maxYIndex = this.netBlockIndexes[netStart];
 
-        int initialBlockIndex = initialNetBlock.blockIndex;
-        int minXIndex = initialBlockIndex,
-            maxXIndex = initialBlockIndex,
-            minYIndex = initialBlockIndex,
-            maxYIndex = initialBlockIndex;
-
-        double initialOffset = initialNetBlock.offset;
-        double minYOffset = initialOffset,
-               maxYOffset = initialOffset;
+        float minYOffset = this.netBlockOffsets[netStart],
+              maxYOffset = this.netBlockOffsets[netStart];
 
         double minX = this.coordinatesX[minXIndex],
                maxX = this.coordinatesX[maxXIndex],
                minY = this.coordinatesY[minYIndex] + minYOffset,
                maxY = this.coordinatesY[maxYIndex] + maxYOffset;
 
-        for(int i = 1; i < numNetBlocks; i++) {
-            NetBlock block = net.blocks[i];
-            int blockIndex = block.blockIndex;
+        for(int i = netStart + 1; i < netEnd; i++) {
+            int blockIndex = this.netBlockIndexes[i];
             double x = this.coordinatesX[blockIndex],
-                   y = this.coordinatesY[blockIndex] + block.offset;
+                   y = this.coordinatesY[blockIndex] + this.netBlockOffsets[i];
 
             if(x < minX) {
                 minX = x;
