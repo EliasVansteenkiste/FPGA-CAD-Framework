@@ -50,6 +50,8 @@ public class Architecture implements Serializable {
 
     private static final long serialVersionUID = -5436935126902935000L;
 
+    private static boolean GET_VPR_TIMING = true;
+
     private boolean autoSize;
     private int width, height;
     private double autoRatio;
@@ -106,8 +108,16 @@ public class Architecture implements Serializable {
         this.processDelays();
 
         // Build the delay matrixes
-        //this.buildDelayMatrixes();
-        this.buildDummyDelayMatrixes();
+        if(Architecture.GET_VPR_TIMING) {
+            this.buildDelayMatrixes();
+
+        } else {
+            // Set all delays to 0
+            // This is only useful while debugging,
+            // because the call to vpr takes a really
+            // long time for large circuits
+            this.buildDummyDelayMatrixes();
+        }
     }
 
 
