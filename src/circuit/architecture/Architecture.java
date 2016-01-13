@@ -50,7 +50,6 @@ public class Architecture implements Serializable {
 
     private static final long serialVersionUID = -5436935126902935000L;
 
-    private static boolean GET_VPR_TIMING = true;
 
     private boolean autoSize;
     private int width, height;
@@ -68,9 +67,17 @@ public class Architecture implements Serializable {
     private DelayTables delayTables;
 
     private int ioCapacity;
+    private boolean getVprTiming;
 
 
-    public Architecture(String circuitName, File architectureFile, String vprCommand, File blifFile, File netFile) {
+    public Architecture(
+            String circuitName,
+            File architectureFile,
+            String vprCommand,
+            File blifFile,
+            File netFile,
+            boolean getVprTiming) {
+
         this.architectureFile = architectureFile;
 
         this.vprCommand = vprCommand;
@@ -79,6 +86,7 @@ public class Architecture implements Serializable {
         this.netFile = netFile;
 
         this.circuitName = circuitName;
+        this.getVprTiming = getVprTiming;
     }
 
     public void parse() throws ParseException, IOException, InvalidFileFormatException, InterruptedException, ParserConfigurationException, SAXException {
@@ -108,7 +116,7 @@ public class Architecture implements Serializable {
         this.processDelays();
 
         // Build the delay matrixes
-        if(Architecture.GET_VPR_TIMING) {
+        if(this.getVprTiming) {
             this.buildDelayMatrixes();
 
         } else {
