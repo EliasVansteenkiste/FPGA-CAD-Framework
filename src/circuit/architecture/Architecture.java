@@ -91,8 +91,8 @@ public class Architecture implements Serializable {
         this.processDelays();
 
         // Build the delay matrixes
-        //this.buildDelayMatrixes();
-        this.buildDummyDelayMatrixes();
+        this.buildDelayMatrixes();
+        //this.buildDummyDelayMatrixes();
     }
 
 
