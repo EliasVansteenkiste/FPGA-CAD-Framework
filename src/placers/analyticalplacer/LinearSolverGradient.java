@@ -37,31 +37,31 @@ class LinearSolverGradient {
     }
 
     void processNet(int netStart, int netEnd, double criticality) {
-        int numNetBlocks = netStart - netEnd;
+        int numNetBlocks = netEnd - netStart;
         double weight = criticality * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {
             int blockIndex1 = this.netBlockIndexes[netStart],
                 blockIndex2 = this.netBlockIndexes[netStart + 1];
-            double offset1 = this.netBlockOffsets[netStart],
-                   offset2 = this.netBlockOffsets[netStart + 1];
 
-            double coordinate1 = this.coordinatesX[blockIndex1],
-                   coordinate2 = this.coordinatesX[blockIndex2];
+            double coordinate1 = this.coordinatesY[blockIndex1] + this.netBlockOffsets[netStart],
+                   coordinate2 = this.coordinatesY[blockIndex2] + this.netBlockOffsets[netStart + 1];
+            if(coordinate1 < coordinate2) {
+                this.solverY.addConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
+            } else {
+                this.solverY.addConnection(blockIndex2, blockIndex1, coordinate1 - coordinate2, weight);
+            }
+
+            coordinate1 = this.coordinatesX[blockIndex1];
+            coordinate2 = this.coordinatesX[blockIndex2];
             if(coordinate1 < coordinate2) {
                 this.solverX.addConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
             } else {
                 this.solverX.addConnection(blockIndex2, blockIndex1, coordinate1 - coordinate2, weight);
             }
 
-            coordinate1 = this.coordinatesY[blockIndex1] + offset1;
-            coordinate2 = this.coordinatesY[blockIndex2] + offset2;
-            if(coordinate1 < coordinate2) {
-                this.solverY.addConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
-            } else {
-                this.solverY.addConnection(blockIndex2, blockIndex1, coordinate1 - coordinate2, weight);
-            }
+
 
             return;
         }
