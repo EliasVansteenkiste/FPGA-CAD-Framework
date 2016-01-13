@@ -208,7 +208,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     private void processNets() {
-        int numNets = this.netEnds.length - 1;
+        int numNets = this.netEnds.length;
         boolean timingDriven = this.isTimingDriven();
 
         int netStart, netEnd = 0;
