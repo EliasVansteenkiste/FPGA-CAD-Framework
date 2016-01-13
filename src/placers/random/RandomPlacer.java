@@ -96,10 +96,9 @@ public class RandomPlacer extends Placer {
             int lastRow = firstRow + numBlocks * blockSpace;
 
 
-            boolean free = true;
-
             // Check if all the sites are legal and free
-            for(int row = lastRow; row > firstRow; row -= blockSpace) {
+            boolean free = true;
+            for(int row = firstRow; row <= lastRow; row += blockSpace) {
                 if(illegalSite(blockType, column, row)) {
                     free = false;
                     break;
