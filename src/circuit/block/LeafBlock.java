@@ -12,20 +12,27 @@ public class LeafBlock extends IntermediateBlock {
     private DelayTables delayTables;
     private GlobalBlock globalParent;
 
-    private ArrayList<LeafBlock> sourceBlocks = new ArrayList<LeafBlock>();
-    private ArrayList<LeafBlock> sinkBlocks = new ArrayList<LeafBlock>();
-    private int numSources = 0;
-
     private int clockDomain = -1;
+    private int numClockDomains;
 
-    private ArrayList<TimingEdge> sourceEdges = new ArrayList<TimingEdge>();
-    private ArrayList<TimingEdge> sinkEdges = new ArrayList<TimingEdge>();
-    private int[] sinkEdgesPinStarts;
-    private int currentPinIndex;
+    private ArrayList<LeafBlock> sourceBlocks = new ArrayList<>();
+    private ArrayList<TimingEdge> sourceEdges = new ArrayList<>();
+    private int numSources = 0;
+    private int[] clockDomainNumSources;
+
+    private ArrayList<LeafBlock> sinkBlocks = new ArrayList<>();
+    private ArrayList<TimingEdge> sinkEdges = new ArrayList<>();
     private int numSinks = 0;
 
+    private ArrayList<ArrayList<LeafBlock>> clockDomainSinkBlocks = new ArrayList<>();
+    private ArrayList<ArrayList<TimingEdge>> clockDomainSinkEdges = new ArrayList<>();
+    private int[] clockDomainNumSinks;
+
+    private int[] sinkEdgesPinStarts;
+    private int currentPinIndex;
+
     private double arrivalTime, requiredTime;
-    private int numProcessedSources, numProcessedSinks;
+    private int numUnprocessedSources;
 
 
     public LeafBlock(DelayTables delayTables, String name, BlockType type, int index, AbstractBlock parent, GlobalBlock globalParent) {
@@ -42,10 +49,16 @@ public class LeafBlock extends IntermediateBlock {
 
     @Override
     public void compact() {
-        this.sourceBlocks.trimToSize();
         this.sinkBlocks.trimToSize();
-        this.sourceEdges.trimToSize();
         this.sinkEdges.trimToSize();
+
+        this.clockDomainSinkBlocks.trimToSize();
+        this.clockDomainSinkEdges.trimToSize();
+
+        for(int clockDomain = 0; clockDomain < this.numClockDomains; clockDomain++) {
+            this.clockDomainSinkBlocks.get(clockDomain).trimToSize();
+            this.clockDomainSinkEdges.get(clockDomain).trimToSize();
+        }
 
         int numOutputPins = this.numOutputPins();
         for(; this.currentPinIndex < numOutputPins; this.currentPinIndex++) {
@@ -57,20 +70,54 @@ public class LeafBlock extends IntermediateBlock {
         return this.globalParent;
     }
 
-    public int getX() {
+    public int getColumn() {
         return this.globalParent.getColumn();
     }
     public int getY() {
         return this.globalParent.getRow();
     }
 
+    void setNumClockDomains(int numClockDomains) {
+        this.numClockDomains = numClockDomains;
+        this.clockDomainNumSources = new int[numClockDomains];
+        this.clockDomainNumSinks = new int[numClockDomains];
 
-    public void setClockDomain(int clockDomain) {
+        for(int clockDomain = 0; clockDomain < numClockDomains; clockDomain++) {
+            this.clockDomainSinkBlocks.add(clockDomain, new ArrayList<LeafBlock>());
+            this.clockDomainSinkEdges.add(clockDomain, new ArrayList<TimingEdge>());
+        }
+    }
+
+    void setClockDomain(int clockDomain) {
         this.clockDomain = clockDomain;
     }
-    public int getClockDomain() {
+    int getClockDomain() {
         return this.clockDomain;
     }
+
+    /*void addSinkClockDomains(int[] sinkNumSinksPerClockDomain) {
+        for(int clockDomain = 0; clockDomain < this.numClockDomains; clockDomain++) {
+            if(sinkNumSinksPerClockDomain[clockDomain] > 0) {
+                this.clockDomainNumSinks[clockDomain]++;
+            }
+        }
+    }*/
+
+    int[] getClockDomainNumSources() {
+        return this.clockDomainNumSources;
+    }
+    int[] getClockDomainNumSinks() {
+        return this.clockDomainNumSinks;
+    }
+
+    void addClockDomainSink(int clockDomain, LeafBlock sink, TimingEdge edge) {
+        this.clockDomainSinkBlocks.get(clockDomain).add(sink);
+        this.clockDomainSinkEdges.get(clockDomain).add(edge);
+        this.clockDomainNumSinks[clockDomain]++;
+    }
+
+
+
 
 
     public int[] getSinkRange(int pinIndex) {
@@ -81,11 +128,12 @@ public class LeafBlock extends IntermediateBlock {
     }
 
 
-    void addSink(int pinIndex, LeafBlock sink, double fixedDelay) throws IllegalArgumentException {
+    TimingEdge addSink(int pinIndex, LeafBlock sink, double fixedDelay) throws IllegalArgumentException {
         /*
-         * This method assumes that pinIndex is always smaller or equal
-         * to the smalles pinIndex encountered so far. In other words:
-         * sinks must be added in ascending order of output pin index.
+         * This method assumes that pinIndex is always smaller than or
+         * equal to the smallest pinIndex encountered so far. In other
+         * words: sinks must be added in ascending order of output pin
+         * index.
          */
         if(pinIndex < this.currentPinIndex) {
             throw new IllegalArgumentException("sink was not added in ascending pin index order");
@@ -103,18 +151,23 @@ public class LeafBlock extends IntermediateBlock {
         this.sinkBlocks.add(sink);
         this.sinkEdges.add(edge);
         this.numSinks++;
+
+        return edge;
     }
 
-    void addSource(LeafBlock source, TimingEdge edge) {
-        this.sourceBlocks.add(source);
+    void addSource(LeafBlock block, TimingEdge edge) {
+        this.sourceBlocks.add(block);
         this.sourceEdges.add(edge);
         this.numSources++;
     }
-
-
-    List<LeafBlock> getSources() {
-        return this.sourceBlocks;
+    void addClockDomainSource(List<Integer> sourceClockDomains) {
+        for(int clockDomain : sourceClockDomains) {
+            this.clockDomainNumSources[clockDomain]++;
+        }
     }
+
+
+
     List<LeafBlock> getSinks() {
         return this.sinkBlocks;
     }
@@ -134,22 +187,68 @@ public class LeafBlock extends IntermediateBlock {
         return sinkRange[1] - sinkRange[0];
     }
 
-    LeafBlock getSource(int index) {
-        return this.sourceBlocks.get(index);
-    }
     public LeafBlock getSink(int index) {
         return this.sinkBlocks.get(index);
     }
 
-    TimingEdge getSourceEdge(int i) {
-        return this.sourceEdges.get(i);
+    public TimingEdge getSinkEdge(int index) {
+        return this.sinkEdges.get(index);
     }
-    public TimingEdge getSinkEdge(int i) {
-        return this.sinkEdges.get(i);
+
+    double updateSinkArrivalTimes(int clockDomain) {
+        double maxArrivalTime = 0;
+
+        List<LeafBlock> sinks = this.clockDomainSinkBlocks.get(clockDomain);
+        List<TimingEdge> edges = this.clockDomainSinkEdges.get(clockDomain);
+        int numSinks = this.clockDomainNumSinks[clockDomain];
+
+        for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
+            LeafBlock sink = sinks.get(sinkIndex);
+            TimingEdge edge = edges.get(sinkIndex);
+
+            double thisArrivalTime = this.isClocked() ? 0 : this.arrivalTime;
+            double sinkArrivalTime = thisArrivalTime + edge.getTotalDelay();
+            if(sinkArrivalTime > sink.arrivalTime) {
+                sink.arrivalTime = sinkArrivalTime;
+
+                if(sinkArrivalTime > maxArrivalTime) {
+                    maxArrivalTime = sinkArrivalTime;
+                }
+            }
+        }
+
+        return maxArrivalTime;
+    }
+
+    void updateSlacks(int sinkClockDomain) {
+
+        this.requiredTime = Double.MAX_VALUE;
+
+        List<LeafBlock> sinks = this.clockDomainSinkBlocks.get(sinkClockDomain);
+        List<TimingEdge> edges = this.clockDomainSinkEdges.get(sinkClockDomain);
+        int numSinks = this.clockDomainNumSinks[sinkClockDomain];
+
+        double thisArrivalTime = this.isClocked() ? 0 : this.arrivalTime;
+
+        for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
+            LeafBlock sink = sinks.get(sinkIndex);
+            double sinkRequiredTime = sink.isClocked() ? 0 : sink.requiredTime;
+
+            double thisRequiredTime = sinkRequiredTime - edges.get(sinkIndex).getTotalDelay();
+            if(thisRequiredTime < this.requiredTime) {
+                this.requiredTime = thisRequiredTime;
+            }
+
+            TimingEdge edge = edges.get(sinkIndex);
+            double slack = sinkRequiredTime - thisArrivalTime - edge.getTotalDelay();
+            if(slack < edge.getSlack()) {
+                edge.setSlack(slack);
+            }
+        }
     }
 
 
-    double calculateArrivalTime() {
+    /*double calculateArrivalTime() {
 
         double maxArrivalTime = this.arrivalTime;
 
@@ -176,13 +275,13 @@ public class LeafBlock extends IntermediateBlock {
         }
 
         return maxArrivalTime;
-    }
+    }*/
 
     double getArrivalTime() {
         return this.arrivalTime;
     }
 
-    void setRequiredTime(double requiredTime) {
+    /*void setRequiredTime(double requiredTime) {
         this.requiredTime = requiredTime;
     }
 
@@ -214,27 +313,28 @@ public class LeafBlock extends IntermediateBlock {
         }
 
         return minRequiredTime;
+    }*/
+
+
+    void resetArrivalTime() {
+        this.arrivalTime = 0;
     }
 
-
-    void resetTiming() {
-        this.arrivalTime = 0;
-        this.requiredTime = Double.MAX_VALUE;
-        this.numProcessedSources = 0;
-        this.numProcessedSinks = 0;
+    void resetProcessedSources() {
+        this.numUnprocessedSources = this.numSources;
+    }
+    void resetProcessedSources(int clockDomain) {
+        this.numUnprocessedSources = this.clockDomainNumSources[clockDomain];
+    }
+    void setTraversalRoot() {
+        this.numUnprocessedSources = -1;
     }
 
     void incrementProcessedSources() {
-        this.numProcessedSources++;
-    }
-    void incrementProcessedSinks() {
-        this.numProcessedSinks++;
+        this.numUnprocessedSources--;
     }
     boolean allSourcesProcessed() {
-        return this.numSources == this.numProcessedSources;
-    }
-    boolean allSinksProcessed() {
-        return this.numSinks == this.numProcessedSinks;
+        return this.numUnprocessedSources == 0;
     }
 
 
@@ -250,7 +350,7 @@ public class LeafBlock extends IntermediateBlock {
     }
 
     private double calculateWireDelay(LeafBlock otherBlock) {
-        int deltaX = Math.abs(this.getX() - otherBlock.getX());
+        int deltaX = Math.abs(this.getColumn() - otherBlock.getColumn());
         int deltaY = Math.abs(this.getY() - otherBlock.getY());
 
         BlockCategory fromCategory = this.globalParent.getCategory();
@@ -261,7 +361,7 @@ public class LeafBlock extends IntermediateBlock {
 
 
 
-    void calculateCriticalities(double maxArrivalTime, double criticalityExponent) {
+    /*void calculateCriticalities(double maxArrivalTime, double criticalityExponent) {
         for(int sinkIndex = 0; sinkIndex < this.numSinks; sinkIndex++) {
             LeafBlock sink = this.sinkBlocks.get(sinkIndex);
             TimingEdge edge = this.sinkEdges.get(sinkIndex);
@@ -270,7 +370,7 @@ public class LeafBlock extends IntermediateBlock {
             double criticality = 1 - slack / maxArrivalTime;
             edge.setCriticality(Math.pow(criticality, criticalityExponent));
         }
-    }
+    }*/
 
 
 
@@ -283,6 +383,11 @@ public class LeafBlock extends IntermediateBlock {
 
         return cost;
     }
+
+
+    /**********************************************
+     * Functions that support simulated annealing *
+     **********************************************/
 
     double calculateDeltaCost(GlobalBlock otherBlock) {
         /*

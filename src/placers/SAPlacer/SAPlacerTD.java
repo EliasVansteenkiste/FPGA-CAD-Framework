@@ -96,7 +96,7 @@ public class SAPlacerTD extends SAPlacer {
                 * (this.criticalityExponentEnd - this.criticalityExponentStart);
 
         this.timingGraph.setCriticalityExponent(criticalityExponent);
-        this.timingGraph.recalculateAllSlacksCriticalities(true);
+        this.timingGraph.calculateCriticalities(true);
 
         this.updatePreviousCosts();
     }
@@ -156,7 +156,7 @@ public class SAPlacerTD extends SAPlacer {
         this.timingGraph.pushThrough();
 
         if(iteration % this.iterationsBeforeRecalculate == 0 && iteration > 0) {
-            this.timingGraph.recalculateAllSlacksCriticalities(false);
+            this.timingGraph.calculateCriticalities(false);
             this.updatePreviousCosts();
         }
     }
@@ -167,7 +167,7 @@ public class SAPlacerTD extends SAPlacer {
         this.timingGraph.revert();
 
         if(iteration % this.iterationsBeforeRecalculate == 0 && iteration > 0) {
-            this.timingGraph.recalculateAllSlacksCriticalities(false);
+            this.timingGraph.calculateCriticalities(false);
             this.updatePreviousCosts();
         }
     }

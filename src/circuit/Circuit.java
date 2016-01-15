@@ -355,7 +355,7 @@ public class Circuit {
     }
 
     public void recalculateTimingGraph() {
-        this.timingGraph.recalculateAllSlacksCriticalities(true);
+        this.timingGraph.calculateCriticalities(true);
     }
     public double calculateTimingCost() {
         return this.timingGraph.calculateTotalCost();

@@ -1,8 +1,5 @@
 package circuit.block;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -12,53 +9,71 @@ import java.util.Map;
 import java.util.Stack;
 
 import circuit.Circuit;
+import circuit.architecture.BlockCategory;
 import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 
 import placers.SAPlacer.Swap;
 import util.Triple;
 
-public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Serializable {
+public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
-    private static final long serialVersionUID = 5056732903629079227L;
+    private static String VIRTUAL_IO_CLOCK = "virtual-io-clock";
 
     private Circuit circuit;
 
-    // A list of clock domains, along with their unique id and delay
+    // A list of clock domains, along with their unique id
     private Map<String, Integer> clocks = new HashMap<>();
+    private int virtualIoClockDomain;
+    private int numClockDomains = 0;
 
-    private transient ArrayList<LeafBlock> endPointBlocks;
-    private transient List<LeafBlock> affectedBlocks;
+    private List<LeafBlock> endPointBlocks  = new ArrayList<>();
+    private List<LeafBlock> affectedBlocks  = new ArrayList<>();
 
-    private double criticalityExponent;
-    private transient double maxDelay;
+    private List<TimingEdge> timingEdges  = new ArrayList<>();
+
+    private List<Triple<Integer, Integer, List<LeafBlock>>> traversals  = new ArrayList<>();
+
+    private double criticalityExponent = 1;
+    private double globalMaxDelay;
 
 
     public TimingGraph(Circuit circuit) {
         this.circuit = circuit;
-        this.initializeData();
+
+        this.virtualIoClockDomain = 0;
+        this.clocks.put(VIRTUAL_IO_CLOCK, this.virtualIoClockDomain);
+        this.numClockDomains = 1;
     }
 
-    private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException {
-        in.defaultReadObject();
-        this.initializeData();
-    }
 
-    private void initializeData() {
-        this.endPointBlocks = new ArrayList<LeafBlock>();
-        this.affectedBlocks = new ArrayList<LeafBlock>();
-    }
 
+
+    /******************************************
+     * These functions build the timing graph *
+     ******************************************/
 
     public void build() {
 
+        this.buildEndPoints();
+
+        this.buildTimingEdges();
+
+        this.setClockDomains();
+
+        this.buildTraversals();
+    }
+
+    private void buildEndPoints() {
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
             boolean isClocked = block.isClocked();
 
             if(isClocked) {
                 this.endPointBlocks.add(block);
 
-            } else {
+            // I don't think constant generators should be in the
+            // endPoints collection.
+            } /*else {
                 boolean isConstantGenerator = true;
                 for(AbstractPin inputPin : block.getInputPins()) {
                     if(inputPin.getSource() != null) {
@@ -67,24 +82,51 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
                     }
                 }
 
+
                 if(isConstantGenerator) {
                     this.endPointBlocks.add(block);
                 }
-            }
+            }*/
         }
+    }
+
+
+    private void buildTimingEdges() {
+        /* Build the basic structure of the timing graph:
+         * each leaf block has direct connections to sink
+         * leaf blocks, with timing information
+         */
 
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            if(block.toString().equals("lcell_comb<>:subckt34659~shareout~unconn")) {
+                int d = 0;
+            }
             this.traverseFromSource(block);
         }
     }
 
     private void traverseFromSource(LeafBlock pathSource) {
-        double setupDelay = this.getSetupTime(pathSource);
+
 
         LinkedList<Triple<Integer, AbstractPin, Double>> stack = new LinkedList<>();
 
-        int sourcePinIndex = 0;
+        if(pathSource.isClocked()) {
+            int sourcePinIndex = 0;
+            double clockDelay = this.getSetupTimeAndSetClockDomain(pathSource);
+
+            for(AbstractPin outputPin : pathSource.getOutputPins()) {
+                double setupDelay = clockDelay + outputPin.getPortType().getSetupTime();
+
+                // Insert elements at the bottom of the stack, so that the output pins of
+                // the source block will be processed in ascending order. This is necessary
+                // for the method addSink().
+                stack.addLast(new Triple<Integer, AbstractPin, Double>(sourcePinIndex, outputPin, setupDelay));
+
+                sourcePinIndex++;
+        }
+
         for(AbstractPin outputPin : pathSource.getOutputPins()) {
+            double setupDelay = clockDelay;
             if(pathSource.isClocked()) {
                 setupDelay += outputPin.getPortType().getSetupTime();
             }
@@ -99,7 +141,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
 
         while(stack.size() > 0) {
             Triple<Integer, AbstractPin, Double> entry = stack.pop();
-            int currentSourcePinIndex = entry.getFirst();
+            int pathSourcePinIndex = entry.getFirst();
             AbstractPin currentPin = entry.getSecond();
             double currentDelay = entry.getThird();
 
@@ -116,10 +158,12 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
 
                 } else {
                     List<AbstractPin> outputPins = owner.getOutputPins();
+                    // TODO: this is wrong
                     endDelay = currentPin.getPortType().getDelay(outputPins.get(0).getPortType());
                 }
 
-                pathSource.addSink(currentSourcePinIndex, pathSink, currentDelay + endDelay);
+                TimingEdge edge = pathSource.addSink(pathSourcePinIndex, pathSink, currentDelay + endDelay);
+                this.timingEdges.add(edge);
 
             // The block has children: proceed with the sinks of the current pin
             } else {
@@ -128,54 +172,235 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
                         double sourceSinkDelay = currentPin.getPortType().getDelay(sinkPin.getPortType());
                         double totalDelay = currentDelay + sourceSinkDelay;
 
-                        stack.push(new Triple<Integer, AbstractPin, Double>(currentSourcePinIndex, sinkPin, totalDelay));
+                        stack.push(new Triple<Integer, AbstractPin, Double>(pathSourcePinIndex, sinkPin, totalDelay));
                     }
                 }
             }
         }
     }
 
-    private double getSetupTime(LeafBlock block) {
-        List<AbstractPin> clockPins = block.getClockPins();
-        if(clockPins.size() == 0) {
+    private double getSetupTimeAndSetClockDomain(LeafBlock block) {
+
+        if(!block.isClocked()) {
             return 0;
         }
 
-        // A leaf block can only have 1 clock
-        assert(clockPins.size() == 1);
+        String clockName;
+        double clockDelay = 0;
 
-        AbstractPin clockPin = clockPins.get(0);
-        double delay = 0;
+        if(block.getGlobalParent().getCategory() == BlockCategory.IO) {
+            clockName = VIRTUAL_IO_CLOCK;
 
-        while(true) {
-            AbstractPin previousClockPin = clockPin.getSource();
-            if(previousClockPin == null) {
-                break;
+        } else{
+            // A clocked leaf block has exactly 1 clock pin
+            List<AbstractPin> clockPins = block.getClockPins();
+            assert(clockPins.size() == 1);
+            AbstractPin clockPin = clockPins.get(0);
+
+            while(true) {
+                AbstractPin sourcePin = clockPin.getSource();
+                if(sourcePin == null) {
+                    break;
+                }
+
+                clockDelay += sourcePin.getPortType().getDelay(clockPin.getPortType());
+                clockPin = sourcePin;
             }
 
-            delay += previousClockPin.getPortType().getDelay(clockPin.getPortType());
-            clockPin = previousClockPin;
+            clockName = clockPin.getOwner().getName();
+            assert(!clockName.equals(VIRTUAL_IO_CLOCK));
+
+            if(!this.clocks.containsKey(clockName)) {
+                this.clocks.put(clockName, this.numClockDomains);
+                this.numClockDomains++;
+            }
         }
 
-        String clockName = clockPin.getOwner().getName();
+        block.setClockDomain(this.clocks.get(clockName));
 
-        int clockDomain = -1;
-        if(this.clocks.containsKey(clockName)) {
-            clockDomain = this.clocks.get(clockName);
-        } else {
-            clockDomain = this.clocks.size();
-            this.clocks.put(clockName, clockDomain);
-        }
-
-        block.setClockDomain(clockDomain);
-
-        return delay;
+        return clockDelay;
     }
 
 
+    private void setClockDomains() {
+
+        // Initialize all blocks
+        List<LeafBlock> leafBlocks = this.circuit.getLeafBlocks();
+        for(LeafBlock block : leafBlocks) {
+            block.resetProcessedSources();
+            block.setNumClockDomains(this.numClockDomains);
+        }
+
+        /* Initialize the todo stack
+         * block.setTraversalRoot() makes sure no block
+         * is processed twice
+         * */
+        Stack<LeafBlock> todo = new Stack<>();
+        for(LeafBlock block : this.endPointBlocks) {
+            block.setTraversalRoot();
+            todo.add(block);
+        }
+
+
+        /* For each block and clock domain: store how many sources
+         * that block has that have a reverse path to a block that
+         * is clocked on that clock domain.
+         *
+         * At the same time, build a traversal regardless of clock
+         * domains. The traversal is a regular list. The order of
+         * blocks is chosen such that for each connection between
+         * two blocks, the source blocks always comes before the
+         * sink block. Connections to a clocked block are not taken
+         * into account: a clocked block may come before its source
+         * blocks.
+         */
+        List<LeafBlock> traversal = new ArrayList<>(leafBlocks.size());
+        while(!todo.empty()) {
+            LeafBlock block = todo.pop();
+            traversal.add(block);
+
+            List<Integer> clockDomains = this.getSourceClockDomains(block);
+            for(LeafBlock sink : block.getSinks()) {
+                sink.addClockDomainSource(clockDomains);
+
+                sink.incrementProcessedSources();
+                if(sink.allSourcesProcessed()) {
+                    todo.add(sink);
+                }
+            }
+        }
+
+        /* For each block and clock domain: store how many sinks
+         * that block has that have a path to a block that is
+         * clocked on that clock domain.
+         */
+        for(int travIndex = traversal.size() - 1; travIndex >= 0; travIndex--) {
+            LeafBlock block = traversal.get(travIndex);
+
+            int numSinks = block.getNumSinks();
+            for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
+                LeafBlock sink = block.getSink(sinkIndex);
+                TimingEdge edge = block.getSinkEdge(sinkIndex);
+
+                List<Integer> clockDomains = this.getSinkClockDomains(sink);
+                for(int clockDomain : clockDomains) {
+                    block.addClockDomainSink(clockDomain, sink, edge);
+                }
+            }
+        }
+    }
+
+    private List<Integer> getSourceClockDomains(LeafBlock block) {
+        List<Integer> clockDomains = new ArrayList<>(this.numClockDomains);
+        if(block.isClocked()) {
+            clockDomains.add(block.getClockDomain());
+
+        } else {
+            int[] clockDomainNumSources = block.getClockDomainNumSources();
+            for(int clockDomain = 0; clockDomain < this.numClockDomains; clockDomain++) {
+                if(clockDomainNumSources[clockDomain] > 0) {
+                    clockDomains.add(clockDomain);
+                }
+            }
+        }
+
+        return clockDomains;
+    }
+
+    private List<Integer> getSinkClockDomains(LeafBlock block) {
+        List<Integer> clockDomains = new ArrayList<>(this.numClockDomains);
+        if(block.isClocked()) {
+            clockDomains.add(block.getClockDomain());
+
+        } else {
+            int[] clockDomainNumSinks = block.getClockDomainNumSinks();
+            for(int clockDomain = 0; clockDomain < this.numClockDomains; clockDomain++) {
+                if(clockDomainNumSinks[clockDomain] > 0) {
+                    clockDomains.add(clockDomain);
+                }
+            }
+        }
+
+        return clockDomains;
+    }
+
+
+
+    private void buildTraversals() {
+        for(int sourceClockDomain = 0; sourceClockDomain < this.numClockDomains; sourceClockDomain++) {
+            for(int sinkClockDomain = 0; sinkClockDomain < this.numClockDomains; sinkClockDomain++) {
+                List<LeafBlock> traversal = this.buildTraversal(sourceClockDomain, sinkClockDomain);
+
+                if(traversal.size() > 0) {
+                    Triple<Integer, Integer, List<LeafBlock>> traversalEntry =
+                        new Triple<>(sourceClockDomain, sinkClockDomain, traversal);
+                    this.traversals.add(traversalEntry);
+                }
+            }
+        }
+    }
+
+    private List<LeafBlock> buildTraversal(int sourceClockDomain, int sinkClockDomain) {
+
+        List<LeafBlock> traversal = new ArrayList<>();
+
+        // Check if the circuit should analyze paths between the
+        // two given clock domains
+        if(!this.includePaths(sourceClockDomain, sinkClockDomain)) {
+            return traversal;
+        }
+
+        for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            block.resetProcessedSources(sourceClockDomain);
+        }
+
+        Stack<LeafBlock> todo = new Stack<>();
+        for(LeafBlock block : this.endPointBlocks) {
+            if(block.getClockDomain() == sourceClockDomain
+                    && block.getClockDomainNumSinks()[sinkClockDomain] > 0) {
+                block.setTraversalRoot();
+                todo.add(block);
+            }
+        }
+
+        /* These traversals only contain blocks that lie between
+         * two clocked blocks on the given clock domain
+         */
+        while(!todo.empty()) {
+            LeafBlock source = todo.pop();
+            traversal.add(source);
+
+            for(LeafBlock sink : source.getSinks()) {
+                // If this sink has a path that lead to a block
+                // that is clocked on the correct clock domain
+                if(sink.getClockDomainNumSinks()[sinkClockDomain] > 0) {
+                    sink.incrementProcessedSources();
+                    if(sink.allSourcesProcessed()) {
+                        todo.add(sink);
+                    }
+                }
+            }
+        }
+
+        return traversal;
+    }
+
+    private boolean includePaths(int sourceClockDomain, int sinkClockDomain) {
+        return
+                sourceClockDomain == this.virtualIoClockDomain
+                || sinkClockDomain == this.virtualIoClockDomain
+                || sourceClockDomain == sinkClockDomain;
+    }
+
+
+
+    /****************************************************************
+     * These functions calculate the criticality of all connections *
+     ******************************************************List<LeafBlock>**********/
+
     public void setCriticalityExponent(double criticalityExponent) {
         this.criticalityExponent = criticalityExponent;
-        this.calculateCriticalities();
+        this.calculateCriticalities(false);
     }
 
 
@@ -189,19 +414,178 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
     }
 
 
-    public void recalculateAllSlacksCriticalities(boolean recalculateWireDelays) {
-        this.calculateArrivalTimes(recalculateWireDelays);
-        this.calculateRequiredTimes();
-        this.calculateCriticalities();
+    public double getMaxDelay() {
+        return this.globalMaxDelay;
+    }
+    public double calculateMaxDelay(boolean calculateWireDelays) {
+        if(calculateWireDelays) {
+            this.calculateWireDelays();
+        }
+
+        this.calculateArrivalTimesAndCriticalities(true);
+        return this.globalMaxDelay;
+    }
+    public void calculateCriticalities(boolean calculateWireDelays) {
+        if(calculateWireDelays) {
+            this.calculateWireDelays();
+        }
+
+        // TODO: DEBUG
+        this.calculateArrivalTimesAndCriticalities(true);
+        //this.calculateArrivalTimesAndCriticalities(false);
     }
 
-    public void calculateArrivalTimes(boolean recalculateWireDelays) {
+    private void calculateArrivalTimesAndCriticalities(boolean calculateCriticalities) {
+
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
-            block.resetTiming();
-            if(recalculateWireDelays) {
-                block.calculateSinkWireDelays();
+            block.resetArrivalTime();
+        }
+
+        if(calculateCriticalities) {
+            for(TimingEdge edge : this.timingEdges) {
+                edge.resetSlack();
             }
         }
+
+        this.globalMaxDelay = 0;
+        for(Triple<Integer, Integer, List<LeafBlock>> traversalEntry : this.traversals) {
+            int sinkClockDomain = traversalEntry.getSecond();
+            List<LeafBlock> traversal = traversalEntry.getThird();
+
+            // Delays are calculated during a forward traversal
+            double maxDelay = this.calculateArrivalTimes(sinkClockDomain, traversal);
+
+            for(LeafBlock block : this.endPointBlocks) {
+                if(block.getName().equals("top^FF_NODE~382")) {
+                    int d = 0;
+                }
+            }
+
+            if(maxDelay > this.globalMaxDelay) {
+                this.globalMaxDelay = maxDelay;
+            }
+
+            /* Slacks and criticalities are calculated during a backward traversal
+             * The global max delay is not known yet, so the endpoint required
+             * times are set to zero. This means all required times are non-positive,
+             * and all the slacks are negative.
+             * When calculating the criticalities, the global max delay is added to
+             * each slack (see TimingEdge.calculateCriticality().
+             */
+             if(calculateCriticalities) {
+                this.calculateCriticalities(sinkClockDomain, traversal);
+             }
+
+             if(traversalEntry.getFirst() == 1 && sinkClockDomain == 1) {
+                 break;
+             }
+        }
+
+
+        if(calculateCriticalities) {
+            for(TimingEdge edge : this.timingEdges) {
+                edge.calculateCriticality(this.globalMaxDelay, this.criticalityExponent);
+            }
+        }
+
+        for(LeafBlock block : this.endPointBlocks) {
+            if(block.toString().equals("memory_slice<>:subckt8317~eccstatus[0]~unconn")) {
+                int d = 0;
+            }
+        }
+
+        LeafBlock prevCritBlock = null;
+        for(LeafBlock block : this.endPointBlocks) {
+            int numSinks = block.getNumSinks();
+            for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
+                TimingEdge edge = block.getSinkEdge(sinkIndex);
+                if(edge.getCriticality() > 0.99999) {
+                    prevCritBlock = block;
+                    break;
+                }
+            }
+            if(prevCritBlock != null) {
+                break;
+            }
+        }
+
+        System.out.printf("%-72s%g\n", prevCritBlock.toString(), prevCritBlock.getArrivalTime());
+        do {
+            int numSinks = prevCritBlock.getNumSinks();
+            LeafBlock critBlock = null;
+            for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
+                TimingEdge edge = prevCritBlock.getSinkEdge(sinkIndex);
+                if(edge.getCriticality() > 0.99999) {
+                    critBlock = prevCritBlock.getSink(sinkIndex);
+                    break;
+                }
+            }
+
+            prevCritBlock = critBlock;
+            System.out.printf("%-72s%g\n", prevCritBlock.toString(), prevCritBlock.getArrivalTime());
+        } while(!prevCritBlock.isClocked());
+
+
+
+        /*for(LeafBlock block : this.endPointBlocks) {
+            if(block.toString().equals("dff<>:sparc_mul_top:mul|sparc_mul_dp:dpath|mul64:mulcore|myout_a1[105]")) {
+                LeafBlock sourceBlock = block;
+                int pathLength = 0;
+                do {
+                    pathLength++;
+                    int sourceIndex = -1;
+                    for(int i = 0; i < sourceBlock.getNumSources(); i++) {
+                        if(sourceBlock.getSourceEdge(i).getCriticality() > 0.9999) {
+                            sourceIndex = i;
+                            break;
+                        }
+                    }
+
+                    sourceBlock = sourceBlock.getSource(sourceIndex);
+                } while(!sourceBlock.isClocked());
+                int d = 0;
+            }
+        }*/
+    }
+
+    public void calculateWireDelays() {
+        for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            block.calculateSinkWireDelays();
+        }
+    }
+
+    private double calculateArrivalTimes(int sinkClockDomain, List<LeafBlock> traversal) {
+        double maxDelay = 0;
+
+        for(LeafBlock block : traversal) {
+            block.resetArrivalTime();
+        }
+
+        for(LeafBlock source : traversal) {
+            if(source.toString().equals("dff<>:sparc_mul_top:mul|sparc_mul_dp:dpath|mul64:mulcore|myout_a1[92]")) {
+                int d = 0;
+            }
+            double maxArrivalTime = source.updateSinkArrivalTimes(sinkClockDomain);
+
+            if(maxArrivalTime > maxDelay) {
+                maxDelay = maxArrivalTime;
+            }
+        }
+
+        return maxDelay;
+    }
+
+    private void calculateCriticalities(int sinkClockDomain, List<LeafBlock> traversal) {
+        for(int travIndex = traversal.size() - 1; travIndex >= 0; travIndex--) {
+            LeafBlock block = traversal.get(travIndex);
+            if(block.toString().equals("dff<>:sparc_mul_top:mul|sparc_mul_dp:dpath|mul64:mulcore|myout_a1[92]")) {
+                int d = 0;
+            }
+            block.updateSlacks(sinkClockDomain);
+        }
+    }
+
+    /*public void calculateArrivalTimes() {
 
         Stack<LeafBlock> todo = new Stack<LeafBlock>();
 
@@ -220,11 +604,13 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
             LeafBlock currentBlock = todo.pop();
 
             double arrivalTime = currentBlock.calculateArrivalTime();
-            if(arrivalTime > this.maxDelay) {
-                this.maxDelay = arrivalTime;
-            }
 
-            if(!currentBlock.isClocked()) {
+            if(currentBlock.isClocked()) {
+                if(arrivalTime > this.maxDelay) {
+                    this.maxDelay = arrivalTime;
+                }
+
+            } else {
                 for(LeafBlock sink : currentBlock.getSinks()) {
                     sink.incrementProcessedSources();
                     if(sink.allSourcesProcessed()) {
@@ -267,13 +653,16 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
 
     public void calculateCriticalities() {
         for(LeafBlock block : this.circuit.getLeafBlocks()) {
+            if(block.toString().equals("lcell_comb<>:subckt77899~shareout~unconn")) {
+                int d = 0;
+            }
             block.calculateCriticalities(this.maxDelay, this.criticalityExponent);
         }
     }
 
     public double getMaxDelay() {
         return this.maxDelay * Math.pow(10, 9);
-    }
+    }*/
 
     public double calculateTotalCost() {
         double totalCost = 0;
@@ -344,7 +733,6 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry>, Seri
     public void revert() {
         // Do nothing
     }
-
 
 
     // Iterator methods

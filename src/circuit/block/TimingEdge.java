@@ -2,8 +2,9 @@ package circuit.block;
 
 public class TimingEdge {
 
-    private double fixedDelay, totalDelay, criticality;
-    private transient double stagedTotalDelay;
+    private double fixedDelay, totalDelay;
+    private double slack, criticality;
+    private double stagedTotalDelay;
 
 
     TimingEdge(double fixedDelay) {
@@ -25,6 +26,33 @@ public class TimingEdge {
         this.totalDelay = this.fixedDelay + wireDelay;
     }
 
+
+    void resetSlack() {
+        this.slack = 0;
+        this.criticality = 0;
+    }
+    void setSlack(double slack) {
+        this.slack = slack;
+        if(slack < -5e-8) {
+            int d = 0;
+        }
+    }
+    double getSlack() {
+        return this.slack;
+    }
+
+    void calculateCriticality(double maxDelay, double criticalityExponent) {
+        this.criticality = Math.pow(1 - (maxDelay + this.slack) / maxDelay, criticalityExponent);
+    }
+    public double getCriticality() {
+        return this.criticality;
+    }
+
+
+    /*************************************************
+     * Functions that facilitate simulated annealing *
+     *************************************************/
+
     double getStagedTotalDelay() {
         return this.stagedTotalDelay;
     }
@@ -34,14 +62,6 @@ public class TimingEdge {
     void resetStagedDelay() {
         this.stagedTotalDelay = this.totalDelay;
     }
-
-    public double getCriticality() {
-        return this.criticality;
-    }
-    void setCriticality(double criticality) {
-        this.criticality = criticality;
-    }
-
 
     void pushThrough() {
         this.totalDelay = this.stagedTotalDelay;

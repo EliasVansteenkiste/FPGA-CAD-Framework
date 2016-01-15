@@ -29,7 +29,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
         this.timingGraph = this.circuit.getTimingGraph();
         this.timingGraph.setCriticalityExponent(this.criticalityExponent);
-        this.timingGraph.recalculateAllSlacksCriticalities(true);
+        this.timingGraph.calculateCriticalities(true);
     }
 
 
