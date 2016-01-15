@@ -106,25 +106,11 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
     }
 
     private void traverseFromSource(LeafBlock pathSource) {
-
+        double clockDelay = this.getSetupTimeAndSetClockDomain(pathSource);
 
         LinkedList<Triple<Integer, AbstractPin, Double>> stack = new LinkedList<>();
 
-        if(pathSource.isClocked()) {
-            int sourcePinIndex = 0;
-            double clockDelay = this.getSetupTimeAndSetClockDomain(pathSource);
-
-            for(AbstractPin outputPin : pathSource.getOutputPins()) {
-                double setupDelay = clockDelay + outputPin.getPortType().getSetupTime();
-
-                // Insert elements at the bottom of the stack, so that the output pins of
-                // the source block will be processed in ascending order. This is necessary
-                // for the method addSink().
-                stack.addLast(new Triple<Integer, AbstractPin, Double>(sourcePinIndex, outputPin, setupDelay));
-
-                sourcePinIndex++;
-        }
-
+        int sourcePinIndex = 0;
         for(AbstractPin outputPin : pathSource.getOutputPins()) {
             double setupDelay = clockDelay;
             if(pathSource.isClocked()) {
@@ -141,7 +127,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
         while(stack.size() > 0) {
             Triple<Integer, AbstractPin, Double> entry = stack.pop();
-            int pathSourcePinIndex = entry.getFirst();
+            int currentSourcePinIndex = entry.getFirst();
             AbstractPin currentPin = entry.getSecond();
             double currentDelay = entry.getThird();
 
@@ -162,7 +148,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                     endDelay = currentPin.getPortType().getDelay(outputPins.get(0).getPortType());
                 }
 
-                TimingEdge edge = pathSource.addSink(pathSourcePinIndex, pathSink, currentDelay + endDelay);
+                TimingEdge edge = pathSource.addSink(currentSourcePinIndex, pathSink, currentDelay + endDelay);
                 this.timingEdges.add(edge);
 
             // The block has children: proceed with the sinks of the current pin
@@ -172,7 +158,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                         double sourceSinkDelay = currentPin.getPortType().getDelay(sinkPin.getPortType());
                         double totalDelay = currentDelay + sourceSinkDelay;
 
-                        stack.push(new Triple<Integer, AbstractPin, Double>(pathSourcePinIndex, sinkPin, totalDelay));
+                        stack.push(new Triple<Integer, AbstractPin, Double>(currentSourcePinIndex, sinkPin, totalDelay));
                     }
                 }
             }
