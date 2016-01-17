@@ -10,6 +10,7 @@ import circuit.exceptions.InvalidBlockException;
 import circuit.exceptions.PlacedBlockException;
 import circuit.exceptions.UnplacedBlockException;
 import circuit.pin.GlobalPin;
+import circuit.timing.TimingNode;
 
 public class GlobalBlock extends AbstractBlock {
 

@@ -1,4 +1,4 @@
-package circuit.block;
+package circuit.timing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,10 +12,13 @@ import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
 import circuit.architecture.DelayTables;
 import circuit.architecture.PortType;
-import circuit.block.TimingNode.Position;
+import circuit.block.AbstractBlock;
+import circuit.block.GlobalBlock;
+import circuit.block.LeafBlock;
 import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 import circuit.pin.LeafPin;
+import circuit.timing.TimingNode.Position;
 
 import placers.SAPlacer.Swap;
 import util.Pair;

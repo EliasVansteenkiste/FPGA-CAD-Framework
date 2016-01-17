@@ -2,7 +2,7 @@ package circuit.pin;
 
 import circuit.architecture.PortType;
 import circuit.block.LeafBlock;
-import circuit.block.TimingNode;
+import circuit.timing.TimingNode;
 
 public class LeafPin extends LocalPin {
 

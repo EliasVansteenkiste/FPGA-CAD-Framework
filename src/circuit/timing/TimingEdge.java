@@ -1,4 +1,4 @@
-package circuit.block;
+package circuit.timing;
 
 public class TimingEdge {
 
@@ -37,9 +37,6 @@ public class TimingEdge {
     }
     void setSlack(double slack) {
         this.slack = slack;
-        if(slack < -5e-8) {
-            int d = 0;
-        }
     }
     double getSlack() {
         return this.slack;

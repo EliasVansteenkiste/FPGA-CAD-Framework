@@ -11,7 +11,7 @@ import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.architecture.DelayTables;
 import circuit.block.GlobalBlock;
-import circuit.block.TimingGraph;
+import circuit.timing.TimingGraph;
 
 class CostCalculatorTD extends CostCalculator {
 

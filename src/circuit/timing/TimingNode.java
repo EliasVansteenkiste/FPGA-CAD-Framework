@@ -1,10 +1,12 @@
-package circuit.block;
+package circuit.timing;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import circuit.architecture.BlockCategory;
 import circuit.architecture.DelayTables;
+import circuit.block.GlobalBlock;
+import circuit.block.LeafBlock;
 import circuit.pin.LeafPin;
 
 public class TimingNode {

@@ -18,12 +18,11 @@ import circuit.architecture.BlockType;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
-import circuit.block.LeafBlock;
 import circuit.block.Macro;
-import circuit.block.TimingEdge;
-import circuit.block.TimingNode;
-import circuit.block.TimingNode.Position;
 import circuit.exceptions.PlacementException;
+import circuit.timing.TimingEdge;
+import circuit.timing.TimingNode;
+import circuit.timing.TimingNode.Position;
 
 import placers.Placer;
 import visual.PlacementVisualizer;

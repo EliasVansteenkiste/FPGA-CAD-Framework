@@ -19,8 +19,8 @@ import circuit.block.IOSite;
 import circuit.block.LeafBlock;
 import circuit.block.Macro;
 import circuit.block.Site;
-import circuit.block.TimingGraph;
 import circuit.pin.GlobalPin;
+import circuit.timing.TimingGraph;
 
 public class Circuit {
 
