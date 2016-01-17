@@ -19,7 +19,7 @@ import circuit.architecture.PortType;
 import circuit.block.AbstractBlock;
 import circuit.block.GlobalBlock;
 import circuit.block.LeafBlock;
-import circuit.block.IntermediateBlock;
+import circuit.block.LocalBlock;
 import circuit.pin.AbstractPin;
 
 public class NetParser {
@@ -246,10 +246,10 @@ public class NetParser {
 
             if(blockType.isLeaf()) {
                 GlobalBlock globalParent = (GlobalBlock) this.blockStack.peekLast();
-                newBlock = new LeafBlock(this.architecture.getDelayTables(), name, blockType, index, parent, globalParent);
+                newBlock = new LeafBlock(name, blockType, index, parent, globalParent);
 
             } else {
-                newBlock = new IntermediateBlock(name, blockType, index, parent);
+                newBlock = new LocalBlock(name, blockType, index, parent);
             }
         }
 
@@ -374,11 +374,11 @@ public class NetParser {
 
             // The net is incident to an input port. It has an input port of the parent block as source.
             if(sourceBlockIndex == -1) {
-                sourceBlock = ((IntermediateBlock) sinkBlock).getParent();
+                sourceBlock = ((LocalBlock) sinkBlock).getParent();
 
             // The net is incident to an input port. It has a sibling's output port as source.
             } else if(sinkPin.isInput()) {
-                AbstractBlock parent = ((IntermediateBlock) sinkBlock).getParent();
+                AbstractBlock parent = ((LocalBlock) sinkBlock).getParent();
                 BlockType sourceBlockType = new BlockType(parent.getType(), sourceBlockName);
                 sourceBlock = parent.getChild(sourceBlockType, sourceBlockIndex);
 

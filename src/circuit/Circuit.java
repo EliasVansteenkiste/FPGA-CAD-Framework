@@ -37,7 +37,7 @@ public class Circuit {
     private List<BlockType> globalBlockTypes;
     private List<BlockType> leafBlockTypes;
     private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
-    private List<LeafBlock> leafBlockList = new ArrayList<LeafBlock>();
+    private List<LeafBlock> leafBlockList = new ArrayList<LeafBlock>(); // TODO: remove this
     private List<Macro> macros = new ArrayList<Macro>();
 
     private List<BlockType> columns;
@@ -86,6 +86,7 @@ public class Circuit {
             this.globalBlockList.addAll(blocksOfType);
         }
 
+        // TODO: remove this
         for(BlockType blockType : this.leafBlockTypes) {
             @SuppressWarnings("unchecked")
             List<LeafBlock> blocksOfType = (List<LeafBlock>) (List<?>) this.blocks.get(blockType);

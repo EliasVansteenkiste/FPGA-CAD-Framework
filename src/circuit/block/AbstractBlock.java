@@ -19,7 +19,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     private int index;
     private boolean clocked;
 
-    private List<IntermediateBlock> children;
+    private List<LocalBlock> children;
     private List<AbstractPin> pins;
 
     public AbstractBlock(String name, BlockType blockType, int index) {
@@ -31,7 +31,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         this.clocked = blockType.isClocked();
 
         int numChildren = blockType.getNumChildren();
-        this.children = new ArrayList<IntermediateBlock>(Collections.nCopies(numChildren, (IntermediateBlock) null));
+        this.children = new ArrayList<LocalBlock>(Collections.nCopies(numChildren, (LocalBlock) null));
 
 
         int numPins = blockType.getNumPins();
@@ -84,17 +84,17 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
 
 
-    public List<IntermediateBlock> getChildren() {
+    public List<LocalBlock> getChildren() {
         return this.children;
     }
-    public List<IntermediateBlock> getChildren(BlockType blockType) {
+    public List<LocalBlock> getChildren(BlockType blockType) {
         int[] childRange = this.blockType.getChildRange(blockType);
         return this.children.subList(childRange[0], childRange[1]);
     }
-    public IntermediateBlock getChild(BlockType blockType, int childIndex) {
+    public LocalBlock getChild(BlockType blockType, int childIndex) {
         return this.getChildren(blockType).get(childIndex);
     }
-    public void setChild(IntermediateBlock block, int childIndex) {
+    public void setChild(LocalBlock block, int childIndex) {
         int childStart = this.blockType.getChildRange(block.getType())[0];
         this.children.set(childStart + childIndex, block);
     }
