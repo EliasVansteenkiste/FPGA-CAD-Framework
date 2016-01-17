@@ -371,8 +371,8 @@ class HeapLegalizer extends Legalizer {
                 // If this is a macro:
                 // Update the goal area to contain the entire macro
                 if(block.macroHeight > 1) {
-                    goalArea.top = Math.max(goalArea.top, row + block.macroHeight - 1 - block.offset);
-                    goalArea.bottom = Math.min(goalArea.bottom, row - block.offset);
+                    goalArea.top = Math.min(this.height - 2, Math.max(goalArea.top, row + block.macroHeight - 1 - block.offset));
+                    goalArea.bottom = Math.max(1, Math.min(goalArea.bottom, row - block.offset));
                 }
             }
         }

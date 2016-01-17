@@ -47,6 +47,7 @@ public class GradientPlacerTD extends GradientPlacer {
         super.initializeData();
 
         this.timingGraph.setCriticalityExponent(this.criticalityExponent);
+        this.timingGraph.calculateCriticalities(true);
 
         this.costCalculator = new CostCalculatorTD(
                 this.circuit,

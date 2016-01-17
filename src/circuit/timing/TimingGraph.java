@@ -442,7 +442,6 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
     public void setCriticalityExponent(double criticalityExponent) {
         this.criticalityExponent = criticalityExponent;
-        this.calculateCriticalities(false);
     }
 
 
