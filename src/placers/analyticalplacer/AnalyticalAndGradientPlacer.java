@@ -21,6 +21,8 @@ import circuit.block.GlobalBlock;
 import circuit.block.LeafBlock;
 import circuit.block.Macro;
 import circuit.block.TimingEdge;
+import circuit.block.TimingNode;
+import circuit.block.TimingNode.Position;
 import circuit.exceptions.PlacementException;
 
 import placers.Placer;
@@ -183,12 +185,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
             NetBlock sourceBlock = this.netBlocks.get(sourceGlobalBlock);
 
-            for(LeafBlock sourceLeafBlock : sourceGlobalBlock.getLeafBlocks()) {
-
-                // Loop through the output pins of the leaf block
-                int numOutputPins = sourceLeafBlock.numOutputPins();
-                for(int pinIndex = 0; pinIndex < numOutputPins; pinIndex++) {
-                    this.addNet(sourceBlock, sourceLeafBlock, pinIndex);
+            for(TimingNode sourceTimingNode : sourceGlobalBlock.getTimingNodes()) {
+                if(sourceTimingNode.getPosition() != Position.LEAF) {
+                    this.addNet(sourceBlock, sourceTimingNode);
                 }
             }
         }
@@ -196,17 +195,17 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.stopTimer(T_INITIALIZE_DATA);
     }
 
-    private void addNet(NetBlock sourceBlock, LeafBlock sourceLeafBlock, int pinIndex) {
-        int[] sinkRange = sourceLeafBlock.getSinkRange(pinIndex);
-        int numSinks = sinkRange[1] - sinkRange[0];
-
+    private void addNet(NetBlock sourceBlock, TimingNode sourceNode) {
+        int numSinks = sourceNode.getNumSinks();
         TimingNet timingNet = new TimingNet(sourceBlock, numSinks);
-        for(int i = 0; i < numSinks; i++) {
-            TimingEdge timingEdge = sourceLeafBlock.getSinkEdge(sinkRange[0] + i);
-            GlobalBlock sinkGlobalBlock = sourceLeafBlock.getSink(sinkRange[0] + i).getGlobalParent();
+
+        for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
+            GlobalBlock sinkGlobalBlock = sourceNode.getSink(sinkIndex).getGlobalBlock();
             NetBlock sinkBlock = this.netBlocks.get(sinkGlobalBlock);
 
-            timingNet.sinks[i] = new TimingNetBlock(sinkBlock, timingEdge);
+            TimingEdge timingEdge = sourceNode.getSinkEdge(sinkIndex);
+
+            timingNet.sinks[sinkIndex] = new TimingNetBlock(sinkBlock, timingEdge);
         }
 
         Net net = new Net(timingNet);

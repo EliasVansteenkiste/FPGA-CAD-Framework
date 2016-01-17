@@ -14,13 +14,19 @@ import circuit.pin.GlobalPin;
 public class GlobalBlock extends AbstractBlock {
 
     private AbstractSite site;
-    private ArrayList<LeafBlock> leafs = new ArrayList<LeafBlock>();
+    private ArrayList<TimingNode> timingNodes = new ArrayList<TimingNode>();
 
     private Macro macro;
     private int macroOffsetY = 0;
 
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
+    }
+
+    @Override
+    public void compact() {
+        super.compact();
+        this.timingNodes.trimToSize();
     }
 
     public AbstractSite getSite() {
@@ -76,11 +82,11 @@ public class GlobalBlock extends AbstractBlock {
     }
 
 
-    public void addLeaf(LeafBlock block) {
-        this.leafs.add(block);
+    public void addTimingNode(TimingNode node) {
+        this.timingNodes.add(node);
     }
-    public List<LeafBlock> getLeafBlocks() {
-        return this.leafs;
+    public List<TimingNode> getTimingNodes() {
+        return this.timingNodes;
     }
 
     @Override
@@ -91,11 +97,5 @@ public class GlobalBlock extends AbstractBlock {
     @Override
     protected GlobalPin createPin(PortType portType, int index) {
         return new GlobalPin(this, portType, index);
-    }
-
-    @Override
-    public void compact() {
-        super.compact();
-        this.leafs.trimToSize();
     }
 }

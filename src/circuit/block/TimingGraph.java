@@ -3,7 +3,6 @@ package circuit.block;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -17,7 +16,6 @@ import circuit.block.TimingNode.Position;
 import circuit.exceptions.PlacementException;
 import circuit.pin.AbstractPin;
 import circuit.pin.LeafPin;
-import circuit.pin.LocalPin;
 
 import placers.SAPlacer.Swap;
 import util.Pair;
@@ -36,7 +34,8 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
     private int virtualIoClockDomain;
 
     private List<TimingNode> timingNodes = new ArrayList<>(),
-                             startNodes = new ArrayList<>();
+                             startNodes = new ArrayList<>(),
+                             affectedNodes = new ArrayList<>();
 
     private List<TimingEdge> timingEdges  = new ArrayList<>();
 
@@ -110,29 +109,24 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                     }
                 }
 
-                // Add the output pins of this timing graph root
-                if(isClocked || isConstantGenerator) {
-                    for(AbstractPin abstractPin : block.getOutputPins()) {
-                        LeafPin outputPin = (LeafPin) abstractPin;
-                        TimingNode node = new TimingNode(block, outputPin, Position.ROOT, clockDomain, this.delayTables);
+
+                // Add the output pins of this timing graph root or intermediate node
+                Position position = (isClocked || isConstantGenerator) ? Position.ROOT : Position.INTERMEDIATE;
+                for(AbstractPin abstractPin : block.getOutputPins()) {
+                    LeafPin outputPin = (LeafPin) abstractPin;
+
+                    if(outputPin.getNumSinks() > 0) {
+                        TimingNode node = new TimingNode(block, outputPin, position, clockDomain, this.delayTables);
                         outputPin.setTimingNode(node);
 
-                        clockDelays.add(clockDelay + outputPin.getPortType().getSetupTime());
-                        // TODO: no TimingNodes in output pins without sinks
                         this.timingNodes.add(node);
-                        this.startNodes.add(node);
-                    }
 
-                // Add the output pins of an intermediate (non-clocked) block
-                } else {
-                    for(AbstractPin abstractPin : block.getOutputPins()) {
-                        LeafPin outputPin = (LeafPin) abstractPin;
-                        TimingNode node = new TimingNode(block, outputPin, Position.INTERMEDIATE, clockDomain, this.delayTables);
-                        outputPin.setTimingNode(node);
-
-                        clockDelays.add(0.0);
-                        // TODO: no TimingNodes in pins without sinks
-                        this.timingNodes.add(node);
+                        if(position == Position.ROOT) {
+                            clockDelays.add(clockDelay + outputPin.getPortType().getSetupTime());
+                            this.startNodes.add(node);
+                        } else {
+                            clockDelays.add(0.0);
+                        }
                     }
                 }
             }
@@ -142,9 +136,6 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         for(int i = 0; i < numNodes; i++) {
             TimingNode node = this.timingNodes.get(i);
             if(node.getPosition() != Position.LEAF && !this.clockNamesToDomains.containsKey(node.getPin().getOwner().getName())) {
-                if(node.toString().equals("lcell_comb<>:subckt60655~shareout~unconn.combout[0]")) {
-                    int d = 0;
-                }
                 this.traverseFromSource(node, clockDelays.get(i));
             }
         }
@@ -219,8 +210,13 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
             if(this.isEndpin(sourceBlock, sourcePin, pathSourcePin)) {
                 delay += sourcePortType.getSetupTime();
                 TimingNode pathSinkNode = ((LeafPin) sourcePin).getTimingNode();
-                TimingEdge edge = pathSourceNode.addSink(pathSinkNode, delay);
-                this.timingEdges.add(edge);
+
+                // If pathSinkNode is null, this sinkPin doesn't have any sinks
+                // so isn't used in the timing graph
+                if(pathSinkNode != null) {
+                    TimingEdge edge = pathSourceNode.addSink(pathSinkNode, delay);
+                    this.timingEdges.add(edge);
+                }
 
             } else {
                 List<AbstractPin> sinkPins;
@@ -456,9 +452,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
             this.calculateWireDelays();
         }
 
-        // TODO: DEBUG
-        this.calculateArrivalTimesAndCriticalities(true);
-        //this.calculateArrivalTimesAndCriticalities(false);
+        this.calculateArrivalTimesAndCriticalities(false);
         return this.globalMaxDelay;
     }
     public void calculateCriticalities(boolean calculateWireDelays) {
@@ -513,67 +507,6 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                 edge.calculateCriticality(this.globalMaxDelay, this.criticalityExponent);
             }
         }
-
-
-
-        for(TimingNode node : this.timingNodes) {
-            if(node.toString().equals("dff<>:lsu:lsu|lsu_stb_rwctl:stb_rwctl|dff_s:ioldced_stgw2|q[0].q[0]")) {
-                int d = 0;
-            }
-        }
-
-        TimingNode prevCritNode = null;
-        for(TimingNode node : this.startNodes) {
-            int numSinks = node.getNumSinks();
-            for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
-                TimingEdge edge = node.getSinkEdge(sinkIndex);
-                if(edge.getCriticality() > 0.99999) {
-                    prevCritNode = node;
-                    break;
-                }
-            }
-            if(prevCritNode != null) {
-                break;
-            }
-        }
-
-        System.out.printf("%-72s%g\n", prevCritNode.toString(), prevCritNode.getArrivalTime());
-        do {
-            int numSinks = prevCritNode.getNumSinks();
-            TimingNode critBlock = null;
-            for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
-                TimingEdge edge = prevCritNode.getSinkEdge(sinkIndex);
-                if(edge.getCriticality() > 0.99999) {
-                    critBlock = prevCritNode.getSink(sinkIndex);
-                    break;
-                }
-            }
-
-            prevCritNode = critBlock;
-            System.out.printf("%-72s%g\n", prevCritNode.toString(), prevCritNode.getArrivalTime());
-        } while(!prevCritNode.getBlock().isClocked());
-
-
-
-        /*for(LeafBlock block : this.endPointBlocks) {
-            if(block.toString().equals("dff<>:sparc_mul_top:mul|sparc_mul_dp:dpath|mul64:mulcore|myout_a1[105]")) {
-                LeafBlock sourceBlock = block;
-                int pathLength = 0;
-                do {
-                    pathLength++;
-                    int sourceIndex = -1;
-                    for(int i = 0; i < sourceBlock.getNumSources(); i++) {
-                        if(sourceBlock.getSourceEdge(i).getCriticality() > 0.9999) {
-                            sourceIndex = i;
-                            break;
-                        }
-                    }
-
-                    sourceBlock = sourceBlock.getSource(sourceIndex);
-                } while(!sourceBlock.isClocked());
-                int d = 0;
-            }
-        }*/
     }
 
     public void calculateWireDelays() {
@@ -690,7 +623,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         double totalCost = 0;
 
         for(TimingEdge edge : this.timingEdges) {
-            totalCost += edge.getCriticality() * edge.getTotalDelay();
+            totalCost += edge.getCost();
         }
 
         return totalCost;
@@ -700,7 +633,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
     public double calculateDeltaCost(Swap swap) {
         double cost = 0;
 
-        this.affectedBlocks.clear();
+        this.affectedNodes.clear();
 
 
         // Switch the positions of the blocks
@@ -735,11 +668,11 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
     }
 
     private double calculateDeltaCost(GlobalBlock block1, GlobalBlock block2) {
-        List<LeafBlock> nodes1 = block1.getLeafBlocks();
-        this.affectedBlocks.addAll(nodes1);
+        List<TimingNode> nodes1 = block1.getTimingNodes();
+        this.affectedNodes.addAll(nodes1);
 
         double cost = 0;
-        for(LeafBlock node : nodes1) {
+        for(TimingNode node : nodes1) {
             cost += node.calculateDeltaCost(block2);
         }
 
@@ -747,8 +680,8 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
     }
 
     public void pushThrough() {
-        for(LeafBlock block : this.affectedBlocks) {
-            block.pushThrough();
+        for(TimingNode node : this.affectedNodes) {
+            node.pushThrough();
         }
     }
 
@@ -771,8 +704,8 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         private GlobalBlock sourceGlobalBlock;
         private Iterator<GlobalBlock> sourceGlobalBlockIterator;
 
-        private LeafBlock sourceBlock;
-        private Iterator<LeafBlock> sourceBlockIterator;
+        private TimingNode sourceNode;
+        private Iterator<TimingNode> sourceNodeIterator;
 
         private int maxSinkIndex, sinkIndex;
 
@@ -783,10 +716,10 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
             this.sourceGlobalBlockIterator = globalBlocks.iterator();
 
             this.sourceGlobalBlock = this.sourceGlobalBlockIterator.next();
-            this.sourceBlockIterator = this.sourceGlobalBlock.getLeafBlocks().iterator();
+            this.sourceNodeIterator = this.sourceGlobalBlock.getTimingNodes().iterator();
 
-            this.sourceBlock = this.sourceBlockIterator.next();
-            this.maxSinkIndex = this.sourceBlock.getNumSinks();
+            this.sourceNode = this.sourceNodeIterator.next();
+            this.maxSinkIndex = this.sourceNode.getNumSinks();
             this.sinkIndex = 0;
         }
 
@@ -798,29 +731,29 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
             while(this.sinkIndex < this.maxSinkIndex) {
 
-                while(!this.sourceBlockIterator.hasNext()) {
+                while(!this.sourceNodeIterator.hasNext()) {
                     if(!this.sourceGlobalBlockIterator.hasNext()) {
                         return false;
                     }
 
                     this.sourceGlobalBlock = this.sourceGlobalBlockIterator.next();
-                    this.sourceBlockIterator = this.sourceGlobalBlock.getLeafBlocks().iterator();
+                    this.sourceNodeIterator = this.sourceGlobalBlock.getTimingNodes().iterator();
                 }
 
-                this.sourceBlock = this.sourceBlockIterator.next();
-                this.maxSinkIndex = this.sourceBlock.getNumSinks();
+                this.sourceNode = this.sourceNodeIterator.next();
+                this.maxSinkIndex = this.sourceNode.getNumSinks();
                 this.sinkIndex = 0;
             }
 
-            LeafBlock sink = this.sourceBlock.getSink(this.sinkIndex);
-            TimingEdge edge = this.sourceBlock.getSinkEdge(this.sinkIndex);
+            TimingNode sink = this.sourceNode.getSink(this.sinkIndex);
+            TimingEdge edge = this.sourceNode.getSinkEdge(this.sinkIndex);
             this.sinkIndex++;
 
             this.cachedEntry = new TimingGraphEntry(
                     this.sourceGlobalBlock,
-                    sink.getGlobalParent(),
+                    sink.getGlobalBlock(),
                     edge.getCriticality(),
-                    this.sourceBlock.getNumSinks());
+                    this.sourceNode.getNumSinks());
 
             return true;
         }

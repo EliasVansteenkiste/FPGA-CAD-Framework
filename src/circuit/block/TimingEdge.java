@@ -26,6 +26,10 @@ public class TimingEdge {
         this.totalDelay = this.fixedDelay + wireDelay;
     }
 
+    public double getCost() {
+        return this.criticality * this.totalDelay;
+    }
+
 
     void resetSlack() {
         this.slack = 0;
@@ -65,6 +69,10 @@ public class TimingEdge {
 
     void pushThrough() {
         this.totalDelay = this.stagedTotalDelay;
+    }
+
+    double getDeltaCost() {
+        return this.criticality * (this.stagedTotalDelay - this.totalDelay);
     }
 
 
