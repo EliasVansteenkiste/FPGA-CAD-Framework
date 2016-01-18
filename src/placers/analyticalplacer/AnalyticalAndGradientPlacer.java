@@ -348,7 +348,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
 
-u        this.circuit.getTimingGraph().calculateCriticalities(true);
+        this.circuit.getTimingGraph().calculateCriticalities(true);
     }
 
 

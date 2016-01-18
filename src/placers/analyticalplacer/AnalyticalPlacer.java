@@ -92,7 +92,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
             // Normally we don't use a pseudo weight in the first iteration.
             // This can lead to diagonal elements in the matrix that are equal
             // to zero, which must be avoided
-            double anchorWeight = iteration == 0 ? 2 : this.anchorWeight;
             LinearSolverAnalytical solver = new LinearSolverAnalytical(
                     this.linearX,
                     this.linearY,

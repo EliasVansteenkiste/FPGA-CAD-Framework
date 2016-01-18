@@ -72,11 +72,11 @@ class HeapLegalizer extends Legalizer {
         // Legalize all unabsorbed areas
         for(Area area : areas) {
             if(!area.isAbsorbed()) {
-                //System.out.printf("(%d, %d, %d, %d), %b\n", area.left, area.top, area.right, area.bottom, area.isAbsorbed());
                 this.legalizeArea(area);
             }
         }
     }
+
 
 
     private void initializeBlockMatrix(int blocksStart, int blocksEnd) {
@@ -499,21 +499,32 @@ class HeapLegalizer extends Legalizer {
 
         } else {
 
-            int numRowsBottom = numRows / 2;
-
-            if(blocks.maxHeight() <= numRowsBottom) {
-                capacity1 = numRowsBottom * numColumns;
-                splitPosition = area.bottom + (numRowsBottom) * this.blockHeight;
-
-                area2 = area1.splitVertical(splitPosition, this.blockHeight);
+            int maxHeight = blocks.maxHeight();
 
             // If there is a macro that is higher than half of the
-            // current area size
-            } else {
+            // current area height: split horizontally to isolate
+            // the column with the high block
+            if(maxHeight > numRows / 2) {
                 this.splitHighBlock(blocks, area, numRows, numColumns);
 
                 // splitHighBlock will make recursive calls to legalizeArea()
                 return;
+
+            } else {
+                // If there is a macro that is higher than a quarter of
+                // the current area height: don't just split in the middle
+                int numRowsBottom;
+                // TODO: does this improve the result?
+                if(maxHeight > numRows / 4) {
+                    numRowsBottom = numRows - maxHeight;
+                } else {
+                    numRowsBottom = numRows / 2;
+                }
+
+                capacity1 = numRowsBottom * numColumns;
+                splitPosition = area.bottom + (numRowsBottom) * this.blockHeight;
+
+                area2 = area1.splitVertical(splitPosition, this.blockHeight);
             }
         }
 
