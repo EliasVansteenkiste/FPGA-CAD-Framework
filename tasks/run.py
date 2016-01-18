@@ -34,9 +34,15 @@ base_commands = {
     ],
 }
 
-statistics_arguments = [
-    '--input_place_file', '{place_file}',
-]
+
+
+def silentremove(filename):
+    # source: http://stackoverflow.com/a/10840586
+    try:
+        os.remove(filename)
+    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise # re-raise exception if a different error occured
 
 
 def ascii_encode(string):
@@ -75,7 +81,7 @@ def argument_sets(arguments):
 
 
 def call(command, stats, regexes):
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(' '.join(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     out, err = process.communicate()
     out = out.decode('utf-8')
     err = err.decode('utf-8')
@@ -91,6 +97,8 @@ def call(command, stats, regexes):
             if match:
                 stats[i] = match.group(1)
 
+    return out
+
 
 folder = os.path.join(os.path.split(os.getcwd())[1], sys.argv[1])
 os.chdir('..')
@@ -100,29 +108,37 @@ config_file = open(config_path)
 config = json.load(config_file, object_pairs_hook=ascii_encode_ordered_dict)
 
 # Get some config options
-placer = config['placer']
-call_statistics = (placer == 'vpr')
-
-route = config['route']
 architecture_file = config['architecture']
 blif_file = config['blif_file']
 net_file = config['net_file']
 
-stat_names = [str(k) for k in config['stats'].keys()]
-stat_regexes = [str(v) for v in config['stats'].values()]
-num_stats = len(stat_names)
+placer = config['placer']
+
+stat_names = config['stats'].keys()
+stat_regexes = config['stats'].values()
 
 # Build the base command
-base_command = substitute(base_commands[placer], {
-    'architecture_file': architecture_file,
-    'blif_file': blif_file,
-    'net_file': net_file,
-})
-base_stats_command = substitute(base_commands['java'], {
-    'architecture_file': architecture_file,
-    'blif_file': blif_file,
-    'net_file': net_file,
-})
+base_command = base_commands[placer]
+extra_command = []
+
+# Set the router and statistics command (if needed)
+call_router = config['route']
+if call_router:
+    stat_names += ['post-routing bb cost', 'post-routing max delay']
+    stat_regexes += [
+        'Total wirelength: ([0-9.e+-]+), average net length',
+        'Final critical path: ([0-9.e+-]+) ns'
+    ]
+
+    if placer == 'java':
+        extra_command += [';'] + base_commands['vpr'][:-3]
+
+    extra_command += ['--route']
+
+call_statistics = (placer == 'vpr')
+if call_statistics:
+    extra_command += [';'] + base_commands['java'][:-2] + ['--input_place_file', '{place_file}']
+
 
 # Get the circuits
 circuits = config['circuits']
@@ -142,6 +158,9 @@ num_iterations = len(argument_sets)
 
 summary_file = open(os.path.join(folder, 'summary.csv'), 'w')
 summary_writer = csv.writer(summary_file)
+summary_writer.writerow(['circuit'] + stat_names)
+
+num_stats = len(stat_names)
 
 for iteration in range(num_iterations):
 
@@ -160,15 +179,13 @@ for iteration in range(num_iterations):
     argument_set = argument_sets[iteration]
     place_file = os.path.join(output_folder, '{circuit}.place')
     route_file = os.path.join(output_folder, '{circuit}.route')
-    substitutions = {
-        'place_file': place_file},
-        'route_file': route_file}
-    }
-
-    command = substitute(base_command + argument_set, substitutions)
-    if call_statistics:
-        stats_command = substitute(base_stats_command + statistics_arguments, substitutions)
-
+    command = substitute(base_command + argument_set + extra_command, {
+        'architecture_file': architecture_file,
+        'blif_file': blif_file,
+        'net_file': net_file,
+        'place_file': place_file,
+        'route_file': route_file
+    })
 
     print(iteration_name + ': ' + ' '.join(argument_set))
 
@@ -178,14 +195,18 @@ for iteration in range(num_iterations):
         print('    ' + circuit)
 
         # Call the placer and get statistics
-        circuit_stats = [None] * len(stat_names)
+        circuit_stats = [''] * num_stats
         circuit_command = substitute(command, {'circuit': circuit})
-        call(circuit_command, circuit_stats, stat_regexes)
+        out = call(circuit_command, circuit_stats, stat_regexes)
 
-        # If necessary: let java calculate correct statistics
-        if call_statistics:
-            circuit_stats_command = substitute(stats_command, {'circuit': circuit})
-            call(circuit_stats_command, circuit_stats, stat_regexes)
+        silentremove(circuit + '.critical_path.out')
+        silentremove(circuit + '.slack.out')
+        silentremove('vpr_stdout.log')
+
+        dump_file = open(os.path.join(output_folder, circuit + '.log'), 'w')
+        dump_file.write(out)
+        dump_file.close()
+
 
         for i in range(num_stats):
             geomeans[i] *= float(circuit_stats[i])
@@ -195,14 +216,13 @@ for iteration in range(num_iterations):
     for i in range(num_stats):
         geomeans[i] = str(math.pow(geomeans[i], 1.0 / len(circuits)))
 
-    stats_writer.writerow([''] + geomeans)
+    stats_writer.writerow([])
+    stats_writer.writerow(['geomeans'] + geomeans)
     summary_writer.writerow([iteration_name] + geomeans)
 
     empty_row = [''] * (num_stats + 1)
     stats_writer.writerow(empty_row + [' '.join(argument_set)])
     stats_writer.writerow(empty_row + [' '.join(command)])
-    if call_statistics:
-        stats_writer.writerow(empty_row + [' '.join(stats_command)])
 
     stats_file.close()
 

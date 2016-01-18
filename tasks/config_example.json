@@ -1,5 +1,5 @@
 {
-    "placer": "vpr",
+    "placer": "java",
     "route": true,
     "architecture": "benchmarks/vpr/k6_frac_N10_mem32K_40nm.xml",
     "blif_file": "benchmarks/vpr/{circuit}.blif",
@@ -8,11 +8,12 @@
     "circuits": "stereovision3 ch_intrinsics",
 
     "arguments": {
+        "--placer": "wld_sa"
     },
 
     "stats": {
-        "runtime": "Placement took ([0-9.e+-]+) seconds",
-        "bb cost": "bb_cost: ([0-9.e+-]+)",
-        "max delay": "Placement estimated critical path delay: ([0-9.e+-]+) ns"
+        "runtime": "runtime\\s+\\|\\s+([0-9.e+-]+) s",
+        "bb cost": "BB cost\\s+\\|\\s+([0-9.e+-]+)",
+        "max delay": "max delay\\s+\\|\\s+([0-9.e+-]+) ns"
     }
 }

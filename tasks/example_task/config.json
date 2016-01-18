@@ -1,0 +1,19 @@
+{
+    "placer": "java",
+    "route": true,
+    "architecture": "benchmarks/vpr/k6_frac_N10_mem32K_40nm.xml",
+    "blif_file": "benchmarks/vpr/{circuit}.blif",
+    "net_file": "benchmarks/vpr/{circuit}.net",
+
+    "circuits": "stereovision3 ch_intrinsics",
+
+    "arguments": {
+        "--placer": "wld_sa"
+    },
+
+    "stats": {
+        "runtime": "runtime\\s+\\|\\s+([0-9.e+-]+) s",
+        "bb cost": "BB cost\\s+\\|\\s+([0-9.e+-]+)",
+        "max delay": "max delay\\s+\\|\\s+([0-9.e+-]+) ns"
+    }
+}
