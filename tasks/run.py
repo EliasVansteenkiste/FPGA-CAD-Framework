@@ -9,6 +9,7 @@ import subprocess
 import csv
 import re
 import math
+import errno
 
 base_commands = {
     'vpr': [
@@ -102,6 +103,7 @@ def call(command, stats, regexes):
 
 folder = os.path.join(os.path.split(os.getcwd())[1], sys.argv[1])
 os.chdir('..')
+subprocess.call(['./compile.sh'])
 
 config_path = os.path.join(folder, 'config.json')
 config_file = open(config_path)

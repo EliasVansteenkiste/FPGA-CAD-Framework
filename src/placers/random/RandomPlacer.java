@@ -114,7 +114,7 @@ public class RandomPlacer extends Placer {
                     macro.getBlock(index).setSite(site);
                 }
 
-                return numBlocks;
+                return 1;
 
             // Else, swap this block with another block in the list,
             // so that it can be used later on
@@ -142,6 +142,7 @@ public class RandomPlacer extends Placer {
 
     private int placeBlocks(List<AbstractBlock> blocks, List<AbstractSite> sites, int nextSiteIndex) throws PlacedBlockException, FullSiteException {
 
+        int placedBlocks = 0;
         int siteIndex = nextSiteIndex;
         for(AbstractBlock abstractBlock : blocks) {
             GlobalBlock block = (GlobalBlock) abstractBlock;
@@ -156,10 +157,11 @@ public class RandomPlacer extends Placer {
                     siteIndex++;
                 } while(site.isFull());
 
+                placedBlocks += 1;
                 block.setSite(site);
             }
         }
 
-        return blocks.size();
+        return placedBlocks;
     }
 }
