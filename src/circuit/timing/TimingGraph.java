@@ -199,7 +199,6 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         Stack<TraversePair> todo = new Stack<>();
         todo.push(new TraversePair(pathSourcePin, clockDelay));
 
-
         while(!todo.empty()) {
             TraversePair traverseEntry = todo.pop();
             AbstractPin sourcePin = traverseEntry.pin;
@@ -232,7 +231,12 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                         double sourceSinkDelay = sourcePortType.getDelay(sinkPin.getPortType());
                         double totalDelay = delay + sourceSinkDelay;
 
-                        todo.push(new TraversePair(sinkPin, totalDelay));
+                        // Loops around an unclocked block are rare, but not inexistent.
+                        // The proper way to handle these is probably to add the loop
+                        // delay to all other output pins of this block.
+                        if(sinkPin != pathSourcePin) {
+                            todo.push(new TraversePair(sinkPin, totalDelay));
+                        }
                     }
                 }
             }
