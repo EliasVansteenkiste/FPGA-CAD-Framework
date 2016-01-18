@@ -118,18 +118,16 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                 for(AbstractPin abstractPin : block.getOutputPins()) {
                     LeafPin outputPin = (LeafPin) abstractPin;
 
-                    if(outputPin.getNumSinks() > 0) {
-                        TimingNode node = new TimingNode(block, outputPin, position, clockDomain, this.delayTables);
-                        outputPin.setTimingNode(node);
+                    TimingNode node = new TimingNode(block, outputPin, position, clockDomain, this.delayTables);
+                    outputPin.setTimingNode(node);
 
-                        this.timingNodes.add(node);
+                    this.timingNodes.add(node);
 
-                        if(position == Position.ROOT) {
-                            clockDelays.add(clockDelay + outputPin.getPortType().getSetupTime());
-                            this.startNodes.add(node);
-                        } else {
-                            clockDelays.add(0.0);
-                        }
+                    if(position == Position.ROOT) {
+                        clockDelays.add(clockDelay + outputPin.getPortType().getSetupTime());
+                        this.startNodes.add(node);
+                    } else {
+                        clockDelays.add(0.0);
                     }
                 }
             }

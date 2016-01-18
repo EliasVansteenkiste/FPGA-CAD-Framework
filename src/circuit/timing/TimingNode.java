@@ -49,9 +49,11 @@ public class TimingNode {
 
     TimingNode(LeafBlock block, LeafPin pin, Position position, int clockDomain, DelayTables delayTables) {
         this.block = block;
-        this.globalBlock = block.getGlobalParent();
-
         this.pin = pin;
+
+        this.globalBlock = block.getGlobalParent();
+        this.globalBlock.addTimingNode(this);
+
         this.position = position;
         this.clockDomain = clockDomain;
 
