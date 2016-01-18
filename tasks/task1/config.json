@@ -1,0 +1,18 @@
+{
+    "placer": "vpr",
+    "route": true,
+    "architecture": "benchmarks/vpr/k6_frac_N10_mem32K_40nm.xml",
+    "blif_file": "benchmarks/vpr/{circuit}.blif",
+    "net_file": "benchmarks/vpr/{circuit}.net",
+
+    "circuits": "stereovision3 ch_intrinsics",
+
+    "arguments": {
+    },
+
+    "stats": {
+        "runtime": "Placement took ([0-9.e+-]+) seconds",
+        "bb cost": "bb_cost: ([0-9.e+-]+)",
+        "max delay": "Placement estimated critical path delay: ([0-9.e+-]+) ns"
+    }
+}

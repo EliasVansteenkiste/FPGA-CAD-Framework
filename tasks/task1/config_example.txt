@@ -1,0 +1,18 @@
+{
+    placer: vpr|java,
+    route: true|false,
+    architecture: ...,
+    blif_file: ...,
+    net_file: ...,
+    circuits: ...,
+    arguments: {
+        arg1: [x y z],
+        arg2: [v w],
+        arg3: q,
+    },
+    stats: {
+        stat1: regex1,
+        stat2: regex2,
+        stat3: regex3,
+    }
+}
