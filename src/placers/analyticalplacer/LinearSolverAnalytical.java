@@ -55,8 +55,8 @@ class LinearSolverAnalytical {
                 blockIndex2 = block2.blockIndex;
             double offset1 = block1.offset,
                    offset2 = block2.offset;
-            boolean fixed1 = isFixed(blockIndex1),
-                    fixed2 = isFixed(blockIndex2);
+            boolean fixed1 = this.isFixed(blockIndex1),
+                    fixed2 = this.isFixed(blockIndex2);
 
 
             this.solverX.addConnection(

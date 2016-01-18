@@ -16,9 +16,9 @@ import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
 import circuit.block.AbstractBlock;
-import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.block.Macro;
+import circuit.block.Site;
 import circuit.exceptions.PlacementException;
 import circuit.timing.TimingEdge;
 import circuit.timing.TimingNode;
@@ -39,6 +39,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     private int[] legalX, legalY;
     protected int[] heights;
 
+    private boolean[] hasNets;
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
 
@@ -100,6 +101,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.linearY = new double[numBlocks];
         this.legalX = new int[numBlocks];
         this.legalY = new int[numBlocks];
+        this.hasNets = new boolean[numBlocks];
 
         this.blockTypeIndexStarts = new ArrayList<>();
         this.blockTypeIndexStarts.add(0);
@@ -184,27 +186,52 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
             NetBlock sourceBlock = this.netBlocks.get(sourceGlobalBlock);
 
-            for(TimingNode sourceTimingNode : sourceGlobalBlock.getTimingNodes()) {
-                if(sourceTimingNode.getPosition() != Position.LEAF) {
-                    this.addNet(sourceBlock, sourceTimingNode);
+            for(TimingNode timingNode : sourceGlobalBlock.getTimingNodes()) {
+                if(timingNode.getPosition() != Position.LEAF) {
+                    this.addNet(sourceBlock, timingNode);
                 }
+            }
+        }
+
+        for(NetBlock block : this.netBlocks.values()) {
+            if(!this.hasNets[block.blockIndex]) {
+                this.addDummyNet(block);
             }
         }
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
 
+    private void addDummyNet(NetBlock sourceBlock) {
+        // These dummy nets are needed for the analytical
+        // placer. If they are not added, diagonal elements
+        // exist in the matrix that are equal to 0, which
+        // makes the matrix unsolvable.
+        Net net = new Net(sourceBlock);
+        this.nets.add(net);
+    }
+
     private void addNet(NetBlock sourceBlock, TimingNode sourceNode) {
         int numSinks = sourceNode.getNumSinks();
         TimingNet timingNet = new TimingNet(sourceBlock, numSinks);
+
+        boolean allFixed = this.isFixed(sourceBlock.blockIndex);
 
         for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
             GlobalBlock sinkGlobalBlock = sourceNode.getSink(sinkIndex).getGlobalBlock();
             NetBlock sinkBlock = this.netBlocks.get(sinkGlobalBlock);
 
+            if(allFixed) {
+                allFixed = this.isFixed(sinkBlock.blockIndex);
+            }
+
             TimingEdge timingEdge = sourceNode.getSinkEdge(sinkIndex);
 
             timingNet.sinks[sinkIndex] = new TimingNetBlock(sinkBlock, timingEdge);
+        }
+
+        if(allFixed) {
+            return;
         }
 
         Net net = new Net(timingNet);
@@ -220,6 +247,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         int numUniqueBlocks = net.blocks.length;
         if(numUniqueBlocks > 1) {
             this.nets.add(net);
+
+            for(NetBlock block : net.blocks) {
+                this.hasNets[block.blockIndex] = true;
+            }
 
             // We only need the complete list of blocks and their
             // timing edges if the algorithm is timing driven
@@ -286,12 +317,14 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
     protected void updateCircuit() throws PlacementException {
-        //Clear all previous locations
+        // Clear all previous locations
         for(GlobalBlock block : this.netBlocks.keySet()) {
             if(block.getCategory() != BlockCategory.IO) {
                 block.removeSite();
             }
         }
+
+        List<GlobalBlock> unplacedBlocks = new ArrayList<GlobalBlock>();
 
         // Update locations
         for(Map.Entry<GlobalBlock, NetBlock> blockEntry : this.netBlocks.entrySet()) {
@@ -305,12 +338,22 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 int column = this.legalX[index];
                 int row = this.legalY[index] + (int) Math.ceil(offset);
 
-                AbstractSite site = this.circuit.getSite(column, row, true);
-                block.setSite(site);
+                Site site = (Site) this.circuit.getSite(column, row, true);
+
+                if(site.isFull()) {
+                    unplacedBlocks.add(block);
+                } else {
+                    block.setSite(site);
+                }
             }
         }
 
-        this.circuit.getTimingGraph().calculateCriticalities(true);
+u        this.circuit.getTimingGraph().calculateCriticalities(true);
+    }
+
+
+    private boolean isFixed(int blockIndex) {
+        return blockIndex < this.numIOBlocks;
     }
 
 
@@ -422,6 +465,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     class Net {
         final NetBlock[] blocks;
+
+        Net(NetBlock block) {
+            this.blocks = new NetBlock[2];
+            this.blocks[0] = block;
+            this.blocks[1] = block;
+        }
 
         Net(TimingNet timingNet) {
             Set<NetBlock> netBlocks = new HashSet<>();

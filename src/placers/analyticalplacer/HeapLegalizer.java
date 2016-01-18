@@ -58,6 +58,9 @@ class HeapLegalizer extends Legalizer {
         this.blockStart = this.blockType.getStart();
         this.blockHeight = this.blockType.getHeight();
         this.blockRepeat = this.blockType.getRepeat();
+        if(this.blockRepeat == -1) {
+            this.blockRepeat = this.width;
+        }
 
         // Make a matrix that contains the blocks that are closest to each position
         initializeBlockMatrix(blocksStart, blocksEnd);
@@ -270,7 +273,8 @@ class HeapLegalizer extends Legalizer {
                 x,
                 y,
                 this.tileCapacity,
-                this.blockType);
+                this.blockHeight,
+                this.blockRepeat);
 
         do {
             int[] direction = area.nextGrowDirection();
@@ -611,7 +615,7 @@ class HeapLegalizer extends Legalizer {
         int leftRightNumColumns = numColumns - centerNumColumns;
         int leftRightSize = size - centerSize;
 
-        int leftNumColumns = (int) Math.round(leftRightNumColumns * maxIndex / (double) leftRightSize);
+        int leftNumColumns = Math.min((int) Math.round(leftRightNumColumns * maxIndex / (double) leftRightSize), numColumns - centerNumColumns);
         int leftSize = (int) Math.round(leftNumColumns * leftRightSize / (double) leftRightNumColumns);
 
         int rightNumColumns = numColumns - leftNumColumns - centerNumColumns;
@@ -744,7 +748,7 @@ class HeapLegalizer extends Legalizer {
             this.grow(direction);
         }
 
-        Area(double[] linearX, double[] linearY, int column, int row, double tileCapacity, BlockType blockType) {
+        Area(double[] linearX, double[] linearY, int column, int row, double tileCapacity, int blockHeight, int blockRepeat) {
             // Thanks to this two-dimensionally linked list, we
             // don't have to sort the list of blocks after each
             // area split: the block list is splitted and resorted
@@ -752,8 +756,8 @@ class HeapLegalizer extends Legalizer {
             this.blockIndexes = new TwoDimLinkedList(linearX, linearY);
 
             this.areaTileCapacity = tileCapacity;
-            this.areaBlockHeight = blockType.getHeight();
-            this.areaBlockRepeat = blockType.getRepeat();
+            this.areaBlockHeight = blockHeight;
+            this.areaBlockRepeat = blockRepeat;
 
             this.left = column;
             this.right = column - this.areaBlockRepeat;
