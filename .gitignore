@@ -9,6 +9,11 @@ benchmarks_titan
 !benchmarks/*.json
 !benchmarks/*.xml
 
+tasks/*
+!tasks/run.py
+!tasks/example_task
+
+
 
 nbproject
 .project
