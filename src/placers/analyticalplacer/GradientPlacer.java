@@ -104,7 +104,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.linearY,
                 this.heights);
 
-        int numNets = this.nets.size();
+        // There can be more WLD nets than this, if there
+        // are blocks that are only connected to themselves.
+        // But we don't need these dummy nets, and they are
+        // always at the back of the list, so that doesn't matter.
+        int numNets = this.timingNets.size();
         this.netCriticalities = new double[numNets];
 
 
@@ -169,7 +173,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     private void updateNetCriticalities() {
-        int numNets = this.nets.size();
+        int numNets = this.timingNets.size();
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             TimingNet net = this.timingNets.get(netIndex);
             this.netCriticalities[netIndex] = net.getCriticality();
