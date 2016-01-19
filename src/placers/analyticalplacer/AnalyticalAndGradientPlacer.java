@@ -103,10 +103,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.legalY = new int[numBlocks];
         this.hasNets = new boolean[numBlocks];
 
+        this.heights = new int[numBlocks];
+        Arrays.fill(this.heights, 1);
+
         this.blockTypeIndexStarts = new ArrayList<>();
         this.blockTypeIndexStarts.add(0);
-
         List<GlobalBlock> macroBlocks = new ArrayList<>();
+
 
         int blockCounter = 0;
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
@@ -129,6 +132,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     this.linearY[blockCounter] = row - offset;
                     this.legalX[blockCounter] = column;
                     this.legalY[blockCounter] = row + (int) Math.floor(-offset);
+                    this.heights[blockCounter] = height;
 
                     this.netBlocks.put(block, new NetBlock(blockCounter, offset));
                     blockCounter++;
@@ -143,10 +147,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.blockTypeIndexStarts.add(blockCounter);
         }
 
-
-        this.heights = new int[numBlocks];
-        Arrays.fill(this.heights, 1);
-
         for(GlobalBlock block : macroBlocks) {
             GlobalBlock macroSource = block.getMacro().getBlock(0);
             int sourceIndex = this.netBlocks.get(macroSource).blockIndex;
@@ -154,7 +154,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             int offset = (1 - macroHeight) / 2 + block.getMacroOffsetY();
 
             this.netBlocks.put(block, new NetBlock(sourceIndex, offset));
-            this.heights[sourceIndex] = Math.max(this.heights[sourceIndex], macroHeight + 1);
             blockCounter++;
         }
 
