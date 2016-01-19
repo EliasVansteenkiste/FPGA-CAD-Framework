@@ -18,9 +18,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         O_ANCHOR_WEIGHT = "anchor weight",
         O_ANCHOR_WEIGHT_MULTIPLIER = "anchor weight multiplier";
 
-    protected final static String
-        T_FINAL_LEGALIZATION = "final legalization";
-
     public static void initOptions(Options options) {
         options.add(
                 O_STOP_RATIO,
@@ -183,18 +180,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         return this.linearCost / this.legalCost > this.stopRatio;
     }
 
-
-    @Override
-    protected void finalizePlacement() {
-        this.startTimer(T_FINAL_LEGALIZATION);
-        ShiftingLegalizer finalLegalizer = new ShiftingLegalizer(this.legalizer);
-        finalLegalizer.legalize(1);
-
-        int[] newLegalX = this.legalizer.getLegalX();
-        int[] newLegalY = this.legalizer.getLegalY();
-        this.updateLegal(newLegalX, newLegalY);
-        this.stopTimer(T_FINAL_LEGALIZATION);
-    }
 
 
     @Override

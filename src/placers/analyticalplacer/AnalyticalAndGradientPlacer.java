@@ -62,7 +62,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void solveLinear(int iteration);
     protected abstract void solveLegal(int iteration);
     protected abstract boolean stopCondition();
-    protected abstract void finalizePlacement();
 
     protected abstract void printStatistics(int iteration, double time);
 
@@ -296,8 +295,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         this.logger.println();
 
-        this.finalizePlacement();
-
 
         this.startTimer(T_UPDATE_CIRCUIT);
         try {
@@ -333,10 +330,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             if(block.getCategory() != BlockCategory.IO) {
                 NetBlock netBlock = blockEntry.getValue();
                 int index = netBlock.blockIndex;
-                float offset = netBlock.offset;
+                int offset = (int) Math.ceil(netBlock.offset);
 
                 int column = this.legalX[index];
-                int row = this.legalY[index] + (int) Math.ceil(offset);
+                int row = this.legalY[index] + offset * block.getType().getHeight();
 
                 Site site = (Site) this.circuit.getSite(column, row, true);
                 block.setSite(site);

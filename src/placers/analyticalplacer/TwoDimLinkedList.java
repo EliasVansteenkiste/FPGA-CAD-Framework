@@ -1,6 +1,5 @@
 package placers.analyticalplacer;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -15,7 +14,7 @@ import placers.analyticalplacer.HeapLegalizer.LegalizerBlock;
  * linked list along one dimension, resulting in two
  * correctly sorted TwoDimLinkedLists.
  */
-class TwoDimLinkedList {
+class TwoDimLinkedList implements Iterable<LegalizerBlock> {
 
     enum Axis {
         X, Y;
@@ -104,11 +103,12 @@ class TwoDimLinkedList {
         this.sorted = false;
     }
 
-    void addAll(Collection<LegalizerBlock> blocks) {
+    void addAll(Iterable<LegalizerBlock> blocks) {
         for(LegalizerBlock block : blocks) {
             this.add(block);
         }
     }
+
 
     private void sort() {
 
@@ -137,8 +137,9 @@ class TwoDimLinkedList {
     }
 
 
-    TwoDimLinkedList split(int splitIndex, Axis axis) {
-        if(splitIndex > this.size) {
+
+    boolean split(TwoDimLinkedList list1, TwoDimLinkedList list2, int splitSize, Axis axis) {
+        if(splitSize > this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -146,116 +147,115 @@ class TwoDimLinkedList {
             this.sort();
         }
 
-        // Make a new list, and set the sizes
-        TwoDimLinkedList newList = new TwoDimLinkedList(this);
-
-        this.size = 0;
-        newList.size = 0;
-
-        this.numBlocks = 0;
-        newList.numBlocks = 0;
-
-        this.maxHeight = 0;
-        newList.maxHeight = 0;
-
-
         // Split the list according to the given dimension
         int axisOrdinal = axis.ordinal();
-        Node cursor = this.initializeSplit(newList, axisOrdinal);
+        this.cursor = this.first(axisOrdinal);
+        list1.initializeSplit(axisOrdinal);
+        list2.initializeSplit(axisOrdinal);
 
         // Build the two lists on the split dimension
-        while(cursor != null) {
-            int height = cursor.block.macroHeight;
+        while(this.cursor != null) {
+            int height = this.cursor.block.macroHeight;
 
-            if(this.size + height <= splitIndex) {
-                if(height > this.maxHeight) {
-                    this.maxHeight = height;
+            if(list1.size + height <= splitSize) {
+                if(height > list1.maxHeight) {
+                    list1.maxHeight = height;
                 }
 
-                cursor.split = false;
-                this.numBlocks++;
-                this.size += height;
+                this.cursor.split = false;
+                list1.numBlocks++;
+                list1.size += height;
 
-                this.cursor.next(axisOrdinal, cursor);
-                this.cursor = cursor;
+                this.addSplitNode(list1, axisOrdinal);
 
             } else {
-                if(height > newList.maxHeight) {
-                    newList.maxHeight = height;
+                if(height > list2.maxHeight) {
+                    list2.maxHeight = height;
                 }
 
-                cursor.split = true;
-                newList.numBlocks++;
-                newList.size += height;
+                this.cursor.split = true;
+                list2.numBlocks++;
+                list2.size += height;
 
-                newList.cursor.next(axisOrdinal, cursor);
-                newList.cursor = cursor;
+                this.addSplitNode(list2, axisOrdinal);
             }
 
-            cursor = cursor.next(axisOrdinal);
+            this.cursor = this.cursor.next(axisOrdinal);
         }
-
-        this.finishSplit(newList, axisOrdinal);
 
 
 
         // Switch to the other axis: update the linked lists
         // for that axis as well
         axisOrdinal = 1 - axisOrdinal;
-        cursor = this.initializeSplit(newList, axisOrdinal);
+        this.cursor = this.first(axisOrdinal);
+        list1.cursor = list1.first(axisOrdinal);
+        list2.cursor = list2.first(axisOrdinal);
 
-        while(cursor != null) {
-            if(cursor.split) {
-                newList.cursor.next(axisOrdinal, cursor);
-                newList.cursor = cursor;
+        while(this.cursor != null) {
+            Node splitNode = this.cursor.splitNode;
+            if(!this.cursor.split) {
+                list1.cursor.next(axisOrdinal, splitNode);
+                list1.cursor = splitNode;
 
             } else {
-                this.cursor.next(axisOrdinal, cursor);
-                this.cursor = cursor;
+                list2.cursor.next(axisOrdinal, splitNode);
+                list2.cursor = splitNode;
             }
 
-            cursor = cursor.next(axisOrdinal);
+            this.cursor = this.cursor.next(axisOrdinal);
         }
 
-        this.finishSplit(newList, axisOrdinal);
+        list1.finishSplit();
+        list2.finishSplit();
 
-        return newList;
+        return (list1.size == splitSize);
     }
 
-    private Node initializeSplit(TwoDimLinkedList newList, int axisOrdinal) {
-        // Get the current first node
-        Node cursor = this.first(axisOrdinal);
+    private void initializeSplit(int axisOrdinal) {
+        this.size = 0;
+        this.numBlocks = 0;
+        this.maxHeight = 1;
 
-        // Make a dummy first node in the two list
-        this.cursor = new Node(null);
-        newList.cursor = new Node(null);
+        for(int i = 0; i < Axis.size; i++) {
+            this.first(i, new Node(null));
+        }
 
-        this.first(axisOrdinal, this.cursor);
-        newList.first(axisOrdinal, newList.cursor);
-
-        return cursor;
+        this.cursor = this.first(axisOrdinal);
     }
 
-    private void finishSplit(TwoDimLinkedList newList, int axisOrdinal) {
-        // Mark the last nodes
-        this.cursor.next(axisOrdinal, null);
-        newList.cursor.next(axisOrdinal, null);
-
+    private void finishSplit() {
         // Remove the dummy nodes
-        this.removeFirst(axisOrdinal);
-        newList.removeFirst(axisOrdinal);
+        for(int i = 0; i < Axis.size; i++) {
+            this.first(i, this.first(i).next(i));
+        }
     }
 
-    private void removeFirst(int axisOrdinal) {
-        this.first(axisOrdinal, this.first(axisOrdinal).next(axisOrdinal));
+    private void addSplitNode(TwoDimLinkedList splitList, int axisOrdinal) {
+        Node splitNode = new Node(this.cursor.block);
+        this.cursor.splitNode = splitNode;
+        splitList.cursor.next(axisOrdinal, splitNode);
+        splitList.cursor = splitNode;
     }
 
 
+    @Override
+    public Iterator<LegalizerBlock> iterator() {
+        return new DimIterator(this.first(0), 0);
+    }
 
     public Iterable<LegalizerBlock> blocksX() {
+        if(!this.sorted) {
+            this.sort();
+        }
+
         return this.blocks(Axis.X);
     }
     public Iterable<LegalizerBlock> blocksY() {
+        if(!this.sorted) {
+            this.sort();
+        }
+
         return this.blocks(Axis.Y);
     }
 
@@ -274,12 +274,14 @@ class TwoDimLinkedList {
 
 
     private class Node {
+
         LegalizerBlock block;
         List<Node> nextNode;
+        Node splitNode;
         boolean split;
 
-        Node(LegalizerBlock item) {
-            this.block = item;
+        Node(LegalizerBlock block) {
+            this.block = block;
 
             this.nextNode = new ArrayList<>();
             for(int i = 0; i < Axis.size; i++) {

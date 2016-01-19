@@ -19,9 +19,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_STEP_SIZE = "step size",
         O_EFFORT_LEVEL = "effort level";
 
-    protected final static String
-        T_FINAL_LEGALIZATION = "final legalization";
-
     public static void initOptions(Options options) {
         options.add(
                 O_ANCHOR_WEIGHT_START,
@@ -270,17 +267,5 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected boolean stopCondition() {
         return this.anchorWeight > this.anchorWeightStop;
-    }
-
-    @Override
-    protected void finalizePlacement() {
-        this.startTimer(T_FINAL_LEGALIZATION);
-        ShiftingLegalizer finalLegalizer = new ShiftingLegalizer(this.legalizer);
-        finalLegalizer.legalize(1);
-
-        int[] newLegalX = this.legalizer.getLegalX();
-        int[] newLegalY = this.legalizer.getLegalY();
-        this.updateLegal(newLegalX, newLegalY);
-        this.stopTimer(T_FINAL_LEGALIZATION);
     }
 }

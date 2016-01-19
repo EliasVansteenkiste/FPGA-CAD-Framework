@@ -1,11 +1,11 @@
 package placers.analyticalplacer;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Stack;
 
 import placers.analyticalplacer.TwoDimLinkedList.Axis;
-import util.Pair;
 
 import circuit.Circuit;
 import circuit.architecture.BlockType;
@@ -387,7 +387,7 @@ class HeapLegalizer extends Legalizer {
         this.legalizeArea(splittingArea, capacity, blocks);
     }
 
-    private void legalizeArea(
+    private boolean legalizeArea(
             SplittingArea area,
             int capacity,
             TwoDimLinkedList blocks) {
@@ -398,11 +398,10 @@ class HeapLegalizer extends Legalizer {
         int numColumns = capacity / numRows;
 
         if(blocks.size() == 0) {
-            return;
+            return true;
 
         // If the area is only one tile big: place all the blocks on this tile
         } else if(capacity == 1) {
-
             int row = area.bottom;
 
             // Find the first column of the correct type
@@ -414,20 +413,20 @@ class HeapLegalizer extends Legalizer {
                 }
             }
 
-            for(LegalizerBlock block : blocks.blocksX()) {
+            for(LegalizerBlock block : blocks) {
                 int blockIndex = block.blockIndex;
                 this.legalX[blockIndex] = column;
                 this.legalY[blockIndex] = row;
             }
 
-            return;
+            return true;
 
         // If there is only one block left: find the closest site in the area
         } else if(blocks.numBlocks() == 1) {
             LegalizerBlock block = blocks.getFirst(Axis.X);
             this.placeBlock(block, area);
 
-            return;
+            return true;
 
         } else if(numColumns == 1) {
             // Find the first column of the correct type
@@ -435,7 +434,7 @@ class HeapLegalizer extends Legalizer {
                 if(this.circuit.getColumnType(column).equals(this.blockType)) {
                     this.placeBlocksInColumn(blocks, column, area.bottom, area.top);
 
-                    return;
+                    return true;
                 }
             }
         }
@@ -489,25 +488,13 @@ class HeapLegalizer extends Legalizer {
             int maxHeight = blocks.maxHeight();
 
             // If there is a macro that is higher than half of the
-            // current area height: split horizontally to isolate
-            // the column with the high block
+            // current area height: place greedily
             if(maxHeight > numRows / 2) {
-                this.splitHighBlock(blocks, area, numRows, numColumns);
-
-                // splitHighBlock will make recursive calls to legalizeArea()
-                return;
+                // TODO: is this ever height 2?
+                return this.placeGreedy(area, blocks);
 
             } else {
-                // If there is a macro that is higher than a quarter of
-                // the current area height: don't just split in the middle
-                int numRowsBottom;
-                // TODO: does this improve the result?
-                if(maxHeight > numRows / 4) {
-                    numRowsBottom = numRows - maxHeight;
-                } else {
-                    numRowsBottom = numRows / 2;
-                }
-
+                int numRowsBottom = numRows / 2;
                 capacity1 = numRowsBottom * numColumns;
                 splitPosition = area.bottom + (numRowsBottom) * this.blockHeight;
 
@@ -515,14 +502,29 @@ class HeapLegalizer extends Legalizer {
             }
         }
 
-        int capacity2 = capacity - capacity1;
-
-
         int splitIndex = (int) Math.ceil(capacity1 * blocks.size() / (double) capacity);
-        TwoDimLinkedList otherBlockIndexes = blocks.split(splitIndex, axis);
 
-        this.legalizeArea(area1, capacity1, blocks);
-        this.legalizeArea(area2, capacity2, otherBlockIndexes);
+        TwoDimLinkedList blocks1 = new TwoDimLinkedList(blocks),
+                         blocks2 = new TwoDimLinkedList(blocks);
+        boolean splitSuccess = blocks.split(blocks1, blocks2, splitIndex, axis);
+
+        // If the split failed
+        if(!splitSuccess) {
+            return false;
+        }
+
+        boolean success1 = this.legalizeArea(area1, capacity1, blocks1);
+        boolean success2 = true;
+        if(success1) {
+            int capacity2 = capacity - capacity1;
+            success2 = this.legalizeArea(area2, capacity2, blocks2);
+        }
+
+        if(success1 && success2) {
+            return true;
+        } else {
+            return this.placeGreedy(area, blocks);
+        }
     }
 
     private void placeBlock(LegalizerBlock block, SplittingArea area) {
@@ -567,9 +569,9 @@ class HeapLegalizer extends Legalizer {
 
     private boolean badColumn(int column, SplittingArea area) {
         return
-                !this.circuit.getColumnType(column).equals(this.blockType)
-                || column < area.left
-                || column > area.right;
+                column < area.left
+                || column > area.right
+                || !this.circuit.getColumnType(column).equals(this.blockType);
     }
 
 
@@ -593,72 +595,109 @@ class HeapLegalizer extends Legalizer {
     }
 
 
-    private void splitHighBlock(TwoDimLinkedList blocks, SplittingArea area, int numRows, int numColumns) {
-        // We are gonna split the area into three parts, along the X axis:
-        // - multiple columns to the left of the high block
-        // - one column that contains the high block
-        // - multiple columns to the right of the high block
+    private boolean placeGreedy(SplittingArea area, TwoDimLinkedList blocks) {
+        // Sort the blocks by size
+        List<LegalizerBlock> sortedBlocks = new ArrayList<>();
+        for(LegalizerBlock block : blocks) {
+            sortedBlocks.add(block);
+        }
 
-        // First split the left part of, and do a recursive call.
-        // The high block is then in the first column of the second area.
-        // Then split this one column off and do a recursive call.
+        Collections.sort(sortedBlocks, new BlockComparator(this.linearX));
 
-        int capacity = numRows * numColumns;
-        int size = blocks.size();
-        int maxIndex = blocks.maxIndex(Axis.X);
+        int numBlocks = sortedBlocks.size();
+        int columnCapacity = (area.top - area.bottom) / this.blockHeight + 1;
+        int splitStart = 0;
 
-        int centerNumColumns = 1;
-        int centerSize = (numRows * size) / capacity;
+        List<Integer> columns = new ArrayList<>();
+        List<List<LegalizerBlock>> columnBlocks = new ArrayList<>();
+        for(int column = area.left; column <= area.right; column++) {
+            if(!this.blockType.equals(this.circuit.getColumnType(column))) {
+                continue;
+            }
 
-        int leftRightNumColumns = numColumns - centerNumColumns;
-        int leftRightSize = size - centerSize;
+            int occupancy = 0;
+            int splitEnd = splitStart;
 
-        int leftNumColumns = Math.min((int) Math.round(leftRightNumColumns * maxIndex / (double) leftRightSize), numColumns - centerNumColumns);
-        int leftSize = (int) Math.round(leftNumColumns * leftRightSize / (double) leftRightNumColumns);
+            boolean blockFound = true;
+            while(occupancy < columnCapacity && blockFound) {
 
-        int rightNumColumns = numColumns - leftNumColumns - centerNumColumns;
+                blockFound = false;
+                int swapPointer = splitEnd;
+                int height = -1;
+                while(swapPointer < numBlocks) {
+                    height = this.heights[sortedBlocks.get(swapPointer).blockIndex];
+                    if(occupancy + height <= columnCapacity) {
+                        blockFound = true;
+                        break;
+                    }
 
-
-
-        TwoDimLinkedList leftBlocks = blocks;
-        TwoDimLinkedList centerBlocks = leftBlocks.split(leftSize, Axis.X);
-        TwoDimLinkedList rightBlocks = centerBlocks.split(centerSize, Axis.X);
-
-
-        // Find the columns at which to split
-        int columnCounter = 0;
-        int leftCenterNumColumns = leftNumColumns + centerNumColumns;
-        int column1 = -1, column2 = -1;
-        for(int column = area.left; column <= area.right; column += this.blockRepeat) {
-            if(this.circuit.getColumnType(column).equals(this.blockType)) {
-
-                if(columnCounter == leftNumColumns) {
-                    column1 = column;
-
-                } else if(columnCounter == leftCenterNumColumns) {
-                    column2 = column;
-                    break;
+                    swapPointer++;
                 }
 
-                columnCounter++;
+                if(blockFound) {
+                    if(swapPointer != splitEnd) {
+                        LegalizerBlock tmp = sortedBlocks.get(splitEnd);
+                        sortedBlocks.set(splitEnd, sortedBlocks.get(swapPointer));
+                        sortedBlocks.set(swapPointer, tmp);
+                    }
+
+                    occupancy += height;
+                    splitEnd++;
+                }
             }
+
+            columns.add(column);
+            columnBlocks.add(sortedBlocks.subList(splitStart, splitEnd));
+
+            splitStart = splitEnd;
         }
 
-        SplittingArea leftArea = new SplittingArea(area);
-        SplittingArea centerArea = leftArea.splitHorizontal(column1, this.blockRepeat);
+        if(splitStart == numBlocks) {
+            int numColumns = columns.size();
+            for(int columnIndex = 0; columnIndex < numColumns; columnIndex++) {
+                this.placeBlocksInColumn(columns.get(columnIndex), area.bottom, columnBlocks.get(columnIndex));
+            }
 
-        if(rightNumColumns > 0) {
-            SplittingArea rightArea = centerArea.splitHorizontal(column2, this.blockRepeat);
-            this.legalizeArea(rightArea, numRows * rightNumColumns, rightBlocks);
+            return true;
+
+        } else {
+            return false;
         }
-
-        if(leftNumColumns > 0) {
-            this.legalizeArea(leftArea, numRows * leftNumColumns, leftBlocks);
-        }
-
-        this.legalizeArea(centerArea, numRows * centerNumColumns, centerBlocks);
-
     }
+
+    private void placeBlocksInColumn(int column, int rowStart, List<LegalizerBlock> blocks) {
+
+        Collections.sort(blocks, new BlockComparator(this.linearY));
+
+        int row = rowStart;
+        for(LegalizerBlock block : blocks) {
+            int blockIndex = block.blockIndex;
+            int macroHeight = block.macroHeight;
+
+            row += ((macroHeight - 1) / 2) * this.blockHeight;
+
+            this.legalX[blockIndex] = column;
+            this.legalY[blockIndex] = row;
+
+            row += ((macroHeight + 2) / 2) * this.blockHeight;
+        }
+    }
+
+
+    private class BlockComparator implements Comparator<LegalizerBlock> {
+
+        private double[] coordinates;
+
+        BlockComparator(double[] coordinates) {
+            this.coordinates = coordinates;
+        }
+
+        @Override
+        public int compare(LegalizerBlock block1, LegalizerBlock block2) {
+            return Double.compare(this.coordinates[block1.blockIndex], this.coordinates[block2.blockIndex]);
+        }
+    }
+
 
 
     class LegalizerBlock {
@@ -866,225 +905,4 @@ class HeapLegalizer extends Legalizer {
             return String.format("[[%d, %d], [%d, %d]", this.left, this.bottom, this.right, this.top);
         }
     }
-
-
-
-
-    /*void finalLegalization(BlockType blockType, int blocksStart, int blocksEnd) {
-        this.initializeLegalization(blockType, blocksStart, blocksEnd);
-
-        this.initializeFinalBlockMatrix(blocksStart, blocksEnd);
-
-        List<Integer> columns = this.circuit.getColumnsPerBlockType(blockType);
-        List<Occupation> occupations = this.getOccupations(columns);
-        this.reorderColumns(columns, occupations);
-    }
-
-    private void initializeFinalBlockMatrix(int blocksStart, int blocksEnd) {
-        // Clear the block matrix
-        for(int column = 0; column < this.width; column++) {
-            for(int row = 0; row < this.height; row++) {
-                this.blockMatrix.get(column).get(row).clear();
-            }
-        }
-
-        // Loop through all the blocks of the correct block type and add them to their closest position
-        for(int index = blocksStart; index < blocksEnd; index++) {
-            int column = this.legalX[index],
-                baseRow = this.legalY[index],
-                height = this.heights[index];
-
-            for(int offset = (1 - height) / 2; offset <= height / 2; offset++) {
-                int row = baseRow + offset;
-                this.blockMatrix.get(column).get(row).add(new LegalizerBlock(index, offset, height));
-            }
-        }
-    }
-
-    private List<Occupation> getOccupations(List<Integer> columns) {
-        List<Occupation> occupations = new ArrayList<>();
-        for(int column : columns) {
-
-            List<List<LegalizerBlock>> columnBlocks = this.blockMatrix.get(column);
-            Occupation columnOccupation = new Occupation();
-
-            for(int row = 1; row < this.height - 1; row += this.blockHeight) {
-                columnOccupation.capacity++;
-                columnOccupation.occupation += columnBlocks.get(row).size();
-            }
-
-            occupations.add(columnOccupation);
-        }
-
-        return occupations;
-    }
-
-    private void reorderColumns(List<Integer> columns, List<Occupation> occupations) {
-
-        int numColumns = columns.size();
-        int centerColumnIndex = numColumns / 2;
-
-        int capacityLeft = 0;
-        for(int columnIndex = 0; columnIndex < centerColumnIndex; columnIndex++) {
-            Occupation columnOccupation = occupations.get(columnIndex);
-            capacityLeft += columnOccupation.capacity - columnOccupation.occupation;
-        }
-
-        // Make sure no column contains more blocks than it can house
-        this.reorderColumn(columns, occupations, centerColumnIndex, -1, capacityLeft);
-
-        for(int columnIndex = centerColumnIndex - 1; columnIndex > 0; columnIndex--) {
-            this.reorderColumn(columns, occupations, columnIndex, -1);
-        }
-
-        for(int columnIndex = centerColumnIndex; columnIndex < numColumns - 1; columnIndex++) {
-            this.reorderColumn(columns, occupations, columnIndex, 1);
-        }
-
-        // Legalize each column separately
-        for(int columnIndex = 0; columnIndex < numColumns; columnIndex++) {
-            this.legalizeColumn(occupations, columnIndex);
-        }
-    }
-
-    private void reorderColumn(List<Integer> columns, List<Occupation> occupation, int columnIndex, int columnDirection) {
-        this.reorderColumn(columns, occupation, columnIndex, columnDirection, Integer.MAX_VALUE);
-    }
-    private void reorderColumn(List<Integer> columns, List<Occupation> occupation, int columnIndex, int columnDirection, int maxMove) {
-        Occupation columnCoors = occupation.get(columnIndex);
-        int overOccupation = Math.min(columnCoors.occupation - columnCoors.capacity, maxMove);
-
-        if(overOccupation <= 0) {
-            return;
-        }
-
-        int column = columns.get(columnIndex);
-        List<List<LegalizerBlock>> columnBlocks = this.blockMatrix.get(column);
-
-        // Make a list of the legal rows
-        List<Integer> rows = new ArrayList<>();
-        for(int row = 1; row < this.height - this.blockHeight; row += this.blockHeight) {
-            rows.add(row);
-        }
-        int numRows = rows.size();
-
-
-        // Find a set of blocks that exactly mathches the overUtilized capacity of this column
-        int minCapacity = overOccupation;
-        boolean foundSolution = false;
-        List<RowBlockPair> moveBlocks = new ArrayList<>();
-        while(!foundSolution && minCapacity > 0) {
-
-            int totalCapacity = 0;
-            moveBlocks.clear();
-
-            int rowIndex = numRows / 2;
-            int rowDirection = -1;
-            while(!foundSolution && rowIndex >= 0 && rowIndex < numRows) {
-
-                int row = rows.get(rowIndex);
-
-                List<LegalizerBlock> cellBlocks = columnBlocks.get(row);
-                int numCellBlocks = cellBlocks.size();
-                for(int blockIndex = 0; blockIndex < numCellBlocks; blockIndex++) {
-                    int capacity = cellBlocks.get(blockIndex).macroHeight;
-                    if(capacity >= minCapacity && totalCapacity + capacity <= overOccupation || totalCapacity + capacity == overOccupation) {
-                        moveBlocks.add(new RowBlockPair(row, blockIndex));
-                        totalCapacity += capacity;
-                    }
-
-                    if(totalCapacity == overOccupation) {
-                        foundSolution = true;
-                        break;
-                    }
-                }
-
-                rowIndex += rowDirection;
-                rowDirection = -(1 + rowDirection);
-            }
-
-            minCapacity--;
-        }
-
-        if(foundSolution) {
-            int toColumn = columns.get(columnIndex + columnDirection);
-            this.moveBlocks(column, toColumn, moveBlocks);
-
-        } else {
-            System.err.println("uh oh");
-            System.exit(1);
-        }
-    }
-
-    private void moveBlocks(int column, int toColumn, List<RowBlockPair> blocks) {
-        for(RowBlockPair pair : blocks) {
-            int row = pair.row;
-            int blockPosition = pair.blockIndex;
-
-            this.moveBlock(column, toColumn, row, blockPosition);
-        }
-    }
-
-    private void moveBlock(int column, int toColumn, int row, int blockPosition) {
-        LegalizerBlock block = this.blockMatrix.get(column).get(row).get(blockPosition);
-
-        int blockIndex = block.blockIndex;
-        int fromRow = row + (1 - block.macroHeight) / 2 - block.offset;
-        int toRow = fromRow + block.macroHeight;
-
-        for(int r = fromRow; r <= toRow; r++) {
-            List<LegalizerBlock> blocks = this.blockMatrix.get(column).get(row);
-            int numBlocks = blocks.size();
-            for(int i = 0; i < numBlocks; i++) {
-                if(blocks.get(i).blockIndex == blockIndex) {
-                    LegalizerBlock moveBlock = blocks.remove(i);
-                    this.blockMatrix.get(toColumn).get(row).add(moveBlock);
-                    break;
-                }
-            }
-        }
-    }
-
-
-    private class Occupation {
-
-        int capacity = 0, occupation = 0;
-
-        public Occupation() {
-            // Do nothing
-        }
-    }
-
-    private class RowBlockPair {
-        int row, blockIndex;
-
-        RowBlockPair(int column, int blockIndex) {
-            this.row = column;
-            this.blockIndex = blockIndex;
-        }
-    }
-
-    private class Coor {
-
-        int column;
-        int row;
-
-        Coor(int column, int row) {
-            this.column = column;
-            this.row = row;
-        }
-
-
-        @Override
-        public boolean equals(Object otherObject) {
-            if(!(otherObject instanceof Coor)) {
-                return false;
-            } else {
-                return this.equals((Coor) otherObject);
-            }
-        }
-        private boolean equals(Coor otherCoor) {
-            return this.column == otherCoor.column && this.row == otherCoor.row;
-        }
-    }*/
 }
