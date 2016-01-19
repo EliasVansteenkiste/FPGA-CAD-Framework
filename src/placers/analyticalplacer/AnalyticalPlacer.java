@@ -8,7 +8,6 @@ import java.util.Random;
 
 import visual.PlacementVisualizer;
 import circuit.Circuit;
-import circuit.exceptions.PlacementException;
 
 public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
@@ -18,6 +17,9 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         O_STOP_RATIO = "stop ratio",
         O_ANCHOR_WEIGHT = "anchor weight",
         O_ANCHOR_WEIGHT_MULTIPLIER = "anchor weight multiplier";
+
+    protected final static String
+        T_FINAL_LEGALIZATION = "final legalization";
 
     public static void initOptions(Options options) {
         options.add(
@@ -157,11 +159,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         double maxUtilization = 1;
 
         this.startTimer(T_LEGALIZE);
-        try {
-            this.legalizer.legalize(maxUtilization);
-        } catch(PlacementException error) {
-            this.logger.raise(error);
-        }
+        this.legalizer.legalize(maxUtilization);
         this.stopTimer(T_LEGALIZE);
 
 
@@ -172,7 +170,8 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_CALCULATE_COST);
 
         this.startTimer(T_UPDATE_CIRCUIT);
-        if(tmpLegalCost < this.legalCost) {
+        //if(tmpLegalCost < this.legalCost) {
+        if(true) {
             this.legalCost = tmpLegalCost;
             this.updateLegal(newLegalX, newLegalY);
         }
@@ -183,6 +182,20 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     protected boolean stopCondition() {
         return this.linearCost / this.legalCost > this.stopRatio;
     }
+
+
+    @Override
+    protected void finalizePlacement() {
+        this.startTimer(T_FINAL_LEGALIZATION);
+        ShiftingLegalizer finalLegalizer = new ShiftingLegalizer(this.legalizer);
+        finalLegalizer.legalize(1);
+
+        int[] newLegalX = this.legalizer.getLegalX();
+        int[] newLegalY = this.legalizer.getLegalY();
+        this.updateLegal(newLegalX, newLegalY);
+        this.stopTimer(T_FINAL_LEGALIZATION);
+    }
+
 
     @Override
     protected void addStatTitles(List<String> titles) {

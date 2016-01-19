@@ -9,7 +9,6 @@ import java.util.Random;
 
 import visual.PlacementVisualizer;
 import circuit.Circuit;
-import circuit.exceptions.PlacementException;
 
 public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
@@ -19,6 +18,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
         O_STEP_SIZE = "step size",
         O_EFFORT_LEVEL = "effort level";
+
+    protected final static String
+        T_FINAL_LEGALIZATION = "final legalization";
 
     public static void initOptions(Options options) {
         options.add(
@@ -231,11 +233,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.maxUtilization = 1;
 
         this.startTimer(T_LEGALIZE);
-        try {
-            this.legalizer.legalize(this.maxUtilization);
-        } catch(PlacementException error) {
-            this.logger.raise(error);
-        }
+        this.legalizer.legalize(this.maxUtilization);
         this.stopTimer(T_LEGALIZE);
 
         this.startTimer(T_UPDATE_CIRCUIT);
@@ -272,5 +270,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected boolean stopCondition() {
         return this.anchorWeight > this.anchorWeightStop;
+    }
+
+    @Override
+    protected void finalizePlacement() {
+        this.startTimer(T_FINAL_LEGALIZATION);
+        ShiftingLegalizer finalLegalizer = new ShiftingLegalizer(this.legalizer);
+        finalLegalizer.legalize(1);
+
+        int[] newLegalX = this.legalizer.getLegalX();
+        int[] newLegalY = this.legalizer.getLegalY();
+        this.updateLegal(newLegalX, newLegalY);
+        this.stopTimer(T_FINAL_LEGALIZATION);
     }
 }

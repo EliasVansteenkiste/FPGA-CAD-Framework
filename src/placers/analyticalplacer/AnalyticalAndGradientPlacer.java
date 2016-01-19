@@ -62,6 +62,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void solveLinear(int iteration);
     protected abstract void solveLegal(int iteration);
     protected abstract boolean stopCondition();
+    protected abstract void finalizePlacement();
 
     protected abstract void printStatistics(int iteration, double time);
 
@@ -295,6 +296,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         this.logger.println();
 
+        this.finalizePlacement();
+
 
         this.startTimer(T_UPDATE_CIRCUIT);
         try {
@@ -323,8 +326,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
 
-        List<GlobalBlock> unplacedBlocks = new ArrayList<GlobalBlock>();
-
         // Update locations
         for(Map.Entry<GlobalBlock, NetBlock> blockEntry : this.netBlocks.entrySet()) {
             GlobalBlock block = blockEntry.getKey();
@@ -338,12 +339,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 int row = this.legalY[index] + (int) Math.ceil(offset);
 
                 Site site = (Site) this.circuit.getSite(column, row, true);
-
-                if(site.isFull()) {
-                    unplacedBlocks.add(block);
-                } else {
-                    block.setSite(site);
-                }
+                block.setSite(site);
             }
         }
 

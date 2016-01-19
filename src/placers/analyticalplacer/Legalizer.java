@@ -5,7 +5,6 @@ import java.util.List;
 import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
-import circuit.exceptions.PlacementException;
 
 abstract class Legalizer {
 
@@ -21,6 +20,11 @@ abstract class Legalizer {
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
     protected int[] heights;
+
+    // Properties of the blockType that is currently being legalized
+    protected BlockType blockType;
+    protected BlockCategory blockCategory;
+    protected int blockStart, blockRepeat, blockHeight;
 
     Legalizer(
             Circuit circuit,
@@ -65,20 +69,47 @@ abstract class Legalizer {
         }
     }
 
+    Legalizer(Legalizer legalizer) {
+        this.circuit = legalizer.circuit;
+        this.width = legalizer.width;
+        this.height = legalizer.height;
 
-    protected abstract void legalizeBlockType(double tileCapacity, BlockType blockType, int blocksStart, int blocksEnd);
+        this.blockTypes = legalizer.blockTypes;
+        this.blockTypeIndexStarts = legalizer.blockTypeIndexStarts;
 
-    void legalize(double tileCapacity) throws PlacementException {
+        this.linearX = legalizer.linearX;
+        this.linearY = legalizer.linearY;
+        this.legalX = legalizer.legalX;
+        this.legalY = legalizer.legalY;
+        this.heights = legalizer.heights;
+
+        this.numBlocks = legalizer.numBlocks;
+        this.numIOBlocks = legalizer.numIOBlocks;
+    }
+
+
+    protected abstract void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd);
+
+    void legalize(double tileCapacity) {
         this.tileCapacity = tileCapacity;
 
         // Skip i = 0: these are IO blocks
         for(int i = 1; i < this.blockTypes.size(); i++) {
-            BlockType blockType = this.blockTypes.get(i);
+            this.blockType = this.blockTypes.get(i);
             int blocksStart = this.blockTypeIndexStarts.get(i);
             int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
             if(blocksEnd > blocksStart) {
-                legalizeBlockType(tileCapacity, blockType, blocksStart, blocksEnd);
+                this.blockCategory = this.blockType.getCategory();
+
+                this.blockStart = Math.max(1, this.blockType.getStart());
+                this.blockHeight = this.blockType.getHeight();
+                this.blockRepeat = this.blockType.getRepeat();
+                if(this.blockRepeat == -1) {
+                    this.blockRepeat = this.width;
+                }
+
+                legalizeBlockType(tileCapacity, blocksStart, blocksEnd);
             }
         }
     }

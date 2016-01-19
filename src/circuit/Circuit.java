@@ -486,6 +486,10 @@ public class Circuit {
         return sites;
     }
 
+    public List<Integer> getColumnsPerBlockType(BlockType blockType) {
+        return this.columnsPerBlockType.get(blockType);
+    }
+
 
     public GlobalBlock getRandomBlock(Random random) {
         int index = random.nextInt(this.globalBlockList.size());
