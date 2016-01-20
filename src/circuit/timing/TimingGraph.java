@@ -449,7 +449,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
 
     public double getMaxDelay() {
-        return this.globalMaxDelay;
+        return this.globalMaxDelay * 10e9;
     }
     public double calculateMaxDelay(boolean calculateWireDelays) {
         if(calculateWireDelays) {
@@ -543,85 +543,6 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
             block.updateSlacks(sinkClockDomain);
         }
     }
-
-    /*public void calculateArrivalTimes() {
-
-        Stack<LeafBlock> todo = new Stack<LeafBlock>();
-
-        for(LeafBlock startBlock : this.endPointBlocks) {
-            for(LeafBlock sink : startBlock.getSinks()) {
-                sink.incrementProcessedSources();
-                if(sink.allSourcesProcessed()) {
-                    todo.add(sink);
-                }
-            }
-        }
-
-
-        this.maxDelay = 0;
-        while(todo.size() > 0) {
-            LeafBlock currentBlock = todo.pop();
-
-            double arrivalTime = currentBlock.calculateArrivalTime();
-
-            if(currentBlock.isClocked()) {
-                if(arrivalTime > this.maxDelay) {
-                    this.maxDelay = arrivalTime;
-                }
-
-            } else {
-                for(LeafBlock sink : currentBlock.getSinks()) {
-                    sink.incrementProcessedSources();
-                    if(sink.allSourcesProcessed()) {
-                        todo.add(sink);
-                    }
-                }
-            }
-        }
-    }
-
-    public void calculateRequiredTimes() {
-        Stack<LeafBlock> todo = new Stack<LeafBlock>();
-
-        for(LeafBlock endBlock : this.endPointBlocks) {
-            endBlock.setRequiredTime(this.maxDelay);
-
-            for(LeafBlock source : endBlock.getSources()) {
-                source.incrementProcessedSinks();
-                if(source.allSinksProcessed()) {
-                    todo.add(source);
-                }
-            }
-        }
-
-        while(todo.size() > 0) {
-            LeafBlock currentBlock = todo.pop();
-
-            if(!currentBlock.isClocked()) {
-                currentBlock.calculateRequiredTime();
-
-                for(LeafBlock source : currentBlock.getSources()) {
-                    source.incrementProcessedSinks();
-                    if(source.allSinksProcessed()) {
-                        todo.add(source);
-                    }
-                }
-            }
-        }
-    }
-
-    public void calculateCriticalities() {
-        for(LeafBlock block : this.circuit.getLeafBlocks()) {
-            if(block.toString().equals("lcell_comb<>:subckt77899~shareout~unconn")) {
-                int d = 0;
-            }
-            block.calculateCriticalities(this.maxDelay, this.criticalityExponent);
-        }
-    }
-
-    public double getMaxDelay() {
-        return this.maxDelay * Math.pow(10, 9);
-    }*/
 
     public double calculateTotalCost() {
         double totalCost = 0;
