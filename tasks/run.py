@@ -27,6 +27,7 @@ base_commands = {
         'java',
         '-cp',
         'bin',
+        'Xmx30g',
         'interfaces.CLI',
         '{architecture_file}',
         '{blif_file}',
