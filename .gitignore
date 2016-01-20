@@ -10,8 +10,8 @@ benchmarks_titan
 !benchmarks/*.xml
 
 tasks/*
-!tasks/run.py
-!tasks/example_task
+!tasks/java_other_benchmarks/config.json
+!tasks/vpr_other_benchmarks/config.json
 
 
 
