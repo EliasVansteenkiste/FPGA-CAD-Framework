@@ -138,7 +138,7 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
 
 
 
-    boolean split(TwoDimLinkedList list1, TwoDimLinkedList list2, int splitSize, Axis axis) {
+    void split(TwoDimLinkedList list1, TwoDimLinkedList list2, int splitSize, Axis axis) {
         if(splitSize > this.size) {
             throw new IndexOutOfBoundsException();
         }
@@ -208,8 +208,6 @@ class TwoDimLinkedList implements Iterable<LegalizerBlock> {
 
         list1.finishSplit();
         list2.finishSplit();
-
-        return (list1.size == splitSize);
     }
 
     private void initializeSplit(int axisOrdinal) {

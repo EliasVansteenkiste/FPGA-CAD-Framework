@@ -268,7 +268,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         while(!isLastIteration) {
             double timerBegin = System.nanoTime();
-
+            if(iteration == 49) {
+                int d = 0;
+            }
             // Solve linear
             this.solveLinear(iteration);
             this.solveLegal(iteration);

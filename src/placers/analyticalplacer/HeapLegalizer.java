@@ -20,7 +20,7 @@ import circuit.block.AbstractSite;
 class HeapLegalizer extends Legalizer {
 
     // These are temporary data structures
-    private Area[][] areaPointers;
+    private GrowingArea[][] areaPointers;
     private List<List<List<LegalizerBlock>>> blockMatrix;
 
 
@@ -54,11 +54,11 @@ class HeapLegalizer extends Legalizer {
         initializeBlockMatrix(blocksStart, blocksEnd);
 
         // Build a set of disjunct areas that are not over-utilized
-        this.areaPointers = new Area[this.width][this.height];
-        List<Area> areas = this.growAreas();
+        this.areaPointers = new GrowingArea[this.width][this.height];
+        List<GrowingArea> areas = this.growAreas();
 
         // Legalize all unabsorbed areas
-        for(Area area : areas) {
+        for(GrowingArea area : areas) {
             if(!area.isAbsorbed()) {
                 this.legalizeArea(area);
             }
@@ -85,6 +85,10 @@ class HeapLegalizer extends Legalizer {
                 AbstractSite site = this.getClosestSite(x, y + offset);
                 int column = site.getColumn();
                 int row = site.getRow();
+
+                if(index == 62) {
+                    int d = 0;
+                }
 
                 LegalizerBlock newBlock = new LegalizerBlock(index, offset, height);
                 this.blockMatrix.get(column).get(row).add(newBlock);
@@ -165,7 +169,7 @@ class HeapLegalizer extends Legalizer {
     }
 
 
-    private List<Area> growAreas() {
+    private List<GrowingArea> growAreas() {
         List<Integer> columns = new ArrayList<Integer>();
 
         // This dummy element is added to simplify the test inside the while loop
@@ -189,7 +193,7 @@ class HeapLegalizer extends Legalizer {
         int rowEndIndex = (rows.size() + 1) / 2;
         double centerY = (rows.get(rowStartIndex) + rows.get(rowEndIndex)) / 2.0;
 
-        List<Area> areas = new ArrayList<Area>();
+        List<GrowingArea> areas = new ArrayList<GrowingArea>();
 
         // Grow from the center coordinate(s)
         for(int rowIndex = rowStartIndex; rowIndex <= rowEndIndex; rowIndex++) {
@@ -243,18 +247,18 @@ class HeapLegalizer extends Legalizer {
     }
 
 
-    private void tryNewArea(List<Area> areas, int x, int y) {
+    private void tryNewArea(List<GrowingArea> areas, int x, int y) {
         if(this.blockMatrix.get(x).get(y).size() >= 1
                 && this.areaPointers[x][y] == null) {
-            Area newArea = this.newArea(x, y);
+            GrowingArea newArea = this.newArea(x, y);
             areas.add(newArea);
         }
     }
 
-    private Area newArea(int x, int y) {
+    private GrowingArea newArea(int x, int y) {
 
         // left, top, right, bottom
-        Area area = new Area(
+        GrowingArea area = new GrowingArea(
                 this.linearX,
                 this.linearY,
                 x,
@@ -264,23 +268,30 @@ class HeapLegalizer extends Legalizer {
                 this.blockRepeat);
 
         do {
-            int[] direction = area.nextGrowDirection();
-            Area goalArea = new Area(area, direction);
-
-            boolean growthPossible = goalArea.isLegal(this.width, this.height);
-            if(growthPossible) {
-                this.growArea(area, goalArea);
-
-            } else {
-                area.disableDirection();
-            }
+            this.growAreaOneStep(area);
         } while(area.getOccupation() > area.getCapacity());
 
         return area;
     }
 
+    private void growAreaOneStep(GrowingArea area) {
+        while(true) {
+            int[] direction = area.nextGrowDirection();
+            GrowingArea goalArea = new GrowingArea(area, direction);
 
-    private void growArea(Area area, Area goalArea) {
+            boolean growthPossible = goalArea.isLegal(this.width, this.height);
+            if(growthPossible) {
+                this.growArea(area, goalArea);
+                return;
+
+            } else {
+                area.disableDirection();
+            }
+        }
+    }
+
+
+    private void growArea(GrowingArea area, GrowingArea goalArea) {
 
         // While goalArea is not completely covered by area
         while(true) {
@@ -331,10 +342,10 @@ class HeapLegalizer extends Legalizer {
         }
     }
 
-    private void addTileToArea(Area area, Area goalArea, int column, int row) {
+    private void addTileToArea(GrowingArea area, GrowingArea goalArea, int column, int row) {
 
         // If this tile is occupied by an unabsorbed area
-        Area neighbour = this.areaPointers[column][row];
+        GrowingArea neighbour = this.areaPointers[column][row];
         if(neighbour != null && !neighbour.isAbsorbed()) {
             neighbour.absorb();
 
@@ -371,20 +382,29 @@ class HeapLegalizer extends Legalizer {
 
 
 
-    private void legalizeArea(Area area) {
-        TwoDimLinkedList blocks = area.getBlockIndexes();
-        SplittingArea splittingArea = new SplittingArea(area);
-
-        // Calculate the capacity of the area
-        int capacity = 0;
-        int columnHeight = (area.top - area.bottom) / this.blockHeight + 1;
-        for(int column = area.left; column <= area.right; column += this.blockRepeat) {
-            if(this.circuit.getColumnType(column) == this.blockType) {
-                capacity += columnHeight;
+    private void legalizeArea(GrowingArea area) {
+        boolean splitSuccess;
+        while(true) {
+            // Calculate the capacity of the area
+            int capacity = 0;
+            int columnHeight = (area.top - area.bottom) / this.blockHeight + 1;
+            for(int column = area.left; column <= area.right; column += this.blockRepeat) {
+                if(this.circuit.getColumnType(column) == this.blockType) {
+                    capacity += columnHeight;
+                }
             }
-        }
 
-        this.legalizeArea(splittingArea, capacity, blocks);
+            TwoDimLinkedList blocks = area.getBlockIndexes();
+            SplittingArea splittingArea = new SplittingArea(area);
+
+            splitSuccess = this.legalizeArea(splittingArea, capacity, blocks);
+
+            if(splitSuccess) {
+                return;
+            }
+
+            this.growAreaOneStep(area);
+        }
     }
 
     private boolean legalizeArea(
@@ -417,6 +437,9 @@ class HeapLegalizer extends Legalizer {
                 int blockIndex = block.blockIndex;
                 this.legalX[blockIndex] = column;
                 this.legalY[blockIndex] = row;
+                if(blockIndex == 62 || blockIndex == 71) {
+                    int d = 0;
+                }
             }
 
             return true;
@@ -503,20 +526,20 @@ class HeapLegalizer extends Legalizer {
         }
 
         int splitIndex = (int) Math.ceil(capacity1 * blocks.size() / (double) capacity);
+        int capacity2 = capacity - capacity1;
 
         TwoDimLinkedList blocks1 = new TwoDimLinkedList(blocks),
                          blocks2 = new TwoDimLinkedList(blocks);
-        boolean splitSuccess = blocks.split(blocks1, blocks2, splitIndex, axis);
+        blocks.split(blocks1, blocks2, splitIndex, axis);
 
         // If the split failed
-        if(!splitSuccess) {
+        if(blocks1.size() > capacity1 || blocks2.size() > capacity2) {
             return false;
         }
 
         boolean success1 = this.legalizeArea(area1, capacity1, blocks1);
         boolean success2 = true;
         if(success1) {
-            int capacity2 = capacity - capacity1;
             success2 = this.legalizeArea(area2, capacity2, blocks2);
         }
 
@@ -565,6 +588,9 @@ class HeapLegalizer extends Legalizer {
         }
 
         this.legalX[blockIndex] = column;
+        if(blockIndex == 62 || blockIndex == 71) {
+            int d = 0;
+        }
     }
 
     private boolean badColumn(int column, SplittingArea area) {
@@ -589,6 +615,9 @@ class HeapLegalizer extends Legalizer {
             int row = (int) Math.round(y + (height - 1) / 2);
             this.legalX[blockIndex] = column;
             this.legalY[blockIndex] = row;
+            if(blockIndex == 62 || blockIndex == 71) {
+                int d = 0;
+            }
 
             y += rowsPerCell * height * this.blockHeight;
         }
@@ -678,6 +707,9 @@ class HeapLegalizer extends Legalizer {
 
             this.legalX[blockIndex] = column;
             this.legalY[blockIndex] = row;
+            if(blockIndex == 62 || blockIndex == 71) {
+                int d = 0;
+            }
 
             row += ((macroHeight + 2) / 2) * this.blockHeight;
         }
@@ -713,23 +745,30 @@ class HeapLegalizer extends Legalizer {
     }
 
 
-    private class SplittingArea {
+
+    private abstract class Area {
 
         int left, right, bottom, top;
 
-        SplittingArea(int left, int right, int bottom, int top) {
+        Area(int left, int right, int bottom, int top) {
             this.left = left;
             this.right = right;
             this.bottom = bottom;
             this.top = top;
         }
 
-        SplittingArea(Area area) {
+        Area(Area area) {
             this(area.left, area.right, area.bottom, area.top);
         }
+    }
+    private class SplittingArea extends Area {
 
-        SplittingArea(SplittingArea area) {
-            this(area.left, area.right, area.bottom, area.top);
+        SplittingArea(int left, int right, int bottom, int top) {
+            super(left, right, bottom, top);
+        }
+
+        SplittingArea(Area area) {
+            super(area);
         }
 
         SplittingArea splitHorizontal(int split, int space) {
@@ -752,9 +791,7 @@ class HeapLegalizer extends Legalizer {
         }
     }
 
-    private class Area {
-
-        int bottom, top, left, right;
+    private class GrowingArea extends Area {
 
         private boolean absorbed = false;
 
@@ -768,24 +805,9 @@ class HeapLegalizer extends Legalizer {
         private boolean[] originalDirection = {true, true, true, true};
         private int growDirectionIndex = -1;
 
-        Area(Area a, int[] direction) {
-            this.blockIndexes = new TwoDimLinkedList(a.blockIndexes);
+        GrowingArea(double[] linearX, double[] linearY, int column, int row, double tileCapacity, int blockHeight, int blockRepeat) {
+            super(column, column - blockRepeat, row, row);
 
-            this.areaTileCapacity = a.areaTileCapacity;
-            this.areaBlockHeight = a.areaBlockHeight;
-            this.areaBlockRepeat = a.areaBlockRepeat;
-
-
-            this.left = a.left;
-            this.right = a.right;
-
-            this.bottom = a.bottom;
-            this.top = a.top;
-
-            this.grow(direction);
-        }
-
-        Area(double[] linearX, double[] linearY, int column, int row, double tileCapacity, int blockHeight, int blockRepeat) {
             // Thanks to this two-dimensionally linked list, we
             // don't have to sort the list of blocks after each
             // area split: the block list is splitted and resorted
@@ -795,13 +817,18 @@ class HeapLegalizer extends Legalizer {
             this.areaTileCapacity = tileCapacity;
             this.areaBlockHeight = blockHeight;
             this.areaBlockRepeat = blockRepeat;
+        }
 
-            this.left = column;
-            this.right = column - this.areaBlockRepeat;
-            this.bottom = row;
-            this.top = row;
+        GrowingArea(GrowingArea area, int[] direction) {
+            super(area);
 
+            this.blockIndexes = new TwoDimLinkedList(area.blockIndexes);
 
+            this.areaTileCapacity = area.areaTileCapacity;
+            this.areaBlockHeight = area.areaBlockHeight;
+            this.areaBlockRepeat = area.areaBlockRepeat;
+
+            this.grow(direction);
         }
 
 

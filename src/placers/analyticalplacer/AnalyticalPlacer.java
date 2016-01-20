@@ -167,8 +167,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_CALCULATE_COST);
 
         this.startTimer(T_UPDATE_CIRCUIT);
-        //if(tmpLegalCost < this.legalCost) {
-        if(true) {
+        if(tmpLegalCost < this.legalCost) {
             this.legalCost = tmpLegalCost;
             this.updateLegal(newLegalX, newLegalY);
         }
