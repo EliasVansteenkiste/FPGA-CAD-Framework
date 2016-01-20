@@ -88,9 +88,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         int innerIterations = iteration == 0 ? 5 : 1;
         for(int i = 0; i < innerIterations; i++) {
 
-            // Normally we don't use a pseudo weight in the first iteration.
-            // This can lead to diagonal elements in the matrix that are equal
-            // to zero, which must be avoided
             LinearSolverAnalytical solver = new LinearSolverAnalytical(
                     this.linearX,
                     this.linearY,
@@ -120,7 +117,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.processNetsTD(solver);
 
         // Add pseudo connections
-        if(iteration >= 0) {
+        if(iteration > 0) {
             // this.legalX and this.legalY store the solution with the lowest cost
             // For anchors, the last (possibly suboptimal) solution usually works better
             solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());

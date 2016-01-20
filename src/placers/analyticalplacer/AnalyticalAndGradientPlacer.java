@@ -281,7 +281,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.printStatistics(iteration, time);
 
             // Update the visualizer
-            // TODO: get this to work again
             this.visualizer.addPlacement(
                     String.format("iteration %d: linear", iteration),
                     this.netBlocks, this.linearX, this.linearY);
