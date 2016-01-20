@@ -1,0 +1,20 @@
+{
+    "placer": "vpr",
+    "route": false,
+    "architecture": "benchmarks/other_benchmarks/stratixiv_arch.timing.xml",
+    "blif_file": "benchmarks/other_benchmarks/{circuit}/netlists/{circuit}_stratixiv_arch_timing.blif",
+    "net_file": "benchmarks/other_benchmarks/{circuit}/netlists/{circuit}_stratixiv_arch_timing.net",
+
+    "circuits": "carpat CH_DFSIN CHERI EKF-SLAM_Jacobians jacobi JPEG leon2 leon3mp MCML MMM radar20 random Reed_Solomon smithwaterman stap_steering sudoku_check SURF_desc ucsb_152_tap_fir uoft_raytracer wb_conmax",
+
+    "arguments": {
+    },
+
+    "stats": {
+        "vpr runtime": "Placement took ([0-9.e+-]+) seconds",
+        "vpr bb cost": "BB cost\\s+\\|\\s+([0-9.e+-]+)",
+        "vpr max delay": "max delay\\s+\\|\\s+([0-9.e+-]+) ns",
+        "java bb cost": "BB cost\\s+\\|\\s+([0-9.e+-]+)",
+        "java max delay": "max delay\\s+\\|\\s+([0-9.e+-]+) ns"
+    }
+}
