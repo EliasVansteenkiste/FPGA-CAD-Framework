@@ -12,8 +12,8 @@
 
     "stats": {
         "vpr runtime": "Placement took ([0-9.e+-]+) seconds",
-        "vpr bb cost": "BB cost\\s+\\|\\s+([0-9.e+-]+)",
-        "vpr max delay": "max delay\\s+\\|\\s+([0-9.e+-]+) ns",
+        "vpr bb cost": "Placement cost:.*bb_cost: ([0-9.e+-]+),",
+        "vpr max delay": "Placement estimated critical path delay: ([0-9.e+-]+) ns",
         "java bb cost": "BB cost\\s+\\|\\s+([0-9.e+-]+)",
         "java max delay": "max delay\\s+\\|\\s+([0-9.e+-]+) ns"
     }

@@ -160,7 +160,7 @@ num_iterations = len(argument_sets)
 
 summary_file = open(os.path.join(folder, 'summary.csv'), 'w')
 summary_writer = csv.writer(summary_file)
-summary_writer.writerow(['circuit'] + stat_names)
+summary_writer.writerow(['run'] + stat_names)
 
 num_stats = len(stat_names)
 
