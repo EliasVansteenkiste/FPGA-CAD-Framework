@@ -197,7 +197,7 @@ for iteration in range(num_iterations):
         print('    ' + circuit)
 
         # Call the placer and get statistics
-        circuit_stats = [''] * num_stats
+        circuit_stats = ['0'] * num_stats
         circuit_command = substitute(command, {'circuit': circuit})
         out = call(circuit_command, circuit_stats, stat_regexes)
 
