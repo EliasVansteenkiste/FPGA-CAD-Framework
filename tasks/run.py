@@ -27,7 +27,7 @@ base_commands = {
         'java',
         '-cp',
         'bin',
-        'Xmx30g',
+        '-Xmx30g',
         'interfaces.CLI',
         '{architecture_file}',
         '{blif_file}',
@@ -89,7 +89,7 @@ def call(command, stats, regexes):
     err = err.decode('utf-8')
 
     if err:
-        print('Error!')
+        print('        Error!')
         return out + '{0}\n\nThere was a problem with command "{1}":\n\n{2}'.format(out, ' '.join(command), err)
 
     for line in out.splitlines():
