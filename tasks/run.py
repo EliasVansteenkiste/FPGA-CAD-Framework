@@ -88,9 +88,8 @@ def call(command, stats, regexes):
     err = err.decode('utf-8')
 
     if err:
-        print(err)
-        print('There was a problem with command "{0}"'.format(' '.join(command)))
-        sys.exit(1)
+        print('Error!')
+        return out + '{0}\n\nThere was a problem with command "{1}":\n\n{2}'.format(out, ' '.join(command), err)
 
     for line in out.splitlines():
         for i in range(len(regexes)):
