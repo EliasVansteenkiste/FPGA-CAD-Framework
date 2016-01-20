@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
+
 import circuit.Circuit;
 import circuit.block.GlobalBlock;
 
@@ -25,23 +27,31 @@ class Placement {
     }
 
 
-    Placement(String name, Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, int[] x, int[] y) {
+    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y) {
         this.initializeData(name, circuit);
 
-        for(Map.Entry<GlobalBlock, Integer> blockIndexEntry : blockIndexes.entrySet()) {
+        for(Map.Entry<GlobalBlock, NetBlock> blockIndexEntry : blockIndexes.entrySet()) {
             GlobalBlock block = blockIndexEntry.getKey();
-            int index = blockIndexEntry.getValue();
-            this.blocks.put(block, new Coordinate(x[index], y[index]));
+            NetBlock netBlock = blockIndexEntry.getValue();
+
+            int index = netBlock.getBlockIndex();
+            float offset = netBlock.getOffset();
+
+            this.blocks.put(block, new Coordinate(x[index], y[index] + offset));
         }
     }
 
-    Placement(String name, Circuit circuit, Map<GlobalBlock, Integer> blockIndexes, double[] x, double[] y) {
+    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y) {
         this.initializeData(name, circuit);
 
-        for(Map.Entry<GlobalBlock, Integer> blockIndexEntry : blockIndexes.entrySet()) {
+        for(Map.Entry<GlobalBlock, NetBlock> blockIndexEntry : blockIndexes.entrySet()) {
             GlobalBlock block = blockIndexEntry.getKey();
-            int index = blockIndexEntry.getValue();
-            this.blocks.put(block, new Coordinate(x[index], y[index]));
+            NetBlock netBlock = blockIndexEntry.getValue();
+
+            int index = netBlock.getBlockIndex();
+            float offset = netBlock.getOffset();
+
+            this.blocks.put(block, new Coordinate(x[index], y[index] + offset));
         }
     }
 

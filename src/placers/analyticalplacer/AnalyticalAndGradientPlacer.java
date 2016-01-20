@@ -282,13 +282,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             // Update the visualizer
             // TODO: get this to work again
-            /*this.visualizer.addPlacement(
+            this.visualizer.addPlacement(
                     String.format("iteration %d: linear", iteration),
-                    this.blocks, this.linearX, this.linearY);
+                    this.netBlocks, this.linearX, this.linearY);
             this.visualizer.addPlacement(
                     String.format("iteration %d: legal", iteration),
-                    this.blocks, this.legalX, this.legalY);
-                    */
+                    this.netBlocks, this.legalX, this.legalY);
 
             iteration++;
         }
@@ -407,7 +406,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
 
-    class NetBlock {
+    public class NetBlock {
         final int blockIndex;
         final float offset;
 
@@ -418,6 +417,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         NetBlock(TimingNetBlock timingNetBlock) {
             this(timingNetBlock.blockIndex, timingNetBlock.offset);
+        }
+
+        public int getBlockIndex() {
+            return this.blockIndex;
+        }
+        public float getOffset() {
+            return this.offset;
         }
 
         @Override
