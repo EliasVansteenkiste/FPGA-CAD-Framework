@@ -86,10 +86,6 @@ class HeapLegalizer extends Legalizer {
                 int column = site.getColumn();
                 int row = site.getRow();
 
-                if(index == 62) {
-                    int d = 0;
-                }
-
                 LegalizerBlock newBlock = new LegalizerBlock(index, offset, height);
                 this.blockMatrix.get(column).get(row).add(newBlock);
             }
@@ -437,9 +433,6 @@ class HeapLegalizer extends Legalizer {
                 int blockIndex = block.blockIndex;
                 this.legalX[blockIndex] = column;
                 this.legalY[blockIndex] = row;
-                if(blockIndex == 62 || blockIndex == 71) {
-                    int d = 0;
-                }
             }
 
             return true;
@@ -513,7 +506,6 @@ class HeapLegalizer extends Legalizer {
             // If there is a macro that is higher than half of the
             // current area height: place greedily
             if(maxHeight > numRows / 2) {
-                // TODO: is this ever height 2?
                 return this.placeGreedy(area, blocks);
 
             } else {
@@ -588,9 +580,6 @@ class HeapLegalizer extends Legalizer {
         }
 
         this.legalX[blockIndex] = column;
-        if(blockIndex == 62 || blockIndex == 71) {
-            int d = 0;
-        }
     }
 
     private boolean badColumn(int column, SplittingArea area) {
@@ -615,9 +604,6 @@ class HeapLegalizer extends Legalizer {
             int row = (int) Math.round(y + (height - 1) / 2);
             this.legalX[blockIndex] = column;
             this.legalY[blockIndex] = row;
-            if(blockIndex == 62 || blockIndex == 71) {
-                int d = 0;
-            }
 
             y += rowsPerCell * height * this.blockHeight;
         }
@@ -707,9 +693,6 @@ class HeapLegalizer extends Legalizer {
 
             this.legalX[blockIndex] = column;
             this.legalY[blockIndex] = row;
-            if(blockIndex == 62 || blockIndex == 71) {
-                int d = 0;
-            }
 
             row += ((macroHeight + 2) / 2) * this.blockHeight;
         }
