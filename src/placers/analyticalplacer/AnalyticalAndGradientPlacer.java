@@ -40,6 +40,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected int[] heights;
 
     private boolean[] hasNets;
+    protected int numNets, numRealNets;
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
 
@@ -192,11 +193,15 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
 
+        this.numRealNets = this.nets.size();
+
         for(NetBlock block : this.netBlocks.values()) {
             if(!this.hasNets[block.blockIndex]) {
                 this.addDummyNet(block);
             }
         }
+
+        this.numNets = this.nets.size();
 
         this.stopTimer(T_INITIALIZE_DATA);
     }

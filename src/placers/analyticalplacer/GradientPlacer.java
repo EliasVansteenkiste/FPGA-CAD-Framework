@@ -108,24 +108,23 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         // are blocks that are only connected to themselves.
         // But we don't need these dummy nets, and they are
         // always at the back of the list, so that doesn't matter.
-        int numNets = this.timingNets.size();
-        this.netCriticalities = new double[numNets];
+        this.netCriticalities = new double[this.numRealNets];
 
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
         // Build some good ol' arrays of primitive types
         int netBlockSize = 0;
-        for(int i = 0; i < numNets; i++) {
+        for(int i = 0; i < this.numRealNets; i++) {
             netBlockSize += this.nets.get(i).blocks.length;
         }
 
-        this.netEnds = new int[numNets];
+        this.netEnds = new int[this.numRealNets];
         this.netBlockIndexes = new int[netBlockSize];
         this.netBlockOffsets = new float[netBlockSize];
 
         int netBlockCounter = 0;
-        for(int netCounter = 0; netCounter < numNets; netCounter++) {
+        for(int netCounter = 0; netCounter < this.numRealNets; netCounter++) {
             Net net = this.nets.get(netCounter);
 
             for(NetBlock block : net.blocks) {
