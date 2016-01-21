@@ -582,6 +582,8 @@ class HeapLegalizer extends Legalizer {
         // Find the closest column
         int column = (int) Math.round(linearX);
 
+      //TODO: debug
+        System.out.printf("%d, %d, %d\n", area.left, area.right, column);
         if(column > area.left && column < area.right) {
             int direction = linearX > column ? 1 : -1;
             while(this.badColumn(column, area)) {
