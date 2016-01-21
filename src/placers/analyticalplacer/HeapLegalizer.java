@@ -597,6 +597,9 @@ class HeapLegalizer extends Legalizer {
         }
 
         this.legalX[blockIndex] = column;
+
+      //TODO: debug
+        System.out.printf("finish place block\n");
     }
 
     private boolean badColumn(int column, SplittingArea area) {
