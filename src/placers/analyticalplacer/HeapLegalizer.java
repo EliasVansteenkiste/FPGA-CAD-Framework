@@ -50,9 +50,6 @@ class HeapLegalizer extends Legalizer {
     @Override
     protected void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd) {
 
-        //TODO: debug
-        System.out.printf("blocktype: %s\n", this.blockType);
-
         // Make a matrix that contains the blocks that are closest to each position
         initializeBlockMatrix(blocksStart, blocksEnd);
 
@@ -63,8 +60,6 @@ class HeapLegalizer extends Legalizer {
         // Legalize all unabsorbed areas
         for(GrowingArea area : areas) {
             if(!area.isAbsorbed()) {
-              //TODO: debug
-                System.out.printf("legalize: %s\n", area);
                 this.legalizeArea(area);
             }
         }
@@ -99,10 +94,6 @@ class HeapLegalizer extends Legalizer {
 
 
     private AbstractSite getClosestSite(double x, double y) {
-
-      //TODO: debug
-        System.out.printf("closest site: %f, %f\n", x, y);
-
 
         int column, row;
 
@@ -214,8 +205,6 @@ class HeapLegalizer extends Legalizer {
     private void tryNewArea(List<GrowingArea> areas, int column, int row) {
         if(this.blockMatrix.get(column).get(row).size() >= 1
                 && this.areaPointers[column][row] == null) {
-          //TODO: debug
-            System.out.printf("new area: %d, %d\n", column, row);
             GrowingArea newArea = this.newArea(column, row);
             areas.add(newArea);
         }
@@ -241,8 +230,6 @@ class HeapLegalizer extends Legalizer {
     }
 
     private void growAreaOneStep(GrowingArea area) {
-      //TODO: debug
-        System.out.printf("grow one step: %s\n", area);
         while(true) {
             int[] direction = area.nextGrowDirection();
             GrowingArea goalArea = new GrowingArea(area, direction);
@@ -380,9 +367,6 @@ class HeapLegalizer extends Legalizer {
             int capacity,
             TwoDimLinkedList blocks) {
 
-      //TODO: debug
-        System.out.printf("split: %s\n", area);
-
         int sizeX = area.right - area.left + 1,
             sizeY = area.top - area.bottom + 1;
         int numRows = (sizeY - 1) / this.blockHeight + 1;
@@ -508,8 +492,6 @@ class HeapLegalizer extends Legalizer {
     }
 
     private void placeBlock(LegalizerBlock block, SplittingArea area) {
-      //TODO: debug
-        System.out.printf("place block: %s\n", area);
         int blockIndex = block.blockIndex;
         double linearX = this.linearX[blockIndex];
         double linearY = this.linearY[blockIndex];
@@ -532,10 +514,6 @@ class HeapLegalizer extends Legalizer {
         // Find the closest column
         int column = (int) Math.round(linearX);
 
-      //TODO: debug
-        System.out.printf("%d, %d, %d\n", area.left, area.right, column);
-        System.out.printf("%s, %s\n", this.blockType, this.circuit.getColumnType(area.left));
-        System.out.printf("%d, %d", this.blockStart, this.blockRepeat);
         if(column > area.left && column < area.right) {
             int direction = linearX > column ? 1 : -1;
             while(this.badColumn(column, area)) {
@@ -559,9 +537,6 @@ class HeapLegalizer extends Legalizer {
         }
 
         this.legalX[blockIndex] = column;
-
-      //TODO: debug
-        System.out.printf("finish place block\n");
     }
 
     private boolean badColumn(int column, SplittingArea area) {
@@ -574,8 +549,6 @@ class HeapLegalizer extends Legalizer {
 
     private void placeBlocksInColumn(TwoDimLinkedList blocks, int column, int rowStart, int rowEnd) {
 
-      //TODO: debug
-        System.out.printf("place column: %d, %d, %d\n", column, rowStart, rowEnd);
         double y = rowStart;
 
         int blocksSize = blocks.size();
@@ -596,8 +569,7 @@ class HeapLegalizer extends Legalizer {
 
 
     private boolean placeGreedy(SplittingArea area, TwoDimLinkedList blocks) {
-      //TODO: debug
-        System.out.printf("place greedy: \n", area);
+
         // Sort the blocks by size
         List<LegalizerBlock> sortedBlocks = new ArrayList<>();
         for(LegalizerBlock block : blocks) {
