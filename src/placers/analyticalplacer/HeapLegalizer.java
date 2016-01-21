@@ -50,6 +50,9 @@ class HeapLegalizer extends Legalizer {
     @Override
     protected void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd) {
 
+        //TODO: debug
+        System.out.printf("blocktype: %s\n", this.blockType);
+
         // Make a matrix that contains the blocks that are closest to each position
         initializeBlockMatrix(blocksStart, blocksEnd);
 
@@ -60,6 +63,8 @@ class HeapLegalizer extends Legalizer {
         // Legalize all unabsorbed areas
         for(GrowingArea area : areas) {
             if(!area.isAbsorbed()) {
+              //TODO: debug
+                System.out.printf("legalize: %s\n", area);
                 this.legalizeArea(area);
             }
         }
@@ -94,6 +99,9 @@ class HeapLegalizer extends Legalizer {
 
 
     private AbstractSite getClosestSite(double x, double y) {
+
+      //TODO: debug
+        System.out.printf("closest site: %f, %f\n", x, y);
 
         switch(this.blockCategory) {
             case IO:
@@ -243,10 +251,12 @@ class HeapLegalizer extends Legalizer {
     }
 
 
-    private void tryNewArea(List<GrowingArea> areas, int x, int y) {
-        if(this.blockMatrix.get(x).get(y).size() >= 1
-                && this.areaPointers[x][y] == null) {
-            GrowingArea newArea = this.newArea(x, y);
+    private void tryNewArea(List<GrowingArea> areas, int column, int row) {
+        if(this.blockMatrix.get(column).get(row).size() >= 1
+                && this.areaPointers[column][row] == null) {
+          //TODO: debug
+            System.out.printf("new area: %d, %d\n", column, row);
+            GrowingArea newArea = this.newArea(column, row);
             areas.add(newArea);
         }
     }
@@ -271,6 +281,8 @@ class HeapLegalizer extends Legalizer {
     }
 
     private void growAreaOneStep(GrowingArea area) {
+      //TODO: debug
+        System.out.printf("grow one step: %s\n", area);
         while(true) {
             int[] direction = area.nextGrowDirection();
             GrowingArea goalArea = new GrowingArea(area, direction);
@@ -408,6 +420,9 @@ class HeapLegalizer extends Legalizer {
             int capacity,
             TwoDimLinkedList blocks) {
 
+      //TODO: debug
+        System.out.printf("split: %s\n", area);
+
         int sizeX = area.right - area.left + 1,
             sizeY = area.top - area.bottom + 1;
         int numRows = (sizeY - 1) / this.blockHeight + 1;
@@ -543,6 +558,8 @@ class HeapLegalizer extends Legalizer {
     }
 
     private void placeBlock(LegalizerBlock block, SplittingArea area) {
+      //TODO: debug
+        System.out.printf("place block: %s\n", area);
         int blockIndex = block.blockIndex;
         double linearX = this.linearX[blockIndex];
         double linearY = this.linearY[blockIndex];
@@ -591,6 +608,9 @@ class HeapLegalizer extends Legalizer {
 
 
     private void placeBlocksInColumn(TwoDimLinkedList blocks, int column, int rowStart, int rowEnd) {
+
+      //TODO: debug
+        System.out.printf("place column: %d, %d, %d\n", column, rowStart, rowEnd);
         double y = rowStart;
 
         int blocksSize = blocks.size();
@@ -611,6 +631,8 @@ class HeapLegalizer extends Legalizer {
 
 
     private boolean placeGreedy(SplittingArea area, TwoDimLinkedList blocks) {
+      //TODO: debug
+        System.out.printf("place greedy: \n", area);
         // Sort the blocks by size
         List<LegalizerBlock> sortedBlocks = new ArrayList<>();
         for(LegalizerBlock block : blocks) {
@@ -743,7 +765,13 @@ class HeapLegalizer extends Legalizer {
         Area(Area area) {
             this(area.left, area.right, area.bottom, area.top);
         }
+
+        @Override
+        public String toString() {
+            return String.format("h: [%d, %d], v: [%d, %d]", this.left, this.right, this.bottom, this.top);
+        }
     }
+
     private class SplittingArea extends Area {
 
         SplittingArea(int left, int right, int bottom, int top) {
@@ -766,11 +794,6 @@ class HeapLegalizer extends Legalizer {
             this.top = split - space;
 
             return newArea;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("h: [%d, %d], v: [%d, %d]", this.left, this.right, this.bottom, this.top);
         }
     }
 
@@ -907,12 +930,6 @@ class HeapLegalizer extends Legalizer {
             // Make sure the replacement for the current grow direction is chosen next,
             // since growing in the current direction must have failede
             this.growDirectionIndex--;
-        }
-
-
-        @Override
-        public String toString() {
-            return String.format("[[%d, %d], [%d, %d]", this.left, this.bottom, this.right, this.top);
         }
     }
 }
