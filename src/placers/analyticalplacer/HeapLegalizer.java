@@ -103,72 +103,32 @@ class HeapLegalizer extends Legalizer {
       //TODO: debug
         System.out.printf("closest site: %f, %f\n", x, y);
 
-        switch(this.blockCategory) {
-            case IO:
-                int siteX, siteY;
-                if(x > y) {
-                    if(x > this.height - y - 1) {
-                        // Right quadrant
-                        siteX = this.width - 1;
-                        siteY = (int) Math.max(Math.min(Math.round(y), this.height - 2), 1);
 
-                    } else {
-                        // Top quadrant
-                        siteX = (int)  Math.max(Math.min(Math.round(x), this.height - 2), 1);
-                        siteY = 0;
-                    }
+        int column, row;
 
-                } else {
-                    if(x > this.height - y - 1) {
-                        //Bottom quadrant
-                        siteX = (int)  Math.max(Math.min(Math.round(x), this.height - 2), 1);
-                        siteY = this.height - 1;
+        if(this.blockCategory == BlockCategory.CLB) {
+            column = (int) Math.round(x);
+            row = (int) Math.round(Math.max(Math.min(y, this.height - 2), 1));
 
-                    } else {
-                        // Left quadrant
-                        siteX = 0;
-                        siteY = (int) Math.max(Math.min(Math.round(y), this.height - 2), 1);
-                    }
-                }
+        } else {
+            int numColumns = (int) Math.floor((this.width - this.blockStart - 2) / this.blockRepeat + 1);
+            int columnIndex = (int) Math.round(Math.max(Math.min((x - this.blockStart) / this.blockRepeat, numColumns - 1), 0));
+            column = columnIndex * this.blockRepeat + this.blockStart;
 
-                return this.circuit.getSite(siteX, siteY);
+            int numRows = (int) Math.floor((this.height - 2) / this.blockHeight);
+            int rowIndex = (int) Math.round(Math.max(Math.min((y - 1) / this.blockHeight, numRows - 1), 0));
+            row = rowIndex * this.blockHeight + 1;
+        }
 
-            case CLB:
-                int row = (int) Math.round(Math.max(Math.min(y, this.height - 2), 1));
-
-                // Get closest column
-                // Not easy to do this with calculations if there are multiple hardblock types
-                // So just trial and error
-                int column = (int) Math.round(x);
-                int step = 1;
-                int direction = (x > column) ? 1 : -1;
-
-                while(true) {
-                    if(column > 0 && column < this.width-1 && this.circuit.getColumnType(column).equals(this.blockType)) {
-                        break;
-                    }
-
-                    column += direction * step;
-                    step++;
-                    direction *= -1;
-                }
-
+        // Get closest legal column
+        int direction = (x > column) ? 1 : -1;
+        while(true) {
+            if(column > 0 && column < this.width-1 && this.circuit.getColumnType(column).equals(this.blockType)) {
                 return this.circuit.getSite(column, row);
+            }
 
-
-            // Hardblocks
-            default:
-                int start = this.blockType.getStart();
-                int repeat = this.blockType.getRepeat();
-                int blockHeight = this.blockType.getHeight();
-
-                int numRows = (int) Math.floor((this.height - 2) / blockHeight);
-                int numColumns = (int) Math.floor((this.width - start - 2) / repeat + 1);
-
-                int columnIndex = (int) Math.round(Math.max(Math.min((x - start) / repeat, numColumns - 1), 0));
-                int rowIndex = (int) Math.round(Math.max(Math.min((y - 1) / blockHeight, numRows - 1), 0));
-
-                return this.circuit.getSite(columnIndex * repeat + start, rowIndex * blockHeight + 1);
+            column += direction * this.blockRepeat;
+            direction = -(direction + (int) Math.signum(direction));
         }
     }
 
@@ -437,7 +397,7 @@ class HeapLegalizer extends Legalizer {
 
             // Find the first column of the correct type
             int column = -1;
-            for(int c = area.left; c <= area.right; c++) {
+            for(int c = area.left; c <= area.right; c += this.blockRepeat) {
                 if(this.circuit.getColumnType(c).equals(this.blockType)) {
                     column = c;
                     break;
@@ -461,7 +421,7 @@ class HeapLegalizer extends Legalizer {
 
         } else if(numColumns == 1) {
             // Find the first column of the correct type
-            for(int column = area.left; column <= area.right; column++) {
+            for(int column = area.left; column <= area.right; column += this.blockRepeat) {
                 if(this.circuit.getColumnType(column).equals(this.blockType)) {
                     this.placeBlocksInColumn(blocks, column, area.bottom, area.top);
 
@@ -488,26 +448,16 @@ class HeapLegalizer extends Legalizer {
         int splitPosition = -1, capacity1;
 
         if(axis == Axis.X) {
-            int numColumnsLeft;
-
-            // If the blockType is CLB
-            if(this.blockCategory == BlockCategory.CLB) {
-                numColumnsLeft = 0;
-                for(int column = area.left; column <= area.right; column++) {
-                    if(this.circuit.getColumnType(column).equals(this.blockType)) {
-                        numColumnsLeft++;
-                    }
-
-                    if(numColumnsLeft >= numColumns / 2) {
-                        splitPosition = column + 1;
-                        break;
-                    }
+            int numColumnsLeft = 0;
+            for(int column = area.left; column <= area.right; column += this.blockRepeat) {
+                if(this.circuit.getColumnType(column).equals(this.blockType)) {
+                    numColumnsLeft++;
                 }
 
-            // Else: it's a hardblock
-            } else {
-                numColumnsLeft = numColumns / 2;
-                splitPosition = area.left + numColumnsLeft * this.blockRepeat;
+                if(numColumnsLeft == numColumns / 2) {
+                    splitPosition = column + this.blockRepeat;
+                    break;
+                }
             }
 
             capacity1 = numColumnsLeft * numRows;
