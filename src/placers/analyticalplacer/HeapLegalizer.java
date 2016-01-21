@@ -585,7 +585,7 @@ class HeapLegalizer extends Legalizer {
       //TODO: debug
         System.out.printf("%d, %d, %d\n", area.left, area.right, column);
         System.out.printf("%s, %s\n", this.blockType, this.circuit.getColumnType(area.left));
-        System.out.printf("%d, %d, %d", this.blockStart, this.blockRepeat);
+        System.out.printf("%d, %d", this.blockStart, this.blockRepeat);
         if(column > area.left && column < area.right) {
             int direction = linearX > column ? 1 : -1;
             while(this.badColumn(column, area)) {
