@@ -16,7 +16,6 @@ import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.block.IOSite;
-import circuit.block.LeafBlock;
 import circuit.block.Macro;
 import circuit.block.Site;
 import circuit.pin.GlobalPin;
@@ -35,9 +34,7 @@ public class Circuit {
     private Map<BlockType, List<AbstractBlock>> blocks;
 
     private List<BlockType> globalBlockTypes;
-    private List<BlockType> leafBlockTypes;
     private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
-    private List<LeafBlock> leafBlockList = new ArrayList<LeafBlock>(); // TODO: remove this
     private List<Macro> macros = new ArrayList<Macro>();
 
     private List<BlockType> columns;
@@ -78,19 +75,11 @@ public class Circuit {
         }
 
         this.globalBlockTypes = BlockType.getGlobalBlockTypes();
-        this.leafBlockTypes = BlockType.getLeafBlockTypes();
 
         for(BlockType blockType : this.globalBlockTypes) {
             @SuppressWarnings("unchecked")
             List<GlobalBlock> blocksOfType = (List<GlobalBlock>) (List<?>) this.blocks.get(blockType);
             this.globalBlockList.addAll(blocksOfType);
-        }
-
-        // TODO: remove this
-        for(BlockType blockType : this.leafBlockTypes) {
-            @SuppressWarnings("unchecked")
-            List<LeafBlock> blocksOfType = (List<LeafBlock>) (List<?>) this.blocks.get(blockType);
-            this.leafBlockList.addAll(blocksOfType);
         }
 
         this.loadMacros();
@@ -369,9 +358,6 @@ public class Circuit {
 
     public List<GlobalBlock> getGlobalBlocks() {
         return this.globalBlockList;
-    }
-    public List<LeafBlock> getLeafBlocks() {
-        return this.leafBlockList;
     }
 
     public List<Macro> getMacros() {
