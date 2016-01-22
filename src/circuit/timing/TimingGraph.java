@@ -449,7 +449,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
 
     public double getMaxDelay() {
-        return this.globalMaxDelay * 10e9;
+        return this.globalMaxDelay * 1e9;
     }
     public double calculateMaxDelay(boolean calculateWireDelays) {
         if(calculateWireDelays) {
@@ -516,7 +516,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
             int numSinks = node.getNumSinks();
             for(int i = 0; i < numSinks; i++) {
                 if(node.getSinkEdge(i).getCriticality() > 0.999) {
-                    System.out.printf("%s  ->  %s: %f\n", node, node.getSink(i), node.getSinkEdge(i).getTotalDelay());
+                    System.out.printf("%s  ->  %s: %g\n", node, node.getSink(i), node.getSinkEdge(i).getTotalDelay());
                 }
             }
         }
