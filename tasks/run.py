@@ -98,7 +98,7 @@ def call(command, stats, regexes):
             if match:
                 stats[i] = match.group(1)
 
-    return out
+    return 'Command: {0}\n\n{1}'.format(' '.join(command), out)
 
 
 folder = os.path.join(os.path.split(os.getcwd())[1], sys.argv[1])
