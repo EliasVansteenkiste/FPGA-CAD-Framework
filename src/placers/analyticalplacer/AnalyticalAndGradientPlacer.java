@@ -34,6 +34,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected final Map<GlobalBlock, NetBlock> netBlocks = new HashMap<>();
 
     protected int numIOBlocks, numMovableBlocks;
+    protected double startUtilization;
 
     protected double[] linearX, linearY;
     private int[] legalX, legalY;
@@ -43,6 +44,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected int numNets, numRealNets;
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
+
+    private static final String
+        O_START_UTILIZATION = "start utilization";
+
+    public static void initOptions(Options options) {
+        options.add(
+                O_START_UTILIZATION,
+                "utilization of tiles at first legalization",
+                new Double(1.0));
+    }
 
     protected final static String
         T_INITIALIZE_DATA = "initialize data",
@@ -55,6 +66,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     public AnalyticalAndGradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
+
+        this.startUtilization = options.getDouble(O_START_UTILIZATION);
     }
 
 

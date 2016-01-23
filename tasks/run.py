@@ -189,7 +189,8 @@ for iteration in range(num_iterations):
         'route_file': route_file
     })
 
-    print(iteration_name + ': ' + ' '.join(argument_set))
+    print(time.strftime("%Y-%m-%d %H:%M:%S"))
+    print('{0}: {1}'.format(iteration_name, ' '.join(argument_set)))
 
 
     # Loop over all circuits

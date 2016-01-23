@@ -95,7 +95,7 @@ public class GradientPlacerTD extends GradientPlacer {
         boolean recalculate = (iteration % mod == 0);
         this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, recalculate);
 
-        if(this.maxUtilization == 1 && this.latestCost < this.minCost) {
+        if(this.utilization == 1 && this.latestCost < this.minCost) {
             this.minCost = this.latestCost;
             this.updateLegal(newLegalX, newLegalY);
         }

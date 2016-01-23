@@ -20,6 +20,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_EFFORT_LEVEL = "effort level";
 
     public static void initOptions(Options options) {
+        AnalyticalAndGradientPlacer.initOptions(options);
+
         options.add(
                 O_ANCHOR_WEIGHT_START,
                 "starting anchor weight",
@@ -52,7 +54,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
     private double stepSize;
     private final int gradientIterations;
-    protected double maxUtilization;
+    protected double utilization;
 
     private double[] netCriticalities;
 
@@ -227,13 +229,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void solveLegal(int iteration) {
-
-        // TODO: optimize this
-        //this.maxUtilization = Math.min(this.numBlocks, Math.max(1, 0.8 / this.anchorWeight));
-        this.maxUtilization = 1;
+        double slope = (this.startUtilization - 1) / (this.anchorWeightStart - this.anchorWeightStop);
+        this.utilization = Math.max(1, 1 + slope * (this.anchorWeight - this.anchorWeightStop));
 
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(this.maxUtilization);
+        this.legalizer.legalize(this.utilization);
         this.stopTimer(T_LEGALIZE);
 
         this.startTimer(T_UPDATE_CIRCUIT);
@@ -246,7 +246,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected void addStatTitles(List<String> titles) {
         titles.add("iteration");
         titles.add("anchor weight");
-        titles.add("max utilization");
+        titles.add("utilization");
 
         this.addStatTitlesGP(titles);
 
@@ -259,7 +259,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         stats.add(Integer.toString(iteration));
         stats.add(String.format("%.2f", this.anchorWeight));
-        stats.add(String.format("%.3g", this.maxUtilization));
+        stats.add(String.format("%.3g", this.utilization));
         this.addStats(stats);
         stats.add(String.format("%.3g", time));
 

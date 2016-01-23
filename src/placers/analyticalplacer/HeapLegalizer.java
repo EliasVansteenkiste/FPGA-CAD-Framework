@@ -341,18 +341,18 @@ class HeapLegalizer extends Legalizer {
         boolean splitSuccess;
         while(true) {
             // Calculate the capacity of the area
-            int capacity = 0;
+            int numTiles = 0;
             int columnHeight = (area.top - area.bottom) / this.blockHeight + 1;
             for(int column = area.left; column <= area.right; column += this.blockRepeat) {
                 if(this.circuit.getColumnType(column) == this.blockType) {
-                    capacity += columnHeight;
+                    numTiles += columnHeight;
                 }
             }
 
             TwoDimLinkedList blocks = area.getBlockIndexes();
             SplittingArea splittingArea = new SplittingArea(area);
 
-            splitSuccess = this.legalizeArea(splittingArea, capacity, blocks);
+            splitSuccess = this.legalizeArea(splittingArea, numTiles, blocks);
 
             if(splitSuccess) {
                 return;
@@ -364,19 +364,19 @@ class HeapLegalizer extends Legalizer {
 
     private boolean legalizeArea(
             SplittingArea area,
-            int capacity,
+            int numTiles,
             TwoDimLinkedList blocks) {
 
         int sizeX = area.right - area.left + 1,
             sizeY = area.top - area.bottom + 1;
         int numRows = (sizeY - 1) / this.blockHeight + 1;
-        int numColumns = capacity / numRows;
+        int numColumns = numTiles / numRows;
 
         if(blocks.size() == 0) {
             return true;
 
         // If the area is only one tile big: place all the blocks on this tile
-        } else if(capacity == 1) {
+        } else if(numTiles == 1) {
             int row = area.bottom;
 
             // Find the first column of the correct type
@@ -429,7 +429,7 @@ class HeapLegalizer extends Legalizer {
         SplittingArea area1 = new SplittingArea(area);
         SplittingArea area2;
 
-        int splitPosition = -1, capacity1;
+        int splitPosition = -1, numTiles1;
 
         if(axis == Axis.X) {
             int numColumnsLeft = 0;
@@ -444,7 +444,7 @@ class HeapLegalizer extends Legalizer {
                 }
             }
 
-            capacity1 = numColumnsLeft * numRows;
+            numTiles1 = numColumnsLeft * numRows;
             area2 = area1.splitHorizontal(splitPosition, this.blockRepeat);
 
 
@@ -459,29 +459,29 @@ class HeapLegalizer extends Legalizer {
 
             } else {
                 int numRowsBottom = numRows / 2;
-                capacity1 = numRowsBottom * numColumns;
+                numTiles1 = numRowsBottom * numColumns;
                 splitPosition = area.bottom + (numRowsBottom) * this.blockHeight;
 
                 area2 = area1.splitVertical(splitPosition, this.blockHeight);
             }
         }
 
-        int splitIndex = (int) Math.ceil(capacity1 * blocks.size() / (double) capacity);
-        int capacity2 = capacity - capacity1;
+        int splitIndex = (int) Math.ceil(numTiles1 * blocks.size() / (double) numTiles);
+        int numTiles2 = numTiles - numTiles1;
 
         TwoDimLinkedList blocks1 = new TwoDimLinkedList(blocks),
                          blocks2 = new TwoDimLinkedList(blocks);
         blocks.split(blocks1, blocks2, splitIndex, axis);
 
         // If the split failed
-        if(blocks1.size() > capacity1 || blocks2.size() > capacity2) {
+        if(blocks1.size() > numTiles1 || blocks2.size() > numTiles2) {
             return false;
         }
 
-        boolean success1 = this.legalizeArea(area1, capacity1, blocks1);
+        boolean success1 = this.legalizeArea(area1, numTiles1, blocks1);
         boolean success2 = true;
         if(success1) {
-            success2 = this.legalizeArea(area2, capacity2, blocks2);
+            success2 = this.legalizeArea(area2, numTiles2, blocks2);
         }
 
         if(success1 && success2) {
