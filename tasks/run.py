@@ -107,7 +107,7 @@ subprocess.call(['./compile.sh'])
 
 config_path = os.path.join(folder, 'config.json')
 config_file = open(config_path)
-config = json.load(config_file, object_pairs_hook=ascii_encode_ordered_dict) # only works for python >= 2.7
+config = json.load(config_file, object_pairs_hook=ascii_encode_ordered_dict)
 
 # Get some config options
 architecture_file = config['architecture']
