@@ -11,13 +11,13 @@ benchmarks_titan
 
 tasks/*
 
-tasks/java_other_benchmarks/*
-!tasks/java_other_benchmarks/
-!tasks/java_other_benchmarks/config.json
+!tasks/example_java/
+tasks/example_java/*
+!tasks/example_java/config.json
 
-tasks/vpr_other_benchmarks/*
-!tasks/vpr_other_benchmarks/
-!tasks/vpr_other_benchmarks/config.json
+!tasks/example_vpr/
+tasks/example_vpr/*
+!tasks/example_vpr/config.json
 
 
 
