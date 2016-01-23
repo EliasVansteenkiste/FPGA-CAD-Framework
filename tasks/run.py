@@ -10,6 +10,7 @@ import csv
 import re
 import math
 import errno
+import time
 
 base_commands = {
     'vpr': [
