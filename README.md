@@ -1,11 +1,11 @@
-The FPGA Placement Framework: An introduction
-==================================================
+The FPGA Placement Framework
+==============================
 
 An FPGA placement framework implemented in Java, including benchmarks
 
 
 What can I do with this tool flow?
-==================================
+---------------
 
 <ul>
   <li>Simulated Annealing Placement</li>
@@ -15,7 +15,7 @@ What can I do with this tool flow?
 
 
 Usage
-=====
+---------------
 
 Some parts of this toolflow require external packages, you can find these in the file "requirements".
 
@@ -31,7 +31,7 @@ benchmarks/k6_frac_N10_mem32K_40nm.xml benchmarks/or1200.blif --placer wld_ap
 
 
 License
-=======
+---------------
 
 The FPGA Placement Framework is licensed by Ghent University. The license is included in all licensed code and in the repository, it is also printed below.
 
@@ -70,13 +70,13 @@ In no event shall UGent be liable for (a) any incidental, consequential, or indi
 (13) Assignment - Neither this Agreement nor any of Licensee's rights hereunder shall be assigned, sublicensed, or transferred (in insolvency proceedings, by mergers, acquisitions or otherwise) by Licensee without the written consent of UGent. Any assignment or other transfer which is inconsistent with the foregoing shall be null and void ab initio. UGent may assign all or a portion of its rights and obligations hereunder.
 
 Contact us
-===============
+---------------
 The FPGA Placement Framework is released by Ghent University, ELIS department, Hardware and Embedded Systems (HES) group (http://hes.elis.ugent.be).
 
 If you encounter bugs, want to use the FPGA Placement Framework but need support or want to tell us about your results, please contact us. We can be reached at Elias.Vansteenkiste@gmail.com
 
 Referencing the FPGA Placement Framework
-===============
+---------------
 If you use the FPGA Placement Framework in your work, please reference in your publications the following paper:
 
 
@@ -84,7 +84,7 @@ If you use the FPGA Placement Framework in your work, please reference in your p
 You may also refer to one of our others papers if you think it is more related.
 
 Contributors
-===============
+---------------
 Active Contributors
 <ul>
   <li>Seppe Lenders - <a href="mailto:Seppe.Lenders@gmail.com"> Seppe.Lenders@gmail.com</a></li>
