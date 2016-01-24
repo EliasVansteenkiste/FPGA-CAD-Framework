@@ -96,4 +96,7 @@ Past Contributors
   <li>Arno Messiaen - <a href="mailto:Arno.Messiaen@gmail.com">Arno.Messiaen@gmail.com</a></li>
 </ul>
 
+Development
+---------------
+Lasagne is a work in progress, input is welcome.
 
