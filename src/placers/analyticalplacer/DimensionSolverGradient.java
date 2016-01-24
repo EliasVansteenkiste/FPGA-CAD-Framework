@@ -7,7 +7,7 @@ class DimensionSolverGradient {
 
     private double[] directions, totalPositiveNetSize, totalNegativeNetSize;
     private int[] numPositiveNets, numNegativeNets;
-    private final double stepSize;
+    private final double halfMaxConnectionLength, speedAveraging, stepSize;
 
     private final double[] speeds;
 
@@ -16,9 +16,11 @@ class DimensionSolverGradient {
     private int[] legalCoordinates;
 
 
-    DimensionSolverGradient(double[] coordinates, double stepSize) {
+    DimensionSolverGradient(double[] coordinates, double stepSize, double maxConnectionLength, double speedAveraging) {
         this.coordinates = coordinates;
         this.stepSize = stepSize;
+        this.halfMaxConnectionLength = maxConnectionLength / 2;
+        this.speedAveraging = speedAveraging;
 
         int numBlocks = coordinates.length;
 
@@ -45,9 +47,7 @@ class DimensionSolverGradient {
 
     void addConnection(int minIndex, int maxIndex, double coorDifference, double weight) {
 
-        // TODO: platforming this net size works a bit better than not doing it
-        // but the optimal maximal value isn't found yet
-        double netSize = 20 * coorDifference / (10 + coorDifference);
+        double netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
 
         this.totalPositiveNetSize[minIndex] += netSize;
         this.numPositiveNets[minIndex] += 1;
@@ -84,11 +84,9 @@ class DimensionSolverGradient {
             double currentCoordinate = this.coordinates[i];
 
             double netGoal = currentCoordinate;
-            //if(direction > 0.000001) {
             if(direction > 0) {
                 netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
 
-            //} else if(direction < -0.000001) {
             } else if(direction < 0) {
                 netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
 
@@ -111,7 +109,7 @@ class DimensionSolverGradient {
                 newSpeed = this.stepSize * (netGoal - currentCoordinate);
             }
 
-            this.speeds[i] = 0.7 * this.speeds[i] + 0.3 * newSpeed;
+            this.speeds[i] = (1 - this.speedAveraging) * this.speeds[i] + this.speedAveraging * newSpeed;
             this.coordinates[i] += this.speeds[i];
         }
     }

@@ -17,6 +17,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_ANCHOR_WEIGHT_STEP = "anchor weight step",
         O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
         O_STEP_SIZE = "step size",
+        O_MAX_CONNECTION_LENGTH = "max connection length",
+        O_SPEED_AVERAGING = "speed averaging",
         O_EFFORT_LEVEL = "effort level";
 
     public static void initOptions(Options options) {
@@ -25,7 +27,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_START,
                 "starting anchor weight",
-                new Double(0));
+                new Double(0.01));
 
         options.add(
                 O_ANCHOR_WEIGHT_STEP,
@@ -34,7 +36,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
-                "anchor weight at which the placement is finished",
+                "anchor weight at which the placement is finished (max: 1)",
                 new Double(0.9));
 
 
@@ -42,6 +44,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_STEP_SIZE,
                 "ratio of distance to optimal position that is moved",
                 new Double(0.4));
+
+        options.add(
+                O_MAX_CONNECTION_LENGTH,
+                "length to which connection lengths are platformed",
+                new Double(20));
+
+        options.add(
+                O_SPEED_AVERAGING,
+                "averaging factor for block speeds",
+                new Double(0.3));
+
 
         options.add(
                 O_EFFORT_LEVEL,
@@ -52,7 +65,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     protected double anchorWeight;
     protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
-    private double stepSize;
+    private double stepSize, maxConnectionLength, speedAveraging;
     private final int gradientIterations;
     protected double utilization;
 
@@ -86,6 +99,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeight = this.anchorWeightStart;
 
         this.stepSize = this.options.getDouble(O_STEP_SIZE);
+        this.maxConnectionLength = this.options.getDouble(O_MAX_CONNECTION_LENGTH);
+        this.speedAveraging = this.options.getDouble(O_SPEED_AVERAGING);
         this.gradientIterations = this.options.getInteger(O_EFFORT_LEVEL);
     }
 
@@ -145,7 +160,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.linearY,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
-                this.stepSize);
+                this.stepSize,
+                this.maxConnectionLength,
+                this.speedAveraging);
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
