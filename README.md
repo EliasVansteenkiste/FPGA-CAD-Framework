@@ -98,5 +98,5 @@ Past Contributors
 
 Development
 ---------------
-Lasagne is a work in progress, input is welcome.
+The FPGA Placement Framework is a work in progress, input is welcome.
 
