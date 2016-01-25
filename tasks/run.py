@@ -163,6 +163,13 @@ summary_file = open(os.path.join(folder, 'summary.csv'), 'w')
 summary_writer = csv.writer(summary_file)
 summary_writer.writerow(['run'] + stat_names + ['arguments'])
 
+circuit_writers = {}
+for circuit in circuits:
+    circuit_file = open(os.path.join(folder, circuit + '.csv'), 'w')
+    circuit_writer = csv.writer(circuit_file)
+    circuit_writer.writerow(['run'] + stat_names + ['arguments'])
+    circuit_writers[circuit] = circuit_writer
+
 num_stats = len(stat_names)
 
 for iteration in range(num_iterations):
@@ -216,6 +223,7 @@ for iteration in range(num_iterations):
             geomeans[i] *= float(circuit_stats[i])
 
         stats_writer.writerow([circuit] + circuit_stats)
+        circuit_writers[circuit].writerow([circuit] + circuit_stats + [' '.join(argument_set)])
 
     for i in range(num_stats):
         geomeans[i] = str(math.pow(geomeans[i], 1.0 / len(circuits)))
