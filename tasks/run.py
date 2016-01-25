@@ -230,7 +230,7 @@ for iteration in range(num_iterations):
 
     stats_writer.writerow([])
     stats_writer.writerow(['geomeans'] + geomeans)
-    summary_writer.writerow([iteration_name] + geomeans + [' ',join(argument_set)])
+    summary_writer.writerow([iteration_name] + geomeans + [' '.join(argument_set)])
 
     empty_row = [''] * (num_stats + 1)
     stats_writer.writerow(empty_row + [' '.join(argument_set)])
