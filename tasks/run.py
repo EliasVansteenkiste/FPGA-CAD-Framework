@@ -161,7 +161,7 @@ num_iterations = len(argument_sets)
 
 summary_file = open(os.path.join(folder, 'summary.csv'), 'w')
 summary_writer = csv.writer(summary_file)
-summary_writer.writerow(['run'] + stat_names)
+summary_writer.writerow(['run'] + stat_names + ['arguments'])
 
 num_stats = len(stat_names)
 
@@ -222,7 +222,7 @@ for iteration in range(num_iterations):
 
     stats_writer.writerow([])
     stats_writer.writerow(['geomeans'] + geomeans)
-    summary_writer.writerow([iteration_name] + geomeans)
+    summary_writer.writerow([iteration_name] + geomeans + [' ',join(argument_set)])
 
     empty_row = [''] * (num_stats + 1)
     stats_writer.writerow(empty_row + [' '.join(argument_set)])

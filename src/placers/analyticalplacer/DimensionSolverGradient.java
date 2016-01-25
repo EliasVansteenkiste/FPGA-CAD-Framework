@@ -27,6 +27,12 @@ class DimensionSolverGradient {
         int numBlocks = coordinates.length;
 
         this.speeds = new double[numBlocks];
+
+        this.directions = new double[numBlocks];
+        this.numPositiveNets = new int[numBlocks];
+        this.numNegativeNets = new int[numBlocks];
+        this.totalPositiveNetSize = new double[numBlocks];
+        this.totalNegativeNetSize = new double[numBlocks];
     }
 
 
