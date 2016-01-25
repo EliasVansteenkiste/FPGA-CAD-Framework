@@ -1,5 +1,7 @@
 package placers.analyticalplacer;
 
+import java.util.Arrays;
+
 
 class DimensionSolverGradient {
 
@@ -31,12 +33,13 @@ class DimensionSolverGradient {
     void initializeIteration(double pseudoWeight) {
         this.pseudoWeight = pseudoWeight;
 
-        int numBlocks = this.coordinates.length;
-        this.directions = new double[numBlocks];
-        this.numPositiveNets = new int[numBlocks];
-        this.numNegativeNets = new int[numBlocks];
-        this.totalPositiveNetSize = new double[numBlocks];
-        this.totalNegativeNetSize = new double[numBlocks];
+        Arrays.fill(this.directions, 0.0);
+
+        Arrays.fill(this.numPositiveNets, 0);
+        Arrays.fill(this.numNegativeNets, 0);
+
+        Arrays.fill(this.totalPositiveNetSize, 0.0);
+        Arrays.fill(this.totalNegativeNetSize, 0.0);
     }
 
     void setLegal(int[] legal) {
