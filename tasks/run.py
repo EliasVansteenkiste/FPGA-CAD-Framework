@@ -223,7 +223,7 @@ for iteration in range(num_iterations):
             geomeans[i] *= float(circuit_stats[i])
 
         stats_writer.writerow([circuit] + circuit_stats)
-        circuit_writers[circuit].writerow([circuit] + circuit_stats + [' '.join(argument_set)])
+        circuit_writers[circuit].writerow([iteration_name] + circuit_stats + [' '.join(argument_set)])
 
     for i in range(num_stats):
         geomeans[i] = str(math.pow(geomeans[i], 1.0 / len(circuits)))
