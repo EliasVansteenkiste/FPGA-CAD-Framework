@@ -156,18 +156,19 @@ for argument in arguments:
 
 
 # Loop over the different combinations of arguments
+argument_names = arguments.keys()[::2]
 argument_sets = list(argument_sets(arguments))
 num_iterations = len(argument_sets)
 
 summary_file = open(os.path.join(folder, 'summary.csv'), 'w')
 summary_writer = csv.writer(summary_file)
-summary_writer.writerow(['run'] + stat_names + ['arguments'])
+summary_writer.writerow(['run'] + argument_names + stat_names)
 
 circuit_writers = {}
 for circuit in circuits:
     circuit_file = open(os.path.join(folder, circuit + '.csv'), 'w')
     circuit_writer = csv.writer(circuit_file)
-    circuit_writer.writerow(['run'] + stat_names + ['arguments'])
+    circuit_writer.writerow(['run'] + argument_names + stat_names)
     circuit_writers[circuit] = circuit_writer
 
 num_stats = len(stat_names)
@@ -223,14 +224,14 @@ for iteration in range(num_iterations):
             geomeans[i] *= float(circuit_stats[i])
 
         stats_writer.writerow([circuit] + circuit_stats)
-        circuit_writers[circuit].writerow([iteration_name] + circuit_stats + [' '.join(argument_set)])
+        circuit_writers[circuit].writerow([iteration_name] + argument_set[1::2] + circuit_stats)
 
     for i in range(num_stats):
         geomeans[i] = str(math.pow(geomeans[i], 1.0 / len(circuits)))
 
     stats_writer.writerow([])
     stats_writer.writerow(['geomeans'] + geomeans)
-    summary_writer.writerow([iteration_name] + geomeans + [' '.join(argument_set)])
+    summary_writer.writerow([iteration_name] + argument_set[1::2] + geomeans)
 
     empty_row = [''] * (num_stats + 1)
     stats_writer.writerow(empty_row + [' '.join(argument_set)])
