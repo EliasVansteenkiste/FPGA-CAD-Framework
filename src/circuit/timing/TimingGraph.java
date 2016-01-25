@@ -92,7 +92,12 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                 if(isClocked) {
                     Pair<Integer, Double> clockDomainAndDelay = this.getClockDomainAndDelay(block);
                     clockDomain = clockDomainAndDelay.getFirst();
-                    clockDelay = clockDomainAndDelay.getSecond();
+
+                    // We don't include the clock setup time in the critical path delay,
+                    // because VPR also doesn't does this for the critical path. When you
+                    // let VPR print out the critical path the clock setup time IS included,
+                    // but it isn't included in the stdout estimation.
+                    //clockDelay = clockDomainAndDelay.getSecond();
                 } else if(isConstantGenerator) {
                     clockDomain = this.virtualIoClockDomain;
                 }

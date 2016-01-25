@@ -55,7 +55,7 @@ public class GradientPlacerTD extends GradientPlacer {
                 this.timingNets);
 
 
-        int numIterations = (int) ((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep);
+        int numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
         this.recalculate = new boolean[numIterations];
         double nextFunctionValue = 0;
 
