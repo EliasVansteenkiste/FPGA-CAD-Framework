@@ -156,7 +156,7 @@ for argument in arguments:
 
 
 # Loop over the different combinations of arguments
-argument_names = arguments.keys()[::2]
+argument_names = arguments.keys()
 argument_sets = list(argument_sets(arguments))
 num_iterations = len(argument_sets)
 
