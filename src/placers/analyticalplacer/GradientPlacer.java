@@ -48,7 +48,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_MAX_CONNECTION_LENGTH,
                 "length to which connection lengths are platformed",
-                new Double(20));
+                new Double(30));
 
         options.add(
                 O_SPEED_AVERAGING,
