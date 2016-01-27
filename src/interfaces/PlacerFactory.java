@@ -21,8 +21,8 @@ class PlacerFactory {
     static {
         PlacerFactory.placers.put("random", "placers.random.RandomPlacer");
 
-        PlacerFactory.placers.put("wld_sa", "placers.simulatedannealing.SAPlacerWLD");
-        PlacerFactory.placers.put("td_sa", "placers.simulatedannealing.SAPlacerTD");
+        PlacerFactory.placers.put("wld_sa", "placers.simulatedannealing.SimulatedAnnealingPlacerWLD");
+        PlacerFactory.placers.put("td_sa", "placers.simulatedannealing.SimulatedAnnealingPlacerTD");
 
         PlacerFactory.placers.put("wld_gp", "placers.analytical.GradientPlacerWLD");
         PlacerFactory.placers.put("td_gp", "placers.analytical.GradientPlacerTD");
