@@ -55,7 +55,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_SPEED_AVERAGING,
                 "averaging factor for block speeds",
-                new Double(0.3));
+                new Double(0.2));
 
 
         options.add(
