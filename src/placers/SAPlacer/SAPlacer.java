@@ -163,7 +163,7 @@ abstract class SAPlacer extends Placer {
 
 
     @Override
-    public void place() throws PlacementException {
+    protected void doPlacement() throws PlacementException {
         this.initializePlace();
 
         int iteration = 0;

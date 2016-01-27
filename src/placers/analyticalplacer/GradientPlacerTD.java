@@ -55,16 +55,15 @@ public class GradientPlacerTD extends GradientPlacer {
                 this.timingNets);
 
 
-        int numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
-        this.recalculate = new boolean[numIterations];
+        this.recalculate = new boolean[this.numIterations];
         double nextFunctionValue = 0;
 
         StringBuilder recalculationsString = new StringBuilder();
-        for(int i = 0; i < numIterations; i++) {
-            double functionValue = Math.pow((1. * i) / numIterations, 1. / this.recalculatePriority);
+        for(int i = 0; i < this.numIterations; i++) {
+            double functionValue = Math.pow((1. * i) / this.numIterations, 1. / this.recalculatePriority);
             if(functionValue >= nextFunctionValue) {
                 this.recalculate[i] = true;
-                nextFunctionValue += 1 / (this.recalculateCriticalities * numIterations);
+                nextFunctionValue += 1 / (this.recalculateCriticalities * this.numIterations);
                 recalculationsString.append("|");
 
             } else {
@@ -85,8 +84,6 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void updateLegalIfNeeded(int iteration) {
-        // TODO: this shouldn't happen every iteration, maybe near the
-        // end of the algorithm we can skip some iterations?
         int[] newLegalX = this.legalizer.getLegalX();
         int[] newLegalY = this.legalizer.getLegalY();
 

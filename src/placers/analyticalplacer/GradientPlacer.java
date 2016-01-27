@@ -19,7 +19,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_STEP_SIZE = "step size",
         O_MAX_CONNECTION_LENGTH = "max connection length",
         O_SPEED_AVERAGING = "speed averaging",
-        O_EFFORT_LEVEL = "effort level";
+        O_EFFORT_LEVEL = "effort level",
+        O_FIRST_EFFORT = "first effort",
+        O_LAST_EFFORT = "last effort";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -60,15 +62,31 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_EFFORT_LEVEL,
                 "number of gradient steps to take in each outer iteration",
                 new Integer(40));
+
+        options.add(
+                O_FIRST_EFFORT,
+                "multiplier for the effort level in the first outer iteration",
+                new Double(4));
+
+        options.add(
+                O_LAST_EFFORT,
+                "multiplier for the effort level in the last outer iteration",
+                new Double(1));
     }
 
 
     protected double anchorWeight;
     protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
+
     private double stepSize, maxConnectionLength, speedAveraging;
-    private final int gradientIterations;
+
+    private int effortLevel;
+    private double firstEffortMultiplier, lastEffortMultiplier;
+
     protected double utilization;
 
+    protected int numIterations;
+    private int iterationEffortLevel;
     private double[] netCriticalities;
 
     protected HeapLegalizer legalizer;
@@ -101,7 +119,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.stepSize = this.options.getDouble(O_STEP_SIZE);
         this.maxConnectionLength = this.options.getDouble(O_MAX_CONNECTION_LENGTH);
         this.speedAveraging = this.options.getDouble(O_SPEED_AVERAGING);
-        this.gradientIterations = this.options.getInteger(O_EFFORT_LEVEL);
+
+        this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
+        this.firstEffortMultiplier = this.options.getDouble(O_FIRST_EFFORT);
+        this.lastEffortMultiplier = this.options.getDouble(O_LAST_EFFORT);
+
+        this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
     }
 
     protected abstract void updateLegalIfNeeded(int iteration);
@@ -182,9 +205,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
         this.stopTimer(T_BUILD_LINEAR);
 
-        int innerIterations = iteration == 0 ? 4 * this.gradientIterations : this.gradientIterations;
+        this.iterationEffortLevel = (int) (this.effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
+        if(iteration == 0) {
+            this.iterationEffortLevel *= this.firstEffortMultiplier;
+        }
 
-        for(int i = 0; i < innerIterations; i++) {
+        for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration(iteration);
         }
     }
@@ -264,6 +290,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("iteration");
         titles.add("anchor weight");
         titles.add("utilization");
+        titles.add("effort level");
 
         this.addStatTitlesGP(titles);
 
@@ -277,7 +304,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(Integer.toString(iteration));
         stats.add(String.format("%.2f", this.anchorWeight));
         stats.add(String.format("%.3g", this.utilization));
+        stats.add(Integer.toString(this.iterationEffortLevel));
+
         this.addStats(stats);
+
         stats.add(String.format("%.3g", time));
 
         this.printStats(stats.toArray(new String[0]));

@@ -279,7 +279,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
 
     @Override
-    public void place() {
+    protected void doPlacement() {
 
         int iteration = 0;
         boolean isLastIteration = false;

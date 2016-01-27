@@ -47,19 +47,23 @@ public abstract class Placer {
 
         this.addStatTitles(this.statTitles);
         this.numStats = this.statTitles.size();
-
-        if(this.numStats > 0) {
-            this.printStatsHeader();
-        }
     }
 
 
     public abstract String getName();
     public abstract void initializeData();
-    public abstract void place() throws PlacementException;
+    protected abstract void doPlacement() throws PlacementException;
 
     protected abstract void addStatTitles(List<String> titles);
 
+
+    public void place() throws PlacementException {
+        if(this.numStats > 0) {
+            this.printStatsHeader();
+        }
+
+        this.doPlacement();
+    }
 
     private final void printOptions() {
         int maxLength = this.options.getMaxNameLength();

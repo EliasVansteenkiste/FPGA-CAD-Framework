@@ -48,7 +48,7 @@ public class RandomPlacer extends Placer {
     }
 
     @Override
-    public void place() throws PlacementException {
+    protected void doPlacement() throws PlacementException {
 
         Map<BlockType, List<AbstractSite>> sites = new HashMap<>();
         Map<BlockType, Integer> nextSiteIndexes = new HashMap<>();
