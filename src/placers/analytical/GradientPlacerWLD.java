@@ -1,4 +1,4 @@
-package placers.analyticalplacer;
+package placers.analytical;
 
 import interfaces.Logger;
 import interfaces.Options;

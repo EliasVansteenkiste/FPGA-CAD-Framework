@@ -18,7 +18,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
+import placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 
 import circuit.Circuit;
 import circuit.block.GlobalBlock;

@@ -1,9 +1,9 @@
-package placers.analyticalplacer;
+package placers.analytical;
 
 import java.util.List;
 
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.Net;
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
+import placers.analytical.AnalyticalAndGradientPlacer.Net;
+import placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 
 class CostCalculatorWLD extends CostCalculator {
 

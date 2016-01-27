@@ -18,7 +18,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
 import placers.Placer;
-import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import simulatedannealing.EfficientBoundingBoxNetCC;
 import util.Timer;
 import visual.PlacementVisualizer;
 import circuit.Circuit;

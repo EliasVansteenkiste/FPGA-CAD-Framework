@@ -1,4 +1,4 @@
-package placers.SAPlacer;
+package simulatedannealing;
 
 import interfaces.Logger;
 import interfaces.Options;
@@ -12,16 +12,16 @@ import circuit.Circuit;
 
 
 
-public class SAPlacerWLD extends SAPlacer {
+public class SimulatedAnnealingPlacerWLD extends SimulatedAnnealingPlacer {
 
     public static void initOptions(Options options) {
-        SAPlacer.initOptions(options);
+        SimulatedAnnealingPlacer.initOptions(options);
     }
 
     private EfficientBoundingBoxNetCC calculator;
     private double cachedCost;
 
-    public SAPlacerWLD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public SimulatedAnnealingPlacerWLD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);

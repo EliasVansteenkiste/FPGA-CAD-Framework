@@ -1,4 +1,4 @@
-package placers.SAPlacer;
+package simulatedannealing;
 
 import interfaces.Logger;
 import interfaces.Options;
@@ -19,7 +19,7 @@ import circuit.exceptions.PlacementException;
 import placers.Placer;
 import visual.PlacementVisualizer;
 
-abstract class SAPlacer extends Placer {
+abstract class SimulatedAnnealingPlacer extends Placer {
 
     private static final String
         O_GREEDY = "greedy",
@@ -86,7 +86,7 @@ abstract class SAPlacer extends Placer {
     private double[] deltaCosts;
 
 
-    protected SAPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    protected SimulatedAnnealingPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
 

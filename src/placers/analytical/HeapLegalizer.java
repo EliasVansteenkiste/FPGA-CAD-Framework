@@ -1,11 +1,11 @@
-package placers.analyticalplacer;
+package placers.analytical;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import placers.analyticalplacer.TwoDimLinkedList.Axis;
+import placers.analytical.TwoDimLinkedList.Axis;
 
 import circuit.Circuit;
 import circuit.architecture.BlockType;

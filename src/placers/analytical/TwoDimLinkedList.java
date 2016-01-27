@@ -1,4 +1,4 @@
-package placers.analyticalplacer;
+package placers.analytical;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 
-import placers.analyticalplacer.HeapLegalizer.LegalizerBlock;
+import placers.analytical.HeapLegalizer.LegalizerBlock;
 
 /**
  * A linked list that is sorted in two dimensions.

@@ -1,4 +1,4 @@
-package placers.SAPlacer;
+package simulatedannealing;
 
 import java.util.ArrayList;
 import java.util.List;

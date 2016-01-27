@@ -1,4 +1,4 @@
-package placers.SAPlacer;
+package simulatedannealing;
 
 import interfaces.Logger;
 import interfaces.Options;
@@ -14,7 +14,7 @@ import circuit.timing.TimingGraph;
 
 
 
-public class SAPlacerTD extends SAPlacer {
+public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
 
     private static final String
         O_TRADE_OFF = "trade off",
@@ -23,7 +23,7 @@ public class SAPlacerTD extends SAPlacer {
         O_INNER_LOOP_RECALCULATES = "inner loop recalculates";
 
     public static void initOptions(Options options) {
-        SAPlacer.initOptions(options);
+        SimulatedAnnealingPlacer.initOptions(options);
 
         options.add(
                 O_TRADE_OFF,
@@ -54,7 +54,7 @@ public class SAPlacerTD extends SAPlacer {
     private final double tradeOffFactor;
     private final int iterationsBeforeRecalculate;
 
-    public SAPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    public SimulatedAnnealingPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
         this.calculator = new EfficientBoundingBoxNetCC(circuit);

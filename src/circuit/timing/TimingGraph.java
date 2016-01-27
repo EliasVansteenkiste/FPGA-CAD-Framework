@@ -20,7 +20,7 @@ import circuit.pin.AbstractPin;
 import circuit.pin.LeafPin;
 import circuit.timing.TimingNode.Position;
 
-import placers.SAPlacer.Swap;
+import simulatedannealing.Swap;
 import util.Pair;
 import util.Triple;
 

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
+import placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 
 import circuit.Circuit;
 import circuit.block.GlobalBlock;

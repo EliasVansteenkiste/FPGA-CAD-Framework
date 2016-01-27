@@ -1,4 +1,4 @@
-package placers.analyticalplacer;
+package placers.analytical;
 
 import java.util.List;
 

@@ -1,9 +1,9 @@
-package placers.analyticalplacer;
+package placers.analytical;
 
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.Net;
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNet;
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNetBlock;
+import placers.analytical.AnalyticalAndGradientPlacer.Net;
+import placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
+import placers.analytical.AnalyticalAndGradientPlacer.TimingNetBlock;
 
 class LinearSolverAnalytical {
 

@@ -1,11 +1,11 @@
-package placers.analyticalplacer;
+package placers.analytical;
 
 import java.util.List;
 import java.util.Map;
 
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.NetBlock;
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNet;
-import placers.analyticalplacer.AnalyticalAndGradientPlacer.TimingNetBlock;
+import placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
+import placers.analytical.AnalyticalAndGradientPlacer.TimingNetBlock;
 
 import circuit.Circuit;
 import circuit.architecture.BlockCategory;
