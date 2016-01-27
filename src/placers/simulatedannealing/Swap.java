@@ -1,4 +1,4 @@
-package simulatedannealing;
+package placers.simulatedannealing;
 
 import java.util.ArrayList;
 import java.util.List;

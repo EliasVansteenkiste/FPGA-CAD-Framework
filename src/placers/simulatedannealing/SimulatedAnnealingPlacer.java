@@ -1,4 +1,4 @@
-package simulatedannealing;
+package placers.simulatedannealing;
 
 import interfaces.Logger;
 import interfaces.Options;

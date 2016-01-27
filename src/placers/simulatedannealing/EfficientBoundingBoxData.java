@@ -1,4 +1,4 @@
-package simulatedannealing;
+package placers.simulatedannealing;
 
 import java.util.HashSet;
 import java.util.Set;

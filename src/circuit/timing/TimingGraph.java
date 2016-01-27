@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import placers.simulatedannealing.Swap;
+
 import circuit.Circuit;
 import circuit.architecture.BlockCategory;
 import circuit.architecture.BlockType;
@@ -20,7 +22,6 @@ import circuit.pin.AbstractPin;
 import circuit.pin.LeafPin;
 import circuit.timing.TimingNode.Position;
 
-import simulatedannealing.Swap;
 import util.Pair;
 import util.Triple;
 

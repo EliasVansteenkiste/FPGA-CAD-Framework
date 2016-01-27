@@ -118,7 +118,7 @@ class DimensionSolverGradient {
                 newSpeed = this.stepSize * (netGoal - currentCoordinate);
             }
 
-            this.speeds[i] = (1 - this.speedAveraging) * this.speeds[i] + this.speedAveraging * newSpeed;
+            this.speeds[i] = this.speedAveraging * this.speeds[i] + (1 - this.speedAveraging) * newSpeed;
             this.coordinates[i] += this.speeds[i];
         }
     }
