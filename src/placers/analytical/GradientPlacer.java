@@ -66,7 +66,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_FIRST_EFFORT,
                 "multiplier for the effort level in the first outer iteration",
-                new Double(4));
+                new Double(1));
 
         options.add(
                 O_LAST_EFFORT,
