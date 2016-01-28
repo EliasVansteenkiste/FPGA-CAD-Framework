@@ -8,9 +8,9 @@ What can I do with this tool flow?
 ---------------
 
 <ul>
-  <li>Simulated Annealing Placement</li>
-  <li>Analytical Solver Iterative Placement</li>
-  <li>Steepest Gradient Descent Iterative Placement</li>
+  <li>Simulated Annealing based Placement</li>
+  <li>Placement with an iterative analytical solver based placement</li>
+  <li>Placement with Liquid: A placer that uses steepest gradient descent moves to place a design</li>
 </ul>
 
 
