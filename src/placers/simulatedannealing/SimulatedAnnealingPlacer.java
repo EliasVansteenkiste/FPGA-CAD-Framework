@@ -25,6 +25,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         O_GREEDY = "greedy",
         O_DETAILED = "detailed",
         O_EFFORT_LEVEL = "effort level",
+        O_EFFORT_EXPONENT = "effort exponent",
         O_TEMPERATURE = "temperature",
         O_RLIM = "rlim",
         O_MAX_RLIM = "max rlim",
@@ -46,6 +47,11 @@ abstract class SimulatedAnnealingPlacer extends Placer {
                 O_EFFORT_LEVEL,
                 "multiplier for the number of swap iterations",
                 new Double(1));
+
+        options.add(
+                O_EFFORT_EXPONENT,
+                "exponent to calculater inner num",
+                new Double(4.0 / 3.0));
 
         options.add(
                 O_TEMPERATURE,
@@ -76,7 +82,6 @@ abstract class SimulatedAnnealingPlacer extends Placer {
     private double temperature;
 
     private final double temperatureMultiplier;
-    private final double temperatureMultiplierGlobalPlacement = 5;
 
     private final boolean fixPins;
     private final boolean greedy, detailed;
@@ -96,7 +101,8 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         this.fixPins = this.options.getBoolean(O_FIX_IO_PINS);
 
         double effortLevel = this.options.getDouble(O_EFFORT_LEVEL);
-        this.movesPerTemperature = (int) (effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), 4.0/3.0));
+        double effortExponent = this.options.getDouble(O_EFFORT_EXPONENT);
+        this.movesPerTemperature = (int) (effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), effortExponent));
 
         this.temperatureMultiplier = this.options.getDouble(O_TEMPERATURE);
 
@@ -211,7 +217,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         int numSamples = this.circuit.getNumGlobalBlocks();
         double stdDev = this.doSwapIteration(numSamples, false);
 
-        return this.temperatureMultiplier * this.temperatureMultiplierGlobalPlacement * stdDev;
+        return this.temperatureMultiplier * stdDev;
     }
 
     private double calculateInitialTemperatureDetailed() throws PlacementException {
