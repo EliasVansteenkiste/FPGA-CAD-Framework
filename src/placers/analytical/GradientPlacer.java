@@ -205,14 +205,20 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
         this.stopTimer(T_BUILD_LINEAR);
 
-        this.iterationEffortLevel = (int) (this.effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
-        if(iteration == 0) {
-            this.iterationEffortLevel *= this.firstEffortMultiplier;
-        }
 
+        this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration(iteration);
         }
+    }
+
+    private int getIterationEffortLevel(int iteration) {
+        int iterationEffortLevel = (int) Math.round(this.effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
+        if(iteration == 0) {
+            iterationEffortLevel *= this.firstEffortMultiplier;
+        }
+
+        return iterationEffortLevel;
     }
 
 
@@ -315,7 +321,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     @Override
-    protected boolean stopCondition() {
-        return this.anchorWeight >= this.anchorWeightStop;
+    protected boolean stopCondition(int iteration) {
+        return this.anchorWeight >= this.anchorWeightStop || this.getIterationEffortLevel(iteration + 1) == 0;
     }
 }

@@ -192,7 +192,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected boolean stopCondition() {
+    protected boolean stopCondition(int iteration) {
         return this.lastRatio > this.stopRatio;
     }
 
