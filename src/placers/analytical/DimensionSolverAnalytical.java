@@ -1,11 +1,9 @@
 package placers.analytical;
 
-import org.la4j.LinearAlgebra;
-import org.la4j.Matrices;
 import org.la4j.Matrix;
 import org.la4j.Vector;
 import org.la4j.linear.GaussianSolver;
-import org.la4j.linear.JacobiSolver;
+import org.la4j.matrix.DenseMatrix;
 
 
 class DimensionSolverAnalytical {
@@ -26,7 +24,7 @@ class DimensionSolverAnalytical {
 
         int numMovableBlocks = coordinates.length - numIOBlocks;
 
-        this.matrix = Matrix.diagonal(numMovableBlocks, 0);
+        this.matrix = DenseMatrix.zero(numMovableBlocks, numMovableBlocks);
         this.vector = Vector.zero(numMovableBlocks);
     }
 
