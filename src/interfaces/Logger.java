@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Locale;
 
 public class Logger {
     public static enum Stream {OUT, ERR};
@@ -14,6 +15,10 @@ public class Logger {
 
 
     Logger() {
+
+        // I only want dots as decimal separators
+        Locale.setDefault(new Locale("en", "US"));
+
         this.filenames[Stream.OUT.ordinal()] = "out.log";
         this.filenames[Stream.ERR.ordinal()] = "out.err";
 

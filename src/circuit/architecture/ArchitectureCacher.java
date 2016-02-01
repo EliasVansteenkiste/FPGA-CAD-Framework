@@ -16,28 +16,51 @@ import circuit.exceptions.InvalidPlatformException;
 public class ArchitectureCacher {
 
     private String circuitName;
-    private File netFile;
-    private final File cacheFolder = new File("data/cache");
+    private File netFile, architectureFile;
 
-    public ArchitectureCacher(String circuitName, File netFile) {
+    private long netTime, architectureTime;
+    private String netPath, architecturePath;
+    private boolean useVprTiming;
+
+    private final File cacheFolder = new File("data");
+
+    public ArchitectureCacher(String circuitName, File netFile, File architectureFile, boolean useVprTiming) {
         this.netFile = netFile;
+        this.architectureFile = architectureFile;
+
+        this.netPath = netFile.getAbsolutePath();
+        this.architecturePath = architectureFile.getAbsolutePath();
+
+        this.netTime = this.getFileTime(this.netFile);
+        this.architectureTime = this.getFileTime(this.architectureFile);
+
+        this.useVprTiming = useVprTiming;
+
         this.circuitName = circuitName;
 
         this.cacheFolder.mkdirs();
     }
 
-    public void store(Architecture architecture) {
+    public boolean store(Architecture architecture) {
         try {
             this.storeThrowing(architecture);
-        } catch(IOException error) {}
+            return true;
+
+        } catch(IOException error) {
+            return false;
+        }
     }
 
     private void storeThrowing(Architecture architecture) throws IOException {
         File cacheFile = this.getCachedCircuitFile();
         ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(cacheFile));
 
-        Long cacheTime = this.getNetFileTime();
-        out.writeObject(cacheTime);
+
+        out.writeObject(this.netPath);
+        out.writeObject(this.architecturePath);
+        out.writeObject(this.netTime);
+        out.writeObject(this.architectureTime);
+        out.writeObject(this.useVprTiming);
 
         out.writeObject(architecture);
 
@@ -76,38 +99,55 @@ public class ArchitectureCacher {
         }
 
         // Try to read the file time and cache time
-        long fileTime = this.getNetFileTime();
-        long cacheTime;
-
-        try {
-            cacheTime = (Long) in.readObject();
-        } catch(ClassNotFoundException | IOException error) {
-            return null;
-        }
-
-        if(cacheTime == fileTime) {
+        if(this.upToDate(in)) {
             return in;
         } else {
             return null;
         }
     }
 
+    private boolean upToDate(ObjectInputStream in) {
+        long cacheNetTime, cacheArchitectureTime;
+        String cacheNetPath, cacheArchitecturePath;
+        boolean cacheUseVprTiming;
 
-    private long getNetFileTime() {
         try {
-            return this.getNetFileTimeThrowing();
+            cacheNetPath = (String) in.readObject();
+            cacheArchitecturePath = (String) in.readObject();
+
+            cacheNetTime = (Long) in.readObject();
+            cacheArchitectureTime = (Long) in.readObject();
+
+            cacheUseVprTiming = (Boolean) in.readObject();
+
+        } catch(ClassNotFoundException | IOException error) {
+            return false;
+        }
+
+        return (
+                this.netPath.equals(cacheNetPath)
+                && this.architecturePath.equals(cacheArchitecturePath)
+                && this.netTime == cacheNetTime
+                && this.architectureTime == cacheArchitectureTime
+                && this.useVprTiming == cacheUseVprTiming);
+    }
+
+
+    private long getFileTime(File file) {
+        try {
+            return this.getFileTimeThrowing(file);
 
         } catch(IOException | InvalidPlatformException error) {
             return -1;
         }
     }
-    private long getNetFileTimeThrowing() throws IOException, InvalidPlatformException {
-        Path netFilePath = this.netFile.toPath();
-        boolean isUnix = Files.getFileStore(netFilePath).supportsFileAttributeView("unix");
+    private long getFileTimeThrowing(File file) throws IOException, InvalidPlatformException {
+        Path filePath = file.toPath();
+        boolean isUnix = Files.getFileStore(filePath).supportsFileAttributeView("unix");
 
         if(isUnix) {
-            FileTime test = (FileTime) Files.getAttribute(netFilePath, "unix:ctime");
-            return test.to(TimeUnit.SECONDS);
+            FileTime fileTime = (FileTime) Files.getAttribute(filePath, "unix:ctime");
+            return fileTime.to(TimeUnit.SECONDS);
 
         } else {
             throw new InvalidPlatformException("Only Unix is supported");

@@ -3,7 +3,10 @@ package placers;
 import interfaces.Logger;
 import interfaces.Options;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -26,6 +29,11 @@ public abstract class Placer {
     private Map<String, Timer> timers = new LinkedHashMap<>();
     private int maxTimerNameLength = 0;
 
+    protected List<String> statTitles = new ArrayList<>();
+    private List<Integer> statLengths = new ArrayList<>();
+    private int numStats;
+    private static int statSpaces = 3;
+
 
     protected Placer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         this.circuit = circuit;
@@ -35,13 +43,27 @@ public abstract class Placer {
         this.visualizer = visualizer;
 
         this.printOptions();
+
+
+        this.addStatTitles(this.statTitles);
+        this.numStats = this.statTitles.size();
     }
 
 
     public abstract String getName();
     public abstract void initializeData();
-    public abstract void place() throws PlacementException;
+    protected abstract void doPlacement() throws PlacementException;
 
+    protected abstract void addStatTitles(List<String> titles);
+
+
+    public void place() throws PlacementException {
+        if(this.numStats > 0) {
+            this.printStatsHeader();
+        }
+
+        this.doPlacement();
+    }
 
     private final void printOptions() {
         int maxLength = this.options.getMaxNameLength();
@@ -86,6 +108,42 @@ public abstract class Placer {
         } else {
             this.logger.raise("Timer hasn't been initialized: " + name);
         }
+    }
+
+    private void printStatsHeader() {
+        StringBuilder header = new StringBuilder();
+        StringBuilder underlines = new StringBuilder();
+
+        for(String title : this.statTitles) {
+            int length = title.length();
+            this.statLengths.add(length);
+
+            String format = "%-" + (length + Placer.statSpaces) + "s";
+
+            char[] underline = new char[length];
+            Arrays.fill(underline, '-');
+
+            header.append(String.format(format, title));
+            underlines.append(String.format(format, new String(underline)));
+        }
+
+
+        this.logger.println(header.toString());
+        this.logger.println(underlines.toString());
+    }
+
+    protected void printStats(String... stats) {
+        StringBuilder line = new StringBuilder();
+
+        for(int i = 0; i < this.numStats; i++) {
+            int length = this.statLengths.get(i);
+            String format = "%-" + (length + Placer.statSpaces) + "s";
+            String stat = String.format(format, stats[i]);
+
+            line.append(String.format("%-"+length+"s", stat));
+        }
+
+        this.logger.println(line.toString());
     }
 
     public void printRuntimeBreakdown() {

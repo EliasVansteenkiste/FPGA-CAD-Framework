@@ -1,6 +1,10 @@
 package util;
 
-public class Triple<F extends Comparable<F>, S, T> implements Comparable<Triple<F, S, T>> {
+import java.io.Serializable;
+
+public class Triple<F extends Comparable<F>, S, T> implements Comparable<Triple<F, S, T>>, Serializable {
+
+    private static final long serialVersionUID = 4434847305741889772L;
 
     private F first;
     private S second;
@@ -36,6 +40,46 @@ public class Triple<F extends Comparable<F>, S, T> implements Comparable<Triple<
     public int compareTo(Triple<F, S, T> otherTriplet) {
         return this.first.compareTo(otherTriplet.first);
     }
+
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((this.first == null) ? 0 : this.first.hashCode());
+        result = prime * result + ((this.second == null) ? 0 : this.second.hashCode());
+        result = prime * result + ((this.third == null) ? 0 : this.third.hashCode());
+        return result;
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public boolean equals(Object obj) {
+        if(this == obj)
+            return true;
+        if(obj == null)
+            return false;
+        if(getClass() != obj.getClass())
+            return false;
+        Triple other = (Triple) obj;
+        if(this.first == null) {
+            if(other.first != null)
+                return false;
+        } else if(!this.first.equals(other.first))
+            return false;
+        if(this.second == null) {
+            if(other.second != null)
+                return false;
+        } else if(!this.second.equals(other.second))
+            return false;
+        if(this.third == null) {
+            if(other.third != null)
+                return false;
+        } else if(!this.third.equals(other.third))
+            return false;
+        return true;
+    }
+
 
     @Override
     public String toString() {

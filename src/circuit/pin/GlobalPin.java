@@ -11,7 +11,7 @@ public class GlobalPin extends AbstractPin {
 
     @Override
     public GlobalBlock getOwner() {
-        return (GlobalBlock) super.getOwner();
+        return (GlobalBlock) this.owner;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package circuit.block;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
@@ -28,7 +29,7 @@ public class Site extends AbstractSite {
 
     @Override
     void addBlock(GlobalBlock block) throws FullSiteException {
-        if(this.block != null) {
+        if(this.isFull()) {
             throw new FullSiteException();
         }
 
@@ -50,7 +51,16 @@ public class Site extends AbstractSite {
     }
 
     @Override
+    public boolean isFull() {
+        return this.block != null;
+    }
+
+    @Override
     public Collection<GlobalBlock> getBlocks() {
-        return Arrays.asList(this.block);
+        if(this.block == null) {
+            return new ArrayList<GlobalBlock>();
+        } else {
+            return Arrays.asList(this.block);
+        }
     }
 }

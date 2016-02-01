@@ -1,6 +1,7 @@
 package main;
 
 import interfaces.Logger;
+import interfaces.Logger.Stream;
 import interfaces.Options;
 import interfaces.Options.Required;
 import interfaces.OptionsManager;
@@ -17,16 +18,17 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
 import placers.Placer;
-import placers.SAPlacer.EfficientBoundingBoxNetCC;
+import placers.simulatedannealing.EfficientBoundingBoxNetCC;
 import util.Timer;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.Architecture;
 import circuit.architecture.ArchitectureCacher;
-import circuit.architecture.parseException;
+import circuit.architecture.ParseException;
 import circuit.exceptions.InvalidFileFormatException;
 import circuit.exceptions.PlacementException;
 import circuit.io.BlockNotFoundException;
+import circuit.io.IllegalSizeException;
 import circuit.io.NetParser;
 import circuit.io.PlaceDumper;
 import circuit.io.PlaceParser;
@@ -38,6 +40,8 @@ public class Main {
     private String circuitName;
     private File blifFile, netFile, inputPlaceFile, outputPlaceFile;
     private File architectureFile;
+
+    private boolean useVprTiming;
     private String vprCommand;
 
     private boolean visual;
@@ -52,18 +56,31 @@ public class Main {
     private Circuit circuit;
 
 
+    private static final String
+        O_ARCHITECTURE = "architecture.xml",
+        O_BLIF_FILE = "blif file",
+        O_NET_FILE = "net file",
+        O_INPUT_PLACE_FILE = "input place file",
+        O_OUTPUT_PLACE_FILE = "output place file",
+        O_VPR_TIMING = "vpr timing",
+        O_VPR_COMMAND = "vpr command",
+        O_VISUAL = "visual",
+        O_RANDOM_SEED = "random seed";
+
+
     public static void initOptionList(Options options) {
-        options.add("architecture.xml", "", File.class);
-        options.add("blif file", "", File.class);
+        options.add(O_ARCHITECTURE, "", File.class);
+        options.add(O_BLIF_FILE, "", File.class);
 
-        options.add("net file", "(default: based on the blif file)", File.class, Required.FALSE);
-        options.add("input place file", "if omitted the initial placement is random", File.class, Required.FALSE);
-        options.add("output place file", "(default: based on the blif file)", File.class, Required.FALSE);
+        options.add(O_NET_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
+        options.add(O_INPUT_PLACE_FILE, "if omitted the initial placement is random", File.class, Required.FALSE);
+        options.add(O_OUTPUT_PLACE_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
 
-        options.add("vpr command", "Path to vpr executable", "./vpr");
+        options.add(O_VPR_TIMING, "Use vpr timing information", Boolean.TRUE);
+        options.add(O_VPR_COMMAND, "Path to vpr executable", "./vpr");
 
-        options.add("visual", "show the placed circuit in a GUI", Boolean.FALSE);
-        options.add("random seed", "seed for randomization", new Long(1));
+        options.add(O_VISUAL, "show the placed circuit in a GUI", Boolean.FALSE);
+        options.add(O_RANDOM_SEED, "seed for randomization", new Long(1));
     }
 
 
@@ -76,13 +93,13 @@ public class Main {
 
     private void parseOptions(Options options) {
 
-        this.randomSeed = options.getLong("random seed");
+        this.randomSeed = options.getLong(O_RANDOM_SEED);
 
-        this.inputPlaceFile = options.getFile("input place file");
+        this.inputPlaceFile = options.getFile(O_INPUT_PLACE_FILE);
 
-        this.blifFile = options.getFile("blif file");
-        this.netFile = options.getFile("net file");
-        this.outputPlaceFile = options.getFile("output place file");
+        this.blifFile = options.getFile(O_BLIF_FILE);
+        this.netFile = options.getFile(O_NET_FILE);
+        this.outputPlaceFile = options.getFile(O_OUTPUT_PLACE_FILE);
 
         File inputFolder = this.blifFile.getParentFile();
         this.circuitName = this.blifFile.getName().replaceFirst("(.+)\\.blif", "$1");
@@ -94,10 +111,11 @@ public class Main {
             this.outputPlaceFile = new File(inputFolder, this.circuitName + ".place");
         }
 
-        this.architectureFile = options.getFile("architecture.xml");
+        this.architectureFile = options.getFile(O_ARCHITECTURE);
 
-        this.vprCommand = options.getString("vpr command");
-        this.visual = options.getBoolean("visual");
+        this.useVprTiming = options.getBoolean(O_VPR_TIMING);
+        this.vprCommand = options.getString(O_VPR_COMMAND);
+        this.visual = options.getBoolean(O_VISUAL);
 
 
         // Check if all input files exist
@@ -147,7 +165,8 @@ public class Main {
 
             try {
                 placeParser.parse();
-            } catch(IOException | BlockNotFoundException | PlacementException error) {
+
+            } catch(IOException | BlockNotFoundException | PlacementException | IllegalSizeException error) {
                 this.logger.raise("Something went wrong while parsing the place file", error);
             }
 
@@ -190,7 +209,11 @@ public class Main {
 
 
     private void loadCircuit() {
-        ArchitectureCacher architectureCacher = new ArchitectureCacher(this.circuitName, this.netFile);
+        ArchitectureCacher architectureCacher = new ArchitectureCacher(
+                this.circuitName,
+                this.netFile,
+                this.architectureFile,
+                this.useVprTiming);
         Architecture architecture = architectureCacher.loadIfCached();
         boolean isCached = (architecture != null);
 
@@ -202,17 +225,17 @@ public class Main {
                     this.architectureFile,
                     this.vprCommand,
                     this.blifFile,
-                    this.netFile);
+                    this.netFile,
+                    this.useVprTiming);
 
             try {
                 architecture.parse();
-            } catch(IOException | InvalidFileFormatException | InterruptedException | parseException | ParserConfigurationException | SAXException error) {
+            } catch(IOException | InvalidFileFormatException | InterruptedException | ParseException | ParserConfigurationException | SAXException error) {
                 this.logger.raise("Failed to parse architecture file or delay tables", error);
             }
 
             this.stopAndPrintTimer();
         }
-
 
         // Parse net file
         this.startTimer("Net file parsing");
@@ -229,8 +252,12 @@ public class Main {
         // Cache the circuit for future use
         if(!isCached) {
             this.startTimer("Circuit caching");
-            architectureCacher.store(architecture);
+            boolean success = architectureCacher.store(architecture);
             this.stopAndPrintTimer();
+
+            if(!success) {
+                this.logger.print(Stream.ERR, "Something went wrong while caching the architecture");
+            }
         }
     }
 

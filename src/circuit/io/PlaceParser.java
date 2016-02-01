@@ -29,7 +29,7 @@ public class PlaceParser {
     }
 
 
-    public void parse() throws IOException, PlacementException, BlockNotFoundException {
+    public void parse() throws IOException, PlacementException, BlockNotFoundException, IllegalSizeException {
 
         BufferedReader reader = new BufferedReader(new FileReader(this.file));
 
@@ -65,7 +65,7 @@ public class PlaceParser {
     }
 
 
-    private void processLine(String line) {
+    private void processLine(String line) throws IllegalSizeException {
         Matcher sizeMatcher = sizePattern.matcher(line);
         boolean sizeMatches = sizeMatcher.matches();
 
@@ -74,10 +74,18 @@ public class PlaceParser {
 
 
         if(sizeMatches) {
-            int width = Integer.parseInt(sizeMatcher.group("width"));
-            int height = Integer.parseInt(sizeMatcher.group("height"));
+            int width = Integer.parseInt(sizeMatcher.group("width")) + 2;
+            int height = Integer.parseInt(sizeMatcher.group("height")) + 2;
 
-            this.circuit.setSize(width + 2, height + 2);
+            int circuitWidth = this.circuit.getWidth();
+            int circuitHeight = this.circuit.getHeight();
+
+            if(!(width == circuitWidth && height == circuitHeight)) {
+                throw new IllegalSizeException(String.format(
+                        "Placed circuit doesn't match architecture size: (%d, %d) vs. (%d, %d)",
+                        width, height,
+                        circuitWidth, circuitHeight));
+            }
 
         } else if(siteMatches) {
             String blockName = siteMatcher.group("block");

@@ -1,17 +1,16 @@
 package circuit.pin;
 
 import circuit.architecture.PortType;
-import circuit.block.AbstractBlock;
-import circuit.block.IntermediateBlock;
+import circuit.block.LocalBlock;
 
 public class LocalPin extends AbstractPin {
 
-    public LocalPin(AbstractBlock owner, PortType portType, int index) {
+    public LocalPin(LocalBlock owner, PortType portType, int index) {
         super(owner, portType, index);
     }
 
     @Override
-    public IntermediateBlock getOwner() {
-        return (IntermediateBlock) super.getOwner();
+    public LocalBlock getOwner() {
+        return (LocalBlock) this.owner;
     }
 }

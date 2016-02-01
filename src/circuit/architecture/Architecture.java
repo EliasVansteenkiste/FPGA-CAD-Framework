@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -32,20 +33,27 @@ import javax.xml.parsers.ParserConfigurationException;
  * We make a lot of assumptions while parsing an architecture XML file.
  * I tried to document these assumptions by commenting them with the
  * prefix ASM.
+ * First assumption: the architecture file is entirely valid. No checks
+ * on duplicate or illegal values are made in this parser.
+ *
+ * Only a subset of the VPR architecture specs is supported.
+ * TODO: document this subset.
  *
  * This parser does not store interconnections. We just assume that all
- * connections in the net file are legal. Should someonse ever want to
+ * connections in the net file are legal. Should someone ever want to
  * write a packer, then this feature has to be implemented.
  *
- * ASM: block types have unique names. There is no need to check parent blocks
- * to find out the exact type of the block.
- *
+ * ASM: block types have unique names. Two blocks with the same type
+ * are exactly equal, regardless of their parent block(s)
  */
 public class Architecture implements Serializable {
 
     private static final long serialVersionUID = -5436935126902935000L;
 
-    private static final double FILL_GRADE = 1;
+
+    private boolean autoSize;
+    private int width, height;
+    private double autoRatio;
 
     private File architectureFile, blifFile, netFile;
     private String circuitName;
@@ -54,13 +62,22 @@ public class Architecture implements Serializable {
     private transient Map<String, Boolean> modelIsClocked = new HashMap<>();
     private transient List<Pair<PortType, Double>> setupTimes = new ArrayList<>();
     private transient List<Triple<PortType, PortType, Double>> delays = new ArrayList<>();
+    private transient Map<String, Integer> directs = new HashMap<>();
 
     private DelayTables delayTables;
 
     private int ioCapacity;
+    private boolean getVprTiming;
 
 
-    public Architecture(String circuitName, File architectureFile, String vprCommand, File blifFile, File netFile) {
+    public Architecture(
+            String circuitName,
+            File architectureFile,
+            String vprCommand,
+            File blifFile,
+            File netFile,
+            boolean getVprTiming) {
+
         this.architectureFile = architectureFile;
 
         this.vprCommand = vprCommand;
@@ -69,19 +86,27 @@ public class Architecture implements Serializable {
         this.netFile = netFile;
 
         this.circuitName = circuitName;
+        this.getVprTiming = getVprTiming;
     }
 
-    public void parse() throws parseException, IOException, InvalidFileFormatException, InterruptedException, ParserConfigurationException, SAXException {
+    public void parse() throws ParseException, IOException, InvalidFileFormatException, InterruptedException, ParserConfigurationException, SAXException {
 
         // Build a XML root
         DocumentBuilder xmlBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         Document xmlDocument = xmlBuilder.parse(this.architectureFile);
         Element root = xmlDocument.getDocumentElement();
 
+        // Get the architecture size (fixed or automatic)
+        this.processLayout(root);
+
         // Store the models to know which ones are clocked
         this.processModels(root);
 
         // The device, switchlist and segmentlist tags are ignored: we leave these complex calculations to VPR
+        // Proceed with directlist
+        this.processDirects(root);
+
+        // Get all the complex block types and their ports and delays
         this.processBlocks(root);
 
         // Cache some frequently used data
@@ -91,9 +116,33 @@ public class Architecture implements Serializable {
         this.processDelays();
 
         // Build the delay matrixes
-        this.buildDelayMatrixes();
-        //this.buildDummyDelayMatrixes();
+        if(this.getVprTiming) {
+            this.buildDelayMatrixes();
+
+        } else {
+            // Set all delays to 0
+            // This is only useful while debugging,
+            // because the call to vpr takes a really
+            // long time for large circuits
+            this.buildDummyDelayMatrixes();
+        }
     }
+
+
+
+    private void processLayout(Element root) {
+        Element layoutElement = this.getFirstChild(root, "layout");
+
+        this.autoSize = layoutElement.hasAttribute("auto");
+        if(this.autoSize) {
+            this.autoRatio = Double.parseDouble(layoutElement.getAttribute("auto"));
+
+        } else {
+            this.width = Integer.parseInt(layoutElement.getAttribute("width"));
+            this.height = Integer.parseInt(layoutElement.getAttribute("height"));
+        }
+    }
+
 
 
     private void processModels(Element root) {
@@ -123,16 +172,52 @@ public class Architecture implements Serializable {
     }
 
 
-    private void processBlocks(Element root) throws parseException {
+
+    private void processDirects(Element root) {
+        Element directsElement = this.getFirstChild(root, "directlist");
+        if(directsElement == null) {
+            return;
+        }
+
+        List<Element> directElements = this.getChildElementsByTagName(directsElement, "direct");
+        for(Element directElement : directElements) {
+
+            String[] fromPort = directElement.getAttribute("from_pin").split("\\.");
+            String[] toPort = directElement.getAttribute("to_pin").split("\\.");
+
+            int offsetX = Integer.parseInt(directElement.getAttribute("x_offset"));
+            int offsetY = Integer.parseInt(directElement.getAttribute("y_offset"));
+            int offsetZ = Integer.parseInt(directElement.getAttribute("z_offset"));
+
+            // Directs can only go between blocks of the same type
+            assert(fromPort[0].equals(toPort[0]));
+
+            // ASM: macro's can only extend in the y direction
+            // if offsetX is different from 0, this is a direct
+            // connection that is not used as a carry chain
+            if(offsetX == 0 && offsetZ == 0) {
+                String id = this.getDirectId(fromPort[0], fromPort[1], toPort[1]);
+                this.directs.put(id, offsetY);
+            }
+        }
+    }
+
+    private String getDirectId(String blockName, String portNameFrom, String portNameTo) {
+        return String.format("%s.%s-%s", blockName, portNameFrom, portNameTo);
+    }
+
+
+
+    private void processBlocks(Element root) throws ParseException {
         Element blockListElement = this.getFirstChild(root, "complexblocklist");
         List<Element> blockElements = this.getChildElementsByTagName(blockListElement, "pb_type");
 
         for(Element blockElement : blockElements) {
-            this.processBlockElement(blockElement);
+            this.processBlockElement(null, blockElement);
         }
     }
 
-    private void processBlockElement(Element blockElement) throws parseException {
+    private BlockType processBlockElement(BlockType parentBlockType, Element blockElement) throws ParseException {
         String blockName = blockElement.getAttribute("name");
 
         boolean isGlobal = this.isGlobal(blockElement);
@@ -145,75 +230,149 @@ public class Architecture implements Serializable {
 
         // ASM: IO blocks are around the perimeter, HARDBLOCKs are in columns,
         // CLB blocks fill the rest of the FPGA
-        int start = 1, repeat = 1, height = 1;
+        int start = -1, repeat = -1, height = -1, priority = -1;
 
 
         if(isLeaf) {
             blockCategory = BlockCategory.LEAF;
 
-        } else if(isGlobal) {
+        } else if(!isGlobal) {
+            blockCategory = BlockCategory.INTERMEDIATE;
+
+        } else {
+            // Get some extra properties that relate to the placement
+            // of global blocks
+
             blockCategory = this.getGlobalBlockCategory(blockElement);
 
             if(blockCategory == BlockCategory.IO) {
+                // ASM: io blocks are always placed around the perimeter of the
+                // architecture, ie. "<loc type="perimeter">" is set.
+                // This assumption is used throughout this entire placement suite.
+                // Many changes will have to be made in the different algorithms
+                // in order to get rid of this assumption.
                 this.ioCapacity = Integer.parseInt(blockElement.getAttribute("capacity"));
 
-            } else if(blockCategory == BlockCategory.HARDBLOCK) {
-                height = Integer.parseInt(blockElement.getAttribute("height"));
+            } else {
+
+                if(blockElement.hasAttribute("height")) {
+                    height = Integer.parseInt(blockElement.getAttribute("height"));
+                } else {
+                    height = 1;
+                }
 
                 Element gridLocationsElement = this.getFirstChild(blockElement, "gridlocations");
                 Element locElement = this.getFirstChild(gridLocationsElement, "loc");
+                priority = Integer.parseInt(locElement.getAttribute("priority"));
 
-                start = Integer.parseInt(locElement.getAttribute("start"));
-                repeat = Integer.parseInt(locElement.getAttribute("repeat"));
+                // ASM: the loc type "rel" is not used
+                String type = locElement.getAttribute("type");
+                assert(!type.equals("rel"));
+
+                if(type.equals("col")) {
+                    start = Integer.parseInt(locElement.getAttribute("start"));
+
+                    if(locElement.hasAttribute("repeat")) {
+                        repeat = Integer.parseInt(locElement.getAttribute("repeat"));
+                    } else {
+                        repeat = -1;
+
+                        // If start is 0 and repeat is -1, the column calculation in Circuit.java fails
+                        assert(start != 0);
+                    }
+
+
+
+                } else if(type.equals("fill")) {
+                    start = 0;
+                    repeat = 1;
+
+                } else {
+                    assert(false);
+                }
             }
 
-        } else {
-            blockCategory = BlockCategory.INTERMEDIATE;
         }
-
 
         // Build maps of inputs and outputs
         Map<String, Integer> inputs = this.getPorts(blockElement, "input");
         Map<String, Integer> outputs = this.getPorts(blockElement, "output");
+        Map<String, Integer> clockPorts = this.getPorts(blockElement, "clock");
 
-        // Get the modes and children
-        List<Element> modeElements = new ArrayList<>();
-        List<Element> childElements = new ArrayList<>();
-        List<String> modes = new ArrayList<>();
-        List<Map<String, Integer>> children = new ArrayList<>();
-        this.getModesAndChildren(blockElement, modeElements, childElements, modes, children);
+        BlockType blockType = BlockTypeData.getInstance().addType(
+                parentBlockType,
+                blockName,
+                blockCategory,
+                height,
+                start,
+                repeat,
+                priority,
+                isClocked,
+                inputs,
+                outputs,
+                clockPorts);
 
+        // If block type is null, this means that there are two block
+        // types in the architecture file that we cannot differentiate.
+        // This should of course never happen.
+        assert(blockType != null);
 
-        boolean success = BlockTypeData.getInstance().addType(blockName, blockCategory, height, start, repeat, isClocked, inputs, outputs);
+        // Set the carry chain, if there is one
+        Pair<PortType, PortType> direct = this.getDirect(blockType, blockElement);
 
-        // Flipflops are defined twice in some arch files, this is no problem
-        // If any other blocks are defined more than once, we'd like to know it
-        if(!success) {
-            if(!blockName.equals("ff")) {
-                System.err.println("Duplicate block type detected in architecture file: " + blockName);
+        if(direct != null) {
+            PortType carryFromPort = direct.getFirst();
+            PortType carryToPort = direct.getSecond();
+
+            String directId = this.getDirectId(
+                    blockType.getName(),
+                    carryFromPort.getName(),
+                    carryToPort.getName());
+            int offsetY = this.directs.get(directId);
+
+            PortTypeData.getInstance().setCarryPorts(carryFromPort, carryToPort, offsetY);
+        }
+
+        // Add the different modes and process the children for that mode
+        /* Ugly data structure, but otherwise we would have to split it up
+         * in multiple structures. Each pair in the list represents a mode
+         * of this block type and its properties.
+         *   - the first part is a pair that contains a mode name and the
+         *     corresponding mode element
+         *   - the second part is a list of child types. For each child
+         *     type the number of children and the corresponding child
+         *     Element are stored.
+         */
+        List<Pair<Pair<BlockType, Element>, List<Pair<Integer, BlockType>>>> modesAndChildren = this.getModesAndChildren(blockType, blockElement);
+
+        for(Pair<Pair<BlockType, Element>, List<Pair<Integer, BlockType>>> modeAndChildren : modesAndChildren) {
+
+            Pair<BlockType, Element> mode = modeAndChildren.getFirst();
+            BlockType blockTypeWithMode = mode.getFirst();
+            Element modeElement = mode.getSecond();
+
+            List<BlockType> blockTypes = new ArrayList<>();
+            blockTypes.add(blockType);
+
+            // Add all the child types
+            for(Pair<Integer, BlockType> child : modeAndChildren.getSecond()) {
+                Integer numChildren = child.getFirst();
+                BlockType childBlockType = child.getSecond();
+                blockTypes.add(childBlockType);
+
+                BlockTypeData.getInstance().addChild(blockTypeWithMode, childBlockType, numChildren);
             }
 
-            return;
+            // Cache delays to and from this element
+            // We can't store them in PortTypeData until all blocks have been stored
+            this.cacheDelays(blockTypes, modeElement);
         }
 
-        for(int i = 0; i < modes.size(); i++) {
-            BlockTypeData.getInstance().addMode(blockName, modes.get(i), children.get(i));
-        }
+        // Cache setup times (time from input to clock, and from clock to output)
+        this.cacheSetupTimes(blockType, blockElement);
 
 
-        // Process children
-        this.addImplicitChildren(blockElement);
-        for(Element childElement : childElements) {
-            this.processBlockElement(childElement);
-        }
-
-
-        // Cache setup times and delays
-        // We can't store them in PortTypeData until all blocks have been stored
-        this.cacheSetupTimes(blockElement);
-        for(Element modeElement : modeElements) {
-            this.cacheDelays(modeElement);
-        }
+        return blockType;
     }
 
 
@@ -264,37 +423,42 @@ public class Architecture implements Serializable {
     }
 
 
-    private BlockCategory getGlobalBlockCategory(Element blockElement) throws parseException {
-        // Descend down until a leaf block is found
-        // Use this leaf block to determine the block category
-        Element childElement = blockElement;
+    private BlockCategory getGlobalBlockCategory(Element blockElement) throws ParseException {
+        // Check if this block type should fill the FPGA
+        // If it does, we call this the CLB type (there can
+        // only be one clb type in an architecture)
+        Element locElement = this.getFirstChild(this.getFirstChild(blockElement, "gridlocations"), "loc");
+        String type = locElement.getAttribute("type");
 
-        while(!childElement.hasAttribute("blif_model")) {
-            Element newChildElement = this.getFirstChild(childElement, "pb_type");
-            if(newChildElement == null) {
-                childElement = this.getFirstChild(childElement, "mode");
-            } else {
-                childElement = newChildElement;
+        if(type.equals("fill")) {
+            return BlockCategory.CLB;
+        }
+
+        // Descend down until a leaf block is found
+        // If the leaf block has has blif_model .input or
+        // .output, this is the io block type (there can
+        // only be one io type in an architecture)
+        Stack<Element> elements = new Stack<Element>();
+        elements.add(blockElement);
+
+        while(elements.size() > 0) {
+            Element element = elements.pop();
+
+            String blifModel = element.getAttribute("blif_model");
+            if(blifModel.equals(".input") || blifModel.equals(".output")) {
+                return BlockCategory.IO;
+            }
+
+
+            List<Element> modeElements = this.getChildElementsByTagName(element, "mode");
+            modeElements.add(element);
+
+            for(Element modeElement : modeElements) {
+                elements.addAll(this.getChildElementsByTagName(modeElement, "pb_type"));
             }
         }
 
-        String model = childElement.getAttribute("blif_model").split(" ")[0];
-
-        switch(model) {
-            case ".input":
-            case ".output":
-                return BlockCategory.IO;
-
-            case ".names":
-            case ".latch":
-                return BlockCategory.CLB;
-
-            case ".subckt":
-                return BlockCategory.HARDBLOCK;
-
-            default:
-                throw new parseException("Unknown model type: " + model);
-        }
+        return BlockCategory.HARDBLOCK;
     }
 
 
@@ -306,207 +470,285 @@ public class Architecture implements Serializable {
         for(Element portElement : portElements) {
             String portName = portElement.getAttribute("name");
 
-            // ASM: circuits have only 1 clock, ignore clock inputs
-            if(!portName.equals("clk")) {
-                int numPins = Integer.parseInt(portElement.getAttribute("num_pins"));
-                ports.put(portName, numPins);
-            }
+            int numPins = Integer.parseInt(portElement.getAttribute("num_pins"));
+            ports.put(portName, numPins);
         }
 
         return ports;
     }
 
-    private void getModesAndChildren(
-            Element blockElement,
-            List<Element> returnModeElements,
-            List<Element> returnChildElements,
-            List<String> returnModes,
-            List<Map<String, Integer>> returnChildren) {
 
-        if(this.hasImplicitChildren(blockElement) || this.isLeaf(blockElement)) {
-            String blockName = blockElement.getAttribute("name");
+    private Pair<PortType, PortType> getDirect(BlockType blockType, Element blockElement) {
+
+        PortType carryFromPort = null, carryToPort = null;
+
+        Element fcElement = this.getFirstChild(blockElement, "fc");
+        if(fcElement == null) {
+            return null;
+        }
+
+        List<Element> pinElements = this.getChildElementsByTagName(fcElement, "pin");
+        for(Element pinElement : pinElements) {
+            double fcVal = Double.parseDouble(pinElement.getAttribute("fc_val"));
+
+            if(fcVal == 0) {
+                String portName = pinElement.getAttribute("name");
+                PortType portType = new PortType(blockType, portName);
+
+                if(portType.isInput()) {
+                    assert(carryToPort == null);
+                    carryToPort = portType;
+
+                } else {
+                    assert(carryFromPort == null);
+                    carryFromPort = portType;
+                }
+            }
+        }
+
+        // carryInput and carryOutput must simultaneously be set or be null
+        assert(!(carryFromPort == null ^ carryToPort == null));
+        if(carryFromPort == null) {
+            return null;
+        } else {
+            return new Pair<PortType, PortType>(carryFromPort, carryToPort);
+        }
+    }
+
+
+    private List<Pair<Pair<BlockType, Element>, List<Pair<Integer, BlockType>>>> getModesAndChildren(BlockType blockType, Element blockElement) throws ParseException {
+
+        List<Pair<Pair<BlockType, Element>, List<Pair<Integer, BlockType>>>> modesAndChildren = new ArrayList<>();
+
+        String blockName = blockElement.getAttribute("name");
+
+        if(this.hasImplicitChildren(blockElement)) {
 
             switch(blockElement.getAttribute("class")) {
                 case "lut":
+                {
                     // ASM: luts have two hardcoded modes that are not defined in the arch file:
                     //  - one with the same name as the block type (e.g. lut5 or lut6). In this mode
                     //    it has one child "lut".
                     //  - "wire": no children
 
-                    returnModes.add(blockName);
+                    BlockType blockTypeWithMode = BlockTypeData.getInstance().addMode(blockType, blockName);
+                    Pair<BlockType, Element> mode = new Pair<>(blockTypeWithMode, blockElement);
+
+                    BlockType childBlockType = this.addImplicitLut(blockTypeWithMode, blockElement);
+                    List<Pair<Integer, BlockType>> modeChildren = new ArrayList<>();
+                    modeChildren.add(new Pair<Integer, BlockType>(1, childBlockType));
+                    modesAndChildren.add(new Pair<>(mode, modeChildren));
 
 
-                    String lutChildName = this.getImplicitBlockName(blockName, "lut");
-                    int numLutChildren = 1;
+                    blockTypeWithMode = BlockTypeData.getInstance().addMode(blockType, "wire");
+                    mode = new Pair<>(blockTypeWithMode, blockElement);
 
-                    Map<String, Integer> lutChildren = new HashMap<String, Integer>();
-                    lutChildren.put(lutChildName, numLutChildren);
-                    returnChildren.add(lutChildren);
+                    modeChildren = new ArrayList<>();
+                    modesAndChildren.add(new Pair<>(mode, modeChildren));
 
-                    returnModes.add("wire");
-                    returnChildren.add(new HashMap<String, Integer>());
                     break;
+                }
 
                 case "memory":
+                {
                     // ASM: blocks of class "memory" have one mode "memory_slice" and x children of type
-                    // "memory_slice", where x can be determined from the number of output ports
-                    returnModes.add("memory_slice");
+                    // "memory_slice", where x can be determined from the number of output pins in an
+                    // output port with a class that begins with "data_out"
 
+                    // Determine the number of children
+                    int numChildren = -1;
+                    for(Element outputElement : this.getChildElementsByTagName(blockElement, "output")) {
+                        String portClass = outputElement.getAttribute("port_class");
+                        if(portClass.startsWith("data_out")) {
+                            int numPins = Integer.parseInt(outputElement.getAttribute("num_pins"));
 
-                    String memoryChildName = this.getImplicitBlockName(blockName, "memory_slice");
+                            if(numChildren == -1) {
+                                numChildren = numPins;
 
-                    Element outputElement = this.getFirstChild(blockElement, "output");
-                    int numMemoryChildren = Integer.parseInt(outputElement.getAttribute("num_pins"));
+                            } else if(numChildren != numPins) {
+                                throw new ArchitectureException(String.format(
+                                        "inconsistend number of data output pins in memory: %d and %d",
+                                        numChildren, numPins));
+                            }
+                        }
+                    }
 
-                    Map<String, Integer> memoryChildren = new HashMap<String, Integer>();
-                    memoryChildren.put(memoryChildName, numMemoryChildren);
-                    returnChildren.add(memoryChildren);
+                    BlockType blockTypeWithMode = BlockTypeData.getInstance().addMode(blockType, "memory_slice");
+                    Pair<BlockType, Element> mode = new Pair<>(blockTypeWithMode, blockElement);
+
+                    BlockType childBlockType = this.addImplicitMemorySlice(blockTypeWithMode, blockElement);
+                    List<Pair<Integer, BlockType>> modeChildren = new ArrayList<>();
+                    modeChildren.add(new Pair<Integer, BlockType>(numChildren, childBlockType));
+                    modesAndChildren.add(new Pair<>(mode, modeChildren));
+
                     break;
+                }
 
                 default:
-                    // ASM: Leafs have 1 unnamed mode without children
-                    returnModes.add("");
-                    returnChildren.add(new HashMap<String, Integer>());
-                    returnModeElements.add(blockElement);
+                    throw new ArchitectureException("Unknown block type with implicit children: " + blockName);
             }
 
-            return;
-        }
+        } else if(this.isLeaf(blockElement)) {
+            // ASM: Leafs have 1 unnamed mode without children
+            BlockType blockTypeWithMode = BlockTypeData.getInstance().addMode(blockType, "");
+            Pair<BlockType, Element >mode = new Pair<>(blockTypeWithMode, blockElement);
+            List<Pair<Integer, BlockType>> modeChildren = new ArrayList<>();
 
-        returnModeElements.addAll(this.getChildElementsByTagName(blockElement, "mode"));
+            modesAndChildren.add(new Pair<>(mode, modeChildren));
 
-        // There is 1 mode with the same name as the block
-        // There is 1 child block type
-        if(returnModeElements.size() == 0) {
-            returnModeElements.add(blockElement);
-        }
+        } else {
+            List<Element> modeElements = new ArrayList<>();
+            modeElements.addAll(this.getChildElementsByTagName(blockElement, "mode"));
 
-        // Add the actual modes and their children
-        for(Element modeElement : returnModeElements) {
-            Map<String, Integer> modeChildren = new HashMap<>();
-
-            List<Element> childElements = this.getChildElementsByTagName(modeElement, "pb_type");
-            for(Element childElement : childElements) {
-                returnChildElements.add(childElement);
-
-                String childName = childElement.getAttribute("name");
-                int childNum = Integer.parseInt(childElement.getAttribute("num_pb"));
-
-                modeChildren.put(childName, childNum);
+            // There is 1 mode with the same name as the block
+            // There is 1 child block type
+            if(modeElements.size() == 0) {
+                modeElements.add(blockElement);
             }
 
-            returnModes.add(modeElement.getAttribute("name"));
-            returnChildren.add(modeChildren);
+            // Add the actual modes and their children
+            for(Element modeElement : modeElements) {
+                String modeName = modeElement.getAttribute("name");
+                BlockType blockTypeWithMode = BlockTypeData.getInstance().addMode(blockType, modeName);
+                Pair<BlockType, Element> mode = new Pair<>(blockTypeWithMode, modeElement);
+
+                List<Pair<Integer, BlockType>> modeChildren = new ArrayList<>();
+                List<Element> childElements = this.getChildElementsByTagName(modeElement, "pb_type");
+                for(Element childElement : childElements) {
+                    int numChildren = Integer.parseInt(childElement.getAttribute("num_pb"));
+                    BlockType childBlockType = this.processBlockElement(blockTypeWithMode, childElement);
+                    modeChildren.add(new Pair<>(numChildren, childBlockType));
+                }
+
+                modesAndChildren.add(new Pair<>(mode, modeChildren));
+            }
         }
+
+        return modesAndChildren;
     }
 
 
-    private void addImplicitChildren(Element blockElement) {
-        if(!this.hasImplicitChildren(blockElement)) {
-            return;
-        }
-
-        switch(blockElement.getAttribute("class")) {
-        case "lut":
-            this.addImplicitLut(blockElement);
-            break;
-
-        case "memory":
-            this.addImplicitMemorySlice(blockElement);
-            break;
-
-        default:
-            System.out.println("Failed to add implicit children for block type: " + blockElement.getAttribute("class"));
-            System.exit(1);
-        }
-    }
-
-
-    private void addImplicitLut(Element blockElement) {
+    private BlockType addImplicitLut(BlockType parentBlockType, Element parentBlockElement) {
         // A lut has exactly the same ports as its parent lut5/lut6/... block
-        Map<String, Integer> inputPorts = this.getPorts(blockElement, "input");
-        Map<String, Integer> outputPorts = this.getPorts(blockElement, "output");
-        String lutName = blockElement.getAttribute("name") + ".lut";
+        Map<String, Integer> inputPorts = this.getPorts(parentBlockElement, "input");
+        Map<String, Integer> outputPorts = this.getPorts(parentBlockElement, "output");
+        Map<String, Integer> clockPorts = this.getPorts(parentBlockElement, "clock");
+        String lutName = "lut";
 
-        BlockTypeData.getInstance().addType(lutName, BlockCategory.LEAF, 1, 1, 1, false, inputPorts, outputPorts);
-        BlockTypeData.getInstance().addMode(lutName, "", new HashMap<String, Integer>());
+        BlockType lutBlockType = BlockTypeData.getInstance().addType(
+                parentBlockType,
+                lutName,
+                BlockCategory.LEAF,
+                -1,
+                -1,
+                -1,
+                -1,
+                false,
+                inputPorts,
+                outputPorts,
+                clockPorts);
+
+        // A lut has one unnamed mode without children
+        BlockTypeData.getInstance().addMode(lutBlockType, "");
 
         // Process delays
-        Element delayMatrixElement = this.getFirstChild(blockElement, "delay_matrix");
+        Element delayMatrixElement = this.getFirstChild(parentBlockElement, "delay_matrix");
 
         // ASM: all delays are equal and type is "max"
-        PortType sourcePortType = this.getPortType(delayMatrixElement.getAttribute("in_port"));
-        PortType sinkPortType = new PortType(lutName, "in");
+        String sourcePortName = delayMatrixElement.getAttribute("in_port").split("\\.")[1];
+        PortType sourcePortType = new PortType(lutBlockType, sourcePortName);
+        String sinkPortName = delayMatrixElement.getAttribute("out_port").split("\\.")[1];
+        PortType sinkPortType = new PortType(lutBlockType, sinkPortName);
 
         String[] delays = delayMatrixElement.getTextContent().split("\\s+");
         int index = delays[0].length() > 0 ? 0 : 1;
         double delay = Double.parseDouble(delays[index]);
 
         this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+
+        return lutBlockType;
     }
 
 
-    private void addImplicitMemorySlice(Element blockElement) {
-        Map<String, Integer> inputPorts = this.getPorts(blockElement, "input");
-        for(Element inputElement : this.getChildElementsByTagName(blockElement, "input")) {
+    private BlockType addImplicitMemorySlice(BlockType parentBlockType, Element parentBlockElement) {
+        // The memory slice has exactly the same ports as its parent,
+        // except there is only one data_in and data_out
+
+        Map<String, Integer> inputPorts = this.getPorts(parentBlockElement, "input");
+        for(Element inputElement : this.getChildElementsByTagName(parentBlockElement, "input")) {
             if(inputElement.getAttribute("port_class").startsWith("data_in")) {
                 inputPorts.put(inputElement.getAttribute("name"), 1);
             }
         }
 
-        Map<String, Integer> outputPorts = this.getPorts(blockElement, "output");
-        for(Element outputElement : this.getChildElementsByTagName(blockElement, "output")) {
+        Map<String, Integer> outputPorts = this.getPorts(parentBlockElement, "output");
+        for(Element outputElement : this.getChildElementsByTagName(parentBlockElement, "output")) {
             if(outputElement.getAttribute("port_class").startsWith("data_out")) {
                 inputPorts.put(outputElement.getAttribute("name"), 1);
             }
         }
 
-        String memorySliceName = this.getImplicitBlockName(blockElement.getAttribute("name"), "memory_slice");
+        Map<String, Integer> clockPorts = this.getPorts(parentBlockElement, "clock");
+
+        String memorySliceName = "memory_slice";
 
         // ASM: memory slices are clocked
-        BlockTypeData.getInstance().addType(memorySliceName, BlockCategory.LEAF, 1, 1, 1, true, inputPorts, outputPorts);
-        BlockTypeData.getInstance().addMode(memorySliceName, "", new HashMap<String, Integer>());
+        BlockType memoryBlockType = BlockTypeData.getInstance().addType(
+                parentBlockType,
+                memorySliceName,
+                BlockCategory.LEAF,
+                -1,
+                -1,
+                -1,
+                -1,
+                true,
+                inputPorts,
+                outputPorts,
+                clockPorts);
+
+        // Add the new memory type as a child of the parent type
+        BlockTypeData.getInstance().addChild(parentBlockType, memoryBlockType, 1);
+
+        // A memory_slice has one unnamed mode without children
+        BlockTypeData.getInstance().addMode(memoryBlockType, "");
 
 
         // Process setup times
         // These are added as delays between the parent and child element
-        List<Element> setupElements = this.getChildElementsByTagName(blockElement, "T_setup");
+        List<Element> setupElements = this.getChildElementsByTagName(parentBlockElement, "T_setup");
         for(Element setupElement : setupElements) {
-            String sourcePort = setupElement.getAttribute("port");
-            PortType sourcePortType = this.getPortType(sourcePort);
-
-            String portName = sourcePort.split("\\.")[1];
-            PortType sinkPortType = new PortType(memorySliceName, portName);
+            String sourcePortName = setupElement.getAttribute("port").split("\\.")[1];
+            PortType sourcePortType = new PortType(parentBlockType, sourcePortName);
+            PortType sinkPortType = new PortType(memoryBlockType, sourcePortName);
 
             double delay = Double.parseDouble(setupElement.getAttribute("value"));
-
             this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
         }
 
         // Process clock to port times
-        // These are added as delays between the parent and child element
-        List<Element> clockToPortElements = this.getChildElementsByTagName(blockElement, "T_clock_to_Q");
+        // These are added as delays between the child and parent element
+        List<Element> clockToPortElements = this.getChildElementsByTagName(parentBlockElement, "T_clock_to_Q");
         for(Element clockToPortElement : clockToPortElements) {
-            String sinkPort = clockToPortElement.getAttribute("port");
-            PortType sinkPortType = this.getPortType(sinkPort);
-
-            String portName = sinkPort.split("\\.")[1];
-            PortType sourcePortType = new PortType(memorySliceName, portName);
+            String sinkPortName = clockToPortElement.getAttribute("port").split("\\.")[1];
+            PortType sourcePortType = new PortType(memoryBlockType, sinkPortName);
+            PortType sinkPortType = new PortType(parentBlockType, sinkPortName);
 
             double delay = Double.parseDouble(clockToPortElement.getAttribute("max"));
-
             this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
         }
+
+
+        return memoryBlockType;
     }
 
 
-
-
-    private void cacheSetupTimes(Element blockElement) {
+    private void cacheSetupTimes(BlockType blockType, Element blockElement) {
         // Process setup times
         List<Element> setupElements = this.getChildElementsByTagName(blockElement, "T_setup");
         for(Element setupElement : setupElements) {
-            PortType portType = this.getPortType(setupElement.getAttribute("port"));
+            String portName = setupElement.getAttribute("port").split("\\.")[1];
+            PortType portType = new PortType(blockType, portName);
             double delay = Double.parseDouble(setupElement.getAttribute("value"));
 
             this.setupTimes.add(new Pair<PortType, Double>(portType, delay));
@@ -515,7 +757,8 @@ public class Architecture implements Serializable {
         // Process clock to port times
         List<Element> clockToPortElements = this.getChildElementsByTagName(blockElement, "T_clock_to_Q");
         for(Element clockToPortElement : clockToPortElements) {
-            PortType portType = this.getPortType(clockToPortElement.getAttribute("port"));
+            String portName = clockToPortElement.getAttribute("port").split("\\.")[1];
+            PortType portType = new PortType(blockType, portName);
             double delay = Double.parseDouble(clockToPortElement.getAttribute("max"));
 
             this.setupTimes.add(new Pair<PortType, Double>(portType, delay));
@@ -526,37 +769,67 @@ public class Architecture implements Serializable {
     }
 
 
-    private void cacheDelays(Element modeElement) {
+    private void cacheDelays(List<BlockType> blockTypes, Element modeElement) {
 
-        // ASM: delays are defined in a delay_constant tag. These tags are children of
-        // one of the next elements:
-        //   - modeElement itself
-        //   - child <interconnect> elements of modeElement
-        //   - child <direct> elements of modeElement
-        // One exception are luts: the lut delays are defined in a delay_matrix element.
-        // See addImplicitLut().
+        /* ASM: delays are defined in a delay_constant tag. These tags are children of
+         * one of the next elements:
+         *   - modeElement
+         *   - modeElement - <interconnect> - <direct>
+         *   - modeElement - <interconnect> - <complete>
+         *   - modeElement - <interconnect> - <mux>
+         *   - child <direct> elements of modeElement
+         * One exception are luts: the lut delays are defined in a delay_matrix element.
+         * See addImplicitLut().
+         */
 
         List<Element> elements = new ArrayList<Element>();
         elements.add(modeElement);
-        elements.addAll(this.getChildElementsByTagName(modeElement, "interconnect"));
-        elements.addAll(this.getChildElementsByTagName(modeElement, "direct"));
+        Element interconnectElement = this.getFirstChild(modeElement, "interconnect");
+        if(interconnectElement != null) {
+            elements.addAll(this.getChildElementsByTagName(interconnectElement, "direct"));
+            elements.addAll(this.getChildElementsByTagName(interconnectElement, "complete"));
+            elements.addAll(this.getChildElementsByTagName(interconnectElement, "mux"));
+        }
 
         for(Element element : elements) {
-            NodeList delayConstantNodes = element.getElementsByTagName("delay_constant");
-            for(int i = 0; i < delayConstantNodes.getLength(); i++) {
-                Element delayConstantElement = (Element) delayConstantNodes.item(i);
-
-                PortType sourcePortType = this.getPortType(delayConstantElement.getAttribute("in_port"));
-                PortType sinkPortType = this.getPortType(delayConstantElement.getAttribute("out_port"));
+            for(Element delayConstantElement : this.getChildElementsByTagName(element, "delay_constant")) {
 
                 double delay = Double.parseDouble(delayConstantElement.getAttribute("max"));
+                String[] sourcePorts = delayConstantElement.getAttribute("in_port").split("\\s+");
+                String[] sinkPorts = delayConstantElement.getAttribute("out_port").split("\\s+");
 
-                // ASM: the element with blif_model .input is located directly under the
-                // global input block type
-                // PortTypeData uses this assumption to set the clock setup time
-                this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+                for(String sourcePort : sourcePorts) {
+                    for(String sinkPort : sinkPorts) {
+                        if(!(sourcePort.length() == 0 || sinkPort.length() == 0)) {
+                            this.cacheDelay(blockTypes, sourcePort, sinkPort, delay);
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private void cacheDelay(List<BlockType> blockTypes, String sourcePort, String sinkPort, double delay) {
+
+        String[] ports = {sourcePort, sinkPort};
+        List<PortType> portTypes = new ArrayList<PortType>(2);
+
+        for(String port : ports) {
+            String[] portParts = port.split("\\.");
+            String blockName = portParts[0].split("\\[")[0];
+            String portName = portParts[1].split("\\[")[0];
+
+            BlockType portBlockType = null;
+            for(BlockType blockType : blockTypes) {
+                if(blockName.equals(blockType.getName())) {
+                    portBlockType = blockType;
+                }
+            }
+
+            portTypes.add(new PortType(portBlockType, portName));
+        }
+
+        this.delays.add(new Triple<PortType, PortType, Double>(portTypes.get(0), portTypes.get(1), delay));
     }
 
 
@@ -575,20 +848,6 @@ public class Architecture implements Serializable {
 
             sourcePortType.setDelay(sinkPortType, delay);
         }
-    }
-
-
-    private PortType getPortType(String definition) {
-        String[] parts = definition.split("\\.");
-        for(int i = 0; i < 2; i++) {
-            String part = parts[i];
-            int bracketIndex = part.indexOf('[');
-            if(bracketIndex > -1) {
-                parts[i] = part.substring(0, bracketIndex);
-            }
-        }
-
-        return new PortType(parts[0], parts[1]);
     }
 
 
@@ -669,6 +928,20 @@ public class Architecture implements Serializable {
     }
 
 
+
+    public boolean isAutoSized() {
+        return this.autoSize;
+    }
+    public double getAutoRatio() {
+        return this.autoRatio;
+    }
+    public int getWidth() {
+        return this.width;
+    }
+    public int getHeight() {
+        return this.height;
+    }
+
     public DelayTables getDelayTables() {
         return this.delayTables;
     }
@@ -679,16 +952,12 @@ public class Architecture implements Serializable {
         return this.ioCapacity;
     }
 
-    public double getFillGrade() {
-        return Architecture.FILL_GRADE;
-    }
-
 
     public boolean isImplicitBlock(String blockTypeName) {
+        // ASM: lut and memory_slice are the only possible implicit blocks
         return blockTypeName.equals("lut") || blockTypeName.equals("memory_slice");
     }
     public String getImplicitBlockName(String parentBlockTypeName, String blockTypeName) {
-        // TODO: make sure every method uses this, by changing . to // or something
         return parentBlockTypeName + "." + blockTypeName;
     }
 
@@ -703,5 +972,14 @@ public class Architecture implements Serializable {
         in.defaultReadObject();
         BlockTypeData.setInstance((BlockTypeData) in.readObject());
         PortTypeData.setInstance((PortTypeData) in.readObject());
+    }
+
+
+    public class ArchitectureException extends RuntimeException {
+        private static final long serialVersionUID = 5348447367650914363L;
+
+        ArchitectureException(String message) {
+            super(message);
+        }
     }
 }

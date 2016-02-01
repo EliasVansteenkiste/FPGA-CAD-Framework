@@ -7,74 +7,66 @@ public class PortType implements Serializable, Comparable<PortType> {
 
     private static final long serialVersionUID = 8336333602345751378L;
 
-    private int blockTypeIndex, portTypeIndex;
+    private int typeIndex;
 
 
-    public PortType(String blockTypeName, String portName) {
-        this(new BlockType(blockTypeName), portName);
-    }
     public PortType(BlockType blockType, String portName) {
-        this(blockType.getIndex(), portName);
+        this(blockType.getTypeIndex(), portName);
     }
     PortType(int blockTypeIndex, String portName) {
-        this.blockTypeIndex = blockTypeIndex;
-        this.portTypeIndex = PortTypeData.getInstance().getTypeIndex(this.blockTypeIndex, portName);
+        this.typeIndex = PortTypeData.getInstance().getTypeIndex(blockTypeIndex, portName);
     }
 
+    int getBlockTypeIndex() {
+        return PortTypeData.getInstance().getBlockTypeIndex(this.typeIndex);
+    }
+    int getPortTypeIndex() {
+        return this.typeIndex;
+    }
 
     void setSetupTime(double delay) {
-        PortTypeData.getInstance().setSetupTime(this.blockTypeIndex, this.portTypeIndex, delay);
+        PortTypeData.getInstance().setSetupTime(this.typeIndex, delay);
     }
     public double getSetupTime() {
-        return PortTypeData.getInstance().getSetupTime(this.blockTypeIndex, this.portTypeIndex);
-    }
-
-    public static double getClockSetupTime() {
-        return PortTypeData.getInstance().getClockSetupTime();
+        return PortTypeData.getInstance().getSetupTime(this.typeIndex);
     }
 
     void setDelay(PortType sinkType, double delay) {
-        PortTypeData.getInstance().setDelay(
-                this.blockTypeIndex, this.portTypeIndex,
-                sinkType.blockTypeIndex, sinkType.portTypeIndex,
-                delay);
+        PortTypeData.getInstance().setDelay(this.typeIndex, sinkType.typeIndex, delay);
     }
     public double getDelay(PortType sinkType) {
-        return PortTypeData.getInstance().getDelay(
-                this.blockTypeIndex, this.portTypeIndex,
-                sinkType.blockTypeIndex, sinkType.portTypeIndex);
+        return PortTypeData.getInstance().getDelay(this.typeIndex, sinkType.typeIndex);
     }
-
 
 
     public String getName() {
-        return PortTypeData.getInstance().getName(this.blockTypeIndex, this.portTypeIndex);
+        return PortTypeData.getInstance().getName(this.typeIndex);
     }
 
     public int[] getRange() {
-        return PortTypeData.getInstance().getRange(this.blockTypeIndex, this.portTypeIndex);
+        return PortTypeData.getInstance().getRange(this.typeIndex);
     }
 
 
-    public boolean isOutput() {
-        return !this.isInput();
-    }
     public boolean isInput() {
-        return this.portTypeIndex < PortTypeData.getInstance().getNumInputPorts(this.blockTypeIndex);
+        return PortTypeData.getInstance().isInput(this.typeIndex);
+    }
+    public boolean isOutput() {
+        return PortTypeData.getInstance().isOutput(this.typeIndex);
+    }
+    public boolean isClock() {
+        return PortTypeData.getInstance().isClock(this.typeIndex);
     }
 
 
-    private int uniqueId() {
-        return PortTypeData.getInstance().uniqueId(this.blockTypeIndex, this.portTypeIndex);
-    }
 
     @Override
     public int compareTo(PortType otherPortType) {
-        return Integer.compare(this.uniqueId(), otherPortType.uniqueId());
+        return Integer.compare(this.typeIndex, otherPortType.typeIndex);
     }
 
     @Override
     public String toString() {
-        return String.format("%s.%s", new BlockType(this.blockTypeIndex).toString(), this.getName());
+        return String.format("%s.%s", new BlockType(this.getBlockTypeIndex()).toString(), this.getName());
     }
 }

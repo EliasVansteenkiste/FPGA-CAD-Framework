@@ -19,7 +19,7 @@ import circuit.architecture.PortType;
 import circuit.block.AbstractBlock;
 import circuit.block.GlobalBlock;
 import circuit.block.LeafBlock;
-import circuit.block.IntermediateBlock;
+import circuit.block.LocalBlock;
 import circuit.pin.AbstractPin;
 
 public class NetParser {
@@ -35,10 +35,11 @@ public class NetParser {
     private LinkedList<AbstractBlock> blockStack;
     private Stack<TupleBlockMap> inputsStack;
     private Stack<Map<String, String>> outputsStack;
+    private Stack<Map<String, String>> clocksStack;
 
     private Map<String, AbstractPin> sourcePins;
 
-    private enum PortDirection {INPUT, OUTPUT};
+    private enum PortDirection {INPUT, OUTPUT, CLOCK};
     private PortDirection currentPortType;
 
 
@@ -61,6 +62,7 @@ public class NetParser {
         this.blockStack = new LinkedList<AbstractBlock>();
         this.inputsStack = new Stack<TupleBlockMap>();
         this.outputsStack = new Stack<Map<String, String>>();
+        this.clocksStack = new Stack<Map<String, String>>();
 
 
         // sourcePins contains the names of the outputs of leaf blocks and
@@ -126,7 +128,7 @@ public class NetParser {
 
 
         Circuit circuit = new Circuit(this.circuitName, this.architecture, this.blocks);
-        circuit.buildDataStructures();
+        circuit.initializeData();
 
         return circuit;
     }
@@ -170,7 +172,7 @@ public class NetParser {
 
     @SuppressWarnings("unused")
     private void processClockLine(String line) {
-        this.currentPortType = null;
+        this.currentPortType = PortDirection.CLOCK;
     }
 
 
@@ -196,6 +198,10 @@ public class NetParser {
 
             case OUTPUT:
                 this.outputsStack.peek().put(name, ports);
+                break;
+
+            case CLOCK:
+                this.clocksStack.peek().put(name, ports);
                 break;
         }
     }
@@ -227,12 +233,8 @@ public class NetParser {
         String mode = modeStart < modeEnd ? line.substring(modeStart, modeEnd) : null;
 
 
-
-        if(this.architecture.isImplicitBlock(type)) {
-            String parentBlockTypeName = this.blockStack.getFirst().getType().getName();
-            type = this.architecture.getImplicitBlockName(parentBlockTypeName, type);
-        }
-        BlockType blockType = new BlockType(type, mode);
+        BlockType parentBlockType = this.blockStack.isEmpty() ? null : this.blockStack.peek().getType();
+        BlockType blockType = new BlockType(parentBlockType, type, mode);
 
 
         AbstractBlock newBlock;
@@ -244,10 +246,10 @@ public class NetParser {
 
             if(blockType.isLeaf()) {
                 GlobalBlock globalParent = (GlobalBlock) this.blockStack.peekLast();
-                newBlock = new LeafBlock(this.architecture.getDelayTables(), name, blockType, index, parent, globalParent);
+                newBlock = new LeafBlock(name, blockType, index, parent, globalParent);
 
             } else {
-                newBlock = new IntermediateBlock(name, blockType, index, parent);
+                newBlock = new LocalBlock(name, blockType, index, parent);
             }
         }
 
@@ -255,10 +257,11 @@ public class NetParser {
         this.blockStack.push(newBlock);
         this.inputsStack.push(new TupleBlockMap(newBlock));
         this.outputsStack.push(new HashMap<String, String>());
+        this.clocksStack.push(new HashMap<String, String>());
 
 
         if(!this.blocks.containsKey(blockType)) {
-            BlockType emptyModeType = new BlockType(blockType.getName());
+            BlockType emptyModeType = new BlockType(parentBlockType, blockType.getName());
             this.blocks.put(emptyModeType, new ArrayList<AbstractBlock>());
         }
         this.blocks.get(blockType).add(newBlock);
@@ -272,12 +275,15 @@ public class NetParser {
             while(this.inputsStack.size() > 0) {
                 TupleBlockMap globalTuple = this.inputsStack.pop();
                 AbstractBlock globalBlock = globalTuple.getBlock();
-                Map<String, String> inputs = globalTuple.getMap();
 
+                Map<String, String> inputs = globalTuple.getMap();
                 processPortsHashMap(globalBlock, inputs);
+
+                Map<String, String> clocks = this.clocksStack.pop();
+                processPortsHashMap(globalBlock, clocks);
             }
 
-        // This is
+        // This is a regular block, global, local or leaf
         } else {
             // Remove this block and its outputs from the stacks
             AbstractBlock block = this.blockStack.pop();
@@ -291,9 +297,12 @@ public class NetParser {
             while(this.inputsStack.peek().getBlock() != block) {
                 TupleBlockMap childTuple = this.inputsStack.pop();
                 AbstractBlock childBlock = childTuple.getBlock();
-                Map<String, String> inputs = childTuple.getMap();
 
+                Map<String, String> inputs = childTuple.getMap();
                 processPortsHashMap(childBlock, inputs);
+
+                Map<String, String> clocks = this.clocksStack.pop();
+                processPortsHashMap(childBlock, clocks);
             }
         }
     }
@@ -356,42 +365,34 @@ public class NetParser {
             int typeStart = 0;
             String sourceBlockName = net.substring(typeStart, typeEnd);
 
-            if(this.architecture.isImplicitBlock(sourceBlockName)) {
-                String parentBlockTypeName = sinkBlock.getType().getName();
-                sourceBlockName = this.architecture.getImplicitBlockName(parentBlockTypeName, sourceBlockName);
-            }
+            //BlockType sourceBlockType = new BlockType(sourceBlockName);
+            //PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
 
-            BlockType sourceBlockType = new BlockType(sourceBlockName);
-            PortType sourcePortType = new PortType(sourceBlockType, sourcePortName);
-
-            // The hardest part: determine the source block
+            // Determine the source block
             AbstractBlock sourceBlock;
+
 
             // The net is incident to an input port. It has an input port of the parent block as source.
             if(sourceBlockIndex == -1) {
-                sourceBlock = ((IntermediateBlock) sinkBlock).getParent();
+                sourceBlock = ((LocalBlock) sinkBlock).getParent();
 
+            // The net is incident to an input port. It has a sibling's output port as source.
+            } else if(sinkPin.isInput()) {
+                AbstractBlock parent = ((LocalBlock) sinkBlock).getParent();
+                BlockType sourceBlockType = new BlockType(parent.getType(), sourceBlockName);
+                sourceBlock = parent.getChild(sourceBlockType, sourceBlockIndex);
 
+            // The net is incident to an output port. It has an input port of itself as source
+            } else if(sinkBlock.getType().getName().equals(sourceBlockName)) {
+                sourceBlock = sinkBlock;
+
+            // The net is incident to an output port. It has a child's output port as source
             } else {
-
-
-                // The net is incident to an input port. It has a sibling output port as source.
-                if(sinkPin.isInput()) {
-                    AbstractBlock parent = ((IntermediateBlock) sinkBlock).getParent();
-                    sourceBlock = parent.getChild(sourceBlockType, sourceBlockIndex);
-
-
-                // The net is incident to an output port. It has either a child output port as source
-                // or an input port of itself.
-                } else {
-                    if(sinkBlock.getType().equals(sourceBlockType)) {
-                        sourceBlock = sinkBlock;
-                    } else {
-                        sourceBlock = sinkBlock.getChild(sourceBlockType, sourceBlockIndex);
-                    }
-                }
+                BlockType sourceBlockType = new BlockType(sinkBlock.getType(), sourceBlockName);
+                sourceBlock = sinkBlock.getChild(sourceBlockType, sourceBlockIndex);
             }
 
+            PortType sourcePortType = new PortType(sourceBlock.getType(), sourcePortName);
             AbstractPin sourcePin = sourceBlock.getPin(sourcePortType, sourcePinIndex);
             sourcePin.addSink(sinkPin);
             sinkPin.setSource(sourcePin);
@@ -409,28 +410,30 @@ public class NetParser {
         } else {
             String sourceName = net;
 
-            AbstractPin sourcePin = this.sourcePins.get(sourceName);
-            AbstractBlock parent = sourcePin.getOwner().getParent();
+            Stack<AbstractPin> sourcePins = new Stack<>();
+            sourcePins.add(this.sourcePins.get(sourceName));
 
+            AbstractPin globalSourcePin = null;
+            while(true) {
+                AbstractPin sourcePin = sourcePins.pop();
+                AbstractBlock parent = sourcePin.getOwner().getParent();
 
-            while(parent != null) {
-                int numPins = sourcePin.getNumSinks();
-                AbstractPin nextSourcePin = null;
-
-                for(int i = 0; i < numPins; i++) {
-                    AbstractPin pin = sourcePin.getSink(i);
-                    if(pin.getOwner() == parent) {
-                        nextSourcePin = pin;
-                        break;
-                    }
+                if(parent == null) {
+                    globalSourcePin = sourcePin;
+                    break;
                 }
 
-                sourcePin = nextSourcePin;
-                parent = sourcePin.getOwner().getParent();
+                int numSinks = sourcePin.getNumSinks();
+                for(int i = 0; i < numSinks; i++) {
+                    AbstractPin pin = sourcePin.getSink(i);
+                    if(pin.getOwner() == parent) {
+                        sourcePins.add(pin);
+                    }
+                }
             }
 
-            sourcePin.addSink(sinkPin);
-            sinkPin.setSource(sourcePin);
+            globalSourcePin.addSink(sinkPin);
+            sinkPin.setSource(globalSourcePin);
         }
     }
 }

@@ -3,19 +3,20 @@ package placers.random;
 import interfaces.Logger;
 import interfaces.Options;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import circuit.Circuit;
 import circuit.architecture.BlockType;
-import circuit.architecture.BlockCategory;
 import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
+import circuit.block.Macro;
+import circuit.exceptions.FullSiteException;
+import circuit.exceptions.PlacedBlockException;
 import circuit.exceptions.PlacementException;
 
 import placers.Placer;
@@ -23,26 +24,12 @@ import visual.PlacementVisualizer;
 
 public class RandomPlacer extends Placer {
 
-    private static final String
-        O_CATEGORIES = "categories";
-
+    @SuppressWarnings("unused")
     public static void initOptions(Options options) {
-        options.add(O_CATEGORIES, "comma-separated list of block categories that must be placed", "");
     }
-
-    private final Set<BlockCategory> categories = new HashSet<>();
 
     public RandomPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random ,logger, visualizer);
-
-        String categoriesString = this.options.getString(O_CATEGORIES);
-        Set<String> categoriesStrings = new HashSet<>(Arrays.asList(categoriesString.split(",")));
-
-        for(BlockCategory category : BlockCategory.values()) {
-            if(categoriesString.length() == 0 || categoriesStrings.contains(category.toString())) {
-                this.categories.add(category);
-            }
-        }
     }
 
     @Override
@@ -56,35 +43,125 @@ public class RandomPlacer extends Placer {
     }
 
     @Override
-    public void place() throws PlacementException {
-        List<BlockType> blockTypes = this.circuit.getGlobalBlockTypes();
-        for(BlockType blockType : blockTypes) {
+    protected void addStatTitles(List<String> titles) {
+        // Do nothing
+    }
 
-            if(this.categories.size() > 0 && !this.categories.contains(blockType.getCategory())) {
-                continue;
-            }
+    @Override
+    protected void doPlacement() throws PlacementException {
 
-            // Get all possible blocks and sites for this type
-            List<AbstractBlock> blocks = this.circuit.getBlocks(blockType);
-            List<AbstractSite> sites = this.circuit.getSites(blockType);
+        Map<BlockType, List<AbstractSite>> sites = new HashMap<>();
+        Map<BlockType, Integer> nextSiteIndexes = new HashMap<>();
 
-            // Permutate sites
-            Collections.shuffle(sites, this.random);
+        for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
+            List<AbstractSite> typeSites = this.circuit.getSites(blockType);
+            Collections.shuffle(typeSites, this.random);
 
-            // Assign each block to a site
-            int siteIndex = 0;
-            for(AbstractBlock abstractBlock : blocks) {
-                AbstractSite site = sites.get(siteIndex);
-                GlobalBlock block = (GlobalBlock) abstractBlock;
+            sites.put(blockType, typeSites);
+            nextSiteIndexes.put(blockType, 0);
+        }
 
-                block.setSite(site);
 
-                siteIndex++;
-            }
+        for(Macro macro : this.circuit.getMacros()) {
+            BlockType blockType = macro.getBlock(0).getType();
+            List<AbstractSite> typeSites = sites.get(blockType);
+            int nextSiteIndex = nextSiteIndexes.get(blockType);
+
+            nextSiteIndex += this.placeMacro(macro, blockType, typeSites, nextSiteIndex);
+            nextSiteIndexes.put(blockType, nextSiteIndex);
+        }
+
+        for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
+            List<AbstractBlock> typeBlocks = this.circuit.getBlocks(blockType);
+            List<AbstractSite> typeSites = sites.get(blockType);
+            int nextSiteIndex = nextSiteIndexes.get(blockType);
+
+            nextSiteIndex += this.placeBlocks(typeBlocks, typeSites, nextSiteIndex);
+            nextSiteIndexes.put(blockType, nextSiteIndex);
         }
 
         this.visualizer.addPlacement("Random placement");
     }
 
+    private int placeMacro(Macro macro, BlockType blockType, List<AbstractSite> sites, int siteIndex) throws PlacedBlockException, FullSiteException {
 
+        int blockSpace = macro.getBlockSpace();
+        int numBlocks = macro.getNumBlocks();
+        int numSites = sites.size();
+
+        while(true) {
+            AbstractSite firstSite = sites.get(siteIndex);
+            int column = firstSite.getColumn();
+            int firstRow = firstSite.getRow();
+            int lastRow = firstRow + numBlocks * blockSpace;
+
+
+            // Check if all the sites are legal and free
+            boolean free = true;
+            for(int row = firstRow; row <= lastRow; row += blockSpace) {
+                if(illegalSite(blockType, column, row)) {
+                    free = false;
+                    break;
+                }
+            }
+
+            // If this placement is possible: place all the blocks
+            // in the macro and return
+            if(free) {
+                for(int index = 0; index < numBlocks; index++) {
+                    int row = firstRow + blockSpace * index;
+                    AbstractSite site = this.circuit.getSite(column, row);
+                    macro.getBlock(index).setSite(site);
+                }
+
+                return 1;
+
+            // Else, swap this block with another block in the list,
+            // so that it can be used later on
+            } else {
+                int randomIndex = this.random.nextInt(numSites - siteIndex - 1) + siteIndex + 1;
+                AbstractSite tmp = sites.get(siteIndex);
+                sites.set(siteIndex, sites.get(randomIndex));
+                sites.set(randomIndex, tmp);
+            }
+        }
+    }
+
+    private boolean illegalSite(BlockType blockType, int column, int row) {
+        if(row >= this.circuit.getHeight()) {
+            return true;
+        }
+
+        AbstractSite site = this.circuit.getSite(column, row);
+        if(site == null || !site.getType().equals(blockType) || site.isFull()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private int placeBlocks(List<AbstractBlock> blocks, List<AbstractSite> sites, int nextSiteIndex) throws PlacedBlockException, FullSiteException {
+
+        int placedBlocks = 0;
+        int siteIndex = nextSiteIndex;
+        for(AbstractBlock abstractBlock : blocks) {
+            GlobalBlock block = (GlobalBlock) abstractBlock;
+
+            // Skip blocks in macro's: those have already been placed
+            if(!block.isInMacro()) {
+
+                // Find a site that is empy
+                AbstractSite site;
+                do {
+                    site = sites.get(siteIndex);
+                    siteIndex++;
+                } while(site.isFull());
+
+                placedBlocks += 1;
+                block.setSite(site);
+            }
+        }
+
+        return placedBlocks;
+    }
 }

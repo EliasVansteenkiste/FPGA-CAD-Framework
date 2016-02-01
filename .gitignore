@@ -4,9 +4,21 @@ data/
 lib/
 
 benchmarks/*
+benchmarks_titan
 !benchmarks/*.blif
 !benchmarks/*.json
 !benchmarks/*.xml
+
+tasks/*
+
+!tasks/example_java/
+tasks/example_java/*
+!tasks/example_java/config.json
+
+!tasks/example_vpr/
+tasks/example_vpr/*
+!tasks/example_vpr/config.json
+
 
 
 nbproject

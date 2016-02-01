@@ -14,14 +14,13 @@ import circuit.pin.AbstractPin;
 public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
     private String name;
-    private BlockType blockType;
+    protected BlockType blockType;
     private BlockCategory category;
     private int index;
     private boolean clocked;
 
-    private List<IntermediateBlock> children;
+    private List<LocalBlock> children;
     private List<AbstractPin> pins;
-
 
     public AbstractBlock(String name, BlockType blockType, int index) {
         this.name = new String(name);
@@ -32,7 +31,7 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         this.clocked = blockType.isClocked();
 
         int numChildren = blockType.getNumChildren();
-        this.children = new ArrayList<IntermediateBlock>(Collections.nCopies(numChildren, (IntermediateBlock) null));
+        this.children = new ArrayList<LocalBlock>(Collections.nCopies(numChildren, (LocalBlock) null));
 
 
         int numPins = blockType.getNumPins();
@@ -53,8 +52,10 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     }
 
 
+
     public abstract AbstractBlock getParent();
     protected abstract AbstractPin createPin(PortType portType, int index);
+
     public void compact() {
         for(AbstractPin pin : this.pins) {
             pin.compact();
@@ -76,10 +77,6 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         return this.index;
     }
 
-    public boolean isFixed() {
-        return false;
-    }
-
     public boolean isGlobal() {
         return this.getType().isGlobal();
     }
@@ -89,17 +86,17 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
 
 
 
-    public List<IntermediateBlock> getChildren() {
+    public List<LocalBlock> getChildren() {
         return this.children;
     }
-    public List<IntermediateBlock> getChildren(BlockType blockType) {
+    public List<LocalBlock> getChildren(BlockType blockType) {
         int[] childRange = this.blockType.getChildRange(blockType);
         return this.children.subList(childRange[0], childRange[1]);
     }
-    public IntermediateBlock getChild(BlockType blockType, int childIndex) {
+    public LocalBlock getChild(BlockType blockType, int childIndex) {
         return this.getChildren(blockType).get(childIndex);
     }
-    public void setChild(IntermediateBlock block, int childIndex) {
+    public void setChild(LocalBlock block, int childIndex) {
         int childStart = this.blockType.getChildRange(block.getType())[0];
         this.children.set(childStart + childIndex, block);
     }
@@ -119,6 +116,10 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
         int[] pinRange = this.blockType.getOutputPortRange();
         return pinRange[1] - pinRange[0];
     }
+    public int numClockPins() {
+        int[] pinRange = this.blockType.getClockPortRange();
+        return pinRange[1] - pinRange[0];
+    }
 
     public List<AbstractPin> getInputPins() {
         int[] pinRange = this.blockType.getInputPortRange();
@@ -126,6 +127,10 @@ public abstract class AbstractBlock implements Comparable<AbstractBlock> {
     }
     public List<AbstractPin> getOutputPins() {
         int[] pinRange = this.blockType.getOutputPortRange();
+        return this.getPins(pinRange);
+    }
+    public List<AbstractPin> getClockPins() {
+        int[] pinRange = this.blockType.getClockPortRange();
         return this.getPins(pinRange);
     }
 

@@ -1,6 +1,8 @@
 package circuit;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,9 +16,10 @@ import circuit.block.AbstractBlock;
 import circuit.block.AbstractSite;
 import circuit.block.GlobalBlock;
 import circuit.block.IOSite;
-import circuit.block.LeafBlock;
+import circuit.block.Macro;
 import circuit.block.Site;
-import circuit.block.TimingGraph;
+import circuit.pin.GlobalPin;
+import circuit.timing.TimingGraph;
 
 public class Circuit {
 
@@ -31,12 +34,12 @@ public class Circuit {
     private Map<BlockType, List<AbstractBlock>> blocks;
 
     private List<BlockType> globalBlockTypes;
-    private List<BlockType> leafBlockTypes;
     private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
-    private List<LeafBlock> leafBlockList = new ArrayList<LeafBlock>();
+    private List<Macro> macros = new ArrayList<Macro>();
 
     private List<BlockType> columns;
     private Map<BlockType, List<Integer>> columnsPerBlockType;
+    private List<List<List<Integer>>> nearbyColumns;
 
     private AbstractSite[][] sites;
 
@@ -51,11 +54,10 @@ public class Circuit {
     }
 
 
-    public void buildDataStructures() {
+    public void initializeData() {
         this.loadBlocks();
 
         this.timingGraph.build();
-
 
         for(List<AbstractBlock> blocksOfType : this.blocks.values()) {
             for(AbstractBlock block : blocksOfType) {
@@ -73,7 +75,6 @@ public class Circuit {
         }
 
         this.globalBlockTypes = BlockType.getGlobalBlockTypes();
-        this.leafBlockTypes = BlockType.getLeafBlockTypes();
 
         for(BlockType blockType : this.globalBlockTypes) {
             @SuppressWarnings("unchecked")
@@ -81,113 +82,231 @@ public class Circuit {
             this.globalBlockList.addAll(blocksOfType);
         }
 
-        for(BlockType blockType : this.leafBlockTypes) {
-            @SuppressWarnings("unchecked")
-            List<LeafBlock> blocksOfType = (List<LeafBlock>) (List<?>) this.blocks.get(blockType);
-            this.leafBlockList.addAll(blocksOfType);
+        this.loadMacros();
+
+        this.createColumns();
+        this.createSites();
+    }
+
+    private void loadMacros() {
+        for(BlockType blockType : this.globalBlockTypes) {
+
+            // Skip block types that don't have a carry chain
+            if(blockType.getCarryFromPort() == null) {
+                continue;
+            }
+
+            for(AbstractBlock abstractBlock : this.blocks.get(blockType)) {
+                GlobalBlock block = (GlobalBlock) abstractBlock;
+                GlobalPin carryIn = block.getCarryIn();
+                GlobalPin carryOut = block.getCarryOut();
+
+                if(carryIn.getSource() == null && carryOut.getNumSinks() > 0) {
+                    List<GlobalBlock> macroBlocks = new ArrayList<>();
+                    macroBlocks.add(block);
+
+                    while(carryOut.getNumSinks() != 0) {
+                        block = carryOut.getSink(0).getOwner();
+                        carryOut = block.getCarryOut();
+                        macroBlocks.add(block);
+                    }
+
+                    Macro macro = new Macro(macroBlocks);
+                    this.macros.add(macro);
+                }
+            }
         }
-
-        this.calculateSizeAndColumns(true);
-        this.createSites();
     }
 
 
-    public void setSize(int width, int height) {
-        this.width = width;
-        this.height = height;
-
-        this.calculateSizeAndColumns(false);
-        this.createSites();
-    }
-
-
-    private void calculateSizeAndColumns(boolean autoSize) {
+    private void createColumns() {
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
         BlockType clbType = BlockType.getBlockTypes(BlockCategory.CLB).get(0);
         List<BlockType> hardBlockTypes = BlockType.getBlockTypes(BlockCategory.HARDBLOCK);
 
+        // Create a list of all global block types except the IO block type,
+        // sorted by priority
+        List<BlockType> blockTypes = new ArrayList<BlockType>();
+        blockTypes.add(clbType);
+        blockTypes.addAll(hardBlockTypes);
 
-        this.columnsPerBlockType = new HashMap<BlockType, List<Integer>>();
-        this.columnsPerBlockType.put(ioType, new ArrayList<Integer>());
-        this.columnsPerBlockType.put(clbType, new ArrayList<Integer>());
-        for(BlockType blockType : hardBlockTypes) {
-            this.columnsPerBlockType.put(blockType, new ArrayList<Integer>());
+        Collections.sort(blockTypes, new Comparator<BlockType>() {
+            @Override
+            public int compare(BlockType b1, BlockType b2) {
+                return Integer.compare(b2.getPriority(), b1.getPriority());
+            }
+        });
+
+
+        this.calculateSize(ioType, blockTypes);
+
+        // Fill some extra data containers to quickly calculate
+        // often used data
+        this.cacheColumns(ioType, blockTypes);
+        this.cacheColumnsPerBlockType(blockTypes);
+        this.cacheNearbyColumns();
+    }
+
+
+    private void calculateSize(BlockType ioType, List<BlockType> blockTypes) {
+        /**
+         * Set the width and height, either fixed or automatically sized
+         */
+        if(this.architecture.isAutoSized()) {
+            this.autoSize(ioType, blockTypes);
+
+        } else {
+            this.width = this.architecture.getWidth();
+            this.height = this.architecture.getHeight();
         }
+    }
 
+    private void autoSize(BlockType ioType, List<BlockType> blockTypes) {
+        int[] numColumnsPerType = new int[blockTypes.size()];
 
-        int numClbColumns = 0;
-        int[] numHardBlockColumns = new int[hardBlockTypes.size()];
-        for(int i = 0; i < hardBlockTypes.size(); i++) {
-            numHardBlockColumns[i] = 0;
-        }
-
-
-        this.columns = new ArrayList<BlockType>();
-        this.columns.add(ioType);
+        boolean bigEnough = false;
+        double autoRatio = this.architecture.getAutoRatio();
         int size = 2;
+        this.width = size;
+        this.height = size;
+        int previousWidth;
 
-        boolean tooSmall = true;
-        while(tooSmall) {
-            for(int i = 0; i < hardBlockTypes.size(); i++) {
-                BlockType hardBlockType = hardBlockTypes.get(i);
-                int start = hardBlockType.getStart();
-                int repeat = hardBlockType.getRepeat();
+        while(!bigEnough) {
+            size += 1;
 
-                if((size - 1 - start) % repeat == 0) {
-                    this.columns.add(hardBlockType);
-                    numHardBlockColumns[i]++;
-                    break;
-                }
+            // Enlarge the architecture by at most 1 block in each
+            // dimension
+            // VPR does this really strange: I would expect that the if clause is
+            // inverted (if(autoRatio < 1)), maybe this is a bug?
+            previousWidth = this.width;
+            if(autoRatio >= 1) {
+                this.height = size;
+                this.width = (int) Math.round((this.height - 2) * autoRatio) + 2;
+
+            } else {
+                this.width = size;
+                this.height = (int) Math.round((this.width - 2) / autoRatio) + 2;
             }
 
-            if(this.columns.size() < size) {
-                this.columns.add(clbType);
-                numClbColumns++;
-            }
-
-            size++;
-
-            if(autoSize) {
-                tooSmall = false;
-
-                int clbCapacity = (int) ((size - 2) * numClbColumns * this.architecture.getFillGrade());
-                int ioCapacity = (size - 2) * 4 * this.architecture.getIoCapacity();
-                if(clbCapacity < this.blocks.get(clbType).size() || ioCapacity < this.blocks.get(ioType).size()) {
-                    tooSmall = true;
-                    continue;
-                }
-
-                for(int i = 0; i < hardBlockTypes.size(); i++) {
-                    BlockType hardBlockType = hardBlockTypes.get(i);
-
-                    if(!this.blocks.containsKey(hardBlockType)) {
-                        continue;
-                    }
-
-                    int heightPerBlock = hardBlockType.getHeight();
-                    int blocksPerColumn = (size - 2) / heightPerBlock;
-                    int capacity = numHardBlockColumns[i] * blocksPerColumn;
-
-                    if(capacity < this.blocks.get(hardBlockType).size()) {
-                        tooSmall = true;
+            // If columns have been added: check which block type those columns contain
+            for(int column = previousWidth - 1; column < this.width - 1; column++) {
+                for(int blockTypeIndex = 0; blockTypeIndex < blockTypes.size(); blockTypeIndex++) {
+                    BlockType blockType = blockTypes.get(blockTypeIndex);
+                    int repeat = blockType.getRepeat();
+                    int start = blockType.getStart();
+                    if(column % repeat == start || repeat == -1 && column == start) {
+                        numColumnsPerType[blockTypeIndex] += 1;
                         break;
                     }
                 }
+            }
 
-            } else {
-                tooSmall = (size != this.width);
+
+            // Check if the architecture is large enough
+            int ioCapacity = (this.width + this.height - 4) * 2 * this.architecture.getIoCapacity();
+            if(ioCapacity >= this.getBlocks(ioType).size()) {
+                bigEnough = true;
+
+                for(int blockTypeIndex = 0; blockTypeIndex < blockTypes.size(); blockTypeIndex++) {
+                    BlockType blockType = blockTypes.get(blockTypeIndex);
+
+                    int blocksPerColumn = (this.height - 2) / blockType.getHeight();
+                    int capacity = numColumnsPerType[blockTypeIndex] * blocksPerColumn;
+
+                    if(capacity < this.blocks.get(blockType).size()) {
+                        bigEnough = false;
+                        break;
+                    }
+                }
             }
         }
+    }
 
+    private void cacheColumns(BlockType ioType, List<BlockType> blockTypes) {
+        /**
+         * Make a list that contains the block type of each column
+         */
 
+        this.columns = new ArrayList<BlockType>(this.width);
         this.columns.add(ioType);
-        this.width = size;
-        this.height = size;
+        for(int column = 1; column < this.width - 1; column++) {
+            for(BlockType blockType : blockTypes) {
+                int repeat = blockType.getRepeat();
+                int start = blockType.getStart();
+                if(column % repeat == start || repeat == -1 && column == start) {
+                    this.columns.add(blockType);
+                    break;
+                }
+            }
+        }
+        this.columns.add(ioType);
+    }
 
-        for(int i = 0; i < this.columns.size(); i++) {
-            this.columnsPerBlockType.get(this.columns.get(i)).add(i);
+    private void cacheColumnsPerBlockType(List<BlockType> blockTypes) {
+        /**
+         *  For each block type: make a list of the columns that contain
+         *  blocks of that type
+         */
+
+        this.columnsPerBlockType = new HashMap<BlockType, List<Integer>>();
+        for(BlockType blockType : blockTypes) {
+            this.columnsPerBlockType.put(blockType, new ArrayList<Integer>());
+        }
+        for(int column = 1; column < this.width - 1; column++) {
+            this.columnsPerBlockType.get(this.columns.get(column)).add(column);
         }
     }
+
+    private void cacheNearbyColumns() {
+        /**
+         * Given a column index and a distance, we want to quickly
+         * find all the columns that are within [distance] of the
+         * current column and that have the same block type.
+         * nearbyColumns facilitates this.
+         */
+
+        this.nearbyColumns = new ArrayList<List<List<Integer>>>();
+        this.nearbyColumns.add(null);
+        int size = Math.max(this.width, this.height) - 2;
+
+        // Loop through all the columns
+        for(int column = 1; column < this.width - 1; column++) {
+            BlockType columnType = this.columns.get(column);
+
+            // previousNearbyColumns will contain all the column indexes
+            // that are within a certain increasing distance to this
+            // column, and that have the same block type.
+            List<Integer> previousNearbyColumns = new ArrayList<>();
+            previousNearbyColumns.add(column);
+
+            // For each distance, nearbyColumnsPerDistance[distance] will
+            // contain a list like previousNearbyColumns.
+            List<List<Integer>> nearbyColumnsPerDistance = new ArrayList<>();
+            nearbyColumnsPerDistance.add(previousNearbyColumns);
+
+            // Loop through all the possible distances
+            for(int distance = 1; distance < size; distance++) {
+                List<Integer> newNearbyColumns = new ArrayList<>(previousNearbyColumns);
+
+                // Add the column to the left and right, if they have the correct block type
+                int left = column - distance;
+                if(left >= 1 && this.columns.get(left).equals(columnType)) {
+                    newNearbyColumns.add(left);
+                }
+
+                int right = column + distance;
+                if(right <= this.width - 2 && this.columns.get(right).equals(columnType)) {
+                    newNearbyColumns.add(right);
+                }
+
+                nearbyColumnsPerDistance.add(newNearbyColumns);
+                previousNearbyColumns = newNearbyColumns;
+            }
+
+            this.nearbyColumns.add(nearbyColumnsPerDistance);
+        }
+    }
+
 
     private void createSites() {
         this.sites = new AbstractSite[this.width][this.height];
@@ -195,20 +314,22 @@ public class Circuit {
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
         int ioCapacity = this.architecture.getIoCapacity();
 
-        int size = this.width;
-        for(int i = 1; i < size - 1; i++) {
+        for(int i = 1; i < this.height - 1; i++) {
             this.sites[0][i] = new IOSite(0, i, ioType, ioCapacity);
-            this.sites[i][size-1] = new IOSite(i, size-1, ioType, ioCapacity);
-            this.sites[size-1][size-1-i] = new IOSite(size-1, size-1-i, ioType, ioCapacity);
-            this.sites[size-1-i][0] = new IOSite(size-1-i, 0, ioType, ioCapacity);
+            this.sites[this.width - 1][i] = new IOSite(this.width - 1, i, ioType, ioCapacity);
         }
 
-        for(int x = 1; x < this.columns.size() - 1; x++) {
-            BlockType blockType = this.columns.get(x);
+        for(int i = 1; i < this.width - 1; i++) {
+            this.sites[i][0] = new IOSite(i, 0, ioType, ioCapacity);
+            this.sites[i][this.height - 1] = new IOSite(i, this.height - 1, ioType, ioCapacity);
+        }
+
+        for(int column = 1; column < this.width - 1; column++) {
+            BlockType blockType = this.columns.get(column);
 
             int blockHeight = blockType.getHeight();
-            for(int y = 1; y < size - blockHeight; y += blockHeight) {
-                this.sites[x][y] = new Site(x, y, blockType);
+            for(int row = 1; row < this.height - blockHeight; row += blockHeight) {
+                this.sites[column][row] = new Site(column, row, blockType);
             }
         }
     }
@@ -224,7 +345,7 @@ public class Circuit {
     }
 
     public void recalculateTimingGraph() {
-        this.timingGraph.recalculateAllSlacksCriticalities(true);
+        this.timingGraph.calculateCriticalities(true);
     }
     public double calculateTimingCost() {
         return this.timingGraph.calculateTotalCost();
@@ -238,8 +359,9 @@ public class Circuit {
     public List<GlobalBlock> getGlobalBlocks() {
         return this.globalBlockList;
     }
-    public List<LeafBlock> getLeafBlocks() {
-        return this.leafBlockList;
+
+    public List<Macro> getMacros() {
+        return this.macros;
     }
 
 
@@ -260,8 +382,8 @@ public class Circuit {
     }
 
 
-    public BlockType getColumnType(int x) {
-        return this.columns.get(x);
+    public BlockType getColumnType(int column) {
+        return this.columns.get(column);
     }
 
     /**
@@ -269,18 +391,18 @@ public class Circuit {
      * return the site that overlaps coordinate (x, y) but possibly
      * doesn't start at that position.
      */
-    public AbstractSite getSite(int x, int y) {
-        return this.getSite(x, y, false);
+    public AbstractSite getSite(int column, int row) {
+        return this.getSite(column, row, false);
     }
-    public AbstractSite getSite(int x, int y, boolean allowNull) {
+    public AbstractSite getSite(int column, int row, boolean allowNull) {
         if(allowNull) {
-            return this.sites[x][y];
+            return this.sites[column][row];
 
         } else {
             AbstractSite site = null;
-            int topY = y;
+            int topY = row;
             while(site == null) {
-                site = this.sites[x][topY];
+                site = this.sites[column][topY];
                 topY--;
             }
 
@@ -320,16 +442,18 @@ public class Circuit {
         List<AbstractSite> sites;
 
         if(blockType.equals(ioType)) {
-            int size = this.width;
             int ioCapacity = this.architecture.getIoCapacity();
-            sites = new ArrayList<AbstractSite>((size - 1) * 4);
+            sites = new ArrayList<AbstractSite>((this.width + this.height - 2) * 2 * ioCapacity);
 
-            for(int i = 1; i < size - 1; i++) {
-                for(int n = 0; n < ioCapacity; n++) {
+            for(int n = 0; n < ioCapacity; n++) {
+                for(int i = 1; i < this.height - 1; i++) {
                     sites.add(this.sites[0][i]);
-                    sites.add(this.sites[i][size-1]);
-                    sites.add(this.sites[size-1][size-1-i]);
-                    sites.add(this.sites[size-1-i][0]);
+                    sites.add(this.sites[this.width - 1][i]);
+                }
+
+                for(int i = 1; i < this.width - 1; i++) {
+                    sites.add(this.sites[i][0]);
+                    sites.add(this.sites[i][this.height - 1]);
                 }
             }
 
@@ -348,33 +472,44 @@ public class Circuit {
         return sites;
     }
 
+    public List<Integer> getColumnsPerBlockType(BlockType blockType) {
+        return this.columnsPerBlockType.get(blockType);
+    }
+
 
     public GlobalBlock getRandomBlock(Random random) {
         int index = random.nextInt(this.globalBlockList.size());
         return this.globalBlockList.get(index);
     }
 
-    public AbstractSite getRandomSite(GlobalBlock block, int distance, Random random) {
+    public AbstractSite getRandomSite(
+            BlockType blockType,
+            int column,
+            int columnDistance,
+            int minRow,
+            int maxRow,
+            Random random) {
 
-        if(distance < block.getType().getHeight() && distance < block.getType().getRepeat()) {
+        int blockHeight = blockType.getHeight();
+        int blockRepeat = blockType.getRepeat();
+
+        // Get a random row
+        int minRowIndex = (int) Math.ceil((minRow - 1.0) / blockHeight);
+        int maxRowIndex = (maxRow - 1) / blockHeight;
+
+        if(maxRowIndex == minRowIndex && columnDistance < blockRepeat) {
             return null;
         }
 
-        int minX = Math.max(0, block.getX() - distance);
-        int maxX = Math.min(this.width - 1, block.getX() + distance);
-        int minY = Math.max(0, block.getY() - distance);
-        int maxY = Math.min(this.height - 1, block.getY() + distance);
+        // Get a random column
+        List<Integer> candidateColumns = this.nearbyColumns.get(column).get(columnDistance);
+        int randomColumn = candidateColumns.get(random.nextInt(candidateColumns.size()));
 
-        //TODO: this should be smarter: only consider sites of the same BlockType
-        while(true) {
-            int x = random.nextInt(maxX - minX + 1) + minX;
-            int y = random.nextInt(maxY - minY + 1) + minY;
+        // Get a random row
+        int randomRow = 1 + blockHeight * (minRowIndex + random.nextInt(maxRowIndex + 1 - minRowIndex));
 
-            AbstractSite randomSite = this.getSite(x, y, true);
-            if(randomSite == null || block.getType().equals(randomSite.getType())) {
-                return randomSite;
-            }
-        }
+        // Return the site found at the random row and column
+        return this.getSite(randomColumn, randomRow, false);
     }
 
 

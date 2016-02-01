@@ -18,6 +18,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+
 import circuit.Circuit;
 import circuit.block.GlobalBlock;
 
@@ -50,12 +52,12 @@ public class PlacementVisualizer {
             this.placements.add(new Placement(name, this.circuit));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, Integer> blockIndexes, int[] x, int[] y) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y) {
         if(this.enabled) {
             this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, Integer> blockIndexes, double[] x, double[] y) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y) {
         if(this.enabled) {
             this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y));
         }
