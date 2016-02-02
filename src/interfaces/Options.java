@@ -96,8 +96,12 @@ public class Options {
         if(option == null) {
             throw new OptionNotSetException(name);
         }
-        
+
         return option.getValue();
+    }
+
+    public boolean isSet(String name) {
+        return this.options.get(name).getValue() != null;
     }
 
     public Boolean getBoolean(String name) throws ClassCastException, OptionNotSetException {

@@ -2,6 +2,7 @@ package placers.analytical;
 
 import interfaces.Logger;
 import interfaces.Options;
+import interfaces.Options.Required;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,12 +30,13 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_START,
                 "starting anchor weight",
-                new Double(0.01));
+                new Double(0.0));
 
         options.add(
                 O_ANCHOR_WEIGHT_STEP,
-                "value that is added to the anchor weight in each iteration",
-                new Double(0.01));
+                "value that is added to the anchor weight in each iteration (default: 1/effort level)",
+                Double.class,
+                Required.FALSE);
 
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
@@ -112,7 +114,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         super(circuit, options, random, logger, visualizer);
 
         this.anchorWeightStart = this.options.getDouble(O_ANCHOR_WEIGHT_START);
-        this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
@@ -123,6 +124,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
         this.firstEffortMultiplier = this.options.getDouble(O_FIRST_EFFORT);
         this.lastEffortMultiplier = this.options.getDouble(O_LAST_EFFORT);
+
+        if(this.options.isSet(O_ANCHOR_WEIGHT_STEP)) {
+            this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
+        } else {
+            this.anchorWeightStep = 1.0 / this.effortLevel;
+        }
 
         this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
     }
