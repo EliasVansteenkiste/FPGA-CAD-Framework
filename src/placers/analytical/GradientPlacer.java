@@ -41,7 +41,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
-                new Double(0.9));
+                new Double(0.85));
 
 
         options.add(
@@ -63,7 +63,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_EFFORT_LEVEL,
                 "number of gradient steps to take in each outer iteration",
-                new Integer(40));
+                new Integer(15));
 
         options.add(
                 O_FIRST_EFFORT,
@@ -73,7 +73,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_LAST_EFFORT,
                 "multiplier for the effort level in the last outer iteration",
-                new Double(1));
+                new Double(0.07));
     }
 
 
