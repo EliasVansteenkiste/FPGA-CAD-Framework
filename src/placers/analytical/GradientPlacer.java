@@ -125,11 +125,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.firstEffortMultiplier = this.options.getDouble(O_FIRST_EFFORT);
         this.lastEffortMultiplier = this.options.getDouble(O_LAST_EFFORT);
 
-        if(this.options.isSet(O_ANCHOR_WEIGHT_STEP)) {
-            this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
-        } else {
-            this.anchorWeightStep = 1.0 / this.effortLevel;
+        if(!this.options.isSet(O_ANCHOR_WEIGHT_STEP)) {
+            this.options.set(O_ANCHOR_WEIGHT_STEP, new Double(1.0 / this.effortLevel));
         }
+        this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
 
         this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
     }
@@ -315,7 +314,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         List<String> stats = new ArrayList<>();
 
         stats.add(Integer.toString(iteration));
-        stats.add(String.format("%.2f", this.anchorWeight));
+        stats.add(String.format("%.3f", this.anchorWeight));
         stats.add(String.format("%.3g", this.utilization));
         stats.add(Integer.toString(this.iterationEffortLevel));
 

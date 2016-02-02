@@ -38,7 +38,7 @@ public class Options {
         }
     }
 
-    void set(String name, Object value) throws IllegalArgumentException, ClassCastException {
+    public void set(String name, Object value) throws IllegalArgumentException, ClassCastException {
         Option option = this.getOption(name);
         option.setValue(value);
     }

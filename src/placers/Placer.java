@@ -42,9 +42,6 @@ public abstract class Placer {
         this.logger = logger;
         this.visualizer = visualizer;
 
-        this.printOptions();
-
-
         this.addStatTitles(this.statTitles);
         this.numStats = this.statTitles.size();
     }
@@ -58,6 +55,8 @@ public abstract class Placer {
 
 
     public void place() throws PlacementException {
+        this.printOptions();
+
         if(this.numStats > 0) {
             this.printStatsHeader();
         }
