@@ -126,7 +126,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.lastEffortMultiplier = this.options.getDouble(O_LAST_EFFORT);
 
         if(!this.options.isSet(O_ANCHOR_WEIGHT_STEP)) {
-            this.options.set(O_ANCHOR_WEIGHT_STEP, new Double(1.0 / this.effortLevel));
+            this.options.set(O_ANCHOR_WEIGHT_STEP, new Double(0.7 / this.effortLevel));
         }
         this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
 
