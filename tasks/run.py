@@ -157,7 +157,7 @@ else:
     argument_values = arguments[1]
 
 for i in range(len(argument_values)):
-    if type(arguments[i]) is not list:
+    if type(argument_values[i]) is not list:
         argument_values[i] = [argument_values[i]]
 
 argument_sets = list(argument_sets(argument_names, argument_values))
