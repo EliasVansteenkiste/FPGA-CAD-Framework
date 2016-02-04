@@ -118,7 +118,7 @@ net_file = config['net_file']
 placer = config['placer']
 
 stats = config['stats']
-if type() is OrderedDict:
+if type(stats) is OrderedDict:
     stat_names = stats.keys()
     stat_regexes = stats.values()
 else:
