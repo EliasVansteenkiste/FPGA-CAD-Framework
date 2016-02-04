@@ -30,9 +30,11 @@ class HeapLegalizer extends Legalizer {
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
             double[] linearY,
+            int[] legalX,
+            int[] legalY,
             int[] heights) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, heights);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights);
 
 
         // Initialize the matrix to contain a linked list at each coordinate

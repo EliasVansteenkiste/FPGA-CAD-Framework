@@ -32,6 +32,8 @@ abstract class Legalizer {
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
             double[] linearY,
+            int[] legalX,
+            int[] legalY,
             int[] heights) {
 
         // Store easy stuff
@@ -63,10 +65,8 @@ abstract class Legalizer {
         this.legalX = new int[this.numBlocks];
         this.legalY = new int[this.numBlocks];
 
-        for(int i = 0; i < this.numIOBlocks; i++) {
-            this.legalX[i] = (int) this.linearX[i];
-            this.legalY[i] = (int) this.linearY[i];
-        }
+        System.arraycopy(legalX, 0, this.legalX, 0, this.numBlocks);
+        System.arraycopy(legalY, 0, this.legalY, 0, this.numBlocks);
     }
 
     Legalizer(Legalizer legalizer) {

@@ -148,6 +148,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.blockTypeIndexStarts,
                 this.linearX,
                 this.linearY,
+                this.legalX,
+                this.legalY,
                 this.heights);
 
         // There can be more WLD nets than this, if there
@@ -200,6 +202,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void solveLinear(int iteration) {
+
         if(iteration > 0) {
             this.anchorWeight += this.anchorWeightStep;
         }
@@ -214,7 +217,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
-            this.solveLinearIteration(iteration);
+            this.solveLinearIteration();
         }
     }
 
@@ -241,7 +244,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
-    protected void solveLinearIteration(int iteration) {
+    protected void solveLinearIteration() {
 
         this.startTimer(T_BUILD_LINEAR);
 
@@ -252,7 +255,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.processNets();
 
         // Add pseudo connections
-        if(iteration > 0) {
+        if(this.anchorWeight != 0.0) {
             // this.legalX and this.legalY store the solution with the lowest cost
             // For anchors, the last (possibly suboptimal) solution usually works better
             this.solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());

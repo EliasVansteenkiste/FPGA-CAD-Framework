@@ -15,9 +15,11 @@ public class ShiftingLegalizer extends Legalizer {
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
             double[] linearY,
+            int[] legalX,
+            int[] legalY,
             int[] heights) {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, heights);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights);
     }
 
     public ShiftingLegalizer(Legalizer legalizer) {

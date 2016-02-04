@@ -77,7 +77,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
     }
 
 
-    protected double Rlimd;
+    protected double rlim;
     protected int initialRlim, maxRlim;
     private double temperature;
 
@@ -122,7 +122,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         this.initialRlim = RlimOption;
 
         this.maxRlim = maxRlimOption;
-        this.Rlimd = Math.min(RlimOption, this.maxRlim);
+        this.rlim = Math.min(RlimOption, this.maxRlim);
     }
 
 
@@ -153,12 +153,12 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         this.addStatisticsTitlesSA(titles);
     }
 
-    private void printStatistics(Integer iteration, Double temperature, Double succesRate, Double gamma) {
+    private void printStatistics(Integer iteration, Double temperature, Double rlim, Double succesRate, Double gamma) {
         List<String> stats = new ArrayList<>();
 
         stats.add(iteration.toString());
         stats.add(String.format("%.4g", temperature));
-        stats.add(String.format("%.3g", this.Rlimd));
+        stats.add(String.format("%.3g", rlim));
         stats.add(String.format("%.3f", succesRate));
         stats.add(gamma.toString());
 
@@ -183,22 +183,23 @@ abstract class SimulatedAnnealingPlacer extends Placer {
                 double alpha = ((double) numSwaps) / this.movesPerTemperature;
 
                 double previousTemperature = this.temperature;
+                double previousRlim = this.rlim;
                 this.updateRlim(alpha);
                 double gamma = this.updateTemperature(alpha);
 
-                this.printStatistics(iteration, previousTemperature, alpha, gamma);
+                this.printStatistics(iteration, previousTemperature, previousRlim, alpha, gamma);
 
                 iteration++;
             }
 
-            this.Rlimd = 3;
+            this.rlim = 3;
         }
 
         // Finish with a greedy iteration
         this.temperature = 0;
         int numSwaps = this.doSwapIteration();
         double alpha = ((double) numSwaps) / this.movesPerTemperature;
-        this.printStatistics(iteration, this.temperature, alpha, 0.0);
+        this.printStatistics(iteration, this.temperature, this.rlim, alpha, 0.0);
 
 
         this.logger.println();
@@ -309,7 +310,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
             this.deltaCosts = new double[moves];
         }
 
-        int intRlim = (int) Math.round(this.Rlimd);
+        int intRlim = (int) Math.round(this.rlim);
 
         for (int i = 0; i < moves; i++) {
             Swap swap = this.findSwap(intRlim);
@@ -423,7 +424,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
             gamma = 0.5;
         } else if (alpha > 0.8) {
             gamma = 0.9;
-        } else if (alpha > 0.15  || this.Rlimd > 1) {
+        } else if (alpha > 0.15  || this.rlim > 1) {
             gamma = 0.95;
         } else {
             gamma = 0.8;
@@ -440,8 +441,8 @@ abstract class SimulatedAnnealingPlacer extends Placer {
     }
 
     protected final void updateRlim(double alpha) {
-        this.Rlimd *= (1 - 0.44 + alpha);
+        this.rlim *= (1 - 0.44 + alpha);
 
-        this.Rlimd = Math.max(Math.min(this.Rlimd, this.maxRlim), 1);
+        this.rlim = Math.max(Math.min(this.rlim, this.maxRlim), 1);
     }
 }

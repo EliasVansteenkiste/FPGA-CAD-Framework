@@ -9,7 +9,9 @@ class DimensionSolverGradient {
 
     private double[] directions, totalPositiveNetSize, totalNegativeNetSize;
     private int[] numPositiveNets, numNegativeNets;
-    private final double halfMaxConnectionLength, speedAveraging, stepSize;
+    private final double halfMaxConnectionLength, speedAveraging;
+
+    private final double stepSize;
 
     private final double[] speeds;
 
@@ -103,17 +105,9 @@ class DimensionSolverGradient {
                 continue;
             }
 
-            /*if(this.firstSolve) {
-                this.coordinates[i] += this.stepSize * (netGoal - currentCoordinate);
-
-            } else {
-                this.coordinates[i] += this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
-            }*/
-
             double newSpeed;
             if(this.legalIsSet) {
                 newSpeed = this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
-
             } else {
                 newSpeed = this.stepSize * (netGoal - currentCoordinate);
             }

@@ -37,7 +37,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double startUtilization;
 
     protected double[] linearX, linearY;
-    private int[] legalX, legalY;
+    protected int[] legalX, legalY;
     protected int[] heights;
 
     private boolean[] hasNets;
