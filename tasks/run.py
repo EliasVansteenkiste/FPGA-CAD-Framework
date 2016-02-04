@@ -72,10 +72,10 @@ def substitute(command, substitutions):
 
 
 def argument_sets(argument_names, argument_values):
-        for argument_value in itertools.product(*arguments.values()):
+        for argument_value_set in itertools.product(*argument_values):
             argument_set = []
             for i in range(len(argument_names)):
-                argument_set += [str(argument_names[i]), str(argument_value[i])]
+                argument_set += [str(argument_names[i]), str(argument_value_set[i])]
 
             yield argument_set
 
