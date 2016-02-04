@@ -71,11 +71,8 @@ def substitute(command, substitutions):
     return new_command
 
 
-def argument_sets(arguments):
-        argument_names = arguments.keys()
-        argument_values = itertools.product(*arguments.values())
-
-        for argument_value in argument_values:
+def argument_sets(argument_names, argument_values):
+        for argument_value in itertools.product(*arguments.values()):
             argument_set = []
             for i in range(len(argument_names)):
                 argument_set += [str(argument_names[i]), str(argument_value[i])]
@@ -118,12 +115,8 @@ net_file = config['net_file']
 placer = config['placer']
 
 stats = config['stats']
-if type(stats) is OrderedDict:
-    stat_names = stats.keys()
-    stat_regexes = stats.values()
-else:
-    stat_names = stats[0]
-    stat_regexes = stats[1]
+stat_names = stats.keys()
+stat_regexes = stats.values()
 
 # Build the base command
 base_command = base_commands[placer]
@@ -153,16 +146,21 @@ circuits = config['circuits']
 if not isinstance(circuits, list):
     circuits = str(circuits).split(' ')
 
-# Get the arguments
-arguments = config['arguments']
-for argument in arguments:
-    if not isinstance(arguments[argument], list):
-        arguments[argument] = [arguments[argument]]
-
 
 # Loop over the different combinations of arguments
-argument_names = arguments.keys()
-argument_sets = list(argument_sets(arguments))
+arguments = config['arguments']
+if type(arguments) is OrderedDict:
+    argument_names = arguments.keys()
+    argument_values = arguments.values()
+else:
+    argument_names = arguments[0]
+    argument_values = arguments[1]
+
+for i in range(len(argument_values)):
+    if type(arguments[i]) is not list:
+        argument_values[i] = [argument_values[i]]
+
+argument_sets = list(argument_sets(argument_names, argument_values))
 num_iterations = len(argument_sets)
 
 summary_file = open(os.path.join(folder, 'summary.csv'), 'w')
