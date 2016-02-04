@@ -117,8 +117,13 @@ net_file = config['net_file']
 
 placer = config['placer']
 
-stat_names = config['stats'].keys()
-stat_regexes = config['stats'].values()
+stats = config['stats']
+if type() is OrderedDict:
+    stat_names = stats.keys()
+    stat_regexes = stats.values()
+else:
+    stat_names = stats[0]
+    stat_regexes = stats[1]
 
 # Build the base command
 base_command = base_commands[placer]
