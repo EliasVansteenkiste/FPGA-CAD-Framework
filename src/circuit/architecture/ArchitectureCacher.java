@@ -16,23 +16,22 @@ import circuit.exceptions.InvalidPlatformException;
 public class ArchitectureCacher {
 
     private String circuitName;
-    private File netFile, architectureFile;
 
-    private long netTime, architectureTime;
-    private String netPath, architecturePath;
+    private long netTime, architectureTime, lookupDumpTime;
+    private String netPath, architecturePath, lookupDumpPath;
     private boolean useVprTiming;
 
     private final File cacheFolder = new File("data");
 
-    public ArchitectureCacher(String circuitName, File netFile, File architectureFile, boolean useVprTiming) {
-        this.netFile = netFile;
-        this.architectureFile = architectureFile;
+    public ArchitectureCacher(String circuitName, File netFile, File architectureFile, boolean useVprTiming, File lookupDumpFile) {
 
         this.netPath = netFile.getAbsolutePath();
         this.architecturePath = architectureFile.getAbsolutePath();
+        this.lookupDumpPath = lookupDumpFile == null ? "" : lookupDumpFile.getAbsolutePath();
 
-        this.netTime = this.getFileTime(this.netFile);
-        this.architectureTime = this.getFileTime(this.architectureFile);
+        this.netTime = this.getFileTime(netFile);
+        this.architectureTime = this.getFileTime(architectureFile);
+        this.lookupDumpTime = this.getFileTime(lookupDumpFile);
 
         this.useVprTiming = useVprTiming;
 
@@ -58,8 +57,11 @@ public class ArchitectureCacher {
 
         out.writeObject(this.netPath);
         out.writeObject(this.architecturePath);
+        out.writeObject(this.lookupDumpPath);
+
         out.writeObject(this.netTime);
         out.writeObject(this.architectureTime);
+        out.writeObject(this.lookupDumpTime);
         out.writeObject(this.useVprTiming);
 
         out.writeObject(architecture);
@@ -107,16 +109,18 @@ public class ArchitectureCacher {
     }
 
     private boolean upToDate(ObjectInputStream in) {
-        long cacheNetTime, cacheArchitectureTime;
-        String cacheNetPath, cacheArchitecturePath;
+        long cacheNetTime, cacheArchitectureTime, cacheLookupDumpTime;
+        String cacheNetPath, cacheArchitecturePath, cacheLookupDumpPath;
         boolean cacheUseVprTiming;
 
         try {
             cacheNetPath = (String) in.readObject();
             cacheArchitecturePath = (String) in.readObject();
+            cacheLookupDumpPath = (String) in.readObject();
 
             cacheNetTime = (Long) in.readObject();
             cacheArchitectureTime = (Long) in.readObject();
+            cacheLookupDumpTime = (Long) in.readObject();
 
             cacheUseVprTiming = (Boolean) in.readObject();
 
@@ -127,13 +131,19 @@ public class ArchitectureCacher {
         return (
                 this.netPath.equals(cacheNetPath)
                 && this.architecturePath.equals(cacheArchitecturePath)
+                && this.lookupDumpPath.equals(cacheLookupDumpPath)
                 && this.netTime == cacheNetTime
                 && this.architectureTime == cacheArchitectureTime
+                && this.lookupDumpTime == cacheLookupDumpTime
                 && this.useVprTiming == cacheUseVprTiming);
     }
 
 
     private long getFileTime(File file) {
+        if(file == null) {
+            return -1;
+        }
+
         try {
             return this.getFileTimeThrowing(file);
 

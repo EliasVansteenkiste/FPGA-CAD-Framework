@@ -43,6 +43,7 @@ public class Main {
 
     private boolean useVprTiming;
     private String vprCommand;
+    private File lookupDumpFile;
 
     private boolean visual;
 
@@ -64,6 +65,7 @@ public class Main {
         O_OUTPUT_PLACE_FILE = "output place file",
         O_VPR_TIMING = "vpr timing",
         O_VPR_COMMAND = "vpr command",
+        O_LOOKUP_DUMP_FILE = "lookup dump file",
         O_VISUAL = "visual",
         O_RANDOM_SEED = "random seed";
 
@@ -78,6 +80,7 @@ public class Main {
 
         options.add(O_VPR_TIMING, "Use vpr timing information", Boolean.TRUE);
         options.add(O_VPR_COMMAND, "Path to vpr executable", "./vpr");
+        options.add(O_LOOKUP_DUMP_FILE, "Path to a vpr lookup_dump.echo file", File.class, Required.FALSE);
 
         options.add(O_VISUAL, "show the placed circuit in a GUI", Boolean.FALSE);
         options.add(O_RANDOM_SEED, "seed for randomization", new Long(1));
@@ -115,6 +118,8 @@ public class Main {
 
         this.useVprTiming = options.getBoolean(O_VPR_TIMING);
         this.vprCommand = options.getString(O_VPR_COMMAND);
+        this.lookupDumpFile = options.getFile(O_LOOKUP_DUMP_FILE);
+
         this.visual = options.getBoolean(O_VISUAL);
 
 
@@ -213,7 +218,8 @@ public class Main {
                 this.circuitName,
                 this.netFile,
                 this.architectureFile,
-                this.useVprTiming);
+                this.useVprTiming,
+                this.lookupDumpFile);
         Architecture architecture = architectureCacher.loadIfCached();
         boolean isCached = (architecture != null);
 
@@ -223,15 +229,26 @@ public class Main {
             architecture = new Architecture(
                     this.circuitName,
                     this.architectureFile,
-                    this.vprCommand,
                     this.blifFile,
-                    this.netFile,
-                    this.useVprTiming);
+                    this.netFile);
 
             try {
                 architecture.parse();
             } catch(IOException | InvalidFileFormatException | InterruptedException | ParseException | ParserConfigurationException | SAXException error) {
                 this.logger.raise("Failed to parse architecture file or delay tables", error);
+            }
+
+            if(this.useVprTiming) {
+                try {
+                    if(this.lookupDumpFile == null) {
+                        architecture.getVprTiming(this.vprCommand);
+                    } else {
+                        architecture.getVprTiming(this.lookupDumpFile);
+                    }
+
+                } catch(IOException | InterruptedException | InvalidFileFormatException error) {
+                    this.logger.raise("Failed to get vpr delays", error);
+                }
             }
 
             this.stopAndPrintTimer();

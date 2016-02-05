@@ -57,7 +57,6 @@ public class Architecture implements Serializable {
 
     private File architectureFile, blifFile, netFile;
     private String circuitName;
-    private transient String vprCommand;
 
     private transient Map<String, Boolean> modelIsClocked = new HashMap<>();
     private transient List<Pair<PortType, Double>> setupTimes = new ArrayList<>();
@@ -67,26 +66,20 @@ public class Architecture implements Serializable {
     private DelayTables delayTables;
 
     private int ioCapacity;
-    private boolean getVprTiming;
 
 
     public Architecture(
             String circuitName,
             File architectureFile,
-            String vprCommand,
             File blifFile,
-            File netFile,
-            boolean getVprTiming) {
+            File netFile) {
 
         this.architectureFile = architectureFile;
-
-        this.vprCommand = vprCommand;
 
         this.blifFile = blifFile;
         this.netFile = netFile;
 
         this.circuitName = circuitName;
-        this.getVprTiming = getVprTiming;
     }
 
     public void parse() throws ParseException, IOException, InvalidFileFormatException, InterruptedException, ParserConfigurationException, SAXException {
@@ -115,19 +108,12 @@ public class Architecture implements Serializable {
         // All delays have been cached in this.delays, process them now
         this.processDelays();
 
-        // Build the delay matrixes
-        if(this.getVprTiming) {
-            this.buildDelayMatrixes();
-
-        } else {
-            // Set all delays to 0
-            // This is only useful while debugging,
-            // because the call to vpr takes a really
-            // long time for large circuits
-            this.buildDummyDelayMatrixes();
-        }
+        // Set all delays to 0
+        // This is only useful while debugging,
+        // because the call to vpr takes a really
+        // long time for large circuits
+        this.delayTables = new DelayTables();
     }
-
 
 
     private void processLayout(Element root) {
@@ -888,19 +874,16 @@ public class Architecture implements Serializable {
 
 
 
-    private void buildDummyDelayMatrixes() {
-        this.delayTables = new DelayTables();
-    }
 
-    private void buildDelayMatrixes() throws IOException, InvalidFileFormatException, InterruptedException {
+
+    public void getVprTiming(String vprCommand) throws IOException, InterruptedException, InvalidFileFormatException {
         // For this method to work, the macro PRINT_ARRAYS should be defined
         // in vpr: place/timing_place_lookup.c
 
-
         // Run vpr
         String command = String.format(
-                "%s %s %s --blif_file %s --net_file %s --place_file vpr_tmp --place --init_t 1 --exit_t 1",
-                this.vprCommand, this.architectureFile, this.circuitName, this.blifFile, this.netFile);
+                "%s %s %s --blif_file %s --net_file %s --place_file vpr_tmp.place --place --init_t 1 --exit_t 1",
+                vprCommand, this.architectureFile, this.circuitName, this.blifFile, this.netFile);
 
         Process process = null;
         process = Runtime.getRuntime().exec(command);
@@ -912,15 +895,25 @@ public class Architecture implements Serializable {
         process.waitFor();
 
 
-        // Parse the delay tables
-        File delaysFile = new File("lookup_dump.echo");
-        this.delayTables = new DelayTables(delaysFile);
-        this.delayTables.parse();
+        // Build delay tables
+        String lookupDumpPath = "lookup_dump.echo";
+        File lookupDumpFile = new File(lookupDumpPath);
+        this.buildDelayTables(lookupDumpFile);
 
         // Clean up
-        this.deleteFile("vpr_tmp");
+        this.deleteFile("vpr_tmp.place");
         this.deleteFile("vpr_stdout.log");
-        this.deleteFile("lookup_dump.echo");
+        this.deleteFile(lookupDumpPath);
+    }
+
+    public void getVprTiming(File lookupDumpFile) throws IOException, InvalidFileFormatException {
+        this.buildDelayTables(lookupDumpFile);
+    }
+
+    private void buildDelayTables(File lookupDumpFile) throws IOException, InvalidFileFormatException {
+        // Parse the delay tables
+        this.delayTables = new DelayTables(lookupDumpFile);
+        this.delayTables.parse();
     }
 
     private void deleteFile(String path) throws IOException {
