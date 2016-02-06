@@ -174,6 +174,8 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
         int iteration = 0;
 
+        this.logger.printf("Swaps per iteration: %d\n\n", this.movesPerTemperature);
+
         if(!this.greedy) {
             this.calculateInitialTemperature();
 
