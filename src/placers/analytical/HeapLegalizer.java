@@ -20,8 +20,8 @@ import circuit.block.AbstractSite;
 class HeapLegalizer extends Legalizer {
 
     // These are temporary data structures
-    private GrowingArea[][] areaPointers;
-    private List<List<List<LegalizerBlock>>> blockMatrix;
+    protected GrowingArea[][] areaPointers;
+    protected List<List<List<LegalizerBlock>>> blockMatrix;
 
 
     HeapLegalizer(
@@ -126,7 +126,7 @@ class HeapLegalizer extends Legalizer {
     }
 
 
-    private List<GrowingArea> growAreas() {
+    protected List<GrowingArea> growAreas() {
         List<Integer> columns = new ArrayList<Integer>();
 
         // This dummy element is added to simplify the test inside the while loop
@@ -503,15 +503,16 @@ class HeapLegalizer extends Legalizer {
         if(macroHeight % 2 == 0) {
             linearY -= 0.5;
         }
-        int row = (int) Math.round(linearY);
+        int row = (((int) Math.round(linearY) - 1) / this.blockHeight) * this.blockHeight + 1;
 
         // Make sure the row fits in the coordinates
-        if(row - (macroHeight - 1) / 2 < area.bottom) {
-            row = area.bottom + (macroHeight - 1) / 2;
-        } else if(row + macroHeight / 2 > area.top) {
-            row = area.top - macroHeight / 2;
+        if(row - ((macroHeight - 1) / 2) * this.blockHeight < area.bottom) {
+            row = area.bottom + ((macroHeight - 1) / 2) * this.blockHeight;
+        } else if(row + (macroHeight / 2) * this.blockHeight > area.top) {
+            row = area.top - (macroHeight / 2) * this.blockHeight;
         }
         this.legalY[blockIndex] = row;
+
 
         // Find the closest column
         int column = (int) Math.round(linearX);
@@ -736,7 +737,7 @@ class HeapLegalizer extends Legalizer {
         }
     }
 
-    private class GrowingArea extends Area {
+    protected class GrowingArea extends Area {
 
         private boolean absorbed = false;
 
