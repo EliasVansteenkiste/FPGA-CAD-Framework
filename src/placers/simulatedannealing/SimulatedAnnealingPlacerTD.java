@@ -74,11 +74,6 @@ public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
     }
 
     @Override
-    public void initializeData() {
-        super.initializeData();
-    }
-
-    @Override
     public String getName() {
         return "TD simulated annealing placer";
     }
@@ -118,6 +113,7 @@ public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
 
     @Override
     protected void addStats(List<String> stats) {
+        this.getCost();
         stats.add(String.format("%.5g", this.cachedBBCost));
         stats.add(String.format("%.4g", this.cachedTDCost));
         stats.add(String.format("%.5g", this.timingGraph.getMaxDelay()));
