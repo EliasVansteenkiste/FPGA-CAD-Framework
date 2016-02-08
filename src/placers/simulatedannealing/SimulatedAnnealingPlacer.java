@@ -14,6 +14,7 @@ import circuit.architecture.BlockType;
 import circuit.block.GlobalBlock;
 import circuit.block.Site;
 import circuit.exceptions.PlacementException;
+import circuit.pin.AbstractPin;
 
 
 import placers.Placer;
@@ -89,11 +90,11 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
     protected boolean circuitChanged = true;
     private double[] deltaCosts;
+    private int numNets;
 
 
     protected SimulatedAnnealingPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
-
 
         this.greedy = this.options.getBoolean(O_GREEDY);
         this.detailed = this.options.getBoolean(O_DETAILED);
@@ -103,6 +104,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         double effortLevel = this.options.getDouble(O_EFFORT_LEVEL);
         double effortExponent = this.options.getDouble(O_EFFORT_EXPONENT);
         this.movesPerTemperature = (int) (effortLevel * Math.pow(this.circuit.getNumGlobalBlocks(), effortExponent));
+        this.logger.printf("Swaps per iteration: %d\n\n", this.movesPerTemperature);
 
         this.temperatureMultiplier = this.options.getDouble(O_TEMPERATURE);
 
@@ -123,6 +125,17 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
         this.maxRlim = maxRlimOption;
         this.rlim = Math.min(RlimOption, this.maxRlim);
+
+
+        // Count the number of nets
+        this.numNets = 0;
+        for(GlobalBlock block : circuit.getGlobalBlocks()) {
+            for(AbstractPin pin : block.getOutputPins()) {
+                if(pin.getNumSinks() > 0) {
+                    this.numNets++;
+                }
+            }
+        }
     }
 
 
@@ -174,13 +187,11 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
         int iteration = 0;
 
-        this.logger.printf("Swaps per iteration: %d\n\n", this.movesPerTemperature);
-
         if(!this.greedy) {
             this.calculateInitialTemperature();
 
             // Do placement
-            while(this.temperature > 0.005 * this.getCost() / this.circuit.getNumGlobalBlocks()) {
+            while(this.temperature > 0.005 * this.getCost() / this.numNets) {
                 int numSwaps = this.doSwapIteration();
                 double alpha = ((double) numSwaps) / this.movesPerTemperature;
 
