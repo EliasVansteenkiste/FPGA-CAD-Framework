@@ -16,7 +16,6 @@ public class GradientPlacerTD extends GradientPlacer {
         GradientPlacer.initOptions(options);
 
         options.add("criticality exponent", "criticality exponent of connections", new Double(3));
-        options.add("criticality threshold", "minimal criticality for adding extra constraints", new Double(0.5));
         options.add("recalculate criticalities", "frequency of criticalities recalculation; 0 = never, 1 = every iteration", new Double(0.5));
         options.add("recalculate priority", "controls the spreading of recalculations; 1 = evenly spread, higher = less recalculations near the end", new Double(1));
     }
