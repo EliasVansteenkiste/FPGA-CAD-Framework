@@ -63,7 +63,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         options.add(
                 O_STOP_RATIO,
                 "ratio T / cost per net below which to stop",
-                new Double(0.05));
+                new Double(0.005));
 
 
         options.add(
