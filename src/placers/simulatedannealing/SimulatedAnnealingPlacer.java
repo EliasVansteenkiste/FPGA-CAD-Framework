@@ -28,6 +28,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         O_EFFORT_LEVEL = "effort level",
         O_EFFORT_EXPONENT = "effort exponent",
         O_TEMPERATURE = "temperature",
+        O_STOP_RATIO = "stop ratio",
         O_RLIM = "rlim",
         O_MAX_RLIM = "max rlim",
         O_FIX_IO_PINS = "fix io pins";
@@ -59,6 +60,11 @@ abstract class SimulatedAnnealingPlacer extends Placer {
                 "multiplier for the starting temperature",
                 new Double(1));
 
+        options.add(
+                O_STOP_RATIO,
+                "ratio T / cost per net below which to stop",
+                new Double(0.05));
+
 
         options.add(
                 O_RLIM,
@@ -80,12 +86,12 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
     protected double rlim;
     protected int initialRlim, maxRlim;
-    private double temperature;
+    private double temperature, stopRatio;
 
     private final double temperatureMultiplier;
 
     private final boolean fixPins;
-    private final boolean greedy, detailed;
+    protected boolean greedy, detailed;
     protected final int movesPerTemperature;
 
     protected boolean circuitChanged = true;
@@ -107,6 +113,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         this.logger.printf("Swaps per iteration: %d\n\n", this.movesPerTemperature);
 
         this.temperatureMultiplier = this.options.getDouble(O_TEMPERATURE);
+        this.stopRatio = this.options.getDouble(O_STOP_RATIO);
 
         // Set Rlim options
         int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight()) - 2;
@@ -191,7 +198,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
             this.calculateInitialTemperature();
 
             // Do placement
-            while(this.temperature > 0.005 * this.getCost() / this.numNets) {
+            while(this.temperature > this.stopRatio * this.getCost() / this.numNets) {
                 int numSwaps = this.doSwapIteration();
                 double alpha = ((double) numSwaps) / this.movesPerTemperature;
 
@@ -209,7 +216,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         }
 
         // Finish with a greedy iteration
-        this.temperature = 0;
+        this.greedy = true;
         int numSwaps = this.doSwapIteration();
         double alpha = ((double) numSwaps) / this.movesPerTemperature;
         this.printStatistics(iteration, this.temperature, this.rlim, alpha, 0.0);

@@ -42,6 +42,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                              affectedNodes = new ArrayList<>();
 
     private List<TimingEdge> timingEdges  = new ArrayList<>();
+    private List<List<TimingEdge>> timingNets = new ArrayList<>();
 
     private List<Triple<Integer, Integer, List<TimingNode>>> traversals  = new ArrayList<>();
 
@@ -200,7 +201,10 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
     }
 
     private void traverseFromSource(TimingNode pathSourceNode, double clockDelay) {
+        GlobalBlock pathSourceBlock = pathSourceNode.getGlobalBlock();
         LeafPin pathSourcePin = pathSourceNode.getPin();
+
+        Map<GlobalBlock, List<TimingEdge>> sourceTimingNets = new HashMap<>();
 
         Stack<TraversePair> todo = new Stack<>();
         todo.push(new TraversePair(pathSourcePin, clockDelay));
@@ -222,6 +226,14 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                 if(pathSinkNode != null) {
                     TimingEdge edge = pathSourceNode.addSink(pathSinkNode, delay);
                     this.timingEdges.add(edge);
+
+                    GlobalBlock pathSinkBlock = pathSinkNode.getGlobalBlock();
+                    if(pathSinkBlock != pathSourceBlock) {
+                        if(!sourceTimingNets.containsKey(pathSinkBlock)) {
+                            sourceTimingNets.put(pathSinkBlock, new ArrayList<TimingEdge>());
+                        }
+                        sourceTimingNets.get(pathSinkBlock).add(edge);
+                    }
                 }
 
             } else {
@@ -246,6 +258,10 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                     }
                 }
             }
+        }
+
+        for(List<TimingEdge> timingNet : sourceTimingNets.values()) {
+            this.timingNets.add(timingNet);
         }
     }
 
@@ -553,9 +569,18 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
     public double calculateTotalCost() {
         double totalCost = 0;
 
-        for(TimingEdge edge : this.timingEdges) {
-            totalCost += edge.getCost();
+        for(List<TimingEdge> net : this.timingNets) {
+            double netCost = 0;
+            for(TimingEdge edge : net) {
+                double cost = edge.getCost();
+                if(cost > netCost) {
+                    netCost = cost;
+                }
+            }
+
+            totalCost += netCost;
         }
+
 
         return totalCost;
     }

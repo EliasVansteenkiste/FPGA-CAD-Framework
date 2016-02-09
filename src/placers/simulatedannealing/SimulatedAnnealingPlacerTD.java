@@ -86,9 +86,15 @@ public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
 
     @Override
     protected void initializeSwapIteration() {
-        double criticalityExponent = this.criticalityExponentStart +
-                (1 - (this.rlim - 1) / (this.initialRlim - 1))
-                * (this.criticalityExponentEnd - this.criticalityExponentStart);
+        double criticalityExponent;
+        if(this.greedy) {
+            criticalityExponent = this.criticalityExponentEnd;
+
+        } else {
+            criticalityExponent = this.criticalityExponentStart +
+                    (1 - (this.rlim - 1) / (this.initialRlim - 1))
+                    * (this.criticalityExponentEnd - this.criticalityExponentStart);
+        }
 
         this.timingGraph.setCriticalityExponent(criticalityExponent);
         this.timingGraph.calculateCriticalities(true);

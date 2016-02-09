@@ -2,9 +2,9 @@ package circuit.timing;
 
 public class TimingEdge {
 
-    private double fixedDelay, totalDelay;
+    private double fixedDelay, wireDelay;
     private double slack, criticality;
-    private double stagedTotalDelay;
+    private double stagedWireDelay;
 
 
     TimingEdge(double fixedDelay) {
@@ -20,14 +20,14 @@ public class TimingEdge {
     }
 
     public double getTotalDelay() {
-        return this.totalDelay;
+        return this.fixedDelay + this.wireDelay;
     }
     public void setWireDelay(double wireDelay) {
-        this.totalDelay = this.fixedDelay + wireDelay;
+        this.wireDelay = wireDelay;
     }
 
     public double getCost() {
-        return this.criticality * this.totalDelay;
+        return this.criticality * this.wireDelay;
     }
 
 
@@ -54,28 +54,25 @@ public class TimingEdge {
      * Functions that facilitate simulated annealing *
      *************************************************/
 
-    double getStagedTotalDelay() {
-        return this.stagedTotalDelay;
-    }
     void setStagedWireDelay(double stagedWireDelay) {
-        this.stagedTotalDelay = this.fixedDelay + stagedWireDelay;
+        this.stagedWireDelay = stagedWireDelay;
     }
     void resetStagedDelay() {
-        this.stagedTotalDelay = this.totalDelay;
+        this.stagedWireDelay = 0;
     }
 
     void pushThrough() {
-        this.totalDelay = this.stagedTotalDelay;
+        this.wireDelay = this.stagedWireDelay;
     }
 
     double getDeltaCost() {
-        return this.criticality * (this.stagedTotalDelay - this.totalDelay);
+        return this.criticality * (this.stagedWireDelay - this.wireDelay);
     }
 
 
 
     @Override
     public String toString() {
-        return String.format("%e", this.totalDelay);
+        return String.format("%e+%e", this.fixedDelay, this.wireDelay);
     }
 }
