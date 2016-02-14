@@ -27,7 +27,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_STOP_RATIO,
                 "ratio between linear and legal cost to stop placement",
-                new Double(0.8));
+                new Double(0.9));
 
         options.add(
                 O_ANCHOR_WEIGHT,
