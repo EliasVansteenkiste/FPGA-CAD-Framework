@@ -12,8 +12,8 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
     private static final String
         O_CRITICALITY_EXPONENT = "criticality exponent",
-        O_CRITICALITY_THRESHOLD = "criticality_threshold",
-        O_TRADE_OFF = "trade_off";
+        O_CRITICALITY_THRESHOLD = "criticality threshold",
+        O_TRADE_OFF = "trade off";
 
     public static void initOptions(Options options) {
         AnalyticalPlacer.initOptions(options);
