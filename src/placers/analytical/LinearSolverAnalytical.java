@@ -11,7 +11,7 @@ class LinearSolverAnalytical {
     private int numIOBlocks;
 
     private DimensionSolverAnalytical solverX, solverY;
-    private double criticalityThreshold;
+    private double criticalityThreshold, tradeOff;
 
     LinearSolverAnalytical(
             double[] coordinatesX,
@@ -19,6 +19,7 @@ class LinearSolverAnalytical {
             int numIOBlocks,
             double pseudoWeight,
             double criticalityThreshold,
+            double tradeOff,
             double epsilon) {
 
         this.coordinatesX = coordinatesX;
@@ -27,6 +28,7 @@ class LinearSolverAnalytical {
         this.numIOBlocks = numIOBlocks;
 
         this.criticalityThreshold = criticalityThreshold;
+        this.tradeOff = tradeOff;
 
         this.solverX = new DimensionSolverAnalytical(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
         this.solverY = new DimensionSolverAnalytical(coordinatesY, numIOBlocks, pseudoWeight, epsilon);
@@ -167,7 +169,7 @@ class LinearSolverAnalytical {
             double criticality = sink.timingEdge.getCriticality();
 
             if(criticality > this.criticalityThreshold) {
-                double weight = 2.0 / numSinks * criticality;
+                double weight = this.tradeOff / numSinks * criticality;
 
                 int sinkIndex = sink.blockIndex;
                 double sinkOffset = sink.offset;

@@ -42,7 +42,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
 
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
-    protected double criticalityThreshold; // This is only used by AnalyticalPlacerTD
+    protected double criticalityThreshold, tradeOff; // This is only used by AnalyticalPlacerTD
 
     private double linearCost, legalCost = Double.MAX_VALUE;
 
@@ -101,6 +101,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                     this.numIOBlocks,
                     this.anchorWeight,
                     this.criticalityThreshold,
+                    this.tradeOff,
                     AnalyticalPlacer.EPSILON);
             this.solveLinearIteration(solver, iteration);
         }
