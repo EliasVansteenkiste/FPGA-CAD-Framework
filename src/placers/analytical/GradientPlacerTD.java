@@ -12,12 +12,28 @@ import circuit.timing.TimingGraph;
 
 public class GradientPlacerTD extends GradientPlacer {
 
+    private static final String
+        O_CRITICALITY_EXPONENT = "criticality exponent",
+        O_RECALCULATE_CRITICALITIES = "recalculate criticalities",
+        O_RECALCULATE_PRIORITY = "recalculate priority";
+
     public static void initOptions(Options options) {
         GradientPlacer.initOptions(options);
 
-        options.add("criticality exponent", "criticality exponent of connections", new Double(3));
-        options.add("recalculate criticalities", "frequency of criticalities recalculation; 0 = never, 1 = every iteration", new Double(0.5));
-        options.add("recalculate priority", "controls the spreading of recalculations; 1 = evenly spread, higher = less recalculations near the end", new Double(1));
+        options.add(
+                O_CRITICALITY_EXPONENT,
+                "criticality exponent of connections",
+                new Double(5));
+
+        options.add(
+                O_RECALCULATE_CRITICALITIES,
+                "frequency of criticalities recalculation; 0 = never, 1 = every iteration",
+                new Double(0.4));
+
+        options.add(
+                O_RECALCULATE_PRIORITY,
+                "controls the spreading of recalculations; 1 = evenly spread, higher = less recalculations near the end",
+                new Double(1));
     }
 
     private double criticalityExponent;
@@ -31,9 +47,9 @@ public class GradientPlacerTD extends GradientPlacer {
     public GradientPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
-        this.criticalityExponent = options.getDouble("criticality exponent");
-        this.recalculateCriticalities = options.getDouble("recalculate criticalities");
-        this.recalculatePriority = options.getDouble("recalculate priority");
+        this.criticalityExponent = options.getDouble(O_CRITICALITY_EXPONENT);
+        this.recalculateCriticalities = options.getDouble(O_RECALCULATE_CRITICALITIES);
+        this.recalculatePriority = options.getDouble(O_RECALCULATE_PRIORITY);
 
         this.timingGraph = this.circuit.getTimingGraph();
 

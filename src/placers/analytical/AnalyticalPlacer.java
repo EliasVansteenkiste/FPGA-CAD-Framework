@@ -27,12 +27,12 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_STOP_RATIO,
                 "ratio between linear and legal cost to stop placement",
-                new Double(0.9));
+                new Double(0.8));
 
         options.add(
                 O_ANCHOR_WEIGHT,
                 "starting anchor weight",
-                new Double(0.3));
+                new Double(0.2));
 
         options.add(
                 O_ANCHOR_WEIGHT_MULTIPLIER,
