@@ -533,13 +533,13 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
         if(calculateCriticalities) {
             for(TimingEdge edge : this.timingEdges) {
-                double val = (1 - (this.globalMaxDelay + edge.slack) / this.globalMaxDelay) * 20;
+                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
                 int i = Math.min(19, (int) val);
                 double linearInterpolation = val - i;
 
-                edge.criticality =
+                edge.setCriticality(
                         (1 - linearInterpolation) * this.criticalityLookupTable[i]
-                        + linearInterpolation * this.criticalityLookupTable[i+1];
+                        + linearInterpolation * this.criticalityLookupTable[i+1]);
             }
         }
     }
