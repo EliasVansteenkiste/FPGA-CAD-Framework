@@ -527,11 +527,11 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         }
 
 
-        /*if(calculateCriticalities) {
+        if(calculateCriticalities) {
             for(TimingEdge edge : this.timingEdges) {
                 edge.calculateCriticality(this.globalMaxDelay, this.criticalityExponent);
             }
-        }*/
+        }
     }
 
     public void calculateWireDelays() {
