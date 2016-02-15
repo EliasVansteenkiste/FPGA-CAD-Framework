@@ -487,7 +487,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         }
 
 
-        //this.calculateArrivalTimesAndCriticalities(true);
+        this.calculateArrivalTimesAndCriticalities(true);
     }
 
     private void calculateArrivalTimesAndCriticalities(boolean calculateCriticalities) {
@@ -527,11 +527,11 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         }
 
 
-        if(calculateCriticalities) {
+        /*if(calculateCriticalities) {
             for(TimingEdge edge : this.timingEdges) {
                 edge.calculateCriticality(this.globalMaxDelay, this.criticalityExponent);
             }
-        }
+        }*/
     }
 
     public void calculateWireDelays() {
