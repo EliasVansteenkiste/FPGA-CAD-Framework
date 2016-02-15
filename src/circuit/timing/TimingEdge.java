@@ -43,7 +43,7 @@ public class TimingEdge {
     }
 
     void calculateCriticality(double maxDelay, double criticalityExponent) {
-        //this.criticality = Math.pow(1 - (maxDelay + this.slack) / maxDelay, criticalityExponent);
+        this.criticality = Math.pow(1 - (maxDelay + this.slack) / maxDelay, criticalityExponent);
     }
     public double getCriticality() {
         return this.criticality;
