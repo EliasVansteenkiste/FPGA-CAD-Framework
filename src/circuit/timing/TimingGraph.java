@@ -487,8 +487,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         }
 
 
-        this.calculateArrivalTimesAndCriticalities(true);
-
+        //this.calculateArrivalTimesAndCriticalities(true);
     }
 
     private void calculateArrivalTimesAndCriticalities(boolean calculateCriticalities) {
