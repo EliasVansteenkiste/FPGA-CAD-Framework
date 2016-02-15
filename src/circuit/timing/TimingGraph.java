@@ -468,7 +468,7 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
     public void setCriticalityExponent(double criticalityExponent) {
         for(int i = 0; i <= 20; i++) {
-            this.criticalityLookupTable[i] = Math.pow(i * 0.05, criticalityExponent);
+            this.criticalityLookupTable[i] = Math.pow(i * 0.1, criticalityExponent);
         }
     }
 
@@ -533,8 +533,8 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
         if(calculateCriticalities) {
             for(TimingEdge edge : this.timingEdges) {
-                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
-                int i = Math.min(19, (int) val);
+                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 10;
+                int i = Math.min(9, (int) val);
                 double linearInterpolation = val - i;
 
                 edge.setCriticality(
