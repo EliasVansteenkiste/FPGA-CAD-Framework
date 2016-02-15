@@ -46,9 +46,9 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
     private List<Triple<Integer, Integer, List<TimingNode>>> traversals  = new ArrayList<>();
 
-    private double criticalityExponent = 1;
     private double globalMaxDelay;
 
+    private double[] criticalityLookupTable = new double[21];
 
     public TimingGraph(Circuit circuit) {
         this.circuit = circuit;
@@ -58,6 +58,8 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
         this.virtualIoClockDomain = 0;
         this.clockNamesToDomains.put(VIRTUAL_IO_CLOCK, this.virtualIoClockDomain);
         this.numClockDomains = 1;
+
+        this.setCriticalityExponent(1);
     }
 
 
@@ -465,7 +467,9 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
      ****************************************************************/
 
     public void setCriticalityExponent(double criticalityExponent) {
-        this.criticalityExponent = criticalityExponent;
+        for(int i = 0; i <= 20; i++) {
+            this.criticalityLookupTable[i] = Math.pow(i * 0.05, criticalityExponent);
+        }
     }
 
 
@@ -529,7 +533,13 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
 
         if(calculateCriticalities) {
             for(TimingEdge edge : this.timingEdges) {
-                edge.calculateCriticality(this.globalMaxDelay, this.criticalityExponent);
+                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
+                int i = Math.min(19, (int) val);
+                double linearInterpolation = val - i;
+
+                edge.setCriticality(
+                        (1 - linearInterpolation) * this.criticalityLookupTable[i]
+                        + linearInterpolation * this.criticalityLookupTable[i+1]);
             }
         }
     }
