@@ -294,9 +294,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.legalizer.legalize(this.utilization);
         this.stopTimer(T_LEGALIZE);
 
-        //this.startTimer(T_UPDATE_CIRCUIT);
+        this.startTimer(T_UPDATE_CIRCUIT);
         this.updateLegalIfNeeded(iteration);
-        //this.stopTimer(T_UPDATE_CIRCUIT);
+        this.stopTimer(T_UPDATE_CIRCUIT);
     }
 
 
