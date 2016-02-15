@@ -3,7 +3,7 @@ package circuit.timing;
 public class TimingEdge {
 
     private double fixedDelay, wireDelay;
-    private double slack, criticality;
+    double slack, criticality;
     private double stagedWireDelay;
 
 
