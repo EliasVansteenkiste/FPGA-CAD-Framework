@@ -15,7 +15,8 @@ public class GradientPlacerTD extends GradientPlacer {
     private static final String
         O_CRITICALITY_EXPONENT = "criticality exponent",
         O_RECALCULATE_CRITICALITIES = "recalculate criticalities",
-        O_RECALCULATE_PRIORITY = "recalculate priority";
+        O_RECALCULATE_PRIORITY = "recalculate priority",
+        O_TRADE_OFF = "trade off";
 
     public static void initOptions(Options options) {
         GradientPlacer.initOptions(options);
@@ -34,6 +35,11 @@ public class GradientPlacerTD extends GradientPlacer {
                 O_RECALCULATE_PRIORITY,
                 "controls the spreading of recalculations; 1 = evenly spread, higher = less recalculations near the end",
                 new Double(1));
+
+        options.add(
+                O_TRADE_OFF,
+                "0 = purely timing driven, higher = more wirelength driven",
+                new Double(0));
     }
 
     private double criticalityExponent;
@@ -50,6 +56,7 @@ public class GradientPlacerTD extends GradientPlacer {
         this.criticalityExponent = options.getDouble(O_CRITICALITY_EXPONENT);
         this.recalculateCriticalities = options.getDouble(O_RECALCULATE_CRITICALITIES);
         this.recalculatePriority = options.getDouble(O_RECALCULATE_PRIORITY);
+        this.tradeOff = options.getDouble(O_TRADE_OFF);
 
         this.timingGraph = this.circuit.getTimingGraph();
 

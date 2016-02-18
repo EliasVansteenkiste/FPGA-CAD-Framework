@@ -84,6 +84,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     private int effortLevel;
     private double firstEffortMultiplier, lastEffortMultiplier;
+    protected double tradeOff; // Only used by GradientPlacerTD
 
     protected double utilization;
 
@@ -235,7 +236,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         int numNets = this.timingNets.size();
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             TimingNet net = this.timingNets.get(netIndex);
-            this.netCriticalities[netIndex] = net.getCriticality();
+            this.netCriticalities[netIndex] = this.tradeOff + net.getCriticality();
         }
     }
 
