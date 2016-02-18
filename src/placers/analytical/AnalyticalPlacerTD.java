@@ -31,7 +31,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
         options.add(
                 O_TRADE_OFF,
                 "trade_off between timing driven and wirelength driven (0 = not timing driven)",
-                new Double(2));
+                new Double(3));
     }
 
 
