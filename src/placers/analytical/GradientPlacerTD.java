@@ -38,8 +38,8 @@ public class GradientPlacerTD extends GradientPlacer {
 
         options.add(
                 O_TRADE_OFF,
-                "0 = purely timing driven, higher = more wirelength driven",
-                new Double(0));
+                "0 = purely wirelength driven, higher = more timing driven",
+                new Double(10));
     }
 
     private double criticalityExponent;

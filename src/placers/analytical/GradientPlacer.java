@@ -236,7 +236,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         int numNets = this.timingNets.size();
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             TimingNet net = this.timingNets.get(netIndex);
-            this.netCriticalities[netIndex] = this.tradeOff + net.getCriticality();
+            this.netCriticalities[netIndex] = 1 + this.tradeOff * net.getCriticality();
         }
     }
 
