@@ -24,7 +24,7 @@ public class GradientPlacerTD extends GradientPlacer {
         options.add(
                 O_CRITICALITY_EXPONENT,
                 "criticality exponent of connections",
-                new Double(5));
+                new Double(4));
 
         options.add(
                 O_RECALCULATE_CRITICALITIES,
