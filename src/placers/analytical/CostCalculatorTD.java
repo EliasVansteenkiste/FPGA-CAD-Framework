@@ -92,7 +92,8 @@ class CostCalculatorTD extends CostCalculator {
                 } catch(IndexOutOfBoundsException error) {
                     System.out.printf("\n\n%s, %s\n", sourceCategory.toString(), sinkCategory.toString());
                     System.out.printf("%d, %d\n", this.width, this.height);
-                    System.out.printf("%d, %d; %d, %d\n", sourceX, sinkX, sourceY, sinkY);
+                    System.out.printf("%f, %f; %f, %f\n", sourceX, sinkX, sourceY, sinkY);
+                    System.out.printf("%d, %d\n", deltaX, deltaY);
                     System.exit(1);
                 }
             }
