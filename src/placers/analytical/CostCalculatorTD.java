@@ -69,8 +69,8 @@ class CostCalculatorTD extends CostCalculator {
             int sourceIndex = net.source.blockIndex;
             BlockCategory sourceCategory = this.blockCategories[sourceIndex];
 
-            int maxDeltaX = sourceCategory == BlockCategory.IO ? this.width : this.width - 1;
-            int maxDeltaY = sourceCategory == BlockCategory.IO ? this.height : this.height - 1;
+            int maxDeltaX = sourceCategory == BlockCategory.IO ? this.width - 1 : this.width - 2;
+            int maxDeltaY = sourceCategory == BlockCategory.IO ? this.height - 1 : this.height - 2;
 
             double sourceX = this.getX(sourceIndex);
             double sourceY = this.getY(sourceIndex);
@@ -85,17 +85,8 @@ class CostCalculatorTD extends CostCalculator {
                 int deltaX = Math.min((int) Math.abs(sinkX - sourceX), sinkCategory == BlockCategory.IO ? maxDeltaX : maxDeltaX - 1);
                 int deltaY = Math.min((int) Math.abs(sinkY - sourceY), sinkCategory == BlockCategory.IO ? maxDeltaY : maxDeltaY - 1);
 
-                try {
-                    double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
-                    sink.timingEdge.setWireDelay(wireDelay);
-
-                } catch(IndexOutOfBoundsException error) {
-                    System.out.printf("\n\n%s, %s\n", sourceCategory.toString(), sinkCategory.toString());
-                    System.out.printf("%d, %d\n", this.width, this.height);
-                    System.out.printf("%f, %f; %f, %f\n", sourceX, sinkX, sourceY, sinkY);
-                    System.out.printf("%d, %d\n", deltaX, deltaY);
-                    System.exit(1);
-                }
+                double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
+                sink.timingEdge.setWireDelay(wireDelay);
             }
         }
     }
