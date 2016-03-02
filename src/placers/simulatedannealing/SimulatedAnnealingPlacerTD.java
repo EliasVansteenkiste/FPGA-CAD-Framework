@@ -11,9 +11,6 @@ import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.timing.TimingGraph;
 
-
-
-
 public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
 
     private static final String
@@ -45,6 +42,12 @@ public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
                 "number of times the criticalities should be recalculated in the inner loop",
                 new Integer(0));
     }
+
+
+    private static String
+        T_UPDATE_CRITICALITIES = "update criticalities",
+        T_CALCULATE_COST = "calculate global cost";
+
 
     private EfficientBoundingBoxNetCC calculator;
     private final TimingGraph timingGraph;
@@ -86,6 +89,9 @@ public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
 
     @Override
     protected void initializeSwapIteration() {
+
+        this.startTimer(T_UPDATE_CRITICALITIES);
+
         double criticalityExponent;
         if(this.greedy) {
             criticalityExponent = this.criticalityExponentEnd;
@@ -98,6 +104,9 @@ public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
 
         this.timingGraph.setCriticalityExponent(criticalityExponent);
         this.timingGraph.calculateCriticalities(true);
+
+        this.stopTimer(T_UPDATE_CRITICALITIES);
+
 
         this.updatePreviousCosts();
     }
@@ -129,9 +138,13 @@ public class SimulatedAnnealingPlacerTD extends SimulatedAnnealingPlacer {
     @Override
     protected double getCost() {
         if(this.circuitChanged) {
+            this.startTimer(T_CALCULATE_COST);
+
             this.circuitChanged = false;
             this.cachedBBCost = this.calculator.calculateTotalCost();
             this.cachedTDCost = this.timingGraph.calculateTotalCost();
+
+            this.stopTimer(T_CALCULATE_COST);
         }
 
         return this.balancedCost(this.cachedBBCost, this.cachedTDCost);

@@ -9,6 +9,8 @@ import interfaces.OptionsManager;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -207,6 +209,8 @@ public class Main {
 
         this.stopAndPrintTimer(totalString);
 
+        this.printGCStats();
+
         this.visualizer.createAndDrawGUI();
     }
 
@@ -385,5 +389,29 @@ public class Main {
     private void printTimer(String timerName) {
         double placeTime = this.getTime(timerName);
         this.logger.printf("%s: %f s\n", timerName, placeTime);
+    }
+
+    private void printGCStats() {
+        long totalGarbageCollections = 0;
+        long garbageCollectionTime = 0;
+
+        for(GarbageCollectorMXBean gc :
+                ManagementFactory.getGarbageCollectorMXBeans()) {
+
+            long count = gc.getCollectionCount();
+
+            if(count >= 0) {
+                totalGarbageCollections += count;
+            }
+
+            long time = gc.getCollectionTime();
+
+            if(time >= 0) {
+                garbageCollectionTime += time;
+            }
+        }
+
+        this.logger.printf("Total garbage collections: %d\n", totalGarbageCollections);
+        this.logger.printf("Total garbage collection time: %f s\n", garbageCollectionTime / 1000.0);
     }
 }

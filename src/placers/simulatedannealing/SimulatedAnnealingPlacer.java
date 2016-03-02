@@ -84,6 +84,12 @@ abstract class SimulatedAnnealingPlacer extends Placer {
     }
 
 
+    protected static String
+        T_INITIALIZE_DATA = "initialize data",
+        T_CALCULATE_TEMPERATURE = "calculate initial temperature",
+        T_DO_SWAPS = "do swaps";
+
+
     protected double rlim;
     protected int initialRlim, maxRlim;
     private double temperature, stopRatio;
@@ -132,17 +138,6 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
         this.maxRlim = maxRlimOption;
         this.rlim = Math.min(RlimOption, this.maxRlim);
-
-
-        // Count the number of nets
-        this.numNets = 0;
-        for(GlobalBlock block : circuit.getGlobalBlocks()) {
-            for(AbstractPin pin : block.getOutputPins()) {
-                if(pin.getNumSinks() > 0) {
-                    this.numNets++;
-                }
-            }
-        }
     }
 
 
@@ -159,7 +154,20 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
     @Override
     public void initializeData() {
-        // Do nothing
+
+        this.startTimer(T_INITIALIZE_DATA);
+
+        // Count the number of nets
+        this.numNets = 0;
+        for(GlobalBlock block : this.circuit.getGlobalBlocks()) {
+            for(AbstractPin pin : block.getOutputPins()) {
+                if(pin.getNumSinks() > 0) {
+                    this.numNets++;
+                }
+            }
+        }
+
+        this.stopTimer(T_INITIALIZE_DATA);
     }
 
     @Override
@@ -190,7 +198,10 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
     @Override
     protected void doPlacement() throws PlacementException {
+
+        this.startTimer(T_INITIALIZE_DATA);
         this.initializePlace();
+        this.stopTimer(T_INITIALIZE_DATA);
 
         int iteration = 0;
 
@@ -248,6 +259,8 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         int numSamples = Math.max(this.circuit.getNumGlobalBlocks() / 5, 500);
         this.doSwapIteration(numSamples, false);
 
+        this.startTimer(T_DO_SWAPS);
+
         Arrays.sort(this.deltaCosts);
 
         int zeroIndex = Arrays.binarySearch(this.deltaCosts, 0);
@@ -295,6 +308,8 @@ abstract class SimulatedAnnealingPlacer extends Placer {
             }
         }
 
+        this.stopTimer(T_DO_SWAPS);
+
         return temperature * this.temperatureMultiplier;
     }
 
@@ -321,8 +336,10 @@ abstract class SimulatedAnnealingPlacer extends Placer {
 
         this.initializeSwapIteration();
 
-        int numSwaps = 0;
+        String timer = pushThrough ? T_DO_SWAPS : T_CALCULATE_TEMPERATURE;
+        this.startTimer(timer);
 
+        int numSwaps = 0;
 
         double sumDeltaCost = 0;
         double quadSumDeltaCost = 0;
@@ -357,8 +374,9 @@ abstract class SimulatedAnnealingPlacer extends Placer {
             }
         }
 
+        double result;
         if(pushThrough) {
-            return numSwaps;
+            result = numSwaps;
 
         } else {
             double sumQuads = quadSumDeltaCost;
@@ -367,8 +385,11 @@ abstract class SimulatedAnnealingPlacer extends Placer {
             double numBlocks = this.circuit.getNumGlobalBlocks();
             double quadNumBlocks = numBlocks * numBlocks;
 
-            return Math.sqrt(Math.abs(sumQuads / numBlocks - quadSum / quadNumBlocks));
+            result = Math.sqrt(Math.abs(sumQuads / numBlocks - quadSum / quadNumBlocks));
         }
+
+        this.stopTimer(timer);
+        return result;
     }
 
 
