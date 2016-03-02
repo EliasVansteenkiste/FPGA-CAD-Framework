@@ -89,7 +89,7 @@ class CostCalculatorTD extends CostCalculator {
                     double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
                     sink.timingEdge.setWireDelay(wireDelay);
 
-                } catch(ArrayIndexOutOfBoundsException error) {
+                } catch(IndexOutOfBoundsException error) {
                     System.out.printf("\n\n%s, %s\n", sourceCategory.toString(), sinkCategory.toString());
                     System.out.printf("%d, %d\n", this.width, this.height);
                     System.out.printf("%d, %d; %d, %d\n", sourceX, sinkX, sourceY, sinkY);
