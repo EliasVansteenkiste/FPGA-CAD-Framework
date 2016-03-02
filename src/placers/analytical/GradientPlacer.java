@@ -276,12 +276,33 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         int netStart, netEnd = 0;
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
+            //double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
+            double criticality = 1;
 
             netStart = netEnd;
             netEnd = this.netEnds[netIndex];
 
             this.solver.processNet(netStart, netEnd, criticality);
+        }
+
+        if(timingDriven) {
+            int numTotal = 0, numCritical = 0;
+
+            for(int netIndex = 0; netIndex < this.numRealNets; netIndex++) {
+                TimingNet net = this.timingNets.get(netIndex);
+                NetBlock source = net.source;
+                for(TimingNetBlock sink : net.sinks) {
+                    numTotal++;
+
+                    double criticality = sink.timingEdge.getCriticality();
+                    if(criticality > 0.7) {
+                        numCritical++;
+                        this.solver.processConnection(source.blockIndex, sink.blockIndex, this.tradeOff * criticality);
+                    }
+                }
+            }
+
+            //System.out.printf("total: %d, critical: %d\n", numTotal, numCritical);
         }
     }
 

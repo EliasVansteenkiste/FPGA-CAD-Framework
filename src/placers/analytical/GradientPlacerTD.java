@@ -14,6 +14,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
     private static final String
         O_CRITICALITY_EXPONENT = "criticality exponent",
+        O_CRITICALITY_THRESHOLD = "criticality threshold",
         O_RECALCULATE_CRITICALITIES = "recalculate criticalities",
         O_RECALCULATE_PRIORITY = "recalculate priority",
         O_TRADE_OFF = "trade off";
@@ -25,6 +26,11 @@ public class GradientPlacerTD extends GradientPlacer {
                 O_CRITICALITY_EXPONENT,
                 "criticality exponent of connections",
                 new Double(4));
+
+        options.add(
+                O_CRITICALITY_THRESHOLD,
+                "minimal criticality for adding TD constraints",
+                new Double(0.8));
 
         options.add(
                 O_RECALCULATE_CRITICALITIES,
@@ -42,7 +48,7 @@ public class GradientPlacerTD extends GradientPlacer {
                 new Double(10));
     }
 
-    private double criticalityExponent;
+    private double criticalityExponent, criticalityThreshold;
     private TimingGraph timingGraph;
     private CostCalculatorTD costCalculator;
     private double latestCost, minCost;
@@ -54,6 +60,8 @@ public class GradientPlacerTD extends GradientPlacer {
         super(circuit, options, random, logger, visualizer);
 
         this.criticalityExponent = options.getDouble(O_CRITICALITY_EXPONENT);
+        this.criticalityThreshold = options.getDouble(O_CRITICALITY_THRESHOLD);
+
         this.recalculateCriticalities = options.getDouble(O_RECALCULATE_CRITICALITIES);
         this.recalculatePriority = options.getDouble(O_RECALCULATE_PRIORITY);
         this.tradeOff = options.getDouble(O_TRADE_OFF);

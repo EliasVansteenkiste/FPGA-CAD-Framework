@@ -63,8 +63,6 @@ class LinearSolverGradient {
                 this.solverX.addConnection(blockIndex2, blockIndex1, coordinate1 - coordinate2, weight);
             }
 
-
-
             return;
         }
 
@@ -108,6 +106,25 @@ class LinearSolverGradient {
         // Add connections between the min and max block
         this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight);
         this.solverY.addConnection(minYIndex, maxYIndex, maxY + maxYOffset - minY - minYOffset, weight);
+    }
+
+    void processConnection(int blockIndex1, int blockIndex2, double weight) {
+        double x1 = this.coordinatesX[blockIndex1],
+               x2 = this.coordinatesX[blockIndex2],
+               y1 = this.coordinatesY[blockIndex1],
+               y2 = this.coordinatesY[blockIndex2];
+
+        if(x2 > x1) {
+            this.solverX.addConnection(blockIndex1, blockIndex2, x2 - x1, weight);
+        } else {
+            this.solverX.addConnection(blockIndex2, blockIndex1, x1 - x2, weight);
+        }
+
+        if(y2 > y1) {
+            this.solverY.addConnection(blockIndex1, blockIndex2, y2 - y1, weight);
+        } else {
+            this.solverY.addConnection(blockIndex2, blockIndex1, y1 - y2, weight);
+        }
     }
 
 

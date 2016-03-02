@@ -8,7 +8,7 @@ class DimensionSolverGradient {
     private final double[] coordinates;
 
     private double[] directions, totalPositiveNetSize, totalNegativeNetSize;
-    private int[] numPositiveNets, numNegativeNets;
+    private double[] numPositiveNets, numNegativeNets;
     private final double halfMaxConnectionLength, speedAveraging;
 
     private final double stepSize;
@@ -31,8 +31,8 @@ class DimensionSolverGradient {
         this.speeds = new double[numBlocks];
 
         this.directions = new double[numBlocks];
-        this.numPositiveNets = new int[numBlocks];
-        this.numNegativeNets = new int[numBlocks];
+        this.numPositiveNets = new double[numBlocks];
+        this.numNegativeNets = new double[numBlocks];
         this.totalPositiveNetSize = new double[numBlocks];
         this.totalNegativeNetSize = new double[numBlocks];
     }
@@ -60,12 +60,12 @@ class DimensionSolverGradient {
 
         double netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
 
-        this.totalPositiveNetSize[minIndex] += netSize;
-        this.numPositiveNets[minIndex] += 1;
+        this.totalPositiveNetSize[minIndex] += weight * netSize;
+        this.numPositiveNets[minIndex] += weight;
         this.directions[minIndex] += weight;
 
-        this.totalNegativeNetSize[maxIndex] += netSize;
-        this.numNegativeNets[maxIndex] += 1;
+        this.totalNegativeNetSize[maxIndex] += weight * netSize;
+        this.numNegativeNets[maxIndex] += weight;
         this.directions[maxIndex] -= weight;
     }
 
