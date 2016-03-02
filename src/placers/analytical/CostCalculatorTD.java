@@ -84,9 +84,17 @@ class CostCalculatorTD extends CostCalculator {
 
                 int deltaX = Math.min((int) Math.abs(sinkX - sourceX), sinkCategory == BlockCategory.IO ? maxDeltaX : maxDeltaX - 1);
                 int deltaY = Math.min((int) Math.abs(sinkY - sourceY), sinkCategory == BlockCategory.IO ? maxDeltaY : maxDeltaY - 1);
-                double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
 
-                sink.timingEdge.setWireDelay(wireDelay);
+                try {
+                    double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
+                    sink.timingEdge.setWireDelay(wireDelay);
+
+                } catch(ArrayIndexOutOfBoundsException error) {
+                    System.out.printf("\n\n%s, %s\n", sourceCategory.toString(), sinkCategory.toString());
+                    System.out.printf("%d, %d\n", this.width, this.height);
+                    System.out.printf("%d, %d; %d, %d\n", sourceX, sinkX, sourceY, sinkY);
+                    System.exit(1);
+                }
             }
         }
     }
