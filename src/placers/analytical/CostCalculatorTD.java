@@ -15,6 +15,8 @@ import circuit.timing.TimingGraph;
 
 class CostCalculatorTD extends CostCalculator {
 
+    private int maxDeltaX, maxDeltaY;
+
     private TimingGraph timingGraph;
     private DelayTables delayTables;
     private BlockCategory[] blockCategories;
@@ -26,6 +28,9 @@ class CostCalculatorTD extends CostCalculator {
             Circuit circuit,
             Map<GlobalBlock, NetBlock> netBlocks,
             List<TimingNet> nets) {
+
+        this.maxDeltaX = circuit.getWidth() - 1;
+        this.maxDeltaY = circuit.getHeight() - 1;
 
         this.timingGraph = circuit.getTimingGraph();
         this.delayTables = circuit.getArchitecture().getDelayTables();
@@ -74,8 +79,8 @@ class CostCalculatorTD extends CostCalculator {
                 double sinkX = this.getX(sinkIndex);
                 double sinkY = this.getY(sinkIndex);
 
-                int deltaX = (int) Math.abs(sinkX - sourceX);
-                int deltaY = (int) Math.abs(sinkY - sourceY);
+                int deltaX = Math.min(this.maxDeltaX, (int) Math.abs(sinkX - sourceX));
+                int deltaY = Math.min(this.maxDeltaY, (int) Math.abs(sinkY - sourceY));
                 double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
 
                 sink.timingEdge.setWireDelay(wireDelay);
