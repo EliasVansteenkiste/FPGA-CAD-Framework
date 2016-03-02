@@ -90,10 +90,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     protected int numIterations;
     private int iterationEffortLevel;
-    private double[] netCriticalities;
 
     protected HeapLegalizer legalizer;
-    private LinearSolverGradient solver;
+    protected LinearSolverGradient solver;
 
 
     private int[] netEnds;
@@ -134,6 +133,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
     }
 
+    protected abstract void initializeIteration(int iteration);
     protected abstract void updateLegalIfNeeded(int iteration);
 
 
@@ -153,16 +153,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.legalY,
                 this.heights);
 
-        // There can be more WLD nets than this, if there
-        // are blocks that are only connected to themselves.
-        // But we don't need these dummy nets, and they are
-        // always at the back of the list, so that doesn't matter.
-        this.netCriticalities = new double[this.numRealNets];
-
-
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
-        // Build some good ol' arrays of primitive types
+        // Build some arrays of primitive types
         int netBlockSize = 0;
         for(int i = 0; i < this.numRealNets; i++) {
             netBlockSize += this.nets.get(i).blocks.length;
@@ -200,7 +193,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
 
-
     @Override
     protected void solveLinear(int iteration) {
 
@@ -208,12 +200,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             this.anchorWeight += this.anchorWeightStep;
         }
 
-        // Cache the max criticality of each net
-        this.startTimer(T_BUILD_LINEAR);
-        if(this.isTimingDriven() && iteration % 1 == 0) {
-            this.updateNetCriticalities();
-        }
-        this.stopTimer(T_BUILD_LINEAR);
+        this.initializeIteration(iteration);
 
 
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
@@ -229,15 +216,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
 
         return iterationEffortLevel;
-    }
-
-
-    private void updateNetCriticalities() {
-        int numNets = this.timingNets.size();
-        for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            TimingNet net = this.timingNets.get(netIndex);
-            this.netCriticalities[netIndex] = 1 + this.tradeOff * net.getCriticality();
-        }
     }
 
 
@@ -270,39 +248,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_SOLVE_LINEAR);
     }
 
-    private void processNets() {
+    protected void processNets() {
         int numNets = this.netEnds.length;
-        boolean timingDriven = this.isTimingDriven();
 
         int netStart, netEnd = 0;
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            //double criticality = timingDriven ? this.netCriticalities[netIndex] : 1;
-            double criticality = 1;
-
             netStart = netEnd;
             netEnd = this.netEnds[netIndex];
 
-            this.solver.processNet(netStart, netEnd, criticality);
-        }
-
-        if(timingDriven) {
-            int numTotal = 0, numCritical = 0;
-
-            for(int netIndex = 0; netIndex < this.numRealNets; netIndex++) {
-                TimingNet net = this.timingNets.get(netIndex);
-                NetBlock source = net.source;
-                for(TimingNetBlock sink : net.sinks) {
-                    numTotal++;
-
-                    double criticality = sink.timingEdge.getCriticality();
-                    if(criticality > 0.7) {
-                        numCritical++;
-                        this.solver.processConnection(source.blockIndex, sink.blockIndex, this.tradeOff * criticality);
-                    }
-                }
-            }
-
-            //System.out.printf("total: %d, critical: %d\n", numTotal, numCritical);
+            this.solver.processNet(netStart, netEnd);
         }
     }
 

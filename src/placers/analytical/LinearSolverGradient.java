@@ -38,9 +38,9 @@ class LinearSolverGradient {
         this.solverY.setLegal(legalY);
     }
 
-    void processNet(int netStart, int netEnd, double criticality) {
+    void processNet(int netStart, int netEnd) {
         int numNetBlocks = netEnd - netStart;
-        double weight = criticality * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
+        double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
 
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {
@@ -108,7 +108,7 @@ class LinearSolverGradient {
         this.solverY.addConnection(minYIndex, maxYIndex, maxY + maxYOffset - minY - minYOffset, weight);
     }
 
-    void processConnection(int blockIndex1, int blockIndex2, double weight) {
+    void processConnection(int blockIndex1, int blockIndex2, float offset, float weight) {
         double x1 = this.coordinatesX[blockIndex1],
                x2 = this.coordinatesX[blockIndex2],
                y1 = this.coordinatesY[blockIndex1],
@@ -121,9 +121,9 @@ class LinearSolverGradient {
         }
 
         if(y2 > y1) {
-            this.solverY.addConnection(blockIndex1, blockIndex2, y2 - y1, weight);
+            this.solverY.addConnection(blockIndex1, blockIndex2, y2 - y1 + offset, weight);
         } else {
-            this.solverY.addConnection(blockIndex2, blockIndex1, y1 - y2, weight);
+            this.solverY.addConnection(blockIndex2, blockIndex1, y1 - y2 - offset, weight);
         }
     }
 

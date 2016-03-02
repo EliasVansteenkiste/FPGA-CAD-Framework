@@ -507,17 +507,5 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.source = source;
             this.sinks = new TimingNetBlock[numSinks];
         }
-
-        double getCriticality() {
-            double maxCriticality = 0;
-            for(TimingNetBlock sink : this.sinks) {
-                double criticality = sink.timingEdge.getCriticality();
-                if(criticality > maxCriticality) {
-                    maxCriticality = criticality;
-                }
-            }
-
-            return maxCriticality;
-        }
     }
 }

@@ -6,6 +6,8 @@ import interfaces.Options;
 import java.util.List;
 import java.util.Random;
 
+import util.FloatList;
+import util.IntList;
 import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.timing.TimingGraph;
@@ -48,6 +50,15 @@ public class GradientPlacerTD extends GradientPlacer {
                 new Double(10));
     }
 
+
+    private static String
+        T_UPDATE_CRIT_CON = "update critical connections";
+
+
+    private IntList criticalBlockIndexes = new IntList();
+    private FloatList criticalOffsets = new FloatList();
+    private FloatList criticalWeights = new FloatList();
+
     private double criticalityExponent, criticalityThreshold;
     private TimingGraph timingGraph;
     private CostCalculatorTD costCalculator;
@@ -84,7 +95,8 @@ public class GradientPlacerTD extends GradientPlacer {
                 this.netBlocks,
                 this.timingNets);
 
-
+        // Determine the iterations in which the connection
+        // criticalities should be recalculated
         this.recalculate = new boolean[this.numIterations];
         double nextFunctionValue = 0;
 
@@ -101,6 +113,7 @@ public class GradientPlacerTD extends GradientPlacer {
             }
         }
 
+        // Print these iterations
         this.logger.println("Criticalities recalculations:");
         this.logger.println(recalculationsString.toString());
         this.logger.println();
@@ -109,6 +122,59 @@ public class GradientPlacerTD extends GradientPlacer {
     @Override
     protected boolean isTimingDriven() {
         return true;
+    }
+
+    @Override
+    protected void initializeIteration(int iteration) {
+        if(iteration == 0 || this.recalculate[iteration - 1]) {
+            this.updateCriticalConnections();
+        }
+    }
+
+    private void updateCriticalConnections() {
+
+        this.startTimer(T_UPDATE_CRIT_CON);
+
+        this.criticalBlockIndexes.clear();
+        this.criticalOffsets.clear();
+        this.criticalWeights.clear();
+
+        for(TimingNet net : this.timingNets) {
+            NetBlock source = net.source;
+
+            for(TimingNetBlock sink : net.sinks) {
+                double criticality = sink.timingEdge.getCriticality();
+                if(criticality > this.criticalityThreshold) {
+
+                    if(source.blockIndex != sink.blockIndex) {
+                        this.criticalBlockIndexes.add(source.blockIndex);
+                        this.criticalBlockIndexes.add(sink.blockIndex);
+
+                        this.criticalOffsets.add(sink.offset - source.offset);
+                        this.criticalWeights.add((float) (this.tradeOff * criticality));
+                    }
+                }
+            }
+        }
+
+        this.stopTimer(T_UPDATE_CRIT_CON);
+    }
+
+
+    @Override
+    protected void processNets() {
+        // Process all nets wirelength driven
+        super.processNets();
+
+        // Process the most critical source-sink connections
+        int numCritConns = this.criticalWeights.size();
+        for(int critIndex = 0; critIndex < numCritConns; critIndex++) {
+            this.solver.processConnection(
+                    this.criticalBlockIndexes.get(2*critIndex),
+                    this.criticalBlockIndexes.get(2*critIndex + 1),
+                    this.criticalOffsets.get(critIndex),
+                    this.criticalWeights.get(critIndex));
+        }
     }
 
 

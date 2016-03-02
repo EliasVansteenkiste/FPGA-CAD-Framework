@@ -21,6 +21,11 @@ public class GradientPlacerWLD extends GradientPlacer {
     }
 
     @Override
+    protected void initializeIteration(int iteration) {
+        // Do nothing
+    }
+
+    @Override
     protected void updateLegalIfNeeded(int iteration) {
         // This placer always accepts the latest solution.
         // No cost has to be calculated, so this is faster.
