@@ -47,7 +47,7 @@ class LinearSolverAnalytical {
     void processNetWLD(Net net) {
 
         int numNetBlocks = net.blocks.length;
-        double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
+        double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (2*numNetBlocks - 3);
 
         // Nets with 2 blocks are common and can be processed very quick
         if(numNetBlocks == 2) {
