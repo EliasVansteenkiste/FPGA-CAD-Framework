@@ -29,8 +29,8 @@ public abstract class Placer {
     private Map<String, Timer> timers = new LinkedHashMap<>();
     private int maxTimerNameLength = 0;
 
-    protected List<String> statTitles = new ArrayList<>();
-    private List<Integer> statLengths = new ArrayList<>();
+    protected List<String> statTitles;
+    private List<Integer> statLengths;
     private int numStats;
     private static int statSpaces = 3;
 
@@ -41,9 +41,6 @@ public abstract class Placer {
         this.random = random;
         this.logger = logger;
         this.visualizer = visualizer;
-
-        this.addStatTitles(this.statTitles);
-        this.numStats = this.statTitles.size();
     }
 
 
@@ -55,6 +52,11 @@ public abstract class Placer {
 
 
     public void place() throws PlacementException {
+        this.statTitles = new ArrayList<>();
+        this.statLengths = new ArrayList<>();
+        this.addStatTitles(this.statTitles);
+        this.numStats = this.statTitles.size();
+
         this.printOptions();
 
         if(this.numStats > 0) {

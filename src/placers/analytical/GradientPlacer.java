@@ -22,7 +22,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_SPEED_AVERAGING = "speed averaging",
         O_EFFORT_LEVEL = "effort level",
         O_FIRST_EFFORT = "first effort",
-        O_LAST_EFFORT = "last effort";
+        O_LAST_EFFORT = "last effort",
+        O_PRINT_OUTER_COST = "print outer cost",
+        O_PRINT_INNER_COST = "print inner cost";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -74,6 +76,16 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_LAST_EFFORT,
                 "multiplier for the effort level in the last outer iteration",
                 new Double(0.07));
+
+        options.add(
+                O_PRINT_OUTER_COST,
+                "print the WLD cost after each outer iteration",
+                new Boolean(false));
+
+        options.add(
+                O_PRINT_INNER_COST,
+                "print the WLD cost after each inner iteration",
+                new Boolean(false));
     }
 
 
@@ -85,6 +97,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private int effortLevel;
     private double firstEffortMultiplier, lastEffortMultiplier;
     protected double tradeOff; // Only used by GradientPlacerTD
+
+    private boolean printInnerCost, printOuterCost;
+    private CostCalculator costCalculator; // Only used if printOuterCost or printInnerCost is true
 
     protected double utilization;
 
@@ -131,6 +146,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
 
         this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
+
+        this.printInnerCost = this.options.getBoolean(O_PRINT_INNER_COST);
+        this.printOuterCost = this.options.getBoolean(O_PRINT_OUTER_COST);
     }
 
     protected abstract void initializeIteration(int iteration);
@@ -189,6 +207,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.maxConnectionLength,
                 this.speedAveraging);
 
+        if(this.printInnerCost || this.printOuterCost) {
+            this.costCalculator = new CostCalculatorWLD(this.nets);
+        }
+
         this.stopTimer(T_INITIALIZE_DATA);
     }
 
@@ -206,6 +228,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration();
+
+            if(this.printInnerCost) {
+                double cost = this.costCalculator.calculate(this.linearX, this.linearY);
+                System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
+            }
         }
     }
 
@@ -283,6 +310,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("utilization");
         titles.add("effort level");
 
+        if(this.printOuterCost) {
+            titles.add("WLD linear cost");
+            titles.add("WLD legal cost");
+        }
+
         this.addStatTitlesGP(titles);
 
         titles.add("time");
@@ -296,6 +328,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(String.format("%.3f", this.anchorWeight));
         stats.add(String.format("%.3g", this.utilization));
         stats.add(Integer.toString(this.iterationEffortLevel));
+
+        if(this.printOuterCost) {
+            double linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+            double legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
+
+            stats.add(String.format("%.4g", linearCost));
+            stats.add(String.format("%.4g", legalCost));
+        }
 
         this.addStats(stats);
 
