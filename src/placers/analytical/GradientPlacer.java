@@ -311,8 +311,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("effort level");
 
         if(this.printOuterCost) {
-            titles.add("WLD linear cost");
-            titles.add("WLD legal cost");
+            titles.add("BB linear cost");
+            titles.add("BB legal cost");
         }
 
         this.addStatTitlesGP(titles);
