@@ -365,8 +365,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
 
-    public static double getWeight(int n_fanout  ) {
-        switch (n_fanout) {
+    public static double getWeight(int size) {
+        switch (size) {
             case 1:
             case 2:
             case 3:  return 1;
@@ -381,78 +381,43 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             case 12:
             case 13:
             case 14:
-            case 15: return (n_fanout-10) * (1.6899-1.4493) / 5 + 1.4493;
+            case 15: return (size-10) * (1.6899-1.4493) / 5 + 1.4493;
             case 16:
             case 17:
             case 18:
             case 19:
-            case 20: return (n_fanout-15) * (1.8924-1.6899) / 5 + 1.6899;
+            case 20: return (size-15) * (1.8924-1.6899) / 5 + 1.6899;
             case 21:
             case 22:
             case 23:
             case 24:
-            case 25: return (n_fanout-20) * (2.0743-1.8924) / 5 + 1.8924;
+            case 25: return (size-20) * (2.0743-1.8924) / 5 + 1.8924;
             case 26:
             case 27:
             case 28:
             case 29:
-            case 30: return (n_fanout-25) * (2.2334-2.0743) / 5 + 2.0743;
+            case 30: return (size-25) * (2.2334-2.0743) / 5 + 2.0743;
             case 31:
             case 32:
             case 33:
             case 34:
-            case 35: return (n_fanout-30) * (2.3895-2.2334) / 5 + 2.2334;
+            case 35: return (size-30) * (2.3895-2.2334) / 5 + 2.2334;
             case 36:
             case 37:
             case 38:
             case 39:
-            case 40: return (n_fanout-35) * (2.5356-2.3895) / 5 + 2.3895;
+            case 40: return (size-35) * (2.5356-2.3895) / 5 + 2.3895;
             case 41:
             case 42:
             case 43:
             case 44:
-            case 45: return (n_fanout-40) * (2.6625-2.5356) / 5 + 2.5356;
+            case 45: return (size-40) * (2.6625-2.5356) / 5 + 2.5356;
             case 46:
             case 47:
             case 48:
             case 49:
-            case 50: return (n_fanout-45) * (2.7933-2.6625) / 5 + 2.6625;
-            case 51:
-            case 52:
-            case 53:
-            case 54:
-            case 55:
-            case 56:
-            case 57:
-            case 58:
-            case 59:
-            case 60:
-            case 61:
-            case 62:
-            case 63:
-            case 64:
-            case 65:
-            case 66:
-            case 67:
-            case 68:
-            case 69:
-            case 70:
-            case 71:
-            case 72:
-            case 73:
-            case 74:
-            case 75:
-            case 76:
-            case 77:
-            case 78:
-            case 79:
-            case 80:
-            case 81:
-            case 82:
-            case 83:
-            case 84:
-            case 85: return (n_fanout-50) * 0.02616 + 2.7933;
-            default: return 2.7933 + n_fanout*0.011 - 0.0000018*n_fanout*n_fanout;
+            case 50: return (size-45) * (2.7933-2.6625) / 5 + 2.6625;
+            default: return (size-50) * 0.02616 + 2.7933;
         }
     }
 
