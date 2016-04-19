@@ -347,6 +347,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected boolean stopCondition(int iteration) {
-        return this.anchorWeight >= this.anchorWeightStop || this.getIterationEffortLevel(iteration + 1) == 0;
+        return iteration + 1 >= this.numIterations || this.getIterationEffortLevel(iteration + 1) == 0;
     }
 }
