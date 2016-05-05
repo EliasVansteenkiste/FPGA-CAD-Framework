@@ -26,6 +26,8 @@ import visual.PlacementVisualizer;
 import circuit.Circuit;
 import circuit.architecture.Architecture;
 import circuit.architecture.ArchitectureCacher;
+import circuit.architecture.BlockCategory;
+import circuit.architecture.BlockType;
 import circuit.architecture.ParseException;
 import circuit.exceptions.InvalidFileFormatException;
 import circuit.exceptions.PlacementException;
@@ -156,6 +158,8 @@ public class Main {
         this.loadCircuit();
         this.logger.println();
 
+        this.printNumBlocks();
+
 
         // Enable the visualizer
         this.visualizer = new PlacementVisualizer(this.logger);
@@ -280,6 +284,43 @@ public class Main {
                 this.logger.print(Stream.ERR, "Something went wrong while caching the architecture");
             }
         }
+    }
+
+
+    private void printNumBlocks() {
+        int numLut = 0,
+            numFf = 0,
+            numClb = 0,
+            numHardBlock = 0,
+            numIo = 0;
+
+        for(BlockType blockType : BlockType.getBlockTypes()) {
+
+            String name = blockType.getName();
+            BlockCategory category = blockType.getCategory();
+            int numBlocks = this.circuit.getBlocks(blockType).size();
+
+            if(name.equals("lut")) {
+                numLut += numBlocks;
+
+            } else if(name.equals("ff") || name.equals("dff")) {
+                numFf += numBlocks;
+
+            } else if(category == BlockCategory.CLB) {
+                numClb += numBlocks;
+
+            } else if(category == BlockCategory.HARDBLOCK) {
+                numHardBlock += numBlocks;
+
+            } else if(category == BlockCategory.IO) {
+                numIo += numBlocks;
+            }
+        }
+
+        this.logger.println("Number of blocks:");
+        this.logger.printf(
+                "clb: %d\nlut: %d\nff: %d\nio: %d\nhardblock: %d\n\n",
+                numClb, numLut, numFf, numIo, numHardBlock);
     }
 
 
