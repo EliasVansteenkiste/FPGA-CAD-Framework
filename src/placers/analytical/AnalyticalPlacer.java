@@ -61,6 +61,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
 
     protected abstract CostCalculator createCostCalculator();
+    protected abstract void updateLegalIfNeeded(int[] x, int[] y);
 
 
     @Override
@@ -166,41 +167,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.ratio = this.linearCost / this.legalCost;
     }
 
-    protected abstract void updateLegalIfNeeded(int[] x, int[] y);
-
-
-    /*    this.startTimer(T_CALCULATE_COST);
-        int[] newLegalX = this.legalizer.getLegalX();
-        int[] newLegalY = this.legalizer.getLegalY();
-
-        double tmpLegalCost = this.getLegalCost(newLegalX, newLegalY);
-        this.stopTimer(T_CALCULATE_COST);
-
-        this.startTimer(T_UPDATE_CIRCUIT);
-        if(this.shouldUpdateLegal(tmpLegalCost)) {
-            this.legalCost = tmpLegalCost;
-            this.updateLegal(newLegalX, newLegalY);
-        }
-
-        double tmpLegalCost = this.costCalculator.calculate(newLegalX, newLegalY);
-
-
-
-        if(tmpLegalCost < this.legalCost) {
-            this.legalCost = tmpLegalCost;
-            this.updateLegal(newLegalX, newLegalY);
-        }
-
-        this.lastRatio = this.linearCost / this.legalCost;
-        if(iteration == 0) {
-            this.firstRatio = this.lastRatio;
-        }
-
-        this.stopTimer(T_UPDATE_CIRCUIT);
-    }
-
-    protected abstract double getLegalCost(int[] x, int[] y);
-    protected abstract boolean shouldUpdateLegal();*/
 
     @Override
     protected boolean stopCondition(int iteration) {
