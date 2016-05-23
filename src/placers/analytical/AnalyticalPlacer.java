@@ -13,8 +13,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     private static final double EPSILON = 0.005;
 
-    private double utilization;
-    private double firstRatio, lastRatio;
+    private double ratio;
 
     private static final String
         O_STOP_RATIO = "stop ratio",
@@ -44,10 +43,11 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     private double stopRatio, anchorWeight, anchorWeightMultiplier;
     protected double criticalityThreshold, tradeOff; // This is only used by AnalyticalPlacerTD
 
-    private double linearCost, legalCost = Double.MAX_VALUE;
+    private double linearCost;
+    protected double legalCost = Double.MAX_VALUE;
 
     private Legalizer legalizer;
-    private CostCalculator costCalculator;
+    protected CostCalculator costCalculator;
 
 
     public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
@@ -61,6 +61,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
 
     protected abstract CostCalculator createCostCalculator();
+    protected abstract void updateLegalIfNeeded(int[] x, int[] y);
 
 
     @Override
@@ -156,47 +157,20 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void solveLegal(int iteration) {
-        /* When the linear-legal-ratio is equal to the ratio in the first
-         * iteration, maxUtilization should be startUtilization. When the
-         * ratio reaches stopRatio * 0.66, maxUtilization should be 1.
-         */
-        if(iteration == 0) {
-            this.utilization = this.startUtilization;
-        } else {
-            this.utilization = (this.lastRatio - this.firstRatio) * (1 - this.startUtilization) / (0.667 * this.stopRatio - this.firstRatio);
-            double maxRatio = 0.67 * this.stopRatio;
-            double slope = (this.startUtilization - 1) / (this.firstRatio - maxRatio);
-            this.utilization = Math.max(1, 1 + slope * (this.lastRatio - maxRatio));
-        }
-
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(this.utilization);
+        this.legalizer.legalize(1);
         this.stopTimer(T_LEGALIZE);
 
-
-        this.startTimer(T_CALCULATE_COST);
         int[] newLegalX = this.legalizer.getLegalX();
         int[] newLegalY = this.legalizer.getLegalY();
-        double tmpLegalCost = this.costCalculator.calculate(newLegalX, newLegalY);
-        this.stopTimer(T_CALCULATE_COST);
-
-        this.startTimer(T_UPDATE_CIRCUIT);
-        if(tmpLegalCost < this.legalCost) {
-            this.legalCost = tmpLegalCost;
-            this.updateLegal(newLegalX, newLegalY);
-        }
-
-        this.lastRatio = this.linearCost / this.legalCost;
-        if(iteration == 0) {
-            this.firstRatio = this.lastRatio;
-        }
-
-        this.stopTimer(T_UPDATE_CIRCUIT);
+        this.updateLegalIfNeeded(newLegalX, newLegalY);
+        this.ratio = this.linearCost / this.legalCost;
     }
+
 
     @Override
     protected boolean stopCondition(int iteration) {
-        return this.lastRatio > this.stopRatio;
+        return this.ratio > this.stopRatio;
     }
 
 
@@ -205,7 +179,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     protected void addStatTitles(List<String> titles) {
         titles.add("iteration");
         titles.add("anchor weight");
-        titles.add("utilization");
         titles.add("linear cost");
         titles.add("legal cost");
         titles.add("time");
@@ -216,7 +189,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.printStats(
                 Integer.toString(iteration),
                 String.format("%.2f", this.anchorWeight),
-                String.format("%.2f", this.utilization),
                 String.format("%.5g", this.linearCost),
                 String.format("%.5g", this.legalCost),
                 String.format("%.3g", time));

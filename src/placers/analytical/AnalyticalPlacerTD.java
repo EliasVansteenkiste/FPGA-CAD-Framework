@@ -38,6 +38,9 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
     private double criticalityExponent;
     private TimingGraph timingGraph;
 
+    private double legalCostTD = Double.MAX_VALUE;
+    private CostCalculatorTD costCalculatorTD;
+
     public AnalyticalPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
@@ -53,7 +56,8 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
     @Override
     protected CostCalculator createCostCalculator() {
-        return new CostCalculatorTD(this.circuit, this.netBlocks, this.timingNets);
+        this.costCalculatorTD = new CostCalculatorTD(this.circuit, this.netBlocks, this.timingNets);
+        return new CostCalculatorWLD(this.nets);
     }
 
 
@@ -65,5 +69,23 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
     @Override
     public String getName() {
         return "Timing driven analytical placer";
+    }
+
+
+    @Override
+    protected void updateLegalIfNeeded(int[] x, int[] y) {
+        this.startTimer(T_CALCULATE_COST);
+        double costBB = this.costCalculator.calculate(x, y);
+        double costTD = this.costCalculatorTD.calculate(x, y);
+        this.stopTimer(T_CALCULATE_COST);
+
+        this.startTimer(T_UPDATE_CIRCUIT);
+        if(costTD < this.legalCostTD) {
+            this.legalCost = costBB;
+            this.legalCostTD = costTD;
+            this.updateLegal(x, y);
+        }
+
+        this.stopTimer(T_UPDATE_CIRCUIT);
     }
 }
