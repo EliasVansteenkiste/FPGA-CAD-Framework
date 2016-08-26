@@ -79,7 +79,8 @@ Referencing the FPGA Placement Framework
 ---------------
 If you use the FPGA Placement Framework in your work, please reference the following paper in your publications: <br>
 <b>Liquid: Fast Placement Prototyping Through Steepest Gradient Descent Movement <br>
-Elias Vansteenkiste, Seppe Lenders, Dirk Stroobandt</b>
+Elias Vansteenkiste, Seppe Lenders, Dirk Stroobandt</b> <br>
+<i> 26th International Conference on Field-Programmable Logic and Applications, FPL2016</i>
 
 
 You may also refer to one of our others papers if you think it is more related.
