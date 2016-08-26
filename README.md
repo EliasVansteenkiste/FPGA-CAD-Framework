@@ -77,8 +77,9 @@ If you encounter bugs, want to use the FPGA Placement Framework but need support
 
 Referencing the FPGA Placement Framework
 ---------------
-If you use the FPGA Placement Framework in your work, please reference in your publications the following paper:
-
+If you use the FPGA Placement Framework in your work, please reference the following paper in your publications: <br>
+<b>Liquid: Fast Placement Prototyping Through Steepest Gradient Descent Movement <br>
+Elias Vansteenkiste, Seppe Lenders, Dirk Stroobandt</b>
 
 
 You may also refer to one of our others papers if you think it is more related.
