@@ -95,19 +95,15 @@ class DimensionSolverGradient {
             double currentCoordinate = this.coordinates[i];
 
             double netGoal = currentCoordinate;
-//            if(direction > 0) {
-//                netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
-//
-//            } else if(direction < 0) {
-//                netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
-//
-//            } else {
-//                continue;
-//            }
-            
-            netGoal += this.numPositiveNets[i];
-            netGoal -= this.numNegativeNets[i];
+            if(direction > 0) {
+                netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
 
+            } else if(direction < 0) {
+                netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
+
+            } else {
+                continue;
+            }
 
             double newSpeed;
             if(this.legalIsSet) {
