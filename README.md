@@ -1,16 +1,34 @@
-The FPGA Placement Framework
+The FPGA CAD Framework
 ==============================
 
-An FPGA placement framework implemented in Java, including benchmarks
+An FPGA CAD framework focused on rapid prototyping of new CAD algorithms.
+The framework is implemented in Java. At this moment pack and placement algorithms are implemented in the framework.
 
 
 What can I do with this tool flow?
 ---------------
 
+
+
+
+<ul>
+
+<li>
+Packing:
+<ul>
+  <li>Partitioning based packing: A multi-threaded implementation of a packer. Packing happens in two phases. Firstly the partitioningsbased packing and secondly the seed-based packing phase. A second phase is necessary to allow the packer to check architectural constraints. </li>
+</ul>
+</li>
+
+<li>
+Placement:
 <ul>
   <li>Simulated Annealing based Placement</li>
   <li>Placement with an iterative analytical solver based placement</li>
   <li>Placement with Liquid: A placer that uses steepest gradient descent moves to place a design</li>
+</ul>
+</li>
+
 </ul>
 
 
@@ -89,13 +107,14 @@ Contributors
 ---------------
 Active Contributors
 <ul>
-  <li>Seppe Lenders - <a href="mailto:Seppe.Lenders@gmail.com"> Seppe.Lenders@gmail.com</a></li>
+  <li>Dries Vercruyce - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
   <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
 </ul>
 
 Past Contributors
 <ul>
   <li>Arno Messiaen - <a href="mailto:Arno.Messiaen@gmail.com">Arno.Messiaen@gmail.com</a></li>
+  <li>Seppe Lenders - <a href="mailto:Seppe.Lenders@gmail.com"> Seppe.Lenders@gmail.com</a></li>
 </ul>
 
 Development
