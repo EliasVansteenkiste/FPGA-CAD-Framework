@@ -30,15 +30,15 @@ public class Cluster {
 	}
 	public void writeNetlistFile(){
 		NetFileWriter writer = new NetFileWriter(this.logicBlocks, this.root);
+		String result_folder = this.simulation.getStringValue("result_folder");
 			
 		writer.netlistInputs();
 		writer.netlistOutputs();
 			
-		writer.makeNetFile();
-		writer.printHeaderToNetFile();
-			
-		writer.printLogicBlocksToNetFile();
+		writer.makeNetFile(result_folder);
 		
+		writer.printHeaderToNetFile(result_folder);
+		writer.printLogicBlocksToNetFile();
 		writer.finishNetFile();
 	}
 }

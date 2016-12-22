@@ -80,14 +80,13 @@ public class NetFileWriter {
 			}
 		}
 	}
-	public void makeNetFile(){
-		makeNetFile(this.root);
+	public void makeNetFile(String resultFolder){
+		makeNetFile(this.root, resultFolder);
 	}
-	public void printHeaderToNetFile(){
-		this.writeBlockToNetFile(Util.run_folder() + this.root.get_blif() + ".net", "FPGA_packed_netlist[0]", null);
-		//for(String clock:this.root.get_clocks())add(clock);
+	public void printHeaderToNetFile(String result_folder){
+		this.writeBlockToNetFile(result_folder + this.root.get_blif() + ".net", "FPGA_packed_netlist[0]", null);
 		for(N input:this.netlistInputs)add(input);
-		this.writeInputsToNetFile(null, true, true);
+		this.writeInputsToNetFile();
 		for(N output:this.netlistOutputs){
 			for(P terminalOutputPin:output.get_terminal_pins()){
 				if(terminalOutputPin.get_terminal().is_output_type()){
@@ -95,11 +94,10 @@ public class NetFileWriter {
 				}
 			}
 		}
-		writeOutputsToNetFile(null, true, true);
+		writeOutputsToNetFile();
 		for(String clock:this.root.get_clocks()) add(clock);
-		writeClocksToNetFile(null);
+		writeClocksToNetFile();
 	}
-
 	public void printLogicBlocksToNetFile(){
 		for(LogicBlock lb:this.logicBlocks){
 			lb.setInstanceNumber(this.blockC++);
@@ -107,6 +105,7 @@ public class NetFileWriter {
 		}
 	}
 	public void finishNetFile(){
+		this.writeToNetFile("</block>");
 		closeNetFile();
 
 		this.t.end();
@@ -137,109 +136,59 @@ public class NetFileWriter {
 		
 		this.tabs += 1;
 	}
-	private void writeInputsToNetFile(String port_name, boolean start, boolean end){
-		if(start){
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("<inputs>");
-			writeToNetFile("\n");
-			this.tabs += 1;
-		}
-		if(port_name!=null){
-			writeToNetFile(Util.tabs(tabs));
-			writeToNetFile("<port name=\"");
-			writeToNetFile(port_name);
-			writeToNetFile("\">");
-			writeToNetFile("\n");
-			this.tabs += 1;
-		}
+	private void writeInputsToNetFile(){
+		writeToNetFile(Util.tabs(this.tabs));
+		writeToNetFile("<inputs>");
+		writeToNetFile("\n");
+		
+		writeToNetFile(Util.tabs(this.tabs + 1));
 		for(String input:this.names){
-			writeToNetFile(Util.tabs(tabs));
-			writeToNetFile(input);
-			writeToNetFile("\n");
+			writeToNetFile(input + " ");
 		}
+		writeToNetFile("\n");
 		this.names.clear();
-		if(port_name!=null){
-			this.tabs -= 1;	
-			writeToNetFile(Util.tabs(tabs));
-			writeToNetFile("</port>");
-			writeToNetFile("\n");
-		}
-		if(end){
-			this.tabs -= 1;
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("</inputs>");
-			writeToNetFile("\n");
-		}
+		
+		writeToNetFile(Util.tabs(this.tabs));
+		writeToNetFile("</inputs>");
+		writeToNetFile("\n");
 	}
-	private void writeOutputsToNetFile(String port_name, boolean start, boolean end){
-		if(start){
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("<outputs>");
-			writeToNetFile("\n");
-			this.tabs += 1;
-		}
-		if(port_name!=null){
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("<port name=\"");
-			writeToNetFile(port_name);
-			writeToNetFile("\">");
-			writeToNetFile("\n");
-			this.tabs += 1;
-		}
+	private void writeOutputsToNetFile(){
+		writeToNetFile(Util.tabs(this.tabs));
+		writeToNetFile("<outputs>");
+		writeToNetFile("\n");
+	
+		writeToNetFile(Util.tabs(this.tabs + 1));
 		for(String output:this.names){
-			writeToNetFile(Util.tabs(tabs));
-			writeToNetFile(output);
-			writeToNetFile("\n");
+			writeToNetFile(output + " ");
 		}
+		writeToNetFile("\n");
 		this.names.clear();
-		if(port_name!=null){
-			this.tabs -= 1;
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("</port>");
-			writeToNetFile("\n");
-		}
-		if(end){
-			this.tabs -= 1;
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("</outputs>");
-			writeToNetFile("\n");
-		}
+
+		writeToNetFile(Util.tabs(this.tabs));
+		writeToNetFile("</outputs>");
+		writeToNetFile("\n");
 	}
-	private void writeClocksToNetFile(String port_name){
+	private void writeClocksToNetFile(){
 		writeToNetFile(Util.tabs(this.tabs));
 		writeToNetFile("<clocks>");
 		writeToNetFile("\n");
-		this.tabs += 1;
-		if(port_name!=null){
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("<port name=\"");
-			writeToNetFile(port_name);
-			writeToNetFile("\">");
-			writeToNetFile("\n");
-			this.tabs += 1;
-		}
+		
+		writeToNetFile(Util.tabs(this.tabs + 1));
 		for(String clock:this.names){
-			writeToNetFile(Util.tabs(tabs));
-			writeToNetFile(clock);
-			writeToNetFile("\n");
+			writeToNetFile(clock + " ");
 		}
+		writeToNetFile("\n");
 		this.names.clear();
-		this.tabs -= 1;
-		if(port_name!=null){
-			writeToNetFile(Util.tabs(this.tabs));
-			writeToNetFile("</port>");
-			writeToNetFile("\n");
-			this.tabs -= 1;
-		}
+		
 		writeToNetFile(Util.tabs(this.tabs));
 		writeToNetFile("</clocks>");
 		writeToNetFile("\n");
 	}
 	
 	//// WRITER ////
-	private void makeNetFile(Netlist root){
+	private void makeNetFile(Netlist root, String resultFolder){
 		try {
-			FileWriter w = new FileWriter(Util.run_folder() + root.get_blif() + ".net");
+			FileWriter w = new FileWriter(resultFolder + root.get_blif() + ".net");
 			this.writer = new BufferedWriter(w);
 		} catch (IOException e) {
 			e.printStackTrace();

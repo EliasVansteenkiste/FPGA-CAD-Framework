@@ -278,13 +278,9 @@ public class LogicBlock {
 					sb.append("<port name=\"");
 					sb.append(inputPort);
 					sb.append("\">");
-					sb.append("\n");
 					for(String inputPin:this.inputs.get(inputPort)){
-						sb.append(Util.tabs(tabs+3));
-						sb.append(inputPin);
-						sb.append("\n");
+						sb.append(inputPin + " ");
 					}
-					sb.append(Util.tabs(tabs+2));
 					sb.append("</port>");
 					sb.append("\n");
 				}
@@ -303,13 +299,9 @@ public class LogicBlock {
 					sb.append("<port name=\"");
 					sb.append(outputPort);
 					sb.append("\">");
-					sb.append("\n");
 					for(String outputPin:this.outputs.get(outputPort)){
-						sb.append(Util.tabs(tabs+3));
-						sb.append(outputPin);
-						sb.append("\n");
+						sb.append(outputPin + " ");
 					}
-					sb.append(Util.tabs(tabs+2));
 					sb.append("</port>");
 					sb.append("\n");
 				}
@@ -328,13 +320,9 @@ public class LogicBlock {
 					sb.append("<port name=\"");
 					sb.append(clockPort);
 					sb.append("\">");
-					sb.append("\n");
 					for(String clockPin:this.clocks.get(clockPort)){
-						sb.append(Util.tabs(tabs+3));
-						sb.append(clockPin);
-						sb.append("\n");
+						sb.append(clockPin + " ");
 					}
-					sb.append(Util.tabs(tabs+2));
 					sb.append("</port>");
 					sb.append("\n");
 				}
