@@ -17,16 +17,16 @@ class PlacerFactory {
 
     private static Map<String, String> placers = new LinkedHashMap<>();
     static {
-        PlacerFactory.placers.put("random", "placers.random.RandomPlacer");
+        PlacerFactory.placers.put("random", "place.placers.random.RandomPlacer");
 
-        PlacerFactory.placers.put("wld_sa", "placers.simulatedannealing.SimulatedAnnealingPlacerWLD");
-        PlacerFactory.placers.put("td_sa", "placers.simulatedannealing.SimulatedAnnealingPlacerTD");
+        PlacerFactory.placers.put("wld_sa", "place.placers.simulatedannealing.SimulatedAnnealingPlacerWLD");
+        PlacerFactory.placers.put("td_sa", "place.placers.simulatedannealing.SimulatedAnnealingPlacerTD");
 
-        PlacerFactory.placers.put("wld_gp", "placers.analytical.GradientPlacerWLD");
-        PlacerFactory.placers.put("td_gp", "placers.analytical.GradientPlacerTD");
+        PlacerFactory.placers.put("wld_gp", "place.placers.analytical.GradientPlacerWLD");
+        PlacerFactory.placers.put("td_gp", "place.placers.analytical.GradientPlacerTD");
 
-        PlacerFactory.placers.put("wld_ap", "placers.analytical.AnalyticalPlacerWLD");
-        PlacerFactory.placers.put("td_ap", "placers.analytical.AnalyticalPlacerTD");
+        PlacerFactory.placers.put("wld_ap", "place.placers.analytical.AnalyticalPlacerWLD");
+        PlacerFactory.placers.put("td_ap", "place.placers.analytical.AnalyticalPlacerTD");
     }
 
 
