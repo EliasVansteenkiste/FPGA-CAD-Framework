@@ -1,248 +1,196 @@
 package pack.main;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.regex.Pattern;
 
 import pack.util.ErrorLog;
-import pack.util.Util;
 
 public class Simulation{
+	private LinkedHashMap<String, Option> options;
+	private int maxNameSize;
+	private int maxDescriptionSize;
+	private int simulationID;
 	
-	//GENERAL CONFIGURATION
-	private String architecture = null;
-	private ArrayList<String> benchmarks = new ArrayList<String>();
-	private String currentBenchmark = null;
-	private Integer interations = null;
-	
-	//SIMULATION CONFIGURATION
-	private Integer numSubcircuits = null;
-	private Integer numThreads = null;
-	private Integer maxFanout = null;
-	private Integer hmetisQuality = null;
-	private Double minCrit = null;
-	private Integer maxPerCritEdge = null;
-	private Integer timingWeight = null;
-	private Double multiplyFactor = null;
-	
-	private Boolean fixedSize = null;
-	
-	private Boolean place = null;
-	private Boolean route = null;
-	private Boolean vprBaseline = null;
-	
-	//BENCHMARK //PARAMETER //ITERATIONS
-	private ArrayList<String> parameters;
-	private HashMap<String, HashMap<String, ArrayList<String>>> results;
-	
-	//INITIALISATION
-	public Simulation(String architecture, int iterations, int numSubcircuits, int numThreads, int maxFanout, int hmetisQuality, double minCrit, int maxPerCritEdge, int timingWeigh, double multiplyFactor, boolean fixedSize, boolean place, boolean route, boolean vprBaseline){
-		this.benchmarks = new ArrayList<String>();
-	
-		this.architecture = architecture;
-		this.interations = iterations;
+	public Simulation(){
+		this.options = new LinkedHashMap<String, Option>();
 		
-		this.numSubcircuits = numSubcircuits;
-		this.numThreads = numThreads;
-		this.maxFanout = maxFanout;
-		this.hmetisQuality = hmetisQuality;
-		this.minCrit = minCrit;
-		this.maxPerCritEdge = maxPerCritEdge;
-		this.timingWeight = timingWeigh;
-		this.multiplyFactor = multiplyFactor;
+		this.addOption(new Option("result_folder","description_todo", String.class));//TODO Description
+		this.addOption(new Option("vpr_folder","description_todo", String.class));//TODO Description
+		this.addOption(new Option("hmetis_folder","description_todo", String.class));//TODO Description
 		
-		this.fixedSize = fixedSize;
+		this.addOption(new Option("circuit","description_todo", String.class));//TODO Description
+		this.addOption(new Option("architecture","description_todo", String.class));//TODO Description
 		
-		this.place = place;
-		this.route = route;
-		this.vprBaseline = vprBaseline;
+		this.addOption(new Option("max_pack_size","The maxmimum number of blocks in the independent subcircuits for seed based packing", 2500));
+		this.addOption(new Option("num_threads","The number of available threads", 4));
+		this.addOption(new Option("max_fanout","The maximum fanout of the added nets during partitioning", 100));
+		this.addOption(new Option("hmetis_quality","description_todo", 2));//TODO Descriptions
+		this.addOption(new Option("unbalance_factor","description_todo", 25));//TODO Description
+		this.addOption(new Option("min_crit","description_todo", 0.7));//TODO Description
+		this.addOption(new Option("max_per_crit_edge","description_todo", 20));//TODO Description
+		this.addOption(new Option("timing_weight","description_todo", 10));//TODO Description
+		this.addOption(new Option("multiply_factor","description_todo", 1.0));//TODO Description
+		this.addOption(new Option("fixed_size","description_todo", true));//TODO Description
 		
-		this.parameters = new ArrayList<String>();
-		this.results = new HashMap<String, HashMap<String, ArrayList<String>>>();
+		this.addOption(new Option("logfile","Print console output to logfile", false));
+		
+		this.addOption(new Option("area_exponent_alpha","Scaling power exponent for area", 0.0));
+		this.addOption(new Option("timing_edge_weight_update", "Update the weight on the critical paths with a cut edge", true));
+
+		this.simulationID = (int)Math.round(Math.random()*1000000);
 	}
-	public void add_benchmark(String benchmark){
-		this.benchmarks.add(benchmark);
+	public boolean hasOption(Option option){
+		return this.hasOption(option.getName());
 	}
-	public void set_current_benchmark(String bench){
-		this.currentBenchmark = bench;
+	public boolean hasOption(String name){
+		if(this.options.containsKey(name)){
+			return true;
+		}
+		return false;
 	}
-	
-	//GETTERS
-	public String architecture(){
-		if(this.architecture == null) ErrorLog.print("This simulation has no value for architecture");
-		return this.architecture;
+	public void addOption(Option option){
+		if(this.hasOption(option)){
+			ErrorLog.print("Duplicate option: " + option.getName() + " " + option.getDescription());
+		}
+		this.options.put(option.getName(), option);
+		if(option.getName().length() > this.maxNameSize){
+			this.maxNameSize = option.getName().length();
+		}
+		if(option.getDescription().length() > this.maxDescriptionSize){
+			this.maxDescriptionSize = option.getDescription().length();
+		}
 	}
-	public ArrayList<String> benchmarks(){
-		if(this.benchmarks.isEmpty()) ErrorLog.print("This simulation has no values for benchmarks");
-		return this.benchmarks;
-	}
-	public String benchmark(){
-		if(this.currentBenchmark == null) ErrorLog.print("This simulation has no value for benchmark");
-		return this.currentBenchmark;
-	}
-	public int iterations(){
-		if(this.interations == null) ErrorLog.print("This simulation has no value for iterations");
-		return this.interations;
+	public Option getOption(String name){
+		if(this.hasOption(name)){
+			return this.options.get(name);
+		}else{
+			ErrorLog.print("Option " + name + " not found");
+		}
+		return null;
 	}
 
-	public int numSubcircuits(){
-		if(this.numSubcircuits == null) ErrorLog.print("This simulation has no value for partitions");
-		return this.numSubcircuits;
-	}
-	public int numPartitionThreads(){
-		if(this.numThreads == null) ErrorLog.print("This simulation has no value for metis pool");
-		return this.numThreads;
-	}
-	public int numPackThreads(){
-		if(this.numThreads == null) ErrorLog.print("This simulation has no value for pack pool");
-		return this.numThreads;
-	}
-	public int maxFanout(){
-		if(this.maxFanout == null) ErrorLog.print("This simulation has no value for max fanout");
-		return this.maxFanout;
-	}
-	public int hmetisQuality(){
-		if(this.hmetisQuality == null) ErrorLog.print("This simulation has no value for hmetis");
-		return this.hmetisQuality;
-	}
-	public double min_crit(){
-		if(this.minCrit == null) ErrorLog.print("This simulation has no value for min crit");
-		return this.minCrit;
-	}
-	public int max_per_crit_edge(){
-		if(this.maxPerCritEdge == null) ErrorLog.print("This simulation has no value for max percentage critical edges");
-		return this.maxPerCritEdge;
-	}
-	public int timing_weight(){
-		if(this.timingWeight == null) ErrorLog.print("This simulation has no value for timing weight");
-		return this.timingWeight;
-	}
-	public double multiply_factor(){
-		if(this.multiplyFactor == null) ErrorLog.print("This simulation has no value for multiply factor");
-		return this.multiplyFactor;
-	}
-	public boolean fixed_size(){
-		if(this.fixedSize == null) ErrorLog.print("This simulation has no value for fixed size");
-		return this.fixedSize;
-	}
-	public boolean place(){
-		if(this.place == null) ErrorLog.print("This simulation has no value for place");
-		return this.place;
-	}
-	public boolean route(){
-		if(this.route == null) ErrorLog.print("This simulation has no value for route");
-		return this.route;
-	}
-	public boolean baseline(){
-		if(this.vprBaseline == null) ErrorLog.print("This simulation has no value for VPR baseline");
-		return this.vprBaseline;
+	
+
+	public void setOptionValue(String name, Object value){
+		if(this.hasOption(name)){
+			this.options.get(name).setValue(value);
+		}else{
+			ErrorLog.print("Option " + name + " not found");
+		}
 	}
 	
-	//RESULTS
-	public void addSimulationResult(String parameter, double value){
-		this.add_simulation_result(parameter, Util.str(value));
+	public String getStringValue(String name){
+		Option option = this.getOption(name);
+		if(!option.getType().equals(String.class)) {
+        	ErrorLog.print("Option " + option.getName() + " is not of class " + String.class + ", class is equal to " + option.getType());
+    	}
+    	return (String)option.getValue();
 	}
-	public void add_simulation_result(String parameter, String value){
-		if(!this.parameters.contains(parameter)){
-			this.parameters.add(parameter);
-		}
-		if(!this.results.containsKey(this.currentBenchmark)){
-			this.results.put(this.currentBenchmark, new HashMap<String,ArrayList<String>>());
-		}
-		if(!this.results.get(this.currentBenchmark).containsKey(parameter)){
-			this.results.get(this.currentBenchmark).put(parameter, new ArrayList<String>());
-		}
-		this.results.get(this.currentBenchmark).get(parameter).add(value);
+	public Double getDoubleValue(String name){
+		Option option = this.getOption(name);
+		if(!option.getType().equals(Double.class)) {
+        	ErrorLog.print("Option " + option.getName() + " is not of class " + Double.class + ", class is equal to " + option.getType());
+    	}
+    	return (Double)option.getValue();
 	}
-	private String get_simulation_settings(){
-		StringBuffer result = new StringBuffer();
-		result.append("################################################################################" + "\n");
-		result.append("############################# SIMULATION SETTINGS ##############################" + "\n");
-		result.append("################################################################################" + "\n");
-		result.append("Fixed size: " + this.fixedSize + "\n");
-		result.append(Util.fill("Timing edge weight: " + this.timingWeight, 25) + " | " + Util.fill("Minimum criticality: " + this.minCrit, 25) + "\n");
-		result.append(Util.fill("Metis pool: " + this.numThreads, 25) + " | Pack pool: " + this.numThreads + "\n");
-		result.append(Util.fill("Partitions: " + this.numSubcircuits, 25) + " | " + Util.fill("hMetis: " + this.hmetisQuality, 25) + " | Max fanout: " + this.maxFanout + "\n");
-		result.append("################################################################################" + "\n\n");
-		return result.toString();
+	public Integer getIntValue(String name){
+		Option option = this.getOption(name);
+		if(!option.getType().equals(Integer.class)) {
+        	ErrorLog.print("Option " + option.getName() + " is not of class " + Integer.class + ", class is equal to " + option.getType());
+    	}
+    	return (Integer)option.getValue();
 	}
-	public String get_results(){
-		StringBuffer result = new StringBuffer();
-		
-		result.append(this.get_simulation_settings());
-
-		for(String parameter:this.parameters){
-			result.append("--------------------------------------------------------------------------------" + "\n");
-			result.append("\t\t\t\t" + parameter + "\n");
-			result.append("--------------------------------------------------------------------------------" + "\n");
-			for(String bench:this.benchmarks){
-				if(bench.length()>6){
-					result.append(bench.substring(0,6) + "\t");
+	public Boolean getBooleanValue(String name){
+		Option option = this.getOption(name);
+		if(!option.getType().equals(Boolean.class)) {
+        	ErrorLog.print("Option " + option.getName() + " is not of class " + Boolean.class + ", class is equal to " + option.getType());
+    	}
+    	return (Boolean)option.getValue();
+	}
+	
+	public int getSimulationID(){
+		return this.simulationID;
+	}
+	
+	public boolean isDouble(String word){
+		if(Pattern.matches("([0-9]*)\\.([0-9]*)", word)){
+			return true;
+		}else if(Pattern.matches("([0-9]*)\\,([0-9]*)", word)){
+			return true;
+		}
+		return false;
+	}
+	public boolean isInt(String word){
+		if(Pattern.matches("([0-9]*)", word)){
+			return true;
+		}
+		return false;
+	}
+	public boolean isBoolean(String word){
+		if(word.equals("true")){
+			return true;
+		}else if(word.equals("True")){
+			return true;
+		}else if(word.equals("false")){
+			return true;
+		}else if(word.equals("False")){
+			return true;
+		}
+		return false;
+	}
+	public void parseArgs(String[]args){
+		for(String arg:args){
+			if(arg.equals("-h") || arg.equals("-help")){
+				System.out.println(this.toString());
+				System.exit(0);
+			}
+		}
+		for(int i=0;i<args.length;i++){
+			if(args[i].contains("-")){
+				String name = args[i].replace("-", "");
+				String value = args[i+1];
+				if(this.isDouble(value)){
+					this.getOption(name).setValue(Double.parseDouble(value));
+				}else if(this.isInt(value)){
+					this.getOption(name).setValue(Integer.parseInt(value));
+				}else if(this.isBoolean(value)){
+					this.getOption(name).setValue(Boolean.parseBoolean(value));
 				}else{
-					result.append(bench + "\t");
+					this.getOption(name).setValue(value);
 				}
+				i += 1;
 			}
-			result.append("\n");
-			for(int run = 0; run<this.iterations(); run ++){
-				boolean tabReq = false;
-				for(String bench:this.benchmarks){
-					if(!tabReq)tabReq = true;
-					else result.append("\t");
-					if(this.results.containsKey(bench)){
-						if(this.results.get(bench).containsKey(parameter)){
-							if(this.results.get(bench).get(parameter).size() > run){
-								result.append(this.results.get(bench).get(parameter).get(run).replace(".", ","));
-							}else{
-								result.append("NaN");
-							}
-						}else{
-							result.append("NaN");
-						}
-					}else{
-						result.append("NaN");
-					}
-				}
-				result.append("\n");
-			}
-			result.append("\n");
 		}
-		return result.toString();
 	}
-	public String print_geomean_results(){
-		StringBuffer result = new StringBuffer();
+
+	public String toString(){
+		String output = new String();
+		output += "\tMultiPart: a partitioning based packing tool\n\n";
+		output += "\tCommand line options:\n\n";
+		String name = "OPTION";
+		while(name.length() < this.maxNameSize) name = name + " ";
+		String description = "DESCRIPTION";
+		while(description.length() < this.maxDescriptionSize) description = description + " ";
+		output += "\t\t" + name + "    " + description + "    " + "DEFAULT" + "\n\n";
 		
-		result.append(this.get_simulation_settings());
-		
-		for(String parameter:this.parameters){
-			ArrayList<Double> geomeanValues = new ArrayList<Double>();
-			for(String bench:this.benchmarks){
-				if(this.results.containsKey(bench)){
-					if(this.results.get(bench).containsKey(parameter)){
-						double sum = 0.0;
-						int avCount = 0;
-						for(int run = 0; run<this.iterations(); run ++){
-							if(this.results.get(bench).get(parameter).size() > run){
-								String value = this.results.get(bench).get(parameter).get(run);
-								if(!value.equals("NaN")){
-									double doubleVal = Double.parseDouble(value);
-									if(doubleVal != 0.0){
-										sum += doubleVal;
-										avCount += 1;
-									}
-								}
-							}
-						}
-						geomeanValues.add(sum/avCount);
-					}
-				}
-			}
-			double total = 1.0;
-			for(double val:geomeanValues){
-				total *= val;
-			}
-			double res = Math.pow(total, 1.0/geomeanValues.size());
-			result.append(Util.fill(parameter, 20) + ": " + Util.str(Util.round(res,4)).replace(".", ",") + "\n");
+		for(Option option:this.options.values()){
+			name = option.getName();
+			while(name.length() < this.maxNameSize) name = name + " ";
+			description = option.getDescription();
+			while(description.length() < this.maxDescriptionSize) description = description + " ";
+			output += "\t\t-" + name + "    " + description;
+			if(option.hasDefaultValue()) output += "    " + option.getDefaultValue();
+			output += "\n";
 		}
-		result.append("################################################################################" + "\n");
-		return result.toString();
+		return output;
+	}
+	public String toValueString(){
+		String output = new String();
+		for(Option option:this.options.values()){
+			String name = option.getName();
+			while(name.length() < this.maxNameSize) name = name + " ";
+			output += name + "    " + option.getValue() + "\n";
+		}
+		return output;
 	}
 }
