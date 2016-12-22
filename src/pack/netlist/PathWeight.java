@@ -354,8 +354,8 @@ public class PathWeight {
 	}
 	public void find_critical_edges_type(){
 		//THIS TYPE HAS A MORE COMPLEX METHOD TO DEFINE THE CRITICAL EDGES AS USED IN THE FPL2016 PAPER
-		double minCriticality = this.simulation.min_crit();
-		int maxPercentageCriticalEdges = this.simulation.max_per_crit_edge();
+		double minCriticality = this.simulation.getDoubleValue("min_crit");
+		int maxPercentageCriticalEdges = this.simulation.getIntValue("max_per_crit_edge");
 		
 		Output.println("\tMinimum criticality               | " + minCriticality);
 		Output.println("\tMaximum percentage critical edges | " + maxPercentageCriticalEdges);
@@ -473,8 +473,8 @@ public class PathWeight {
 		return edges;
 	}
 	public void assign_critical_edges(ArrayList<P> criticalEdges){
-		int weightFactor = this.simulation.timing_weight();
-		double multiplyFactor = this.simulation.multiply_factor();
+		int weightFactor = this.simulation.getIntValue("timing_weight");
+		double multiplyFactor = this.simulation.getDoubleValue("multiply_factor");
 		
 		Output.println("\tAssign critical edges:");
 		Output.println("\t\tMultiply factor           | " + multiplyFactor);

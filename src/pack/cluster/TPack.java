@@ -28,6 +28,8 @@ public class TPack {
 	//private Architecture architecture;
 	private Simulation simulation;
 	
+	private String vpr_folder;
+	
 	private HashSet<String> netlistInputs;
 	private HashSet<String> netlistOutputs;
 		
@@ -48,6 +50,8 @@ public class TPack {
 		this.partition = partition;
 		//this.architecture = architecture;
 		this.simulation = simulation;
+		
+		this.vpr_folder = simulation.getStringValue("vpr_folder");
 		
 		this.logicBlocks = new ArrayList<LogicBlock>();
  		
@@ -111,7 +115,6 @@ public class TPack {
 		Output.newLine();
 		
 		Output.println("\tLeaf nodes: " + this.subcircuits.size());
-		this.simulation.addSimulationResult("Leaf nodes", this.subcircuits.size());
 		Output.print("\t\t");
 		int no = 0;
 		int totalArea = 0;
@@ -131,7 +134,7 @@ public class TPack {
 		Output.println("\t\tTotal area is equal to " + totalArea);
 		Output.newLine();
 		
-		int poolSize = this.simulation.numPackThreads();
+		int poolSize = this.simulation.getIntValue("num_threads");
 		this.threadPool = new ThreadPool(poolSize);
 		this.packPool = new ArrayList<VPRThread>();
 		Output.println("\tPool size: " + poolSize);
@@ -148,7 +151,6 @@ public class TPack {
 		Output.newLine();
 		
 		Output.println("\t" + "A maximum of " + this.threadPool.maxUsage() + " threads is used during seed based packing");
-		simulation.addSimulationResult("Seed based packing threads", this.threadPool.maxUsage());
 		Output.newLine();
 		
 		this.removeCutTerminalsFromIOBlocks();
@@ -160,8 +162,8 @@ public class TPack {
 
 	private void startTPack(Set<B> floatingBlocks){
 		int thread = this.threadPool.getThread();
-		Netlist.write_blif(Util.localFolder() + "vtr-no-output/vpr/files/", thread, floatingBlocks, this.root.get_blif(), this.root.get_models());
-		VPRThread vpr = new VPRThread(Util.localFolder() + "vtr-no-output/vpr/files/", thread, this.simulation);
+		Netlist.write_blif(this.vpr_folder + "vpr/files/", thread, floatingBlocks, this.root.get_blif(), this.root.get_models(), this.simulation.getSimulationID());
+		VPRThread vpr = new VPRThread(thread, this.simulation);
 		vpr.run(floatingBlocks.size(), 0);
 		this.packPool.add(vpr);
 	}
@@ -195,9 +197,9 @@ public class TPack {
 				
 			}
 			int thread = this.threadPool.getThread();
-			leafNode.writeSDC(Util.localFolder() + "vtr-no-output/vpr/files/", thread, this.partition);
-			leafNode.writeBlif(Util.localFolder() + "vtr-no-output/vpr/files/", thread, this.partition);
-			VPRThread vpr = new VPRThread(Util.localFolder() + "vtr-no-output/vpr/files/", thread, this.simulation);
+			leafNode.writeSDC(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
+			leafNode.writeBlif(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
+			VPRThread vpr = new VPRThread(thread, this.simulation);
 			vpr.run(leafNode.atom_count(), leafNode.get_area());
 			this.packPool.add(vpr);
 		}
@@ -209,7 +211,7 @@ public class TPack {
 				int thread = vpr.getThread();
 				this.threadPool.addThread(thread);
 				
-				String file = Util.localFolder() + "vtr-no-output/vpr/files/" +  this.root.get_blif() + "_" + Util.getSimulationId() + "_" + thread;
+				String file = this.vpr_folder + "vpr/files/" +  this.root.get_blif() + "_" + this.simulation.getSimulationID() + "_" + thread;
 		 		if(!Util.fileExists(file + ".net")){
 		 			Output.println("Netfile " + file + ".net" + " " + "not available");
 		 			Output.println("**** VPR Line ****");
@@ -330,7 +332,7 @@ public class TPack {
 					pbLevel -= 1;
 					if(pbLevel == 0){
 						LogicBlock lb = currentBlock[pbLevel+1];
-						lb.setName();
+						//lb.setName();//TODO REMOVED
 						this.logicBlocks.add(lb);
 					}else{
 						currentBlock[pbLevel].addChildBlock(currentBlock[pbLevel+1]);
@@ -493,12 +495,12 @@ public class TPack {
  	}
  	private void deleteExistingFiles(){
 		//Delete all existing files of this netlist in the vpr files folder
-		File folder = new File(Util.localFolder() + "vtr-no-output/vpr/files/");
+		File folder = new File(this.vpr_folder + "vpr/files/");
 		File[] listOfFiles = folder.listFiles();
 		for(int i = 0; i < listOfFiles.length; i++){
 			File file = listOfFiles[i];
 			if(file.isFile()){
-				if(file.getName().contains(this.root.get_blif() + Util.getSimulationId())){
+				if(file.getName().contains(this.root.get_blif() + this.simulation.getSimulationID())){
 					file.delete();
 				}
 			}

@@ -46,6 +46,7 @@ public class HMetis {
 	
 	private double partitioningRuntime;
 	private int numberOfcutEdges;
+
 	
 	public HMetis(Netlist netlist, int thread, int metisIt, Param param){
 		this.netlist = netlist;
@@ -147,7 +148,7 @@ public class HMetis {
     }
 	private void writeToFile(){
 		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(Util.localFolder() + "hmetis/files/" + this.netlist.get_blif() + "_" + Util.getSimulationId() + "_" + this.thread));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(this.param.getHMetisFolder() + "files/" + this.netlist.get_blif() + "_" + this.param.getSimulationID() + "_" + this.thread));
 			int numberOfInternalNets = 0;
 			for(N n:this.netlist.get_nets()){
 				if(n.add_net_to_hmetis_partitioning(this.param.maxFanout())){
@@ -183,7 +184,12 @@ public class HMetis {
 					ErrorLog.print("Error in the block numbering");
 				}
 				int area = b.get_area();
-				area = (int)Math.ceil(Math.pow(area, 0.7));
+				area = (int)Math.ceil(Math.pow(area, this.param.alpha()));
+				
+				//Safety build in to assure that alpha exponent is equal to zero
+				if(area != 1){
+					ErrorLog.print("Area should be equal to 1, instead it is equal to " + area);
+				}
 				bw.write(area + "");
 				bw.newLine();
 
@@ -250,10 +256,10 @@ public class HMetis {
 	}
 	private void run_hMetis(){
 		try{
-        	ProcessBuilder pb = new ProcessBuilder(this.param.getHMetisLine(this.netlist.get_blif(), this.thread));	
+        	ProcessBuilder pb = new ProcessBuilder(this.param.getHMetisLine(this.thread));	
         	this.proc = pb.start();
         	Output.println(this.param.getInfoLine(this.netlist, this.numberOfEdges, this.numberOfCriticalEdges, this.metisIt, this.thread));
-        	//this.param.printHMetisLine(this.netlist.get_blif(), this.thread);
+        	//this.param.printHMetisLine(this.thread);
         } catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -273,14 +279,14 @@ public class HMetis {
 			Info.add("HMetis", this.netlist.atom_count() + "\t" +  this.partitioningRuntime);	
 		}
 		
-		String resultFile = Util.localFolder() + "hmetis/files/" + this.netlist.get_blif() + "_" + Util.getSimulationId() + "_" + this.thread + ".part." + this.param.nparts();
+		String resultFile = this.param.getHMetisFolder() + "files/" + this.netlist.get_blif() + "_" + this.param.getSimulationID() + "_" + this.thread + ".part." + this.param.nparts();
 		
 		//CHECK IF FILE EXISTS
 		if(!Util.fileExists(resultFile)){
 			Output.newLine();
-			this.param.printHMetisLine(this.netlist.get_blif(), this.thread);
+			this.param.printHMetisLine(this.thread);
         	Output.newLine();
-			Output.println("Input file: " + Util.localFolder() + "hmetis/files/" + this.netlist.get_blif() + "_" + Util.getSimulationId() + "_" + this.thread);
+			Output.println("Input file: " + this.param.getHMetisFolder() + "files/" + this.netlist.get_blif() + "_" + this.param.getSimulationID() + "_" + this.thread);
 			Output.println("Result file: " + resultFile);
         	Output.newLine();
 			ErrorLog.print("Problem with hMetis, result file not found: " + resultFile);
@@ -302,9 +308,9 @@ public class HMetis {
 		}
 		
 		//Delete the files
-		File metisNetlistFile = new File(Util.localFolder() + "hmetis/files/" + this.netlist.get_blif() + "_" + Util.getSimulationId()  + "_" + this.thread);
+		File metisNetlistFile = new File(this.param.getHMetisFolder() + "files/" + this.netlist.get_blif() + "_" + this.param.getSimulationID()  + "_" + this.thread);
 		metisNetlistFile.delete();
-		File metisResultFile = new File(Util.localFolder() + "hmetis/files/" + this.netlist.get_blif() + "_" + Util.getSimulationId()  + "_" + this.thread + ".part." + this.param.nparts());
+		File metisResultFile = new File(this.param.getHMetisFolder() + "files/" + this.netlist.get_blif() + "_" + this.param.getSimulationID()  + "_" + this.thread + ".part." + this.param.nparts());
 		metisResultFile.delete();
 	}
 	public int getThreadNumber(){

@@ -9,7 +9,6 @@ import java.util.HashMap;
 import pack.util.ErrorLog;
 import pack.util.Output;
 import pack.util.Timing;
-import pack.util.Util;
 
 public class Model {
 	private String name;
@@ -24,7 +23,7 @@ public class Model {
 	
 	private int area;
 
-	public Model(String name){
+	public Model(String name, String archFile){
 		this.name = name;
 		this.inputPorts = new ArrayList<String>();
 		this.outputPorts = new ArrayList<String>();
@@ -35,7 +34,7 @@ public class Model {
 		
 		if(this.name.contains("stratixiv_ram_block")){
 			//System.out.println("Stratix ram block: " + this.name);
-			this.assign_stratixiv_ram_slices();
+			this.assign_stratixiv_ram_slices(archFile);
 			//System.out.println("\tM9K Slices: " + this.ramSlices9);
 			//System.out.println("\tM144K Slices: " + this.ramSlices144);
 		}
@@ -304,7 +303,7 @@ public class Model {
 	public int get_stratixiv_ram_slices_144(){
 		return this.ramSlices144;
 	}
-	private void assign_stratixiv_ram_slices(){
+	private void assign_stratixiv_ram_slices(String archFile){
 		boolean M9K = false;
 		boolean M144K = false;
 		boolean readPort = false;
@@ -320,7 +319,7 @@ public class Model {
 		int num_pb = 0;
 		
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(Util.archFolder() + "stratixiv_arch.timing.xml"));
+			BufferedReader br = new BufferedReader(new FileReader(archFile));
 		    String line = br.readLine();
 		    while (line != null) {
 		    	if(line.contains("<pb_type") && line.contains("name=\"M9K\"")){

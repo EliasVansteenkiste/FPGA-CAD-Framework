@@ -15,8 +15,13 @@ public class Param{
 	private int vCycle;
 	private int reconst;
 	private int dbglvl;
+	private double alpha;
 	
 	private int maxFanout;
+	
+	private String hmetis_folder;
+	private String circuitName;
+	private int simulationID;
 		
 	public Param(Simulation simulation){
 		this.nparts = 2;
@@ -24,10 +29,12 @@ public class Param{
 		this.reconst = 0;
 		this.dbglvl = 0;
 		
-		String qualityString = "" + simulation.hmetisQuality() + "";
-		int quality = Integer.parseInt(qualityString.substring(0, 1));
-		this.ubfactor =  Integer.parseInt(qualityString.substring(1, 3));
-
+		int quality = simulation.getIntValue("hmetis_quality");
+		this.ubfactor =  simulation.getIntValue("unbalance_factor");
+		this.maxFanout = simulation.getIntValue("max_fanout");
+		
+		this.alpha = simulation.getDoubleValue("area_exponent_alpha");
+		
 		if(quality == 1){
 			this.cType = 1;
 			this.rType = 3;
@@ -76,7 +83,9 @@ public class Param{
 			ErrorLog.print("Unknown hmetis quality parameter => " + quality);
 		}
 		
-		this.maxFanout = simulation.maxFanout();
+		this.hmetis_folder = simulation.getStringValue("hmetis_folder");
+		this.circuitName = simulation.getStringValue("circuit");
+		this.simulationID = simulation.getSimulationID();
 	}
 	public String getHMetisParameters(String tabs){
 		int length = 12;
@@ -101,14 +110,17 @@ public class Param{
 	public int maxFanout(){
 		return this.maxFanout;
 	}
-	public String getGraphFile(String blif, int thread){
-		return Util.localFolder() + "hmetis/files/" + blif + "_" + Util.getSimulationId() + "_" + thread;
+	public double alpha(){
+		return this.alpha;
 	}
-	public String[] getHMetisLine(String blif, int thread){
-		return new String[]{Util.localFolder() + "hmetis/hmetis", this.getGraphFile(blif, thread), ""+this.nparts, ""+this.ubfactor, ""+this.nruns, ""+this.cType, ""+this.rType, ""+this.vCycle, ""+this.reconst, ""+this.dbglvl};
+	public String getGraphFile(int thread){
+		return this.hmetis_folder + "files/" + this.circuitName + "_" + this.simulationID + "_" + thread;
 	}
-	public void printHMetisLine(String blif, int thread){
-    	for(String part:this.getHMetisLine(blif,thread)){
+	public String[] getHMetisLine(int thread){
+		return new String[]{this.hmetis_folder + "hmetis", this.getGraphFile(thread), Util.str(this.nparts), Util.str(this.ubfactor), Util.str(this.nruns), Util.str(this.cType), Util.str(this.rType), Util.str(this.vCycle), Util.str(this.reconst), Util.str(this.dbglvl)};
+	}
+	public void printHMetisLine(int thread){
+    	for(String part:this.getHMetisLine(thread)){
     		Output.print(part + " ");
     	}
     	Output.newLine();
@@ -129,5 +141,14 @@ public class Param{
     	outputLine.append(Util.fill(percentageCritEdges, 5) + "% crit edges | ");
     	outputLine.append("hMetis it " + Util.fill(metisIteration, 3) + " | ");
 		return outputLine.toString();
+	}
+	public String getHMetisFolder(){
+		return this.hmetis_folder;
+	}
+	public String getCircuitName(){
+		return this.circuitName;
+	}
+	public int getSimulationID(){
+		return this.simulationID;
 	}
 }

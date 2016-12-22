@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import pack.architecture.Architecture;
 import pack.main.Simulation;
 import pack.netlist.Model;
 import pack.partition.HardBlockGroup;
@@ -45,10 +46,14 @@ public class Netlist{
 	private boolean holdArea = false;
 	private int area = 0;
 	private int terminalCount = 0;
+	
+	private Simulation simulation;
 		
-	public Netlist(String blif, Simulation simulation){
+	public Netlist(Simulation simulation){
+		this.simulation = simulation;
+		
 		this.data = new Data();
-		this.set_blif(blif);
+		this.set_blif(simulation.getStringValue("circuit"));
 		
 		this.blocks = new HashMap<Integer,B>();
 		this.nets = new HashMap<Integer,N>();
@@ -114,7 +119,7 @@ public class Netlist{
 		//Read file
 		Timing readFile = new Timing();
 		readFile.start();
-		String [] lines = read_blif_file(this.get_blifFile());
+		String [] lines = read_blif_file(this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("circuit") + ".blif");
 		readFile.end();
 		
 		HashSet<String> inputs = get_input_terminals(lines);
@@ -164,7 +169,7 @@ public class Netlist{
 				truthTable = "";
 				
 				if(!this.has_model(".names")){
-					Model model = new Model(".names");
+					Model model = new Model(".names", this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("architecture"));
 					model.add_input_port("in");
 					model.add_input_port("in");
 					model.add_input_port("in");
@@ -328,7 +333,7 @@ public class Netlist{
 				truthTable = "";
 				
 				if(!this.has_model(".latch")){
-					Model model = new Model(".latch");
+					Model model = new Model(".latch", this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("architecture"));
 					model.add_input_port("in");
 					model.add_input_port("clk");
 					model.add_output_port("out");
@@ -607,7 +612,7 @@ public class Netlist{
 				if(!topModel_passed){
 					topModel_passed = true;
 				}else{
-					Model model = new Model(words[1]);
+					Model model = new Model(words[1], this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("architecture"));
 					this.add_model(model);
 					line = lines[++i];
 					while(!line.contains(".end")){
@@ -866,7 +871,7 @@ public class Netlist{
 		}
 	}
 	//// SDC WRITER ////
-	public void writeSDC(String folder, int num, Partition partition){
+	public void writeSDC(String folder, int num, Partition partition, int simulationID){
 		try {
 			//Find the clocks in the netlist
 			HashSet<String> localClocks = new HashSet<String>();
@@ -881,7 +886,7 @@ public class Netlist{
 				}
 			}
 			
-			BufferedWriter bw = new BufferedWriter(new FileWriter(folder + this.get_blif() + "_" + Util.getSimulationId() + "_" + num + ".sdc"));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(folder + this.get_blif() + "_" + simulationID + "_" + num + ".sdc"));
 
 			bw.write("#############################" + "\n");
 			bw.write("### Clocks in the netlist ###" + "\n");
@@ -1003,8 +1008,8 @@ public class Netlist{
 		}
 	}
 	//// BLIF WRITER ////
-	public void writeBlif(String folder, int num, Partition partition){
-		Blif blif = new Blif(folder, this.get_blif(), num);	
+	public void writeBlif(String folder, int num, Partition partition, int simulationID){
+		Blif blif = new Blif(folder, this.get_blif(), num, simulationID);	
 		
 		//Clock is not always an input, only input clocks of the netlist are added. 
 		//This is done automatically because now the clocks are also added as a net.
@@ -1113,8 +1118,8 @@ public class Netlist{
 		
 		blif.write();
 	}
-	public static void write_blif(String folder, int num, Set<B> floatingBlocks, String blifName, HashMap<String,Model> models){
-		Blif blif = new Blif(folder, blifName, num);	
+	public static void write_blif(String folder, int num, Set<B> floatingBlocks, String blifName, HashMap<String,Model> models, int simulationID){
+		Blif blif = new Blif(folder, blifName, num, simulationID);	
 		
 		//Inputs
 		for(B floatingBlock:floatingBlocks){
@@ -1385,6 +1390,8 @@ public class Netlist{
 	
 	//// AREA ASSIGNMENT ////
 	public void assign_area(){
+		Timing t = new Timing();
+		t.start();
 		HashMap<String,Integer> areaMap = new HashMap<String,Integer>();
 		HashMap<String,Integer> totalAreaMap = new HashMap<String,Integer>();
 		Output.println("Area assignment:");
@@ -1441,6 +1448,9 @@ public class Netlist{
 			Output.println("\t\t" + type + "\t" + Util.parseDigit(a) + "\t" + p + " %");
 		}	
 		Output.newLine();
+		t.end();
+		Output.println("\tTook " + t.toString());
+		Output.newLine();
 	}
 	//// COMMON DATA ////
 	private Data get_data(){
@@ -1451,9 +1461,6 @@ public class Netlist{
 	}
 	public String get_blif(){
 		return this.get_data().get_blif();
-	}
-	public String get_blifFile(){
-		return this.get_data().get_blifFile();
 	}
 	
 	private void set_max_net_number(int max){
@@ -1490,6 +1497,8 @@ public class Netlist{
 	}
 	//// NETLIST COPY ////
 	public Netlist(Part part, Netlist parent){
+		this.simulation = parent.simulation;
+		
 		boolean timingInfo = true;
 		Timing timer = new Timing();
 		if(timingInfo)timer.start();
@@ -2075,7 +2084,7 @@ public class Netlist{
 		}
 		return blocks;
 	}
-	public void pre_pack_ram(Simulation simulation){
+	public void pre_pack_ram(Architecture architecture){
 		Timing t = new Timing();
 		t.start();
 		Output.println("RAM pre partition:");
@@ -2150,8 +2159,8 @@ public class Netlist{
 		
 		//MAKE FPGA
 		FPGA fpga = new FPGA();
-		if(simulation.fixed_size()){
-			fpga.set_size(Util.sizeX(simulation), Util.sizeY(simulation));
+		if(this.simulation.getBooleanValue("fixed_size")){
+			fpga.set_size(architecture.getSizeX(), architecture.getSizeY());
 			Output.println("\tFIXED FPGA SIZE: " + fpga.sizeX() + " x " + fpga.sizeY());
 			Output.println("\t\tDSP | AV: " + Util.fill(fpga.DSP(), 3) + " | REQ: " + reqDSP);
 			Output.println("\t\tM9K | AV: " + Util.fill(fpga.M9K(), 3) + " | REQ: " + reqM9K);
@@ -2415,7 +2424,7 @@ public class Netlist{
 		}
 		this.add_block(molecule);
 		if(!this.has_model(moleculeType)){
-			Model model = new Model(moleculeType);
+			Model model = new Model(moleculeType, this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("architecture"));
 			this.add_model(model);
 		}
 		this.get_model(moleculeType).increment_occurences();

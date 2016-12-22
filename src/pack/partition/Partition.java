@@ -21,7 +21,7 @@ public class Partition{
 	private Architecture architecture;
 	private Simulation simulation;
 	
-	private int minNetlistSize;
+	private int maxNetlistSize;
 	private Param param;
 	private ThreadPool threadPool;
 	
@@ -36,7 +36,6 @@ public class Partition{
 	private CutEdges cutEdges;
 	
 	private double scale;
-	
 	
 	private static final boolean debug = false;
 	
@@ -53,23 +52,17 @@ public class Partition{
 		Output.println("\tSettings: ");
 		
 		//Stop criterium
-		int numSubcircuits = this.simulation.numSubcircuits();
-		if(numSubcircuits < 500){
-			this.minNetlistSize = (int)Math.round((1.0*netlist.atom_count())/numSubcircuits);
-		}else{
-			this.minNetlistSize = numSubcircuits;
-		}
-		
-		Output.println("\t\tNum subcircuits: " + numSubcircuits);
-		Output.println("\t\tMinimum netlist size: " + Util.parseDigit(this.minNetlistSize));
+		this.maxNetlistSize = this.simulation.getIntValue("max_pack_size");
+		Output.println("\t\tMaximum netlist size: " + Util.parseDigit(this.maxNetlistSize));
 		Output.newLine();
 		
 		Output.println("\t\tMax area: " + netlist.max_block_area());
-		this.scale = Math.log(this.simulation.numSubcircuits())/Math.log(netlist.max_block_area());
-		if(this.scale > 1){
-			this.scale = 1;
-		}
-		Output.println("\t\tScaling factor: " + Util.round(this.scale, 2) + " | Not used!");
+		this.scale = this.simulation.getDoubleValue("area_exponent_alpha");
+		
+		Output.println("\t\tScaled area exponent factor alpha: " + this.scale);
+		Output.newLine();
+		
+		Output.println("\t\tTiming edge weight update: " + this.simulation.getBooleanValue("timing_edge_weight_update"));
 		Output.newLine();
 		
 		this.param = new Param(this.simulation);
@@ -80,7 +73,7 @@ public class Partition{
 		this.cutEdges = new CutEdges(maxDelay);
 		
 		//Thread pool
-		int poolSize = this.simulation.numPartitionThreads();
+		int poolSize = this.simulation.getIntValue("num_threads");
 		Output.println("\t\tPartition pool size: " + poolSize);
 		this.threadPool = new ThreadPool(poolSize);
 				
@@ -124,12 +117,10 @@ public class Partition{
 			j += 1;
 		}
 		
-		Output.println("\t" + this.numberOfCutEdges + " edges cut during partitioning");
-		this.simulation.addSimulationResult("Cut edges", this.numberOfCutEdges);
+		Output.println("\tThere are " + this.numberOfCutEdges + " edges cut during partitioning");
 		Output.newLine();
 		
 		Output.println("\t" + "A maximum of " + this.threadPool.maxUsage() + " threads is used during partitioning");
-		this.simulation.addSimulationResult("Partitioning threads", this.threadPool.maxUsage());
 		Output.newLine();
 	}
 	
@@ -226,7 +217,10 @@ public class Partition{
 		for(Edge critEdge:hMetis.cutCriticalEdges(this.architecture)){
 			this.cutEdges.addCriticalEdge(critEdge);//THESE CRITICAL EDGES ARE ADDED TO SDC FILE
 		}
-		hMetis.increasePinWeightOnPadWithCutEdge(this.architecture);
+		
+		if(this.simulation.getBooleanValue("timing_edge_weight_update")){
+			hMetis.increasePinWeightOnPadWithCutEdge(this.architecture);
+		}
 		
 		if(!this.threadPool.isEmpty() && this.threadPool.size() > 1){
 			NetGen ngx = new NetGen(X, parent, this.threadPool.getThread());
@@ -276,7 +270,7 @@ public class Partition{
 		}
 	}
 	public void processChildNetlist(Netlist child){
-		if(child.atom_count() > this.minNetlistSize){
+		if(child.atom_count() > this.maxNetlistSize){
 			this.stack.pushNetlist(child);
 		}
 		this.timeSteps.add(Timing.currentTime(this.startTime) + "\t" + this.threadPool.usedThreads());
@@ -325,12 +319,12 @@ public class Partition{
 		}
 	}
 	private void deleteExistingFiles(){
-		File folder = new File(Util.localFolder() + "hmetis/files/");
+		File folder = new File(this.simulation.getStringValue("hmetis_folder") + "files/");
 		File[] listOfFiles = folder.listFiles();
 		for(int i = 0; i < listOfFiles.length; i++){
 			File file = listOfFiles[i];
 			if(file.isFile()){
-				if(file.getName().contains(this.root.get_blif() + "_" + Util.getSimulationId())){
+				if(file.getName().contains(this.root.get_blif() + "_" + this.simulation.getSimulationID())){
 					file.delete();
 				}
 			}

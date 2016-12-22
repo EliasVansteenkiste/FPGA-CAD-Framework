@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import pack.main.Simulation;
+
 public class Info {
 	private static HashMap<String,ArrayList<String>> info = new HashMap<String,ArrayList<String>>();
 	public synchronized static void add(String type, String line){
@@ -16,11 +18,11 @@ public class Info {
 			Info.info.put(type, temp);
 		}
 	}
-	public static void finish(){
+	public static void finish(Simulation simulation){
 		for(String key:Info.info.keySet()){
 			FileWriter file = null;
 			try {
-				file = new FileWriter(Util.run_folder() + key.replace(" ", "") + ".txt");
+				file = new FileWriter(simulation.getStringValue("result_folder") + key.replace(" ", "") + ".txt");
 				for(String line:Info.info.get(key)){
 					file.write(line + "\n");
 				}

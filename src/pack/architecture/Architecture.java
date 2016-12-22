@@ -35,9 +35,12 @@ public class Architecture {
 	private HashMap<Integer, HashMap<Integer, Conn>> connections;
 	private HashMap<String, HashMap<String, Boolean>> globalConnections;
 	private HashMap<String, HashMap<String,Integer>> delayMap;
+	
+	private int sizeX;
+	private int sizeY;
 
-	public Architecture(String name, Simulation simulation){
-		this.name = name;
+	public Architecture(Simulation simulation){
+		this.name = simulation.getStringValue("architecture");
 		this.simulation = simulation;
 		this.modelSet = new HashSet<String>();
 		this.removedModels = new HashSet<String>();
@@ -83,44 +86,21 @@ public class Architecture {
 		}
 		return parse_file(lines);
 	}
-	private ArrayList<String> parse_file(ArrayList<String> lines){//Remove comment and empty lines
-		ArrayList<String> temp1 = new ArrayList<String>();
-		ArrayList<String> temp2 = new ArrayList<String>();
+	private ArrayList<String> parse_file(ArrayList<String> lines){//Trim lines | Remove comment and empty lines
 		ArrayList<String> res = new ArrayList<String>();
-		
-		for(int i=0; i<lines.size(); i++){
-			String line = lines.get(i);
+		for(String line:lines){
 			if(line.contains("<!--") && line.contains("-->")){
 				int startPos = line.indexOf("<!--");
 				int endPos = line.indexOf("-->", startPos);
 				String comment = line.substring(startPos, endPos+3);
-				temp1.add(line.replace(comment, ""));
-			}else{
-				temp1.add(line);
+				line = line.replace(comment, "");
 			}
-		}
-		
-		for(int i=0; i<temp1.size(); i++){
-			String line = temp1.get(i);
-			while(line.contains("\t<")) line = line.replace("\t<", "<");
-			while(line.contains(" <")) line = line.replace(" <", "<");
-			while(line.contains(">\t")) line = line.replace(">\t", ">");
-			while(line.contains("> ")) line = line.replace("> ", ">");
+			line = line.trim();
 			while(line.contains("\t")) line = line.replace("\t", "");
 			while(line.contains("  ")) line = line.replace("  ", " ");
-			temp2.add(line);
-		}
-		
-		for(int i=0; i<temp2.size(); i++){
-			String line = temp2.get(i);
-			while(line.contains("\t")){
-				line = line.replace("\t", "");
-			}
-			while(line.contains(" ")){
-				line = line.replace(" ", "");
-			}
+			
 			if(line.length() > 0){
-				res.add(temp2.get(i));
+				res.add(line);
 			}
 		}
 		return res;
@@ -129,9 +109,10 @@ public class Architecture {
 	//INITIALIZE ARCHITECTURE
 	public void initialize(){
 		Output.println("Initialize architecture:");
-		this.lines = this.read_file(Util.run_folder() + "arch.light.xml");
+		this.lines = this.read_file(this.simulation.getStringValue("result_folder") + "arch.light.xml");
 		this.get_models();
 		this.get_complex_blocks(true);
+		this.setDimensions();
 		Output.newLine();
 	}
 	private void get_models(){
@@ -705,14 +686,53 @@ public class Architecture {
 		}
 	}
 	
+	//Architecture dimensions
+	public void setDimensions(){
+		for(int i=0; i<this.lines.size();i++){
+			String line = this.lines.get(i);
+			if(line.contains("layout") && line.contains("width") && line.contains("height")){
+				String[]words = line.split(" ");
+				for(String word:words){
+					if(word.contains("width")){
+						word = word.replace("\"", "");
+						word = word.replace("width", "");
+						word = word.replace("=", "");
+						word = word.replace("/", "");
+						word = word.replace(">", "");
+						this.sizeX = Integer.parseInt(word);
+					}else if(word.contains("height")){
+						word = word.replace("\"", "");
+						word = word.replace("height", "");
+						word = word.replace("=", "");
+						word = word.replace("/", "");
+						word = word.replace(">", "");
+						this.sizeY = Integer.parseInt(word);
+					}
+				}
+			}
+		}
+	}
+	public void removeDimensions(){
+		for(int i=0; i<this.lines.size();i++){
+			String line = this.lines.get(i);
+			if(line.contains("layout") && line.contains("width") && line.contains("height")){
+				this.lines.set(i, "<layout auto=\"1.35\"/>");
+			}
+		}
+	}
+	
 	//GENERATE NETLIST SPECIFIC ARCHITECTURES
 	public void generate_light_architecture(Set<String> usedModelsInNetlist){
 		Output.println("Generate light architecture:");
-		Output.println("\tFixed size: " + this.simulation.fixed_size());
-		if(this.simulation.fixed_size()){
-			Output.println("\t\tSizeX: " + Util.sizeX(simulation) + " | SizeY: " + Util.sizeY(simulation));
+		
+		boolean fixedSize = this.simulation.getBooleanValue("fixed_size");
+		Output.println("\tFixed size: " + fixedSize);
+		this.lines = this.read_file(this.simulation.getStringValue("result_folder") + this.name);
+		if(fixedSize){
+			this.setDimensions();
+			Output.println("\t\tSizeX: " + this.sizeX + " | SizeY: " + this.sizeY);
 		}
-		this.lines = this.read_file(Util.archFolder() + this.name);
+		
 		this.get_models();
 		this.get_complex_blocks(false);
 		
@@ -788,11 +808,16 @@ public class Architecture {
 	}
 	public void generate_pack_architecture(Set<String> usedModelsInNetlist){
 		Output.println("Generate pack architecture:");
-		Output.println("\tFixed size: " + this.simulation.fixed_size());
-		if(this.simulation.fixed_size()){
-			Output.println("\t\tSizeX: " + Util.sizeX(simulation) + " | SizeY: " + Util.sizeY(simulation));
+		
+		boolean fixedSize = this.simulation.getBooleanValue("fixed_size");
+		Output.println("\tFixed size: " + fixedSize);
+		this.lines = this.read_file(this.simulation.getStringValue("result_folder") + this.name);
+		if(fixedSize){
+			this.setDimensions();
+			this.removeDimensions();
+			Output.println("\t\tSizeX: " + this.sizeX + " | SizeY: " + this.sizeY);
 		}
-		this.lines = this.read_file(Util.archFolder() + this.name);
+		
 		this.get_models();
 		this.get_complex_blocks(false);
 		
@@ -995,7 +1020,7 @@ public class Architecture {
 	private void write_arch_file(ArrayList<String> arch, String name){
 		int tabs = 0;
 		try{
-			BufferedWriter bw = new BufferedWriter(new FileWriter(Util.run_folder() + name));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(this.simulation.getStringValue("result_folder") + name));
 			for(String line:arch){
 				if(line.contains("</")){
 					tabs -= 1;
@@ -1316,5 +1341,13 @@ public class Architecture {
 			macOut.set_pack_pattern(packPatterns);
 		}
 		halfDSP.set_pack_pattern(packPatterns);
+	}
+	
+	//SIZE
+	public int getSizeX(){
+		return this.sizeX;
+	}
+	public int getSizeY(){
+		return this.sizeY;
 	}
 }

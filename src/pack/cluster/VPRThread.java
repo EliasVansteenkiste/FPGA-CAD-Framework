@@ -10,23 +10,15 @@ import pack.util.Output;
 import pack.util.Util;
 
 public class VPRThread {
-	private String folder;
 	private int thread;
-	
 	private Process proc;
-	
 	private Simulation simulation;
-	
 	private String run;
-	
 	private int size;
 
-	public VPRThread(String folder, int thread, Simulation simulation){
-		this.folder = folder;
+	public VPRThread( int thread, Simulation simulation){
 		this.thread = thread;
-		
 		this.simulation = simulation;
-		
 		this.run = new String();
 	}
 	public boolean isRunning() {
@@ -45,7 +37,7 @@ public class VPRThread {
 	    	   }
 	    	   line = reader.readLine();
 	       }
-	       String output = this.size + "\t" + runtime + "\t" + runtime/this.size * 1000;
+	       String output = this.size + "\t" + runtime + "\t" + runtime/this.size*1000;
 	       output = output.replace(".", ",");
 	       Info.add("RuntimePerBlock", output);
 	       return false;
@@ -54,10 +46,14 @@ public class VPRThread {
 	    }
 	}
 	public void run(int size, int area){
+		String circuit = this.simulation.getStringValue("circuit");
+		String vpr_folder = this.simulation.getStringValue("vpr_folder");
+		String result_folder = this.simulation.getStringValue("result_folder");
+		
 		this.run = new String();
-		this.run += Util.localFolder() + "vtr-no-output/vpr/vpr" + " ";
-    	this.run += Util.run_folder() + "arch.pack.xml" + " ";
-    	this.run += this.folder + this.simulation.benchmark() + "_" + Util.getSimulationId() + "_" + this.thread + " ";
+		this.run += vpr_folder + "/vpr/vpr" + " ";
+    	this.run += result_folder + "arch.pack.xml" + " ";
+    	this.run += vpr_folder + "vpr/files/" + circuit + "_" + this.simulation.getSimulationID() + "_" + this.thread + " ";
     	this.run += "-pack" + " ";
 
     	ProcessBuilder pb = new ProcessBuilder(this.run.split(" "));	
@@ -68,7 +64,7 @@ public class VPRThread {
 			e.printStackTrace();
 		}
     	
-		Output.println("\t\t" + this.simulation.benchmark() + " | " + "Thread: " + Util.fill(this.thread,2) + " | Blocks: " + Util.fill(size,5) + " | Area: " + area);
+		Output.println("\t\t" + circuit + " | " + "Thread: " + Util.fill(this.thread,2) + " | Blocks: " + Util.fill(size,5) + " | Area: " + area);
 		
 		this.size = size;
 		

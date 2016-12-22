@@ -6,12 +6,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import pack.util.Util;
-
 public class Blif {
 	private String blif; 
 	private String folder;
 	private int num;
+	private int simulationID;
 	
 	private HashSet<String> inputs;
 	private HashSet<String> outputs;
@@ -25,10 +24,11 @@ public class Blif {
 	
 	private int dummy_counter;
 	
-	public Blif(String folder, String blif, int num){
+	public Blif(String folder, String blif, int num, int simulationID){
 		this.folder = folder;
 		this.blif = blif;
 		this.num = num;
+		this.simulationID = simulationID;
 		
 		this.inputs = new HashSet<String>();
 		this.outputs = new HashSet<String>();
@@ -78,7 +78,7 @@ public class Blif {
 			if(num < 0){
 				writer = new FileWriter(this.folder + blif + ".blif");
 			}else{
-				writer = new FileWriter(this.folder + this.blif + "_" + Util.getSimulationId() + "_" + this.num + ".blif");
+				writer = new FileWriter(this.folder + this.blif + "_" + this.simulationID + "_" + this.num + ".blif");
 			}
 	        BufferedWriter bufferedWriter = new BufferedWriter(writer);
 	        bufferedWriter.write(".model " + this.blif);

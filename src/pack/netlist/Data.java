@@ -3,7 +3,6 @@ package pack.netlist;
 import java.util.HashSet;
 
 import pack.util.Output;
-import pack.util.Util;
 
 public class Data {
 	private String blif;
@@ -39,9 +38,6 @@ public class Data {
 	}
 	public String get_blif(){
 		return this.blif;
-	}
-	public String get_blifFile(){
-		return Util.run_folder() + this.blif + ".blif";		
 	}
 	
 	//MAX BLOCK, NET AND PIN NUMBER
