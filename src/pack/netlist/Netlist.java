@@ -2162,6 +2162,7 @@ public class Netlist{
 		if(this.simulation.getBooleanValue("fixed_size")){
 			fpga.set_size(architecture.getSizeX(), architecture.getSizeY());
 			Output.println("\tFIXED FPGA SIZE: " + fpga.sizeX() + " x " + fpga.sizeY());
+			Output.println("\t\tLAB | AV: " + Util.fill(fpga.LAB(), 3));
 			Output.println("\t\tDSP | AV: " + Util.fill(fpga.DSP(), 3) + " | REQ: " + reqDSP);
 			Output.println("\t\tM9K | AV: " + Util.fill(fpga.M9K(), 3) + " | REQ: " + reqM9K);
 			Output.println("\t\tM144K | AV: " + Util.fill(fpga.M144K(), 3) + " | REQ: " + reqM144K);
@@ -2219,6 +2220,7 @@ public class Netlist{
 				//END CONTROL
 			}
 			Output.println("\tFINAL FPGA SIZE: " + fpga.sizeX() + " x " + fpga.sizeY());
+			Output.println("\t\tLAB | AV: " + Util.fill(fpga.LAB(), 3));
 			Output.println("\t\tDSP | AV: " + Util.fill(fpga.DSP(), 3) + " | REQ: " + reqDSP);
 			Output.println("\t\tM9K | AV: " + Util.fill(fpga.M9K(), 3) + " | REQ: " + reqM9K);
 			Output.println("\t\tM144K | AV: " + Util.fill(fpga.M144K(), 3) + " | REQ: " + reqM144K);
