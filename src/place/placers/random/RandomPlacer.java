@@ -68,12 +68,12 @@ public class RandomPlacer extends Placer {
             nextSiteIndex += this.placeMacro(macro, blockType, typeSites, nextSiteIndex);
             nextSiteIndexes.put(blockType, nextSiteIndex);
         }
-
+        
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
             List<AbstractBlock> typeBlocks = this.circuit.getBlocks(blockType);
             List<AbstractSite> typeSites = sites.get(blockType);
             int nextSiteIndex = nextSiteIndexes.get(blockType);
-
+            
             nextSiteIndex += this.placeBlocks(typeBlocks, typeSites, nextSiteIndex);
             nextSiteIndexes.put(blockType, nextSiteIndex);
         }
@@ -126,7 +126,10 @@ public class RandomPlacer extends Placer {
     }
 
     private boolean illegalSite(BlockType blockType, int column, int row) {
-        if(row >= this.circuit.getHeight()) {
+        if(row >= this.circuit.getHeight() + 2) {
+            return true;
+        }
+        if(column >= this.circuit.getWidth() + 2) {
             return true;
         }
 
@@ -148,7 +151,7 @@ public class RandomPlacer extends Placer {
             // Skip blocks in macro's: those have already been placed
             if(!block.isInMacro()) {
 
-                // Find a site that is empy
+                // Find a site that is empty
                 AbstractSite site;
                 do {
                     site = sites.get(siteIndex);

@@ -28,7 +28,6 @@ public class ShiftingLegalizer extends Legalizer {
 
     @Override
     protected void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd) {
-
         int numBlocks = blocksEnd - blocksStart;
         Integer[] blockIndexes = new Integer[numBlocks];
         for(int i = 0; i < numBlocks; i++) {
@@ -39,10 +38,10 @@ public class ShiftingLegalizer extends Legalizer {
 
         // Count the number of blocks in each column
         int countPointer = 0;
-        int columnCapacity = (this.height - 2) / this.blockHeight;
+        int columnCapacity = this.height / this.blockHeight;
         int[] columnOccupancy = new int[this.width];
 
-        for(int column = this.blockStart; column < this.width - 1; column += this.blockRepeat) {
+        for(int column = this.blockStart; column < this.width + 1; column += this.blockRepeat) {
             if(this.blockType.equals(this.circuit.getColumnType(column))) {
                 double boundary = column + this.blockRepeat / 2.0;
                 int occupancy = 0;
@@ -65,14 +64,14 @@ public class ShiftingLegalizer extends Legalizer {
 
 
         // Redistribute the number of blocks in each column
-        for(int column = this.blockStart; column < this.width - 1; column += this.blockRepeat) {
+        for(int column = this.blockStart; column < this.width + 1; column += this.blockRepeat) {
             int toColumn = column;
             int direction = this.blockRepeat;
             while(columnOccupancy[column] > columnCapacity) {
                 toColumn += direction;
                 direction = -(direction + Integer.signum(direction) * this.blockRepeat);
 
-                if(toColumn > 0 && toColumn < this.width - 1 && columnOccupancy[toColumn] < columnCapacity) {
+                if(toColumn > 0 && toColumn < this.width + 1 && columnOccupancy[toColumn] < columnCapacity) {
                     int moveBlocks = Math.min(
                             columnOccupancy[column] - columnCapacity,
                             columnCapacity - columnOccupancy[toColumn]);
@@ -87,7 +86,7 @@ public class ShiftingLegalizer extends Legalizer {
         // Reorder some cells to make sure that each column can be
         // filled exactly to the required capacity
         int splitStart = 0;
-        for(int column = this.blockStart; column < this.width - 1; column += this.blockRepeat) {
+        for(int column = this.blockStart; column < this.width + 1; column += this.blockRepeat) {
 
             // Skip columns of the wrong type
             if(!this.blockType.equals(this.circuit.getColumnType(column))) {

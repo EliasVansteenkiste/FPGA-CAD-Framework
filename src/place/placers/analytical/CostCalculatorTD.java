@@ -68,8 +68,8 @@ class CostCalculatorTD extends CostCalculator {
             int sourceIndex = net.source.blockIndex;
             BlockCategory sourceCategory = this.blockCategories[sourceIndex];
 
-            int maxDeltaX = sourceCategory == BlockCategory.IO ? this.width - 1 : this.width - 2;
-            int maxDeltaY = sourceCategory == BlockCategory.IO ? this.height - 1 : this.height - 2;
+            int maxDeltaX = sourceCategory == BlockCategory.IO ? this.width + 1 : this.width;
+            int maxDeltaY = sourceCategory == BlockCategory.IO ? this.height + 1 : this.height;
 
             double sourceX = this.getX(sourceIndex);
             double sourceY = this.getY(sourceIndex);

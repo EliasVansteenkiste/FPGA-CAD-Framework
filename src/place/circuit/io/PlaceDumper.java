@@ -77,7 +77,7 @@ public class PlaceDumper {
     private void dumpHeader(PrintWriter writer, int width, int height, int length) {
         // Print out the header
         writer.printf("Netlist file: %s   Architecture file: %s\n", this.netPath, this.architecturePath);
-        writer.printf("Array size: %d x %d logic blocks\n\n", width - 2, height - 2);
+        writer.printf("Array size: %d x %d logic blocks\n\n", width, height);
 
         length = Math.max(length, 10);
         writer.printf("%-"+length+"s x       y       subblk  block number\n", "#block name");

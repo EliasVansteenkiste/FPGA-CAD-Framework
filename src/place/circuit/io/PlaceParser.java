@@ -74,8 +74,8 @@ public class PlaceParser {
 
 
         if(sizeMatches) {
-            int width = Integer.parseInt(sizeMatcher.group("width")) + 2;
-            int height = Integer.parseInt(sizeMatcher.group("height")) + 2;
+            int width = Integer.parseInt(sizeMatcher.group("width"));
+            int height = Integer.parseInt(sizeMatcher.group("height"));
 
             int circuitWidth = this.circuit.getWidth();
             int circuitHeight = this.circuit.getHeight();

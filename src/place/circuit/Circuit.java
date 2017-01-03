@@ -65,6 +65,25 @@ public class Circuit {
             }
         }
     }
+    public String stats(){
+    	String s = new String();
+    	s += "-------------------------------";
+    	s += "\n";
+    	s += "Type" + "\t" + "Col" + "\t" + "Loc" + "\t" + "Loc/Col";
+    	s += "\n";
+    	s += "-------------------------------";
+    	s += "\n";
+    	for(BlockType blockType:this.globalBlockTypes){
+    		String columns = "-";
+    		String columnHeight = "-";
+    		if(this.columnsPerBlockType.get(blockType) != null){
+    			columns = "" + (this.columnsPerBlockType.get(blockType).size()) + "";
+    			columnHeight = "" + (this.height / blockType.getHeight()) + "";
+    		}
+        	s += blockType.getName() + "\t" + columns + "\t" + this.getCapacity(blockType) + "\t" + columnHeight + "\n";
+        }
+    	return s;
+    }
 
 
     private void loadBlocks() {
@@ -153,9 +172,9 @@ public class Circuit {
          * Set the width and height, either fixed or automatically sized
          */
         if(this.architecture.isAutoSized()) {
-            this.autoSize(ioType, blockTypes);
-
+        	this.autoSize(ioType, blockTypes);
         } else {
+        	System.out.println("Fixed size: " +  this.architecture.getWidth() + "x" + this.architecture.getHeight() + "\n");
             this.width = this.architecture.getWidth();
             this.height = this.architecture.getHeight();
         }
@@ -166,7 +185,7 @@ public class Circuit {
 
         boolean bigEnough = false;
         double autoRatio = this.architecture.getAutoRatio();
-        int size = 2;
+        int size = 0;
         this.width = size;
         this.height = size;
         int previousWidth;
@@ -181,15 +200,14 @@ public class Circuit {
             previousWidth = this.width;
             if(autoRatio >= 1) {
                 this.height = size;
-                this.width = (int) Math.round((this.height - 2) * autoRatio) + 2;
-
+                this.width = (int) Math.round(this.height * autoRatio);
             } else {
                 this.width = size;
-                this.height = (int) Math.round((this.width - 2) / autoRatio) + 2;
+                this.height = (int) Math.round(this.width / autoRatio);
             }
 
             // If columns have been added: check which block type those columns contain
-            for(int column = previousWidth - 1; column < this.width - 1; column++) {
+            for(int column = previousWidth + 1; column < this.width + 1; column++) {
                 for(int blockTypeIndex = 0; blockTypeIndex < blockTypes.size(); blockTypeIndex++) {
                     BlockType blockType = blockTypes.get(blockTypeIndex);
                     int repeat = blockType.getRepeat();
@@ -203,14 +221,14 @@ public class Circuit {
 
 
             // Check if the architecture is large enough
-            int ioCapacity = (this.width + this.height - 4) * 2 * this.architecture.getIoCapacity();
+            int ioCapacity = (this.width + this.height) * 2 * this.architecture.getIoCapacity();
             if(ioCapacity >= this.getBlocks(ioType).size()) {
                 bigEnough = true;
 
                 for(int blockTypeIndex = 0; blockTypeIndex < blockTypes.size(); blockTypeIndex++) {
                     BlockType blockType = blockTypes.get(blockTypeIndex);
 
-                    int blocksPerColumn = (this.height - 2) / blockType.getHeight();
+                    int blocksPerColumn = this.height / blockType.getHeight();
                     int capacity = numColumnsPerType[blockTypeIndex] * blocksPerColumn;
 
                     if(capacity < this.blocks.get(blockType).size()) {
@@ -221,15 +239,15 @@ public class Circuit {
             }
         }
     }
-
+    
     private void cacheColumns(BlockType ioType, List<BlockType> blockTypes) {
         /**
          * Make a list that contains the block type of each column
          */
-
-        this.columns = new ArrayList<BlockType>(this.width);
+    	
+        this.columns = new ArrayList<BlockType>(this.width+2);
         this.columns.add(ioType);
-        for(int column = 1; column < this.width - 1; column++) {
+        for(int column = 1; column < this.width + 1; column++) {
             for(BlockType blockType : blockTypes) {
                 int repeat = blockType.getRepeat();
                 int start = blockType.getStart();
@@ -252,7 +270,7 @@ public class Circuit {
         for(BlockType blockType : blockTypes) {
             this.columnsPerBlockType.put(blockType, new ArrayList<Integer>());
         }
-        for(int column = 1; column < this.width - 1; column++) {
+        for(int column = 1; column < this.width + 1; column++) {
             this.columnsPerBlockType.get(this.columns.get(column)).add(column);
         }
     }
@@ -267,10 +285,10 @@ public class Circuit {
 
         this.nearbyColumns = new ArrayList<List<List<Integer>>>();
         this.nearbyColumns.add(null);
-        int size = Math.max(this.width, this.height) - 2;
+        int size = Math.max(this.width, this.height);
 
         // Loop through all the columns
-        for(int column = 1; column < this.width - 1; column++) {
+        for(int column = 1; column < this.width + 1; column++) {
             BlockType columnType = this.columns.get(column);
 
             // previousNearbyColumns will contain all the column indexes
@@ -295,7 +313,7 @@ public class Circuit {
                 }
 
                 int right = column + distance;
-                if(right <= this.width - 2 && this.columns.get(right).equals(columnType)) {
+                if(right <= this.width && this.columns.get(right).equals(columnType)) {
                     newNearbyColumns.add(right);
                 }
 
@@ -307,28 +325,27 @@ public class Circuit {
         }
     }
 
-
     private void createSites() {
-        this.sites = new AbstractSite[this.width][this.height];
+        this.sites = new AbstractSite[this.width+2][this.height+2];
 
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
         int ioCapacity = this.architecture.getIoCapacity();
-
-        for(int i = 1; i < this.height - 1; i++) {
+        
+        for(int i = 1; i < this.height + 1; i++) {
             this.sites[0][i] = new IOSite(0, i, ioType, ioCapacity);
-            this.sites[this.width - 1][i] = new IOSite(this.width - 1, i, ioType, ioCapacity);
+            this.sites[this.width + 1][i] = new IOSite(this.width + 1, i, ioType, ioCapacity);
         }
 
-        for(int i = 1; i < this.width - 1; i++) {
+        for(int i = 1; i < this.width + 1; i++) {
             this.sites[i][0] = new IOSite(i, 0, ioType, ioCapacity);
-            this.sites[i][this.height - 1] = new IOSite(i, this.height - 1, ioType, ioCapacity);
+            this.sites[i][this.height + 1] = new IOSite(i, this.height + 1, ioType, ioCapacity);
         }
 
-        for(int column = 1; column < this.width - 1; column++) {
+        for(int column = 1; column < this.width + 1; column++) {
             BlockType blockType = this.columns.get(column);
-
+            
             int blockHeight = blockType.getHeight();
-            for(int row = 1; row < this.height - blockHeight; row += blockHeight) {
+            for(int row = 1; row < this.height + 2 - blockHeight; row += blockHeight) {
                 this.sites[column][row] = new Site(column, row, blockType);
             }
         }
@@ -428,11 +445,11 @@ public class Circuit {
     public int getCapacity(BlockType blockType) {
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
         if(blockType.equals(ioType)) {
-            return (this.height + this.width - 4) * 2;
+            return (this.height + this.width) * 2;
 
         } else {
             int numColumns = this.columnsPerBlockType.get(blockType).size();
-            int columnHeight = (this.height - 2) / blockType.getHeight();
+            int columnHeight = this.height / blockType.getHeight();
 
             return numColumns * columnHeight;
         }
@@ -443,27 +460,27 @@ public class Circuit {
 
         if(blockType.equals(ioType)) {
             int ioCapacity = this.architecture.getIoCapacity();
-            sites = new ArrayList<AbstractSite>((this.width + this.height - 2) * 2 * ioCapacity);
+            sites = new ArrayList<AbstractSite>((this.width + this.height) * 2 * ioCapacity);
 
             for(int n = 0; n < ioCapacity; n++) {
-                for(int i = 1; i < this.height - 1; i++) {
+                for(int i = 1; i < this.height + 1; i++) {
                     sites.add(this.sites[0][i]);
-                    sites.add(this.sites[this.width - 1][i]);
+                    sites.add(this.sites[this.width + 1][i]);
                 }
 
-                for(int i = 1; i < this.width - 1; i++) {
+                for(int i = 1; i < this.width + 1; i++) {
                     sites.add(this.sites[i][0]);
-                    sites.add(this.sites[i][this.height - 1]);
+                    sites.add(this.sites[i][this.height + 1]);
                 }
             }
 
         } else {
             List<Integer> columns = this.columnsPerBlockType.get(blockType);
             int blockHeight = blockType.getHeight();
-            sites = new ArrayList<AbstractSite>(columns.size() * (this.height - 2));
+            sites = new ArrayList<AbstractSite>(columns.size() * this.height);
 
             for(Integer column : columns) {
-                for(int row = 1; row < this.height - blockHeight; row += blockHeight) {
+                for(int row = 1; row < this.height + 2 - blockHeight; row += blockHeight) {
                     sites.add(this.sites[column][row]);
                 }
             }

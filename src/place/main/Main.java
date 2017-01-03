@@ -266,6 +266,7 @@ public class Main {
         try {
             NetParser netParser = new NetParser(architecture, this.circuitName, this.netFile);
             this.circuit = netParser.parse();
+            this.logger.println(this.circuit.stats());
 
         } catch(IOException error) {
             this.logger.raise("Failed to read net file", error);

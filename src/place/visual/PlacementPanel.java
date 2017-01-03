@@ -49,8 +49,8 @@ public class PlacementPanel extends JPanel {
     }
 
     private void setDimensions() {
-        int maxWidth = this.getWidth();
-        int maxHeight = this.getHeight();
+        int maxWidth = this.getWidth() + 2;
+        int maxHeight = this.getHeight() + 2;
 
         int circuitWidth = this.placement.getWidth();
         int circuitHeight = this.placement.getHeight();

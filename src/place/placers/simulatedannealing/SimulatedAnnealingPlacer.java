@@ -119,7 +119,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
         this.stopRatio = this.options.getDouble(O_STOP_RATIO);
 
         // Set Rlim options
-        int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight()) - 2;
+        int size = Math.max(this.circuit.getWidth(), this.circuit.getHeight());
 
         int RlimOption = this.options.getInteger(O_RLIM);
         if(RlimOption == -1) {
@@ -410,7 +410,7 @@ abstract class SimulatedAnnealingPlacer extends Placer {
             int column = fromBlock.getColumn();
             int row = fromBlock.getRow();
             int minRow = Math.max(1, row - Rlim);
-            int maxRow = Math.min(this.circuit.getHeight() - 2 - freeAbove, row + Rlim);
+            int maxRow = Math.min(this.circuit.getHeight() - freeAbove, row + Rlim);
 
             // Find a suitable site near this block
             int maxTries = Math.min(4 * Rlim * Rlim / fromBlock.getType().getHeight(), 10);

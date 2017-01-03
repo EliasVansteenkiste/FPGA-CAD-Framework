@@ -250,7 +250,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
     protected void solveLinearIteration() {
-
         this.startTimer(T_BUILD_LINEAR);
 
         // Reset the solver
