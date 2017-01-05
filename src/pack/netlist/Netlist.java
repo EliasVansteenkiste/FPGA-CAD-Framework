@@ -1548,7 +1548,7 @@ public class Netlist{
 		this.trim();
 		
 		if(timingInfo)timer.end();
-		if(timingInfo)Info.add("Netlist Generation", this.atom_count() + "\t" + (""+timer.time()).replace(".", ","));
+		if(timingInfo)Info.add("netgen", "atoms" + "\t" + this.atom_count() + "\t" + "required_time" + "\t" + Util.str(timer.time()).replace(".", ","));
 	}
 	public void updateFamily(Netlist parent){//Parent and children
 		this.set_parent(parent);

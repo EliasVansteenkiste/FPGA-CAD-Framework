@@ -22,7 +22,7 @@ public class Info {
 		for(String key:Info.info.keySet()){
 			FileWriter file = null;
 			try {
-				file = new FileWriter(simulation.getStringValue("result_folder") + key.replace(" ", "") + ".txt");
+				file = new FileWriter(simulation.getStringValue("result_folder") + "stats" + "." + key.replace(" ", "") + ".txt");
 				for(String line:Info.info.get(key)){
 					file.write(line + "\n");
 				}

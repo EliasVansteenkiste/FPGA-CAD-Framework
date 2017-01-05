@@ -271,12 +271,12 @@ public class HMetis {
 	private void readHMetisResultsFromFile(){
 		boolean printCutInformation = true;
 		if(printCutInformation){
-			Info.add("Cut", this.netlist.atom_count() + "\t" +  this.numberOfcutEdges);	
+			Info.add("cut", "atom_count" + "\t" + this.netlist.atom_count() + "\t" + "cut_edges" + "\t" + this.numberOfcutEdges);	
 		}
 		
 		boolean printPartitioningRuntime = true;
 		if(printPartitioningRuntime){
-			Info.add("HMetis", this.netlist.atom_count() + "\t" +  this.partitioningRuntime);	
+			Info.add("hmetis", "atom_count" + "\t" + this.netlist.atom_count() + "\t" + "runtime" + "\t" + Util.str(this.partitioningRuntime).replace(".",","));	
 		}
 		
 		String resultFile = this.param.getHMetisFolder() + "files/" + this.netlist.get_blif() + "_" + this.param.getSimulationID() + "_" + this.thread + ".part." + this.param.nparts();

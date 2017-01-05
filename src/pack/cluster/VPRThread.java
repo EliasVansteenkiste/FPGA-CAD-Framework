@@ -37,9 +37,9 @@ public class VPRThread {
 	    	   }
 	    	   line = reader.readLine();
 	       }
-	       String output = this.size + "\t" + runtime + "\t" + runtime/this.size*1000;
+	       String output = "size" + "\t" + this.size + "\t" + "total_runtime" + "\t" + Util.round(runtime, 4) + "\t" + "runtime_per_block" + "\t" + Util.round(runtime/this.size*1000.0, 4);
 	       output = output.replace(".", ",");
-	       Info.add("RuntimePerBlock", output);
+	       Info.add("rpb", output);
 	       return false;
 	    } catch (Exception e) {
 	       return true;

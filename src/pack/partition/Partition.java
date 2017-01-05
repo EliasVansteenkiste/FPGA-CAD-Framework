@@ -106,13 +106,13 @@ public class Partition{
 		this.eachParentHasTwoChildren();
 		
 		for(int i=1; i<this.timeSteps.size();i++){
-			Info.add("Partitioning", i + "\t" + (""+this.timeSteps.get(i)).replace(".", ","));
+			Info.add("partitioning", "subcircuit" + "\t" + i + "\t=>\t" + this.timeSteps.get(i).replace(".", ","));
 		}
 		
 		int i = 1;
 		int j = 1;
 		while(i<this.timeSteps.size()){
-			Info.add("Hierarchy Level", j + "\t" + (""+this.timeSteps.get(i)).replace(".", ","));
+			Info.add("hierarchylevel", "subcircuit" + "\t" + j + "\t" + this.timeSteps.get(i).replace(".", ","));
 			i *= 2;
 			j += 1;
 		}
@@ -211,7 +211,7 @@ public class Partition{
 		double relX = Util.round(areaX/totalArea*100,2);
 		double relY = Util.round(areaY/totalArea*100,2);
 		
-		Info.add("RelativeArea",relX + "\t" + relY);
+		Info.add("unbalance", Util.str(relX).replace(".", ",") + "\t" + Util.str(relY).replace(".", ","));
 		
 		//CUT CRITICAL EDGES
 		for(Edge critEdge:hMetis.cutCriticalEdges(this.architecture)){
@@ -277,7 +277,7 @@ public class Partition{
 		this.startHMetis();
 	}
 	private void testBipartition(Netlist root, Part[] result){
-		Info.add("PartStat", "Netlist " + root.toString() + " has two parts of size " + result[0].size() + " and size " + result[1].size());
+		Info.add("partstat", "Netlist " + root.toString() + " has two parts of size " + result[0].size() + " and size " + result[1].size());
 		int blockCount = 0;
 		for(Part part:result){
 			blockCount += part.size();
