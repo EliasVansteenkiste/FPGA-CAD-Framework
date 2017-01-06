@@ -15,9 +15,13 @@ public class PlacementPanel extends JPanel {
     private Logger logger;
 
     private final Color gridColor = new Color(50, 50, 50);
-    private final Color clbColor = new Color(255, 0, 0, 25);
-    private final Color ioColor = new Color(0, 0, 255, 25);
-    private final Color hardBlockColor = new Color(0, 255, 0, 25);
+    private final Color clbColor = new Color(255, 0, 0, 50);
+    private final Color macroColor = new Color(100, 0, 0, 50);
+    private final Color ioColor = new Color(0, 0, 255, 50);
+    private final Color dspColor = new Color(0, 255, 0, 50);
+    private final Color m9kColor = new Color(255, 255, 0, 50);
+    private final Color m144kColor = new Color(0, 255, 255, 50);
+    private final Color hardBlockColor = new Color(255, 255, 255, 50);
 
     private transient Placement placement;
 
@@ -49,11 +53,11 @@ public class PlacementPanel extends JPanel {
     }
 
     private void setDimensions() {
-        int maxWidth = this.getWidth() + 2;
-        int maxHeight = this.getHeight() + 2;
+        int maxWidth = this.getWidth();
+        int maxHeight = this.getHeight();
 
-        int circuitWidth = this.placement.getWidth();
-        int circuitHeight = this.placement.getHeight();
+        int circuitWidth = this.placement.getWidth() + 2;
+        int circuitHeight = this.placement.getHeight() + 2;
 
         this.blockSize = Math.min((maxWidth - 1) / circuitWidth, (maxHeight - 1) / circuitHeight);
 
@@ -66,8 +70,8 @@ public class PlacementPanel extends JPanel {
 
 
     private void drawGrid(Graphics g) {
-        int circuitWidth = this.placement.getWidth();
-        int circuitHeight = this.placement.getHeight();
+        int circuitWidth = this.placement.getWidth() + 2;
+        int circuitHeight = this.placement.getHeight() + 2;
 
         int left = this.left;
         int top = this.top;
@@ -77,10 +81,20 @@ public class PlacementPanel extends JPanel {
 
         g.setColor(this.gridColor);
         for(int x = left; x <= right; x += this.blockSize) {
-            g.drawLine(x, top, x, bottom);
+        	if(x == left || x == right){
+        		 g.drawLine(x, top + this.blockSize, x, bottom - this.blockSize);
+        	}else{
+        		 g.drawLine(x, top, x, bottom);
+        	}
+           
         }
         for(int y = top; y <= bottom; y += this.blockSize) {
-            g.drawLine(left, y, right, y);
+        	if(y == top || y == bottom){
+        		g.drawLine(left + this.blockSize, y, right - this.blockSize, y);
+        	}else{
+        		g.drawLine(left, y, right, y);
+        	}
+            
         }
     }
 
@@ -101,13 +115,21 @@ public class PlacementPanel extends JPanel {
                 color = this.ioColor;
                 break;
 
-            case HARDBLOCK:
-                color = this.hardBlockColor;
-                break;
-
             case CLB:
                 color = this.clbColor;
                 break;
+            	
+            case HARDBLOCK:
+            	if(block.getType().getName().equals("DSP")){
+            		color = this.dspColor;
+            	}else if(block.getType().getName().equals("M9K")){
+            		color = this.m9kColor;
+            	}else if(block.getType().getName().equals("M144K")){
+            		color = this.m144kColor;
+            	}else{
+            		color = this.hardBlockColor;
+            	}
+            	break;
 
             default:
                 try {
@@ -117,8 +139,16 @@ public class PlacementPanel extends JPanel {
                 }
                 color = null;
         }
-
+        if(block.isInMacro()) color = this.macroColor;
+        
         g.setColor(color);
-        g.fillRect(left, top, size, size);
+        if(block.getType().getHeight() > 1){
+            for(int i=0;i<block.getType().getHeight();i++){
+            	top = (int) (this.top + 1 + this.blockSize * (coordinate.getY()+i));
+            	g.fillRect(left, top, size, size);
+            }
+        }else{
+        	g.fillRect(left, top, size, size);
+        }
     }
 }
