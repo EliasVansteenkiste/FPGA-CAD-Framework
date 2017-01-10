@@ -150,16 +150,17 @@ public class RandomPlacer extends Placer {
 
             // Skip blocks in macro's: those have already been placed
             if(!block.isInMacro()) {
+            	if(block.getSite() == null){//If the blocks has no location from input placement file, then give it a random location
+                    // Find a site that is empty
+                    AbstractSite site;
+                    do {
+                        site = sites.get(siteIndex);
+                        siteIndex++;
+                    } while(site.isFull());
 
-                // Find a site that is empty
-                AbstractSite site;
-                do {
-                    site = sites.get(siteIndex);
-                    siteIndex++;
-                } while(site.isFull());
-
-                placedBlocks += 1;
-                block.setSite(site);
+                    placedBlocks += 1;
+                    block.setSite(site);
+            	}
             }
         }
 
