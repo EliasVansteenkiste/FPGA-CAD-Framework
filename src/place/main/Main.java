@@ -168,26 +168,34 @@ public class Main {
 
 
         // Read the place file
-        boolean startFromPlaceFile = (this.inputPlaceFile != null);
-        if(startFromPlaceFile) {
-            this.startTimer("Placement parser");
-            PlaceParser placeParser = new PlaceParser(this.circuit, this.inputPlaceFile);
+        boolean placeFileDefined = (this.inputPlaceFile != null);
+        if(placeFileDefined) {
+        	boolean isIoPlaceFile = this.inputPlaceFile.getName().contains(".io.place");
+        	if(!isIoPlaceFile){
+                this.startTimer("Placement parser");
+                PlaceParser placeParser = new PlaceParser(this.circuit, this.inputPlaceFile);
 
-            try {
-                placeParser.parse();
+                try {
+                    placeParser.parse();
 
-            } catch(IOException | BlockNotFoundException | PlacementException | IllegalSizeException error) {
-                this.logger.raise("Something went wrong while parsing the place file", error);
-            }
+                } catch(IOException | BlockNotFoundException | PlacementException | IllegalSizeException error) {
+                    this.logger.raise("Something went wrong while parsing the place file", error);
+                }
 
-            this.stopTimer();
-            this.printStatistics("Placement parser", false);
-
-        // Add a random placer with default options at the beginning
+                this.stopTimer();
+                this.printStatistics("Placement parser", false);
+        	}else{
+                PlaceParser placeParser = new PlaceParser(this.circuit, this.inputPlaceFile);
+                try {
+                    placeParser.ioParse();
+                } catch(IOException | BlockNotFoundException | PlacementException | IllegalSizeException error) {
+                    this.logger.raise("Something went wrong while parsing the io.place file", error);
+                }
+                this.options.insertRandomPlacer();
+        	}
         } else {
             this.options.insertRandomPlacer();
         }
-
 
         // Loop through the placers
         int numPlacers = this.options.getNumPlacers();
