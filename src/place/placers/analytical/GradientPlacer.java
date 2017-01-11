@@ -122,6 +122,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected abstract void addStats(List<String> stats);
 
     private boolean[] fixed;
+    private ArrayList<BlockType> fixTypes;
+    private int fixTypePointer;
+    
+    private double[] coordinatesX;
+    private double[] coordinatesY;
 
     public GradientPlacer(
             Circuit circuit,
@@ -202,10 +207,21 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
 
         this.fixed = new boolean[this.legalX.length];
+        this.coordinatesX = new double[this.legalX.length];
+        this.coordinatesY = new double[this.legalX.length];
+        this.fixTypes = new ArrayList<BlockType>();
+        this.fixTypes.add(null);
+        this.fixTypePointer = -1;
+        BlockType dspType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(1);
+        BlockType m9kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(2);
+        BlockType m144kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(3);
+        if(this.circuit.getBlocks(dspType).size() > 0) this.fixTypes.add(dspType);
+        if(this.circuit.getBlocks(m9kType).size() > 0) this.fixTypes.add(m9kType);
+        if(this.circuit.getBlocks(m144kType).size() > 0) this.fixTypes.add(m144kType);
 
         this.solver = new LinearSolverGradient(
-                this.linearX,
-                this.linearY,
+                this.coordinatesX,
+                this.coordinatesY,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
                 this.stepSize,
@@ -239,18 +255,30 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
             }
         }
+        this.freeFixedBlocks();
     }
     private void setFixedBlocks(){
+        this.fixTypePointer += 1;
+        this.fixTypePointer = this.fixTypePointer % this.fixTypes.size();
+        
     	Arrays.fill(this.fixed, false);
 
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
-        BlockType pllType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(0);
-        BlockType dspType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(1);
-        BlockType m9kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(2);
-        BlockType m144kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(3);
-        
         this.fixBlockType(ioType);
-
+        
+        BlockType fixType = this.fixTypes.get(this.fixTypePointer);
+        if(fixType != null){
+        	this.fixBlockType(fixType);
+        }
+        for(int i=0; i<this.fixed.length; i++){
+        	if(this.fixed[i]){
+        		this.coordinatesX[i] = this.legalX[i];
+        		this.coordinatesY[i] = this.legalY[i];
+        	}else{
+        		this.coordinatesX[i] = this.linearX[i];
+        		this.coordinatesY[i] = this.linearY[i];
+        	}
+        }
     }
     private void fixBlockType(BlockType fixType){
     	for(GlobalBlock block:this.netBlocks.keySet()){
@@ -260,6 +288,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
     }
+    public void freeFixedBlocks(){
+        for(int i=0; i<this.fixed.length; i++){
+        	if(!this.fixed[i] || true){
+        		this.linearX[i] = this.coordinatesX[i];
+        		this.linearY[i] = this.coordinatesY[i];
+        	}
+        }
+    }
     private int getIterationEffortLevel(int iteration) {
         int iterationEffortLevel = (int) Math.round(this.effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
         if(iteration == 0) {
@@ -268,8 +304,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         return iterationEffortLevel;
     }
-
-
+    
     /*
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
@@ -341,6 +376,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.addStatTitlesGP(titles);
 
         titles.add("time");
+        titles.add("fix type");
     }
 
     @Override
@@ -363,6 +399,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.addStats(stats);
 
         stats.add(String.format("%.3g", time));
+        
+        stats.add("" + this.fixTypes.get(this.fixTypePointer));
 
         this.printStats(stats.toArray(new String[0]));
     }
