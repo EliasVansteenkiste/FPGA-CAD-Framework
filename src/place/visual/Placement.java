@@ -36,7 +36,7 @@ class Placement {
             int index = netBlock.getBlockIndex();
             float offset = netBlock.getOffset();
 
-            this.blocks.put(block, new Coordinate(x[index], y[index] + offset));
+            this.blocks.put(block, new Coordinate(x[index], y[index] + Math.ceil(offset)));
         }
     }
 
@@ -50,7 +50,7 @@ class Placement {
             int index = netBlock.getBlockIndex();
             float offset = netBlock.getOffset();
 
-            this.blocks.put(block, new Coordinate(x[index], y[index] + offset));
+            this.blocks.put(block, new Coordinate(x[index], y[index] + Math.ceil(offset)));
         }
     }
 
