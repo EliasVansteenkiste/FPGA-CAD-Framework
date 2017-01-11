@@ -39,7 +39,7 @@ public class ShiftingLegalizer extends Legalizer {
         // Count the number of blocks in each column
         int countPointer = 0;
         int columnCapacity = this.height / this.blockHeight;
-        int[] columnOccupancy = new int[this.width];
+        int[] columnOccupancy = new int[this.width + 2];
 
         for(int column = this.blockStart; column < this.width + 1; column += this.blockRepeat) {
             if(this.blockType.equals(this.circuit.getColumnType(column))) {
