@@ -15,7 +15,8 @@ class LinearSolverGradient {
             float[] netBlockOffsets,
             double stepSize,
             double maxConnectionLength,
-            double speedAveraging) {
+            double speedAveraging,
+            boolean[] fixed) {
 
         this.coordinatesX = coordinatesX;
         this.coordinatesY = coordinatesY;
@@ -23,8 +24,8 @@ class LinearSolverGradient {
         this.netBlockIndexes = netBlockIndexes;
         this.netBlockOffsets = netBlockOffsets;
 
-        this.solverX = new DimensionSolverGradient(coordinatesX, stepSize, maxConnectionLength, speedAveraging);
-        this.solverY = new DimensionSolverGradient(coordinatesY, stepSize, maxConnectionLength, speedAveraging);
+        this.solverX = new DimensionSolverGradient(coordinatesX, stepSize, maxConnectionLength, speedAveraging, fixed);
+        this.solverY = new DimensionSolverGradient(coordinatesY, stepSize, maxConnectionLength, speedAveraging, fixed);
     }
 
     public void initializeIteration(double pseudoWeight) {

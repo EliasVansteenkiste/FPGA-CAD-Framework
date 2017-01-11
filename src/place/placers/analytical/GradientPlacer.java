@@ -1,12 +1,16 @@
 package place.placers.analytical;
 
 import place.circuit.Circuit;
+import place.circuit.architecture.BlockCategory;
+import place.circuit.architecture.BlockType;
+import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.interfaces.Options.Required;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -117,6 +121,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected abstract void addStatTitlesGP(List<String> titles);
     protected abstract void addStats(List<String> stats);
 
+    private boolean[] fixed;
 
     public GradientPlacer(
             Circuit circuit,
@@ -196,6 +201,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             this.netEnds[netCounter] = netBlockCounter;
         }
 
+        this.fixed = new boolean[this.legalX.length];
 
         this.solver = new LinearSolverGradient(
                 this.linearX,
@@ -204,7 +210,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.netBlockOffsets,
                 this.stepSize,
                 this.maxConnectionLength,
-                this.speedAveraging);
+                this.speedAveraging,
+                this.fixed);
 
         if(this.printInnerCost || this.printOuterCost) {
             this.costCalculator = new CostCalculatorWLD(this.nets);
@@ -212,7 +219,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
-
 
     @Override
     protected void solveLinear(int iteration) {
@@ -222,7 +228,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
 
         this.initializeIteration(iteration);
-
+        this.setFixedBlocks();
 
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
@@ -234,7 +240,26 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             }
         }
     }
+    private void setFixedBlocks(){
+    	Arrays.fill(this.fixed, false);
 
+        BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
+        BlockType pllType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(0);
+        BlockType dspType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(1);
+        BlockType m9kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(2);
+        BlockType m144kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(3);
+        
+        this.fixBlockType(ioType);
+
+    }
+    private void fixBlockType(BlockType fixType){
+    	for(GlobalBlock block:this.netBlocks.keySet()){
+    		if(block.getType().equals(fixType)){
+    			int blockIndex = this.netBlocks.get(block).getBlockIndex();
+    			this.fixed[blockIndex] = true;
+    		}
+    	}
+    }
     private int getIterationEffortLevel(int iteration) {
         int iterationEffortLevel = (int) Math.round(this.effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
         if(iteration == 0) {
