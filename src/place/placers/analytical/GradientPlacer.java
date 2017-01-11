@@ -270,6 +270,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         if(fixType != null){
         	this.fixBlockType(fixType);
         }
+        
         for(int i=0; i<this.fixed.length; i++){
         	if(this.fixed[i]){
         		this.coordinatesX[i] = this.legalX[i];
@@ -290,7 +291,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
     public void freeFixedBlocks(){
         for(int i=0; i<this.fixed.length; i++){
-        	if(!this.fixed[i] || true){
+        	if(!this.fixed[i]){
         		this.linearX[i] = this.coordinatesX[i];
         		this.linearY[i] = this.coordinatesY[i];
         	}
