@@ -1,10 +1,13 @@
 package place.placers.analytical;
 
 import place.circuit.Circuit;
+import place.circuit.architecture.BlockType;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.visual.PlacementVisualizer;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -165,7 +168,16 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.updateLegalIfNeeded(newLegalX, newLegalY);
         this.ratio = this.linearCost / this.legalCost;
     }
-
+    
+    @Override
+    protected void initializeLegalizationAreas(){
+    	this.legalizer.initializeLegalizationAreas();
+    }
+    
+    @Override
+    protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
+    	return this.legalizer.getLegalizationAreas();
+    }
 
     @Override
     protected boolean stopCondition(int iteration) {

@@ -1,6 +1,7 @@
 package place.visual;
 
 import place.circuit.Circuit;
+import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
@@ -13,6 +14,7 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ public class PlacementVisualizer {
     private Circuit circuit;
 
     private int currentPlacement;
+    private BlockType currentType;
     private List<Placement> placements = new ArrayList<Placement>();
 
 
@@ -50,14 +53,14 @@ public class PlacementVisualizer {
             this.placements.add(new Placement(name, this.circuit));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
         if(this.enabled) {
-            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y));
+            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
         if(this.enabled) {
-            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y));
+            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas));
         }
     }
 
@@ -105,6 +108,20 @@ public class PlacementVisualizer {
         JButton nextFastButton = new JButton(">>");
         nextFastButton.addActionListener(new NavigateActionListener(this, 2));
         navigationPanel.add(nextFastButton, BorderLayout.CENTER);
+        
+        //Legalization buttons
+        JPanel legalizationPanel = new JPanel();
+        pane.add(legalizationPanel, BorderLayout.PAGE_END);
+        JButton legalisationButton = new JButton("None");
+        legalisationButton.addActionListener(new LegalizationActionListener(this, null));
+        legalizationPanel.add(legalisationButton, BorderLayout.CENTER);
+        for(BlockType type:this.circuit.getGlobalBlockTypes()){
+        	if(this.placements.get(1).getLegalizationAreas().containsKey(type)){	
+                legalisationButton = new JButton(type.getName());
+                legalisationButton.addActionListener(new LegalizationActionListener(this, type));
+                legalizationPanel.add(legalisationButton, BorderLayout.CENTER);
+        	}
+        }
 
         this.placementPanel = new PlacementPanel(this.logger);
         pane.add(this.placementPanel);
@@ -117,6 +134,7 @@ public class PlacementVisualizer {
 
         Placement placement = this.placements.get(index);
         this.placementLabel.setText(placement.getName());
+        this.placementPanel.setLegalAreaBlockType(this.currentType);
         this.placementPanel.setPlacement(this.placements.get(index));
     }
 
@@ -130,8 +148,27 @@ public class PlacementVisualizer {
 
         this.drawPlacement(newIndex);
     }
+    
+    void drawLegalizationAreas(BlockType type) {
+    	this.currentType = type;
+        this.drawPlacement(this.currentPlacement);
+    }
 
+    private class LegalizationActionListener implements ActionListener {
 
+        private PlacementVisualizer vizualizer;
+        private BlockType drawLegalAreaBlockType;
+
+        LegalizationActionListener(PlacementVisualizer vizualizer, BlockType blockType) {
+            this.drawLegalAreaBlockType = blockType;
+            this.vizualizer = vizualizer;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            this.vizualizer.drawLegalizationAreas(this.drawLegalAreaBlockType);
+        }
+    }
 
     private class NavigateActionListener implements ActionListener {
 

@@ -1,5 +1,7 @@
 package place.placers.analytical;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import place.circuit.Circuit;
@@ -89,6 +91,8 @@ abstract class Legalizer {
 
 
     protected abstract void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd);
+    protected abstract void initializeLegalizationAreas();
+    protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
     void legalize(double tileCapacity) {
         this.tileCapacity = tileCapacity;

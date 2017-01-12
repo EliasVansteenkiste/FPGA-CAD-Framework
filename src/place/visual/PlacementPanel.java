@@ -1,5 +1,6 @@
 package place.visual;
 
+import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 
@@ -22,12 +23,13 @@ public class PlacementPanel extends JPanel {
     private final Color dspColor = new Color(0, 255, 0, 50);
     private final Color m9kColor = new Color(255, 255, 0, 50);
     private final Color m144kColor = new Color(0, 255, 255, 50);
-    private final Color hardBlockColor = new Color(255, 255, 255, 50);
+    private final Color hardBlockColor = new Color(0, 0, 0, 50);
 
     private transient Placement placement;
 
     private int blockSize;
     private int left, top;
+    private BlockType drawLegalAreaBlockType;
 
     PlacementPanel(Logger logger) {
         this.logger = logger;
@@ -38,6 +40,9 @@ public class PlacementPanel extends JPanel {
 
         // Redraw the panel
         super.repaint();
+    }
+    void setLegalAreaBlockType(BlockType blockType){
+    	this.drawLegalAreaBlockType = blockType;
     }
 
     @Override
@@ -50,6 +55,8 @@ public class PlacementPanel extends JPanel {
             this.drawGrid(g);
 
             this.drawBlocks(g);
+            
+            this.drawLegalizationAreas(g);
         }
     }
 
@@ -91,7 +98,6 @@ public class PlacementPanel extends JPanel {
          	}else{
          		g.drawLine(x, top, x, bottom);
         	}
-           
         }
         for(int y = top; y <= bottom; y += this.blockSize) {
         	if(y == top || y == bottom){
@@ -103,7 +109,6 @@ public class PlacementPanel extends JPanel {
         	}else{
         		g.drawLine(left, y, right, y);
         	}
-            
         }
     }
 
@@ -111,6 +116,31 @@ public class PlacementPanel extends JPanel {
         for(Map.Entry<GlobalBlock, Coordinate> blockEntry : this.placement.blocks()) {
             this.drawBlock(blockEntry.getKey(), blockEntry.getValue(), g);
         }
+    }
+    
+    private void drawLegalizationAreas(Graphics g) {
+    	if(this.placement.getLegalizationAreas() != null){
+        	g.setColor(this.gridColorDark);
+        	if(this.drawLegalAreaBlockType != null){
+            	for(BlockType type:this.placement.getLegalizationAreas().keySet()){
+            		if(type.equals(this.drawLegalAreaBlockType)){
+                    	for(int[] area: this.placement.getLegalizationAreas().get(type)){
+                        	int top = this.top + this.blockSize * area[0];
+                        	int bottom = this.top + this.blockSize * area[1];
+                        	int left = this.left + this.blockSize * area[2];
+                        	int right = this.left + this.blockSize * area[3];
+                        	
+                        	for(int i = -1;i<=1;i++){
+                        		g.drawLine(left-i, top+i, left-i, bottom-i);
+                        		g.drawLine(right+i, top+i, right+i, bottom-i);
+                        		g.drawLine(left-i, top+i, right+i, top+i);
+                        		g.drawLine(left+i, bottom+i, right-i, bottom+i);
+                        	}
+                    	}
+            		}
+            	}
+        	}
+    	}
     }
 
     private void drawBlock(GlobalBlock block, Coordinate coordinate, Graphics g) {

@@ -1,7 +1,9 @@
 package place.placers.analytical;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 import place.circuit.Circuit;
@@ -25,7 +27,7 @@ public class ShiftingLegalizer extends Legalizer {
     public ShiftingLegalizer(Legalizer legalizer) {
         super(legalizer);
     }
-
+    
     @Override
     protected void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd) {
         int numBlocks = blocksEnd - blocksStart;
@@ -116,6 +118,17 @@ public class ShiftingLegalizer extends Legalizer {
             this.legalizeColumn(column, blockIndexes, splitStart, splitEnd);
             splitStart = splitEnd;
         }
+    }
+    
+    @Override
+    protected void initializeLegalizationAreas(){
+    	//DO NOTHING
+    	return;
+    }
+    
+    @Override
+    protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
+    	return null;
     }
 
     private void legalizeColumn(int column, Integer[] blockIndexes, int blockStart, int blockEnd) {

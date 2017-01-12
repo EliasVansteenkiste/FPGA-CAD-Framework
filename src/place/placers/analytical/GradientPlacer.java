@@ -11,6 +11,7 @@ import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -359,6 +360,16 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_UPDATE_CIRCUIT);
         this.updateLegalIfNeeded(iteration);
         this.stopTimer(T_UPDATE_CIRCUIT);
+    }
+    
+    @Override
+    protected void initializeLegalizationAreas(){
+    	this.legalizer.initializeLegalizationAreas();
+    }
+    
+    @Override
+    protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
+    	return this.legalizer.getLegalizationAreas();
     }
 
 

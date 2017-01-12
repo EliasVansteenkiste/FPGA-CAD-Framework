@@ -1,10 +1,12 @@
 package place.visual;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import place.circuit.Circuit;
+import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 
@@ -15,6 +17,8 @@ class Placement {
     private int numBlocks;
 
     private Map<GlobalBlock, Coordinate> blocks;
+    
+    private HashMap<BlockType,ArrayList<int[]>> legalizationAreas;
 
 
     Placement(String name, Circuit circuit) {
@@ -23,10 +27,12 @@ class Placement {
         for(GlobalBlock block : this.circuit.getGlobalBlocks()) {
             this.blocks.put(block, new Coordinate(block.getColumn(), block.getRow()));
         }
+        
+        this.legalizationAreas = new HashMap<BlockType,ArrayList<int[]>>();
     }
 
 
-    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y) {
+    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
         this.initializeData(name, circuit);
 
         for(Map.Entry<GlobalBlock, NetBlock> blockIndexEntry : blockIndexes.entrySet()) {
@@ -38,9 +44,11 @@ class Placement {
 
             this.blocks.put(block, new Coordinate(x[index], y[index] + Math.ceil(offset)));
         }
+        
+        this.legalizationAreas = legalizationAreas;
     }
 
-    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y) {
+    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
         this.initializeData(name, circuit);
 
         for(Map.Entry<GlobalBlock, NetBlock> blockIndexEntry : blockIndexes.entrySet()) {
@@ -52,6 +60,8 @@ class Placement {
 
             this.blocks.put(block, new Coordinate(x[index], y[index] + Math.ceil(offset)));
         }
+        
+        this.legalizationAreas = legalizationAreas;
     }
 
     private void initializeData(String name, Circuit circuit) {
@@ -79,5 +89,8 @@ class Placement {
 
     public Set<Map.Entry<GlobalBlock, Coordinate>> blocks() {
         return this.blocks.entrySet();
+    }
+    public HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
+    	return this.legalizationAreas;
     }
 }
