@@ -14,7 +14,8 @@ public class PlacementPanel extends JPanel {
 
     private Logger logger;
 
-    private final Color gridColor = new Color(50, 50, 50);
+    private final Color gridColorLight = new Color(150, 150, 150);
+    private final Color gridColorDark = new Color(0, 0, 0);
     private final Color clbColor = new Color(255, 0, 0, 50);
     private final Color macroColor = new Color(100, 0, 0, 50);
     private final Color ioColor = new Color(0, 0, 255, 50);
@@ -79,18 +80,26 @@ public class PlacementPanel extends JPanel {
         int right = left + this.blockSize * circuitWidth;
         int bottom = top + this.blockSize * circuitHeight;
 
-        g.setColor(this.gridColor);
+        g.setColor(this.gridColorLight);
         for(int x = left; x <= right; x += this.blockSize) {
         	if(x == left || x == right){
         		 g.drawLine(x, top + this.blockSize, x, bottom - this.blockSize);
-        	}else{
-        		 g.drawLine(x, top, x, bottom);
+        	}else if( (x-left)/this.blockSize % 10 == 1){
+        		g.setColor(this.gridColorDark);
+        		g.drawLine(x, top, x, bottom);
+        		g.setColor(this.gridColorLight);
+         	}else{
+         		g.drawLine(x, top, x, bottom);
         	}
            
         }
         for(int y = top; y <= bottom; y += this.blockSize) {
         	if(y == top || y == bottom){
         		g.drawLine(left + this.blockSize, y, right - this.blockSize, y);
+        	}else if( (y-top)/this.blockSize % 10 == 1){
+        		g.setColor(this.gridColorDark);
+        		g.drawLine(left, y, right, y);
+        		g.setColor(this.gridColorLight);
         	}else{
         		g.drawLine(left, y, right, y);
         	}
