@@ -61,6 +61,7 @@ class HeapLegalizer extends Legalizer {
         // Legalize all unabsorbed areas
         for(GrowingArea area : areas) {
             if(!area.isAbsorbed()) {
+            	System.out.println("\t\tArea: " + area + "\tOccupation " + area.getOccupation() + "\tCapacity " + area.getCapacity() + "\tcenter " + area.centerX + " " + area.centerY);
                 this.legalizeArea(area);
             }
         }
@@ -226,21 +227,21 @@ class HeapLegalizer extends Legalizer {
             this.growAreaOneStep(area);
         } while(area.getOccupation() > area.getCapacity());
 
+        
         return area;
     }
 
     private void growAreaOneStep(GrowingArea area) {
         while(true) {
-            int[] direction = area.nextGrowDirection();
+            Direction direction = area.nextGrowDirection();
             GrowingArea goalArea = new GrowingArea(area, direction);
-
             boolean growthPossible = goalArea.isLegal(this.width+2, this.height+2);
             if(growthPossible) {
                 this.growArea(area, goalArea);
                 return;
 
             } else {
-                area.disableDirection();
+                direction.disable();
             }
         }
     }
@@ -251,7 +252,6 @@ class HeapLegalizer extends Legalizer {
         // While goalArea is not completely covered by area
         while(true) {
             int rowStart, rowEnd, columnStart, columnEnd;
-
             // Check if growing the area would go out of the bounds of the FPGA
             if(goalArea.right > area.right || goalArea.left < area.left) {
                 rowStart = area.bottom;
@@ -706,7 +706,7 @@ class HeapLegalizer extends Legalizer {
 
         @Override
         public String toString() {
-            return String.format("h: [%d, %d], v: [%d, %d]", this.left, this.right, this.bottom, this.top);
+            return String.format("h: [%d, %d],\tv: [%d, %d]", this.left, this.right, this.bottom, this.top);
         }
     }
 
@@ -735,6 +735,66 @@ class HeapLegalizer extends Legalizer {
         }
     }
 
+    protected class ExtendingArea extends Area {
+    	
+    	private int centerX;
+    	private int centerY;
+    	private double ratio;
+
+    	private Direction growLeft;
+    	private Direction growRight;
+    	private Direction growUp;
+    	private Direction growDown;
+    	
+		public ExtendingArea(GrowingArea area, int centerX, int centerY, double ratio) {
+    		super(area.left, area.right, area.bottom, area.top);
+    		
+    		this.centerX = centerX;
+    		this.centerY = centerY;
+    		
+    		this.ratio = ratio;
+    		
+    		this.growLeft = area.growLeft;
+    		this.growRight = area.growRight;
+    		this.growUp = area.growUp;
+    		this.growDown = area.growDown;
+		}
+		public void increaseOneStep(){
+			if(this.top - this.bottom == 0){
+				this.increaseVertical();
+			}else if( (this.right - this.left) / (this.top - this.bottom) > this.ratio){
+        		this.increaseVertical();
+        	}else{
+        		this.increaseHorizontal();
+        	}
+		}
+		public void increaseHorizontal(){
+			if(this.growLeft.disabled() && this.growRight.disabled()){
+				this.increaseVertical();
+			}else if(this.growLeft.disabled()){
+				this.right += 1;
+			}else if(this.growRight.disabled()){
+				this.left -= 1;
+			}else if(this.centerX - this.left > this.right - this.centerX){
+    			this.right += 1;
+    		}else{
+    			this.left -= 1;
+    		}
+		}
+		public void increaseVertical(){
+			if(this.growDown.disabled() && this.growUp.disabled()){
+				this.increaseHorizontal();
+			}else if(this.growDown.disabled()){
+				this.top += 1;
+			}else if(this.growUp.disabled()){
+				this.bottom -= 1;
+			}else if(this.centerY - this.bottom > this.top - this.centerY){
+    			this.top += 1;
+    		}else{
+    			this.bottom -= 1;
+    		}
+		}
+    }
     protected class GrowingArea extends Area {
 
         private boolean absorbed = false;
@@ -745,9 +805,9 @@ class HeapLegalizer extends Legalizer {
         private int numTiles = 0;
         private TwoDimLinkedList blockIndexes;
 
-        private int[][] growDirections = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
-        private boolean[] originalDirection = {true, true, true, true};
-        private int growDirectionIndex = -1;
+        private Direction growRight, growLeft, growUp, growDown;
+
+        private int centerX, centerY;        
 
         GrowingArea(double[] linearX, double[] linearY, int column, int row, double tileCapacity, int blockHeight, int blockRepeat) {
             super(column, column - blockRepeat, row, row);
@@ -761,9 +821,17 @@ class HeapLegalizer extends Legalizer {
             this.areaTileCapacity = tileCapacity;
             this.areaBlockHeight = blockHeight;
             this.areaBlockRepeat = blockRepeat;
+            
+            this.centerX = column;
+            this.centerY = row;
+            
+            this.growRight = new Direction(1,0);
+            this.growLeft = new Direction(-1,0);
+            this.growUp = new Direction(0,1);
+            this.growDown = new Direction(0,-1);
         }
 
-        GrowingArea(GrowingArea area, int[] direction) {
+        GrowingArea(GrowingArea area, Direction direction) {
             super(area);
 
             this.blockIndexes = new TwoDimLinkedList(area.blockIndexes);
@@ -812,21 +880,36 @@ class HeapLegalizer extends Legalizer {
                     && this.top + this.areaBlockHeight <= height - 1;
         }
 
-
-
-        int[] nextGrowDirection() {
-            int[] direction;
-            do {
-                this.growDirectionIndex = (this.growDirectionIndex + 1) % 4;
-                direction = this.growDirections[this.growDirectionIndex];
-            } while(direction[0] == 0 && direction[1] == 0);
-
-            return direction;
+        Direction nextGrowDirection() {
+        	if(this.right < this.left) return this.growRight;
+        	if(this.top < this.bottom) return this.growUp;
+        	
+        	Direction direction;
+        	ExtendingArea extendedArea = new ExtendingArea(this, this.centerX, centerY, 1.35);
+        	while(true){
+        		extendedArea.increaseOneStep();
+        		direction = compare(this, extendedArea);
+        		if(direction != null){
+        			return direction;
+        		}
+        	}
+        }
+        public Direction compare(GrowingArea originalArea, ExtendingArea extendedArea){
+        	if(extendedArea.top == originalArea.top + this.areaBlockHeight){
+        		return this.growUp;
+        	}else if(extendedArea.bottom == originalArea.bottom - this.areaBlockHeight){
+        		return this.growDown;
+        	}else if(extendedArea.right == originalArea.right + this.areaBlockRepeat){
+        		return this.growRight;
+        	}else if(extendedArea.left == originalArea.left - this.areaBlockRepeat){
+        		return this.growLeft;
+        	}else{
+        		return null;
+        	}
         }
 
-
-        void grow(int[] direction) {
-            this.grow(direction[0], direction[1]);
+        void grow(Direction direction) {
+            this.grow(direction.getHorizontal(), direction.getVertical());
         }
         void grow(int horizontal, int vertical) {
             if(horizontal == -1) {
@@ -842,32 +925,28 @@ class HeapLegalizer extends Legalizer {
                 this.top += this.areaBlockHeight;
             }
         }
-
-
-        void disableDirection() {
-            int index = this.growDirectionIndex;
-            int oppositeIndex = (index + 2) % 4;
-
-            if(this.originalDirection[index]) {
-                if(!this.originalDirection[oppositeIndex]) {
-                    this.growDirections[oppositeIndex][0] = 0;
-                    this.growDirections[oppositeIndex][1] = 0;
-                }
-
-                this.originalDirection[index] = false;
-                this.growDirections[index][0] = this.growDirections[oppositeIndex][0];
-                this.growDirections[index][1] = this.growDirections[oppositeIndex][1];
-
-            } else {
-                this.growDirections[index][0] = 0;
-                this.growDirections[index][1] = 0;
-                this.growDirections[oppositeIndex][0] = 0;
-                this.growDirections[oppositeIndex][1] = 0;
-            }
-
-            // Make sure the replacement for the current grow direction is chosen next,
-            // since growing in the current direction must have failede
-            this.growDirectionIndex--;
-        }
+    }
+    private class Direction {
+    	private int horizontal;
+    	private int vertical;
+    	private boolean disabled;
+    	
+    	public Direction(int horizontal, int vertical){
+    		this.horizontal = horizontal;
+    		this.vertical = vertical;
+    		this.disabled = false;
+    	}
+    	public void disable(){
+    		this.disabled = true;
+    	}
+    	public boolean disabled(){
+    		return this.disabled;
+    	}
+    	public int getHorizontal(){
+    		return this.horizontal;
+    	}
+    	public int getVertical(){
+    		return this.vertical;
+    	}
     }
 }
