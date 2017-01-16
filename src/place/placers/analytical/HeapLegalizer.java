@@ -770,11 +770,11 @@ class HeapLegalizer extends Legalizer {
     	private Direction growUp;
     	private Direction growDown;
     	
-		public ExtendingArea(GrowingArea area, int centerX, int centerY, double ratio) {
+		public ExtendingArea(GrowingArea area, double ratio) {
     		super(area.left, area.right, area.bottom, area.top);
     		
-    		this.centerX = centerX;
-    		this.centerY = centerY;
+    		this.centerX = area.centerX;
+    		this.centerY = area.centerY;
     		
     		this.ratio = ratio;
     		
@@ -909,23 +909,23 @@ class HeapLegalizer extends Legalizer {
         	if(this.top < this.bottom) return this.growUp;
         	
         	Direction direction;
-        	ExtendingArea extendedArea = new ExtendingArea(this, this.centerX, centerY, 1.35);
+        	ExtendingArea extendedArea = new ExtendingArea(this, 1.35);
         	while(true){
         		extendedArea.increaseOneStep();
-        		direction = compare(this, extendedArea);
+        		direction = this.compare(extendedArea);
         		if(direction != null){
         			return direction;
         		}
         	}
         }
-        public Direction compare(GrowingArea originalArea, ExtendingArea extendedArea){
-        	if(extendedArea.top == originalArea.top + this.areaBlockHeight){
+        public Direction compare(ExtendingArea extendedArea){
+        	if(extendedArea.top == this.top + this.areaBlockHeight){
         		return this.growUp;
-        	}else if(extendedArea.bottom == originalArea.bottom - this.areaBlockHeight){
+        	}else if(extendedArea.bottom == this.bottom - this.areaBlockHeight){
         		return this.growDown;
-        	}else if(extendedArea.right == originalArea.right + this.areaBlockRepeat){
+        	}else if(extendedArea.right == this.right + this.areaBlockRepeat){
         		return this.growRight;
-        	}else if(extendedArea.left == originalArea.left - this.areaBlockRepeat){
+        	}else if(extendedArea.left == this.left - this.areaBlockRepeat){
         		return this.growLeft;
         	}else{
         		return null;
