@@ -34,6 +34,8 @@ public class PlacementPanel extends JPanel {
     private int blockSize;
     private int left, top;
     private BlockType drawLegalAreaBlockType;
+    
+    private boolean mouseEnabled = false;
 
     PlacementPanel(Logger logger) {
         this.logger = logger;
@@ -47,6 +49,9 @@ public class PlacementPanel extends JPanel {
     }
     void setLegalAreaBlockType(BlockType blockType){
     	this.drawLegalAreaBlockType = blockType;
+    }
+    void setMouseEnabled(boolean mouseEnabled){
+    	this.mouseEnabled = mouseEnabled;
     }
 
     @Override
@@ -62,7 +67,7 @@ public class PlacementPanel extends JPanel {
             
             this.drawLegalizationAreas(g);
             
-            this.drawBlockInformation(g);
+            if(this.mouseEnabled)this.drawBlockInformation(g);
         }
     }
 

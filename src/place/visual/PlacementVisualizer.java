@@ -35,9 +35,7 @@ public class PlacementVisualizer {
     private Circuit circuit;
 
     private int currentPlacement;
-    private BlockType currentType;
     private List<Placement> placements = new ArrayList<Placement>();
-
 
     public PlacementVisualizer(Logger logger) {
         this.logger = logger;
@@ -109,6 +107,10 @@ public class PlacementVisualizer {
         nextFastButton.addActionListener(new NavigateActionListener(this, 2));
         navigationPanel.add(nextFastButton, BorderLayout.CENTER);
         
+        JButton enableMouse = new JButton("Mouse Info");
+        enableMouse.addActionListener(new MouseActionListener(this));
+        navigationPanel.add(enableMouse, BorderLayout.CENTER);
+        
         //Legalization buttons
         JPanel legalizationPanel = new JPanel();
         pane.add(legalizationPanel, BorderLayout.PAGE_END);
@@ -134,7 +136,6 @@ public class PlacementVisualizer {
 
         Placement placement = this.placements.get(index);
         this.placementLabel.setText(placement.getName());
-        this.placementPanel.setLegalAreaBlockType(this.currentType);
         this.placementPanel.setPlacement(this.placements.get(index));
     }
 
@@ -150,10 +151,32 @@ public class PlacementVisualizer {
     }
     
     void drawLegalizationAreas(BlockType type) {
-    	this.currentType = type;
+    	this.placementPanel.setLegalAreaBlockType(type);
+        this.drawPlacement(this.currentPlacement);
+    }
+    
+    void drawMouseInfo(boolean mouseEnabled) {
+    	this.placementPanel.setMouseEnabled(mouseEnabled);
         this.drawPlacement(this.currentPlacement);
     }
 
+    private class MouseActionListener implements ActionListener {
+
+        private PlacementVisualizer vizualizer;
+        private boolean mouseEnabled;
+
+        MouseActionListener(PlacementVisualizer vizualizer) {
+        	this.vizualizer = vizualizer;
+            this.mouseEnabled = false;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+        	this.mouseEnabled = !this.mouseEnabled;
+            this.vizualizer.drawMouseInfo(this.mouseEnabled);
+        }
+    }
+    
     private class LegalizationActionListener implements ActionListener {
 
         private PlacementVisualizer vizualizer;
