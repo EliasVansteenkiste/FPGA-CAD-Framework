@@ -5,9 +5,13 @@ import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.Map;
 
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 public class PlacementPanel extends JPanel {
@@ -57,6 +61,8 @@ public class PlacementPanel extends JPanel {
             this.drawBlocks(g);
             
             this.drawLegalizationAreas(g);
+            
+            this.drawBlockInformation(g);
         }
     }
 
@@ -190,4 +196,62 @@ public class PlacementPanel extends JPanel {
         	g.fillRect(left, top, size, size);
         }
     }
+    private void drawBlockInformation(Graphics g) {
+    	final MouseLabelComponent mouseLabel = new MouseLabelComponent(this);
+        //add component to panel
+        this.add(mouseLabel);
+        mouseLabel.setBounds(0, 0, this.getWidth(), this.getHeight());
+        this.addMouseMotionListener(new MouseMotionAdapter(){
+        	public void mouseMoved (MouseEvent me){
+        		mouseLabel.x = me.getX();
+        		mouseLabel.y = me.getY();
+        	}
+        });
+    }
+    
+  	private class MouseLabelComponent extends JComponent{
+  	  	//x , y are from mouseLocation relative to real screen/JPanel
+  	  	//coorX, coorY are FPGA's
+  		private static final long serialVersionUID = 1L;
+  		private int x;
+  		private int y;
+  		private PlacementPanel panel;
+  			
+  		public MouseLabelComponent(PlacementPanel panel){
+  			this.panel = panel;
+  		}
+  			
+  		protected void paintComponent(Graphics g){
+  			this.drawBlockCoordinate(this.x, this.y, g);
+  		}
+  		
+  		public void drawBlockCoordinate(int x, int y, Graphics g){
+  	    	int coorX = (int)(x-this.panel.left)/this.panel.blockSize;
+  	    	int coorY = (int)(y-this.panel.top)/this.panel.blockSize;
+  	    	if(this.onScreen(coorX, coorY)){
+  	    		String s = coorX + "," + coorY;
+  	    		GlobalBlock globalBlock = this.getGlobalBlock(coorX, coorY);
+  	    		if(globalBlock != null){
+  	    			s += " " + globalBlock.getName();
+  	    		}
+  	        	int fontSize = 20;
+  	      		g.setFont(new Font("TimesRoman", Font.BOLD, fontSize));
+  	    		g.setColor(Color.BLUE);
+  	    		g.drawString(s, x, y);
+  	    	}
+  	    }
+  	  	public GlobalBlock getGlobalBlock(int x, int y){
+  	        for(Map.Entry<GlobalBlock, Coordinate> blockEntry : this.panel.placement.blocks()) {
+  	        	Coordinate blockCoor = blockEntry.getValue();
+  	        	
+  	        	if(blockCoor.getX() == x && blockCoor.getY() == y){
+  	        		return blockEntry.getKey();
+  	        	}
+  	        }
+  	        return null;      
+  	    }
+  	    public boolean onScreen(int x, int y){
+  	    	return (x > 0 && y > 0 && x < this.panel.placement.getWidth()+2 && y < this.panel.placement.getHeight()+2);
+  	    }
+  	}
 }
