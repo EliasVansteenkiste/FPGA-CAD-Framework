@@ -6,6 +6,7 @@ import place.interfaces.Logger;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
@@ -32,10 +33,11 @@ public class PlacementPanel extends JPanel {
     private transient Placement placement;
 
     private int blockSize;
-    private int left, top;
+    private int left, top, right, bottom;
     private BlockType drawLegalAreaBlockType;
     
-    private boolean mouseEnabled = false;
+    private boolean mouseEnabled = false, plotEnabled = false;
+    private double[] bbCost;
 
     PlacementPanel(Logger logger) {
         this.logger = logger;
@@ -53,22 +55,124 @@ public class PlacementPanel extends JPanel {
     void setMouseEnabled(boolean mouseEnabled){
     	this.mouseEnabled = mouseEnabled;
     }
+    void setPlotEnabled(boolean plotEnabled, double[] bbCost){
+    	this.plotEnabled = plotEnabled;
+    	this.bbCost = bbCost;
+    }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
         if(this.placement != null) {
-            this.setDimensions();
-
-            this.drawGrid(g);
-
-            this.drawBlocks(g);
-            
-            this.drawLegalizationAreas(g);
-            
-            if(this.mouseEnabled)this.drawBlockInformation(g);
+        	if(!this.plotEnabled){
+        		this.setDimensions();
+        		this.drawGrid(g);
+        		this.drawBlocks(g);
+        		this.drawLegalizationAreas(g);
+        		if(this.mouseEnabled)this.drawBlockInformation(g);
+        	}else{
+        		this.drawPlot(g);
+        	}
         }
+    }
+    
+    private void drawPlot(Graphics g){
+    	int iteration = this.getIteration();
+
+    	double alpha = 0.2;
+    	double left = this.getWidth() * alpha;
+    	double top = this.getHeight() * alpha;
+    	double right = this.getWidth() * (1-alpha);
+    	double bottom =  this.getHeight() * (1-alpha);
+
+    	double maxbbcost = 0.0;
+    	for(double bbCost:this.bbCost){
+    		maxbbcost = Math.max(bbCost, maxbbcost);
+    	}
+    	
+    	double graphWidth = this.bbCost.length;
+    	double graphHeight = maxbbcost;
+
+    	int numLabels = 10;
+    	int labelWidthY = (int)Math.ceil(graphHeight / numLabels / 50) * 50;
+    	int labelWidthX = (int)Math.ceil(graphWidth / numLabels / 5) * 5;
+
+    	graphHeight = Math.ceil(graphHeight / labelWidthY) * labelWidthY;
+    	graphWidth = Math.ceil(graphWidth /labelWidthX) * labelWidthX;
+
+    	double scaleX = (right - left) / graphWidth;
+    	double scaleY = (bottom - top) / graphHeight;
+   
+    	//create x and y axes
+    	g.setColor(Color.BLACK);
+    	FontMetrics metrics = g.getFontMetrics();
+    	this.drawLine(g, left, bottom+1, right + metrics.getHeight()/2, bottom+1);
+    	this.drawLine(g, left, bottom, right + metrics.getHeight()/2, bottom);
+    	this.drawLine(g, left-1, top - metrics.getHeight()/2, left-1, bottom);
+    	this.drawLine(g, left, top - metrics.getHeight()/2, left, bottom);
+
+    	//create hatch marks for y axis. 
+    	double y = bottom - labelWidthY * scaleY;
+    	int label = labelWidthY;
+    	while(y >= top-1){
+    		this.drawLine(g, left, y, left+5, y);
+
+    		String yLabel = label + "";
+    		int labelWidth = metrics.stringWidth(yLabel);
+    		int labelHeight = metrics.getHeight();
+    		this.drawString(g, yLabel, left - labelWidth - 10, y + labelHeight / 4);
+
+    		y -= labelWidthY * scaleY;
+    		label += labelWidthY;
+    	}
+
+    	//create hatch marks for x axis.
+    	double x = left + labelWidthX * scaleX;
+    	label = labelWidthX;
+    	while(x <= right){
+    		this.drawLine(g, x, bottom, x, bottom-5);
+
+    		String xLabel = label + "";
+    		int labelWidth = metrics.stringWidth(xLabel);
+    		int labelHeight = metrics.getHeight();
+    		this.drawString(g, xLabel, x - labelWidth / 2, bottom + labelHeight / 2 + 10);
+
+    		x += labelWidthX * scaleX;
+    		label += labelWidthX;
+    	}
+
+    	//DRAW PLOT
+    	g.setColor(Color.BLUE);
+    	for(int i = 0; i < this.bbCost.length - 2; i+=2) {
+    		this.drawLine(g, left + i * scaleX, bottom - this.bbCost[i] * scaleY, left + (i + 2) * scaleX, bottom - this.bbCost[i+2] * scaleY);
+    	}
+    	for(int i = 1; i < this.bbCost.length - 2; i+=2) {
+    		this.drawLine(g, left + i * scaleX, bottom - this.bbCost[i] * scaleY, left + (i + 2) * scaleX, bottom - this.bbCost[i+2] * scaleY);
+    	}
+
+    	int d = 6;
+    	for(int i = 0; i < this.bbCost.length; i+=1) {
+    		if(iteration == i)g.setColor(Color.RED);
+    		g.fillOval((int)Math.round(left + i * scaleX) - d/2, (int)Math.round(bottom - this.bbCost[i] * scaleY) - d/2, d, d);
+    		if(iteration == i)g.setColor(Color.BLUE);
+    	}
+    }
+    private int getIteration(){
+    	String name = this.placement.getName();
+    	if(name.contains("iteration") && name.contains("legal")){
+    		return Integer.parseInt(name.split("iteration ")[1].split(": legal")[0]) * 2 + 1;
+    	}else if(name.contains("iteration") && name.contains("linear")){
+    		return Integer.parseInt(name.split("iteration ")[1].split(": linear")[0]) * 2;
+    	}else{
+    		return -1;
+    	}
+    }
+    private void drawLine(Graphics g, double x1, double y1, double x2, double y2){
+    	g.drawLine((int)Math.round(x1), (int)Math.round(y1), (int)Math.round(x2), (int)Math.round(y2));
+    }
+    private void drawString(Graphics g, String s, double x, double y){
+    	g.drawString(s, (int)Math.round(x), (int)Math.round(y));
     }
 
     private void setDimensions() {
@@ -85,40 +189,34 @@ public class PlacementPanel extends JPanel {
 
         this.left = (maxWidth - width) / 2;
         this.top = (maxHeight - height) / 2;
+        
+        this.right = this.left + this.blockSize * circuitWidth;
+        this.bottom = this.top + this.blockSize * circuitHeight;
     }
 
 
     private void drawGrid(Graphics g) {
-        int circuitWidth = this.placement.getWidth() + 2;
-        int circuitHeight = this.placement.getHeight() + 2;
-
-        int left = this.left;
-        int top = this.top;
-
-        int right = left + this.blockSize * circuitWidth;
-        int bottom = top + this.blockSize * circuitHeight;
-
         g.setColor(this.gridColorLight);
-        for(int x = left; x <= right; x += this.blockSize) {
-        	if(x == left || x == right){
-        		 g.drawLine(x, top + this.blockSize, x, bottom - this.blockSize);
-        	}else if( (x-left)/this.blockSize % 10 == 1){
+        for(int x = this.left; x <= this.right; x += this.blockSize) {
+        	if(x == this.left || x == this.right){
+        		 g.drawLine(x, this.top + this.blockSize, x, this.bottom - this.blockSize);
+        	}else if( (x-this.left)/this.blockSize % 10 == 1){
         		g.setColor(this.gridColorDark);
-        		g.drawLine(x, top, x, bottom);
+        		g.drawLine(x, this.top, x, this.bottom);
         		g.setColor(this.gridColorLight);
          	}else{
-         		g.drawLine(x, top, x, bottom);
+         		g.drawLine(x, this.top, x, this.bottom);
         	}
         }
-        for(int y = top; y <= bottom; y += this.blockSize) {
-        	if(y == top || y == bottom){
-        		g.drawLine(left + this.blockSize, y, right - this.blockSize, y);
-        	}else if( (y-top)/this.blockSize % 10 == 1){
+        for(int y = this.top; y <= this.bottom; y += this.blockSize) {
+        	if(y == this.top || y == this.bottom){
+        		g.drawLine(this.left + this.blockSize, y, this.right - this.blockSize, y);
+        	}else if( (y-this.top)/this.blockSize % 10 == 1){
         		g.setColor(this.gridColorDark);
-        		g.drawLine(left, y, right, y);
+        		g.drawLine(this.left, y, this.right, y);
         		g.setColor(this.gridColorLight);
         	}else{
-        		g.drawLine(left, y, right, y);
+        		g.drawLine(this.left, y, this.right, y);
         	}
         }
     }

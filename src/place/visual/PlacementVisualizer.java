@@ -36,6 +36,7 @@ public class PlacementVisualizer {
 
     private int currentPlacement;
     private List<Placement> placements = new ArrayList<Placement>();
+    private double[] bbCost;
 
     public PlacementVisualizer(Logger logger) {
         this.logger = logger;
@@ -51,14 +52,14 @@ public class PlacementVisualizer {
             this.placements.add(new Placement(name, this.circuit));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas, double bbCost) {
         if(this.enabled) {
-            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas));
+            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas, bbCost));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas, double bbCost) {
         if(this.enabled) {
-            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas));
+            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas, bbCost));
         }
     }
 
@@ -111,6 +112,17 @@ public class PlacementVisualizer {
         enableMouse.addActionListener(new MouseActionListener(this));
         navigationPanel.add(enableMouse, BorderLayout.CENTER);
         
+        boolean bbCost = this.placements.get(1).hasBBCost();
+        if(bbCost){
+            JButton enablePlot = new JButton("Plot");
+            enablePlot.addActionListener(new PlotActionListener(this));
+            navigationPanel.add(enablePlot, BorderLayout.CENTER);
+            this.bbCost = new double[this.placements.size() - 2];
+            for(int i=1;i<this.placements.size()-1;i++){
+            	this.bbCost[i-1] = this.placements.get(i).getBBCost();
+            }
+        }
+        
         //Legalization buttons
         JPanel legalizationPanel = new JPanel();
         pane.add(legalizationPanel, BorderLayout.PAGE_END);
@@ -135,6 +147,7 @@ public class PlacementVisualizer {
         this.currentPlacement = index;
 
         Placement placement = this.placements.get(index);
+        
         this.placementLabel.setText(placement.getName());
         this.placementPanel.setPlacement(this.placements.get(index));
     }
@@ -159,6 +172,11 @@ public class PlacementVisualizer {
     	this.placementPanel.setMouseEnabled(mouseEnabled);
         this.drawPlacement(this.currentPlacement);
     }
+    
+    void drawPlot(boolean plotEnabled) {
+    	this.placementPanel.setPlotEnabled(plotEnabled, this.bbCost);
+    	this.drawPlacement(this.currentPlacement);
+    }
 
     private class MouseActionListener implements ActionListener {
 
@@ -174,6 +192,23 @@ public class PlacementVisualizer {
         public void actionPerformed(ActionEvent e) {
         	this.mouseEnabled = !this.mouseEnabled;
             this.vizualizer.drawMouseInfo(this.mouseEnabled);
+        }
+    }
+    
+    private class PlotActionListener implements ActionListener {
+
+        private PlacementVisualizer vizualizer;
+        private boolean plotEnabled;
+
+        PlotActionListener(PlacementVisualizer vizualizer) {
+        	this.vizualizer = vizualizer;
+            this.plotEnabled = false;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+        	this.plotEnabled = !this.plotEnabled;
+            this.vizualizer.drawPlot(this.plotEnabled);
         }
     }
     

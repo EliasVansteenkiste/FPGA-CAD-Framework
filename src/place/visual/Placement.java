@@ -17,6 +17,7 @@ class Placement {
     private int numBlocks;
 
     private Map<GlobalBlock, Coordinate> blocks;
+    private double bbCost;
     
     private HashMap<BlockType,ArrayList<int[]>> legalizationAreas;
 
@@ -29,10 +30,12 @@ class Placement {
         }
         
         this.legalizationAreas = new HashMap<BlockType,ArrayList<int[]>>();
+        this.bbCost = -1.0;
+
     }
 
 
-    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
+    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas, double bbCost) {
         this.initializeData(name, circuit);
 
         for(Map.Entry<GlobalBlock, NetBlock> blockIndexEntry : blockIndexes.entrySet()) {
@@ -46,9 +49,10 @@ class Placement {
         }
         
         this.legalizationAreas = legalizationAreas;
+        this.bbCost = bbCost;
     }
 
-    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas) {
+    Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas, double bbCost) {
         this.initializeData(name, circuit);
 
         for(Map.Entry<GlobalBlock, NetBlock> blockIndexEntry : blockIndexes.entrySet()) {
@@ -62,10 +66,11 @@ class Placement {
         }
         
         this.legalizationAreas = legalizationAreas;
+        this.bbCost = bbCost;
     }
 
     private void initializeData(String name, Circuit circuit) {
-        this.name = name;
+        this.name = circuit.getName() + " | " + name;
         this.circuit = circuit;
         this.numBlocks = circuit.getGlobalBlocks().size();
 
@@ -92,5 +97,11 @@ class Placement {
     }
     public HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
     	return this.legalizationAreas;
+    }
+    public boolean hasBBCost(){
+    	return !(this.bbCost < 0.0);
+    }
+    public double getBBCost(){
+    	return this.bbCost;
     }
 }

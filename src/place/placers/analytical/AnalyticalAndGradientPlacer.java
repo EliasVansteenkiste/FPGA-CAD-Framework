@@ -42,6 +42,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected int numNets, numRealNets;
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
+    
+    protected double linearCost;
+    protected double legalCost;
 
     private static final String
         O_START_UTILIZATION = "start utilization";
@@ -108,7 +111,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
 
-
+        this.linearCost = -1.0;
+        this.legalCost = -1.0;
 
         // Add all global blocks, in the order of 'blockTypes'
         this.linearX = new double[numBlocks];
@@ -303,10 +307,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             // Update the visualizer
             this.visualizer.addPlacement(
                     String.format("iteration %d: linear", iteration),
-                    this.netBlocks, this.linearX, this.linearY, this.getLegalizationAreas());
+                    this.netBlocks, this.linearX, this.linearY, this.getLegalizationAreas(),
+                    this.linearCost);
             this.visualizer.addPlacement(
                     String.format("iteration %d: legal", iteration),
-                    this.netBlocks, this.legalX, this.legalY, this.getLegalizationAreas());
+                    this.netBlocks, this.legalX, this.legalY, this.getLegalizationAreas(),
+                    this.legalCost);
 
             iteration++;
         }

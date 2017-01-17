@@ -401,11 +401,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(Integer.toString(this.iterationEffortLevel));
 
         if(this.printOuterCost) {
-            double linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-            double legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
+            this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+            this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
 
-            stats.add(String.format("%.4g", linearCost));
-            stats.add(String.format("%.4g", legalCost));
+            stats.add(String.format("%.4g", this.linearCost));
+            stats.add(String.format("%.4g", this.legalCost));
         }
 
         this.addStats(stats);
