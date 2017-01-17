@@ -234,7 +234,7 @@ public class PlacementPanel extends JPanel {
   	    	int coorX = (int)(x-this.panel.left)/this.panel.blockSize;
   	    	int coorY = (int)(y-this.panel.top)/this.panel.blockSize;
   	    	if(this.onScreen(coorX, coorY)){
-  	    		String s = coorX + "," + coorY;
+  	    		String s = "[" + coorX + "," + coorY + "]";
   	    		GlobalBlock globalBlock = this.getGlobalBlock(coorX, coorY);
   	    		if(globalBlock != null){
   	    			s += " " + globalBlock.getName();
@@ -249,7 +249,7 @@ public class PlacementPanel extends JPanel {
   	        for(Map.Entry<GlobalBlock, Coordinate> blockEntry : this.panel.placement.blocks()) {
   	        	Coordinate blockCoor = blockEntry.getValue();
   	        	
-  	        	if(blockCoor.getX() == x && blockCoor.getY() == y){
+  	        	if(Math.abs(blockCoor.getX() - x) < 0.25 && Math.abs(blockCoor.getY() - y) < 0.25){
   	        		return blockEntry.getKey();
   	        	}
   	        }
