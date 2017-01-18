@@ -94,13 +94,13 @@ abstract class Legalizer {
     protected abstract void initializeLegalizationAreas();
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
-    void legalize(double tileCapacity, List<BlockType> movableBlockTypes) {
+    void legalize(double tileCapacity, BlockType movableBlockType) {
         this.tileCapacity = tileCapacity;
 
         // Skip i = 0: these are IO blocks
         for(int i = 1; i < this.blockTypes.size(); i++) {
             this.blockType = this.blockTypes.get(i);
-            if(movableBlockTypes.contains(this.blockType)){
+            if(movableBlockType.equals(this.blockType)){
                 int blocksStart = this.blockTypeIndexStarts.get(i);
                 int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 

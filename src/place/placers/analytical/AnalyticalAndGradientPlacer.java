@@ -74,8 +74,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected abstract boolean isTimingDriven();
 
-    protected abstract void solveLinear(int iteration,  List<BlockType> movableBlockTypes);
-    protected abstract void solveLegal(int iteration,  List<BlockType> movableBlockTypes);
+    protected abstract void solveLinear(int iteration, BlockType movableBlockType);
+    protected abstract void solveLegal(int iteration, BlockType movableBlockType);
     protected abstract boolean stopCondition(int iteration);
     protected abstract void initializeIteration(int iteration);
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
@@ -295,16 +295,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.initializeIteration(iteration);
             
             // Solve linear
-            if(iteration % 2 == 0){
-                this.solveLinear(iteration, blockTypes);
-                this.solveLegal(iteration, blockTypes);
-            }else{
-                for(BlockType currentBlockType:blockTypes){
-                	List<BlockType> movableBlockTypes = new ArrayList<BlockType>();
-                	movableBlockTypes.add(currentBlockType);
-                    this.solveLinear(iteration, movableBlockTypes);
-                    this.solveLegal(iteration, movableBlockTypes);
-                }
+            for(BlockType movableBlockType:blockTypes){
+            	this.solveLinear(iteration, movableBlockType);
+            	this.solveLegal(iteration, movableBlockType);
             }
 
             isLastIteration = this.stopCondition(iteration);

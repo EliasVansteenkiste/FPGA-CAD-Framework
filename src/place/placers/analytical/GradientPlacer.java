@@ -226,10 +226,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void solveLinear(int iteration, List<BlockType> movableBlockTypes) {
+    protected void solveLinear(int iteration, BlockType movableBlockType) {
     	Arrays.fill(this.fixed, true);
-        this.freeMovableBlocks(movableBlockTypes);
-
+    	this.freeBlockType(movableBlockType);
+    	this.updateCoordinateValues();
+    	
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration();
@@ -241,12 +242,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
         
         this.updateLinearCoordinates();
-    }
-    private void freeMovableBlocks(List<BlockType> movableBlockTypes){
-    	for(BlockType movableBlockType: movableBlockTypes){
-    		this.freeBlockType(movableBlockType);
-    	}
-    	this.updateCoordinateValues();
     }
     private void freeBlockType(BlockType movableBlockType){
     	for(GlobalBlock block:this.netBlocks.keySet()){
@@ -326,12 +321,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     @Override
-    protected void solveLegal(int iteration, List<BlockType> movableBlockTypes) {
+    protected void solveLegal(int iteration, BlockType movableBlockType) {
         double slope = (this.startUtilization - 1) / (this.anchorWeightStart - this.anchorWeightStop);
         this.utilization = Math.max(1, 1 + slope * (this.anchorWeight - this.anchorWeightStop));
 
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(this.utilization, movableBlockTypes);
+        this.legalizer.legalize(this.utilization, movableBlockType);
         this.stopTimer(T_LEGALIZE);
 
         this.startTimer(T_UPDATE_CIRCUIT);

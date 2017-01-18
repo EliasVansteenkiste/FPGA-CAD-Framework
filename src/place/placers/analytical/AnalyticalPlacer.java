@@ -89,7 +89,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
 
     @Override
-    protected void solveLinear(int iteration, List<BlockType> movableBlockTypes) {
+    protected void solveLinear(int iteration, BlockType movableBlockType) {
     	
     	/*TODO Implement the functionality to allow only a few blocktypes to move in analytical placement.	*
     	 *Current this functionality is only implemented in the gradient descent placer						*/
@@ -161,9 +161,9 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void solveLegal(int iteration,  List<BlockType> movableBlockTypes) {
+    protected void solveLegal(int iteration,  BlockType movableBlockType) {
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(1, movableBlockTypes);
+        this.legalizer.legalize(1, movableBlockType);
         this.stopTimer(T_LEGALIZE);
 
         int[] newLegalX = this.legalizer.getLegalX();
