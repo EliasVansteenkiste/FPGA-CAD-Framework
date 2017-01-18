@@ -125,8 +125,12 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void initializeIteration(int iteration) {
-        if(iteration == 0 || this.recalculate[iteration - 1]) {
+    	if(iteration == 0 || this.recalculate[iteration - 1]) {
             this.updateCriticalConnections();
+        }
+    	this.legalizer.initializeLegalizationAreas();
+        if(iteration > 0) {
+            this.anchorWeight += this.anchorWeightStep;
         }
     }
 

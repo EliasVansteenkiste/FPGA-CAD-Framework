@@ -1,7 +1,6 @@
 package place.placers.analytical;
 
 import place.circuit.Circuit;
-import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
@@ -122,9 +121,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected abstract void addStatTitlesGP(List<String> titles);
     protected abstract void addStats(List<String> stats);
 
-    private boolean[] fixed;
-    private ArrayList<BlockType> fixTypes;
-    private int fixTypePointer;
+    protected boolean[] fixed;
     
     private double[] coordinatesX;
     private double[] coordinatesY;
@@ -210,15 +207,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.fixed = new boolean[this.legalX.length];
         this.coordinatesX = new double[this.legalX.length];
         this.coordinatesY = new double[this.legalX.length];
-        this.fixTypes = new ArrayList<BlockType>();
-        this.fixTypes.add(null);
-        this.fixTypePointer = -1;
-        BlockType dspType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(1);
-        BlockType m9kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(2);
-        BlockType m144kType = BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(3);
-        if(this.circuit.getBlocks(dspType).size() > 0) this.fixTypes.add(dspType);
-        if(this.circuit.getBlocks(m9kType).size() > 0) this.fixTypes.add(m9kType);
-        if(this.circuit.getBlocks(m144kType).size() > 0) this.fixTypes.add(m144kType);
 
         this.solver = new LinearSolverGradient(
                 this.coordinatesX,
@@ -238,14 +226,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void solveLinear(int iteration) {
-
-        if(iteration > 0) {
-            this.anchorWeight += this.anchorWeightStep;
-        }
-
-        this.initializeIteration(iteration);
-        this.setFixedBlocks();
+    protected void solveLinear(int iteration, List<BlockType> movableBlockTypes) {
+    	Arrays.fill(this.fixed, true);
+        this.freeMovableBlocks(movableBlockTypes);
 
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
@@ -256,22 +239,24 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
             }
         }
-        this.freeFixedBlocks();
+        
+        this.updateLinearCoordinates();
     }
-    private void setFixedBlocks(){
-        this.fixTypePointer += 1;
-        this.fixTypePointer = this.fixTypePointer % this.fixTypes.size();
-        
-    	Arrays.fill(this.fixed, false);
-
-        BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);
-        this.fixBlockType(ioType);
-        
-        BlockType fixType = this.fixTypes.get(this.fixTypePointer);
-        if(fixType != null){
-        	this.fixBlockType(fixType);
-        }
-        
+    private void freeMovableBlocks(List<BlockType> movableBlockTypes){
+    	for(BlockType movableBlockType: movableBlockTypes){
+    		this.freeBlockType(movableBlockType);
+    	}
+    	this.updateCoordinateValues();
+    }
+    private void freeBlockType(BlockType movableBlockType){
+    	for(GlobalBlock block:this.netBlocks.keySet()){
+    		if(block.getType().equals(movableBlockType)){
+    			int blockIndex = this.netBlocks.get(block).getBlockIndex();
+    			this.fixed[blockIndex] = false;
+    		}
+    	}
+    }
+    private void updateCoordinateValues(){
         for(int i=0; i<this.fixed.length; i++){
         	if(this.fixed[i]){
         		this.coordinatesX[i] = this.legalX[i];
@@ -282,15 +267,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         	}
         }
     }
-    private void fixBlockType(BlockType fixType){
-    	for(GlobalBlock block:this.netBlocks.keySet()){
-    		if(block.getType().equals(fixType)){
-    			int blockIndex = this.netBlocks.get(block).getBlockIndex();
-    			this.fixed[blockIndex] = true;
-    		}
-    	}
-    }
-    public void freeFixedBlocks(){
+    public void updateLinearCoordinates(){
         for(int i=0; i<this.fixed.length; i++){
         	if(!this.fixed[i]){
         		this.linearX[i] = this.coordinatesX[i];
@@ -349,22 +326,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     @Override
-    protected void solveLegal(int iteration) {
+    protected void solveLegal(int iteration, List<BlockType> movableBlockTypes) {
         double slope = (this.startUtilization - 1) / (this.anchorWeightStart - this.anchorWeightStop);
         this.utilization = Math.max(1, 1 + slope * (this.anchorWeight - this.anchorWeightStop));
 
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(this.utilization);
+        this.legalizer.legalize(this.utilization, movableBlockTypes);
         this.stopTimer(T_LEGALIZE);
 
         this.startTimer(T_UPDATE_CIRCUIT);
         this.updateLegalIfNeeded(iteration);
         this.stopTimer(T_UPDATE_CIRCUIT);
-    }
-    
-    @Override
-    protected void initializeLegalizationAreas(){
-    	this.legalizer.initializeLegalizationAreas();
     }
     
     @Override
@@ -388,7 +360,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.addStatTitlesGP(titles);
 
         titles.add("time");
-        titles.add("fix type");
     }
 
     @Override
@@ -411,8 +382,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.addStats(stats);
 
         stats.add(String.format("%.3g", time));
-        
-        stats.add("" + this.fixTypes.get(this.fixTypePointer));
 
         this.printStats(stats.toArray(new String[0]));
     }

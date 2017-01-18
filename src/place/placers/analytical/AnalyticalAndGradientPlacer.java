@@ -74,10 +74,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected abstract boolean isTimingDriven();
 
-    protected abstract void solveLinear(int iteration);
-    protected abstract void solveLegal(int iteration);
+    protected abstract void solveLinear(int iteration,  List<BlockType> movableBlockTypes);
+    protected abstract void solveLegal(int iteration,  List<BlockType> movableBlockTypes);
     protected abstract boolean stopCondition(int iteration);
-    protected abstract void initializeLegalizationAreas();
+    protected abstract void initializeIteration(int iteration);
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
     protected abstract void printStatistics(int iteration, double time);
@@ -287,15 +287,25 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         int iteration = 0;
         boolean isLastIteration = false;
+        List<BlockType> blockTypes = this.getBlockTypes();
 
         while(!isLastIteration) {
             double timerBegin = System.nanoTime();
 
-            this.initializeLegalizationAreas();
+            this.initializeIteration(iteration);
             
             // Solve linear
-            this.solveLinear(iteration);
-            this.solveLegal(iteration);
+            if(iteration % 2 == 0){
+                this.solveLinear(iteration, blockTypes);
+                this.solveLegal(iteration, blockTypes);
+            }else{
+                for(BlockType currentBlockType:blockTypes){
+                	List<BlockType> movableBlockTypes = new ArrayList<BlockType>();
+                	movableBlockTypes.add(currentBlockType);
+                    this.solveLinear(iteration, movableBlockTypes);
+                    this.solveLegal(iteration, movableBlockTypes);
+                }
+            }
 
             isLastIteration = this.stopCondition(iteration);
 
@@ -328,8 +338,18 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
         this.stopTimer(T_UPDATE_CIRCUIT);
     }
-
-
+    
+    private List<BlockType> getBlockTypes(){
+        List<BlockType> blockTypes = new ArrayList<BlockType>();
+        for(BlockType type:this.circuit.getGlobalBlockTypes()){
+        	if(!type.getCategory().equals(BlockCategory.IO)){
+            	if(this.circuit.getBlocks(type).size() > 0){
+            		blockTypes.add(type);
+            	}
+        	}
+        }
+        return blockTypes;
+    }
 
     protected void updateLegal(int[] newLegalX, int[] newLegalY) {
         int numMovableBlocks = this.legalX.length - this.numIOBlocks;

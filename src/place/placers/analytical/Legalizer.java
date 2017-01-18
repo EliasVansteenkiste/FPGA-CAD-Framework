@@ -94,26 +94,27 @@ abstract class Legalizer {
     protected abstract void initializeLegalizationAreas();
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
-    void legalize(double tileCapacity) {
+    void legalize(double tileCapacity, List<BlockType> movableBlockTypes) {
         this.tileCapacity = tileCapacity;
 
-        // Skip i = 0: these are IO blocks
-        for(int i = 1; i < this.blockTypes.size(); i++) {
+        for(int i = 0; i < this.blockTypes.size(); i++) {
             this.blockType = this.blockTypes.get(i);
-            int blocksStart = this.blockTypeIndexStarts.get(i);
-            int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
+            if(movableBlockTypes.contains(this.blockType)){
+                int blocksStart = this.blockTypeIndexStarts.get(i);
+                int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
-            if(blocksEnd > blocksStart) {
-                this.blockCategory = this.blockType.getCategory();
+                if(blocksEnd > blocksStart) {
+                    this.blockCategory = this.blockType.getCategory();
 
-                this.blockStart = Math.max(1, this.blockType.getStart());
-                this.blockHeight = this.blockType.getHeight();
-                this.blockRepeat = this.blockType.getRepeat();
-                if(this.blockRepeat == -1) {
-                    this.blockRepeat = this.width;
+                    this.blockStart = Math.max(1, this.blockType.getStart());
+                    this.blockHeight = this.blockType.getHeight();
+                    this.blockRepeat = this.blockType.getRepeat();
+                    if(this.blockRepeat == -1) {
+                        this.blockRepeat = this.width;
+                    }
+
+                    legalizeBlockType(tileCapacity, blocksStart, blocksEnd);
                 }
-
-                legalizeBlockType(tileCapacity, blocksStart, blocksEnd);
             }
         }
     }
