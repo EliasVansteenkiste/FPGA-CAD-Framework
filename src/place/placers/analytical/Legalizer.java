@@ -97,7 +97,8 @@ abstract class Legalizer {
     void legalize(double tileCapacity, List<BlockType> movableBlockTypes) {
         this.tileCapacity = tileCapacity;
 
-        for(int i = 0; i < this.blockTypes.size(); i++) {
+        // Skip i = 0: these are IO blocks
+        for(int i = 1; i < this.blockTypes.size(); i++) {
             this.blockType = this.blockTypes.get(i);
             if(movableBlockTypes.contains(this.blockType)){
                 int blocksStart = this.blockTypeIndexStarts.get(i);
