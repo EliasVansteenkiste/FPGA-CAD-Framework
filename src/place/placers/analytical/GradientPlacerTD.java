@@ -190,8 +190,11 @@ public class GradientPlacerTD extends GradientPlacer {
 
         if(this.utilization == 1 && this.latestCost < this.minCost) {
             this.minCost = this.latestCost;
-            this.updateLegal(newLegalX, newLegalY);
+            //this.updateLegal(newLegalX, newLegalY);
         }
+        
+        //Always update legal cost
+        this.updateLegal(newLegalX, newLegalY);
     }
 
 
