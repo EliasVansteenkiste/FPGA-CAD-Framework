@@ -79,6 +79,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract boolean stopCondition(int iteration);
     protected abstract void initializeIteration(int iteration);
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
+    protected abstract void setBestSolution();
 
     protected abstract void printStatistics(int iteration, double time);
 
@@ -295,10 +296,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.initializeIteration(iteration);
             
             // Solve linear
+
             for(BlockType movableBlockType:blockTypes){
             	this.solveLinear(iteration, movableBlockType);
             	this.solveLegal(iteration, movableBlockType);
             }
+
 
             isLastIteration = this.stopCondition(iteration);
 
@@ -320,6 +323,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             iteration++;
         }
 
+        this.setBestSolution();
+        
         this.logger.println();
 
 

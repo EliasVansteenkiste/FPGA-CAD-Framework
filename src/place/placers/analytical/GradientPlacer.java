@@ -125,6 +125,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     
     private double[] coordinatesX;
     private double[] coordinatesY;
+    
+    private double minCost;
+    private int[] minX;
+    private int[] minY;
 
     public GradientPlacer(
             Circuit circuit,
@@ -221,6 +225,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         if(this.printInnerCost || this.printOuterCost) {
             this.costCalculator = new CostCalculatorWLD(this.nets);
         }
+        
+        this.minCost = Double.MAX_VALUE;
+		this.minX = new int[this.legalX.length];
+		this.minY = new int[this.legalX.length];
+		Arrays.fill(this.minX, 0);
+		Arrays.fill(this.minY, 0);
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
@@ -369,6 +379,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         if(this.printOuterCost) {
             this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
             this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
+        
+        	if(this.legalCost < this.minCost){
+        		this.minCost = this.legalCost;
+        		for(int i=0; i<this.legalX.length; i++){
+        			this.minX[i] = this.legalX[i];
+        			this.minY[i] = this.legalY[i];
+        		}
+        	}
 
             stats.add(String.format("%.4g", this.linearCost));
             stats.add(String.format("%.4g", this.legalCost));
@@ -385,5 +403,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected boolean stopCondition(int iteration) {
         return iteration + 1 >= this.numIterations || this.getIterationEffortLevel(iteration + 1) == 0;
+    }
+    
+    @Override
+    protected void setBestSolution(){
+    	if(this.printOuterCost) {
+    		for(int i=0; i<this.legalX.length; i++){
+    			this.legalX[i] = this.minX[i];
+    			this.legalY[i] = this.minY[i];
+    		}
+    	}
     }
 }

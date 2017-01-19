@@ -207,4 +207,9 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 String.format("%.5g", this.legalCost),
                 String.format("%.3g", time));
     }
+    
+    @Override
+    protected void setBestSolution(){
+    	//DO NOTHING, Best solution is not saved in analytical placer
+    }
 }
