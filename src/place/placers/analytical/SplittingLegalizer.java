@@ -17,7 +17,7 @@ import place.placers.analytical.TwoDimLinkedList.Axis;
  * Heterogeneous Analytical Placement (HeAP).
  *
  */
-class HeapLegalizer extends Legalizer {
+class SplittingLegalizer extends Legalizer {
 
     // These are temporary data structures
     protected GrowingArea[][] areaPointers;
@@ -25,7 +25,7 @@ class HeapLegalizer extends Legalizer {
 
     private HashMap<BlockType,ArrayList<int[]>> legalizationAreas;
 
-    HeapLegalizer(
+    SplittingLegalizer(
             Circuit circuit,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
@@ -696,7 +696,6 @@ class HeapLegalizer extends Legalizer {
             return Double.compare(this.coordinates[block1.blockIndex], this.coordinates[block2.blockIndex]);
         }
     }
-
 
 
 

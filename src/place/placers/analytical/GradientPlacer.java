@@ -109,7 +109,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected int numIterations;
     private int iterationEffortLevel;
 
-    protected HeapLegalizer legalizer;
+    protected Legalizer legalizer;
     protected LinearSolverGradient solver;
 
 
