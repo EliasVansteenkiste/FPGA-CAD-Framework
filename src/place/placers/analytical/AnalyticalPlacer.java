@@ -87,13 +87,9 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_INITIALIZE_DATA);
     }
 
-
     @Override
-    protected void solveLinear(int iteration, BlockType movableBlockType) {
+    protected void solveLinear(int iteration) {
     	
-    	/*TODO Implement the functionality to allow only a few blocktypes to move in analytical placement.	*
-    	 *Current this functionality is only implemented in the gradient descent placer						*/
-
         if(iteration > 0) {
             this.anchorWeight *= this.anchorWeightMultiplier;
         }
@@ -115,6 +111,13 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_CALCULATE_COST);
         this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
         this.stopTimer(T_CALCULATE_COST);
+    }
+    
+    @Override
+    protected void solveLinear(int iteration, BlockType movableBlockType) {
+    	this.logger.println("Analytical placement with only one movable blocktype is not supported yet");
+    	/*TODO Implement the functionality to allow only a few blocktypes to move in analytical placement.	*
+    	 *Current this functionality is only implemented in the gradient descent placer						*/
     }
 
     /*
@@ -160,6 +163,18 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         }
     }
 
+    @Override
+    protected void solveLegal(int iteration) {
+        this.startTimer(T_LEGALIZE);
+        this.legalizer.legalize(1);
+        this.stopTimer(T_LEGALIZE);
+
+        int[] newLegalX = this.legalizer.getLegalX();
+        int[] newLegalY = this.legalizer.getLegalY();
+        this.updateLegalIfNeeded(newLegalX, newLegalY);
+        this.ratio = this.linearCost / this.legalCost;
+    }
+    
     @Override
     protected void solveLegal(int iteration,  BlockType movableBlockType) {
         this.startTimer(T_LEGALIZE);

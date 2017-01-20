@@ -1,6 +1,7 @@
 package place.placers.analytical;
 
 import place.circuit.Circuit;
+import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
@@ -236,6 +237,25 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
+    protected void solveLinear(int iteration) {
+    	Arrays.fill(this.fixed, false);
+    	this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
+    	this.updateCoordinateValues();
+    	
+        this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
+        for(int i = 0; i < this.iterationEffortLevel; i++) {
+            this.solveLinearIteration();
+
+            if(this.printInnerCost) {
+                double cost = this.costCalculator.calculate(this.linearX, this.linearY);
+                System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
+            }
+        }
+        
+        this.updateLinearCoordinates();
+    }
+    
+    @Override
     protected void solveLinear(int iteration, BlockType movableBlockType) {
     	Arrays.fill(this.fixed, true);
     	this.freeBlockType(movableBlockType);
@@ -252,6 +272,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
         
         this.updateLinearCoordinates();
+    }
+    private void fixBlockType(BlockType fixBlockType){
+    	for(GlobalBlock block:this.netBlocks.keySet()){
+    		if(block.getType().equals(fixBlockType)){
+    			int blockIndex = this.netBlocks.get(block).getBlockIndex();
+    			this.fixed[blockIndex] = true;
+    		}
+    	}
     }
     private void freeBlockType(BlockType movableBlockType){
     	for(GlobalBlock block:this.netBlocks.keySet()){
@@ -329,7 +357,20 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
     }
 
+    @Override
+    protected void solveLegal(int iteration) {
+        double slope = (this.startUtilization - 1) / (this.anchorWeightStart - this.anchorWeightStop);
+        this.utilization = Math.max(1, 1 + slope * (this.anchorWeight - this.anchorWeightStop));
 
+        this.startTimer(T_LEGALIZE);
+        this.legalizer.legalize(this.utilization);
+        this.stopTimer(T_LEGALIZE);
+
+        this.startTimer(T_UPDATE_CIRCUIT);
+        this.updateLegalIfNeeded(iteration);
+        this.stopTimer(T_UPDATE_CIRCUIT);
+    }
+    
     @Override
     protected void solveLegal(int iteration, BlockType movableBlockType) {
         double slope = (this.startUtilization - 1) / (this.anchorWeightStart - this.anchorWeightStop);
