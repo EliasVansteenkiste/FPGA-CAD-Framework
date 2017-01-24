@@ -39,18 +39,12 @@ class SplittingLegalizer extends Legalizer {
     private void legalize(Area area){
     	if(!area.blocks.isEmpty()){
         	if(area.capacity() == 1){
-        		if(area.occupation() > 1){
-        			System.out.println("The occupation of area with capacity 1 should be equal to 1 instead it is equal to " + area.occupation());
-        		}else if(area.occupation() == 1){
-        			System.out.println("Set legal position");
-        			LegalizerBlock legalizerBlock = area.blocks.get(0);
-        			this.legalX[legalizerBlock.index] = area.left;
-        			this.legalY[legalizerBlock.index] = area.bottom;
-        		}
+        		LegalizerBlock legalizerBlock = area.blocks.get(0);
+        		this.legalX[legalizerBlock.index] = area.left;
+        		this.legalY[legalizerBlock.index] = area.bottom;
         	}else{
         		List<Area> splittedAreas = area.split();
         		for(Area newArea:splittedAreas){
-        			System.out.println(newArea);
         			legalize(newArea);
         		}
         	}
@@ -79,11 +73,8 @@ class SplittingLegalizer extends Legalizer {
     }
     
     private class Area {
-
     	int left, right, bottom, top;
-        
         List<LegalizerBlock> blocks;
-        
         private final double epsilon = 0.00001;
 
         Area(int left, int right, int bottom, int top, List<LegalizerBlock> blocks) {
@@ -110,18 +101,10 @@ class SplittingLegalizer extends Legalizer {
         }
         
         List<Area> splitHorizontal(){
-        	System.out.println("Split horizontal");
         	int center = this.left + (int)Math.ceil((double)this.width()/2);
         	
         	Area areaLeft = new Area(this.left, center, this.bottom, this.top, this.blocks);
         	Area areaRight = new Area(center, this.right, this.bottom, this.top, this.blocks);
-        	
-        	if(this.blocks.size() != areaLeft.blocks.size() + areaRight.blocks.size()){
-        		System.out.println("Blocks are lost during horizontal splitting before swap");
-        		System.out.println("\tarea\t" + this.blocks.size());
-        		System.out.println("\tarea left\t" + areaLeft.blocks.size());
-        		System.out.println("\tarea right\t" + areaRight.blocks.size());
-        	}
         	
         	while(areaLeft.utilisation() > 1){
         		LegalizerBlock block = areaLeft.getLastBlock(Comparators.HORIZONTAL);
@@ -140,25 +123,13 @@ class SplittingLegalizer extends Legalizer {
         	result.add(areaLeft);
         	result.add(areaRight);
         	
-        	if(this.blocks.size() != areaLeft.blocks.size() + areaRight.blocks.size()){
-        		System.out.println("Blocks are lost during horizontal splitting after swap");
-        		System.out.println("\tarea\t" + this.blocks.size());
-        		System.out.println("\tarea left\t" + areaLeft.blocks.size());
-        		System.out.println("\tarea right\t" + areaRight.blocks.size());
-        	}
-        	
         	return result;
         	
         }
         List<Area> splitVertical(){
-        	System.out.println("Split vertical");
         	int center = this.bottom + (int)Math.ceil((double)this.height()/2);
         	Area areaBottom = new Area(this.left, this.right, this.bottom, center, this.blocks);
         	Area areaTop = new Area(this.left, this.right, center, this.top, this.blocks);
-        	
-        	if(this.blocks.size() != areaBottom.blocks.size() + areaTop.blocks.size()){
-        		System.out.println("Blocks are lost during vertical splitting before swap");
-        	}
         	
         	while(areaBottom.utilisation() > 1){
         		LegalizerBlock block = areaBottom.getLastBlock(Comparators.VERTICAL);
@@ -176,10 +147,6 @@ class SplittingLegalizer extends Legalizer {
         	List<Area> result = new ArrayList<Area>();
         	result.add(areaBottom);
         	result.add(areaTop);
-        	
-        	if(this.blocks.size() != areaBottom.blocks.size() + areaTop.blocks.size()){
-        		System.out.println("Blocks are lost during vertical splitting after swap");
-        	}
         	
         	return result;
         }
