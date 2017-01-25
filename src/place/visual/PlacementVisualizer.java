@@ -92,48 +92,90 @@ public class PlacementVisualizer {
         this.placementLabel = new JLabel("");
         navigationPanel.add(this.placementLabel, BorderLayout.LINE_START);
 
-        JButton previousFastButton = new JButton("<<");
-        previousFastButton.addActionListener(new NavigateActionListener(this, -2));
-        navigationPanel.add(previousFastButton, BorderLayout.CENTER);
+        for(Placement placement:this.placements){
+        	if(placement.getName().contains("linear")){
+                JButton previousFastButton = new JButton("<<<");
+                previousFastButton.addActionListener(new NavigateActionListener(this, -3));
+                navigationPanel.add(previousFastButton, BorderLayout.CENTER);
 
-        JButton previousButton = new JButton("<");
-        previousButton.addActionListener(new NavigateActionListener(this, -1));
-        navigationPanel.add(previousButton, BorderLayout.CENTER);
+                JButton previousButton = new JButton("<<");
+                previousButton.addActionListener(new NavigateActionListener(this, -2));
+                navigationPanel.add(previousButton, BorderLayout.CENTER);
+                
+                break;
+        	}
+        }
+        
+        JButton previousGradientButton = new JButton("<");
+        previousGradientButton.addActionListener(new NavigateActionListener(this, -1));
+        navigationPanel.add(previousGradientButton, BorderLayout.CENTER);
 
-        JButton nextButton = new JButton(">");
-        nextButton.addActionListener(new NavigateActionListener(this, 1));
-        navigationPanel.add(nextButton, BorderLayout.CENTER);
+        JButton nextGradientButton = new JButton(">");
+        nextGradientButton.addActionListener(new NavigateActionListener(this, 1));
+        navigationPanel.add(nextGradientButton, BorderLayout.CENTER);
 
-        JButton nextFastButton = new JButton(">>");
-        nextFastButton.addActionListener(new NavigateActionListener(this, 2));
-        navigationPanel.add(nextFastButton, BorderLayout.CENTER);
+        for(Placement placement:this.placements){
+        	if(placement.getName().contains("linear")){
+                JButton nextButton = new JButton(">>");
+                nextButton.addActionListener(new NavigateActionListener(this, 2));
+                navigationPanel.add(nextButton, BorderLayout.CENTER);
+                
+        		JButton nextFastButton = new JButton(">>>");
+                nextFastButton.addActionListener(new NavigateActionListener(this, 3));
+                navigationPanel.add(nextFastButton, BorderLayout.CENTER);
+                
+                break;
+        	}
+        }
         
         JButton enableMouse = new JButton("Mouse Info");
         enableMouse.addActionListener(new MouseActionListener(this));
         navigationPanel.add(enableMouse, BorderLayout.CENTER);
         
-        boolean bbCost = this.placements.get(1).hasBBCost();
-        if(bbCost){
-            JButton enablePlot = new JButton("Plot");
-            enablePlot.addActionListener(new PlotActionListener(this));
-            navigationPanel.add(enablePlot, BorderLayout.CENTER);
-            this.bbCost = new double[this.placements.size() - 2];
-            for(int i=1;i<this.placements.size()-1;i++){
-            	this.bbCost[i-1] = this.placements.get(i).getBBCost();
-            }
+        //BB Cost plot
+        for(Placement placement:this.placements){
+        	if(placement.getName().contains("linear")){
+        		if(placement.hasBBCost()){
+                    JButton enablePlot = new JButton("Plot");
+                    enablePlot.addActionListener(new PlotActionListener(this));
+                    navigationPanel.add(enablePlot, BorderLayout.CENTER);
+                    
+                    int bbPlacements = 0;
+                    for(Placement bbPlacement:this.placements){
+                    	if(bbPlacement.getName().contains("linear") || bbPlacement.getName().contains("legal")){
+                    		bbPlacements += 1;
+                    	}
+                    }
+                    this.bbCost = new double[bbPlacements];
+                    
+                    int i = 0;
+                    for(Placement bbPlacement:this.placements){
+                    	if(bbPlacement.getName().contains("linear") || bbPlacement.getName().contains("legal")){
+                    		this.bbCost[i] = bbPlacement.getBBCost();
+                    		i += 1;
+                    	}
+                    }
+                }
+        		break;
+        	}
         }
         
         //Legalization buttons
-        JPanel legalizationPanel = new JPanel();
-        pane.add(legalizationPanel, BorderLayout.PAGE_END);
-        JButton legalisationButton = new JButton("None");
-        legalisationButton.addActionListener(new LegalizationActionListener(this, null));
-        legalizationPanel.add(legalisationButton, BorderLayout.CENTER);
-        for(BlockType type:this.circuit.getGlobalBlockTypes()){
-        	if(this.placements.get(1).getLegalizationAreas().containsKey(type)){	
-                legalisationButton = new JButton(type.getName());
-                legalisationButton.addActionListener(new LegalizationActionListener(this, type));
+        for(Placement placement:this.placements){
+        	if(placement.getName().contains("linear")){
+        		JPanel legalizationPanel = new JPanel();
+                pane.add(legalizationPanel, BorderLayout.PAGE_END);
+                JButton legalisationButton = new JButton("None");
+                legalisationButton.addActionListener(new LegalizationActionListener(this, null));
                 legalizationPanel.add(legalisationButton, BorderLayout.CENTER);
+                for(BlockType type:this.circuit.getGlobalBlockTypes()){
+                	if(placement.getLegalizationAreas().containsKey(type)){	
+                        legalisationButton = new JButton(type.getName());
+                        legalisationButton.addActionListener(new LegalizationActionListener(this, type));
+                        legalizationPanel.add(legalisationButton, BorderLayout.CENTER);
+                	}
+                }
+                break;
         	}
         }
 
@@ -147,20 +189,40 @@ public class PlacementVisualizer {
         this.currentPlacement = index;
 
         Placement placement = this.placements.get(index);
-        
+
         this.placementLabel.setText(placement.getName());
         this.placementPanel.setPlacement(this.placements.get(index));
     }
 
-    void navigate(int step) {
-        int numPlacements = this.placements.size();
-
-        int newIndex = (this.currentPlacement + step) % numPlacements;
+    void navigate(int type, int step) {
+    	int numPlacements = this.placements.size();
+    	int newIndex = this.currentPlacement;
+    	
+    	if(type == 1){
+            newIndex = this.addStep(newIndex, step, numPlacements);
+    	}else if(type == 2){
+    		PlacementType currentType = this.getPlacementType(newIndex);
+    		PlacementType nextType = PlacementType.LINEAR;
+    		if(currentType.equals(PlacementType.LINEAR)) nextType = PlacementType.LEGAL;
+    		do{
+    			newIndex = this.addStep(newIndex, step, numPlacements);
+    		}while(!this.getPlacementType(newIndex).equals(nextType));
+    	}else if(type == 3){
+    		newIndex = this.currentPlacement;
+    		PlacementType currentType = this.getPlacementType(newIndex);
+    		do{
+    			newIndex = this.addStep(newIndex, step, numPlacements);
+    		}while(!this.getPlacementType(newIndex).equals(currentType));
+    	}
+    	this.drawPlacement(newIndex);
+    }
+    
+    int addStep(int currentIndex, int step, int numPlacements){
+    	int newIndex = (currentIndex + step) % numPlacements;
         if(newIndex < 0) {
             newIndex += numPlacements;
         }
-
-        this.drawPlacement(newIndex);
+        return newIndex;
     }
     
     void drawLegalizationAreas(BlockType type) {
@@ -176,6 +238,31 @@ public class PlacementVisualizer {
     void drawPlot(boolean plotEnabled) {
     	this.placementPanel.setPlotEnabled(plotEnabled, this.bbCost);
     	this.drawPlacement(this.currentPlacement);
+    }
+    
+    PlacementType getPlacementType(int index){
+    	String name = this.placements.get(index).getName();
+    	if(name.contains("gradient")){
+    		return PlacementType.GRADIENT;
+    	}else if(name.contains("linear")){
+    		return PlacementType.LINEAR;
+    	}else if(name.contains("legal")){
+    		return PlacementType.LEGAL;
+    	}else if(name.contains("Final")){
+    		return PlacementType.FINAL;
+    	}else if(name.contains("Random")){
+    		return PlacementType.RANDOM;
+    	}else{
+    		return null;
+    	}
+    }
+    
+    private enum PlacementType {
+    	GRADIENT,
+    	LINEAR,
+    	LEGAL,
+    	FINAL,
+    	RANDOM
     }
 
     private class MouseActionListener implements ActionListener {
@@ -232,6 +319,9 @@ public class PlacementVisualizer {
 
         private PlacementVisualizer vizualizer;
         private int step;
+        //1 Go to next placement
+        //2 Go to next linear or legal
+        //3 Go to next of same type
 
         NavigateActionListener(PlacementVisualizer vizualizer, int step) {
             this.step = step;
@@ -240,7 +330,7 @@ public class PlacementVisualizer {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            this.vizualizer.navigate(this.step);
+            this.vizualizer.navigate(Math.abs(this.step), (int)Math.signum(this.step));
         }
     }
 }

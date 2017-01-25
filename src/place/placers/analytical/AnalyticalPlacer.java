@@ -112,7 +112,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
         this.stopTimer(T_CALCULATE_COST);
     }
-    
+
     @Override
     protected void solveLinear(int iteration, BlockType movableBlockType) {
     	this.logger.println("Analytical placement with only one movable blocktype is not supported yet");
@@ -221,10 +221,5 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 String.format("%.5g", this.linearCost),
                 String.format("%.5g", this.legalCost),
                 String.format("%.3g", time));
-    }
-    
-    @Override
-    protected void setBestSolution(){
-    	//DO NOTHING, Best solution is not saved in analytical placer
     }
 }

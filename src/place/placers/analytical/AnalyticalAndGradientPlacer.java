@@ -81,7 +81,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract boolean stopCondition(int iteration);
     protected abstract void initializeIteration(int iteration);
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
-    protected abstract void setBestSolution();
 
     protected abstract void printStatistics(int iteration, double time);
 
@@ -325,8 +324,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             iteration++;
         }
-
-        this.setBestSolution();
         
         this.logger.println();
 
@@ -339,17 +336,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
         this.stopTimer(T_UPDATE_CIRCUIT);
     }
-    
     private List<BlockType> getBlockTypes(){
-        List<BlockType> blockTypes = new ArrayList<BlockType>();
-        for(BlockType type:this.circuit.getGlobalBlockTypes()){
-        	if(!type.getCategory().equals(BlockCategory.IO)){
-            	if(this.circuit.getBlocks(type).size() > 0){
-            		blockTypes.add(type);
-            	}
-        	}
-        }
-        return blockTypes;
+    	List<BlockType> blockTypes = new ArrayList<BlockType>();
+    	for(BlockType type:this.circuit.getGlobalBlockTypes()){
+    		if(!type.getCategory().equals(BlockCategory.IO)){
+    			if(this.circuit.getBlocks(type).size() > 0){
+    				blockTypes.add(type);
+    			}
+    		}
+    	}
+    	return blockTypes;
     }
 
     protected void updateLegal(int[] newLegalX, int[] newLegalY) {

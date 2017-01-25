@@ -28,15 +28,58 @@ class LinearSolverGradient {
         this.solverY = new DimensionSolverGradient(coordinatesY, stepSize, maxConnectionLength, speedAveraging, fixed);
     }
 
-    public void initializeIteration(double pseudoWeight) {
-        this.solverX.initializeIteration(pseudoWeight);
-        this.solverY.initializeIteration(pseudoWeight);
+    public void initializeIteration(double peusoWeight, double alpha) {
+        this.solverX.initializeIteration(peusoWeight, alpha);
+        this.solverY.initializeIteration(peusoWeight, alpha);
     }
 
 
     void addPseudoConnections(int[] legalX, int[] legalY) {
         this.solverX.setLegal(legalX);
         this.solverY.setLegal(legalY);
+    }
+
+    void addPushingForces(){//TODO This function is slow, make it faster if the pushing forces work
+    	double multiplyFactor = 10;//TODO Balance pushing and pulling forces
+
+    	double x1, x2, y1, y2, overlapX, overlapY;
+    	for(int i=0;i<this.coordinatesX.length;i++){
+    		for(int j=i+1;j<this.coordinatesX.length;j++){//Analyze each set of blocks only once
+
+    			x1 = this.coordinatesX[i];
+    			x2 = this.coordinatesX[j];
+
+    			y1 = this.coordinatesY[i];
+    			y2 = this.coordinatesY[j];
+
+    			if(x1 < x2){
+    				overlapX = x1 - x2 + 1;
+    			}else{
+    				overlapX = x2 - x1 + 1;
+    			}
+    			if(y1 < y2){
+    				overlapY = y1 - y2 + 1;
+    			}else{
+    				overlapY = y2 - y1 + 1;
+    			}
+
+    			if(overlapX > 0.0 && overlapY > 0.0){//Overlapping blocks
+    				if(overlapX < overlapY){//Move in direction of smallest overlap
+        				if(x1 < x2){
+        					this.solverX.addOverlapForce(i,j, overlapX*multiplyFactor);
+        				}else{
+        					this.solverX.addOverlapForce(j,i, overlapX*multiplyFactor);
+        				}
+    				}else{
+        				if(y1 < y2){
+        					this.solverY.addOverlapForce(i,j, overlapY*multiplyFactor);
+        				}else{
+        					this.solverY.addOverlapForce(j,i, overlapY*multiplyFactor);
+        				}
+    				}
+    			}
+    		}
+    	}
     }
 
     void processNet(int netStart, int netEnd) {
@@ -132,5 +175,12 @@ class LinearSolverGradient {
     void solve() {
         this.solverX.solve();
         this.solverY.solve();
+    }
+    
+    double[] getCoordinatesX(){
+    	return this.coordinatesX;
+    }
+    double[] getCoordinatesY(){
+    	return this.coordinatesY;
     }
 }
