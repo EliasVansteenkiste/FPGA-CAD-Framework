@@ -47,13 +47,18 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double legalCost;
 
     private static final String
-        O_START_UTILIZATION = "start utilization";
+        O_START_UTILIZATION = "start utilization",
+        O_SEPARATE_SOLVING = "separate solving";
 
     public static void initOptions(Options options) {
         options.add(
                 O_START_UTILIZATION,
                 "utilization of tiles at first legalization",
                 new Double(1.0));
+        options.add(
+        		O_SEPARATE_SOLVING,
+                "place (linear solving and legalisation) all blocktypes separately in each iteration",
+                new Boolean(false));
     }
 
     protected final static String
@@ -297,14 +302,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.initializeIteration(iteration);
             
             // Solve linear
-            for(BlockType movableBlockType:blockTypes){
-            	this.solveLinear(iteration, movableBlockType);
-            	this.solveLegal(iteration, movableBlockType);
+            if(this.options.getBoolean(O_SEPARATE_SOLVING)){
+            	for(BlockType movableBlockType:blockTypes){
+            		this.solveLinear(iteration, movableBlockType);
+            		this.solveLegal(iteration, movableBlockType);
+            	}
+            }else{
+                this.solveLinear(iteration);
+                this.solveLegal(iteration);
             }
-//            this.solveLinear(iteration);
-//            this.solveLegal(iteration);
-
-
+            
             isLastIteration = this.stopCondition(iteration);
 
             double timerEnd = System.nanoTime();

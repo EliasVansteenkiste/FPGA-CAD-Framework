@@ -18,7 +18,8 @@ public class GradientPlacerTD extends GradientPlacer {
         O_CRITICALITY_THRESHOLD = "criticality threshold",
         O_RECALCULATE_CRITICALITIES = "recalculate criticalities",
         O_RECALCULATE_PRIORITY = "recalculate priority",
-        O_TRADE_OFF = "trade off";
+        O_TRADE_OFF = "trade off",
+        O_ALWAYS_UPDATE = "always update legal solution";
 
     public static void initOptions(Options options) {
         GradientPlacer.initOptions(options);
@@ -47,6 +48,11 @@ public class GradientPlacerTD extends GradientPlacer {
                 O_TRADE_OFF,
                 "0 = purely wirelength driven, higher = more timing driven",
                 new Double(10));
+        
+        options.add(
+                O_ALWAYS_UPDATE,
+                "always update the legal solution, even if it leads to worse quality than the best legal solution",
+                new Boolean(true));
     }
 
 
@@ -190,11 +196,14 @@ public class GradientPlacerTD extends GradientPlacer {
 
         if(this.utilization == 1 && this.latestCost < this.minCost) {
             this.minCost = this.latestCost;
-            //this.updateLegal(newLegalX, newLegalY);
         }
         
         //Always update legal cost
-        this.updateLegal(newLegalX, newLegalY);
+        if(this.options.getBoolean(O_ALWAYS_UPDATE)){
+        	this.updateLegal(newLegalX, newLegalY);
+        }else if(this.latestCost == this.minCost){
+        	this.updateLegal(newLegalX, newLegalY);
+        }
     }
 
 

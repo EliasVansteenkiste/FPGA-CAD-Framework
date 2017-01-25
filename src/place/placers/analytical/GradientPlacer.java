@@ -28,7 +28,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_FIRST_EFFORT = "first effort",
         O_LAST_EFFORT = "last effort",
         O_PRINT_OUTER_COST = "print outer cost",
-        O_PRINT_INNER_COST = "print inner cost";
+        O_PRINT_INNER_COST = "print inner cost",
+        O_FIXED_IO = "fixed io blocks";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -84,12 +85,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_PRINT_OUTER_COST,
                 "print the WLD cost after each outer iteration",
-                new Boolean(false));
+                new Boolean(true));
 
         options.add(
                 O_PRINT_INNER_COST,
                 "print the WLD cost after each inner iteration",
                 new Boolean(false));
+        
+        options.add(
+                O_FIXED_IO,
+                "fixed io blocks during gradient descent",
+                new Boolean(true));
     }
 
 
@@ -235,7 +241,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected void solveLinear(int iteration) {
     	Arrays.fill(this.fixed, false);
-    	this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
+    	if(this.options.getBoolean(O_FIXED_IO)){
+    		this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
+    	}
     	this.updateCoordinateValues();
     	this.alpha = 0.0;
 
