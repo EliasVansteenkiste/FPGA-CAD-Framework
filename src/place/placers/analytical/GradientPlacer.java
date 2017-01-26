@@ -134,8 +134,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private double[] coordinatesX;
     private double[] coordinatesY;
 
-    private double alpha;
-
     public GradientPlacer(
             Circuit circuit,
             Options options,
@@ -233,8 +231,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             this.costCalculator = new CostCalculatorWLD(this.nets);
         }
 
-        this.alpha = 0.0;
-
         this.stopTimer(T_INITIALIZE_DATA);
     }
 
@@ -245,7 +241,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
     	}
     	this.updateCoordinateValues();
-    	this.alpha = 0.0;
 
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
@@ -267,7 +262,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	Arrays.fill(this.fixed, true);
     	this.freeBlockType(movableBlockType);
     	this.updateCoordinateValues();
-    	this.alpha = 0.0;
 
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
@@ -336,13 +330,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_BUILD_LINEAR);
 
         // Set value of alpha and reset the solver
-        this.initializeLinearIteration();
+        this.solver.initializeIteration(this.anchorWeight);
 
         // Process nets
         this.processNets();
-
-        //Add pushing forces between overlapping blocks
-        //this.solver.addPushingForces();
 
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
@@ -357,15 +348,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_SOLVE_LINEAR);
         this.solver.solve();
         this.stopTimer(T_SOLVE_LINEAR);
-    }
-    
-    private void initializeLinearIteration(){
-    	//TODO Best value for alpha in each inner iteration?
-    	double maxAlphaValue = 0.9;
-    	this.alpha += maxAlphaValue/this.iterationEffortLevel;
-    	//System.out.println(String.format("%.3f", this.alpha));
-    	
-    	this.solver.initializeIteration(this.anchorWeight, this.alpha);
     }
 
     protected void processNets() {
