@@ -142,18 +142,4 @@ abstract class Legalizer {
     int[] getLegalY() {
         return this.legalY;
     }
-
-
-
-    class LegalizerBlock {
-        int blockIndex;
-        int offset;
-        int macroHeight;
-
-        LegalizerBlock(int blockIndex, int offset, int macroHeight) {
-            this.blockIndex = blockIndex;
-            this.offset = offset;
-            this.macroHeight = macroHeight;
-        }
-    }
 }
