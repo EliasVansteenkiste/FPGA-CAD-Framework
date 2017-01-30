@@ -100,7 +100,7 @@ abstract class Legalizer {
         // Skip i = 0: these are IO blocks
         for(int i = 1; i < this.blockTypes.size(); i++) {
             this.blockType = this.blockTypes.get(i);
-            this.legalize(i);
+            this.legalizeBlockType(i);
         }
     }
     
@@ -111,12 +111,12 @@ abstract class Legalizer {
         for(int i = 1; i < this.blockTypes.size(); i++) {
             this.blockType = this.blockTypes.get(i);
             if(movableBlockType.equals(this.blockType)){
-            	this.legalize(i);
+            	this.legalizeBlockType(i);
             }
         }
     }
     
-    private void legalize(int i){
+    private void legalizeBlockType(int i){
         int blocksStart = this.blockTypeIndexStarts.get(i);
         int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
@@ -130,7 +130,7 @@ abstract class Legalizer {
                 this.blockRepeat = this.width;
             }
 
-            legalizeBlockType(tileCapacity, blocksStart, blocksEnd);
+            legalizeBlockType(this.tileCapacity, blocksStart, blocksEnd);
         }
     }
 
