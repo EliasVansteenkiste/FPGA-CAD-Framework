@@ -213,16 +213,19 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         titles.add("linear cost");
         titles.add("legal cost");
         titles.add("time");
+        titles.add("displacement");
+        titles.add("overlap");
     }
 
     @Override
-    protected void printStatistics(int iteration, double time, double displacement) {
+    protected void printStatistics(int iteration, double time, double displacement, int overlap) {
         this.printStats(
                 Integer.toString(iteration),
                 String.format("%.2f", this.anchorWeight),
                 String.format("%.5g", this.linearCost),
                 String.format("%.5g", this.legalCost),
                 String.format("%.3g", time),
-                String.format("%.2f", displacement));
+                String.format("%.2f", displacement),
+                String.format("%d",   overlap));
     }
 }

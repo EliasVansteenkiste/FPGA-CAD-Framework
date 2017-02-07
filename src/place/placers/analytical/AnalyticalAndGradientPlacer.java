@@ -87,7 +87,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void initializeIteration(int iteration);
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
-    protected abstract void printStatistics(int iteration, double time, double displacement);
+    protected abstract void printStatistics(int iteration, double time, double displacement, int overlap);
 
 
     @Override
@@ -323,20 +323,23 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
 
-            this.printStatistics(iteration, time, this.calculateDisplacement());
+            this.printStatistics(iteration, time, this.calculateDisplacement(), this.overlap());
 
             iteration++;
         }
 
         this.logger.println();
-
-        this.startTimer(T_UPDATE_CIRCUIT);
-        try {
-            this.updateCircuit();
-        } catch(PlacementException error) {
-            this.logger.raise(error);
+        
+        //Only update circuit if the final solution is legal
+        if(this.overlap() == 0){
+        	this.startTimer(T_UPDATE_CIRCUIT);
+        	try {
+        		this.updateCircuit();
+        	} catch(PlacementException error) {
+        		this.logger.raise(error);
+        	}
+        	this.stopTimer(T_UPDATE_CIRCUIT);
         }
-        this.stopTimer(T_UPDATE_CIRCUIT);
     }
     private void addLinearPlacement(int iteration){
         this.visualizer.addPlacement(
@@ -382,7 +385,32 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     private double manhattanDisplacement(int index){
     	return Math.abs(this.linearX[index] - this.legalX[index]) + Math.abs(this.linearY[index] - this.legalY[index]);
     }
-   
+    
+    //Overlap
+    private int overlap(){
+    	int width = this.circuit.getWidth() + 2;
+    	int height = this.circuit.getHeight() + 2;
+    	
+    	int[][] legalMassMap = new int[width][height];
+    	for(int b = this.numIOBlocks; b < this.legalX.length; b++){
+    		int x = this.legalX[b];
+    		int y = this.legalY[b];
+    		legalMassMap[x][y] += 1;
+    	}
+    	
+    	int overlap = 0;
+    	
+    	for(int i = 0; i < width; i++){
+    		for(int j = 0; j < height; j++){
+    			if(legalMassMap[i][j] > 1){
+    				overlap += legalMassMap[i][j];
+    			}
+    		}
+    	}
+    	
+    	return overlap;
+    }
+
 
 
     protected void updateCircuit() throws PlacementException {

@@ -177,7 +177,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new HeapLegalizer(
+        this.legalizer = new GradientLegalizer(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
@@ -415,10 +415,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("time (ms)");
         
         titles.add("displacement");
+        
+        titles.add("overlap");
     }
 
     @Override
-    protected void printStatistics(int iteration, double time, double displacement) {
+    protected void printStatistics(int iteration, double time, double displacement, int overlap) {
         List<String> stats = new ArrayList<>();
 
         stats.add(Integer.toString(iteration));
@@ -439,6 +441,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
         
         stats.add(String.format("%.0f", displacement));
+        
+        stats.add(String.format("%d", overlap));
 
         this.printStats(stats.toArray(new String[0]));
     }
