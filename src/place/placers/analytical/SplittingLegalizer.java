@@ -4,9 +4,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockType;
+import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.visual.PlacementVisualizer;
 
 class SplittingLegalizer extends Legalizer {
 
@@ -18,13 +22,15 @@ class SplittingLegalizer extends Legalizer {
             double[] linearY,
             int[] legalX,
             int[] legalY,
-            int[] heights) throws IllegalArgumentException {
+            int[] heights,
+            PlacementVisualizer visualizer,
+            Map<GlobalBlock, NetBlock> blockIndexes) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, blockIndexes);
     }
 
     @Override
-    protected void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd) {
+    protected void legalizeBlockType(int blocksStart, int blocksEnd) {
     	List<LegalizerBlock> blocks = new ArrayList<LegalizerBlock>();
     	for(int index = blocksStart; index < blocksEnd; index++) {
     		LegalizerBlock legalizerBlock = new LegalizerBlock(index, this.linearX[index], this.linearY[index]);

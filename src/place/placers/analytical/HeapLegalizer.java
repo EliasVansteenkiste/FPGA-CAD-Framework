@@ -5,12 +5,16 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.AbstractSite;
+import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.placers.analytical.TwoDimLinkedList.Axis;
+import place.visual.PlacementVisualizer;
 
 /**
  * This is approximately the legalizer as proposed in
@@ -33,9 +37,11 @@ class HeapLegalizer extends Legalizer {
             double[] linearY,
             int[] legalX,
             int[] legalY,
-            int[] heights) throws IllegalArgumentException {
+            int[] heights,
+            PlacementVisualizer visualizer,
+            Map<GlobalBlock, NetBlock> blockIndexes) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, blockIndexes);
 
 
         // Initialize the matrix to contain a linked list at each coordinate
@@ -51,7 +57,7 @@ class HeapLegalizer extends Legalizer {
 
 
     @Override
-    protected void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd) {
+    protected void legalizeBlockType(int blocksStart, int blocksEnd) {
 
         // Make a matrix that contains the blocks that are closest to each position
         initializeBlockMatrix(blocksStart, blocksEnd);

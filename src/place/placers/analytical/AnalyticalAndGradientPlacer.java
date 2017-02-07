@@ -305,11 +305,17 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             if(this.options.getBoolean(O_SEPARATE_SOLVING)){
             	for(BlockType movableBlockType:blockTypes){
             		this.solveLinear(iteration, movableBlockType);
+            		this.addLinearPlacement(iteration);
+                    
             		this.solveLegal(iteration, movableBlockType);
+            		this.addLegalPlacement(iteration);
             	}
             }else{
                 this.solveLinear(iteration);
+                this.addLinearPlacement(iteration);
+                
                 this.solveLegal(iteration);
+                this.addLegalPlacement(iteration);
             }
             
             isLastIteration = this.stopCondition(iteration);
@@ -319,19 +325,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             this.printStatistics(iteration, time);
 
-            // Update the visualizer
-            this.visualizer.addPlacement(
-                    String.format("iteration %d: linear", iteration),
-                    this.netBlocks, this.linearX, this.linearY, this.getLegalizationAreas(),
-                    this.linearCost);
-            this.visualizer.addPlacement(
-                    String.format("iteration %d: legal", iteration),
-                    this.netBlocks, this.legalX, this.legalY, this.getLegalizationAreas(),
-                    this.legalCost);
-
             iteration++;
         }
-        
+
         this.logger.println();
 
 
@@ -342,6 +338,18 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.logger.raise(error);
         }
         this.stopTimer(T_UPDATE_CIRCUIT);
+    }
+    private void addLinearPlacement(int iteration){
+        this.visualizer.addPlacement(
+                String.format("iteration %d: linear", iteration),
+                this.netBlocks, this.linearX, this.linearY, this.getLegalizationAreas(),
+                this.linearCost);
+    }
+    private void addLegalPlacement(int iteration){
+        this.visualizer.addPlacement(
+                String.format("iteration %d: legal", iteration),
+                this.netBlocks, this.legalX, this.legalY, this.getLegalizationAreas(),
+                this.legalCost);
     }
     private List<BlockType> getBlockTypes(){
     	List<BlockType> blockTypes = new ArrayList<BlockType>();

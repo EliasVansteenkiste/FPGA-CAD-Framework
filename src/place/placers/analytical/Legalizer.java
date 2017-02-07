@@ -3,10 +3,14 @@ package place.placers.analytical;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
+import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.visual.PlacementVisualizer;
 
 abstract class Legalizer {
 
@@ -27,6 +31,10 @@ abstract class Legalizer {
     protected BlockType blockType;
     protected BlockCategory blockCategory;
     protected int blockStart, blockRepeat, blockHeight;
+    
+    //Visualizer
+    private PlacementVisualizer visualizer;
+    private final Map<GlobalBlock, NetBlock> blockIndexes;
 
     Legalizer(
             Circuit circuit,
@@ -36,7 +44,9 @@ abstract class Legalizer {
             double[] linearY,
             int[] legalX,
             int[] legalY,
-            int[] heights) {
+            int[] heights,
+            PlacementVisualizer visualizer,
+            Map<GlobalBlock, NetBlock> blockIndexes) {
 
         // Store easy stuff
         this.circuit = circuit;
@@ -69,6 +79,10 @@ abstract class Legalizer {
 
         System.arraycopy(legalX, 0, this.legalX, 0, this.numBlocks);
         System.arraycopy(legalY, 0, this.legalY, 0, this.numBlocks);
+        
+        // Information to visualize the legalisation progress
+        this.visualizer = visualizer;
+        this.blockIndexes = blockIndexes;
     }
 
     Legalizer(Legalizer legalizer) {
@@ -87,10 +101,14 @@ abstract class Legalizer {
 
         this.numBlocks = legalizer.numBlocks;
         this.numIOBlocks = legalizer.numIOBlocks;
+        
+        this.visualizer = legalizer.visualizer;
+        this.blockIndexes = legalizer.blockIndexes;
     }
 
 
-    protected abstract void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd);
+    protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
+    
     protected abstract void initializeLegalizationAreas();
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
@@ -130,7 +148,7 @@ abstract class Legalizer {
                 this.blockRepeat = this.width;
             }
 
-            legalizeBlockType(this.tileCapacity, blocksStart, blocksEnd);
+            this.legalizeBlockType(blocksStart, blocksEnd);
         }
     }
 
@@ -141,5 +159,9 @@ abstract class Legalizer {
     }
     int[] getLegalY() {
         return this.legalY;
+    }
+    
+    protected void addVisual(String name, double[] linearX, double[] linearY){
+    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, null, -1);
     }
 }

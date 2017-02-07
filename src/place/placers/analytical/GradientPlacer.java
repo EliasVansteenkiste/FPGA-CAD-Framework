@@ -185,7 +185,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.linearY,
                 this.legalX,
                 this.legalY,
-                this.heights);
+                this.heights,
+                this.visualizer,
+                this.netBlocks);
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)

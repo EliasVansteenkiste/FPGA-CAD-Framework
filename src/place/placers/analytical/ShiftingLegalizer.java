@@ -5,9 +5,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockType;
+import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.visual.PlacementVisualizer;
 
 public class ShiftingLegalizer extends Legalizer {
 
@@ -19,9 +23,11 @@ public class ShiftingLegalizer extends Legalizer {
             double[] linearY,
             int[] legalX,
             int[] legalY,
-            int[] heights) {
+            int[] heights,
+            PlacementVisualizer visualizer,
+            Map<GlobalBlock, NetBlock> blockIndexes) {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, blockIndexes);
     }
 
     public ShiftingLegalizer(Legalizer legalizer) {
@@ -29,7 +35,7 @@ public class ShiftingLegalizer extends Legalizer {
     }
     
     @Override
-    protected void legalizeBlockType(double tileCapacity, int blocksStart, int blocksEnd) {
+    protected void legalizeBlockType(int blocksStart, int blocksEnd) {
         int numBlocks = blocksEnd - blocksStart;
         Integer[] blockIndexes = new Integer[numBlocks];
         for(int i = 0; i < numBlocks; i++) {
