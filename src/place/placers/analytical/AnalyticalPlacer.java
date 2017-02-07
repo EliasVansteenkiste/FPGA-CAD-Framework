@@ -216,12 +216,13 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void printStatistics(int iteration, double time) {
+    protected void printStatistics(int iteration, double time, double displacement) {
         this.printStats(
                 Integer.toString(iteration),
                 String.format("%.2f", this.anchorWeight),
                 String.format("%.5g", this.linearCost),
                 String.format("%.5g", this.legalCost),
-                String.format("%.3g", time));
+                String.format("%.3g", time),
+                String.format("%.2f", displacement));
     }
 }

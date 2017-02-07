@@ -87,7 +87,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void initializeIteration(int iteration);
     protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
-    protected abstract void printStatistics(int iteration, double time);
+    protected abstract void printStatistics(int iteration, double time, double displacement);
 
 
     @Override
@@ -323,13 +323,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
 
-            this.printStatistics(iteration, time);
+            this.printStatistics(iteration, time, this.calculateDisplacement());
 
             iteration++;
         }
 
         this.logger.println();
-
 
         this.startTimer(T_UPDATE_CIRCUIT);
         try {
@@ -369,6 +368,21 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         System.arraycopy(newLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, numMovableBlocks);
         System.arraycopy(newLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, numMovableBlocks);
     }
+    
+    //Manhattan displacement
+    private double calculateDisplacement(){
+    	int numBlocks = this.legalX.length;
+    	
+    	double manhattanDisplacement = 0.0;
+    	for(int b=0; b < numBlocks; b++){
+    		manhattanDisplacement += manhattanDisplacement(b);
+    	}
+    	return manhattanDisplacement;
+    }
+    private double manhattanDisplacement(int index){
+    	return Math.abs(this.linearX[index] - this.legalX[index]) + Math.abs(this.linearY[index] - this.legalY[index]);
+    }
+   
 
 
     protected void updateCircuit() throws PlacementException {

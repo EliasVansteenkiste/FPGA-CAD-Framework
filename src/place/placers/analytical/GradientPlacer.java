@@ -413,10 +413,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.addStatTitlesGP(titles);
 
         titles.add("time (ms)");
+        
+        titles.add("displacement");
     }
 
     @Override
-    protected void printStatistics(int iteration, double time) {
+    protected void printStatistics(int iteration, double time, double displacement) {
         List<String> stats = new ArrayList<>();
 
         stats.add(Integer.toString(iteration));
@@ -435,6 +437,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.addStats(stats);
 
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
+        
+        stats.add(String.format("%.0f", displacement));
 
         this.printStats(stats.toArray(new String[0]));
     }
