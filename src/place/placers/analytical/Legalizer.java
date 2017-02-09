@@ -164,4 +164,7 @@ abstract class Legalizer {
     protected void addVisual(String name, double[] linearX, double[] linearY){
     	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, null, -1);
     }
+    protected void addVisual(String name, int[] linearX, int[] linearY){
+    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, null, -1);
+    }
 }
