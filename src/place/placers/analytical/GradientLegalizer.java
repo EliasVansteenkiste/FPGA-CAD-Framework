@@ -12,18 +12,18 @@ import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.visual.PlacementVisualizer;
 
 class GradientLegalizer extends Legalizer {
-	
+
 	private LegalizerBlock[] blocks;
-	
-	private double stepSize, speedAveraging;
-    
+
     private int discretisation;
     private Loc[][] massMap;
     private ArrayList<Loc> usedLoc;
-    
+
     private int iteration;
-    
-    private static final boolean timing = false;
+
+	private final double stepSize, speedAveraging;
+
+    private static final boolean timing = true;
     private Timer timer;
     private static final boolean visual = false;
 
@@ -49,19 +49,18 @@ class GradientLegalizer extends Legalizer {
         this.speedAveraging = 0.2;
         
     	this.discretisation = 4;
-    	if(this.discretisation %2 != 0){
+    	if(this.discretisation % 2 != 0){
     		System.out.println("Discretisation should be even, now it is equal to " + this.discretisation);
     		System.exit(0);
     	}
-    	
+
     	int width = (this.width+2) * this.discretisation;
     	int height = (this.height+2) * this.discretisation;
     	this.massMap = new Loc[width][height];
     	this.usedLoc = new ArrayList<Loc>();
     	for(int i = 0; i < width; i++){
     		for(int j = 0; j < height; j++){
-    			Loc loc = new Loc(i,j, this.discretisation, 0.05);
-    			this.massMap[i][j] = loc;
+    			this.massMap[i][j] = new Loc(i, j, this.discretisation, 0.05);
     		}
     	}
 
@@ -71,10 +70,7 @@ class GradientLegalizer extends Legalizer {
     	if(visual){
     		this.visualX = new double[this.linearX.length];
     		this.visualY = new double[this.linearY.length];
-    		for(int i = 0; i < this.linearX.length; i++){
-    			this.visualX[i] = this.linearX[i];
-    			this.visualY[i] = this.linearY[i];
-    		}
+
     	}
     }
  
@@ -84,7 +80,7 @@ class GradientLegalizer extends Legalizer {
         do{
         	this.applyPushingForces();
         	this.iteration += 1;
-        }while(this.overlap() > 500 && this.iteration < 1000);
+        }while(this.overlap() > 500 && this.iteration < 750);
 
     	this.updateLegal();
     	this.shiftLegal();
@@ -147,6 +143,7 @@ class GradientLegalizer extends Legalizer {
     		if(block.vertical.coordinate > this.height) block.vertical.coordinate = this.height;
     		if(block.vertical.coordinate < 1) block.vertical.coordinate = 1;
     	}
+    	
     	if(timing) this.timer.time("Solve");
     }
     private int overlap(){
@@ -197,7 +194,6 @@ class GradientLegalizer extends Legalizer {
     	
     	if(timing) this.timer.time("Calculate forces");
     }
-
 
 
     //PUSHING GRAVITY FORCES BETWEEN THE BLOCKS
@@ -406,28 +402,24 @@ class GradientLegalizer extends Legalizer {
     }
     
     private class Loc {
-    	private int x;
-    	private int y;
-    	
     	private int mass;
     	private boolean used;
     	
     	double horizontalPotential;
     	double verticalPotential;
+    	
     	double horizontalForce;
     	double verticalForce;
     	
     	Loc(int x, int y, int discretisation, double maxPotential){
-    		this.x = x;
-    		this.y = y;
-    		
     		this.mass = 0;
-    		
-        	double rest = ((this.x) % discretisation) + 1.0/discretisation;
-        	this.horizontalPotential =  Math.abs(maxPotential - 2*maxPotential*rest/discretisation);
-        	
-        	rest = ((this.y) % discretisation) + 1.0/discretisation;
-        	this.verticalPotential =  Math.abs(maxPotential - 2*maxPotential*rest/discretisation);
+
+        	this.horizontalPotential = this.potential(x, discretisation, maxPotential);
+        	this.verticalPotential =  this.potential(y, discretisation, maxPotential);
+    	}
+    	private double potential(int val, int discretisation, double maxPotential){
+    		double rest = (val % discretisation) + 1.0/discretisation;
+    		return Math.abs(maxPotential - 2*maxPotential*rest/discretisation);
     	}
     	
     	boolean used(){
