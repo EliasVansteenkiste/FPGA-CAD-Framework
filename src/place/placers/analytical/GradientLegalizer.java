@@ -276,72 +276,53 @@ class GradientLegalizer extends Legalizer {
 	    	
 	    	if(this.discretisation == 4){
 	    		//LOOP UNROLLING
-				loc = this.massMap[i][j];
-				horizontalForce += loc.horizontalForce();
-				verticalForce += loc.verticalForce();
+				horizontalForce += this.massMap[i][j].horizontalForce();
+				verticalForce += this.massMap[i][j].verticalForce();
 				
-				loc = this.massMap[i][j + 1];
-				horizontalForce += loc.horizontalForce();
-				verticalForce += loc.verticalForce();
+				horizontalForce += this.massMap[i][j + 1].horizontalForce();
+				verticalForce += this.massMap[i][j + 1].verticalForce();
 				
-				loc = this.massMap[i][j + 2];
-				horizontalForce += loc.horizontalForce();
-				verticalForce -= loc.verticalForce();
+				horizontalForce += this.massMap[i][j + 2].horizontalForce();
+				verticalForce -= this.massMap[i][j + 2].verticalForce();
 		    	
-				loc = this.massMap[i][j + 3];
-				horizontalForce += loc.horizontalForce();
-				verticalForce -= loc.verticalForce();
+				horizontalForce += this.massMap[i][j + 3].horizontalForce();
+				verticalForce -= this.massMap[i][j + 3].verticalForce();
 
+				horizontalForce += this.massMap[i + 1][j].horizontalForce();
+				verticalForce += this.massMap[i + 1][j].verticalForce();
 				
-				loc = this.massMap[i + 1][j];
-				horizontalForce += loc.horizontalForce();
-				verticalForce += loc.verticalForce();
+				horizontalForce += this.massMap[i + 1][j + 1].horizontalForce();
+				verticalForce += this.massMap[i + 1][j + 1].verticalForce();
 				
-				loc = this.massMap[i + 1][j + 1];
-				horizontalForce += loc.horizontalForce();
-				verticalForce += loc.verticalForce();
-				
-				loc = this.massMap[i + 1][j + 2];
-				horizontalForce += loc.horizontalForce();
-				verticalForce -= loc.verticalForce();
+				horizontalForce += this.massMap[i + 1][j + 2].horizontalForce();
+				verticalForce -= this.massMap[i + 1][j + 2].verticalForce();
 		    	
-				loc = this.massMap[i + 1][j + 3];
-				horizontalForce += loc.horizontalForce();
-				verticalForce -= loc.verticalForce();				
+				horizontalForce += this.massMap[i + 1][j + 3].horizontalForce();
+				verticalForce -= this.massMap[i + 1][j + 3].verticalForce();				
 
-				
-				loc = this.massMap[i + 2][j];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce += loc.verticalForce();
-				
-				loc = this.massMap[i + 2][j + 1];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce += loc.verticalForce();
-				
-				loc = this.massMap[i + 2][j + 2];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce -= loc.verticalForce();
-		    	
-				loc = this.massMap[i + 2][j + 3];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce -= loc.verticalForce();
+				horizontalForce -= this.massMap[i + 2][j].horizontalForce();
+				verticalForce += this.massMap[i + 2][j].verticalForce();
 
-				
-				loc = this.massMap[i + 3][j];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce += loc.verticalForce();
-				
-				loc = this.massMap[i + 3][j + 1];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce += loc.verticalForce();
-				
-				loc = this.massMap[i + 3][j + 2];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce -= loc.verticalForce();
-		    	
-				loc = this.massMap[i + 3][j + 3];
-				horizontalForce -= loc.horizontalForce();
-				verticalForce -= loc.verticalForce();
+				horizontalForce -= this.massMap[i + 2][j + 1].horizontalForce();
+				verticalForce += this.massMap[i + 2][j + 1].verticalForce();
+
+				horizontalForce -= this.massMap[i + 2][j + 2].horizontalForce();
+				verticalForce -= this.massMap[i + 2][j + 2].verticalForce();
+
+				horizontalForce -= this.massMap[i + 2][j + 3].horizontalForce();
+				verticalForce -= this.massMap[i + 2][j + 3].verticalForce();
+
+				horizontalForce -= this.massMap[i + 3][j].horizontalForce();
+				verticalForce += this.massMap[i + 3][j].verticalForce();
+
+				horizontalForce -= this.massMap[i + 3][j + 1].horizontalForce();
+				verticalForce += this.massMap[i + 3][j + 1].verticalForce();
+
+				horizontalForce -= this.massMap[i + 3][j + 2].horizontalForce();
+				verticalForce -= this.massMap[i + 3][j + 2].verticalForce();
+
+				horizontalForce -= this.massMap[i + 3][j + 3].horizontalForce();
+				verticalForce -= this.massMap[i + 3][j + 3].verticalForce();
 	    	}else{
 	    		for(int k = 0; k < halfDiscretisation; k++){
 		    		for(int l = 0; l < halfDiscretisation; l++){
