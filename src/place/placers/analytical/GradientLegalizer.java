@@ -165,12 +165,13 @@ class GradientLegalizer extends Legalizer {
     private void solve(){
     	if(timing) this.timer.start();
 
-    	int origI, origJ, newI, newJ;
+    	short origI, origJ, newI, newJ;
+    	int horizontalDistance, verticalDistance;
     	
     	for(LegalizerBlock block:this.blocks){
 
-            origI = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
-            origJ = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
+            origI = (short)Math.ceil(block.horizontal.coordinate * this.discretisation);
+            origJ = (short)Math.ceil(block.vertical.coordinate * this.discretisation);
     		
     		block.horizontal.solve(this.stepSize, this.speedAveraging);
     		block.vertical.solve(this.stepSize, this.speedAveraging);
@@ -181,19 +182,83 @@ class GradientLegalizer extends Legalizer {
     		if(block.vertical.coordinate > this.height) block.vertical.coordinate = this.height;
     		if(block.vertical.coordinate < 1) block.vertical.coordinate = 1;
             
-            newI = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
-            newJ = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
+            newI = (short)Math.ceil(block.horizontal.coordinate * this.discretisation);
+            newJ = (short)Math.ceil(block.vertical.coordinate * this.discretisation);
             
     		//UPDATE MASS MAP //TODO NOT FULLY INCREMENTAL
+            if(origI == newI && origJ == newJ){
+            	//NO UPDATE REQUIRED
+            	continue;
+            }else if(origJ == newJ){
+            	if(origI < newI){
+            		//MOVE RIGHT
+            		horizontalDistance = newI - origI;
+            		for(int k = 0; k < horizontalDistance; k++){
+                    	for(int l = 0; l < this.discretisation; l++){
+                    		if(this.massMap[origI + k][origJ + l].decrease() > 0) this.overlap--;
+                    		if(this.massMap[newI + this.discretisation - 1 - k][newJ + l].increase() > 1) this.overlap++;
+                    	}
+                    }
+            		continue;
+            	}else{
+            		//MOVE LEFT
+            		horizontalDistance = origI - newI;
+            		for(int k = 0; k < horizontalDistance; k++){
+                    	for(int l = 0; l < this.discretisation; l++){
+                    		if(this.massMap[origI + this.discretisation - 1 - k][origJ + l].decrease() > 0) this.overlap--;
+                    		if(this.massMap[newI + k][newJ + l].increase() > 1) this.overlap++;
+                    	}
+                    }
+            		continue;
+            	}
+            }else if(origI == newI){
+            	if(origJ < newJ){
+            		//MOVE UP
+            		verticalDistance = newJ - origJ;
+            		for(int k = 0; k < this.discretisation; k++){
+                    	for(int l = 0; l < verticalDistance; l++){
+                    		if(this.massMap[origI + k][origJ + l].decrease() > 0) this.overlap--;
+                    		if(this.massMap[newI + k][newJ + this.discretisation - 1 - l].increase() > 1) this.overlap++;
+                    	}
+                    }
+            		continue;
+            	}else{
+            		//MOVE DOWN
+            		verticalDistance = origJ - newJ;
+            		for(int k = 0; k < this.discretisation; k++){
+                    	for(int l = 0; l < verticalDistance; l++){
+                    		if(this.massMap[origI + k][origJ + this.discretisation - 1 - l].decrease() > 0) this.overlap--;
+                    		if(this.massMap[newI + k][newJ + l].increase() > 1) this.overlap++;
+                    	}
+                    }
+            		continue;
+            	}
+//            }else if(origI < newI){
+//            	if(origJ < newJ){
+//            		horizontalDistance = newI - origI;
+//            		verticalDistance = newJ - origJ;
+//            		//TODO IMPLEMENT | I THINK THIS WILL NOT SPEED UP THE LEGALIZER
+//            	}else{
+//            		horizontalDistance = newI - origI;
+//            		verticalDistance = origJ - newJ;
+//            		//TODO IMPLEMENT | I THINK THIS WILL NOT SPEED UP THE LEGALIZER
+//            	}
+//            }else{
+//            	if(origJ < newJ){
+//            		horizontalDistance = origI - newI;
+//            		verticalDistance = newJ - origJ;
+//            		//TODO IMPLEMENT | I THINK THIS WILL NOT SPEED UP THE LEGALIZER
+//            	}else{
+//            		horizontalDistance = origI - newI;
+//            		verticalDistance = origJ - newJ;
+//            		//TODO IMPLEMENT | I THINK THIS WILL NOT SPEED UP THE LEGALIZER
+//            	}
+            }
+    		
             for(int k = 0; k < this.discretisation; k++){
             	for(int l = 0; l < this.discretisation; l++){
-            		Loc origLoc = this.massMap[origI + k][origJ + l];
-            		origLoc.decrease();
-            		if(origLoc.mass > 0) this.overlap--;
-            		
-            		Loc newLoc = this.massMap[newI + k][newJ + l];
-            		newLoc.increase();
-            		if(newLoc.mass > 1) this.overlap++;
+            		if(this.massMap[origI + k][origJ + l].decrease() > 0) this.overlap--;
+            		if(this.massMap[newI + k][newJ + l].increase() > 1) this.overlap++;
             	}
             }
     	}
@@ -265,7 +330,7 @@ class GradientLegalizer extends Legalizer {
 	    	
 	    	Loc loc = null;
 	    	
-	    	if(this.discretisation == 40){
+	    	if(this.discretisation == 4){
 	    		//LOOP UNROLLING
 				horizontalForce += this.massMap[i][j].horizontalForce();
 				verticalForce += this.massMap[i][j].verticalForce();
@@ -530,13 +595,15 @@ class GradientLegalizer extends Legalizer {
     		this.verticalForce = 0.0;
     	}
 
-    	void decrease(){
+    	short decrease(){
     		this.mass--;
     		this.forceValid = false;
+    		return this.mass;
     	}
-    	void increase(){
+    	short increase(){
     		this.mass++;
     		this.forceValid = false;
+    		return this.mass;
     	}
     	
     	boolean overlap(){
