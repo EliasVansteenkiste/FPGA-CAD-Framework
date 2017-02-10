@@ -406,8 +406,8 @@ class GradientLegalizer extends Legalizer {
 		    	}
 	    	}
 
-	    	block.horizontal.force += horizontalForce / area;
-	    	block.vertical.force += verticalForce / area;	
+	    	block.horizontal.setForce(horizontalForce / area);
+	    	block.vertical.setForce(verticalForce / area);
     	}    	
     	if(timing) this.timer.time("Gravity Push Forces");
     }
@@ -566,6 +566,7 @@ class GradientLegalizer extends Legalizer {
 
     private class Loc {
     	private short mass;
+    	private short forceMass;
 
     	final double horizontalPotential;
     	final double verticalPotential;
@@ -573,15 +574,12 @@ class GradientLegalizer extends Legalizer {
     	double horizontalForce;
     	double verticalForce;
     	
-    	boolean forceValid;
-    	
     	Loc(int x, int y, int discretisation, double maxPotential){
     		this.mass = 0;
+    		this.forceMass = 0;
 
         	this.horizontalPotential = this.potential(x, discretisation, maxPotential);
         	this.verticalPotential =  this.potential(y, discretisation, maxPotential);
-        	
-        	this.forceValid = false;
     	}
     	private double potential(int val, int discretisation, double maxPotential){
     		double rest = (val % discretisation) + 1.0/discretisation;
@@ -590,19 +588,17 @@ class GradientLegalizer extends Legalizer {
     	
     	void reset(){
     		this.mass = 0;
-    		this.forceValid = false;
+    		this.forceMass = 0;
     		this.horizontalForce = 0.0;
     		this.verticalForce = 0.0;
     	}
 
     	short decrease(){
     		this.mass--;
-    		this.forceValid = false;
     		return this.mass;
     	}
     	short increase(){
     		this.mass++;
-    		this.forceValid = false;
     		return this.mass;
     	}
     	
@@ -615,16 +611,16 @@ class GradientLegalizer extends Legalizer {
     		this.verticalForce = 1.0 - 1.0/(this.mass + this.verticalPotential);
     	}
         private double horizontalForce(){
-        	if(!this.forceValid){
+        	if(this.mass != this.forceMass){
         		this.setForce();
-        		this.forceValid = true;
+        		this.forceMass = this.mass;
         	}
         	return this.horizontalForce;
         }
         private double verticalForce(){
-        	if(!this.forceValid){
+        	if(this.mass != this.forceMass){
         		this.setForce();
-        		this.forceValid = true;
+        		this.forceMass = this.mass;
         	}
         	return this.verticalForce;
         }
@@ -657,28 +653,25 @@ class GradientLegalizer extends Legalizer {
     	
     	Direction(double coordinate){
     		this.coordinate = coordinate;
-    		this.speed = 0;
-    		this.force = 0;
+    		this.speed = 0.0;
+    		this.force = 0.0;
     	}
     	
     	void reset(){
     		this.force = 0.0;
     	}
     	
+    	void setForce(double force){
+    		this.force = force;
+    	}
+    	
     	void solve(double stepSize, double speedAveraging){
-        	
-    		double netGoal = this.coordinate;
-        	
-        	if(this.force != 0.0){
-        		netGoal += this.force;
-        	} else {
-        		return;
-        	}
-        	
-        	double newSpeed = stepSize * (netGoal - this.coordinate);
-        	
-        	this.speed = speedAveraging * this.speed + (1 - speedAveraging) * newSpeed;
-        	this.coordinate += this.speed;
+    		if(this.force != 0.0){
+            	double newSpeed = stepSize * this.force;
+            	
+            	this.speed = speedAveraging * this.speed + (1 - speedAveraging) * newSpeed;
+            	this.coordinate += this.speed;
+    		}
     	}
     }
     
