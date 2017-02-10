@@ -268,39 +268,38 @@ class GradientLegalizer extends Legalizer {
     		   		
 	    	int i = (int)Math.ceil(x * this.discretisation);
 	    	int j = (int)Math.ceil(y * this.discretisation);
-	    		
-	    	//Horizontal
-	    	double horizontalForce = 0.0;
+	    	
+	    	double horizontalForce  = 0.0;
+	    	double verticalForce = 0.0;
+	    	
+	    	Loc loc = null;
+	    	
 	    	for(int k = 0; k < halfDiscretisation; k++){
-	    		for(int l = 0; l < discretisation; l++){
-	    			//Positive force
-	    			horizontalForce += this.massMap[i+k][j+l].horizontalForce();
+	    		for(int l = 0; l < halfDiscretisation; l++){
+	    			loc = this.massMap[i+k][j+l];
+	    			horizontalForce += loc.horizontalForce();
+	    			verticalForce += loc.verticalForce();
+	    		}
+	    		for(int l = halfDiscretisation; l < discretisation; l++){
+	    			loc = this.massMap[i+k][j+l];
+	    			horizontalForce += loc.horizontalForce();
+	    			verticalForce -= loc.verticalForce();
 	    		}
 	    	}
 	    	for(int k = halfDiscretisation; k < discretisation; k++){
-	    		for(int l = 0; l < discretisation; l++){
-	    			//Negative force
-	    			horizontalForce -= this.massMap[i+k][j+l].horizontalForce();
+	    		for(int l = 0; l < halfDiscretisation; l++){
+	    			loc = this.massMap[i+k][j+l];
+	    			horizontalForce -= loc.horizontalForce();
+	    			verticalForce += loc.verticalForce();
+	    		}
+	    		for(int l = halfDiscretisation; l < discretisation; l++){
+	    			loc = this.massMap[i+k][j+l];
+	    			horizontalForce -= loc.horizontalForce();
+	    			verticalForce -= loc.verticalForce();
 	    		}
 	    	}
 	    	block.horizontal.force += horizontalForce / area;
-	    	
-	    	//Vertical
-	    	double verticalForce = 0.0;
-	    	for(int k = 0; k < discretisation; k++){
-	    		for(int l = 0; l < halfDiscretisation; l++){
-	    			//Positive force
-	    			verticalForce += this.massMap[i+k][j+l].verticalForce();
-	    		}
-	    	}
-	    	for(int k = 0; k < discretisation; k++){
-	    		for(int l = halfDiscretisation; l < discretisation; l++){
-	    			//Negative force
-	    			verticalForce -= this.massMap[i+k][j+l].verticalForce();
-	    		}
-	    	}
 	    	block.vertical.force += verticalForce / area;	
-    		
     	}    	
     	if(timing) this.timer.time("Gravity Push Forces");
     }
