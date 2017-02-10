@@ -159,9 +159,6 @@ class SimpleLegalizer extends Legalizer {
     	return movement;
 		  	
     }
-   
-   
-    
     private class LegalizerBlock {
     	int index;
     	double x;
