@@ -16,6 +16,7 @@ class GradientLegalizer extends Legalizer {
 	private LegalizerBlock[] blocks;
 
     private final int discretisation;
+    private final int halfDiscretisation;
     private final Loc[][] massMap;
 
     private int iteration;
@@ -53,6 +54,11 @@ class GradientLegalizer extends Legalizer {
     		System.out.println("Discretisation should be even, now it is equal to " + this.discretisation);
     		System.exit(0);
     	}
+    	if(this.discretisation > 20){
+    		System.out.println("Discretisation should be smaller than 20, now it is equal to " + this.discretisation);
+    		System.exit(0);
+    	}
+    	this.halfDiscretisation = this.discretisation / 2;
 
     	int width = (this.width + 2) * this.discretisation;
     	int height = (this.height + 2) * this.discretisation;
@@ -120,12 +126,9 @@ class GradientLegalizer extends Legalizer {
     private void initializeMassMap(){
     	if(timing) this.timer.start();
 
-    	for(LegalizerBlock block:this.blocks){
-        	double x = block.horizontal.coordinate;
-        	double y = block.vertical.coordinate;
-        		
-        	int i = (int)Math.ceil(x * this.discretisation);
-        	int j = (int)Math.ceil(y * this.discretisation);
+    	for(LegalizerBlock block:this.blocks){	
+        	int i = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
+        	int j = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
         		
         	for(int k = 0; k < this.discretisation; k++){
         		for(int l = 0; l < this.discretisation; l++){
@@ -161,17 +164,13 @@ class GradientLegalizer extends Legalizer {
     }
     private void solve(){
     	if(timing) this.timer.start();
-    	
-    	double origX, origY, newX, newY;
+
     	int origI, origJ, newI, newJ;
     	
     	for(LegalizerBlock block:this.blocks){
-    		
-    		origX = block.horizontal.coordinate;
-    		origY = block.vertical.coordinate;
-    		
-            origI = (int)Math.ceil(origX * this.discretisation);
-            origJ = (int)Math.ceil(origY * this.discretisation);
+
+            origI = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
+            origJ = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
     		
     		block.horizontal.solve(this.stepSize, this.speedAveraging);
     		block.vertical.solve(this.stepSize, this.speedAveraging);
@@ -181,12 +180,9 @@ class GradientLegalizer extends Legalizer {
     		
     		if(block.vertical.coordinate > this.height) block.vertical.coordinate = this.height;
     		if(block.vertical.coordinate < 1) block.vertical.coordinate = 1;
-    		
-    		newX = block.horizontal.coordinate;
-    		newY = block.vertical.coordinate;
             
-            newI = (int)Math.ceil(newX * this.discretisation);
-            newJ = (int)Math.ceil(newY * this.discretisation);
+            newI = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
+            newJ = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
             
     		//UPDATE MASS MAP //TODO NOT FULLY INCREMENTAL
             for(int k = 0; k < this.discretisation; k++){
@@ -258,23 +254,18 @@ class GradientLegalizer extends Legalizer {
     	if(timing) this.timer.start();
     	
     	//Local known variables
-    	double area = (double)this.discretisation * (double)this.discretisation / 2.0;
-    	final int discretisation = this.discretisation;
-    	final int halfDiscretisation = this.discretisation / 2;
+    	int area = this.discretisation * this.halfDiscretisation;
     	
-    	for(LegalizerBlock block:this.blocks){
-    		double x = block.horizontal.coordinate;
-    		double y = block.vertical.coordinate;
-    		   		
-	    	int i = (int)Math.ceil(x * this.discretisation);
-	    	int j = (int)Math.ceil(y * this.discretisation);
+    	for(LegalizerBlock block:this.blocks){ 		
+	    	int i = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
+	    	int j = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
 	    	
 	    	double horizontalForce  = 0.0;
 	    	double verticalForce = 0.0;
 	    	
 	    	Loc loc = null;
 	    	
-	    	if(this.discretisation == 4){
+	    	if(this.discretisation == 40){
 	    		//LOOP UNROLLING
 				horizontalForce += this.massMap[i][j].horizontalForce();
 				verticalForce += this.massMap[i][j].verticalForce();
@@ -324,25 +315,25 @@ class GradientLegalizer extends Legalizer {
 				horizontalForce -= this.massMap[i + 3][j + 3].horizontalForce();
 				verticalForce -= this.massMap[i + 3][j + 3].verticalForce();
 	    	}else{
-	    		for(int k = 0; k < halfDiscretisation; k++){
-		    		for(int l = 0; l < halfDiscretisation; l++){
+	    		for(int k = 0; k < this.halfDiscretisation; k++){
+		    		for(int l = 0; l < this.halfDiscretisation; l++){
 		    			loc = this.massMap[i+k][j+l];
 		    			horizontalForce += loc.horizontalForce();
 		    			verticalForce += loc.verticalForce();
 		    		}
-		    		for(int l = halfDiscretisation; l < discretisation; l++){
+		    		for(int l = this.halfDiscretisation; l < this.discretisation; l++){
 		    			loc = this.massMap[i+k][j+l];
 		    			horizontalForce += loc.horizontalForce();
 		    			verticalForce -= loc.verticalForce();
 		    		}
 		    	}
-		    	for(int k = halfDiscretisation; k < discretisation; k++){
-		    		for(int l = 0; l < halfDiscretisation; l++){
+		    	for(int k = this.halfDiscretisation; k < this.discretisation; k++){
+		    		for(int l = 0; l < this.halfDiscretisation; l++){
 		    			loc = this.massMap[i+k][j+l];
 		    			horizontalForce -= loc.horizontalForce();
 		    			verticalForce += loc.verticalForce();
 		    		}
-		    		for(int l = halfDiscretisation; l < discretisation; l++){
+		    		for(int l = this.halfDiscretisation; l < this.discretisation; l++){
 		    			loc = this.massMap[i+k][j+l];
 		    			horizontalForce -= loc.horizontalForce();
 		    			verticalForce -= loc.verticalForce();
@@ -509,7 +500,7 @@ class GradientLegalizer extends Legalizer {
     }
 
     private class Loc {
-    	private int mass;
+    	private short mass;
 
     	final double horizontalPotential;
     	final double verticalPotential;
@@ -562,7 +553,6 @@ class GradientLegalizer extends Legalizer {
         		this.forceValid = true;
         	}
         	return this.horizontalForce;
-        	//return 1.0 - 1.0/(this.mass + this.horizontalPotential);
         }
         private double verticalForce(){
         	if(!this.forceValid){
@@ -570,7 +560,6 @@ class GradientLegalizer extends Legalizer {
         		this.forceValid = true;
         	}
         	return this.verticalForce;
-        	//return 1.0 - 1.0/(this.mass + this.verticalPotential);
         }
     }
     
