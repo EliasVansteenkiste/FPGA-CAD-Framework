@@ -463,10 +463,10 @@ class GradientLegalizer extends Legalizer {
     	final double horizontalPotential;
     	final double verticalPotential;
 
-//    	double horizontalForce;
-//    	double verticalForce;
-//    	
-//    	boolean forceValid;
+    	double horizontalForce;
+    	double verticalForce;
+    	
+    	boolean forceValid;
     	
     	Loc(int x, int y, int discretisation, double maxPotential){
     		this.mass = 0;
@@ -474,7 +474,7 @@ class GradientLegalizer extends Legalizer {
         	this.horizontalPotential = this.potential(x, discretisation, maxPotential);
         	this.verticalPotential =  this.potential(y, discretisation, maxPotential);
         	
-//        	this.forceValid = false;
+        	this.forceValid = false;
     	}
     	private double potential(int val, int discretisation, double maxPotential){
     		double rest = (val % discretisation) + 1.0/discretisation;
@@ -483,40 +483,43 @@ class GradientLegalizer extends Legalizer {
     	
     	void reset(){
     		this.mass = 0;
+    		this.forceValid = false;
+    		this.horizontalForce = 0.0;
+    		this.verticalForce = 0.0;
     	}
 
     	void decrease(){
     		this.mass--;
-//    		this.forceValid = false;
+    		this.forceValid = false;
     	}
     	void increase(){
     		this.mass++;
-//    		this.forceValid = false;
+    		this.forceValid = false;
     	}
     	
     	boolean overlap(){
     		return this.mass > 1;
     	}
     	
-//    	void setForce(){
-//    		this.horizontalForce = 1.0 - 1.0/(this.mass + this.horizontalPotential);
-//    		this.verticalForce = 1.0 - 1.0/(this.mass + this.verticalPotential);
-//    	}
+    	void setForce(){
+    		this.horizontalForce = 1.0 - 1.0/(this.mass + this.horizontalPotential);
+    		this.verticalForce = 1.0 - 1.0/(this.mass + this.verticalPotential);
+    	}
         private double horizontalForce(){
-//        	if(!this.forceValid){
-//        		this.setForce();
-//        		this.forceValid = true;
-//        	}
-//        	return this.horizontalForce;
-        	return 1.0 - 1.0/(this.mass + this.horizontalPotential);
+        	if(!this.forceValid){
+        		this.setForce();
+        		this.forceValid = true;
+        	}
+        	return this.horizontalForce;
+        	//return 1.0 - 1.0/(this.mass + this.horizontalPotential);
         }
         private double verticalForce(){
-//        	if(!this.forceValid){
-//        		this.setForce();
-//        		this.forceValid = true;
-//        	}
-//        	return this.verticalForce;
-        	return 1.0 - 1.0/(this.mass + this.verticalPotential);
+        	if(!this.forceValid){
+        		this.setForce();
+        		this.forceValid = true;
+        	}
+        	return this.verticalForce;
+        	//return 1.0 - 1.0/(this.mass + this.verticalPotential);
         }
     }
     
