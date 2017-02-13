@@ -79,12 +79,15 @@ class GradientLegalizer extends Legalizer {
     }
  
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
+    	int maxOverlap = this.discretisation * this.discretisation * (blocksEnd - blocksStart);
+    	double allowedOverlap = maxOverlap * 0.05;
+    	
     	this.initializeData(blocksStart, blocksEnd);
         
         do{
         	this.applyPushingForces();
         	this.iteration += 1;
-        }while(this.overlap > 500 && this.iteration < 750);
+        }while(this.overlap > allowedOverlap && this.iteration < 500);
 
     	this.updateLegal();
     	this.shiftLegal();
@@ -446,7 +449,7 @@ class GradientLegalizer extends Legalizer {
     			unplacedBlocks.add(block);
     		}
     	}
-    	if(unplacedBlocks.size() < this.blocks.length * 0.02){
+    	if(unplacedBlocks.size() < this.blocks.length * 0.05){
         	int movingX = 0, movingY = 0;
         	for(LegalizerBlock block:unplacedBlocks){
 
