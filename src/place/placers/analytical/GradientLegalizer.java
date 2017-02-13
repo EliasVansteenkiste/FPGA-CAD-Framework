@@ -23,12 +23,11 @@ class GradientLegalizer extends Legalizer {
     private final int halfDiscretisation;
     private final Loc[][] massMap;
     
+    private final boolean[][] legal;
+    private final LegalizerBlock[][] legalMap;
+
     private final int gridWidth;
     private final int gridHeight;
-
-    private final ArrayList<Integer> rows;
-    private final ArrayList<Integer> legalColumns;
-    private final ArrayList<Integer> illegalColumns;
 
     private int iteration;
     private int overlap;
@@ -83,12 +82,8 @@ class GradientLegalizer extends Legalizer {
     		}
     	}
 
-    	this.rows = new ArrayList<Integer>();
-    	for(int row = 1; row < this.height + 1; row++){
-    		this.rows.add(row);
-    	}
-    	this.legalColumns = new ArrayList<Integer>();
-    	this.illegalColumns = new ArrayList<Integer>();
+    	this.legal = new boolean[this.width + 2][this.height + 2];
+    	this.legalMap = new LegalizerBlock[this.width + 2][this.height + 2];
 
     	if(timing){
     		this.timer = new Timer();
@@ -102,6 +97,8 @@ class GradientLegalizer extends Legalizer {
     }
  
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
+    	if(timing) this.timer.start("Legalize BlockType");
+    	
     	int maxOverlap = this.discretisation * this.discretisation * (blocksEnd - blocksStart);
     	double allowedOverlap = maxOverlap * 0.05;
 
@@ -110,6 +107,9 @@ class GradientLegalizer extends Legalizer {
     	//LEGAL POTENTIAL
     	this.ioPotential();
     	this.legalPotential();
+    	
+    	int legalIterations = 250;
+    	if(timing) legalIterations = 5;
 
     	if(printPotential) this.printPotential();
 
@@ -117,21 +117,23 @@ class GradientLegalizer extends Legalizer {
     	do{
         	this.applyPushingForces();
         	this.iteration += 1;
-        }while(this.overlap > allowedOverlap && this.iteration < 250);
+        }while(this.overlap > allowedOverlap && this.iteration < legalIterations);
     	
     	this.addVisual("Legal Potential");
 
     	//ILLEGAL POTENTIAL
     	this.illegalPotential();
 
+    	int illegalIterations = 50;
+    	if(timing) illegalIterations = 5;
+    	
     	this.iteration = 0;
         do{
         	this.applyPushingForces();
         	this.iteration += 1;
-        }while(this.overlap > allowedOverlap && this.iteration < 50);
+        }while(this.overlap > allowedOverlap && this.iteration < illegalIterations);
 
         this.addVisual("Illegal Potential");
-
 
         //LEGAL SOLUTION
     	this.updateLegal();
@@ -139,12 +141,14 @@ class GradientLegalizer extends Legalizer {
     	this.addVisual("Legalized Postions");
 
     	this.shiftLegal();
+    	
+    	if(timing) this.timer.time("Legalize BlockType");
     }
     
     //INITIALISATION
     private void initializeData(int blocksStart, int blocksEnd){
-    	if(timing) this.timer.start();
-
+    	if(timing) this.timer.start("Initialize Data");
+    	
     	this.blocks = new LegalizerBlock[blocksEnd - blocksStart];
     	for(int b = blocksStart; b < blocksEnd; b++){
     		this.blocks[b - blocksStart] = new LegalizerBlock(b, this.linearX[b], this.linearY[b]);
@@ -167,73 +171,47 @@ class GradientLegalizer extends Legalizer {
     			this.visualY[i] = this.linearY[i];
     		}
     	}
-
+    	
     	if(timing) this.timer.time("Initialize Data");
     }
     private void setLegal(BlockType blockType){
-    	this.legalColumns.clear();
-    	this.illegalColumns.clear();
-    	for(int column = 1; column < this.width + 1; column++){
-    		if(this.circuit.getColumnType(column).equals(blockType)){
-    			this.legalColumns.add(column);
-    		}else{
-    			this.illegalColumns.add(column);
+    	if(timing) this.timer.start("Set Legal");
+    	
+    	for(int x = 0; x < this.width + 2; x++){
+    		for(int y = 0; y < this.height + 2; y++){
+    			this.legal[x][y] = false;
     		}
     	}
-
-    	for(int x:this.legalColumns){
-    		for(int y:this.rows){
-    			this.massMap[x][y].setLegal(true);
+    	for(int x = 1; x < this.width + 1; x++){
+    		if(this.circuit.getColumnType(x).equals(blockType)){
+    			for(int y = 1; y < this.height + 1; y++){
+	    			this.legal[x][y] = true;
+	    		}
     		}
     	}
-    	for(int x:this.illegalColumns){
-    		for(int y:this.rows){
-    			this.massMap[x][y].setLegal(false);
+    	for(int x = 0; x < this.width + 2; x++){
+    		for(int y = 0; y < this.height + 2; y++){
+    			this.massMap[x][y].setLegal(this.legal[x][y]);
     		}
     	}
-    	//IO Columns
-    	for(int y = 0; y < this.gridHeight; y++){
-    		for(int d = 0; d < this.discretisation; d++){
-    			this.massMap[d][y].setLegal(false);
-    			this.massMap[this.gridWidth - 1 - d][y].setLegal(false);
-    		}
-    	}
-    	//IO Rows
-    	for(int x = 0; x < this.gridWidth; x++){
-    		for(int d = 0; d < this.discretisation; d++){
-    			this.massMap[x][d].setLegal(false);
-    			this.massMap[x][this.gridHeight - 1 - d].setLegal(false);
-    		}
-    	}
+    	
+    	if(timing) this.timer.time("Set Legal");
     }
     
     //POTENTIAL
     private void resetPotential(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Reset Potential");
     	
-    	for(int x:this.legalColumns){
-    		for(int y:this.rows){
-    			for(int k = 0; k < this.discretisation; k++){
-    				for(int l = 0; l < this.discretisation; l++){
-    					this.massMap[x + k][y + l].resetPotential();
-    				}
-    			}
-    		}
-    	}
-    	for(int x:this.illegalColumns){
-    		for(int y:this.rows){
-    			for(int k = 0; k < this.discretisation; k++){
-    				for(int l = 0; l < this.discretisation; l++){
-    					this.massMap[x + k][y + l].resetPotential();
-    				}
-    			}
+    	for(int x = 0; x < this.gridWidth; x++){
+    		for(int y = 0; y < this.gridHeight; y++){
+    			this.massMap[x][y].resetPotential();
     		}
     	}
     	
     	if(timing) this.timer.time("Reset Potential");
     }
     private void ioPotential(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("IO Potential");
 
     	for(int y = 0; y < this.gridHeight; y++){
     		for(int d = 0; d < this.discretisation; d++){
@@ -251,7 +229,7 @@ class GradientLegalizer extends Legalizer {
     	if(timing) this.timer.time("IO Potential");
     }
     private void illegalPotential(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Illegal Potential");
     	
         int height = (this.height + 2) * this.discretisation;
     	for(int j = 0; j < height-1; j+=2){
@@ -270,34 +248,37 @@ class GradientLegalizer extends Legalizer {
     	if(timing) this.timer.time("Illegal Potential");
     }
     private void legalPotential(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Legal Potential");
     	
     	double maxPotential = 0.025;
     	double horizontalPotential, verticalPotential;
 
-		for(int k = 0; k < this.discretisation; k++){
-			for(int l = 0; l < this.discretisation; l++){
-				
-				horizontalPotential = Math.abs(maxPotential - 2*maxPotential*(k + 0.5)/this.discretisation);
-				verticalPotential = Math.abs(maxPotential - 2*maxPotential*(l + 0.5)/this.discretisation);
-				
-		    	for(int column:this.legalColumns){
-		    		int x = column * this.discretisation;
-		    		for(int row:this.rows){
-		    			int y = row * this.discretisation;
-		    			
-		    			this.massMap[x + k][y + l].setHorizontalPotential(horizontalPotential);
-		    			this.massMap[x + k][y + l].setVerticalPotential(verticalPotential);
-		    		}
-		    	}
-			}
-		}
-    	
+    	for(int x = 0; x < this.width + 2; x++){
+    		for(int y = 0; y < this.height + 2; y++){
+    			if(this.legal[x][y]){
+    				for(int k = 0; k < this.discretisation; k++){
+    					for(int l = 0; l < this.discretisation; l++){
+    						
+    						horizontalPotential = Math.abs(maxPotential - 2*maxPotential*(k + 0.5)/this.discretisation);
+    						verticalPotential = Math.abs(maxPotential - 2*maxPotential*(l + 0.5)/this.discretisation);
+    						
+    		    			this.massMap[x*this.discretisation + k][y*this.discretisation + l].setHorizontalPotential(horizontalPotential);
+    		    			this.massMap[x*this.discretisation + k][y*this.discretisation+ l].setVerticalPotential(verticalPotential);
+    					}
+    				}
+    			}
+    		}
+    	}
+
     	if(timing) this.timer.time("Legal Potential");
     }
     private void printPotential(){
+    	if(timing) this.timer.start("Print Potential");
+    	
     	this.printHorizontalPotential();
     	this.printVerticalPotential();
+    	
+    	if(timing) this.timer.time("Print Potential");
     }
     private void printHorizontalPotential(){
     	try {
@@ -336,7 +317,7 @@ class GradientLegalizer extends Legalizer {
 
     //MASS MAP
     private void resetMassMap(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Reset Mass Map");
 
     	for(int x = 0; x < this.gridWidth; x++){
     		for(int y = 0; y < this.gridHeight; y++){
@@ -347,7 +328,7 @@ class GradientLegalizer extends Legalizer {
     	if(timing) this.timer.time("Reset Mass Map");
     }
     private void initializeMassMap(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Initialize Mass Map");
 
     	for(LegalizerBlock block:this.blocks){
         	int x = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
@@ -366,16 +347,18 @@ class GradientLegalizer extends Legalizer {
 
     //PUSHING GRAVITY FORCES
     private void applyPushingForces(){
+    	if(timing) this.timer.start("Apply Pushing Forces");
+    	
 		this.initializeIteration();
-		
 		this.fpgaPullForces();
-		
 		this.solve();
 		
 		this.addVisual();
+		
+		if(timing) this.timer.time("Apply Pushing Forces");
     }
     private void initializeIteration(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Initialize Iteration");
 
     	for(LegalizerBlock block:this.blocks){
     		block.reset();
@@ -384,7 +367,7 @@ class GradientLegalizer extends Legalizer {
     	if(timing) this.timer.time("Initialize Iteration");
     }
     private void solve(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Solve");
 
     	int origX, origY, newX, newY;
     	int horizontalDistance, verticalDistance;
@@ -511,7 +494,7 @@ class GradientLegalizer extends Legalizer {
 
     //PUSHING GRAVITY FORCES BETWEEN THE BLOCKS
     private void fpgaPullForces(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Gravity Push Forces");
     	
     	//Local known variables
     	int area = this.discretisation * this.halfDiscretisation;
@@ -608,7 +591,7 @@ class GradientLegalizer extends Legalizer {
 
     //Set legal coordinates of all blocks
     private void updateLegal(){
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Update legal");
     	
     	for(LegalizerBlock block:this.blocks){
     		block.horizontal.coordinate = Math.round(block.horizontal.coordinate);
@@ -621,31 +604,27 @@ class GradientLegalizer extends Legalizer {
     	if(timing) this.timer.time("Update legal");
     }
     private void shiftLegal(){//TODO
-    	if(timing) this.timer.start();
+    	if(timing) this.timer.start("Shift legal");
     	
-    	this.iteration += 1;
+    	this.resetLegalMap();
     	
-    	int width = this.width + 2;
-    	int height = this.height + 2;
-    	
-    	LegalizerBlock[][] legalMap = new LegalizerBlock[width][height];
     	ArrayList<LegalizerBlock> unplacedBlocks = new ArrayList<LegalizerBlock>();
     	for(LegalizerBlock block:this.blocks){
     		int x = this.legalX[block.index];
     		int y = this.legalY[block.index];
     		
-    		if(legalMap[x][y] == null){
-    			legalMap[x][y] = block;
+    		if(this.legalPostion(x, y)){
+    			this.legalMap[x][y] = block;
     		}else{
     			unplacedBlocks.add(block);
     		}
     	}
     	if(unplacedBlocks.size() < this.blocks.length * 0.05){
         	int movingX = 0, movingY = 0;
+        	
         	for(LegalizerBlock block:unplacedBlocks){
-
-        		int x = (int)block.horizontal.coordinate;
-        		int y = (int)block.vertical.coordinate;
+        		int x = this.legalX[block.index];
+        		int y = this.legalY[block.index];
         		
         		int horizontalLeft = 0;
         		int horizontalRight = 0;
@@ -742,11 +721,27 @@ class GradientLegalizer extends Legalizer {
     	}
     	if(timing) this.timer.time("Shift legal");
     }
+    private void resetLegalMap(){
+    	int width = this.legalMap.length;
+    	int height = this.legalMap[0].length;
+    	for(int x = 0; x < width; x++){
+    		for(int y = 0; y < height; y++){
+    			this.legalMap[x][y] = null;
+    		}
+    	}
+    }
+    private boolean legalPostion(int x, int y){
+    	if(this.legal[x][y] && this.legalMap[x][y] == null){
+    		return true;
+    	}else{
+    		return false;
+    	}
+    }
     
     // Visual
     private void addVisual(String name){
     	if(interVisual){
-    		if(timing) this.timer.start();
+    		if(timing) this.timer.start("Add Inter Visual");
     		
     		for(LegalizerBlock block:this.blocks){
     			this.visualX[block.index] = block.horizontal.coordinate;
@@ -759,7 +754,7 @@ class GradientLegalizer extends Legalizer {
 	}
     private void addVisual(){
 		if(visual){
-			if(timing) this.timer.start();
+			if(timing) this.timer.start("Add Visual");
 
 			for(LegalizerBlock block:this.blocks){
 				this.visualX[block.index] = block.horizontal.coordinate;
@@ -917,22 +912,24 @@ class GradientLegalizer extends Legalizer {
     }
     
     private class Timer {
-    	private long start;
+    	private HashMap<String, Long> timers;
+
+    	Timer(){
+    		this.timers = new HashMap<String, Long>();
+    	}
     	
-    	Timer(){}
-    	
-    	void start(){
-    		this.start = System.nanoTime();
+    	void start(String name){
+    		this.timers.put(name, System.nanoTime());
     	}
 
-    	void time(String type){
-        	double time = (System.nanoTime() - this.start) * Math.pow(10, -6);
+    	void time(String name){
+        	double time = (System.nanoTime() -  this.timers.remove(name)) * Math.pow(10, -6);
         		
         	if(time < 10){
         		time *= Math.pow(10, 3);
-        		System.out.printf(type + " took %.0f ns\n", time);
+        		System.out.printf(name + " took %.0f ns\n", time);
         	}else{
-        		System.out.printf(type + " took %.0f ms\n", time);	
+        		System.out.printf(name + " took %.0f ms\n", time);	
     		}
     	}
     }
