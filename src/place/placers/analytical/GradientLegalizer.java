@@ -36,7 +36,7 @@ class GradientLegalizer extends Legalizer {
 
 	private static final boolean debug = false;
 	private Timer timer;
-    private static final boolean timing = false;
+    private static final boolean timing = true;
     private static final boolean visual = false;
     private static final boolean interVisual = false;
     private static final boolean printPotential = false;
@@ -109,7 +109,7 @@ class GradientLegalizer extends Legalizer {
     	this.legalPotential();
     	
     	int legalIterations = 250;
-    	if(timing) legalIterations = 5;
+    	if(timing) legalIterations = 20;
 
     	if(printPotential) this.printPotential();
 
@@ -125,7 +125,7 @@ class GradientLegalizer extends Legalizer {
     	this.illegalPotential();
 
     	int illegalIterations = 50;
-    	if(timing) illegalIterations = 5;
+    	if(timing) illegalIterations = 20;
     	
     	this.iteration = 0;
         do{
@@ -913,9 +913,11 @@ class GradientLegalizer extends Legalizer {
     
     private class Timer {
     	private HashMap<String, Long> timers;
+    	private ArrayList<Time> timingResult;
 
     	Timer(){
     		this.timers = new HashMap<String, Long>();
+    		this.timingResult = new ArrayList<Time>();
     	}
     	
     	void start(String name){
@@ -923,14 +925,109 @@ class GradientLegalizer extends Legalizer {
     	}
 
     	void time(String name){
-        	double time = (System.nanoTime() -  this.timers.remove(name)) * Math.pow(10, -6);
-        		
+    		long start = this.timers.remove(name);
+    		long end = System.nanoTime();
+    		int index = this.timers.size();
+    		
+    		Time time = new Time(name, index, start, end);
+
+    		this.timingResult.add(time);
+    		
+    		if(index == 0){
+    			this.printTiming();
+    		}
+    	}
+    	
+    	void printTiming(){
+    		Time head = this.timingResult.get(this.timingResult.size() - 1);
+    		Time parent = head;
+    		Time previous = head;
+    		for(int i = this.timingResult.size() - 2; i >= 0; i--){
+    			Time current = this.timingResult.get(i);
+    			
+    			if(current.index == parent.index){
+    				parent = parent.getParent();
+    				parent.addChild(current);
+    				current.setParent(parent);
+    			}else if(current.index == parent.index + 1){
+    				parent.addChild(current);
+    				current.setParent(parent);
+    			}else if(current.index == parent.index + 2){
+    				parent = previous;
+    				parent.addChild(current);
+    				current.setParent(parent);
+    			}
+    			
+    			previous = current;
+    		}
+    		System.out.println(head);
+    		this.timers = new HashMap<String, Long>();
+    		this.timingResult = new ArrayList<Time>();
+    	}
+    }
+    private class Time {
+    	String name;
+    	
+    	int index;
+    	
+    	long start;
+    	long end;
+    	
+    	Time parent;
+    	ArrayList<Time> children;
+    	
+    	Time(String name, int index, long start, long end){
+    		this.name = name;
+    		
+    		this.index = index;
+    		
+    		this.start = start;
+    		this.end = end;
+    		
+    		this.parent = null;
+    		this.children = new ArrayList<Time>();
+    	}
+    	
+    	void setParent(Time parent){
+    		this.parent = parent;
+    	}
+    	Time getParent(){
+    		return this.parent;
+    	}
+    	void addChild(Time child){
+    		this.children.add(child);
+    	}
+    	Time[] getChildren(){
+    		int counter = this.children.size() - 1;
+    		Time[] result = new Time[this.children.size()];
+    		
+    		for(Time child:this.children){
+    			result[counter] = child;
+    			counter--;
+    		}
+    		return result;
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		String result = new String();
+
+    		for(int i = 0; i < this.index; i++){
+    			this.name = "\t" + this.name;
+    		}
+    		double time = (this.end -  this.start) * Math.pow(10, -6);
         	if(time < 10){
         		time *= Math.pow(10, 3);
-        		System.out.printf(name + " took %.0f ns\n", time);
+        		result += String.format(this.name + " took %.0f ns\n", time);
         	}else{
-        		System.out.printf(name + " took %.0f ms\n", time);	
+        		result += String.format(this.name + " took %.0f ms\n", time);
     		}
+        	
+    		for(Time child:this.getChildren()){
+    			result += child.toString();
+    		}
+    		
+    		return result;
     	}
     }
 
