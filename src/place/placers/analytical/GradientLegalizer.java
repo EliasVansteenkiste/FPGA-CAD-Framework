@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,8 @@ class GradientLegalizer extends Legalizer {
     
     private final boolean[][] legal;
     private final LegalizerBlock[][] legalMap;
+    private final ArrayList<LegalizerBlock> unplacedBlocks;
+    private final ArrayList<LegalizerBlock> moveBlocks;
 
     private final int gridWidth;
     private final int gridHeight;
@@ -36,9 +39,9 @@ class GradientLegalizer extends Legalizer {
 
 	private static final boolean debug = false;
 	private Timer timer;
-    private static final boolean timing = true;
+    private static final boolean timing = false;
     private static final boolean visual = false;
-    private static final boolean interVisual = false;
+    private static final boolean interVisual = true;
     private static final boolean printPotential = false;
 
     // Arrays to visualize the legalisation progress
@@ -84,6 +87,8 @@ class GradientLegalizer extends Legalizer {
 
     	this.legal = new boolean[this.width + 2][this.height + 2];
     	this.legalMap = new LegalizerBlock[this.width + 2][this.height + 2];
+    	this.unplacedBlocks = new ArrayList<LegalizerBlock>();
+    	this.moveBlocks = new ArrayList<LegalizerBlock>();
 
     	if(timing){
     		this.timer = new Timer();
@@ -108,7 +113,7 @@ class GradientLegalizer extends Legalizer {
     	this.ioPotential();
     	this.legalPotential();
     	
-    	int legalIterations = 250;
+    	int legalIterations = 500;
     	if(timing) legalIterations = 20;
 
     	if(printPotential) this.printPotential();
@@ -124,7 +129,7 @@ class GradientLegalizer extends Legalizer {
     	//ILLEGAL POTENTIAL
     	this.illegalPotential();
 
-    	int illegalIterations = 50;
+    	int illegalIterations = 500;
     	if(timing) illegalIterations = 20;
     	
     	this.iteration = 0;
@@ -195,6 +200,20 @@ class GradientLegalizer extends Legalizer {
     		}
     	}
     	
+    	//TODO DUMMY FUNCTIONALITY
+    	ArrayList<Integer> illegalColumns = new ArrayList<Integer>();
+       	illegalColumns.add(32);
+    	illegalColumns.add(33);
+    	illegalColumns.add(34);
+
+    	for(int x = 1; x < this.width + 1; x++){
+    		if(illegalColumns.contains(x)){
+    			for(int y = 1; y < this.height + 1; y++){
+	    			this.legal[x][y] = false;
+	    		}
+    		}
+    	}
+    	
     	if(timing) this.timer.time("Set Legal");
     }
     
@@ -231,18 +250,38 @@ class GradientLegalizer extends Legalizer {
     private void illegalPotential(){
     	if(timing) this.timer.start("Illegal Potential");
     	
-        int height = (this.height + 2) * this.discretisation;
-    	for(int j = 0; j < height-1; j+=2){
-    		this.massMap[124][j].setHorizontalPotential(4);
-    		this.massMap[125][j].setHorizontalPotential(3);
-    		this.massMap[126][j].setHorizontalPotential(2);
-    		this.massMap[127][j].setHorizontalPotential(1);
-    	}
-    	for(int j = 0; j < height-1; j+=2){
-    		this.massMap[124][j].setHorizontalPotential(1);
-    		this.massMap[125][j].setHorizontalPotential(2);
-    		this.massMap[126][j].setHorizontalPotential(3);
-    		this.massMap[127][j].setHorizontalPotential(4);
+    	int start = 0, end = 0;
+    	//Set the potential of illegal columns
+    	for(int x = 1; x < this.width + 1; x++){
+    		if(!this.legal[x][1]){
+    			start = x;
+    			
+        		while(!this.legal[x][1]){
+        			x++;
+        			
+        			if(x == this.width + 1){
+        				break;
+        			}
+        		}
+        		end = x;
+        		
+            	int width = end - start;
+            	width *= this.discretisation;
+            	
+            	//TODO SLIDE DIRECTION?
+            	for(int k = 0; k < width; k++){
+                	for(int y = 1; y < this.height + 1; y+=2){
+                		for(int l = 0; l < this.discretisation; l++){
+                			this.massMap[start*this.discretisation + k][y*this.discretisation + l].setHorizontalPotential(k + 1);
+                		}
+                	}
+                	for(int y = 2; y < this.height + 1; y+=2){
+                		for(int l = 0; l < this.discretisation; l++){
+                			this.massMap[start*this.discretisation + k][y*this.discretisation + l].setHorizontalPotential(width - k);
+                		}
+                	}
+            	}
+    		}
     	}
     	
     	if(timing) this.timer.time("Illegal Potential");
@@ -331,8 +370,8 @@ class GradientLegalizer extends Legalizer {
     	if(timing) this.timer.start("Initialize Mass Map");
 
     	for(LegalizerBlock block:this.blocks){
-        	int x = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
-        	int y = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
+        	int x = (int)Math.ceil(block.horizontal() * this.discretisation);
+        	int y = (int)Math.ceil(block.vertical() * this.discretisation);
         		
         	for(int k = 0; k < this.discretisation; k++){
         		for(int l = 0; l < this.discretisation; l++){
@@ -374,20 +413,19 @@ class GradientLegalizer extends Legalizer {
     	
     	for(LegalizerBlock block:this.blocks){
 
-            origX = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
-            origY = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
+            origX = (int)Math.ceil(block.horizontal() * this.discretisation);
+            origY = (int)Math.ceil(block.vertical() * this.discretisation);
     		
-    		block.horizontal.solve(this.stepSize, this.speedAveraging);
-    		block.vertical.solve(this.stepSize, this.speedAveraging);
+    		block.solve(this.stepSize, this.speedAveraging);
     		
-//    		if(block.horizontal.coordinate > this.width) block.horizontal.coordinate = this.width;
-//    		if(block.horizontal.coordinate < 1) block.horizontal.coordinate = 1;
-//    		
-//    		if(block.vertical.coordinate > this.height) block.vertical.coordinate = this.height;
-//    		if(block.vertical.coordinate < 1) block.vertical.coordinate = 1;
+    		if(block.horizontal() > this.width) block.setHorizontal(this.width);
+    		if(block.horizontal() < 1) block.setHorizontal(1);
+    		
+    		if(block.vertical() > this.height) block.setVertical(this.height);
+    		if(block.vertical() < 1) block.setVertical(1);
             
-            newX = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
-            newY = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
+            newX = (int)Math.ceil(block.horizontal() * this.discretisation);
+            newY = (int)Math.ceil(block.vertical() * this.discretisation);
             
     		//UPDATE MASS MAP
             if(origX == newX && origY == newY){
@@ -455,8 +493,8 @@ class GradientLegalizer extends Legalizer {
         	int[][] controlMassMap = new int[this.gridWidth][this.gridHeight];
         			
         	for(LegalizerBlock block:this.blocks){	
-            	int i = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
-            	int j = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
+            	int i = (int)Math.ceil(block.horizontal() * this.discretisation);
+            	int j = (int)Math.ceil(block.vertical() * this.discretisation);
             		
             	for(int k = 0; k < this.discretisation; k++){
             		for(int l = 0; l < this.discretisation; l++){
@@ -500,8 +538,8 @@ class GradientLegalizer extends Legalizer {
     	int area = this.discretisation * this.halfDiscretisation;
     	
     	for(LegalizerBlock block:this.blocks){ 		
-	    	int x = (int)Math.ceil(block.horizontal.coordinate * this.discretisation);
-	    	int y = (int)Math.ceil(block.vertical.coordinate * this.discretisation);
+	    	int x = (int)Math.ceil(block.horizontal() * this.discretisation);
+	    	int y = (int)Math.ceil(block.vertical() * this.discretisation);
 	    	
 	    	double horizontalForce = 0.0;
 	    	double verticalForce = 0.0;
@@ -509,51 +547,37 @@ class GradientLegalizer extends Legalizer {
 	    	if(this.discretisation == 4){
 	    		//LOOP UNROLLING
 				horizontalForce += this.massMap[x][y].horizontalForce();
-				verticalForce += this.massMap[x][y].verticalForce();
-				
 				horizontalForce += this.massMap[x][y + 1].horizontalForce();
-				verticalForce += this.massMap[x][y + 1].verticalForce();
-				
 				horizontalForce += this.massMap[x][y + 2].horizontalForce();
-				verticalForce -= this.massMap[x][y + 2].verticalForce();
-		    	
 				horizontalForce += this.massMap[x][y + 3].horizontalForce();
-				verticalForce -= this.massMap[x][y + 3].verticalForce();
-
 				horizontalForce += this.massMap[x + 1][y].horizontalForce();
-				verticalForce += this.massMap[x + 1][y].verticalForce();
-				
 				horizontalForce += this.massMap[x + 1][y + 1].horizontalForce();
-				verticalForce += this.massMap[x + 1][y + 1].verticalForce();
-				
 				horizontalForce += this.massMap[x + 1][y + 2].horizontalForce();
-				verticalForce -= this.massMap[x + 1][y + 2].verticalForce();
-		    	
 				horizontalForce += this.massMap[x + 1][y + 3].horizontalForce();
-				verticalForce -= this.massMap[x + 1][y + 3].verticalForce();				
-
 				horizontalForce -= this.massMap[x + 2][y].horizontalForce();
-				verticalForce += this.massMap[x + 2][y].verticalForce();
-
 				horizontalForce -= this.massMap[x + 2][y + 1].horizontalForce();
-				verticalForce += this.massMap[x + 2][y + 1].verticalForce();
-
 				horizontalForce -= this.massMap[x + 2][y + 2].horizontalForce();
-				verticalForce -= this.massMap[x + 2][y + 2].verticalForce();
-
 				horizontalForce -= this.massMap[x + 2][y + 3].horizontalForce();
-				verticalForce -= this.massMap[x + 2][y + 3].verticalForce();
-
 				horizontalForce -= this.massMap[x + 3][y].horizontalForce();
-				verticalForce += this.massMap[x + 3][y].verticalForce();
-
 				horizontalForce -= this.massMap[x + 3][y + 1].horizontalForce();
-				verticalForce += this.massMap[x + 3][y + 1].verticalForce();
-
 				horizontalForce -= this.massMap[x + 3][y + 2].horizontalForce();
-				verticalForce -= this.massMap[x + 3][y + 2].verticalForce();
-
 				horizontalForce -= this.massMap[x + 3][y + 3].horizontalForce();
+				
+				verticalForce += this.massMap[x][y].verticalForce();
+				verticalForce += this.massMap[x][y + 1].verticalForce();
+				verticalForce -= this.massMap[x][y + 2].verticalForce();
+				verticalForce -= this.massMap[x][y + 3].verticalForce();
+				verticalForce += this.massMap[x + 1][y].verticalForce();
+				verticalForce += this.massMap[x + 1][y + 1].verticalForce();
+				verticalForce -= this.massMap[x + 1][y + 2].verticalForce();
+				verticalForce -= this.massMap[x + 1][y + 3].verticalForce();
+				verticalForce += this.massMap[x + 2][y].verticalForce();
+				verticalForce += this.massMap[x + 2][y + 1].verticalForce();
+				verticalForce -= this.massMap[x + 2][y + 2].verticalForce();
+				verticalForce -= this.massMap[x + 2][y + 3].verticalForce();
+				verticalForce += this.massMap[x + 3][y].verticalForce();
+				verticalForce += this.massMap[x + 3][y + 1].verticalForce();
+				verticalForce -= this.massMap[x + 3][y + 2].verticalForce();
 				verticalForce -= this.massMap[x + 3][y + 3].verticalForce();
 	    	}else{
 	    		Loc loc = null;
@@ -591,24 +615,22 @@ class GradientLegalizer extends Legalizer {
 
     //Set legal coordinates of all blocks
     private void updateLegal(){
-    	if(timing) this.timer.start("Update legal");
+    	if(timing) this.timer.start("Update Legal");
     	
     	for(LegalizerBlock block:this.blocks){
-    		block.horizontal.coordinate = Math.round(block.horizontal.coordinate);
-    		block.vertical.coordinate = Math.round(block.vertical.coordinate);
+    		block.legalize();
     		
-    		this.legalX[block.index] = (int)block.horizontal.coordinate;
-    		this.legalY[block.index] = (int)block.vertical.coordinate;
+    		this.legalX[block.index] = block.legalHorizontal();
+    		this.legalY[block.index] = block.legalVertical();
     	}
     	
-    	if(timing) this.timer.time("Update legal");
+    	if(timing) this.timer.time("Update Legal");
     }
     private void shiftLegal(){//TODO
-    	if(timing) this.timer.start("Shift legal");
+    	if(timing) this.timer.start("Shift Legal");
     	
     	this.resetLegalMap();
     	
-    	ArrayList<LegalizerBlock> unplacedBlocks = new ArrayList<LegalizerBlock>();
     	for(LegalizerBlock block:this.blocks){
     		int x = this.legalX[block.index];
     		int y = this.legalY[block.index];
@@ -616,112 +638,116 @@ class GradientLegalizer extends Legalizer {
     		if(this.legalPostion(x, y)){
     			this.legalMap[x][y] = block;
     		}else{
-    			unplacedBlocks.add(block);
+    			this.unplacedBlocks.add(block);
     		}
     	}
-    	if(unplacedBlocks.size() < this.blocks.length * 0.05){
-        	int movingX = 0, movingY = 0;
-        	
-        	for(LegalizerBlock block:unplacedBlocks){
-        		int x = this.legalX[block.index];
-        		int y = this.legalY[block.index];
+    	if(this.unplacedBlocks.size() < this.blocks.length * 0.05){
+    		
+        	for(LegalizerBlock overlappingBlock:this.unplacedBlocks){
         		
-        		int horizontalLeft = 0;
-        		int horizontalRight = 0;
-        		int verticalDown = 0;
-        		int verticalUp = 0;
-        		
-        		//Horizontal left
-        		movingX = x;
-        		while(legalMap[movingX][y] != null){
-        			movingX--;
-        			horizontalLeft++;
-        		}
+        		Direction movingDirection = bestMovingDirection(overlappingBlock);
 
-        		//Horizontal right
-        		movingX = x;
-        		while(legalMap[movingX][y] != null){
-        			movingX++;
-        			horizontalRight++;
-        		}
-        			
-        		//Vertical down
-        		movingY = y;
-        		while(legalMap[x][movingY] != null){
-        			movingY--;
-        			verticalDown++;
-        		}
-        		
-        		//Vertical up
-        		movingY = y;
-        		while(legalMap[x][movingY] != null){
-        			movingY++;
-        			verticalUp++;
-        		}
+        		int x = this.legalX[overlappingBlock.index];
+        		int y = this.legalY[overlappingBlock.index];
 
-        		//Move blocks to make place for the current block
-        		int min = Math.min(Math.min(horizontalLeft, horizontalRight), Math.min(verticalDown, verticalUp));
+        		this.moveBlocks.clear();
         		
-        		x = (int)block.horizontal.coordinate;
-        		y = (int)block.vertical.coordinate;
-        		
-        		if(horizontalLeft == min){
-            		while(legalMap[x][y] != null){
+        		if(movingDirection.equals(Direction.LEFT)){
+        			while(!this.legalPostion(x, y)){
+        				if(this.legal[x][y]){
+        					this.moveBlocks.add(this.legalMap[x][y]);
+        				}
             			x--;
             		}
-            		while(x < (int)block.horizontal.coordinate){
-            			legalMap[x][y] = legalMap[x + 1][y];
-            			x++;
-            		}
-            		legalMap[x][y] = block;
-        		}else if(horizontalRight == min){
-            		while(legalMap[x][y] != null){
-            			x++;
-            		}
-            		while(x > (int)block.horizontal.coordinate){
-            			legalMap[x][y] = legalMap[x - 1][y];
-            			x--;
-            		}
-            		legalMap[x][y] = block;
-        		}else if(verticalDown == min){
-            		while(legalMap[x][y] != null){
-            			y--;
-            		}
-            		while(y < (int)block.vertical.coordinate){
-            			legalMap[x][y] = legalMap[x][y + 1];
-            			y++;
-            		}
-            		legalMap[x][y] = block;
-        		}else if(verticalUp == min){
-            		while(legalMap[x][y] != null){
-            			y++;
-            		}
-            		while(y > (int)block.vertical.coordinate){
-            			legalMap[x][y] = legalMap[x][y - 1];
-            			y--;
-            		}
-            		legalMap[x][y] = block;
-        		}
-        	}
-        	
-        	for(int i = 0; i < width; i++){
-        		for(int j = 0; j < height; j++){
-        			if(legalMap[i][j] != null){
-        				LegalizerBlock block = legalMap[i][j];
-        				block.horizontal.coordinate = i;
-        				block.vertical.coordinate = j;
+        			Collections.reverse(this.moveBlocks);
+        			for(LegalizerBlock moveBlock:this.moveBlocks){
+        				x = moveBlock.legalHorizontal();
+        				y = moveBlock.legalVertical();
         				
-        	    		this.legalX[block.index] = (int)block.horizontal.coordinate;
-        	    		this.legalY[block.index] = (int)block.vertical.coordinate;
+        				while(!this.legalPostion(x, y)){
+        					x--;
+        				}
+        				this.legalMap[x][y] = moveBlock;
+        				this.legalMap[moveBlock.legalHorizontal()][moveBlock.legalVertical()] = null;
+        				moveBlock.setHorizontal(x);
         			}
+        			this.legalMap[overlappingBlock.legalHorizontal()][overlappingBlock.legalVertical()] = overlappingBlock;
+        		}else if(movingDirection.equals(Direction.RIGHT)){
+        			while(!this.legalPostion(x, y)){
+        				if(this.legal[x][y]){
+        					this.moveBlocks.add(this.legalMap[x][y]);
+        				}
+            			x++;
+            		}
+        			Collections.reverse(this.moveBlocks);
+        			for(LegalizerBlock moveBlock:this.moveBlocks){
+        				x = moveBlock.legalHorizontal();
+        				y = moveBlock.legalVertical();
+        				
+        				while(!this.legalPostion(x, y)){
+        					x++;
+        				}
+        				
+        				this.legalMap[x][y] = moveBlock;
+        				this.legalMap[moveBlock.legalHorizontal()][moveBlock.legalVertical()] = null;
+        				moveBlock.setHorizontal(x);
+        			}
+        			this.legalMap[overlappingBlock.legalHorizontal()][overlappingBlock.legalVertical()] = overlappingBlock;
+        		}else if(movingDirection.equals(Direction.DOWN)){
+        			while(!this.legalPostion(x, y)){
+        				if(this.legal[x][y]){
+        					this.moveBlocks.add(this.legalMap[x][y]);
+        				}
+            			y--;
+            		}
+        			Collections.reverse(this.moveBlocks);
+        			for(LegalizerBlock moveBlock:this.moveBlocks){
+        				x = moveBlock.legalHorizontal();
+        				y = moveBlock.legalVertical();
+        				
+        				while(!this.legalPostion(x, y)){
+        					y--;
+        				}
+        				
+        				this.legalMap[x][y] = moveBlock;
+        				this.legalMap[moveBlock.legalHorizontal()][moveBlock.legalVertical()] = null;
+        				moveBlock.setVertical(y);
+        			}
+        			this.legalMap[overlappingBlock.legalHorizontal()][overlappingBlock.legalVertical()] = overlappingBlock;
+        		}else if(movingDirection.equals(Direction.UP)){
+        			while(!this.legalPostion(x, y)){
+        				if(this.legal[x][y]){
+        					this.moveBlocks.add(this.legalMap[x][y]);
+        				}
+            			y++;
+            		}
+        			Collections.reverse(this.moveBlocks);
+        			for(LegalizerBlock block:this.moveBlocks){
+        				x = block.legalHorizontal();
+        				y = block.legalVertical();
+        				
+        				while(!this.legalPostion(x, y)){
+        					y++;
+        				}
+        				
+        				this.legalMap[x][y] = block;
+        				this.legalMap[block.legalHorizontal()][block.legalVertical()] = null;
+        				block.setVertical(y);
+        			}
+        			this.legalMap[overlappingBlock.legalHorizontal()][overlappingBlock.legalVertical()] = overlappingBlock;
         		}
         	}
-        	
+        	for(LegalizerBlock block:this.blocks){
+        		this.legalX[block.index] = block.legalHorizontal();
+        		this.legalY[block.index] = block.legalVertical();
+        	}
         	this.addVisual();
     	}
-    	if(timing) this.timer.time("Shift legal");
+    	if(timing) this.timer.time("Shift Legal");
     }
     private void resetLegalMap(){
+    	if(timing) this.timer.start("Reset Legal");
+    	
     	int width = this.legalMap.length;
     	int height = this.legalMap[0].length;
     	for(int x = 0; x < width; x++){
@@ -729,6 +755,11 @@ class GradientLegalizer extends Legalizer {
     			this.legalMap[x][y] = null;
     		}
     	}
+    	
+    	this.unplacedBlocks.clear();
+    	this.moveBlocks.clear();
+    	
+    	if(timing) this.timer.time("Reset Legal");
     }
     private boolean legalPostion(int x, int y){
     	if(this.legal[x][y] && this.legalMap[x][y] == null){
@@ -737,6 +768,85 @@ class GradientLegalizer extends Legalizer {
     		return false;
     	}
     }
+    private Direction bestMovingDirection(LegalizerBlock block){
+		int x = this.legalX[block.index];
+		int y = this.legalY[block.index];
+		
+		int movingX, movingY;
+		int left = 0, right = 0, down = 0, up = 0;
+		
+		//Horizontal left
+		movingX = x;
+		while(!this.legalPostion(movingX, y)){
+			left++;
+			movingX--;
+			
+			if(movingX == 0){
+				left = Integer.MAX_VALUE;
+				break;
+			}
+		}
+		
+		//Horizontal right
+		movingX = x;
+		while(!this.legalPostion(movingX, y)){
+			right++;
+			movingX++;
+			
+			if(movingX == this.width + 1){
+				right = Integer.MAX_VALUE;
+				break;
+			}
+		}
+			
+		//Vertical down
+		movingY = y;
+		while(!this.legalPostion(x, movingY)){
+			down++;
+			movingY--;
+			
+			if(movingY == 0){
+				down = Integer.MAX_VALUE;
+				break;
+			}
+		}
+		
+		//Vertical up
+		movingY = y;
+		while(!this.legalPostion(x, movingY)){
+			up++;
+			movingY++;
+			
+			if(movingY == this.height + 1){
+				up = Integer.MAX_VALUE;
+				break;
+			}
+		}
+
+		int min = Math.min(Math.min(left, right), Math.min(down, up));
+		if(min == Integer.MAX_VALUE){
+			System.out.println("Boundaries hit");
+			return null;
+		}
+
+		if(left == min){
+			return Direction.LEFT;
+		}else if(right == min){
+			return Direction.RIGHT;
+		}else if(down == min){
+			return Direction.DOWN;
+		}else if(up == min){
+			return Direction.UP;
+		}
+		return null;
+    }
+    
+    private enum Direction {
+    	LEFT,
+    	RIGHT,
+    	UP,
+    	DOWN
+    }
     
     // Visual
     private void addVisual(String name){
@@ -744,8 +854,8 @@ class GradientLegalizer extends Legalizer {
     		if(timing) this.timer.start("Add Inter Visual");
     		
     		for(LegalizerBlock block:this.blocks){
-    			this.visualX[block.index] = block.horizontal.coordinate;
-    			this.visualY[block.index] = block.vertical.coordinate;	
+    			this.visualX[block.index] = block.horizontal();
+    			this.visualY[block.index] = block.vertical();	
     		}
     		this.addVisual(name, this.visualX, this.visualY);
     		
@@ -757,8 +867,8 @@ class GradientLegalizer extends Legalizer {
 			if(timing) this.timer.start("Add Visual");
 
 			for(LegalizerBlock block:this.blocks){
-				this.visualX[block.index] = block.horizontal.coordinate;
-				this.visualY[block.index] = block.vertical.coordinate;	
+				this.visualX[block.index] = block.horizontal();
+				this.visualY[block.index] = block.vertical();	
 			}
 			this.addVisual(String.format("gradient expand step %d", this.iteration), this.visualX, this.visualY);
 			
@@ -864,30 +974,75 @@ class GradientLegalizer extends Legalizer {
     
     //LegalizerBlock
     private class LegalizerBlock {
-    	final int index;
+    	private final int index;
     	
-    	final Direction horizontal;
-    	final Direction vertical;
+    	private final Dimension horizontal;
+    	private final Dimension vertical;
+    	
+    	private boolean isLegal;
 
     	LegalizerBlock(int index, double x, double y){
     		this.index = index;
     		
-    		this.horizontal = new Direction(x);
-    		this.vertical = new Direction(y);
+    		this.horizontal = new Dimension(x);
+    		this.vertical = new Dimension(y);
+    		
+    		this.isLegal = false;
     	}
     	
     	void reset(){
     		this.horizontal.reset();
     		this.vertical.reset();
     	}
+    	
+    	void solve(double stepSize, double speedAveraging){
+    		this.horizontal.solve(stepSize, speedAveraging);
+    		this.vertical.solve(stepSize, speedAveraging);
+    	}
+    	void legalize(){
+    		this.setHorizontal((int)Math.round(this.horizontal()));
+    		this.setVertical((int)Math.round(this.vertical()));
+    		this.isLegal = true;
+    	}
+    	
+    	void setHorizontal(int horizontal){
+    		this.horizontal.coordinate = horizontal;
+    	}
+    	void setVertical(int vertical){
+    		this.vertical.coordinate = vertical;
+    	}
+    	
+    	double horizontal(){
+    		return this.horizontal.coordinate;
+    	}
+    	double vertical(){
+    		return this.vertical.coordinate;	
+    	}
+    	int legalHorizontal(){
+    		if(this.isLegal){
+    			return (int)this.horizontal();
+    		}else{
+    			System.out.println("The block is not legal!\n\t x: " + this.horizontal() + " y: " + this.vertical());
+    			return 0;
+    		}
+    		
+    	}
+    	int legalVertical(){
+    		if(this.isLegal){
+    			return (int)this.vertical();
+    		}else{
+    			System.out.println("The block is not legal!\n\t x: " + this.horizontal() + " y: " + this.vertical());
+    			return 0;
+    		}
+    	}
     }
     
-    private class Direction {
+    private class Dimension {
     	double coordinate;
     	double speed;
     	double force;
     	
-    	Direction(double coordinate){
+    	Dimension(double coordinate){
     		this.coordinate = coordinate;
     		this.speed = 0.0;
     		this.force = 0.0;
