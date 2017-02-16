@@ -35,16 +35,16 @@ class SimpleLegalizer extends Legalizer {
 
     @Override
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-//    	String name = "linear";
-//    	addVisual(name, this.linearX,this.linearY);
-    	this.doExpansion(blocksStart, blocksEnd);
-    
+    	double[] expandedLinearX = doExpansion(this.linearX, blocksStart, blocksEnd, this.width);
+    	double[] expandedLinearY = doExpansion(this.linearY, blocksStart, blocksEnd, this.height);
+    	System.out.println("max expandedLinearX: " + max(expandedLinearX) + ", " + "max expandedLinearY: " + max(expandedLinearY));
+    	System.out.println("min expandedLinearX: " + min(expandedLinearX) + ", " + "min expandedLinearY: " + min(expandedLinearY));
+    	String name = "expansion";
+    	this.addVisual(name, expandedLinearX, expandedLinearY);
+    	
     	List<LegalizerBlock> blocks = new ArrayList<LegalizerBlock>();  	
-//    	int numBlocks = blocksEnd - blocksStart;
-//    	int[] blockIndexes = new int[numBlocks];
     	for(int index = blocksStart; index < blocksEnd; index++) {
-//    		System.out.println(this.linearX[index]);
-    		LegalizerBlock legalizerBlock = new LegalizerBlock(index, this.linearX[index], this.linearY[index]);
+    		LegalizerBlock legalizerBlock = new LegalizerBlock(index, expandedLinearX[index], expandedLinearY[index]);
     		blocks.add(legalizerBlock);
     	}
     	
@@ -62,11 +62,12 @@ class SimpleLegalizer extends Legalizer {
     	for(LegalizerBlock block: blocks){
     		double bestCost = this.width + this.height;
     		for (int row = 1; row <this.height +1; row++){
-    			rowLeftMost = (int)Math.floor(Math.max(this.linearX[block.index], rowLeftMost));
-    			double cost = calculateMovement(this.linearX[block.index], this.linearY[block.index], rowLeftMost, row);
+    			rowLeftMost = (int)Math.floor(Math.max(expandedLinearX[block.index], rowLeftMost));
+    			double cost = calculateMovement(expandedLinearX[block.index], expandedLinearY[block.index], rowLeftMost, row);
     			if(cost < bestCost){
     				bestCost = cost;
     				bestRow = row;
+//    				System.out.println("Best row is: " + bestRow);
     				
     			}
     		}
@@ -93,65 +94,37 @@ class SimpleLegalizer extends Legalizer {
     	}
     	return min;
     }
-	private void doExpansion(int blocksStart, int blocksEnd){
+	private double[] doExpansion(double[] array, int blocksStart, int blocksEnd, int maxEdge){
 		int numBlocks = blocksEnd - blocksStart;
-    	double[] tmpLinearX = new double[numBlocks];
-    	double[] tmpLinearY = new double[numBlocks];
-    	System.arraycopy( this.linearX, blocksStart, tmpLinearX, 0, numBlocks );
-    	System.arraycopy( this.linearY, blocksStart, tmpLinearY, 0, numBlocks );
+    	double[] tmpArray = new double[numBlocks];
+    	System.arraycopy( array, blocksStart, tmpArray, 0, numBlocks );
 
-    	double maxX = max(tmpLinearX);
-    	double minX = min(tmpLinearX);
+    	double maxX = max(tmpArray);
+    	double minX = min(tmpArray);
     	double centerX = (maxX + minX)/2;
-    	double scaleXRight = Math.abs((this.width - centerX)/(maxX - centerX));
+    	double scaleXRight = Math.abs((maxEdge - centerX)/(maxX - centerX));
     	double scaleXLeft = Math.abs((centerX)/(centerX - minX));
     	
     	for(int index = 0; index < numBlocks; index++){
-    		if (this.linearX[index] > centerX){ 
-    			tmpLinearX[index] = centerX + scaleXRight * (this.linearX[index + blocksStart] - centerX);
+    		if (tmpArray[index] > centerX){ 
+    			tmpArray[index] = centerX + scaleXRight * (tmpArray[index] - centerX);
     		}
     		else {
-    			tmpLinearX[index] = centerX - scaleXLeft * (centerX - this.linearX[index+ blocksStart]);
+    			tmpArray[index] = centerX - scaleXLeft * (centerX - tmpArray[index]);
     		}
     	}
-    	double maxY = max(tmpLinearY);
-    	double minY = min(tmpLinearY);
-    	double centerY = (maxY + minY)/2;
-    	double scaleYUpper = Math.abs(((this.height - centerY)/(maxY - centerY)));
-    	double scaleYLower = Math.abs((centerY)/(centerY - minY));
-    	
-    	for(int index = 0; index <numBlocks; index++){
-    		if (this.linearY[index] > centerX){ 
-    			tmpLinearY[index] = centerY + scaleYUpper * (this.linearY[index + blocksStart] - centerY);
-    		}
-    		else {
-    			tmpLinearY[index] = centerY - scaleYLower * (centerY - this.linearY[index + blocksStart]);
-    		}
-    	}
-    	double[] wholeArrayX = new double[this.linearX.length];
-    	double[] wholeArrayY = new double[this.linearY.length];
+    	double[] expandedArray = new double[array.length];
     	for(int index = 0; index < blocksStart; index++){
-    		wholeArrayX[index] = this.linearX[index];
-    		wholeArrayY[index] = this.linearY[index];
+    		expandedArray[index] = array[index];
     	}
     	for(int index = 0; index < numBlocks; index++){
-    		wholeArrayX[index + blocksStart] = tmpLinearX[index];
-    		wholeArrayY[index + blocksStart] = tmpLinearY[index];
+    		expandedArray[index + blocksStart] = tmpArray[index];
     	}
-    	for(int index = blocksEnd; index < this.linearX.length; index++){
-    		wholeArrayX[index] = this.linearX[index];
-    		wholeArrayY[index] = this.linearY[index];
+    	for(int index = blocksEnd; index < array.length; index++){
+    		expandedArray[index] = array[index];
     	}
-    	for(int index = 0; index < this.linearX.length; index++){
-    		System.out.println(index+ ": " + this.linearX[index] + ", " + this.linearY[index]);
-    		System.out.println(index+ ": " + wholeArrayX[index] + ", " + wholeArrayY[index]);
-    	}
-    	System.out.println(centerX + ", " + scaleXRight + ", " + scaleXLeft);
-		System.out.println(centerY + ", " + scaleYUpper + ", " + scaleYLower);
-    	System.out.println(blocksStart);
-    	System.out.println(blocksEnd);
-    	String name = "expansion";
-    	this.addVisual(name, wholeArrayX, wholeArrayY);
+//    	System.out.println("blocksStart: " + blocksStart + " blocksEnd: " + blocksEnd + " numBlocks: " + numBlocks);
+		return expandedArray;
     }    
 
 	private double calculateMovement( double x1, double y1, int x, int y ){
