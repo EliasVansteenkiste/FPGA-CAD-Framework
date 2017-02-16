@@ -41,7 +41,7 @@ class GradientLegalizer extends Legalizer {
 	private Timer timer;
     private static final boolean timing = false;
     private static final boolean visual = false;
-    private static final boolean interVisual = true;
+    private static final boolean interVisual = false;
     private static final boolean printPotential = false;
 
     // Arrays to visualize the legalisation progress
@@ -114,7 +114,6 @@ class GradientLegalizer extends Legalizer {
     	this.legalPotential();
     	
     	int legalIterations = 500;
-    	if(timing) legalIterations = 500;
 
     	if(printPotential) this.printPotential();
 
@@ -130,7 +129,6 @@ class GradientLegalizer extends Legalizer {
     	this.illegalPotential();
 
     	int illegalIterations = 500;
-    	if(timing) illegalIterations = 500;
     	
     	this.iteration = 0;
         do{
@@ -156,7 +154,7 @@ class GradientLegalizer extends Legalizer {
     	
     	this.blocks = new LegalizerBlock[blocksEnd - blocksStart];
     	for(int b = blocksStart; b < blocksEnd; b++){
-    		this.blocks[b - blocksStart] = new LegalizerBlock(b, this.linearX[b], this.linearY[b]);
+    		this.blocks[b - blocksStart] = new LegalizerBlock(b, this.linearX[b], this.linearY[b], this.heights[b]);
     	}
     	
     	this.setLegal(this.blockType);
@@ -201,20 +199,19 @@ class GradientLegalizer extends Legalizer {
     	}
     	
     	//TODO DUMMY FUNCTIONALITY
-    	ArrayList<Integer> illegalColumns = new ArrayList<Integer>();
-       	illegalColumns.add(32);
-    	illegalColumns.add(33);
-    	illegalColumns.add(34);
-
+//    	this.addIllegalDummyColumn(32);
+//    	this.addIllegalDummyColumn(33);
+//    	this.addIllegalDummyColumn(34);
+    }
+    private void addIllegalDummyColumn(int column){
     	for(int x = 1; x < this.width + 1; x++){
-    		if(illegalColumns.contains(x)){
+    		if(column == x){
     			for(int y = 1; y < this.height + 1; y++){
 	    			this.legal[x][y] = false;
 	    		}
     		}
     	}
-    	
-    	if(timing) this.timer.time("Set Legal");
+    	System.out.println("Illegal dummy column (" + column + ") added!");
     }
     
     //POTENTIAL
@@ -288,7 +285,7 @@ class GradientLegalizer extends Legalizer {
     }
     private void legalPotential(){
     	if(timing) this.timer.start("Legal Potential");
-    	
+
     	double maxPotential = 0.025;
     	double horizontalPotential, verticalPotential;
 
@@ -387,8 +384,7 @@ class GradientLegalizer extends Legalizer {
     //PUSHING GRAVITY FORCES
     private void applyPushingForces(){
     	if(timing) this.timer.start("Apply Pushing Forces");
-    	
-		this.initializeIteration();
+
 		this.fpgaPullForces();
 		this.solve();
 		
@@ -396,20 +392,10 @@ class GradientLegalizer extends Legalizer {
 		
 		if(timing) this.timer.time("Apply Pushing Forces");
     }
-    private void initializeIteration(){
-    	if(timing) this.timer.start("Initialize Iteration");
-
-    	for(LegalizerBlock block:this.blocks){
-    		block.reset();
-    	}
-
-    	if(timing) this.timer.time("Initialize Iteration");
-    }
     private void solve(){
     	if(timing) this.timer.start("Solve");
 
     	int origX, origY, newX, newY;
-    	int horizontalDistance, verticalDistance;
     	
     	for(LegalizerBlock block:this.blocks){
 
@@ -428,106 +414,111 @@ class GradientLegalizer extends Legalizer {
             newY = (int)Math.ceil(block.vertical() * this.discretisation);
             
     		//UPDATE MASS MAP
-            if(origX == newX && origY == newY){
-            	//NO UPDATE REQUIRED
-            	continue;
-            }else if(origY == newY){
-            	//HORIZONTAL MOVE
-            	if(origX < newX){
-            		//MOVE RIGHT
-            		horizontalDistance = newX - origX;
-            		for(int k = 0; k < horizontalDistance; k++){
-                    	for(int l = 0; l < this.discretisation; l++){
-                    		if(this.massMap[origX + k][origY + l].decrease()) this.overlap--;
-                    		if(this.massMap[newX + this.discretisation - 1 - k][newY + l].increase()) this.overlap++;
-                    	}
-                    }
-            		continue;
-            	}else{
-            		//MOVE LEFT
-            		horizontalDistance = origX - newX;
-            		for(int k = 0; k < horizontalDistance; k++){
-                    	for(int l = 0; l < this.discretisation; l++){
-                    		if(this.massMap[origX + this.discretisation - 1 - k][origY + l].decrease()) this.overlap--;
-                    		if(this.massMap[newX + k][newY + l].increase()) this.overlap++;
-                    	}
-                    }
-            		continue;
-            	}
-            }else if(origX == newX){
-            	//VERTICAL MOVE
-            	if(origY < newY){
-            		//MOVE UP
-            		verticalDistance = newY - origY;
-            		for(int k = 0; k < this.discretisation; k++){
-                    	for(int l = 0; l < verticalDistance; l++){
-                    		if(this.massMap[origX + k][origY + l].decrease()) this.overlap--;
-                    		if(this.massMap[newX + k][newY + this.discretisation - 1 - l].increase()) this.overlap++;
-                    	}
-                    }
-            		continue;
-            	}else{
-            		//MOVE DOWN
-            		verticalDistance = origY - newY;
-            		for(int k = 0; k < this.discretisation; k++){
-                    	for(int l = 0; l < verticalDistance; l++){
-                    		if(this.massMap[origX + k][origY + this.discretisation - 1 - l].decrease()) this.overlap--;
-                    		if(this.massMap[newX + k][newY + l].increase()) this.overlap++;
-                    	}
-                    }
-            		continue;
-            	}
-            }
-            for(int k = 0; k < this.discretisation; k++){
+            this.updateMassMap(origX, origY, newX, newY);
+    	}
+
+    	if(debug){
+    		this.testMassMap();
+    		this.testOverlap();
+    	}
+
+    	if(timing) this.timer.time("Solve");
+    }
+    private void updateMassMap(int origX, int origY, int newX, int newY){
+        if(origX == newX && origY == newY){
+        	//Do nothing
+        }else if(origY == newY){
+        	this.horizontalMassMapUpdate(origX, origY, newX, newY);
+        }else if(origX == newX){
+        	this.verticalMassMapUpdate(origX, origY, newX, newY);
+        }else{
+        	this.twoDimensionalMassMapUpdate(origX, origY, newX, newY);
+        }
+    }
+    private void horizontalMassMapUpdate(int origX, int origY, int newX, int newY){
+    	if(origX < newX){//Move right
+    		int horizontalDistance = newX - origX;
+    		for(int k = 0; k < horizontalDistance; k++){
             	for(int l = 0; l < this.discretisation; l++){
             		if(this.massMap[origX + k][origY + l].decrease()) this.overlap--;
+            		if(this.massMap[newX + this.discretisation - 1 - k][newY + l].increase()) this.overlap++;
+            	}
+            }
+    	}else{//Move left
+    		int horizontalDistance = origX - newX;
+    		for(int k = 0; k < horizontalDistance; k++){
+            	for(int l = 0; l < this.discretisation; l++){
+            		if(this.massMap[origX + this.discretisation - 1 - k][origY + l].decrease()) this.overlap--;
             		if(this.massMap[newX + k][newY + l].increase()) this.overlap++;
             	}
             }
     	}
-
-    	if(debug){
-    		//CONTROL MASS MAP
-    		boolean ok = true;
-
-        	int[][] controlMassMap = new int[this.gridWidth][this.gridHeight];
-        			
-        	for(LegalizerBlock block:this.blocks){	
-            	int i = (int)Math.ceil(block.horizontal() * this.discretisation);
-            	int j = (int)Math.ceil(block.vertical() * this.discretisation);
-            		
-            	for(int k = 0; k < this.discretisation; k++){
-            		for(int l = 0; l < this.discretisation; l++){
-            			controlMassMap[i + k][j + l]++;
-            		}
-            	}
-        	}
-        	
-        	for(int i = 0; i < this.gridWidth; i++){
-        		for(int j = 0; j < this.gridHeight; j++){
-        			if(controlMassMap[i][j] != this.massMap[i][j].getMass()){
-        				ok = false;
-        			}
-        		}
-        	}
-        	if(!ok){
-        		System.out.println("Something is wrong in the incremental mass map update!");
-        	}
-        	
-        	//CONTROL OVERLAP
-        	int testOverlap = 0;
-        			
-            for(int x = 0; x < this.gridWidth; x++){
-            	for(int y = 0; y < this.gridHeight; y++){
-            		testOverlap += this.massMap[x][y].overlap();
+    }
+    private void verticalMassMapUpdate(int origX, int origY, int newX, int newY){
+    	if(origY < newY){//Move up
+    		int verticalDistance = newY - origY;
+    		for(int k = 0; k < this.discretisation; k++){
+            	for(int l = 0; l < verticalDistance; l++){
+            		if(this.massMap[origX + k][origY + l].decrease()) this.overlap--;
+            		if(this.massMap[newX + k][newY + this.discretisation - 1 - l].increase()) this.overlap++;
             	}
             }
-        	if(testOverlap != this.overlap){
-        		System.out.println("Something is wrong in the incremental overlap update!");
+    	}else{//Move down
+    		int verticalDistance = origY - newY;
+    		for(int k = 0; k < this.discretisation; k++){
+            	for(int l = 0; l < verticalDistance; l++){
+            		if(this.massMap[origX + k][origY + this.discretisation - 1 - l].decrease()) this.overlap--;
+            		if(this.massMap[newX + k][newY + l].increase()) this.overlap++;
+            	}
+            }
+    	}
+    }
+    private void twoDimensionalMassMapUpdate(int origX, int origY, int newX, int newY){
+        for(int k = 0; k < this.discretisation; k++){
+        	for(int l = 0; l < this.discretisation; l++){
+        		if(this.massMap[origX + k][origY + l].decrease()) this.overlap--;
+        		if(this.massMap[newX + k][newY + l].increase()) this.overlap++;
+        	}
+        }
+    }
+    private void testMassMap(){
+    	int[][] testMassMap = new int[this.gridWidth][this.gridHeight];
+    			
+    	for(LegalizerBlock block:this.blocks){	
+        	int i = (int)Math.ceil(block.horizontal() * this.discretisation);
+        	int j = (int)Math.ceil(block.vertical() * this.discretisation);
+        		
+        	for(int k = 0; k < this.discretisation; k++){
+        		for(int l = 0; l < this.discretisation; l++){
+        			testMassMap[i + k][j + l]++;
+        		}
         	}
     	}
-
-    	if(timing) this.timer.time("Solve");
+    	
+    	for(int i = 0; i < this.gridWidth; i++){
+    		for(int j = 0; j < this.gridHeight; j++){
+    			if(testMassMap[i][j] != this.massMap[i][j].getMass()){
+    				System.out.println("Something is wrong in the incremental mass map update");
+    				System.out.println("\tLocation [" + i + "," + j + "]");
+    				System.out.println("\t\tTest Mass Map: " + testMassMap[i][j]);
+    				System.out.println("\t\tMass Map: " + this.massMap[i][j]);
+    			}
+    		}
+    	}
+    }
+    private void testOverlap(){
+    	int testOverlap = 0;
+		
+        for(int x = 0; x < this.gridWidth; x++){
+        	for(int y = 0; y < this.gridHeight; y++){
+        		testOverlap += this.massMap[x][y].overlap();
+        	}
+        }
+    	if(testOverlap != this.overlap){
+    		System.out.println("Something is wrong in the incremental overlap update!");
+    		System.out.println("\tTest overlap: " + testOverlap);
+    		System.out.println("\tOverlap: " + this.overlap);
+    	}
     }
 
     //PUSHING GRAVITY FORCES BETWEEN THE BLOCKS
@@ -540,11 +531,11 @@ class GradientLegalizer extends Legalizer {
     	for(LegalizerBlock block:this.blocks){ 		
 	    	int x = (int)Math.ceil(block.horizontal() * this.discretisation);
 	    	int y = (int)Math.ceil(block.vertical() * this.discretisation);
-	    	
-	    	double horizontalForce = 0.0;
-	    	double verticalForce = 0.0;
 
 	    	if(this.discretisation == 4){
+    			double horizontalForce = 0.0;
+    	    	double verticalForce = 0.0;
+    	    	
 	    		//LOOP UNROLLING
 				horizontalForce += this.massMap[x][y].horizontalForce();
 				horizontalForce += this.massMap[x][y + 1].horizontalForce();
@@ -579,8 +570,15 @@ class GradientLegalizer extends Legalizer {
 				verticalForce += this.massMap[x + 3][y + 1].verticalForce();
 				verticalForce -= this.massMap[x + 3][y + 2].verticalForce();
 				verticalForce -= this.massMap[x + 3][y + 3].verticalForce();
+				
+		    	block.horizontal.setForce(horizontalForce / area);
+		    	block.vertical.setForce(verticalForce / area);
 	    	}else{
+	    		double horizontalForce = 0.0;
+		    	double verticalForce = 0.0;
+		    	
 	    		Loc loc = null;
+	    		
 	    		for(int k = 0; k < this.halfDiscretisation; k++){
 		    		for(int l = 0; l < this.halfDiscretisation; l++){
 		    			loc = this.massMap[x+k][y+l];
@@ -605,10 +603,9 @@ class GradientLegalizer extends Legalizer {
 		    			verticalForce -= loc.verticalForce();
 		    		}
 		    	}
+		    	block.horizontal.setForce(horizontalForce / area);
+		    	block.vertical.setForce(verticalForce / area);
 	    	}
-
-	    	block.horizontal.setForce(horizontalForce / area);
-	    	block.vertical.setForce(verticalForce / area);
     	}    	
     	if(timing) this.timer.time("Gravity Push Forces");
     }
@@ -628,8 +625,6 @@ class GradientLegalizer extends Legalizer {
     }
     private void shiftLegal(){
     	if(timing) this.timer.start("Shift Legal");
-    	Timer timer = new Timer();
-    	timer.start("Shift Legal");
     	
     	this.resetLegalMap();
     	
@@ -794,7 +789,6 @@ class GradientLegalizer extends Legalizer {
         	}
         	this.addVisual();
     	}
-    	timer.time("Shift Legal");
     	if(timing) this.timer.time("Shift Legal");
     }
     private void resetLegalMap(){
@@ -1039,25 +1033,24 @@ class GradientLegalizer extends Legalizer {
     
     //LegalizerBlock
     private class LegalizerBlock {
-    	private final int index;
+    	final int index;
     	
-    	private final Dimension horizontal;
-    	private final Dimension vertical;
+    	final int height;
     	
-    	private boolean isLegal;
+    	final Dimension horizontal;
+    	final Dimension vertical;
+    	
+    	boolean isLegal;
 
-    	LegalizerBlock(int index, double x, double y){
+    	LegalizerBlock(int index, double x, double y, int height){
     		this.index = index;
     		
     		this.horizontal = new Dimension(x);
     		this.vertical = new Dimension(y);
     		
     		this.isLegal = false;
-    	}
-    	
-    	void reset(){
-    		this.horizontal.reset();
-    		this.vertical.reset();
+    		
+    		this.height = height;
     	}
     	
     	void solve(double stepSize, double speedAveraging){
@@ -1110,10 +1103,6 @@ class GradientLegalizer extends Legalizer {
     	Dimension(double coordinate){
     		this.coordinate = coordinate;
     		this.speed = 0.0;
-    		this.force = 0.0;
-    	}
-    	
-    	void reset(){
     		this.force = 0.0;
     	}
     	
