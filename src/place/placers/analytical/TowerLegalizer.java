@@ -2,7 +2,6 @@ package place.placers.analytical;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,11 +15,12 @@ class TowerLegalizer extends Legalizer {
 	
 	private LegalizerBlock[] blocks;
 	
+	private Timer timer;
     private static final boolean timing = false;
-    private static final boolean visual = false;
+    private static final boolean visual = true;
 
-    private Tower[][] grid;
-    private ArrayList<Tower> towerList;
+    private final Tower[][] grid;
+    private final ArrayList<Tower> towers;
     
     private int[] visualX;
     private int[] visualY;
@@ -42,47 +42,57 @@ class TowerLegalizer extends Legalizer {
     	int width = this.width + 2;
     	int height = this.height + 2;
     	this.grid = new Tower[width][height];
-    	this.towerList = new ArrayList<Tower>();
-    	for(int i = 0; i < width; i++){
-    		for(int j = 0; j < height; j++){
-    			Tower tower = new Tower(i, j, 1);
-    			this.grid[i][j] = tower;
-    			this.towerList.add(tower);
+    	this.towers = new ArrayList<Tower>();
+    	for(int x = 0; x < width; x++){
+    		for(int y = 0; y < height; y++){
+    			Tower tower = new Tower(x, y, 1);
+    			this.grid[x][y] = tower;
+    			this.towers.add(tower);
     		}
     	}
-    	
-    	this.visualX = new int[this.legalX.length];
-    	this.visualY = new int[this.legalY.length];
+
+    	if(timing){
+    		this.timer = new Timer();
+    	}
+    	if(visual){
+        	this.visualX = new int[this.legalX.length];
+        	this.visualY = new int[this.legalY.length];
+    	}
     }
  
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-    	this.initializeData(blocksStart, blocksEnd);
-    	this.addVisual();
+    	if(timing) this.timer.start("Legalize BlockType");
     	
+    	this.initializeData(blocksStart, blocksEnd);
+
     	while(overlap()){
-    		Tower tower = this.findHighestTower();
-    		this.spreadTower(tower);
-    		
-    		this.addVisual();
+    		for(Tower tower:this.towers){
+    			tower.fixed = false;
+    		}
+        	while(unfixed()){
+        		Tower tower = this.getNextTower();
+        		this.spreadTower(tower);
+        	}
+        	this.addVisual();
     	}
     	
     	this.updateLegal();
+    	
+    	if(timing) this.timer.time("Legalize BlockType");
     }
+    
+    //INITIALIZE DATA
     private void initializeData(int blocksStart, int blocksEnd){
-    	Timer t = new Timer();
-
-    	for(Tower tower:this.towerList){
+    	if(timing) this.timer.start("Initialize Data");
+    	
+    	for(Tower tower:this.towers){
     		tower.reset();
     	}
-
-    	t.time("Reset Towers");
     	
     	this.blocks = new LegalizerBlock[blocksEnd - blocksStart];
     	for(int b = blocksStart; b < blocksEnd; b++){
     		this.blocks[b - blocksStart] = new LegalizerBlock(b, this.linearX[b], this.linearY[b]);
     	}
-
-    	t.time("Make Legalizer Blocks");
 
     	for(LegalizerBlock block:this.blocks){
     		int x = (int)Math.round(block.x);
@@ -90,8 +100,6 @@ class TowerLegalizer extends Legalizer {
     		
     		this.grid[x][y].add(block);
     	}
-
-    	t.time("Fill Grid");
     	
     	if(visual){
     		for(int i = 0; i < this.linearX.length; i++){
@@ -99,74 +107,120 @@ class TowerLegalizer extends Legalizer {
     			this.visualY[i] = (int)Math.round(this.linearY[i]);
     		}
     	}
+    	
+    	if(timing) this.timer.time("Initialize Data");
     }
-    boolean overlap(){
-    	for(Tower tower:this.towerList){
-    		if(tower.overlap()){
-    			return true;	
+
+    //OVERLAP
+    boolean unfixed(){
+    	for(Tower tower:this.towers){
+    		if(tower.overlap() && !tower.fixed()){
+    			return true;
     		}
     	}
     	return false;
     }
+    boolean overlap(){
+    	for(Tower tower:this.towers){
+    		if(tower.overlap()){
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
+    //NEXT TOWER
+    Tower getNextTower(){
+    	return this.findHighestTower();
+    }
     Tower findHighestTower(){
-    	Tower tower = this.towerList.get(0);
-    	for(Tower otherTower:this.towerList){
-    		if(otherTower.height() > tower.height()){
-    			tower = otherTower;
-    		}
-    	}
-    	return tower;
-    }
-    void spreadTower(Tower tower){
-    	int x = tower.x;
-    	int y = tower.y;
+    	if(timing) this.timer.start("Find Highest Tower");
     	
-    	int direction = 0;
-    	while(tower.overlap()){
-    		Tower neighbour = this.getNeighBour(x, y, direction);
-    		if(neighbour != null){
-    			if(direction == 0) neighbour.add(tower.getLeft());
-    			else if(direction == 1) neighbour.add(tower.getUp());
-    			else if(direction == 2) neighbour.add(tower.getRight());
-    			else if(direction == 3) neighbour.add(tower.getDown());
+    	Tower highestTower = this.towers.get(0);
+    	
+    	for(Tower tower:this.towers){
+    		if(!tower.fixed()){
+        		if(tower.height() > highestTower.height()){
+        			highestTower = tower;
+        		}
     		}
-
-    		direction += 1;
-    		direction = direction % 4;
     	}
-    	tower.fix();
+    	return highestTower;
     }
-    Tower getNeighBour(int x, int y, int direction){
-    	Tower result = null;
-    	if(direction == 0){//Left
-    		if(x > 1) result = this.grid[x - 1][y];
-    	}else if(direction == 1){//Up
-    		if(y < this.height) result = this.grid[x][y + 1];
-    	}else if(direction == 2){//Right
-    		if(x <  this.width) result = this.grid[x + 1][y];
-    	}else if(direction == 3){//Down
-    		if(y > 1) result = this.grid[x][y - 1];
-    	}
-    	if(result.fixed()) return null;
-    	else return result;
+    
+    //SRPEAD TOWER
+    void spreadTower(Tower tower){
+    	if(timing) this.timer.start("Spread Tower");
+    	
+//    	System.out.println(tower);
+//    	for(LegalizerBlock block:tower.blocks){
+//    		System.out.println("\t" + block);
+//    	}
 
+    	ArrayList<Direction> validDirections = new ArrayList<Direction>();
+    	for(Direction direction:Direction.values()){
+    		Tower neighbour = this.getNeighBour(tower, direction);
+    		if(neighbour != null){
+    			if(!neighbour.fixed()){
+    				validDirections.add(direction);
+    			}
+    		}
+    	}
+
+    	if(!validDirections.isEmpty()){
+        	int d = 0;
+        	while(tower.overlap()){
+        		Direction direction = validDirections.get(d);
+        		LegalizerBlock block = tower.getBlock(direction);
+        		
+        		Tower neighbour = this.getNeighBour(tower, direction);
+        		
+        		neighbour.add(block);
+                
+        		d++;
+        		if(d == validDirections.size()){
+        			d = 0;
+        		}
+        	}
+    	}
+    	
+    	tower.fix();
+    	
+    	if(timing) this.timer.time("Spread Tower");
+    }
+    Tower getNeighBour(Tower tower, Direction direction){
+    	if(direction.equals(Direction.NORD)){
+    		if(tower.y < this.height) return this.grid[tower.x][tower.y + 1];
+    	}else if(direction.equals(Direction.EAST) ){
+    		if(tower.x < this.width) return this.grid[tower.x + 1][tower.y];
+    	}else if(direction.equals(Direction.SOUTH)){
+    		if(tower.y > 1) return this.grid[tower.x][tower.y - 1];
+    	}else if(direction.equals(Direction.WEST)){
+        		if(tower.x > 1) return this.grid[tower.x - 1][tower.y];
+    	}
+    	return null;
     }
     void updateLegal(){
-    	for(Tower tower:this.towerList){
-    		if(!tower.isEmpty()){
-    			if(tower.overlap()){
-    				System.out.println("Tower " + tower + " still has overlap");
-    			}
-    				
-    			LegalizerBlock block = tower.get();
-    				
+    	if(timing) this.timer.start("Update Legal");
+    	
+    	for(Tower tower:this.towers){
+    		for(LegalizerBlock block:tower.blocks){
     			block.x = tower.x;
     			block.y = tower.y;
-    				
+    			
     			this.legalX[block.index] = tower.x;
     			this.legalY[block.index] = tower.y;
     		}
     	}
+    	
+    	if(timing) this.timer.time("Update Legal");
+    }
+    
+    private enum Direction{
+    	WEST,
+    	SOUTH,
+    	EAST,
+    	NORD
     }
     
     //TOWER
@@ -174,7 +228,7 @@ class TowerLegalizer extends Legalizer {
     	int x;
     	int y;
 
-    	LinkedList<LegalizerBlock> blocks;
+    	final ArrayList<LegalizerBlock> blocks;
     	int maxHeight;
 
     	boolean fixed;
@@ -183,15 +237,15 @@ class TowerLegalizer extends Legalizer {
     		this.x = x;
     		this.y = y;
 
-    		this.blocks = new LinkedList<LegalizerBlock>();
+    		this.blocks = new ArrayList<LegalizerBlock>();
     		this.maxHeight = maxHeight;
 
     		this.fixed = false;
     	}
-
+    	
     	void reset(){
-    		this.blocks.clear();
     		this.fixed = false;
+    		this.blocks.clear();
     	}
 
     	void fix(){
@@ -204,60 +258,49 @@ class TowerLegalizer extends Legalizer {
     	void add(LegalizerBlock block){
     		this.blocks.add(block);
     	}
-    	LegalizerBlock get(){
-    		return this.blocks.removeFirst();
-    	}
-    	
-    	LegalizerBlock getLeft(){
-    		LegalizerBlock result = blocks.get(0);
-    		for(LegalizerBlock block:this.blocks){
-    			if(block.x < result.x){
-    				result = block;
-    			}
-    		}
-    		this.blocks.remove(result);
-    		return result;
-    	}
-    	LegalizerBlock getRight(){
-    		LegalizerBlock result = blocks.get(0);
-    		for(LegalizerBlock block:this.blocks){
-    			if(block.x > result.x){
-    				result = block;
-    			}
-    		}
-    		this.blocks.remove(result);
-    		return result;
-    	}
-    	LegalizerBlock getDown(){
-    		LegalizerBlock result = blocks.get(0);
-    		for(LegalizerBlock block:this.blocks){
-    			if(block.y < result.y){
-    				result = block;
-    			}
-    		}
-    		this.blocks.remove(result);
-    		return result;
-    	}
-    	LegalizerBlock getUp(){
-    		LegalizerBlock result = blocks.get(0);
-    		for(LegalizerBlock block:this.blocks){
-    			if(block.y > result.y){
-    				result = block;
-    			}
-    		}
-    		this.blocks.remove(result);
-    		return result;
-    	}
 
-    	boolean isEmpty(){
-    		return this.blocks.isEmpty();
-    	}
     	int height(){
     		return this.blocks.size();
     	}
 
     	boolean overlap(){
     		return this.height() > this.maxHeight;
+    	}
+    	
+    	LegalizerBlock getBlock(Direction direction){
+    		LegalizerBlock bestBlock = this.blocks.get(0);
+    		if(direction.equals(Direction.NORD)){
+    			for(LegalizerBlock candidateBlock:this.blocks){
+    				if(candidateBlock.y > bestBlock.y){
+    					bestBlock = candidateBlock;
+    				}
+    			}
+    		}else if(direction.equals(Direction.EAST)){
+    			for(LegalizerBlock candidateBlock:this.blocks){
+    				if(candidateBlock.x > bestBlock.x){
+    					bestBlock = candidateBlock;
+    				}
+    			}
+    		}else if(direction.equals(Direction.SOUTH)){
+    			for(LegalizerBlock candidateBlock:this.blocks){
+    				if(candidateBlock.y < bestBlock.y){
+    					bestBlock = candidateBlock;
+    				}
+    			}
+    		}else if(direction.equals(Direction.WEST)){
+    			for(LegalizerBlock candidateBlock:this.blocks){
+    				if(candidateBlock.x < bestBlock.x){
+    					bestBlock = candidateBlock;
+    				}
+    			}
+    		}
+    		this.blocks.remove(bestBlock);
+    		return bestBlock;
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		return "Tower [" + this.x + "," + this.y + "] => " + this.height();
     	}
     }
     
@@ -274,38 +317,138 @@ class TowerLegalizer extends Legalizer {
     		
     		this.index = index;
     	}
+    	
+    	@Override
+    	public String toString(){
+    		return "Block " + this.index + " [" + this.x + ", " + this.y + "]";
+    	}
     }
 
     private class Timer {
-    	long start;
-    	
+    	private HashMap<String, Long> timers;
+    	private ArrayList<Time> timingResult;
+
     	Timer(){
-    		if(timing){
-    			this.start = System.nanoTime();
+    		this.timers = new HashMap<String, Long>();
+    		this.timingResult = new ArrayList<Time>();
+    	}
+    	
+    	void start(String name){
+    		this.timers.put(name, System.nanoTime());
+    	}
+
+    	void time(String name){
+    		long start = this.timers.remove(name);
+    		long end = System.nanoTime();
+    		int index = this.timers.size();
+    		
+    		Time time = new Time(name, index, start, end);
+
+    		this.timingResult.add(time);
+    		
+    		if(index == 0){
+    			this.printTiming();
     		}
     	}
     	
-    	void time(String type){
-    		if(timing){
-        		double time = (System.nanoTime() - this.start) * Math.pow(10, -6);
-        		
-        		if(time < 10){
-        			time *= Math.pow(10, 3);
-        			System.out.printf(type + " took %.0f ns\n", time);
-        		}else{
-        			System.out.printf(type + " took %.0f ms\n", time);	
-        		}
+    	void printTiming(){
+    		Time head = this.timingResult.get(this.timingResult.size() - 1);
+    		Time parent = head;
+    		Time previous = head;
+    		for(int i = this.timingResult.size() - 2; i >= 0; i--){
+    			Time current = this.timingResult.get(i);
+    			
+    			if(current.index == parent.index){
+    				parent = parent.getParent();
+    				parent.addChild(current);
+    				current.setParent(parent);
+    			}else if(current.index == parent.index + 1){
+    				parent.addChild(current);
+    				current.setParent(parent);
+    			}else if(current.index == parent.index + 2){
+    				parent = previous;
+    				parent.addChild(current);
+    				current.setParent(parent);
+    			}
+    			
+    			previous = current;
+    		}
+    		System.out.println(head);
+    		this.timers = new HashMap<String, Long>();
+    		this.timingResult = new ArrayList<Time>();
+    	}
+    }
+    private class Time {
+    	String name;
+    	
+    	int index;
+    	
+    	long start;
+    	long end;
+    	
+    	Time parent;
+    	ArrayList<Time> children;
+    	
+    	Time(String name, int index, long start, long end){
+    		this.name = name;
+    		
+    		this.index = index;
+    		
+    		this.start = start;
+    		this.end = end;
+    		
+    		this.parent = null;
+    		this.children = new ArrayList<Time>();
+    	}
+    	
+    	void setParent(Time parent){
+    		this.parent = parent;
+    	}
+    	Time getParent(){
+    		return this.parent;
+    	}
+    	void addChild(Time child){
+    		this.children.add(child);
+    	}
+    	Time[] getChildren(){
+    		int counter = this.children.size() - 1;
+    		Time[] result = new Time[this.children.size()];
+    		
+    		for(Time child:this.children){
+    			result[counter] = child;
+    			counter--;
+    		}
+    		return result;
+    	}
+    	
+    	@Override
+    	public String toString(){
+    		String result = new String();
+
+    		for(int i = 0; i < this.index; i++){
+    			this.name = "\t" + this.name;
+    		}
+    		double time = (this.end -  this.start) * Math.pow(10, -6);
+        	if(time < 10){
+        		time *= Math.pow(10, 3);
+        		result += String.format(this.name + " took %.0f ns\n", time);
+        	}else{
+        		result += String.format(this.name + " took %.0f ms\n", time);
+    		}
+        	
+    		for(Time child:this.getChildren()){
+    			result += child.toString();
     		}
     		
-    		this.start = System.nanoTime();
+    		return result;
     	}
     }
     
     private void addVisual(){
 		if(visual){
-			Timer t = new Timer();
+			if(timing) this.timer.start("Add Visual");
 		    
-		    for(Tower tower:this.towerList){
+		    for(Tower tower:this.towers){
 		    	for(LegalizerBlock block:tower.blocks){
 		    		this.visualX[block.index] = tower.x;
 		    		this.visualY[block.index] = tower.y;
@@ -314,7 +457,7 @@ class TowerLegalizer extends Legalizer {
 			
 			this.addVisual("tower expantion", this.visualX, this.visualY);
 			
-			t.time("Add Visual");
+			if(timing) this.timer.time("Add Visual");
 		}
     }
 
