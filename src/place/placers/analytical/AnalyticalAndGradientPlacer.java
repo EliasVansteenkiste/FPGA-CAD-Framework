@@ -332,13 +332,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         
         //Only update circuit if the final solution is legal
         if(this.overlap() == 0){
-        	this.startTimer(T_UPDATE_CIRCUIT);
-        	try {
-        		this.updateCircuit();
-        	} catch(PlacementException error) {
-        		this.logger.raise(error);
-        	}
-        	this.stopTimer(T_UPDATE_CIRCUIT);
+//        	this.startTimer(T_UPDATE_CIRCUIT);
+//        	try {
+//        		this.updateCircuit();
+//        	} catch(PlacementException error) {
+//        		this.logger.raise(error);
+//        	}
+//        	this.stopTimer(T_UPDATE_CIRCUIT);
         }
     }
     private void addLinearPlacement(int iteration){
@@ -388,30 +388,44 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     
     //Overlap
     private int overlap(){
-    	int width = this.circuit.getWidth() + 2;
-    	int height = this.circuit.getHeight() + 2;
-    	
-    	int[][] legalMassMap = new int[width][height];
-    	for(int b = this.numIOBlocks; b < this.legalX.length; b++){
-    		int x = this.legalX[b];
-    		int y = this.legalY[b];
-    		legalMassMap[x][y] += 1;
-    	}
-    	
-    	int overlap = 0;
-    	
-    	for(int i = 0; i < width; i++){
-    		for(int j = 0; j < height; j++){
-    			if(legalMassMap[i][j] > 1){
-    				overlap += legalMassMap[i][j];
-    			}
+    	int gridWidth = this.circuit.getWidth() + 2;
+    	int gridHeight = this.circuit.getHeight() + 2;
+
+    	boolean[][] legalMap = new boolean[gridWidth][gridHeight];
+    	for(int x = 0; x < gridWidth; x++){
+    		for(int y = 0; y < gridHeight; y++){
+    			legalMap[x][y] = true;
     		}
     	}
-    	
+
+    	int overlap = 0;
+
+    	// Skip i = 0: these are IO blocks
+        for(int i = 1; i < this.blockTypes.size(); i++) {
+            BlockType blockType = this.blockTypes.get(i);
+
+            int blocksStart = this.blockTypeIndexStarts.get(i);
+            int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
+
+            if(blocksEnd > blocksStart) {
+            	for(int blockIndex = blocksStart; blockIndex < blocksEnd; blockIndex++){
+            		int x = this.legalX[blockIndex];
+                	int y = this.legalY[blockIndex];
+
+                	int height = this.heights[blockIndex] *  blockType.getHeight();
+
+                	for(int h = 0; h < height; h++){
+                		if(legalMap[x][y + h]){
+                			legalMap[x][y + h] = false;
+                		}else{
+                			overlap++;
+                		}
+                	}
+            	}
+            }
+        }
     	return overlap;
     }
-
-
 
     protected void updateCircuit() throws PlacementException {
         // Clear all previous locations
