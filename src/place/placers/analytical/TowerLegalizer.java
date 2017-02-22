@@ -62,7 +62,7 @@ class TowerLegalizer extends Legalizer {
  
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
     	if(timing) this.timer.start("Legalize BlockType");
-    	
+
     	this.initializeData(blocksStart, blocksEnd);
 
     	while(overlap()){

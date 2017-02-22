@@ -177,7 +177,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new HeapLegalizer(
+        this.legalizer = new GradientLegalizer(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
@@ -248,7 +248,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration();
 
-            this.visualizer.addPlacement(String.format("gradient step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
+            this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
             
             if(this.printInnerCost) {
                 double cost = this.costCalculator.calculate(this.linearX, this.linearY);
@@ -269,7 +269,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration();
             
-            this.visualizer.addPlacement(String.format("gradient step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
+            this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
 
             if(this.printInnerCost) {
                 double cost = this.costCalculator.calculate(this.linearX, this.linearY);

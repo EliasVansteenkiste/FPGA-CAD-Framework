@@ -105,7 +105,6 @@ public class PlacementVisualizer {
                 break;
         	}
         }
-        
         JButton previousGradientButton = new JButton("<");
         previousGradientButton.addActionListener(new NavigateActionListener(this, -1));
         navigationPanel.add(previousGradientButton, BorderLayout.CENTER);
@@ -128,9 +127,10 @@ public class PlacementVisualizer {
         	}
         }
         
-        JButton enableMouse = new JButton("Mouse Info");
+        JButton enableMouse = new JButton("Info");
         enableMouse.addActionListener(new MouseActionListener(this));
         navigationPanel.add(enableMouse, BorderLayout.CENTER);
+
         
         //BB Cost plot
         for(Placement placement:this.placements){
@@ -201,12 +201,9 @@ public class PlacementVisualizer {
     	if(type == 1){
             newIndex = this.addStep(newIndex, step, numPlacements);
     	}else if(type == 2){
-    		PlacementType currentType = this.getPlacementType(newIndex);
-    		PlacementType nextType = PlacementType.LINEAR;
-    		if(currentType.equals(PlacementType.LINEAR)) nextType = PlacementType.LEGAL;
     		do{
     			newIndex = this.addStep(newIndex, step, numPlacements);
-    		}while(!this.getPlacementType(newIndex).equals(nextType));
+    		}while(!(this.getPlacementType(newIndex).equals(PlacementType.LEGAL) || this.getPlacementType(newIndex).equals(PlacementType.LINEAR)));
     	}else if(type == 3){
     		newIndex = this.currentPlacement;
     		PlacementType currentType = this.getPlacementType(newIndex);
@@ -242,8 +239,10 @@ public class PlacementVisualizer {
     
     PlacementType getPlacementType(int index){
     	String name = this.placements.get(index).getName();
-    	if(name.contains("gradient")){
-    		return PlacementType.GRADIENT;
+    	if(name.contains("gradient descent")){
+    		return PlacementType.GRADIENT_DESCENT;
+    	}else if(name.contains("gradient_expand")){
+    		return PlacementType.GRADIENT_EXPAND;
     	}else if(name.contains("linear")){
     		return PlacementType.LINEAR;
     	}else if(name.contains("legal")){
@@ -253,16 +252,18 @@ public class PlacementVisualizer {
     	}else if(name.contains("Random")){
     		return PlacementType.RANDOM;
     	}else{
-    		return null;
+    		return  PlacementType.OTHER;
     	}
     }
     
     private enum PlacementType {
-    	GRADIENT,
+    	GRADIENT_DESCENT,
+    	GRADIENT_EXPAND,
     	LINEAR,
     	LEGAL,
     	FINAL,
-    	RANDOM
+    	RANDOM,
+    	OTHER
     }
 
     private class MouseActionListener implements ActionListener {

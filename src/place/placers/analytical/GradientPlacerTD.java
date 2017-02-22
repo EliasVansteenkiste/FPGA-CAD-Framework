@@ -204,7 +204,7 @@ public class GradientPlacerTD extends GradientPlacer {
         }else if(this.latestCost == this.minCost){
         	this.updateLegal(newLegalX, newLegalY);
         }else{
-        	this.logger.print("Warning: the legal solution is not updated");
+        	this.logger.println("Warning: the legal solution is not updated");
         }
     }
 
