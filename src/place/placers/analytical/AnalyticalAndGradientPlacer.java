@@ -332,13 +332,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         
         //Only update circuit if the final solution is legal
         if(this.overlap() == 0){
-//        	this.startTimer(T_UPDATE_CIRCUIT);
-//        	try {
-//        		this.updateCircuit();
-//        	} catch(PlacementException error) {
-//        		this.logger.raise(error);
-//        	}
-//        	this.stopTimer(T_UPDATE_CIRCUIT);
+        	this.startTimer(T_UPDATE_CIRCUIT);
+        	try {
+        		this.updateCircuit();
+        	} catch(PlacementException error) {
+        		this.logger.raise(error);
+        	}
+        	this.stopTimer(T_UPDATE_CIRCUIT);
         }
     }
     private void addLinearPlacement(int iteration){
@@ -392,18 +392,22 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     	int gridHeight = this.circuit.getHeight() + 2;
 
     	boolean[][] legalMap = new boolean[gridWidth][gridHeight];
-    	for(int x = 0; x < gridWidth; x++){
-    		for(int y = 0; y < gridHeight; y++){
-    			legalMap[x][y] = true;
-    		}
-    	}
-
     	int overlap = 0;
 
     	// Skip i = 0: these are IO blocks
         for(int i = 1; i < this.blockTypes.size(); i++) {
             BlockType blockType = this.blockTypes.get(i);
 
+        	for(int x = 0; x < gridWidth; x++){
+        		for(int y = 0; y < gridHeight; y++){
+        			if(this.circuit.getColumnType(x).equals(blockType)){
+        				legalMap[x][y] = true;
+        			}else{
+        				legalMap[x][y] = false;
+        			}
+        		}
+        	}
+        	
             int blocksStart = this.blockTypeIndexStarts.get(i);
             int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
