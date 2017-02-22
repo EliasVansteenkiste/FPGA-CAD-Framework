@@ -177,7 +177,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new HeapLegalizer(
+        this.legalizer = new SimpleLegalizer(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,

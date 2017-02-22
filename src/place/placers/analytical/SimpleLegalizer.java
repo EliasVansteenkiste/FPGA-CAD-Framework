@@ -35,16 +35,16 @@ class SimpleLegalizer extends Legalizer {
 
     @Override
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-    	double[] expandedLinearX = doExpansion(this.linearX, blocksStart, blocksEnd, this.width);
-    	double[] expandedLinearY = doExpansion(this.linearY, blocksStart, blocksEnd, this.height);
-    	System.out.println("max expandedLinearX: " + max(expandedLinearX) + ", " + "max expandedLinearY: " + max(expandedLinearY));
-    	System.out.println("min expandedLinearX: " + min(expandedLinearX) + ", " + "min expandedLinearY: " + min(expandedLinearY));
-    	String name = "expansion";
-    	this.addVisual(name, expandedLinearX, expandedLinearY);
+//    	double[] expandedLinearX = doExpansion(this.linearX, blocksStart, blocksEnd, this.width);
+//    	double[] expandedLinearY = doExpansion(this.linearY, blocksStart, blocksEnd, this.height);
+//    	System.out.println("max expandedLinearX: " + max(expandedLinearX) + ", " + "max expandedLinearY: " + max(expandedLinearY));
+//    	System.out.println("min expandedLinearX: " + min(expandedLinearX) + ", " + "min expandedLinearY: " + min(expandedLinearY));
+//    	String name = "expansion";
+//    	this.addVisual(name, expandedLinearX, expandedLinearY);
     	
     	List<LegalizerBlock> blocks = new ArrayList<LegalizerBlock>();  	
     	for(int index = blocksStart; index < blocksEnd; index++) {
-    		LegalizerBlock legalizerBlock = new LegalizerBlock(index, expandedLinearX[index], expandedLinearY[index]);
+    		LegalizerBlock legalizerBlock = new LegalizerBlock(index, this.linearX[index], this.linearY[index]);
     		blocks.add(legalizerBlock);
     	}
     	
@@ -56,24 +56,52 @@ class SimpleLegalizer extends Legalizer {
     	
 //    	ArrayList<ArrayList<Row>> rows = new ArrayList<ArrayList<Row>>();
 //    	rows.clear();
+    	int numColumn = this.width + 1;
+    	int numRow = this.height + 1;
+    	int[] rowLeftMost = new int[numColumn];
+    	int maxCost = this.width + this.height;
+    	for(int rowIndex = 0; rowIndex < numRow; rowIndex++) {
+    		
+            rowLeftMost[rowIndex] = 1;
+        }
     	
-    	int rowLeftMost = 1;
-    	int bestRow = 0;
+    	boolean[][] occupiedSite = new boolean[this.width+2][this.height+2];
+    	for(int row = 1; row < this.height+1; row++){
+    		for(int column = 1; column < numColumn; column++){
+    			occupiedSite[column][row] = false;
+    		}
+    	}
+    	
     	for(LegalizerBlock block: blocks){
-    		double bestCost = this.width + this.height;
-    		for (int row = 1; row <this.height +1; row++){
-    			rowLeftMost = (int)Math.floor(Math.max(expandedLinearX[block.index], rowLeftMost));
-    			double cost = calculateMovement(expandedLinearX[block.index], expandedLinearY[block.index], rowLeftMost, row);
+    		int bestRow = 1;
+    		double bestCost = maxCost;
+    		for (int row = 1; row < numRow; row++){
+    			rowLeftMost[row] = (int)Math.round(Math.max(this.linearX[block.id], rowLeftMost[row]));
+    			double cost = calculateMovement(this.linearX[block.id], this.linearX[block.id], rowLeftMost[row], row);
+//    			System.out.println("rowLeftMost is: "+ rowLeftMost +" " + "cost is :" + cost);
+//    			if((cost < bestCost) && !occupiedSite[rowLeftMost[bestRow]][row]){
     			if(cost < bestCost){
     				bestCost = cost;
     				bestRow = row;
-//    				System.out.println("Best row is: " + bestRow);
-    				
-    			}
+    			}	
     		}
-    	this.legalX[block.index] = rowLeftMost;
-    	this.legalY[block.index] = bestRow;	
+    		if(!occupiedSite[rowLeftMost[bestRow]][bestRow]){
+    			this.legalX[block.id] = rowLeftMost[bestRow];
+        		this.legalY[block.id] = bestRow;
+        		occupiedSite[rowLeftMost[bestRow]][bestRow] = true;
+    		}else{
+    			
+    		}
+    		
+    		if(rowLeftMost[bestRow] < this.width){
+    			rowLeftMost[bestRow]++;
+    		} else{
+    		rowLeftMost[bestRow] = this.width;
+    		}
     	}
+    	for(int rowIndex = 0; rowIndex < numRow; rowIndex++) {
+    		System.out.println(rowLeftMost[rowIndex] + " " + rowIndex);
+        }
     }
     
     
@@ -103,7 +131,7 @@ class SimpleLegalizer extends Legalizer {
     	double minX = min(tmpArray);
     	double centerX = (maxX + minX)/2;
     	double scaleXRight = Math.abs((maxEdge - centerX)/(maxX - centerX));
-    	double scaleXLeft = Math.abs((centerX)/(centerX - minX));
+    	double scaleXLeft = Math.abs((centerX - 1)/(centerX - minX));
     	
     	for(int index = 0; index < numBlocks; index++){
     		if (tmpArray[index] > centerX){ 
@@ -133,19 +161,16 @@ class SimpleLegalizer extends Legalizer {
 		  	
     }
     private class LegalizerBlock {
-    	int index;
+    	int id;
     	double x;
     	double y;
     	
-    	LegalizerBlock(int index, double x, double y){
-    		this.index = index;
+    	LegalizerBlock(int id, double x, double y){
+    		this.id = id;
     		this.x = x;
     		this.y = y;
     	}
-    	public int getIndex(){
-    		return this.index;
-    	}
-   		    	
+       		    	
         boolean inRow(Row row){
         	return (this.x >= row.left && this.x < row.right && this.y >= row.bottom && this.y < row.top);
         }
