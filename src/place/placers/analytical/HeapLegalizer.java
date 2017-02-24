@@ -3,7 +3,6 @@ package place.placers.analytical;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,8 +25,6 @@ class HeapLegalizer extends Legalizer {
     // These are temporary data structures
     protected GrowingArea[][] areaPointers;
     protected List<List<List<LegalizerBlock>>> blockMatrix;
-
-    private HashMap<BlockType,ArrayList<int[]>> legalizationAreas;
 
     HeapLegalizer(
             Circuit circuit,
@@ -66,8 +63,6 @@ class HeapLegalizer extends Legalizer {
         this.areaPointers = new GrowingArea[this.width+2][this.height+2];
         List<GrowingArea> areas = this.growAreas();
 
-        this.updateLegalizationAreas(areas);
-
         // Legalize all unabsorbed areas
         for(GrowingArea area : areas) {
             if(!area.isAbsorbed()) {
@@ -75,31 +70,6 @@ class HeapLegalizer extends Legalizer {
             }
         }
     }
-    
-    @Override
-    protected void initializeLegalizationAreas(){
-    	this.legalizationAreas = new HashMap<BlockType,ArrayList<int[]>>();
-    }
-    
-    private void updateLegalizationAreas(List<GrowingArea> areas){
-        if(!this.legalizationAreas.containsKey(this.blockType))this.legalizationAreas.put(this.blockType, new ArrayList<int[]>());
-        for(GrowingArea area : areas) {
-        	if(!area.isAbsorbed()) {
-        		int top = area.top + this.blockType.getHeight();
-        		int bottom = area.bottom;
-        		int left = area.left;
-        		int right = area.right + 1;
-        		int[] temp = {top, bottom, left, right};
-        		this.legalizationAreas.get(this.blockType).add(temp);
-        	}
-        }
-    }
-    
-    @Override
-    protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
-    	return this.legalizationAreas;
-    }
-
 
     private void initializeBlockMatrix(int blocksStart, int blocksEnd) {
         // Clear the block matrix

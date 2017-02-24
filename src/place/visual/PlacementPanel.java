@@ -1,6 +1,5 @@
 package place.visual;
 
-import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 
@@ -34,7 +33,6 @@ public class PlacementPanel extends JPanel {
 
     private int blockSize;
     private int left, top, right, bottom;
-    private BlockType drawLegalAreaBlockType;
     
     private boolean mouseEnabled = false, plotEnabled = false;
     private double[] bbCost;
@@ -48,9 +46,6 @@ public class PlacementPanel extends JPanel {
 
         // Redraw the panel
         super.repaint();
-    }
-    void setLegalAreaBlockType(BlockType blockType){
-    	this.drawLegalAreaBlockType = blockType;
     }
     void setMouseEnabled(boolean mouseEnabled){
     	this.mouseEnabled = mouseEnabled;
@@ -69,7 +64,6 @@ public class PlacementPanel extends JPanel {
         		this.setDimensions();
         		this.drawGrid(g);
         		this.drawBlocks(g);
-        		this.drawLegalizationAreas(g);
         		if(this.mouseEnabled)this.drawBlockInformation(g);
         	}else{
         		this.drawPlot(g);
@@ -225,31 +219,6 @@ public class PlacementPanel extends JPanel {
         for(Map.Entry<GlobalBlock, Coordinate> blockEntry : this.placement.blocks()) {
             this.drawBlock(blockEntry.getKey(), blockEntry.getValue(), g);
         }
-    }
-    
-    private void drawLegalizationAreas(Graphics g) {
-    	if(this.placement.getLegalizationAreas() != null){
-        	g.setColor(this.gridColorDark);
-        	if(this.drawLegalAreaBlockType != null){
-            	for(BlockType type:this.placement.getLegalizationAreas().keySet()){
-            		if(type.equals(this.drawLegalAreaBlockType)){
-                    	for(int[] area: this.placement.getLegalizationAreas().get(type)){
-                        	int top = this.top + this.blockSize * area[0];
-                        	int bottom = this.top + this.blockSize * area[1];
-                        	int left = this.left + this.blockSize * area[2];
-                        	int right = this.left + this.blockSize * area[3];
-                        	
-                        	for(int i = -1;i<=1;i++){
-                        		g.drawLine(left-i, top+i, left-i, bottom-i);
-                        		g.drawLine(right+i, top+i, right+i, bottom-i);
-                        		g.drawLine(left-i, top+i, right+i, top+i);
-                        		g.drawLine(left+i, bottom+i, right-i, bottom+i);
-                        	}
-                    	}
-            		}
-            	}
-        	}
-    	}
     }
 
     private void drawBlock(GlobalBlock block, Coordinate coordinate, Graphics g) {

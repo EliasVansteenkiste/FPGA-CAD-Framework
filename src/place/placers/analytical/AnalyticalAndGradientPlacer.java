@@ -85,7 +85,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void solveLegal(int iteration, BlockType movableBlockType);
     protected abstract boolean stopCondition(int iteration);
     protected abstract void initializeIteration(int iteration);
-    protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
     protected abstract void printStatistics(int iteration, double time, double displacement, int overlap);
 
@@ -344,13 +343,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     private void addLinearPlacement(int iteration){
         this.visualizer.addPlacement(
                 String.format("iteration %d: linear", iteration),
-                this.netBlocks, this.linearX, this.linearY, this.getLegalizationAreas(),
+                this.netBlocks, this.linearX, this.linearY,
                 this.linearCost);
     }
     private void addLegalPlacement(int iteration){
         this.visualizer.addPlacement(
                 String.format("iteration %d: legal", iteration),
-                this.netBlocks, this.legalX, this.legalY, this.getLegalizationAreas(),
+                this.netBlocks, this.legalX, this.legalY,
                 this.legalCost);
     }
     private List<BlockType> getBlockTypes(){

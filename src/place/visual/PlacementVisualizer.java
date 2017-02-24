@@ -1,7 +1,6 @@
 package place.visual;
 
 import place.circuit.Circuit;
-import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
@@ -14,7 +13,6 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,14 +50,14 @@ public class PlacementVisualizer {
             this.placements.add(new Placement(name, this.circuit));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas, double bbCost) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, double bbCost) {
         if(this.enabled) {
-            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas, bbCost));
+            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, bbCost));
         }
     }
-    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, HashMap<BlockType,ArrayList<int[]>> legalizationAreas, double bbCost) {
+    public void addPlacement(String name, Map<GlobalBlock, NetBlock> blockIndexes, double[] x, double[] y, double bbCost) {
         if(this.enabled) {
-            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, legalizationAreas, bbCost));
+            this.placements.add(new Placement(name, this.circuit, blockIndexes, x, y, bbCost));
         }
     }
 
@@ -159,25 +157,6 @@ public class PlacementVisualizer {
         		break;
         	}
         }
-        
-        //Legalization buttons
-        for(Placement placement:this.placements){
-        	if(placement.getName().contains("linear")){
-        		JPanel legalizationPanel = new JPanel();
-                pane.add(legalizationPanel, BorderLayout.PAGE_END);
-                JButton legalisationButton = new JButton("None");
-                legalisationButton.addActionListener(new LegalizationActionListener(this, null));
-                legalizationPanel.add(legalisationButton, BorderLayout.CENTER);
-                for(BlockType type:this.circuit.getGlobalBlockTypes()){
-                	if(placement.getLegalizationAreas().containsKey(type)){	
-                        legalisationButton = new JButton(type.getName());
-                        legalisationButton.addActionListener(new LegalizationActionListener(this, type));
-                        legalizationPanel.add(legalisationButton, BorderLayout.CENTER);
-                	}
-                }
-                break;
-        	}
-        }
 
         this.placementPanel = new PlacementPanel(this.logger);
         pane.add(this.placementPanel);
@@ -220,11 +199,6 @@ public class PlacementVisualizer {
             newIndex += numPlacements;
         }
         return newIndex;
-    }
-    
-    void drawLegalizationAreas(BlockType type) {
-    	this.placementPanel.setLegalAreaBlockType(type);
-        this.drawPlacement(this.currentPlacement);
     }
     
     void drawMouseInfo(boolean mouseEnabled) {
@@ -297,22 +271,6 @@ public class PlacementVisualizer {
         public void actionPerformed(ActionEvent e) {
         	this.plotEnabled = !this.plotEnabled;
             this.vizualizer.drawPlot(this.plotEnabled);
-        }
-    }
-    
-    private class LegalizationActionListener implements ActionListener {
-
-        private PlacementVisualizer vizualizer;
-        private BlockType drawLegalAreaBlockType;
-
-        LegalizationActionListener(PlacementVisualizer vizualizer, BlockType blockType) {
-            this.drawLegalAreaBlockType = blockType;
-            this.vizualizer = vizualizer;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            this.vizualizer.drawLegalizationAreas(this.drawLegalAreaBlockType);
         }
     }
 

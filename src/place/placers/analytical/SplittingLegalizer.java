@@ -2,7 +2,6 @@ package place.placers.analytical;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -218,15 +217,5 @@ class SplittingLegalizer extends Legalizer {
                 return Double.compare(b1.y, b2.y);
             }
         };
-    }
-    
-    @Override
-    protected void initializeLegalizationAreas(){
-    	return;
-    }
-
-    @Override
-    protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
-    	return new HashMap<BlockType,ArrayList<int[]>>();
     }
 }

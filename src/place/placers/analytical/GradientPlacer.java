@@ -11,7 +11,6 @@ import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -118,6 +117,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private int iterationEffortLevel;
 
     protected Legalizer legalizer;
+    
     protected LinearSolverGradient solver;
 
 
@@ -248,7 +248,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration();
 
-            this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
+            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
             
             if(this.printInnerCost) {
                 double cost = this.costCalculator.calculate(this.linearX, this.linearY);
@@ -269,7 +269,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration();
             
-            this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
+            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
 
             if(this.printInnerCost) {
                 double cost = this.costCalculator.calculate(this.linearX, this.linearY);
@@ -391,12 +391,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.updateLegalIfNeeded(iteration);
         this.stopTimer(T_UPDATE_CIRCUIT);
     }
-    
-    @Override
-    protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
-    	return this.legalizer.getLegalizationAreas();
-    }
-
 
     @Override
     protected void addStatTitles(List<String> titles) {

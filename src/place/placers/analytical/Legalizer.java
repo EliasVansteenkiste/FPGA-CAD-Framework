@@ -1,7 +1,5 @@
 package place.placers.analytical;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -106,11 +104,7 @@ abstract class Legalizer {
         this.blockIndexes = legalizer.blockIndexes;
     }
 
-
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
-    
-    protected abstract void initializeLegalizationAreas();
-    protected abstract HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas();
 
     void legalize(double tileCapacity) {
         this.tileCapacity = tileCapacity;
@@ -162,9 +156,9 @@ abstract class Legalizer {
     }
     
     protected void addVisual(String name, double[] linearX, double[] linearY){
-    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, null, -1);
+    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, -1);
     }
     protected void addVisual(String name, int[] linearX, int[] linearY){
-    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, null, -1);
+    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, -1);
     }
 }

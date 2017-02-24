@@ -6,8 +6,6 @@ import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.visual.PlacementVisualizer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -191,12 +189,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     
     @Override
     protected void initializeIteration(int iteration){
-    	this.legalizer.initializeLegalizationAreas();
-    }
-    
-    @Override
-    protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
-    	return this.legalizer.getLegalizationAreas();
+    	//DO NOTHING
     }
 
     @Override

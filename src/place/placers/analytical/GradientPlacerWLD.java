@@ -21,7 +21,6 @@ public class GradientPlacerWLD extends GradientPlacer {
 
     @Override
     protected void initializeIteration(int iteration) {
-    	this.legalizer.initializeLegalizationAreas();
         if(iteration > 0) {
             this.anchorWeight += this.anchorWeightStep;
         }

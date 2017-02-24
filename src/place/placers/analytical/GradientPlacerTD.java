@@ -134,7 +134,6 @@ public class GradientPlacerTD extends GradientPlacer {
     	if(iteration == 0 || this.recalculate[iteration - 1]) {
             this.updateCriticalConnections();
         }
-    	this.legalizer.initializeLegalizationAreas();
         if(iteration > 0) {
             this.anchorWeight += this.anchorWeightStep;
         }
