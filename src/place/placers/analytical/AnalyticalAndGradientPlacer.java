@@ -294,7 +294,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         int iteration = 0;
         boolean isLastIteration = false;
         List<BlockType> blockTypes = this.getBlockTypes();
-
+        
         while(!isLastIteration) {
             double timerBegin = System.nanoTime();
 
@@ -354,13 +354,14 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
     private List<BlockType> getBlockTypes(){
     	List<BlockType> blockTypes = new ArrayList<BlockType>();
-    	for(BlockType type:this.circuit.getGlobalBlockTypes()){
-    		if(!type.getCategory().equals(BlockCategory.IO)){
-    			if(this.circuit.getBlocks(type).size() > 0){
-    				blockTypes.add(type);
-    			}
-    		}
-    	}
+//    	for(BlockType type:this.circuit.getGlobalBlockTypes()){
+//    		if(!type.getCategory().equals(BlockCategory.IO) && !type.getCategory().equals(BlockCategory.HARDBLOCK)){
+//    			if(this.circuit.getBlocks(type).size() > 0){
+//    				blockTypes.add(type);
+//    			}
+//    		}
+//    	}
+    	blockTypes.add(BlockType.getBlockTypes(BlockCategory.CLB).get(0));
     	return blockTypes;
     }
 
@@ -391,14 +392,23 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     	int gridHeight = this.circuit.getHeight() + 2;
 
     	boolean[][] legalMap = new boolean[gridWidth][gridHeight];
+    	for(int x = 0; x < gridWidth; x++){
+    		legalMap[x][0] = false;
+    		legalMap[x][gridHeight - 1] = false;
+    	}
+    	for(int y = 0; y < gridHeight; y++){
+    		legalMap[0][y] = false;
+    		legalMap[gridWidth - 1][y] = false;
+    	}
+    	
     	int overlap = 0;
 
     	// Skip i = 0: these are IO blocks
         for(int i = 1; i < this.blockTypes.size(); i++) {
             BlockType blockType = this.blockTypes.get(i);
 
-        	for(int x = 0; x < gridWidth; x++){
-        		for(int y = 0; y < gridHeight; y++){
+        	for(int x = 1; x < gridWidth- 1; x++){
+        		for(int y = 1; y < gridHeight - 1; y++){
         			if(this.circuit.getColumnType(x).equals(blockType)){
         				legalMap[x][y] = true;
         			}else{
@@ -415,13 +425,15 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             		int x = this.legalX[blockIndex];
                 	int y = this.legalY[blockIndex];
 
-                	int height = this.heights[blockIndex] *  blockType.getHeight();
+                	int height = this.heights[blockIndex];
 
-                	for(int h = 0; h < height; h++){
-                		if(legalMap[x][y + h]){
-                			legalMap[x][y + h] = false;
-                		}else{
-                			overlap++;
+                	for(int offset = (1-height) / 2; offset <= height / 2; offset++){
+                		for(int h = 0; h < blockType.getHeight(); h++){
+                    		if(legalMap[x][y + offset + h] == true){
+                    			legalMap[x][y + offset + h] = false;
+                    		}else{
+                    			overlap++;
+                    		}
                 		}
                 	}
             	}
