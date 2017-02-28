@@ -41,7 +41,7 @@ public class Main {
     private long randomSeed;
 
     private String circuitName;
-    private File blifFile, netFile, inputPlaceFile, ioPlaceFile, outputPlaceFile;
+    private File blifFile, netFile, inputPlaceFile, iohbPlaceFile, outputPlaceFile;
     private File architectureFile;
 
     private boolean useVprTiming;
@@ -65,7 +65,7 @@ public class Main {
         O_BLIF_FILE = "blif file",
         O_NET_FILE = "net file",
         O_INPUT_PLACE_FILE = "input place file",
-        O_IO_PLACE_FILE = "io place file",
+        O_IOHB_PLACE_FILE = "iohb place file",
         O_OUTPUT_PLACE_FILE = "output place file",
         O_VPR_TIMING = "vpr timing",
         O_VPR_COMMAND = "vpr command",
@@ -80,7 +80,7 @@ public class Main {
 
         options.add(O_NET_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
         options.add(O_INPUT_PLACE_FILE, "if omitted the initial placement is random", File.class, Required.FALSE);
-        options.add(O_IO_PLACE_FILE, "placement of the IO blocks", File.class, Required.FALSE);
+        options.add(O_IOHB_PLACE_FILE, "placement of the IO and/or hard blocks", File.class, Required.FALSE);
         options.add(O_OUTPUT_PLACE_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
 
         options.add(O_VPR_TIMING, "Use vpr timing information", Boolean.TRUE);
@@ -104,7 +104,7 @@ public class Main {
         this.randomSeed = options.getLong(O_RANDOM_SEED);
 
         this.inputPlaceFile = options.getFile(O_INPUT_PLACE_FILE);
-        this.ioPlaceFile = options.getFile(O_IO_PLACE_FILE);
+        this.iohbPlaceFile = options.getFile(O_IOHB_PLACE_FILE);
 
         this.blifFile = options.getFile(O_BLIF_FILE);
         this.netFile = options.getFile(O_NET_FILE);
@@ -133,7 +133,7 @@ public class Main {
         this.checkFileExistence("Blif file", this.blifFile);
         this.checkFileExistence("Net file", this.netFile);
         this.checkFileExistence("Input place file", this.inputPlaceFile);
-        this.checkFileExistence("Io place file", this.ioPlaceFile);
+        this.checkFileExistence("Iohb place file", this.iohbPlaceFile);
 
         this.checkFileExistence("Architecture file", this.architectureFile);
     }
@@ -172,12 +172,12 @@ public class Main {
 
 
         // Read the place file
-        if(this.ioPlaceFile != null) {
-            PlaceParser placeParser = new PlaceParser(this.circuit, this.ioPlaceFile);
+        if(this.iohbPlaceFile != null) {
+            PlaceParser placeParser = new PlaceParser(this.circuit, this.iohbPlaceFile);
             try {
-                placeParser.ioParse();
+                placeParser.iohbParse();
             } catch(IOException | BlockNotFoundException | PlacementException | IllegalSizeException error) {
-                this.logger.raise("Something went wrong while parsing the io.place file", error);
+                this.logger.raise("Something went wrong while parsing the iohb.place file", error);
             }
             this.options.insertRandomPlacer();
         }else if(this.inputPlaceFile != null){
