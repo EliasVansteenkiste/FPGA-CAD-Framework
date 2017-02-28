@@ -47,24 +47,24 @@ class SimpleLegalizer extends Legalizer {
     		LegalizerBlock legalizerBlock = new LegalizerBlock(index, this.linearX[index], this.linearY[index]);
     		blocks.add(legalizerBlock);
     	}
-    	
-    	
     	Collections.sort(blocks, Comparators.HORIZONTAL);
-//    	for(LegalizerBlock block: blocks){
-//    		System.out.println(block.x);
-//    	}
+
+    	System.out.println(blocks.get(blocks.size()/2).x);
     	
-//    	ArrayList<ArrayList<Row>> rows = new ArrayList<ArrayList<Row>>();
-//    	rows.clear();
-    	int numColumn = this.width + 1;
-    	int numRow = this.height + 1;
-    	int[] rowLeftMost = new int[numColumn];
+    	int numColumn = this.width + 2;
+    	int numRow = this.height + 2;
     	int maxCost = this.width + this.height;
+    	int centX = (int)Math.ceil(blocks.get(blocks.size()/2).x);
+    	int[] rowLeftMost = new int[numColumn];
     	for(int rowIndex = 0; rowIndex < numRow; rowIndex++) {
     		
-            rowLeftMost[rowIndex] = 1;
+            rowLeftMost[rowIndex] = centX;
         }
-    	
+    	int[] rowRightMost = new int[numColumn];
+    	for(int rowIndex = 0; rowIndex < numRow; rowIndex++) {
+    		
+    		rowRightMost[rowIndex] = centX-1;
+        }
     	boolean[][] occupiedSite = new boolean[this.width+2][this.height+2];
     	for(int row = 1; row < this.height+1; row++){
     		for(int column = 1; column < numColumn; column++){
@@ -72,36 +72,54 @@ class SimpleLegalizer extends Legalizer {
     		}
     	}
     	
-    	for(LegalizerBlock block: blocks){
+    	//for(LegalizerBlock block: blocks){
+    	for(int i = blocks.size()/2 - 1; i >= 0; i--){
+    		LegalizerBlock block = blocks.get(i);
     		int bestRow = 1;
     		double bestCost = maxCost;
     		for (int row = 1; row < numRow; row++){
-    			rowLeftMost[row] = (int)Math.round(Math.max(this.linearX[block.id], rowLeftMost[row]));
-    			double cost = calculateMovement(this.linearX[block.id], this.linearX[block.id], rowLeftMost[row], row);
+    			rowRightMost[row] = (int)Math.round(Math.min(this.linearX[block.id], rowRightMost[row]));
+    			double cost = calculateMovement(this.linearX[block.id], this.linearY[block.id], rowRightMost[row], row);
 //    			System.out.println("rowLeftMost is: "+ rowLeftMost +" " + "cost is :" + cost);
-//    			if((cost < bestCost) && !occupiedSite[rowLeftMost[bestRow]][row]){
     			if(cost < bestCost){
     				bestCost = cost;
     				bestRow = row;
     			}	
     		}
-    		if(!occupiedSite[rowLeftMost[bestRow]][bestRow]){
-    			this.legalX[block.id] = rowLeftMost[bestRow];
-        		this.legalY[block.id] = bestRow;
-        		occupiedSite[rowLeftMost[bestRow]][bestRow] = true;
-    		}else{
-    			
+    		this.legalX[block.id] = rowRightMost[bestRow];
+        	this.legalY[block.id] = bestRow;
+        	occupiedSite[rowRightMost[bestRow]][bestRow] = true;
+//    		this.legalX[block.id] = (int)Math.round(this.linearX[block.id]);
+//        	this.legalY[block.id] = (int)Math.round(this.linearY[block.id]);;
+    		if(rowRightMost[bestRow] > 1){
+    			rowRightMost[bestRow]--;
+    		} else{
+    			rowRightMost[bestRow] = 1;
     		}
+    	}
+    	for(int i = blocks.size()/2; i < blocks.size(); i++){
+    		LegalizerBlock block = blocks.get(i);
     		
+    		int bestRow = 1;
+    		double bestCost = maxCost;
+    		for (int row = 1; row < numRow; row++){
+    			rowLeftMost[row] = (int)Math.round(Math.max(this.linearX[block.id], rowLeftMost[row]));
+    			double cost = calculateMovement(this.linearX[block.id], this.linearY[block.id], rowLeftMost[row], row);
+    			if(cost < bestCost){
+    				bestCost = cost;
+    				bestRow = row;
+    			}	
+    		}
+    		this.legalX[block.id] = rowLeftMost[bestRow];
+        	this.legalY[block.id] = bestRow;
+        	occupiedSite[rowLeftMost[bestRow]][bestRow] = true;
+        		
     		if(rowLeftMost[bestRow] < this.width){
     			rowLeftMost[bestRow]++;
     		} else{
-    		rowLeftMost[bestRow] = this.width;
+    			rowLeftMost[bestRow] = this.width;
     		}
     	}
-    	for(int rowIndex = 0; rowIndex < numRow; rowIndex++) {
-    		System.out.println(rowLeftMost[rowIndex] + " " + rowIndex);
-        }
     }
     
     
