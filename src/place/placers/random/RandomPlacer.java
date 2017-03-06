@@ -61,12 +61,15 @@ public class RandomPlacer extends Placer {
 
 
         for(Macro macro : this.circuit.getMacros()) {
-            BlockType blockType = macro.getBlock(0).getType();
-            List<AbstractSite> typeSites = sites.get(blockType);
-            int nextSiteIndex = nextSiteIndexes.get(blockType);
+        	if(macro.getBlock(0).getSite() == null){
+        		//If the blocks has no location from input placement file, then give it a random location
+                BlockType blockType = macro.getBlock(0).getType();
+                List<AbstractSite> typeSites = sites.get(blockType);
+                int nextSiteIndex = nextSiteIndexes.get(blockType);
 
-            nextSiteIndex += this.placeMacro(macro, blockType, typeSites, nextSiteIndex);
-            nextSiteIndexes.put(blockType, nextSiteIndex);
+                nextSiteIndex += this.placeMacro(macro, blockType, typeSites, nextSiteIndex);
+                nextSiteIndexes.put(blockType, nextSiteIndex);
+        	}
         }
         
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {

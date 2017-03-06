@@ -10,8 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import place.circuit.Circuit;
-import place.circuit.architecture.BlockType;
-import place.circuit.block.AbstractBlock;
 import place.circuit.block.AbstractSite;
 import place.circuit.block.GlobalBlock;
 import place.circuit.exceptions.PlacementException;
@@ -79,27 +77,17 @@ public class PlaceParser {
         }
 
         // Loop over all the blocks in the circuit
-        for(BlockType blockType:this.circuit.getGlobalBlockTypes()){
-            for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
+        for(GlobalBlock block : this.circuit.getGlobalBlocks()) {
 
-            	GlobalBlock block = (GlobalBlock) abstractBlock;
-            	
-                // Get the coordinate of the block
-                String blockName = block.getName();
-                if(this.coordinates.containsKey(blockName)) {
-                    int[] coordinate = this.coordinates.get(blockName);
-                    int x = coordinate[0], y = coordinate[1];
+            // Get the coordinate of the block
+            String blockName = block.getName();
+            if(this.coordinates.containsKey(blockName)) {
+                int[] coordinate = this.coordinates.get(blockName);
+                int x = coordinate[0], y = coordinate[1];
 
-                    // Bind the site and block to each other
-                    AbstractSite site = this.circuit.getSite(x, y);
-                    if(site.getType().equals(block.getType())){
-                    	block.setSite(site);
-                    }else{//TODO Replace with appropriate exception
-                    	System.out.println("Block and site have different type");
-                    	System.out.println("\tBlockType: " + block.getType());
-                    	System.out.println("\tSiteType: " + site.getType());
-                    }
-                }
+                // Bind the site and block to each other
+                AbstractSite site = this.circuit.getSite(x, y);
+                block.setSite(site);
             }
         }
         reader.close();
