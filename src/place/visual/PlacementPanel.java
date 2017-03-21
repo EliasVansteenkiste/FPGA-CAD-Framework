@@ -23,9 +23,9 @@ public class PlacementPanel extends JPanel {
     private final Color gridColorDark = new Color(0, 0, 0);
     private final Color clbColor = new Color(255, 0, 0, 50);
     private final Color macroColor = new Color(100, 0, 0, 50);
-    private final Color ioColor = new Color(0, 0, 255, 50);
+    private final Color ioColor = new Color(255, 255, 0, 50);
     private final Color dspColor = new Color(0, 255, 0, 50);
-    private final Color m9kColor = new Color(255, 255, 0, 50);
+    private final Color m9kColor = new Color(0, 0, 255, 50);
     private final Color m144kColor = new Color(0, 255, 255, 50);
     private final Color hardBlockColor = new Color(0, 0, 0, 50);
 
