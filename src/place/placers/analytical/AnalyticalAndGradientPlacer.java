@@ -264,6 +264,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         Net net = new Net(timingNet);
 
 
+        //TODO HOW CAN I MAKE THE COSTCALCULATOR ACCURATE
         /* Don't add nets which connect only one global block.
          * Due to this, the WLD costcalculator is not entirely
          * accurate, but that doesn't matter, because we use
@@ -303,6 +304,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             // Solve linear
             if(this.options.getBoolean(O_SEPARATE_SOLVING)){
             	for(BlockType movableBlockType:blockTypes){
+            		System.out.println(movableBlockType);
             		this.solveLinear(iteration, movableBlockType);
             		this.addLinearPlacement(iteration);
                     
@@ -354,15 +356,20 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
     private List<BlockType> getBlockTypes(){
     	List<BlockType> blockTypes = new ArrayList<BlockType>();
-//    	for(BlockType type:this.circuit.getGlobalBlockTypes()){
-//    		if(!type.getCategory().equals(BlockCategory.IO) && !type.getCategory().equals(BlockCategory.HARDBLOCK)){
-//    			if(this.circuit.getBlocks(type).size() > 0){
-//    				blockTypes.add(type);
-//    			}
-//    		}
-//    	}
-    	blockTypes.add(BlockType.getBlockTypes(BlockCategory.CLB).get(0));
+
+    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.CLB).get(0));//LAB
+    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.CLB).get(0));//LAB
+    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(0));//PLL
+    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(1));//DSP
+    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(2));//M9K
+    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(3));//M144K
+
     	return blockTypes;
+    }
+    private void addBlockType(List<BlockType> blockTypes, BlockType blockType){
+    	if(this.circuit.getBlocks(blockType).size() > 0){
+    		blockTypes.add(blockType);
+    	}
     }
 
     protected void updateLegal(int[] newLegalX, int[] newLegalY) {
