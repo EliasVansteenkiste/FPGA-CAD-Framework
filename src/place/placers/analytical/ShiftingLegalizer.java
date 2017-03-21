@@ -8,6 +8,7 @@ import java.util.Map;
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.visual.PlacementVisualizer;
 
@@ -22,10 +23,11 @@ public class ShiftingLegalizer extends Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
+            List<Net> nets,
             PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> blockIndexes) {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, blockIndexes);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, blockIndexes);
     }
 
     public ShiftingLegalizer(Legalizer legalizer) {

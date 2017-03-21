@@ -11,6 +11,7 @@ import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.AbstractSite;
 import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.placers.analytical.TwoDimLinkedList.Axis;
 import place.visual.PlacementVisualizer;
@@ -35,10 +36,11 @@ class HeapLegalizer extends Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
+            List<Net> nets,
             PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> blockIndexes) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, blockIndexes);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, blockIndexes);
 
 
         // Initialize the matrix to contain a linked list at each coordinate

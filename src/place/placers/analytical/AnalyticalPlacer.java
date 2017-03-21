@@ -79,6 +79,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.legalX,
                 this.legalY,
                 this.heights,
+                this.nets,
                 this.visualizer,
                 this.netBlocks);
 

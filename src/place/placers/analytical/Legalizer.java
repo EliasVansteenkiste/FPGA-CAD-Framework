@@ -7,6 +7,7 @@ import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.visual.PlacementVisualizer;
 
@@ -30,6 +31,9 @@ abstract class Legalizer {
     protected BlockCategory blockCategory;
     protected int blockStart, blockRepeat, blockHeight;
     
+    //Hard Block Legalizer
+    private HardblockLegalizer hardblockLegalizer;
+    
     //Visualizer
     private PlacementVisualizer visualizer;
     private final Map<GlobalBlock, NetBlock> blockIndexes;
@@ -43,6 +47,7 @@ abstract class Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
+            List<Net> nets,
             PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> blockIndexes) {
 
@@ -77,6 +82,9 @@ abstract class Legalizer {
 
         System.arraycopy(legalX, 0, this.legalX, 0, this.numBlocks);
         System.arraycopy(legalY, 0, this.legalY, 0, this.numBlocks);
+        
+        //Hard block legalizer
+        this.hardblockLegalizer = new HardblockLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, nets);
         
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
@@ -142,11 +150,15 @@ abstract class Legalizer {
                 this.blockRepeat = this.width;
             }
 
-            this.legalizeBlockType(blocksStart, blocksEnd);
+            if(this.blockType.getCategory().equals(BlockCategory.CLB)){
+            	this.legalizeBlockType(blocksStart, blocksEnd);
+        	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
+        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, this.width, this.height, this.blockStart, this.blockRepeat, this.blockHeight);
+        	}else{
+        		System.out.println("unrecognized block type: " + this.blockType);
+        	}
         }
     }
-
-
 
     int[] getLegalX() {
         return this.legalX;

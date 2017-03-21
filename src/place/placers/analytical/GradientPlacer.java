@@ -177,7 +177,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new GradientLegalizer(
+        this.legalizer = new D2GradientLegalizer(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
@@ -186,6 +186,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.legalX,
                 this.legalY,
                 this.heights,
+                this.nets,
                 this.visualizer,
                 this.netBlocks);
 
