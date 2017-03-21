@@ -7,6 +7,7 @@ import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.util.TimingTree;
 import place.visual.PlacementVisualizer;
@@ -24,10 +25,9 @@ class GradientLegalizer extends Legalizer {
 	final BlockType lab;
     private int legalColumns, illegalColumns;
     final PushingSpreader initialSpreading;
+    final PushingSpreader mediumSpreading;
     final PushingSpreader detailedSpreading;
     final DetailedLegalizer detaildLegalizer;
-
-    final HeapLegalizer hardBlockLegalizer;
 
     private static final boolean timing = false;
 	private TimingTree timer = null;
@@ -46,10 +46,11 @@ class GradientLegalizer extends Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
+            List<Net> nets,
             PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> blockIndexes){
 
-    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, blockIndexes);
+    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, blockIndexes);
     	
     	if(timing){
     		this.timer = new TimingTree();
@@ -71,9 +72,21 @@ class GradientLegalizer extends Legalizer {
     			this.height,		//height
     			4,					//discretisation
     			0.75,				//min step size
-    			1.0,				//max step size
-    			0.02,				//potential
+    			0.75,				//max step size
+    			0.025,				//potential
     			0.2,				//speed averaging
+    			false,				//detailed
+    			this.timer);
+    	
+    	this.mediumSpreading = new PushingSpreader(
+    			this.legalColumns,	//width
+    			this.height,		//height
+    			6,					//discretisation
+    			1.0,				//min step size
+    			1.0,				//max step size
+    			0.025,				//potential
+    			0.2,				//speed averaging
+    			false,				//detailed
     			this.timer);
     	
     	this.detailedSpreading = new PushingSpreader(
@@ -84,24 +97,13 @@ class GradientLegalizer extends Legalizer {
     			0.5,				//max step size
     			0.05,				//potential
     			0.2,				//speed averaging
+    			true,				//detailed
     			this.timer);
     	
     	this.detaildLegalizer = new DetailedLegalizer(
     			this.legalColumns,
     			this.height);
-    	
-    	this.hardBlockLegalizer = new HeapLegalizer(
-                					circuit,
-                					blockTypes,
-                					blockTypeIndexStarts,
-                					linearX,
-                					linearY,
-                					legalX,
-                					legalY,
-                					heights,
-                					visualizer,
-                					blockIndexes);
-    	
+
     	if(visual){
     		this.visualX = new double[this.linearX.length];
     		this.visualY = new double[this.linearY.length];
@@ -109,39 +111,32 @@ class GradientLegalizer extends Legalizer {
     }
  
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-    	if(this.blockType.equals(BlockType.getBlockTypes(BlockCategory.CLB).get(0))){
-        	if(timing) this.timer.start("Legalize BlockType");
+        if(timing) this.timer.start("Legalize BlockType");
 
-        	this.initializeData(blocksStart, blocksEnd);
+        this.initializeData(blocksStart, blocksEnd);
 
-        	this.addVisual("Start of gradient legalization");
+        this.addVisual("Start of gradient legalization");
         	
-        	//Initial Spreading
-        	this.initialSpreading.doSpreading(this.blocks, this.blocks.length / 2);
-        	this.addVisual("Initial spreading");
-
-        	//Detailed Spreading
-        	this.detailedSpreading.doSpreading(this.blocks, this.blocks.length / 10);
-        	this.addVisual("Detailed Spreading");
-        	
-        	//this.detaildLegalizer.shiftLegal(this.blocks);
-        	//this.addVisual("Shift Legal");
-
-        	this.updateLegal();
-        	this.addVisual("Update Legal");
-        	
-        	this.insertIllegalColumns();
-        	this.updateLegal();
-        	this.addVisual("Insert illegal columns");
-
-        	if(timing) this.timer.time("Legalize BlockType");
-    	}else{
-    		this.hardBlockLegalizer.legalize(1.0, this.blockType);
-        	for(int i = blocksStart; i < blocksEnd; i++){
-        		this.legalX[i] = this.hardBlockLegalizer.getLegalX()[i];
-        		this.legalY[i] = this.hardBlockLegalizer.getLegalY()[i];
-        	}
-    	}
+        //Initial Spreading
+        this.initialSpreading.doSpreading(this.blocks, this.blocks.length * 2);
+        this.addVisual("Initial spreading");
+        
+        //Medium Spreading
+        this.mediumSpreading.doSpreading(this.blocks, this.blocks.length * 2);
+        this.addVisual("Medium spreading");
+        
+        //Detailed Spreading
+       	this.detailedSpreading.doSpreading(this.blocks, this.blocks.length / 20);
+       	this.addVisual("Detailed Spreading");
+        
+       	this.updateLegal();
+       	this.addVisual("Update Legal");
+       	
+       	this.insertIllegalColumns();
+       	this.updateLegal();
+       	this.addVisual("Insert illegal columns");
+        
+       	if(timing) this.timer.time("Legalize BlockType");
     }
 
     //INITIALISATION
@@ -223,7 +218,7 @@ class GradientLegalizer extends Legalizer {
     		
     		for(LegalizerBlock block:this.blocks){
     			this.visualX[block.index] = block.horizontal.coordinate;
-    			this.visualY[block.index] = block.vertical.coordinate;
+    			this.visualY[block.index] = block.vertical.coordinate - block.offset;
     		}
     		this.addVisual(name, this.visualX, this.visualY);
     		
@@ -297,6 +292,9 @@ class GradientLegalizer extends Legalizer {
     	}
     	int grid(){
     		return this.grid;
+    	}
+    	double force(){
+    		return this.force;
     	}
     	
     	void updateGridValue(){

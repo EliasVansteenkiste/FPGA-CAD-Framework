@@ -26,6 +26,8 @@ class PushingSpreader {
 
     private final double[] horizontalPotential;
     private final double[] verticalPotential;
+    
+    private final boolean detailed;
 
 	private final boolean debug = false;
 	private TimingTree timer;
@@ -39,6 +41,7 @@ class PushingSpreader {
     		double maxStepSize, 
     		double potential, 
     		double speedAveraging,
+    		boolean detailed,
     		TimingTree timingTree){
     	
     	this.width = width;
@@ -78,6 +81,8 @@ class PushingSpreader {
     	}else{
     		this.timing = false;
     	}
+    	
+    	this.detailed = detailed;
     }
  
     protected void doSpreading(LegalizerBlock[] blocks, int iterations) {
@@ -167,6 +172,8 @@ class PushingSpreader {
     private void fpgaPushForces(){
     	if(timing) this.timer.start("Gravity Push Forces");
 
+    	int quarterMass = (this.discretisation * this.discretisation) / 4;
+    	
     	int horizontal = this.discretisation;
     	int halfHorizontal = horizontal / 2;
 
@@ -218,6 +225,25 @@ class PushingSpreader {
 	    	int mass = southWest + nordWest + southEast + nordEast;
 	    	block.horizontal.setForce( (southWest + nordWest - southEast - nordEast + horizontalPotential) / mass);
 	    	block.vertical.setForce(   (southWest - nordWest + southEast - nordEast + verticalPotential  ) / mass);
+	    	
+	    	if(this.detailed){//TODO FASTER AND BETTER
+		    	if(southWest == quarterMass && nordWest == quarterMass && southEast == quarterMass && nordEast == quarterMass){
+			    	if(block.horizontal.grid() % this.discretisation == this.discretisation / 2){
+				    	if(block.horizontal.coordinate() < block.horizontal.originalCoordinate()){
+					    	block.horizontal.setForce(0.1);
+					    }else{
+					    	block.horizontal.setForce(-0.1);
+					    }
+			    	}
+			    	if(block.vertical.grid() % this.discretisation == this.discretisation / 2){
+				    	if(block.vertical.coordinate() < block.vertical.originalCoordinate()){
+				    		block.vertical.setForce(0.1);
+				    	}else{
+				    		block.vertical.setForce(-0.1);
+				    	}
+			    	}
+		    	}
+	    	}
     	}    	
     	if(timing) this.timer.time("Gravity Push Forces");
     }
