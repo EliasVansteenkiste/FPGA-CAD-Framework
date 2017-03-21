@@ -31,7 +31,6 @@ public class Netlist{
 	private ArrayList<String> clocks;
 	
 	private HashMap<String,Model> models;
-	
 	private int level;
 	private int number;
 	
@@ -1752,7 +1751,52 @@ public class Netlist{
 		}
 	}
 	
-	
+	public void pre_pack_lut_ff(){
+		Timing t = new Timing();
+		t.start();
+
+		Output.println("LUT-FF pre partition:");
+		
+		ArrayList<ArrayList<B>> molecules = new ArrayList<ArrayList<B>>();
+		for(N n:this.get_nets()){
+			if(n.has_source()){
+				if(n.has_sinks()){
+					if(n.get_sink_blocks().size() == 1){
+
+						B source = n.get_source_block();
+						B sink = n.get_sink_blocks().get(0);
+						
+						if(source.get_type().equals("stratixiv_lcell_comb")){
+							if(sink.get_type().equals("dffeas")){
+								if(source.get_output_pins().size() == 1){
+									if(n.fanout() == 1){
+										if(n.get_sink_pins().iterator().next().get_port().equals("d")){
+											ArrayList<B> molecule = new ArrayList<B>();
+											molecule.add(source);
+											molecule.add(sink);
+											
+											molecules.add(molecule);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		for(ArrayList<B> molecule:molecules){
+			this.pack_to_molecule(molecule, "LUT_FF");
+		}
+		
+		Output.println("\tThe design has " + molecules.size() + " LUT-FF pairs out of a total of " + this.get_nets().size() + " nets which is " + Util.round((double)molecules.size() /  this.get_nets().size() * 100, 2) + "%");
+		Output.newLine();
+
+		t.end();
+		Output.println("\tTook " + t.toString());
+		Output.newLine();
+	}
 	public void pre_pack_carry(){
 		Timing t = new Timing();
 		t.start();

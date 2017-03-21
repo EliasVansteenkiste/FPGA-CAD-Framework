@@ -59,6 +59,9 @@ public class Main {
 		//Pre-packing
 		netlist.pre_pack_carry();
 		netlist.pre_pack_share();
+		
+		netlist.pre_pack_lut_ff();
+
 		netlist.pre_pack_mixed_width_ram();
 		netlist.pre_pack_ram(archLight);//MOET ALS LAATSTE, GEBRUIKT INFO OVER AANTAL DSP BLOKKEN
 

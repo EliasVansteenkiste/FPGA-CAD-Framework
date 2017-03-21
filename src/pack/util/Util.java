@@ -103,6 +103,8 @@ public class Util {
 			return true;
 		}else if(type.equals("CARRY_CHAIN")){
 			return true;
+		}else if(type.equals("LUT_FF")){
+			return true;
 		}else if(type.equals("SHARE_CHAIN")){
 			return true;
 		}else if(type.equals("MWR")){
