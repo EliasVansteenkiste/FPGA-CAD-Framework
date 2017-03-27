@@ -247,7 +247,7 @@ public class Model {
 			Output.println("\tUnrecognized model type in area assignment: " + this.name);
 			this.area = 1;
 		}
-		t.end();
+		t.stop();
 	}
 	private int get_ram_area(int area9, int area144){
 		int area_M9K = 0;

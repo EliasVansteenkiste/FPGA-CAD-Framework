@@ -61,7 +61,7 @@ public class PathWeight {
 		Output.println("\tThere are " + this.timingEdges + " timing edges added to the circuit out of a total of " + this.numEdges + " which is " + Util.round(((float)this.timingEdges)/this.numEdges*100,2) + "% of the total number of edges");
 		Output.newLine();
 		
-		pathTimer.end();
+		pathTimer.stop();
 		Output.println("\tPath took " + pathTimer.time());
 		Output.newLine();
 	}
@@ -157,7 +157,7 @@ public class PathWeight {
 			}
 		}
 		
-		t.end();
+		t.stop();
 		Output.println("\tFind combinational loops took " + t.toString() + " netlist has " + comb + " combinational loops");
 		Output.newLine();
 		
@@ -379,7 +379,7 @@ public class PathWeight {
 				ErrorLog.print("Problem in sort");
 			}
 		}
-		t1.end();
+		t1.stop();
 
 		//Find critical edges
 		ArrayList<P> criticalEdges = new ArrayList<P>();
@@ -401,7 +401,7 @@ public class PathWeight {
 				ErrorLog.print("Problem in sort");
 			}
 		}
-		t2.end();
+		t2.stop();
 		
 		Output.println("\tTest sort took " + (t1.time() + t2.time()));
 		Output.newLine();

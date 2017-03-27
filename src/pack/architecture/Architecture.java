@@ -597,7 +597,7 @@ public class Architecture {
 			}
 			Output.println("\t" + this.numConn + " connections");
 		}
-		t.end();
+		t.stop();
 		Output.println("\tArchitecture generation took " + t.toString());
 		this.test();
 	}
@@ -1273,7 +1273,7 @@ public class Architecture {
 		t.start();
 		this.remove_pack_pattern(element);
 		this.add_pack_pattern(element);
-		t.end();
+		t.stop();
 		if(t.time() > 0.5){
 			ErrorLog.print("Set pack pattern took " + t.toString());
 		}

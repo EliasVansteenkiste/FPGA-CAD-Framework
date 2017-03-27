@@ -40,7 +40,7 @@ public class Main {
 		Architecture archLight = new Architecture(simulation);
 		archLight.initialize();
 
-		architecturetimer.end();
+		architecturetimer.stop();
 		Output.println("Architecture functionality took " + architecturetimer.toString());
 		Output.newLine();
 
@@ -72,7 +72,7 @@ public class Main {
 		Timing partitioningTimer = new Timing();
 		partitioningTimer.start();
 		partition.partitionate();
-		partitioningTimer.end();
+		partitioningTimer.stop();
 		Output.println("\tPartitioning took " + partitioningTimer.toString());
 		Output.newLine();
 		
@@ -85,12 +85,12 @@ public class Main {
 		Timing seedBasedPackingTimer = new Timing();
 		seedBasedPackingTimer.start();
 		pack.packing();
-		seedBasedPackingTimer.end();
+		seedBasedPackingTimer.stop();
 		Output.println("\tSeed based packing took " + seedBasedPackingTimer.toString());
 		Output.newLine();
 		
 		//////// PACKING TIMER ////////
-		multiPartTimer.end();
+		multiPartTimer.stop();
 		Output.println("\tMultiPart took " + multiPartTimer.toString());
 		Output.newLine();
 		///////////////////////////////

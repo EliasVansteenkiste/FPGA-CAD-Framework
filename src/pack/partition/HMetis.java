@@ -366,7 +366,7 @@ public class HMetis {
 				}
 			}
 		}
-		t.end();
+		t.stop();
 		if(t.time() > 0.2) Output.println("\t\t\tIncrease pin weight on pad with cut edge took " + t.toString());
 	}
 }

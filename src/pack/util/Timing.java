@@ -13,7 +13,7 @@ public class Timing {
 	public void start(){
 		this.startTime = System.nanoTime();
 	}
-	public void end(){
+	public void stop(){
 		this.endTime = System.nanoTime();
 		this.totalTime += (endTime - startTime);
 		
@@ -24,7 +24,20 @@ public class Timing {
 		return Util.round(1.0*(System.nanoTime()-startTime)*Math.pow(10, -9),3);
 	}
 	public String toString(){
-		return "" + Util.round(1.0*this.totalTime*Math.pow(10, -9),3) + " s";
+		double time = this.totalTime * Math.pow(10, -9);
+		if(time > 1){
+			return String.format("%.0f s\n", time);
+		}
+
+		time *= 1000;//ms
+
+		if(time > 1){
+			return String.format("%.0f ms\n", time);
+		}
+    	
+		time *= 1000;//ns
+
+		return String.format("%.0f ns\n", time);
 	}
 	public double time(){
 		return Util.round(1.0*this.totalTime*Math.pow(10, -9),3);

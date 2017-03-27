@@ -119,7 +119,7 @@ public class Netlist{
 		Timing readFile = new Timing();
 		readFile.start();
 		String [] lines = read_blif_file(this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("circuit") + ".blif");
-		readFile.end();
+		readFile.stop();
 		
 		HashSet<String> inputs = get_input_terminals(lines);
 		HashSet<String> outputs = get_output_terminals(lines);
@@ -465,7 +465,7 @@ public class Netlist{
 		this.set_max_net_number(netNumber-1);
 		this.set_max_pin_number(terminalNumber-1);
 		
-		blifTiming.end();
+		blifTiming.stop();
 		Output.println(" | Read file took " + readFile.toString() + " | Total time " + blifTiming.toString());
 		Output.println("\t" + removedLutBuffers + " buffered luts are removed");
 	}
@@ -1447,7 +1447,7 @@ public class Netlist{
 			Output.println("\t\t" + type + "\t" + Util.parseDigit(a) + "\t" + p + " %");
 		}	
 		Output.newLine();
-		t.end();
+		t.stop();
 		Output.println("\tTook " + t.toString());
 		Output.newLine();
 	}
@@ -1546,7 +1546,7 @@ public class Netlist{
 		
 		this.trim();
 		
-		if(timingInfo)timer.end();
+		if(timingInfo)timer.stop();
 		if(timingInfo)Info.add("netgen", "atoms" + "\t" + this.atom_count() + "\t" + "required_time" + "\t" + Util.str(timer.time()).replace(".", ","));
 	}
 	public void updateFamily(Netlist parent){//Parent and children
@@ -1793,7 +1793,7 @@ public class Netlist{
 		Output.println("\tThe design has " + molecules.size() + " LUT-FF pairs out of a total of " + this.get_nets().size() + " nets which is " + Util.round((double)molecules.size() /  this.get_nets().size() * 100, 2) + "%");
 		Output.newLine();
 
-		t.end();
+		t.stop();
 		Output.println("\tTook " + t.toString());
 		Output.newLine();
 	}
@@ -1845,7 +1845,7 @@ public class Netlist{
 			this.pack_to_molecule(carryChain, "CARRY_CHAIN");
 		}
 		
-		t.end();
+		t.stop();
 		Output.println("\tTook " + t.toString());
 		
 		Output.newLine();
@@ -1898,7 +1898,7 @@ public class Netlist{
 			this.pack_to_molecule(shareChain, "SHARE_CHAIN");
 		}
 		
-		t.end();
+		t.stop();
 		Output.println("\tTook " + t.toString());
 		
 		Output.newLine();
@@ -1962,7 +1962,7 @@ public class Netlist{
 			this.pack_to_molecule(atoms, "HALF_DSP");
 		}
 		
-		t.end();
+		t.stop();
 		Output.println("\tTook " + t.toString());
 		
 		Output.newLine();
@@ -2363,7 +2363,7 @@ public class Netlist{
 		Output.println("\t\tTotal amount of RAM blocks | " + "M9K:   " + Util.fill((M9K[0]+M9K[1]), 4) + " | M144K: " + Util.fill((M144K[0]+M144K[1]), 4));
 		Output.newLine();
 		
-		t.end();
+		t.stop();
 		Output.println("\tTook " + t.toString());
 		Output.newLine();
 	}
@@ -2382,7 +2382,7 @@ public class Netlist{
 		for(B molecule:molecules){
 			unpack_to_atoms(molecule);
 		}
-		t.end();
+		t.stop();
 		return t.time();
 	}
 	public void pack_to_molecule(ArrayList<B> atoms, String moleculeType){
