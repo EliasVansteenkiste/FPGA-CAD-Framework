@@ -8,7 +8,6 @@ import place.util.FloatList;
 import place.util.IntList;
 import place.visual.PlacementVisualizer;
 
-import java.util.List;
 import java.util.Random;
 
 public class GradientPlacerTD extends GradientPlacer {
@@ -66,8 +65,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
     private double criticalityExponent, criticalityThreshold;
     private TimingGraph timingGraph;
-    private CostCalculatorTD costCalculator;
-    private double latestCost, minCost;
+    private CriticalityCalculator criticalityCalculator;
 
     private double recalculateCriticalities, recalculatePriority;
     private boolean[] recalculate;
@@ -83,8 +81,6 @@ public class GradientPlacerTD extends GradientPlacer {
         this.tradeOff = options.getDouble(O_TRADE_OFF);
 
         this.timingGraph = this.circuit.getTimingGraph();
-
-        this.minCost = Double.MAX_VALUE;
     }
 
 
@@ -95,7 +91,7 @@ public class GradientPlacerTD extends GradientPlacer {
         this.timingGraph.setCriticalityExponent(this.criticalityExponent);
         this.timingGraph.calculateCriticalities(true);
 
-        this.costCalculator = new CostCalculatorTD(
+        this.criticalityCalculator = new CriticalityCalculator(
                 this.circuit,
                 this.netBlocks,
                 this.timingNets);
@@ -132,7 +128,9 @@ public class GradientPlacerTD extends GradientPlacer {
     @Override
     protected void initializeIteration(int iteration) {
     	if(iteration == 0 || this.recalculate[iteration - 1]) {
-            this.updateCriticalConnections();
+    		this.startTimer(T_UPDATE_CRIT_CON);
+    		this.updateCriticalConnections();
+    		this.stopTimer(T_UPDATE_CRIT_CON);
         }
         if(iteration > 0) {
             this.anchorWeight += this.anchorWeightStep;
@@ -141,9 +139,9 @@ public class GradientPlacerTD extends GradientPlacer {
 
     private void updateCriticalConnections() {
 
-        this.startTimer(T_UPDATE_CRIT_CON);
+    	this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
 
-        this.criticalBlockIndexes.clear();
+    	this.criticalBlockIndexes.clear();
         this.criticalOffsets.clear();
         this.criticalWeights.clear();
 
@@ -164,8 +162,6 @@ public class GradientPlacerTD extends GradientPlacer {
                 }
             }
         }
-
-        this.stopTimer(T_UPDATE_CRIT_CON);
     }
 
 
@@ -191,35 +187,9 @@ public class GradientPlacerTD extends GradientPlacer {
         int[] newLegalX = this.legalizer.getLegalX();
         int[] newLegalY = this.legalizer.getLegalY();
 
-        this.latestCost = this.costCalculator.calculate(newLegalX, newLegalY, this.recalculate[iteration]);
-
-        if(this.utilization == 1 && this.latestCost < this.minCost) {
-            this.minCost = this.latestCost;
-        }
-        
         //Always update legal cost
-        if(this.options.getBoolean(O_ALWAYS_UPDATE)){
-        	this.updateLegal(newLegalX, newLegalY);
-        }else if(this.latestCost == this.minCost){
-        	this.updateLegal(newLegalX, newLegalY);
-        }else{
-        	this.logger.println("Warning: the legal solution is not updated");
-        }
+        this.updateLegal(newLegalX, newLegalY);
     }
-
-
-    @Override
-    protected void addStatTitlesGP(List<String> titles) {
-        titles.add("max delay");
-        titles.add("best iteration");
-    }
-
-    @Override
-    protected void addStats(List<String> stats) {
-        stats.add(String.format("%.4g", this.latestCost));
-        stats.add(this.latestCost == this.minCost ? "yes" : "");
-    }
-
 
     @Override
     public String getName() {

@@ -5,7 +5,6 @@ import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.visual.PlacementVisualizer;
 
-import java.util.List;
 import java.util.Random;
 
 public class GradientPlacerWLD extends GradientPlacer {
@@ -32,18 +31,6 @@ public class GradientPlacerWLD extends GradientPlacer {
         // No cost has to be calculated, so this is faster.
         this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
     }
-
-
-    @Override
-    protected void addStatTitlesGP(List<String> titles) {
-        // Do nothing
-    }
-
-    @Override
-    protected void addStats(List<String> stats) {
-        // Do nothing
-    }
-
 
     @Override
     public String getName() {
