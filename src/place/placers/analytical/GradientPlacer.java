@@ -144,7 +144,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.maxConnectionLength = this.options.getDouble(O_MAX_CONNECTION_LENGTH);
         this.speedAveraging = this.options.getDouble(O_SPEED_AVERAGING);
 
-    	this.effortLevel = Math.min(this.options.getInteger(O_EFFORT_LEVEL), 30);
+    	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
         this.firstEffortMultiplier = this.options.getDouble(O_FIRST_EFFORT);
         this.lastEffortMultiplier = this.options.getDouble(O_LAST_EFFORT);
 
@@ -255,7 +255,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
     }
     private int getIterationEffortLevel(int iteration) {
-        int iterationEffortLevel = (int) Math.round(this.effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
+    	int effortLevel = Math.min(this.effortLevel, 30);
+        int iterationEffortLevel = (int) Math.round(effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
         if(iteration == 0) {
             iterationEffortLevel *= this.firstEffortMultiplier;
         }
