@@ -26,7 +26,7 @@ class D2GradientLegalizer extends Legalizer {
 
 	final BlockType lab;
     private int[] legalColumns;//1 if legal, 0 if illegal
-    final D2PushingSpreader initialSpreading;
+    final D2PushingSpreader spreader;
 
     private static final boolean timing = false;
 	private TimingTree timer = null;
@@ -45,11 +45,11 @@ class D2GradientLegalizer extends Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
-            List<Net> nets,
             PlacementVisualizer visualizer,
-            Map<GlobalBlock, NetBlock> blockIndexes){
+            List<Net> nets,
+            Map<GlobalBlock, NetBlock> netBlocks){
 
-    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, blockIndexes);
+    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, nets, netBlocks);
     	
     	if(timing){
     		this.timer = new TimingTree();
@@ -65,7 +65,7 @@ class D2GradientLegalizer extends Legalizer {
     		}
     	}
     	
-    	this.initialSpreading = new D2PushingSpreader(
+    	this.spreader = new D2PushingSpreader(
     			Arrays.stream(this.legalColumns).sum(),	//width
     			this.height,							//height
     			1.00,									//step size
@@ -87,7 +87,7 @@ class D2GradientLegalizer extends Legalizer {
         this.addVisual("Remove illegal columns");
         	
         //Initial Spreading
-        this.initialSpreading.doSpreading(this.blocks, this.blocks.length);
+        this.spreader.doSpreading(this.blocks, this.blocks.length);
         this.addVisual("Initial spreading");
         
         this.updateLegal();
@@ -133,9 +133,9 @@ class D2GradientLegalizer extends Legalizer {
     	while(this.legalColumns[counter] == 0) counter++;
     	this.findScaleClusters(0.0, counter, clusters);
     	
-    	for(ScaleCluster cluster:clusters){
-    		System.out.println(cluster);
-    	}
+    	//for(ScaleCluster cluster:clusters){
+    	//	System.out.println(cluster);
+    	//}
     	
     	for(ScaleCluster cluster:clusters){
     		for(LegalizerBlock block:this.blocks){
@@ -162,9 +162,7 @@ class D2GradientLegalizer extends Legalizer {
     			if(block.horizontal.coordinate < 0){
     				block.horizontal.coordinate = 0.1;
     			}
-    			//System.out.println(block.horizontal.coordinate);
     		}
-    		
     		
     		subtract += cluster.illegalEnd - cluster.legalEnd;
     	}
@@ -211,15 +209,15 @@ class D2GradientLegalizer extends Legalizer {
     	void add(LegalizerBlock block){
     		this.blocks.add(block);
     	}
-    	void scale(){//TODO There is still something wrong with the scaling
+    	void scale(){
     		double illegalLeft = this.legalStart - this.illegalStart;
     		double illegalRight = this.illegalEnd - this.legalEnd;
     		
     		double illegalWidth = this.illegalEnd - this.illegalStart;
     		
-    		double center = this.illegalStart + illegalWidth * illegalLeft / (illegalLeft + illegalRight);
+    		double center = this.illegalStart - 0.5 + illegalWidth * illegalLeft / (illegalLeft + illegalRight);
     		
-    		double scalingFactor = (center - this.legalStart) / (center - this.illegalStart);
+    		double scalingFactor = (center - this.legalStart + 0.5) / (center - this.illegalStart + 0.5);
     		
     		for(LegalizerBlock block:this.blocks){
     			block.horizontal.coordinate = center - (center - block.horizontal.coordinate) * scalingFactor;

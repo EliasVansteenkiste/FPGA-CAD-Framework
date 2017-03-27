@@ -1,7 +1,5 @@
 package place.placers.analytical;
 
-import java.util.ArrayList;
-
 import place.placers.analytical.D2GradientLegalizer.LegalizerBlock;
 import place.util.TimingTree;
 
@@ -14,7 +12,6 @@ class D2PushingSpreader {
 
 	private LegalizerBlock[] blocks;
 
-	private int start, end;
 	private final int width, height;
 	private final int gridWidth, gridHeight;
     private final double[][] massMap;
@@ -53,8 +50,9 @@ class D2PushingSpreader {
     protected void doSpreading(LegalizerBlock[] blocks, int iterations) {
     	this.blocks = blocks;
     	
-    	double initialGridForce = 0.004;
-    	double finalGridForce = 0.004;
+    	//TODO Dynamic grid force calculation
+    	double initialGridForce = 0.002;
+    	double finalGridForce = 0.002;
     	this.iteration = 0;
     	do{
     		double gridForce = initialGridForce - this.iteration * (initialGridForce - finalGridForce) / iterations;
