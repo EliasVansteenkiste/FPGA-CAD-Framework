@@ -2,6 +2,7 @@ package place.placers.analytical;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockType;
@@ -10,26 +11,28 @@ import place.placers.analytical.GradientLegalizer.LegalizerBlock;
 class DetailedLegalizer {
 
 	private final int width, height;
-    private final boolean[][] isLegal;
-    private final LegalizerBlock[][] legalMap;
-    private final ArrayList<LegalizerBlock> unplacedBlocks;
-    private final ArrayList<LegalizerBlock> moveBlocks;
+    private LegalizerBlock[][] legalMap;
 
     DetailedLegalizer(int width, int height){
     	this.width = width;
     	this.height = height;
     	
-    	this.isLegal = new boolean[this.width + 2][this.height + 2];
     	this.legalMap = new LegalizerBlock[this.width + 2][this.height + 2];
-    	this.unplacedBlocks = new ArrayList<LegalizerBlock>();
-    	this.moveBlocks = new ArrayList<LegalizerBlock>();
     }
-  
-    public void shiftLegal(LegalizerBlock[] blocks, BlockType blockType, Circuit circuit, double maxIllegalRatio){//TODO ADD BLOCK HEIGHT
+    public void shiftLegal(LegalizerBlock[] blocks){
+    	for(int x = 0; x < this.width + 2; x++){
+    		for(int y = 0; y < this.height + 2; y++){
+    			this.legalMap[x][y] = null;
+    		}
+    	}
+    }
+    
+    public void shiftLegal2(LegalizerBlock[] blocks, double maxIllegalRatio){
     	
-    	this.resetLegalMap();
-    	this.setLegal(blockType, circuit);
+
     	
+    	HashSet<LegalizerBlock> unplacedBlocks = new HashSet<LegalizerBlock>();
+
     	for(LegalizerBlock block:blocks){
     		int x = block.legalHorizontal();
     		int y = block.legalVertical();
@@ -47,18 +50,18 @@ class DetailedLegalizer {
     				this.legalMap[x][y + h] = block;
     			}
     		}else{
-    			this.unplacedBlocks.add(block);
+    			unplacedBlocks.add(block);
     		}
     	}
-    	if(this.unplacedBlocks.size() < blocks.length * maxIllegalRatio){
-    		
-    		while(!this.unplacedBlocks.isEmpty()){
+    	if(unplacedBlocks.size() < blocks.length * maxIllegalRatio){
+
+    		while(!unplacedBlocks.isEmpty()){
     			
     			//Find block that leads to minimal displacement
-    			LegalizerBlock overlappingBlock = this.unplacedBlocks.get(0);
+    			LegalizerBlock overlappingBlock = unplacedBlocks.iterator().next();
     			int minimalDisplacement = this.legalizationDisplacement(overlappingBlock);
     			
-    			for(LegalizerBlock candidateBlock:this.unplacedBlocks){
+    			for(LegalizerBlock candidateBlock:unplacedBlocks){
     				int legalizeDisplacement = this.legalizationDisplacement(candidateBlock);
     				if(legalizeDisplacement < minimalDisplacement){
     					overlappingBlock = candidateBlock;
@@ -66,24 +69,22 @@ class DetailedLegalizer {
     				}
     			}
     			
-    			this.unplacedBlocks.remove(overlappingBlock);
+    			unplacedBlocks.remove(overlappingBlock);
         		
         		Direction movingDirection = bestMovingDirection(overlappingBlock);
 
         		int x = overlappingBlock.legalHorizontal();
         		int y = overlappingBlock.legalVertical();
 
-        		this.moveBlocks.clear();
+        		ArrayList<LegalizerBlock> moveBlocks = new ArrayList<LegalizerBlock>();
         		
         		if(movingDirection.equals(Direction.LEFT)){
         			while(!this.legalPostion(x, y)){
-        				if(this.isLegal[x][y]){
-        					this.moveBlocks.add(this.legalMap[x][y]);
-        				}
+        				moveBlocks.add(this.legalMap[x][y]);
             			x--;
             		}
-        			Collections.reverse(this.moveBlocks);
-        			for(LegalizerBlock moveBlock:this.moveBlocks){
+        			Collections.reverse(moveBlocks);
+        			for(LegalizerBlock moveBlock:moveBlocks){
         				x = moveBlock.legalHorizontal();
         				y = moveBlock.legalVertical();
         				
@@ -105,13 +106,11 @@ class DetailedLegalizer {
         			overlappingBlock.setHorizontal(x);
         		}else if(movingDirection.equals(Direction.RIGHT)){
         			while(!this.legalPostion(x, y)){
-        				if(this.isLegal[x][y]){
-        					this.moveBlocks.add(this.legalMap[x][y]);
-        				}
+        				moveBlocks.add(this.legalMap[x][y]);
             			x++;
             		}
-        			Collections.reverse(this.moveBlocks);
-        			for(LegalizerBlock moveBlock:this.moveBlocks){
+        			Collections.reverse(moveBlocks);
+        			for(LegalizerBlock moveBlock:moveBlocks){
         				x = moveBlock.legalHorizontal();
         				y = moveBlock.legalVertical();
         				
@@ -134,13 +133,11 @@ class DetailedLegalizer {
         			overlappingBlock.setHorizontal(x);
         		}else if(movingDirection.equals(Direction.DOWN)){
         			while(!this.legalPostion(x, y)){
-        				if(this.isLegal[x][y]){
-        					this.moveBlocks.add(this.legalMap[x][y]);
-        				}
+        				moveBlocks.add(this.legalMap[x][y]);
             			y--;
             		}
-        			Collections.reverse(this.moveBlocks);
-        			for(LegalizerBlock moveBlock:this.moveBlocks){
+        			Collections.reverse(moveBlocks);
+        			for(LegalizerBlock moveBlock:moveBlocks){
         				x = moveBlock.legalHorizontal();
         				y = moveBlock.legalVertical();
         				
@@ -163,13 +160,11 @@ class DetailedLegalizer {
         			overlappingBlock.setVertical(y);
         		}else if(movingDirection.equals(Direction.UP)){
         			while(!this.legalPostion(x, y)){
-        				if(this.isLegal[x][y]){
-        					this.moveBlocks.add(this.legalMap[x][y]);
-        				}
+        				moveBlocks.add(this.legalMap[x][y]);
             			y++;
             		}
-        			Collections.reverse(this.moveBlocks);
-        			for(LegalizerBlock block:this.moveBlocks){
+        			Collections.reverse(moveBlocks);
+        			for(LegalizerBlock block:moveBlocks){
         				x = block.legalHorizontal();
         				y = block.legalVertical();
         				
@@ -195,38 +190,8 @@ class DetailedLegalizer {
         	}
     	}
     }
-    private void resetLegalMap(){
-    	int width = this.legalMap.length;
-    	int height = this.legalMap[0].length;
-    	for(int x = 0; x < width; x++){
-    		for(int y = 0; y < height; y++){
-    			this.legalMap[x][y] = null;
-    		}
-    	}
-    	
-    	this.unplacedBlocks.clear();
-    	this.moveBlocks.clear();
-    }
-    private void setLegal(BlockType blockType, Circuit circuit){
-    	for(int x = 0; x < this.width + 2; x++){
-    		for(int y = 0; y < this.height + 2; y++){
-    			this.isLegal[x][y] = false;
-    		}
-    	}
-    	for(int x = 1; x < this.width + 1; x++){
-    		if(circuit.getColumnType(x).equals(blockType)){
-    			for(int y = 1; y < this.height + 1; y++){
-	    			this.isLegal[x][y] = true;
-	    		}
-    		}
-    	}
-    }
     private boolean legalPostion(int x, int y){
-    	if(this.isLegal[x][y] && this.legalMap[x][y] == null){
-    		return true;
-    	}else{
-    		return false;
-    	}
+    	return this.legalMap[x][y] == null;
     }
     private int legalizationDisplacement(LegalizerBlock block){
 		int left = this.displacement(block, Direction.LEFT);
