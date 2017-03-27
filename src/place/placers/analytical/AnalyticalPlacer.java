@@ -79,8 +79,8 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.legalX,
                 this.legalY,
                 this.heights,
-                this.nets,
                 this.visualizer,
+                this.nets,
                 this.netBlocks);
 
         this.costCalculator = this.createCostCalculator();
@@ -114,17 +114,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_CALCULATE_COST);
     }
 
-    @Override
-    protected void solveLinear(int iteration, BlockType movableBlockType) {
-    	this.logger.println("Analytical placement with only one movable blocktype is not supported yet");
-    	/*TODO Implement the functionality to allow only a few blocktypes to move in analytical placement.	*
-    	 *Current this functionality is only implemented in the gradient descent placer						*/
-    }
-
-    /*
-     * Build and solve the linear system ==> recalculates linearX and linearY
-     * If it is the first time we solve the linear system ==> don't take pseudonets into account
-     */
     protected void solveLinearIteration(LinearSolverAnalytical solver, int iteration) {
 
         this.startTimer(T_BUILD_LINEAR);

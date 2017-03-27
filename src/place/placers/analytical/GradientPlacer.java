@@ -125,14 +125,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private int[] netBlockIndexes;
     private float[] netBlockOffsets;
 
-
-    protected abstract void addStatTitlesGP(List<String> titles);
-    protected abstract void addStats(List<String> stats);
-
     protected boolean[] fixed;
-    
-    private double[] coordinatesX;
-    private double[] coordinatesY;
 
     public GradientPlacer(
             Circuit circuit,
@@ -177,7 +170,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new D2GradientLegalizer(
+        this.legalizer = new HeapLegalizer(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
@@ -186,8 +179,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.legalX,
                 this.legalY,
                 this.heights,
-                this.nets,
                 this.visualizer,
+                this.nets,
                 this.netBlocks);
 
         // Juggling with objects is too slow (I profiled this,
@@ -217,12 +210,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
 
         this.fixed = new boolean[this.legalX.length];
-        this.coordinatesX = new double[this.legalX.length];
-        this.coordinatesY = new double[this.legalX.length];
+    	Arrays.fill(this.fixed, false);
+    	if(this.options.getBoolean(O_FIXED_IO)){
+    		this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
+    	}
 
         this.solver = new LinearSolverGradient(
-                this.coordinatesX,
-                this.coordinatesY,
+                this.linearX,
+                this.linearY,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
                 this.stepSize,
@@ -236,50 +231,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
-
-    @Override
-    protected void solveLinear(int iteration) {
-    	Arrays.fill(this.fixed, false);
-    	if(this.options.getBoolean(O_FIXED_IO)){
-    		this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
-    	}
-    	this.updateCoordinateValues();
-
-        this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
-        for(int i = 0; i < this.iterationEffortLevel; i++) {
-            this.solveLinearIteration();
-
-            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
-            
-            if(this.printInnerCost) {
-                double cost = this.costCalculator.calculate(this.linearX, this.linearY);
-                System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
-            }
-        }
-
-        this.updateLinearValues();
-    }
-    
-    @Override
-    protected void solveLinear(int iteration, BlockType movableBlockType) {
-    	Arrays.fill(this.fixed, true);
-    	this.freeBlockType(movableBlockType);
-    	this.updateCoordinateValues();
-
-        this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
-        for(int i = 0; i < this.iterationEffortLevel; i++) {
-            this.solveLinearIteration();
-            
-            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
-
-            if(this.printInnerCost) {
-                double cost = this.costCalculator.calculate(this.linearX, this.linearY);
-                System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
-            }
-        }
-
-        this.updateLinearValues();
-    }
     private void fixBlockType(BlockType fixBlockType){
     	for(GlobalBlock block:this.netBlocks.keySet()){
     		if(block.getType().equals(fixBlockType)){
@@ -288,40 +239,26 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
     }
-    private void freeBlockType(BlockType movableBlockType){
-    	for(GlobalBlock block:this.netBlocks.keySet()){
-    		if(block.getType().equals(movableBlockType)){
-    			int blockIndex = this.netBlocks.get(block).getBlockIndex();
-    			this.fixed[blockIndex] = false;
-    		}
-    	}
-    }
-    private void updateCoordinateValues(){
-        for(int i=0; i<this.fixed.length; i++){
-        	if(this.fixed[i]){
-        		this.coordinatesX[i] = this.legalX[i];
-        		this.coordinatesY[i] = this.legalY[i];
-        	}else{
-        		this.coordinatesX[i] = this.linearX[i];
-        		this.coordinatesY[i] = this.linearY[i];
-        	}
-        }
-    }
-    public void updateLinearValues(){
-        for(int i=0; i<this.fixed.length; i++){
-        	if(!this.fixed[i]){
-        		this.linearX[i] = this.coordinatesX[i];
-        		this.linearY[i] = this.coordinatesY[i];
-        	}
-        }
-    }
 
+    @Override
+    protected void solveLinear(int iteration) {
+        this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
+        for(int i = 0; i < this.iterationEffortLevel; i++) {
+            this.solveLinearIteration();
+
+            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
+            
+            if(this.printInnerCost) {
+                double cost = this.costCalculator.calculate(this.linearX, this.linearY);
+                System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
+            }
+        }
+    }
     private int getIterationEffortLevel(int iteration) {
         int iterationEffortLevel = (int) Math.round(this.effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
         if(iteration == 0) {
             iterationEffortLevel *= this.firstEffortMultiplier;
         }
-
         return iterationEffortLevel;
     }
     
@@ -405,8 +342,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             titles.add("BB legal cost");
         }
 
-        this.addStatTitlesGP(titles);
-
         titles.add("time (ms)");
         
         titles.add("displacement");
@@ -430,8 +365,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             stats.add(String.format("%.0f", this.linearCost));
             stats.add(String.format("%.0f", this.legalCost));
         }
-
-        this.addStats(stats);
 
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
         
