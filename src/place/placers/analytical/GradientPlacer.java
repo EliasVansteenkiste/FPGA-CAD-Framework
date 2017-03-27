@@ -144,7 +144,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.maxConnectionLength = this.options.getDouble(O_MAX_CONNECTION_LENGTH);
         this.speedAveraging = this.options.getDouble(O_SPEED_AVERAGING);
 
-        this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
+    	this.effortLevel = Math.min(this.options.getInteger(O_EFFORT_LEVEL), 30);
         this.firstEffortMultiplier = this.options.getDouble(O_FIRST_EFFORT);
         this.lastEffortMultiplier = this.options.getDouble(O_LAST_EFFORT);
 
