@@ -32,11 +32,11 @@ abstract class Legalizer {
     protected int blockStart, blockRepeat, blockHeight;
     
     //Hard Block Legalizer
-    private HardblockLegalizer hardblockLegalizer;
+    private HardblockConnectionLegalizer hardblockLegalizer;
     
     //Visualizer
     private PlacementVisualizer visualizer;
-    private final Map<GlobalBlock, NetBlock> blockIndexes;
+    private final Map<GlobalBlock, NetBlock> netBlocks;
 
     Legalizer(
             Circuit circuit,
@@ -47,9 +47,9 @@ abstract class Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
-            List<Net> nets,
             PlacementVisualizer visualizer,
-            Map<GlobalBlock, NetBlock> blockIndexes) {
+            List<Net> nets,
+            Map<GlobalBlock, NetBlock> netBlocks) {
 
         // Store easy stuff
         this.circuit = circuit;
@@ -82,13 +82,13 @@ abstract class Legalizer {
 
         System.arraycopy(legalX, 0, this.legalX, 0, this.numBlocks);
         System.arraycopy(legalY, 0, this.legalY, 0, this.numBlocks);
-        
+
         //Hard block legalizer
-        this.hardblockLegalizer = new HardblockLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, nets);
-        
+        this.netBlocks = netBlocks;
+        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, netBlocks);
+
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
-        this.blockIndexes = blockIndexes;
     }
 
     Legalizer(Legalizer legalizer) {
@@ -109,7 +109,7 @@ abstract class Legalizer {
         this.numIOBlocks = legalizer.numIOBlocks;
         
         this.visualizer = legalizer.visualizer;
-        this.blockIndexes = legalizer.blockIndexes;
+        this.netBlocks = legalizer.netBlocks;
     }
 
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
@@ -150,13 +150,19 @@ abstract class Legalizer {
                 this.blockRepeat = this.width;
             }
 
+            long start = System.nanoTime();
+           
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
             	this.legalizeBlockType(blocksStart, blocksEnd);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, this.width, this.height, this.blockStart, this.blockRepeat, this.blockHeight);
+        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, this.blockStart, this.blockRepeat, this.blockHeight);
         	}else{
         		System.out.println("unrecognized block type: " + this.blockType);
         	}
+           
+            long end = System.nanoTime();
+    		double time = (end -  start) * Math.pow(10, -6);
+        	System.out.printf("%.0f ms\n", time);
         }
     }
 
@@ -168,9 +174,9 @@ abstract class Legalizer {
     }
     
     protected void addVisual(String name, double[] linearX, double[] linearY){
-    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, -1);
+    	this.visualizer.addPlacement(name, this.netBlocks, linearX, linearY, -1);
     }
     protected void addVisual(String name, int[] linearX, int[] linearY){
-    	this.visualizer.addPlacement(name, this.blockIndexes, linearX, linearY, -1);
+    	this.visualizer.addPlacement(name, this.netBlocks, linearX, linearY, -1);
     }
 }
