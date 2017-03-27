@@ -36,11 +36,11 @@ class HeapLegalizer extends Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
-            List<Net> nets,
             PlacementVisualizer visualizer,
-            Map<GlobalBlock, NetBlock> blockIndexes) throws IllegalArgumentException {
+            List<Net> nets,
+            Map<GlobalBlock, NetBlock> netBlocks) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, blockIndexes);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, nets, netBlocks);
 
 
         // Initialize the matrix to contain a linked list at each coordinate

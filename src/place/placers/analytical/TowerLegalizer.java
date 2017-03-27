@@ -35,11 +35,11 @@ class TowerLegalizer extends Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
-            List<Net> nets,
             PlacementVisualizer visualizer,
-            Map<GlobalBlock, NetBlock> blockIndexes){
+            List<Net> nets,
+            Map<GlobalBlock, NetBlock> netBlocks){
     	
-    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, blockIndexes);
+    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, nets, netBlocks);
     	
     	int width = this.width + 2;
     	int height = this.height + 2;
