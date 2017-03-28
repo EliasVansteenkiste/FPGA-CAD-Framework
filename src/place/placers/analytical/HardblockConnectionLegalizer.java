@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
@@ -141,13 +142,13 @@ public class HardblockConnectionLegalizer{
 			double minimumIncrease = Double.MAX_VALUE;
 			
 			for(Block block: largestBucket.blocks){
-				double currentCost = block.connectionCost();
+				double currentCost = block.horizontalConnectionCost();
 				for(Bucket bucket:availableBuckets){
 
 					block.legalX = bucket.coordinate;
-					double newCost = block.connectionCost(largestBucket.coordinate, bucket.coordinate);
+					double newCost = block.horizontalConnectionCost(largestBucket.coordinate, bucket.coordinate);
 					block.legalX = largestBucket.coordinate;
-					
+
 					double increase = newCost - currentCost;
 					if(increase < minimumIncrease){
 						minimumIncrease = increase;
@@ -161,7 +162,7 @@ public class HardblockConnectionLegalizer{
 			bestBucket.addBlock(bestBlock);
 			
 			bestBlock.legalX = bestBucket.coordinate;
-			bestBlock.updateConnectionCost(largestBucket.coordinate, bestBucket.coordinate);
+			bestBlock.updateHorizontalConnectionCost();
 			
 			if(bestBucket.usedPos() == bestBucket.numPos()){
 				availableBuckets.remove(bestBucket);
@@ -183,6 +184,43 @@ public class HardblockConnectionLegalizer{
 			bucket.legalize();
 		}
 		
+		//////////////////////////////////////////////////////////////
+		/////////////////////////// ANNEAL ///////////////////////////
+		//////////////////////////////////////////////////////////////
+		
+		//Initialize data
+		for(Block block:this.blocks){
+			if(block.hasSite()){
+				block.removeSite();
+			}
+		}
+		Site[][] annealSites = new Site[this.numColumns][this.numRows];
+		for(int c = 0; c < this.numColumns; c++){
+			int column = this.firstColumn + c * this.columnRepeat;
+			for(int r = 0; r < this.numRows; r++){
+				int row = this.firstRow + r * this.rowRepeat;
+				
+				annealSites[c][r] = new Site(column, row);
+			}
+		}
+		
+		Block[] annealBlocks = new Block[lastBlockIndex - firstBlockIndex];
+		for(int i = firstBlockIndex; i < lastBlockIndex; i++){
+			annealBlocks[i - firstBlockIndex] = this.blocks[i];
+		}
+		for(Block block:annealBlocks){
+			int columnIndex = (block.legalX - this.firstColumn) / this.columnRepeat;
+			int rowIndex    = (block.legalY - this.firstRow)    / this.rowRepeat;
+			
+			Site site = annealSites[columnIndex][rowIndex];
+			
+			site.setBlock(block);
+			block.setSite(site);
+		}
+		
+		
+		this.anneal(annealBlocks, annealSites);
+		
 		this.updateLegal();
 	}
 
@@ -195,6 +233,96 @@ public class HardblockConnectionLegalizer{
 		}
 		return result;
 	}
+	
+    /////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////// ANNEAL ///////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////
+	private void anneal(Block[] annealBlocks, Site[][] annealSites){
+		int numBlocks = annealBlocks.length;
+		int numColumns = annealSites.length;
+		int numRows = annealSites[0].length;
+
+		Random random = new Random(100);
+		
+		double temperature = 3000;
+
+		int temperatureSteps = 500;
+		int stepsPerTemperature = numBlocks;
+		
+		for(int temperatureStep = 0; temperatureStep < temperatureSteps; temperatureStep++){
+			
+			temperature *= 0.98;
+			
+			for(int i = 0; i < stepsPerTemperature; i++){
+				
+				Block block1 = annealBlocks[random.nextInt(numBlocks)];
+				Site site1 = block1.getSite();
+				
+				Site site2 = annealSites[random.nextInt(numColumns)][random.nextInt(numRows)];
+				while(site1.equals(site2)){
+					site2 = annealSites[random.nextInt(numColumns)][random.nextInt(numRows)];
+				}
+				Block block2 = site2.getBlock();
+				
+				double oldCost = block1.horizontalConnectionCost() + block1.verticalConnectionCost();
+				if(block2 != null){
+					oldCost += block2.horizontalConnectionCost();
+					oldCost += block2.verticalConnectionCost();
+				}
+				
+				block1.legalX = site2.column;
+				block1.legalY = site2.row;
+				if(block2 != null){
+					block2.legalX = site1.column;
+					block2.legalY = site1.row;
+				}
+
+				double newCost = block1.horizontalConnectionCost(site1.column, site2.column) + block1.verticalConnectionCost(site1.row, site2.row);
+				
+				if(block2 != null){
+					newCost += block2.horizontalConnectionCost(site2.column, site1.column);
+					newCost += block2.verticalConnectionCost(site2.row, site1.row);
+				}
+				
+				double deltaCost = newCost - oldCost;
+				
+ 				if(deltaCost <= 0 || random.nextDouble() < Math.exp(-deltaCost / temperature)) {
+ 					site1.removeBlock();
+ 					block1.removeSite();
+ 					
+ 					if(block2 != null){
+ 						site2.removeBlock();
+ 						block2.removeSite();
+ 					}
+ 					
+ 					site2.setBlock(block1);
+ 					block1.setSite(site2);
+ 
+ 					if(block2 != null){
+ 						site1.setBlock(block2);
+ 						block2.setSite(site1);
+ 					}
+ 					
+ 					block1.updateHorizontalConnectionCost();
+ 					block1.updateVerticalConnectionCost();
+ 					
+ 					if(block2 != null){
+ 						block2.updateHorizontalConnectionCost();
+ 						block2.updateVerticalConnectionCost();
+ 					}
+ 				}else{
+ 					block1.legalX = site1.column;
+ 					block1.legalY = site1.row;
+ 					
+ 					if(block2 != null){
+ 						block2.legalX = site2.column;
+ 						block2.legalY = site2.row;
+ 					}
+ 				}
+			}
+		}
+	}
+	
     private void updateLegal(){
     	for(Block block:this.blocks){
     		this.legalX[block.index] = block.legalX;
@@ -213,11 +341,15 @@ public class HardblockConnectionLegalizer{
 
 		final List<Net> nets;
 		
+		private Site site;
+		
 		Block(int index, int offset){
 			this.index = index;
 			this.offset = offset;
 			
 			this.nets = new ArrayList<Net>();
+			
+			this.site = null;
 		}
 		void setLinearCoordinates(double linearX, double linearY){
 			this.linearX = linearX;
@@ -234,31 +366,58 @@ public class HardblockConnectionLegalizer{
 			}
 		}
 		
-		//Connection cost
+		//// Connection cost ////
 		void initializeConnectionCost(){
 			for(Net net:this.nets){
 				net.initializeConnectionCost();
 			}
 		}
-		void updateConnectionCost(int oldX, int newX){
+		
+		// Horizontal
+		void updateHorizontalConnectionCost(){
 			for(Net net:this.nets){
-				net.updateConnectionCost(oldX, newX);
+				net.updateHorizontalConnectionCost();
 			}
 		}
-		double connectionCost(){
+		double horizontalConnectionCost(){
 			double cost = 0.0;
 			
 			for(Net net:this.nets){
-				cost += net.connectionCost();
+				cost += net.horizontalConnectionCost();
 			}
 			
 			return cost;
 		}
-		double connectionCost(int oldX, int newX){
+		double horizontalConnectionCost(int oldX, int newX){
 			double cost = 0.0;
 			
 			for(Net net:this.nets){
-				cost += net.connectionCost(oldX, newX);
+				cost += net.horizontalConnectionCost(oldX, newX);
+			}
+			
+			return cost;
+		}
+		
+		// Vertical
+		void updateVerticalConnectionCost(){
+			for(Net net:this.nets){
+				net.updateVerticalConnectionCost();
+			}
+		}
+		double verticalConnectionCost(){
+			double cost = 0.0;
+			
+			for(Net net:this.nets){
+				cost += net.verticalConnectionCost();
+			}
+			
+			return cost;
+		}
+		double verticalConnectionCost(int oldY, int newY){
+			double cost = 0.0;
+			
+			for(Net net:this.nets){
+				cost += net.verticalConnectionCost(oldY, newY);
 			}
 			
 			return cost;
@@ -271,6 +430,28 @@ public class HardblockConnectionLegalizer{
 		
     	public String toString(){
     		return String.format("%.2f  %.2f", this.linearX, this.linearY);
+    	}
+    	
+    	//Site
+    	void setSite(Site site){
+    		if(this.site == null){
+    			this.site = site;
+    		}else{
+    			System.out.println("This block already has a site");
+    		}
+    	}
+    	Site getSite(){
+    		return this.site;
+    	}
+    	void removeSite(){
+    		if(this.site != null){
+    			this.site = null;
+    		}else{
+    			System.out.println("This block has no site");
+    		}
+    	}
+    	boolean hasSite(){
+    		return this.site != null;
     	}
 	}
     public static class BlockComparator {
@@ -297,6 +478,10 @@ public class HardblockConnectionLegalizer{
 
 		double netWeight;
 		int minX, maxX;
+		int minY, maxY;
+		
+		int tempMinX, tempMaxX;
+		int tempMinY, tempMaxY;
 
 		Net(int index){
 			this.index = index;
@@ -307,24 +492,29 @@ public class HardblockConnectionLegalizer{
 			this.blocks.add(block);
 		}
 
-		//Connection cost
+		//// Connection cost ////
 		void initializeConnectionCost(){
 			this.netWeight = AnalyticalAndGradientPlacer.getWeight(this.blocks.size());
 			
 			this.minX = this.getMinX();
 			this.maxX = this.getMaxX();
+			
+			this.minY = this.getMinY();
+			this.maxY = this.getMaxY();
 		}
-		double connectionCost(){
+		
+		// Horizontal
+		double horizontalConnectionCost(){
 			return (this.maxX - this.minX + 1) * this.netWeight;
 		}
-		double connectionCost(int oldX, int newX){
-            int localMinX = this.updateMinX(oldX, newX, this.minX);
-            int localMaxX = this.updateMaxX(oldX, newX, this.maxX);
-            return (localMaxX - localMinX + 1) * this.netWeight;
+		double horizontalConnectionCost(int oldX, int newX){
+            this.tempMinX = this.updateMinX(oldX, newX, this.minX);
+            this.tempMaxX = this.updateMaxX(oldX, newX, this.maxX);
+            return (this.tempMaxX - this.tempMinX + 1) * this.netWeight;
 		}
-		void updateConnectionCost(int oldX, int newX){
-			this.minX = this.updateMinX(oldX, newX, this.minX);
-			this.maxX = this.updateMaxX(oldX, newX, this.maxX);
+		void updateHorizontalConnectionCost(){
+			this.minX = this.tempMinX;
+			this.maxX = this.tempMaxX;
 		}
 		int updateMinX(int oldX, int newX, int minX){
 			if(newX <= minX){
@@ -363,6 +553,59 @@ public class HardblockConnectionLegalizer{
 	            }
 	        }
 	        return maxX;
+		}
+		
+		
+		// Vertical
+		double verticalConnectionCost(){
+			return (this.maxY - this.minY + 1) * this.netWeight;
+		}
+		double verticalConnectionCost(int oldY, int newY){
+            this.tempMinY = this.updateMinY(oldY, newY, this.minY);
+            this.tempMaxY = this.updateMaxY(oldY, newY, this.maxY);
+            return (this.tempMaxY - this.tempMinY + 1) * this.netWeight;
+		}
+		void updateVerticalConnectionCost(){
+			this.minY = this.tempMinY;
+			this.maxY = this.tempMaxY;
+		}
+		int updateMinY(int oldY, int newY, int minY){
+			if(newY <= minY){
+            	return newY;
+			}else if(oldY == minY){
+            	return this.getMinY();
+            }else{
+            	return minY;
+            }
+		}
+		int updateMaxY(int oldY, int newY, int maxY){
+            if(newY >= maxY){
+            	return newY;
+            }else if(oldY == maxY){
+            	return this.getMaxY();
+            }else{
+            	return maxY;
+            }
+		}
+		int getMinY(){
+			Block initialBlock = this.blocks.get(0);
+	        int minY = initialBlock.legalY;
+	        for(Block block:this.blocks){
+	            if(block.legalY < minY) {
+	                minY = block.legalY;
+	            }
+	        }
+	        return minY;
+		}
+		int getMaxY(){
+			Block initialBlock = this.blocks.get(0);
+	        int maxY = initialBlock.legalY;
+	        for(Block block:this.blocks){
+	            if(block.legalY > maxY) {
+	                maxY = block.legalY;
+	            }
+	        }
+	        return maxY;
 		}
 	}
 	
@@ -628,4 +871,45 @@ public class HardblockConnectionLegalizer{
     		return result;
     	}
     }
+	
+    /////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////// SITE //////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////
+	public class Site {
+
+	    private int column, row;
+	    private Block block;
+
+	    public Site(int column, int row) {
+	        this.column = column;
+	        this.row = row;
+	        
+	        this.block = null;
+	    }
+
+	    public int getColumn() {
+	        return this.column;
+	    }
+	    public int getRow() {
+	        return this.row;
+	    }
+	    
+	    public void removeBlock(){
+	    	if(this.block != null){
+	    		this.block = null;
+	    	}else{
+	    		System.out.println("This site has no block");
+	    	}
+	    }
+	    public void setBlock(Block block){
+	    	if(this.block == null){
+	    		this.block = block;
+	    	}else{
+	    		System.out.println("This site already has a block");
+	    	}
+	    }
+	    public Block getBlock(){
+	        return this.block;
+	    }
+	}
 }
