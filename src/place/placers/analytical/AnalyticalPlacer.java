@@ -81,6 +81,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.heights,
                 this.visualizer,
                 this.nets,
+                this.timingNets,
                 this.netBlocks);
 
         this.costCalculator = this.createCostCalculator();

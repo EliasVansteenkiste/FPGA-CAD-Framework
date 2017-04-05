@@ -10,6 +10,7 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
 import place.visual.PlacementVisualizer;
 
 class SplittingLegalizer extends Legalizer {
@@ -25,9 +26,10 @@ class SplittingLegalizer extends Legalizer {
             int[] heights,
             PlacementVisualizer visualizer,
             List<Net> nets,
+            List<TimingNet> timingNets,
             Map<GlobalBlock, NetBlock> netBlocks) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, nets, netBlocks);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, nets, timingNets, netBlocks);
     }
 
     @Override
