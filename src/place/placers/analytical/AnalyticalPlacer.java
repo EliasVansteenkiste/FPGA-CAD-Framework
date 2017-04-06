@@ -1,7 +1,6 @@
 package place.placers.analytical;
 
 import place.circuit.Circuit;
-import place.circuit.architecture.BlockType;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.visual.PlacementVisualizer;
@@ -158,18 +157,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     protected void solveLegal(int iteration) {
         this.startTimer(T_LEGALIZE);
         this.legalizer.legalize(1);
-        this.stopTimer(T_LEGALIZE);
-
-        int[] newLegalX = this.legalizer.getLegalX();
-        int[] newLegalY = this.legalizer.getLegalY();
-        this.updateLegalIfNeeded(newLegalX, newLegalY);
-        this.ratio = this.linearCost / this.legalCost;
-    }
-    
-    @Override
-    protected void solveLegal(int iteration,  BlockType movableBlockType) {
-        this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(1, movableBlockType);
         this.stopTimer(T_LEGALIZE);
 
         int[] newLegalX = this.legalizer.getLegalX();

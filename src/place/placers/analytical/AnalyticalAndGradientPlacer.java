@@ -5,6 +5,7 @@ import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.AbstractBlock;
 import place.circuit.block.GlobalBlock;
+import place.circuit.block.IOSite;
 import place.circuit.block.Macro;
 import place.circuit.block.Site;
 import place.circuit.exceptions.PlacementException;
@@ -76,7 +77,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected abstract void solveLinear(int iteration);
     protected abstract void solveLegal(int iteration);
-    protected abstract void solveLegal(int iteration, BlockType movableBlockType);
     protected abstract boolean stopCondition(int iteration);
     protected abstract void initializeIteration(int iteration);
 
@@ -97,7 +97,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         for(Macro macro : this.circuit.getMacros()) {
             numBlocks -= macro.getNumBlocks() - 1;
         }
-
 
         // Make a list of all block types, with IO blocks first
         this.blockTypes = new ArrayList<>();
@@ -153,6 +152,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     this.heights[blockCounter] = height;
 
                     this.netBlocks.put(block, new NetBlock(blockCounter, offset));
+
                     blockCounter++;
 
                 // The position of other blocks will be calculated
@@ -288,8 +288,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         int iteration = 0;
         boolean isLastIteration = false;
-        List<BlockType> blockTypes = this.getBlockTypes();
-        
+
         while(!isLastIteration) {
             double timerBegin = System.nanoTime();
 
@@ -298,12 +297,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             // Solve linear
             this.solveLinear(iteration);
         	this.addLinearPlacement(iteration);
-        	
-            for(BlockType legalizationBlocktype:blockTypes){
-            	System.out.print(legalizationBlocktype + "\t");
-            	this.solveLegal(iteration, legalizationBlocktype);
-           		this.addLegalPlacement(iteration);
-           	}
+        	this.solveLegal(iteration);
+        	this.addLegalPlacement(iteration);
 
             isLastIteration = this.stopCondition(iteration);
 
@@ -340,28 +335,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 this.netBlocks, this.legalX, this.legalY,
                 this.legalCost);
     }
-    private List<BlockType> getBlockTypes(){
-    	List<BlockType> blockTypes = new ArrayList<BlockType>();
-
-    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.CLB).get(0));//LAB
-    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(0));//PLL
-    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(1));//DSP
-    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(2));//M9K
-    	this.addBlockType(blockTypes, BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(3));//M144K
-
-    	return blockTypes;
-    }
-    private void addBlockType(List<BlockType> blockTypes, BlockType blockType){
-    	if(this.circuit.getBlocks(blockType).size() > 0){
-    		blockTypes.add(blockType);
-    	}
-    }
 
     protected void updateLegal(int[] newLegalX, int[] newLegalY) {
-        int numMovableBlocks = this.legalX.length - this.numIOBlocks;
-
-        System.arraycopy(newLegalX, this.numIOBlocks, this.legalX, this.numIOBlocks, numMovableBlocks);
-        System.arraycopy(newLegalY, this.numIOBlocks, this.legalY, this.numIOBlocks, numMovableBlocks);
+        System.arraycopy(newLegalX, 0, this.legalX, 0, this.legalX.length);
+        System.arraycopy(newLegalY, 0, this.legalY, 0, this.legalY.length);
     }
     
     //Manhattan displacement
@@ -437,28 +414,28 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected void updateCircuit() throws PlacementException {
         // Clear all previous locations
         for(GlobalBlock block : this.netBlocks.keySet()) {
-            if(block.getCategory() != BlockCategory.IO) {
-                block.removeSite();
-            }
+            block.removeSite();
         }
 
         // Update locations
         for(Map.Entry<GlobalBlock, NetBlock> blockEntry : this.netBlocks.entrySet()) {
             GlobalBlock block = blockEntry.getKey();
 
+            NetBlock netBlock = blockEntry.getValue();
+            int index = netBlock.blockIndex;
+            int offset = (int) Math.ceil(netBlock.offset);
+            
+            int column = this.legalX[index];
+            int row = this.legalY[index] + offset * block.getType().getHeight();
+            
             if(block.getCategory() != BlockCategory.IO) {
-                NetBlock netBlock = blockEntry.getValue();
-                int index = netBlock.blockIndex;
-                int offset = (int) Math.ceil(netBlock.offset);
-
-                int column = this.legalX[index];
-                int row = this.legalY[index] + offset * block.getType().getHeight();
-
                 Site site = (Site) this.circuit.getSite(column, row, true);
+                block.setSite(site);
+            }else{
+                IOSite site = (IOSite) this.circuit.getSite(column, row, true);
                 block.setSite(site);
             }
         }
-
         this.circuit.getTimingGraph().calculateCriticalities(true);
     }
 

@@ -9,6 +9,7 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
 import place.visual.PlacementVisualizer;
 
 abstract class Legalizer {
@@ -49,6 +50,7 @@ abstract class Legalizer {
             int[] heights,
             PlacementVisualizer visualizer,
             List<Net> nets,
+            List<TimingNet> timingNets,
             Map<GlobalBlock, NetBlock> netBlocks) {
 
         // Store easy stuff
@@ -85,7 +87,7 @@ abstract class Legalizer {
 
         //Hard block legalizer
         this.netBlocks = netBlocks;
-        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, netBlocks);
+        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, timingNets, netBlocks);
 
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
@@ -122,18 +124,10 @@ abstract class Legalizer {
             this.blockType = this.blockTypes.get(i);
             this.legalizeBlockType(i);
         }
-    }
-    
-    void legalize(double tileCapacity, BlockType movableBlockType) {
-        this.tileCapacity = tileCapacity;
-
-        // Skip i = 0: these are IO blocks
-        for(int i = 1; i < this.blockTypes.size(); i++) {
-            this.blockType = this.blockTypes.get(i);
-            if(movableBlockType.equals(this.blockType)){
-            	this.legalizeBlockType(i);
-            }
-        }
+        
+        //Legalize the IO blocks at the end
+        this.blockType = this.blockTypes.get(0);
+        this.legalizeBlockType(0);
     }
     
     private void legalizeBlockType(int i){
@@ -152,10 +146,19 @@ abstract class Legalizer {
 
             long start = System.nanoTime();
            
+            System.out.print(this.blockType + "\t");
+            
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
             	this.legalizeBlockType(blocksStart, blocksEnd);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, this.blockStart, this.blockRepeat, this.blockHeight);
+        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, this.blockStart, this.blockRepeat, this.blockHeight, 1);
+        	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
+        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, -1, -1, 1, 2);
+        		
+        		for(int b = blocksStart; b < blocksEnd; b++){
+        			this.linearX[b] = this.legalX[b];
+        			this.linearY[b] = this.legalY[b];
+        		}
         	}else{
         		System.out.println("unrecognized block type: " + this.blockType);
         	}

@@ -317,20 +317,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.updateLegalIfNeeded(iteration);
         this.stopTimer(T_UPDATE_CIRCUIT);
     }
-    
-    @Override
-    protected void solveLegal(int iteration, BlockType movableBlockType) {
-        double slope = (this.startUtilization - 1) / (this.anchorWeightStart - this.anchorWeightStop);
-        this.utilization = Math.max(1, 1 + slope * (this.anchorWeight - this.anchorWeightStop));
-
-        this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(this.utilization, movableBlockType);
-        this.stopTimer(T_LEGALIZE);
-
-        this.startTimer(T_UPDATE_CIRCUIT);
-        this.updateLegalIfNeeded(iteration);
-        this.stopTimer(T_UPDATE_CIRCUIT);
-    }
 
     @Override
     protected void addStatTitles(List<String> titles) {
