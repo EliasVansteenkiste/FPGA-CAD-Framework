@@ -15,7 +15,7 @@ public class Timing {
 	}
 	public void stop(){
 		this.endTime = System.nanoTime();
-		this.totalTime += (endTime - startTime);
+		this.totalTime += (this.endTime - this.startTime);
 		
 		this.startTime = 0;
 		this.endTime = 0;
