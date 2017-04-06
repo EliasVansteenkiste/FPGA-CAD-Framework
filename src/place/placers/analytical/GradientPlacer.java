@@ -181,6 +181,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.heights,
                 this.visualizer,
                 this.nets,
+                this.timingNets,
                 this.netBlocks);
 
         // Juggling with objects is too slow (I profiled this,
@@ -255,7 +256,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
     }
     private int getIterationEffortLevel(int iteration) {
-    	int effortLevel = Math.min(this.effortLevel, 30);
+    	int effortLevel = this.effortLevel;
         int iterationEffortLevel = (int) Math.round(effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
         if(iteration == 0) {
             iterationEffortLevel *= this.firstEffortMultiplier;
