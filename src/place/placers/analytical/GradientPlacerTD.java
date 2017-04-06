@@ -4,10 +4,10 @@ import place.circuit.Circuit;
 import place.circuit.timing.TimingGraph;
 import place.interfaces.Logger;
 import place.interfaces.Options;
-import place.util.FloatList;
-import place.util.IntList;
 import place.visual.PlacementVisualizer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class GradientPlacerTD extends GradientPlacer {
@@ -57,11 +57,8 @@ public class GradientPlacerTD extends GradientPlacer {
 
     private static String
         T_UPDATE_CRIT_CON = "update critical connections";
-
-
-    private IntList criticalBlockIndexes = new IntList();
-    private FloatList criticalOffsets = new FloatList();
-    private FloatList criticalWeights = new FloatList();
+    
+    private List<CriticalConnection> criticalConnections = new ArrayList<CriticalConnection>();
 
     private double criticalityExponent, criticalityThreshold;
     private TimingGraph timingGraph;
@@ -108,8 +105,8 @@ public class GradientPlacerTD extends GradientPlacer {
                 this.recalculate[i] = true;
                 nextFunctionValue += 1 / (this.recalculateCriticalities * this.numIterations);
                 recalculationsString.append("|");
-
             } else {
+                this.recalculate[i] = false;
                 recalculationsString.append(".");
             }
         }
@@ -127,7 +124,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void initializeIteration(int iteration) {
-    	if(iteration == 0 || this.recalculate[iteration - 1]) {
+    	if(this.recalculate[iteration]) {
     		this.startTimer(T_UPDATE_CRIT_CON);
     		this.updateCriticalConnections();
     		this.stopTimer(T_UPDATE_CRIT_CON);
@@ -136,14 +133,10 @@ public class GradientPlacerTD extends GradientPlacer {
             this.anchorWeight += this.anchorWeightStep;
         }
     }
-
     private void updateCriticalConnections() {
-
     	this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
 
-    	this.criticalBlockIndexes.clear();
-        this.criticalOffsets.clear();
-        this.criticalWeights.clear();
+        this.criticalConnections.clear();
 
         for(TimingNet net : this.timingNets) {
             NetBlock source = net.source;
@@ -153,17 +146,13 @@ public class GradientPlacerTD extends GradientPlacer {
                 if(criticality > this.criticalityThreshold) {
 
                     if(source.blockIndex != sink.blockIndex) {
-                        this.criticalBlockIndexes.add(source.blockIndex);
-                        this.criticalBlockIndexes.add(sink.blockIndex);
-
-                        this.criticalOffsets.add(sink.offset - source.offset);
-                        this.criticalWeights.add((float) (this.tradeOff * criticality));
+                    	CriticalConnection c = new CriticalConnection(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * criticality));
+                    	this.criticalConnections.add(c);
                     }
                 }
             }
         }
     }
-
 
     @Override
     protected void processNets() {
@@ -171,16 +160,10 @@ public class GradientPlacerTD extends GradientPlacer {
         super.processNets();
 
         // Process the most critical source-sink connections
-        int numCritConns = this.criticalWeights.size();
-        for(int critIndex = 0; critIndex < numCritConns; critIndex++) {
-            this.solver.processConnection(
-                    this.criticalBlockIndexes.get(2*critIndex),
-                    this.criticalBlockIndexes.get(2*critIndex + 1),
-                    this.criticalOffsets.get(critIndex),
-                    this.criticalWeights.get(critIndex));
+        for(CriticalConnection c:this.criticalConnections){
+        	this.solver.processConnection(c.source, c.sink, c.offset, c.weight);
         }
     }
-
 
     @Override
     protected void updateLegalIfNeeded(int iteration) {
@@ -194,5 +177,17 @@ public class GradientPlacerTD extends GradientPlacer {
     @Override
     public String getName() {
         return "Timing driven gradient placer";
+    }
+    
+    public class CriticalConnection{
+    	private final int source, sink;
+    	private final float offset, weight;
+    	
+    	CriticalConnection(int source, int sink, float offset, float weight){
+    		this.source = source;
+    		this.sink = sink;
+    		this.offset = offset;
+    		this.weight = weight;
+    	}
     }
 }
