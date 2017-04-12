@@ -117,7 +117,11 @@ abstract class Legalizer {
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
     void legalize(double tileCapacity) {
-        this.tileCapacity = tileCapacity;
+    	long start = System.nanoTime();
+    	
+    	this.tileCapacity = tileCapacity;
+        
+        this.hardblockLegalizer.updateCriticalConnections();
 
         // Skip i = 0: these are IO blocks
         for(int i = 1; i < this.blockTypes.size(); i++) {
@@ -128,6 +132,10 @@ abstract class Legalizer {
         //Legalize the IO blocks at the end
         this.blockType = this.blockTypes.get(0);
         this.legalizeBlockType(0);
+        
+    	long end = System.nanoTime();
+    	double time = (end -  start) * Math.pow(10, -6);
+    	System.out.printf("Legalization took %.0f ms\n", time);
     }
     
     private void legalizeBlockType(int i){
@@ -144,28 +152,28 @@ abstract class Legalizer {
                 this.blockRepeat = this.width;
             }
 
-            long start = System.nanoTime();
-           
-            System.out.print(this.blockType + "\t");
+
             
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
+            	long start = System.nanoTime();
             	this.legalizeBlockType(blocksStart, blocksEnd);
+            	long end = System.nanoTime();
+            	double time = (end -  start) * Math.pow(10, -6);
+            	System.out.printf("Legalize LAB took %.0f ms\n", time);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, this.blockStart, this.blockRepeat, this.blockHeight, 1);
+        		this.hardblockLegalizer.legalizeHardblock(blocksStart, blocksEnd, this.blockStart, this.blockRepeat, this.blockHeight, this.blockType.toString());
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
-        		this.hardblockLegalizer.legalizeBlockType(blocksStart, blocksEnd, -1, -1, 1, 2);
+        		//this.hardblockLegalizer.legalizeIO(blocksStart, blocksEnd);
         		
-        		for(int b = blocksStart; b < blocksEnd; b++){
-        			this.linearX[b] = this.legalX[b];
-        			this.linearY[b] = this.legalY[b];
-        		}
+        		//for(int b = blocksStart; b < blocksEnd; b++){
+        		//	this.linearX[b] = this.legalX[b];
+        		//	this.linearY[b] = this.legalY[b];
+        		//}
         	}else{
         		System.out.println("unrecognized block type: " + this.blockType);
         	}
            
-            long end = System.nanoTime();
-    		double time = (end -  start) * Math.pow(10, -6);
-        	System.out.printf("%.0f ms\n", time);
+
         }
     }
 
