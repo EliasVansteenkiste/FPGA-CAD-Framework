@@ -4,30 +4,44 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class TimingTree {
+	private final boolean enabled;
 	private HashMap<String, Long> timers;
 	private ArrayList<Time> timingResult;
 
 	public TimingTree(){
+		this.enabled = true;
+		
 		this.timers = new HashMap<String, Long>();
 		this.timingResult = new ArrayList<Time>();
 	}
+	public TimingTree(boolean enabled){
+		this.enabled = enabled;
+		
+		if(this.enabled){
+			this.timers = new HashMap<String, Long>();
+			this.timingResult = new ArrayList<Time>();
+		}
+	}
 	
 	public void start(String name){
-		this.timers.put(name, System.nanoTime());
+		if(this.enabled){
+			this.timers.put(name, System.nanoTime());
+		}
 	}
-
 	public void time(String name){
-		long start = this.timers.remove(name);
-		long end = System.nanoTime();
-		
-		int index = this.timers.size();
-		
-		Time time = new Time(name, index, start, end);
+		if(this.enabled){
+			long start = this.timers.remove(name);
+			long end = System.nanoTime();
+			
+			int index = this.timers.size();
+			
+			Time time = new Time(name, index, start, end);
 
-		this.timingResult.add(time);
-		
-		if(index == 0){
-			this.printTiming();
+			this.timingResult.add(time);
+			
+			if(index == 0){
+				this.printTiming();
+			}
 		}
 	}
 	
@@ -114,7 +128,12 @@ class Time {
 		}
 		double time = (this.end -  this.start) * Math.pow(10, -3);
 
-    	result += String.format(this.name + " took %.0f ns\n", time);
+		if(time < 1000){
+			result += String.format(this.name + " took %.0f ns\n", time);
+		}else{
+			time /= 1000;
+			result += String.format(this.name + " took %.0f ms\n", time);
+		}
     	
 		for(Time child:this.getChildren()){
 			result += child.toString();
@@ -123,4 +142,3 @@ class Time {
 		return result;
 	}
 }
-
