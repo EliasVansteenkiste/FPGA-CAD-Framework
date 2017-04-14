@@ -1,27 +1,34 @@
 package place.placers.analytical;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
-import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNetBlock;
+import place.placers.analytical.GradientPlacerTD.CriticalConnection;
 import place.util.TimingTree;
 
 public class HardblockConnectionLegalizer{
-
+	
+	private BlockType blockType;
+	
 	private final double[] linearX, linearY;
     private final int[] legalX, legalY;
 
     private final Block[] blocks;
     private final Net[] nets;
+    
+    private Map<BlockType, Block[]> blocksPerBlocktype;
+    private Map<BlockType, Net[]> netsPerBlocktype;
 
-    private final List<TimingNet> timingNets;
+    //private final List<TimingNet> timingNets;
 
     private final int gridWidth, gridHeigth;
     
@@ -54,7 +61,7 @@ public class HardblockConnectionLegalizer{
 
 		//Count the number of nets
 		System.out.println("Nets with large fanout:");
-		int maxFanout = 500;
+		int maxFanout = 100;
 		int numNets = 0;
 		for(int i = 0; i < placerNets.size(); i++){
 			int fanout = placerNets.get(i).blocks.length;
@@ -101,41 +108,90 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Initialize Hardblock Connection Legalizer Data");
 		
-		this.timingNets = timingNets;
+		//this.timingNets = timingNets;
+		
+		this.blocksPerBlocktype = new HashMap<BlockType, Block[]>();
+		this.netsPerBlocktype = new HashMap<BlockType, Net[]>();
 	}
-	public void updateCriticalConnections(){
+	public void addBlocktype(BlockType blockType, int firstBlockIndex, int lastBlockIndex){
+		Block[] legalizeBlocks = this.getLegalizeBlocks(firstBlockIndex, lastBlockIndex);
+		Net[] legalizeNets = this.getLegalizeNets(legalizeBlocks);
+		
+		this.blocksPerBlocktype.put(blockType, legalizeBlocks);
+		this.netsPerBlocktype.put(blockType, legalizeNets);
+	}
+	private Block[] getLegalizeBlocks(int firstBlockIndex, int lastBlockIndex){
+		Block[] legalizeBlocks = new Block[lastBlockIndex - firstBlockIndex];
+		for(int i = firstBlockIndex; i < lastBlockIndex; i++){
+			Block legalizeBlock = this.blocks[i];
+			legalizeBlocks[i - firstBlockIndex] = legalizeBlock;
+			
+	        //Offset test
+	        if(legalizeBlock.offset != 0){
+	        	System.out.println("The offset of hard  block is equal to " + legalizeBlock.offset + ", should be 0");
+	        }
+		}
+		
+		return legalizeBlocks;
+	}
+	private Net[] getLegalizeNets(Block[] legalizeBlocks){
+		Set<Net> hardblockNets = new HashSet<Net>();
+		for(Block block:legalizeBlocks){
+			for(Net net:block.nets){
+				hardblockNets.add(net);
+			}
+		}
+		
+		Net[] legalizeNets = hardblockNets.toArray(new Net[hardblockNets.size()]);
+		
+		return legalizeNets;
+	}
+
+	
+	public void updateCriticalConnections(List<CriticalConnection> criticalConnections){
 		this.timingTree.start("Update critical connections in hardblock connection legalizer");
 		
 		//Clear all data
 		for(Block block:this.blocks){
 			block.criticalConnections.clear();
 		}
+		
+		for(CriticalConnection critConn:criticalConnections){
+        	Block sourceBlock = this.blocks[critConn.sourceIndex];
+        	Block sinkBlock = this.blocks[critConn.sinkIndex];
+        	
+        	Crit conn = new Crit(sourceBlock, sinkBlock, critConn.weight);
+        	sourceBlock.criticalConnections.add(conn);
+        	sinkBlock.criticalConnections.add(conn);
+		}
 
 		//Update critical connections
-		double criticalityThreshold = 0.75;
+		//double criticalityThreshold = 0.75;
         
-		for(TimingNet net : this.timingNets){
-            NetBlock source = net.source;
+		//for(TimingNet net : this.timingNets){
+        //    NetBlock source = net.source;
 
-            for(TimingNetBlock sink : net.sinks) {
-                double criticality = sink.timingEdge.getCriticality();
-                if(criticality > criticalityThreshold) {
+        //    for(TimingNetBlock sink : net.sinks) {
+        //        double criticality = sink.timingEdge.getCriticality();
+        //        if(criticality > criticalityThreshold) {
 
-                    if(source.blockIndex != sink.blockIndex) {
-                    	Block sourceBlock = this.blocks[source.blockIndex];
-                    	Block sinkBlock = this.blocks[sink.blockIndex];
+        //            if(source.blockIndex != sink.blockIndex) {
+        //            	Block sourceBlock = this.blocks[source.blockIndex];
+        //            	Block sinkBlock = this.blocks[sink.blockIndex];
                     	
-                    	CriticalConnection conn = new CriticalConnection(sourceBlock, sinkBlock, criticality);
-                    	sourceBlock.criticalConnections.add(conn);
-                    	sinkBlock.criticalConnections.add(conn);
-                    }
-                }
-            }
-        }
+        //            	Crit conn = new Crit(sourceBlock, sinkBlock, criticality);
+        //            	sourceBlock.criticalConnections.add(conn);
+        //            	sinkBlock.criticalConnections.add(conn);
+        //            }
+        //        }
+        //    }
+        //}
 		this.timingTree.time("Update critical connections in hardblock connection legalizer");
 	}
-	public void legalizeHardblock(int firstBlockIndex, int lastBlockIndex, int firstColumn, int columnRepeat, int blockHeight, String blockType){
+	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight){
 		this.timingTree.start("Legalize " + blockType + " hardblock");
+		
+		this.blockType = blockType;
 		
 		int firstRow = 1;
 		int rowRepeat = blockHeight;
@@ -143,7 +199,8 @@ public class HardblockConnectionLegalizer{
         int numColumns = (int) Math.floor((this.gridWidth - firstColumn) / columnRepeat + 1);
         int numRows = (int) Math.floor(this.gridHeigth / rowRepeat);
         
-		Block[] legalizeBlocks = this.getLegalizeBlocks(firstBlockIndex, lastBlockIndex);
+		Block[] legalizeBlocks = this.blocksPerBlocktype.get(this.blockType);
+		Net[] legalizeNets = this.netsPerBlocktype.get(this.blockType);
 		Column[] columns = new Column[numColumns];
 		for(int c = 0; c < numColumns; c++){
 			int column = firstColumn + c * columnRepeat;
@@ -172,7 +229,7 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
-		this.initializeConnectionCost();
+		this.initializeConnectionCost(legalizeBlocks, legalizeNets);
 
 		this.columnSwap(columns);
 		
@@ -185,12 +242,15 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Legalize " + blockType + " hardblock");
 	}
-	public void legalizeIO(int firstBlockIndex, int lastBlockIndex){
+	public void legalizeIO(BlockType blockType){
 		this.timingTree.start("Legalize IO");
+		
+		this.blockType = blockType;
 		
 		int siteCapacity = 2;
 		
-		Block[] legalizeBlocks = this.getLegalizeBlocks(firstBlockIndex, lastBlockIndex);
+		Block[] legalizeBlocks = this.blocksPerBlocktype.get(this.blockType);
+		Net[] legalizeNets = this.netsPerBlocktype.get(this.blockType);
 		Site[] legalizeSites = new Site[2 * (this.gridWidth + this.gridHeigth) * siteCapacity];
 		int l = 0;
 		for(int i = 1; i <= this.gridWidth; i++){
@@ -233,7 +293,7 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Find best site for all IO blocks based on minimal displacement cost");
 		
-		this.initializeConnectionCost();
+		this.initializeConnectionCost(legalizeBlocks, legalizeNets);
 
 		this.anneal(legalizeBlocks, legalizeSites);
 		
@@ -251,33 +311,20 @@ public class HardblockConnectionLegalizer{
         
         this.timingTree.time("Update block coordinates");
 	}
-	private Block[] getLegalizeBlocks(int firstBlockIndex, int lastBlockIndex){
-		this.timingTree.start("Get legalize blocks");
-		
-		Block[] legalizeBlocks = new Block[lastBlockIndex - firstBlockIndex];
-		for(int i = firstBlockIndex; i < lastBlockIndex; i++){
-			Block legalizeBlock = this.blocks[i];
-			legalizeBlocks[i - firstBlockIndex] = legalizeBlock;
-			
-	        //Offset test
-	        if(legalizeBlock.offset != 0){
-	        	System.out.println("The offset of hard  block is equal to " + legalizeBlock.offset + ", should be 0");
-	        }
-		}
-		
-		this.timingTree.time("Get legalize blocks");
-		
-		return legalizeBlocks;
-	}
-	private void initializeConnectionCost(){
+	private void initializeConnectionCost(Block[] legalizeBlocks, Net[] legalizeNets){
 		this.timingTree.start("Initialize connection cost");
 
-		for(Net net:this.nets){
+		this.timingTree.start("Update nets");
+		for(Net net:legalizeNets){
 			net.initializeConnectionCost();
 		}
-		for(Block block:this.blocks){
+		this.timingTree.time("Update nets");
+		
+		this.timingTree.start("Update blocks");
+		for(Block block:legalizeBlocks){
 			block.initializeConnectionCost();
 		}
+		this.timingTree.time("Update blocks");
 		
 		this.timingTree.time("Initialize connection cost");
 	}
@@ -400,7 +447,7 @@ public class HardblockConnectionLegalizer{
 		Site site;
 
 		final List<Net> nets;
-		final List<CriticalConnection> criticalConnections;
+		final List<Crit> criticalConnections;
 
 		double connectionCost;
 
@@ -409,7 +456,7 @@ public class HardblockConnectionLegalizer{
 			this.offset = offset;
 
 			this.nets = new ArrayList<Net>();
-			this.criticalConnections = new ArrayList<CriticalConnection>();
+			this.criticalConnections = new ArrayList<Crit>();
 
 			this.site = null;
 		}
@@ -434,7 +481,7 @@ public class HardblockConnectionLegalizer{
 			for(Net net:this.nets){
 				this.connectionCost += net.connectionCost();
 			}
-			for(CriticalConnection conn:this.criticalConnections){
+			for(Crit conn:this.criticalConnections){
 				this.connectionCost += conn.timingCost();
 			}
 		}
@@ -449,7 +496,7 @@ public class HardblockConnectionLegalizer{
 				cost += net.verticalConnectionCost(oldY, newY);
 			}
 
-			for(CriticalConnection conn:this.criticalConnections){
+			for(Crit conn:this.criticalConnections){
 				cost += conn.timingCost();
 			}
 			
@@ -462,7 +509,7 @@ public class HardblockConnectionLegalizer{
 				this.connectionCost += net.updateHorizontalConnectionCost(oldX, newX);
 				this.connectionCost += net.updateVerticalConnectionCost(oldY, newY);
 			}
-			for(CriticalConnection conn:this.criticalConnections){
+			for(Crit conn:this.criticalConnections){
 				this.connectionCost += conn.timingCost();
 			}
 		}
@@ -473,7 +520,7 @@ public class HardblockConnectionLegalizer{
 				this.connectionCost += net.updateHorizontalConnectionCost();
 				this.connectionCost += net.updateVerticalConnectionCost();
 			}
-			for(CriticalConnection conn:this.criticalConnections){
+			for(Crit conn:this.criticalConnections){
 				this.connectionCost += conn.timingCost();
 			}
 		}
@@ -552,7 +599,9 @@ public class HardblockConnectionLegalizer{
 			this.verticalChange = false;
 		}
 		void addBlock(Block block){
-			this.blocks.add(block);
+			if(!this.blocks.contains(block)){
+				this.blocks.add(block);
+			}
 		}
 		
 		void checkForHorizontalChange(){
@@ -566,11 +615,26 @@ public class HardblockConnectionLegalizer{
 
 		//// Connection cost ////
 		void initializeConnectionCost(){
-			this.minX = this.getMinX();
-			this.maxX = this.getMaxX();
-
-			this.minY = this.getMinY();
-			this.maxY = this.getMaxY();
+			Block initialBlock = this.blocks.get(0);
+	        this.minX = initialBlock.x;
+	        this.maxX = initialBlock.x;
+	        
+	        this.minY = initialBlock.y;
+	        this.maxY = initialBlock.y;
+	        
+	        for(int i = 1; i < this.blocks.size(); i++){
+	        	Block block = this.blocks.get(i);
+	            if(block.x < this.minX) {
+	                this.minX = block.x;
+	            }else if(block.x > this.maxX){
+	            	this.maxX = block.x;
+	            }
+	            if(block.y < this.minY) {
+	                this.minY = block.y;
+	            }else if(block.y > this.maxY){
+	            	this.maxY = block.y;
+	            }
+	        }
 
 			this.horizontalConnectionCost = (this.maxX - this.minX + 1) * this.netWeight;
 			this.verticalConnectionCost = (this.maxY - this.minY + 1) * this.netWeight;
@@ -638,7 +702,8 @@ public class HardblockConnectionLegalizer{
 		int getMinX(){
 			Block initialBlock = this.blocks.get(0);
 	        int minX = initialBlock.x;
-	        for(Block block:this.blocks){
+	        for(int i = 1; i < this.blocks.size(); i++){
+	        	Block block = this.blocks.get(i);
 	            if(block.x < minX) {
 	                minX = block.x;
 	            }
@@ -648,7 +713,8 @@ public class HardblockConnectionLegalizer{
 		int getMaxX(){
 			Block initialBlock = this.blocks.get(0);
 	        int maxX = initialBlock.x;
-	        for(Block block:this.blocks){
+	        for(int i = 1; i < this.blocks.size(); i++){
+	        	Block block = this.blocks.get(i);
 	            if(block.x > maxX) {
 	                maxX = block.x;
 	            }
@@ -715,7 +781,8 @@ public class HardblockConnectionLegalizer{
 		private int getMinY(){
 			Block initialBlock = this.blocks.get(0);
 	        int minY = initialBlock.y;
-	        for(Block block:this.blocks){
+	        for(int i = 1; i < this.blocks.size(); i++){
+	        	Block block = this.blocks.get(i);
 	            if(block.y < minY) {
 	                minY = block.y;
 	            }
@@ -725,7 +792,8 @@ public class HardblockConnectionLegalizer{
 		private int getMaxY(){
 			Block initialBlock = this.blocks.get(0);
 	        int maxY = initialBlock.y;
-	        for(Block block:this.blocks){
+	        for(int i = 1; i < this.blocks.size(); i++){
+	        	Block block = this.blocks.get(i);
 	            if(block.y > maxY) {
 	                maxY = block.y;
 	            }
@@ -736,22 +804,20 @@ public class HardblockConnectionLegalizer{
     /////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// CRITICAL CONNECTION //////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
-	private class CriticalConnection {
+	private class Crit {
 		private Block sourceBlock, sinkBlock;
-		private double criticality;
+		private double weight;
 		
-		private final int timingMultiplier = 50;
-		
-		CriticalConnection(Block sourceBlock, Block sinkBlock, double criticality){
+		Crit(Block sourceBlock, Block sinkBlock, double weight){
 			this.sourceBlock = sourceBlock;
 			this.sinkBlock = sinkBlock;
-			this.criticality = criticality;
+			this.weight = weight;
 		}
 		int manhattanDistance(){
 			return Math.abs(this.sourceBlock.x - this.sinkBlock.x) + Math.abs(this.sourceBlock.y - this.sinkBlock.y);
 		}
 		double timingCost(){
-			return this.timingMultiplier * this.criticality * this.manhattanDistance();
+			return this.weight * this.manhattanDistance();
 		}
 	}
 	

@@ -10,6 +10,7 @@ import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
+import place.placers.analytical.GradientPlacerTD.CriticalConnection;
 import place.visual.PlacementVisualizer;
 
 abstract class Legalizer {
@@ -87,8 +88,20 @@ abstract class Legalizer {
 
         //Hard block legalizer
         this.netBlocks = netBlocks;
+        
         this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, timingNets, netBlocks);
+        for(int i = 0; i < this.blockTypes.size(); i++) {
+            BlockType hardblockType = this.blockTypes.get(i);
+            if(hardblockType.getCategory().equals(BlockCategory.HARDBLOCK) || hardblockType.getCategory().equals(BlockCategory.IO)){
+            	int blocksStart = this.blockTypeIndexStarts.get(i);
+                int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
+                if(blocksEnd > blocksStart) {
+                	this.hardblockLegalizer.addBlocktype(hardblockType, blocksStart, blocksEnd);
+                }
+            }    
+        }
+        
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
     }
@@ -116,12 +129,12 @@ abstract class Legalizer {
 
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
-    void legalize(double tileCapacity) {
+    void legalize(double tileCapacity, List<CriticalConnection> criticalConnections) {
     	long start = System.nanoTime();
     	
     	this.tileCapacity = tileCapacity;
         
-        this.hardblockLegalizer.updateCriticalConnections();
+        this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
 
         // Skip i = 0: these are IO blocks
         for(int i = 1; i < this.blockTypes.size(); i++) {
@@ -161,7 +174,7 @@ abstract class Legalizer {
             	double time = (end -  start) * Math.pow(10, -6);
             	System.out.printf("Legalize LAB took %.0f ms\n", time);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		this.hardblockLegalizer.legalizeHardblock(blocksStart, blocksEnd, this.blockStart, this.blockRepeat, this.blockHeight, this.blockType.toString());
+        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		//this.hardblockLegalizer.legalizeIO(blocksStart, blocksEnd);
         		

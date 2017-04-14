@@ -3,8 +3,11 @@ package place.placers.analytical;
 import place.circuit.Circuit;
 import place.interfaces.Logger;
 import place.interfaces.Options;
+import place.placers.analytical.GradientPlacerTD.CriticalConnection;
 import place.visual.PlacementVisualizer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class GradientPlacerWLD extends GradientPlacer {
@@ -30,6 +33,10 @@ public class GradientPlacerWLD extends GradientPlacer {
         // This placer always accepts the latest solution.
         // No cost has to be calculated, so this is faster.
         this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+    }
+    
+    public List<CriticalConnection> getCriticalConnections(){
+    	return new ArrayList<CriticalConnection>();
     }
 
     @Override

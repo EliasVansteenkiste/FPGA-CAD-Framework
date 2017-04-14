@@ -153,6 +153,9 @@ public class GradientPlacerTD extends GradientPlacer {
             }
         }
     }
+    public List<CriticalConnection> getCriticalConnections(){
+    	return this.criticalConnections;
+    }
 
     @Override
     protected void processNets() {
@@ -161,7 +164,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
         // Process the most critical source-sink connections
         for(CriticalConnection c:this.criticalConnections){
-        	this.solver.processConnection(c.source, c.sink, c.offset, c.weight);
+        	this.solver.processConnection(c.sourceIndex, c.sinkIndex, c.offset, c.weight);
         }
     }
 
@@ -180,12 +183,12 @@ public class GradientPlacerTD extends GradientPlacer {
     }
     
     public class CriticalConnection{
-    	private final int source, sink;
-    	private final float offset, weight;
+    	final int sourceIndex, sinkIndex;
+    	final float offset, weight;
     	
     	CriticalConnection(int source, int sink, float offset, float weight){
-    		this.source = source;
-    		this.sink = sink;
+    		this.sourceIndex = source;
+    		this.sinkIndex = sink;
     		this.offset = offset;
     		this.weight = weight;
     	}

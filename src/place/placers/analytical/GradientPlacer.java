@@ -7,6 +7,7 @@ import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.interfaces.Options.Required;
+import place.placers.analytical.GradientPlacerTD.CriticalConnection;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
@@ -162,6 +163,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     protected abstract void initializeIteration(int iteration);
     protected abstract void updateLegalIfNeeded(int iteration);
+    protected abstract List<CriticalConnection> getCriticalConnections();
 
 
     @Override
@@ -310,7 +312,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.utilization = Math.max(1, 1 + slope * (this.anchorWeight - this.anchorWeightStop));
 
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(this.utilization);
+        this.legalizer.legalize(this.utilization, this.getCriticalConnections());
         this.stopTimer(T_LEGALIZE);
 
         this.startTimer(T_UPDATE_CIRCUIT);
