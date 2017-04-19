@@ -11,29 +11,35 @@ import place.placers.analytical.HardblockConnectionLegalizer.Net;
 import place.util.TimingTree;
 
 public class ColumnSwap {
-	private final Column[] columns;
+	private Column[] columns;
 	
 	private final Set<Column> freeColumns;
 	private final Set<Column> overutilizedColumns;
 	
 	private final Set<Block> influencedBlocks;
 	
-	private Map<Integer, double[]> costIncreaseTable;
+	private final Map<Integer, double[]> costIncreaseTable;
 	
 	private TimingTree timing;
 	
-	ColumnSwap(Column[] columns, TimingTree timing){
+	ColumnSwap(TimingTree timing){
 		this.timing = timing;
+		
+		this.freeColumns = new HashSet<>();
+		this.overutilizedColumns = new HashSet<>();
+		this.influencedBlocks = new HashSet<>();
+		this.costIncreaseTable = new HashMap<>();
+	}
+	public void doSwap(Column[] columns){
 		this.timing.start("Column Swap");
 		
 		this.columns = columns;
 		
-		this.freeColumns = this.getFreeColumns();
-		this.overutilizedColumns = this.getOverutilizedColumns();
+		this.getFreeColumns();
+		this.getOverutilizedColumns();
 		
-		this.influencedBlocks = new HashSet<Block>();
-		
-		this.costIncreaseTable = new HashMap<Integer, double[]>();
+		this.influencedBlocks.clear();
+		this.costIncreaseTable.clear();
 		
 		while(!this.overutilizedColumns.isEmpty()){
 			Column largestColumn = this.getLargestColumn();
@@ -134,23 +140,21 @@ public class ColumnSwap {
 		}
 		this.timing.time("Column Swap");
 	}
-	private Set<Column> getFreeColumns(){
-		Set<Column> freeColumns = new HashSet<Column>();
+	private void getFreeColumns(){
+		this.freeColumns.clear();
 		for(Column column:this.columns){
 			if(column.usedPos() < column.numPos()){
-				freeColumns.add(column);
+				this.freeColumns.add(column);
 			}
 		}
-		return freeColumns;
 	}
-	private Set<Column> getOverutilizedColumns(){
-		Set<Column> overutilizedColumns = new HashSet<Column>();
+	private void getOverutilizedColumns(){
+		this.overutilizedColumns.clear();
 		for(Column column:this.columns){
 			if(column.usedPos() > column.numPos()){
-				overutilizedColumns.add(column);
+				this.overutilizedColumns.add(column);
 			}
 		}
-		return overutilizedColumns;
 	}
 	private Column getLargestColumn(){
 		Column largestColumn = null;
