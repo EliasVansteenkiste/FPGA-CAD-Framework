@@ -51,11 +51,9 @@ class PushingSpreader {
     	this.blocks = blocks;
     	
     	//TODO Dynamic grid force calculation
-    	double initialGridForce = 0.002;
-    	double finalGridForce = 0.002;
+    	double gridForce = 0.002;
     	this.iteration = 0;
     	do{
-    		double gridForce = initialGridForce - this.iteration * (initialGridForce - finalGridForce) / iterations;
         	this.applyPushingForces(gridForce);
         	this.iteration += 1;
         }while(this.iteration < iterations);
