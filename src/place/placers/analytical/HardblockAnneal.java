@@ -16,7 +16,7 @@ public class HardblockAnneal {
 	private int numSites;
 	
 	private double temperature;
-	private int temperatureSteps, movesPerTemperature;
+	private int movesPerTemperature;
 	
 	private final Random random;
 
@@ -63,16 +63,14 @@ public class HardblockAnneal {
 		}
 		
 		this.temperature = this.calculateInitialTemperature();
-		this.temperatureSteps = 250;
 		this.movesPerTemperature = (int)Math.pow(this.numBlocks, 4/3);
-		
-		System.out.println("Initial temperature is equal to " + this.temperature);
-		for(int temperatureStep = 0; temperatureStep < this.temperatureSteps; temperatureStep++){//Stop criterium for simulated annealing
+
+		while(this.temperature > 0.01){
 			double numSwaps = this.doSwapIteration(this.movesPerTemperature, true);
 			double alpha = numSwaps / this.movesPerTemperature;
 			this.updateTemperature(alpha);
 		}
-		
+
 		System.out.println(this.temperature);
 		this.timing.time("Anneal");
 	}
