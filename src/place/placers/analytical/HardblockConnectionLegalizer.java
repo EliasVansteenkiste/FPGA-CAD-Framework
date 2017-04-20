@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import place.circuit.architecture.BlockType;
@@ -16,23 +15,26 @@ import place.placers.analytical.GradientPlacerTD.CriticalConnection;
 import place.util.TimingTree;
 
 public class HardblockConnectionLegalizer{
-	
 	private BlockType blockType;
-	
+
 	private final double[] linearX, linearY;
     private final int[] legalX, legalY;
 
     private final Block[] blocks;
     private final Net[] nets;
-    
-    private Map<BlockType, Block[]> blocksPerBlocktype;
-    private Map<BlockType, Net[]> netsPerBlocktype;
 
-    //private final List<TimingNet> timingNets;
+    private final List<Crit> critConn;
+
+    private final ColumnSwap columnSwap;
+    private final HardblockAnneal hardblockAnneal;
+    private final ColumnPlacer columnPlacer;
+    
+    private final Map<BlockType, Block[]> blocksPerBlocktype;
+    private final Map<BlockType, Net[]> netsPerBlocktype;
 
     private final int gridWidth, gridHeigth;
     
-    private TimingTree timingTree;
+    private final TimingTree timingTree;
 
 	HardblockConnectionLegalizer(
 			double[] linearX,
@@ -79,14 +81,16 @@ public class HardblockConnectionLegalizer{
 		int l = 0;
 		for(int i = 0; i < placerNets.size(); i++){
 			int fanout = placerNets.get(i).blocks.length;
-			if(fanout < maxFanout){
+			if(fanout > maxFanout){
+				//Do Nothing
+			}else{
 				double netWeight = AnalyticalAndGradientPlacer.getWeight(fanout);
-				this.nets[l] = new Net(i, netWeight);
+				this.nets[l] = new Net(l, netWeight);
 				l++;
 			}
 		}
 		for(int i = 0; i < legalX.length; i++){
-			int offset = (1 - heights[i]) / 2;
+			float offset = (1 - heights[i]) / 2f;
 			this.blocks[i] = new Block(i, offset);
 		}
 		
@@ -94,7 +98,9 @@ public class HardblockConnectionLegalizer{
 		l = 0;
 		for(int i = 0; i < placerNets.size(); i++){
 			int fanout = placerNets.get(i).blocks.length;
-			if(fanout < maxFanout){
+			if(fanout > maxFanout){
+				//Do nothing
+			}else{
 				Net legalizerNet = this.nets[l];
 				for(NetBlock block:placerNets.get(i).blocks){
 					Block legalizerBlock = this.blocks[block.blockIndex];
@@ -108,11 +114,17 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Initialize Hardblock Connection Legalizer Data");
 		
-		//this.timingNets = timingNets;
+		this.critConn = new ArrayList<>();
 		
-		this.blocksPerBlocktype = new HashMap<BlockType, Block[]>();
-		this.netsPerBlocktype = new HashMap<BlockType, Net[]>();
+		this.blocksPerBlocktype = new HashMap<>();
+		this.netsPerBlocktype = new HashMap<>();
+		
+		this.columnSwap = new ColumnSwap(this.timingTree);
+		this.hardblockAnneal = new HardblockAnneal(this.timingTree, 100);
+		this.columnPlacer = new ColumnPlacer(this.timingTree, this.blocks);
 	}
+	
+	//ADD BLOCK TYPE
 	public void addBlocktype(BlockType blockType, int firstBlockIndex, int lastBlockIndex){
 		Block[] legalizeBlocks = this.getLegalizeBlocks(firstBlockIndex, lastBlockIndex);
 		Net[] legalizeNets = this.getLegalizeNets(legalizeBlocks);
@@ -126,12 +138,11 @@ public class HardblockConnectionLegalizer{
 			Block legalizeBlock = this.blocks[i];
 			legalizeBlocks[i - firstBlockIndex] = legalizeBlock;
 			
-	        //Offset test
+	        //Offset test -> hard blocks have no offset
 	        if(legalizeBlock.offset != 0){
 	        	System.out.println("The offset of hard  block is equal to " + legalizeBlock.offset + ", should be 0");
 	        }
 		}
-		
 		return legalizeBlocks;
 	}
 	private Net[] getLegalizeNets(Block[] legalizeBlocks){
@@ -141,13 +152,10 @@ public class HardblockConnectionLegalizer{
 				hardblockNets.add(net);
 			}
 		}
-		
-		Net[] legalizeNets = hardblockNets.toArray(new Net[hardblockNets.size()]);
-		
-		return legalizeNets;
+		return hardblockNets.toArray(new Net[hardblockNets.size()]);
 	}
 
-	
+	//UPDATE CRITICAL CONNECTIONS
 	public void updateCriticalConnections(List<CriticalConnection> criticalConnections){
 		this.timingTree.start("Update critical connections in hardblock connection legalizer");
 		
@@ -155,6 +163,7 @@ public class HardblockConnectionLegalizer{
 		for(Block block:this.blocks){
 			block.criticalConnections.clear();
 		}
+		this.critConn.clear();
 		
 		for(CriticalConnection critConn:criticalConnections){
         	Block sourceBlock = this.blocks[critConn.sourceIndex];
@@ -163,31 +172,14 @@ public class HardblockConnectionLegalizer{
         	Crit conn = new Crit(sourceBlock, sinkBlock, critConn.weight);
         	sourceBlock.criticalConnections.add(conn);
         	sinkBlock.criticalConnections.add(conn);
+        	
+        	this.critConn.add(conn);
 		}
-
-		//Update critical connections
-		//double criticalityThreshold = 0.75;
-        
-		//for(TimingNet net : this.timingNets){
-        //    NetBlock source = net.source;
-
-        //    for(TimingNetBlock sink : net.sinks) {
-        //        double criticality = sink.timingEdge.getCriticality();
-        //        if(criticality > criticalityThreshold) {
-
-        //            if(source.blockIndex != sink.blockIndex) {
-        //            	Block sourceBlock = this.blocks[source.blockIndex];
-        //            	Block sinkBlock = this.blocks[sink.blockIndex];
-                    	
-        //            	Crit conn = new Crit(sourceBlock, sinkBlock, criticality);
-        //            	sourceBlock.criticalConnections.add(conn);
-        //            	sinkBlock.criticalConnections.add(conn);
-        //            }
-        //        }
-        //    }
-        //}
+		
 		this.timingTree.time("Update critical connections in hardblock connection legalizer");
 	}
+	
+	//Legalize hard block
 	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight){
 		this.timingTree.start("Legalize " + blockType + " hardblock");
 		
@@ -213,10 +205,12 @@ public class HardblockConnectionLegalizer{
 			columns[c] = new Column(c, column, sites);
 		}
 		
+		//Update the coordinates off all blocks based on the current legal placement
 		this.updateBlockCoordinates();
 
 		this.timingTree.start("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
+		//Update the coordinates of the current hard block type based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
 			double linearX = this.linearX[block.index];
 			double linearY = this.linearY[block.index];
@@ -229,19 +223,32 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
+		//All blocks have a coordinate, initialize the connection cost based on the coordinates
 		this.initializeConnectionCost(legalizeBlocks, legalizeNets);
 
-		this.columnSwap(columns);
+		this.columnSwap.doSwap(columns);
 		
-		//for(Column column: columns){
-		//	this.anneal(column);
-		//}
+		this.timingTree.start("Legalize columns");
+		for(Column column:columns){
+			column.legalize();
+		}
+		this.timingTree.time("Legalize columns");
+		
+		this.timingTree.start("Anneal columns");
+		for(Column column:columns){
+			this.hardblockAnneal.doAnneal(column);
+		}
+		this.timingTree.time("Anneal columns");
+		
+		//this.columnPlacer.doPlacement(columns, legalizeBlocks, legalizeNets, this.critConn, 1, this.gridHeigth - blockHeight);
 		
 		this.updateLegal();
 		this.cleanData();
 		
 		this.timingTree.time("Legalize " + blockType + " hardblock");
 	}
+	
+	//Legalize IO block
 	public void legalizeIO(BlockType blockType){
 		this.timingTree.start("Legalize IO");
 		
@@ -266,12 +273,13 @@ public class HardblockConnectionLegalizer{
 			}
 		}
 		
+		//Update the coordinates of the current hard block type based on the current linear placement
 		this.updateBlockCoordinates();
 		
 		this.timingTree.start("Find best site for all IO blocks based on minimal displacement cost");
 		
+		//Update the coordinates of the io blocks based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
-			
 			double linearX = this.linearX[block.index];
 			double linearY = this.linearY[block.index];
 			
@@ -280,6 +288,8 @@ public class HardblockConnectionLegalizer{
 			
 			for(Site site:legalizeSites){
 				if(!site.hasBlock()){
+					
+					block.setCoordinates(site.column, site.row);
 					double cost = (site.column - linearX) * (site.column - linearX) + (site.row - linearY) * (site.row - linearY);
 					if(cost < minimumCost){
 						minimumCost = cost;
@@ -292,10 +302,12 @@ public class HardblockConnectionLegalizer{
 		}
 		
 		this.timingTree.time("Find best site for all IO blocks based on minimal displacement cost");
-		
+
+		//All blocks have a coordinate, initialize the connection cost based on the coordinates
 		this.initializeConnectionCost(legalizeBlocks, legalizeNets);
 
-		this.anneal(legalizeBlocks, legalizeSites);
+		//Anneal the IOs to find a good placement
+		this.hardblockAnneal.doAnneal(legalizeBlocks, legalizeSites);
 		
 		this.updateLegal();
 		this.cleanData();
@@ -306,7 +318,7 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.start("Update block coordinates");
 		
         for(Block block:this.blocks){
-        	block.setCoordinates(this.legalX[block.index], this.legalY[block.index] + block.offset);
+        	block.setCoordinates(this.legalX[block.index], this.legalY[block.index]);
         }
         
         this.timingTree.time("Update block coordinates");
@@ -325,105 +337,15 @@ public class HardblockConnectionLegalizer{
 			block.initializeConnectionCost();
 		}
 		this.timingTree.time("Update blocks");
-		
+
 		this.timingTree.time("Initialize connection cost");
-	}
-	
-	private void columnSwap(Column[] columns){
-
-		new ColumnSwap(columns, this.timingTree);
-
-		this.timingTree.start("Legalize columns");
-		//Spread the blocks in the buckets
-		//for(Column column:columns){
-		//	column.legalize();
-		//}
-		this.timingTree.time("Legalize columns");
-	}
-    /////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////// ANNEAL ///////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////
-	private void anneal(Column column){
-		this.anneal(column.blocks.toArray(new Block[column.blocks.size()]), column.sites);
-	}
-	private void anneal(Block[] annealBlocks, Site[] annealSites){
-		this.timingTree.start("Anneal");
-		
-		int numBlocks = annealBlocks.length;
-		int numSites = annealSites.length;
-		
-		Random random = new Random(100);
-		
-		double temperature = 3000;
-
-		int temperatureSteps = 500;
-		int stepsPerTemperature = (int)Math.pow(numBlocks, 4/3);
-		
-		for(int temperatureStep = 0; temperatureStep < temperatureSteps; temperatureStep++){
-
-			temperature *= 0.98;
-			
-			for(int i = 0; i < stepsPerTemperature; i++){
-				
-				Block block1 = annealBlocks[random.nextInt(numBlocks)];
-				Site site1 = block1.getSite();
-				
-				Site site2 = annealSites[random.nextInt(numSites)];
-				while(site1.equals(site2)){
-					site2 = annealSites[random.nextInt(numSites)];
-				}
-				Block block2 = site2.getBlock();
-				
-				if(block2 != null){
-					double oldCost = block1.connectionCost() + block2.connectionCost();
-
-					block1.setSite(site2);
-					block2.setSite(site1);
-					
-					site2.setBlock(block1);
-					site1.setBlock(block2);
-
-					double newCost = block1.connectionCost(site1.column, site2.column, site1.row, site2.row) + block2.connectionCost(site2.column, site1.column, site2.row, site1.row);
-					double deltaCost = newCost - oldCost;
-					
-	 				if(deltaCost <= 0 || random.nextDouble() < Math.exp(-deltaCost / temperature)) {
-	 					block1.updateConnectionCost();
-	 					block2.updateConnectionCost();
-	 				}else{
-	 					block1.setSite(site1);
-	 					site1.setBlock(block1);
-	 					
-	 					site2.setBlock(block2);
-	 					block2.setSite(site2);
-	 				}
-				}else{
-					double oldCost = block1.connectionCost();
-					
-					block1.setSite(site2);
-					site2.setBlock(block1);
-					site1.removeBlock();
-
-					double newCost = block1.connectionCost(site1.column, site2.column, site1.row, site2.row);
-					double deltaCost = newCost - oldCost;
-					
-	 				if(deltaCost <= 0 || random.nextDouble() < Math.exp(-deltaCost / temperature)) {
-	 					block1.updateConnectionCost();
-	 				}else{
-	 					block1.setSite(site1);
-	 					site1.setBlock(block1);
-	 					site2.removeBlock();
-	 				}
-				}
-			}
-		}
-		this.timingTree.time("Anneal");
 	}
     private void updateLegal(){
     	this.timingTree.start("Update legal");
     	
     	for(Block block:this.blocks){
     		this.legalX[block.index] = block.x;
-    		this.legalY[block.index] = block.y - block.offset;
+    		this.legalY[block.index] = block.y;
     	}
     	
     	this.timingTree.time("Update legal");
@@ -442,7 +364,8 @@ public class HardblockConnectionLegalizer{
     ////////////////////////////////////// BLOCK ////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
 	class Block{
-		final int index, offset;
+		final int index;
+		final float offset;
 		int x, y;
 		Site site;
 
@@ -451,7 +374,7 @@ public class HardblockConnectionLegalizer{
 
 		double connectionCost;
 
-		Block(int index, int offset){
+		Block(int index, float offset){
 			this.index = index;
 			this.offset = offset;
 
@@ -541,9 +464,9 @@ public class HardblockConnectionLegalizer{
     /////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////// SITE //////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
-	private class Site {
-	    private final int column, row;
-	    private Block block;
+	class Site {
+	    final int column, row;
+	    Block block;
 
 	    public Site(int column, int row) {
 	        this.column = column;
@@ -804,9 +727,9 @@ public class HardblockConnectionLegalizer{
     /////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// CRITICAL CONNECTION //////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
-	private class Crit {
-		private Block sourceBlock, sinkBlock;
-		private double weight;
+	class Crit {
+		Block sourceBlock, sinkBlock;
+		double weight;
 		
 		Crit(Block sourceBlock, Block sinkBlock, double weight){
 			this.sourceBlock = sourceBlock;
@@ -817,7 +740,7 @@ public class HardblockConnectionLegalizer{
 			return Math.abs(this.sourceBlock.x - this.sinkBlock.x) + Math.abs(this.sourceBlock.y - this.sinkBlock.y);
 		}
 		double timingCost(){
-			return this.weight * this.manhattanDistance();
+			return  this.weight * this.manhattanDistance();
 		}
 	}
 	
@@ -849,49 +772,21 @@ public class HardblockConnectionLegalizer{
 		int usedPos(){
 			return this.blocks.size();
 		}
-		
-		void legalize(){//TODO OPTIMIZE
+		void legalize(){
 			if(this.usedPos() > this.numPos()){
 				System.out.println("To many blocks in column to legalize");
 			}else{
 				for(Block block:this.blocks){
-					Site site = this.getBestSite(block);
+					int origX = block.x;
+					int origY = block.y;
 					
-					if(!site.hasBlock()){
-						block.setSite(site);
-						site.setBlock(block);
-					}
-				}
-				for(Block block:this.blocks){
-					if(!block.hasSite()){
-						Site site = this.getBestFreeSite(block);
-						block.setSite(site);
-						site.setBlock(block);
-					}
+					Site site = this.getBestFreeSite(block);
+					block.setSite(site);
+					site.setBlock(block);
+					
+					block.updateConnectionCost(origX, site.column, origY, site.row);
 				}
 			}
-		}
-		Site getBestSite(Block block){
-			
-			Site bestSite = null;
-			double minimumCost = Double.MAX_VALUE;
-			
-			for(Site site:this.sites){
-				int oldX = block.x;
-				int oldY = block.y;
-				
-				int newX = site.column;
-				int newY = site.row;
-				
-				block.setCoordinates(newX, newY);
-				double cost = block.connectionCost(oldX, newX, oldY, newY);
-				
-				if(cost < minimumCost){
-					minimumCost = cost;
-					bestSite = site;
-				}
-			}
-			return bestSite;
 		}
 		Site getBestFreeSite(Block block){
 			
