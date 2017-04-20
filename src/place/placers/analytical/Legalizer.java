@@ -165,8 +165,6 @@ abstract class Legalizer {
                 this.blockRepeat = this.width;
             }
 
-
-            
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
             	long start = System.nanoTime();
             	this.legalizeBlockType(blocksStart, blocksEnd);
@@ -176,17 +174,15 @@ abstract class Legalizer {
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
         		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
-        		//this.hardblockLegalizer.legalizeIO(blocksStart, blocksEnd);
-        		
-        		//for(int b = blocksStart; b < blocksEnd; b++){
-        		//	this.linearX[b] = this.legalX[b];
-        		//	this.linearY[b] = this.legalY[b];
-        		//}
+        		this.hardblockLegalizer.legalizeIO(this.blockType);
+
+        		for(int b = blocksStart; b < blocksEnd; b++){
+        			this.linearX[b] = this.legalX[b];
+        			this.linearY[b] = this.legalY[b];
+        		 }
         	}else{
         		System.out.println("unrecognized block type: " + this.blockType);
         	}
-           
-
         }
     }
 
