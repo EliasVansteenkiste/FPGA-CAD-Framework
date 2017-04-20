@@ -9,6 +9,7 @@ import place.util.TimingTree;
 
 public class HardblockAnneal {
 	private Block[] blocks;
+	private Column[] columns;
 	private Site[] sites;
 	
 	private int numBlocks;
@@ -25,17 +26,41 @@ public class HardblockAnneal {
 		this.timing = timing;
 		this.random = new Random(seed);
 	}
+	public void doAnneal(Block[] annealBlocks, Column[] annealColumns){
+		for(Column column:annealColumns){
+			for(Block block:column.blocks){
+				block.column = column;
+			}
+		}
+		this.blocks = annealBlocks;
+		this.columns = annealColumns;
+		this.sites = null;
+		
+		this.doAnneal();
+	}
 	public void doAnneal(Column column){
-		this.doAnneal(column.blocks.toArray(new Block[column.blocks.size()]), column.sites);
+		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
+		this.columns = null;
+		this.sites = column.sites;
+		
+		this.doAnneal();
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites){
-		this.timing.start("Anneal");
-		
 		this.blocks = annealBlocks;
+		this.columns = null;
 		this.sites = annealSites;
 		
+		this.doAnneal();
+	}
+	private void doAnneal(){
+		this.timing.start("Anneal");
+		
 		this.numBlocks = this.blocks.length;
-		this.numSites = this.sites.length;
+		if(this.sites == null){
+			this.numSites = this.columns[0].sites.length;
+		}else{
+			this.numSites = this.sites.length;
+		}
 		
 		this.temperature = this.calculateInitialTemperature();
 		this.temperatureSteps = 250;
@@ -73,16 +98,27 @@ public class HardblockAnneal {
 		double sumDeltaCost = 0;
 		double quadSumDeltaCost = 0;
 
+		Block block1 = null, block2 = null;
+		Site site1 = null, site2 = null;
+		
         for(int i = 0; i < moves; i++){
 			
-			Block block1 = this.blocks[this.random.nextInt(this.numBlocks)];
-			Site site1 = block1.getSite();
+			block1 = this.blocks[this.random.nextInt(this.numBlocks)];
+			site1 = block1.getSite();
 			
-			Site site2 = this.sites[this.random.nextInt(this.numSites)];
-			while(site1.equals(site2)){
+			if(this.sites == null){
+				Column column = block1.column;
+				site2 = column.sites[this.random.nextInt(this.numSites)];
+				while(site1.equals(site2)){
+					site2 = column.sites[this.random.nextInt(this.numSites)];
+				}
+			}else{
 				site2 = this.sites[this.random.nextInt(this.numSites)];
+				while(site1.equals(site2)){
+					site2 = this.sites[this.random.nextInt(this.numSites)];
+				}
 			}
-			Block block2 = site2.getBlock();
+			block2 = site2.getBlock();
 			
 			double deltaCost = this.deltaCost(block1, site1, block2, site2);
 			

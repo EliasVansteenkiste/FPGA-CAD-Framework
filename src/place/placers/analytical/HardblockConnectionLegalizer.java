@@ -235,9 +235,13 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.time("Legalize columns");
 		
 		this.timingTree.start("Anneal columns");
+		
 		for(Column column:columns){
-			this.hardblockAnneal.doAnneal(column);
+			if(column.usedPos() > 0){
+				this.hardblockAnneal.doAnneal(column);
+			}
 		}
+
 		this.timingTree.time("Anneal columns");
 		
 		//this.columnPlacer.doPlacement(columns, legalizeBlocks, legalizeNets, this.critConn, 1, this.gridHeigth - blockHeight);
@@ -373,6 +377,8 @@ public class HardblockConnectionLegalizer{
 		final List<Crit> criticalConnections;
 
 		double connectionCost;
+		
+		Column column;
 
 		Block(int index, float offset){
 			this.index = index;
@@ -740,7 +746,7 @@ public class HardblockConnectionLegalizer{
 			return Math.abs(this.sourceBlock.x - this.sinkBlock.x) + Math.abs(this.sourceBlock.y - this.sinkBlock.y);
 		}
 		double timingCost(){
-			return  this.weight * this.manhattanDistance();
+			return this.weight * this.manhattanDistance();
 		}
 	}
 	
