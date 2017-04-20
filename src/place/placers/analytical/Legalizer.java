@@ -37,7 +37,7 @@ abstract class Legalizer {
     private HardblockConnectionLegalizer hardblockLegalizer;
     
     //Visualizer
-    private PlacementVisualizer visualizer;
+    private final PlacementVisualizer visualizer;
     private final Map<GlobalBlock, NetBlock> netBlocks;
 
     Legalizer(
@@ -49,9 +49,9 @@ abstract class Legalizer {
             int[] legalX,
             int[] legalY,
             int[] heights,
-            PlacementVisualizer visualizer,
             List<Net> nets,
             List<TimingNet> timingNets,
+            PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> netBlocks) {
 
         // Store easy stuff
@@ -89,7 +89,10 @@ abstract class Legalizer {
         //Hard block legalizer
         this.netBlocks = netBlocks;
         
-        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, timingNets, netBlocks);
+        // Information to visualize the legalisation progress
+        this.visualizer = visualizer;
+        
+        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, timingNets, this.visualizer, this.netBlocks);
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
             if(hardblockType.getCategory().equals(BlockCategory.HARDBLOCK) || hardblockType.getCategory().equals(BlockCategory.IO)){
@@ -101,9 +104,6 @@ abstract class Legalizer {
                 }
             }    
         }
-        
-        // Information to visualize the legalisation progress
-        this.visualizer = visualizer;
     }
 
     Legalizer(Legalizer legalizer) {

@@ -13,6 +13,7 @@ import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
 import place.placers.analytical.GradientPlacerTD.CriticalConnection;
 import place.util.TimingTree;
+import place.visual.PlacementVisualizer;
 
 public class HardblockConnectionLegalizer{
 	private BlockType blockType;
@@ -35,6 +36,12 @@ public class HardblockConnectionLegalizer{
     private final int gridWidth, gridHeigth;
     
     private final TimingTree timingTree;
+    
+    //Visualizer
+    private static final boolean printVisual = true;
+    private final PlacementVisualizer visualizer;
+    private final Map<GlobalBlock, NetBlock> netBlocks;
+    private final double[] visualX, visualY;
 
 	HardblockConnectionLegalizer(
 			double[] linearX,
@@ -46,6 +53,7 @@ public class HardblockConnectionLegalizer{
 			int gridHeight,
 			List<AnalyticalAndGradientPlacer.Net> placerNets,
 			List<TimingNet> timingNets,
+			PlacementVisualizer visualizer,
 			Map<GlobalBlock, NetBlock> blockIndexes){
 
 		this.timingTree = new TimingTree(true);
@@ -119,9 +127,14 @@ public class HardblockConnectionLegalizer{
 		this.blocksPerBlocktype = new HashMap<>();
 		this.netsPerBlocktype = new HashMap<>();
 		
+		this.visualizer = visualizer;
+		this.netBlocks = blockIndexes;
+		this.visualX = new double[this.linearX.length];
+		this.visualY = new double[this.linearY.length];
+		
 		this.columnSwap = new ColumnSwap(this.timingTree);
 		this.hardblockAnneal = new HardblockAnneal(this.timingTree, 100);
-		this.columnPlacer = new ColumnPlacer(this.timingTree, this.blocks);
+		this.columnPlacer = new ColumnPlacer(this.timingTree, this.blocks, this.visualizer, this.netBlocks);
 	}
 	
 	//ADD BLOCK TYPE
@@ -210,6 +223,8 @@ public class HardblockConnectionLegalizer{
 
 		this.timingTree.start("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
+		this.addVisual(this.blockType + " => Before best position for each hard block");
+		
 		//Update the coordinates of the current hard block type based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
 			double linearX = this.linearX[block.index];
@@ -221,6 +236,8 @@ public class HardblockConnectionLegalizer{
 			columns[columnIndex].addBlock(block);
 		}
 		
+		this.addVisual(this.blockType + " => After best position for each hard block");
+		
 		this.timingTree.time("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
 		//All blocks have a coordinate, initialize the connection cost based on the coordinates
@@ -228,23 +245,30 @@ public class HardblockConnectionLegalizer{
 
 		this.columnSwap.doSwap(columns);
 		
-		this.timingTree.start("Legalize columns");
-		for(Column column:columns){
-			column.legalize();
-		}
-		this.timingTree.time("Legalize columns");
+		this.addVisual("After column swap");
 		
-		this.timingTree.start("Anneal columns");
-		
-		for(Column column:columns){
-			if(column.usedPos() > 0){
-				this.hardblockAnneal.doAnneal(column);
+		boolean annealNotColumnPlacer = false;
+		if(annealNotColumnPlacer){
+			this.timingTree.start("Legalize columns");
+			for(Column column:columns){
+				column.legalize();
 			}
+			this.timingTree.time("Legalize columns");
+			
+			this.addVisual("After legalize");
+			
+			this.timingTree.start("Anneal columns");
+			for(Column column:columns){
+				if(column.usedPos() > 0){
+					this.hardblockAnneal.doAnneal(column);
+				}
+			}
+			this.timingTree.time("Anneal columns");
+		}else{
+			this.columnPlacer.doPlacement(columns, legalizeBlocks, legalizeNets, this.critConn, 1, this.gridHeigth - blockHeight);
 		}
-
-		this.timingTree.time("Anneal columns");
 		
-		//this.columnPlacer.doPlacement(columns, legalizeBlocks, legalizeNets, this.critConn, 1, this.gridHeigth - blockHeight);
+		this.addVisual(this.blockType + " => After column placement");
 		
 		this.updateLegal();
 		this.cleanData();
@@ -819,4 +843,16 @@ public class HardblockConnectionLegalizer{
 			return bestSite;
 		}
 	}
+    /////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////// COLUMN ////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////
+    protected void addVisual(String name){
+    	if(printVisual){
+        	for(Block block:this.blocks){
+        		this.visualX[block.index] = block.x;
+        		this.visualY[block.index] = block.y;
+        	}
+        	this.visualizer.addPlacement(name, this.netBlocks, this.visualX, this.visualY, -1);
+    	}
+    }
 }

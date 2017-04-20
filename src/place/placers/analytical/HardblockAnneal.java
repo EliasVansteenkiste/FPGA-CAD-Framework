@@ -71,7 +71,6 @@ public class HardblockAnneal {
 			this.updateTemperature(alpha);
 		}
 
-		System.out.println(this.temperature);
 		this.timing.time("Anneal");
 	}
     private double calculateInitialTemperature(){

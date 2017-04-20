@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -86,40 +87,47 @@ public class PlacementVisualizer {
 
         JPanel navigationPanel = new JPanel();
         pane.add(navigationPanel, BorderLayout.PAGE_START);
-
+        
+        JPanel titlePanel = new JPanel();
+        JPanel buttonPanel = new JPanel();
+        
+        navigationPanel.setLayout(new BoxLayout(navigationPanel, BoxLayout.Y_AXIS));
+        navigationPanel.add(titlePanel, BorderLayout.CENTER);
+        navigationPanel.add(buttonPanel, BorderLayout.CENTER);
+        
         this.placementLabel = new JLabel("");
-        navigationPanel.add(this.placementLabel, BorderLayout.LINE_START);
+        titlePanel.add(this.placementLabel, BorderLayout.CENTER);
 
         for(Placement placement:this.placements){
         	if(placement.getName().contains("linear")){
                 JButton previousFastButton = new JButton("<<<");
                 previousFastButton.addActionListener(new NavigateActionListener(this, -3));
-                navigationPanel.add(previousFastButton, BorderLayout.CENTER);
+                buttonPanel.add(previousFastButton, BorderLayout.CENTER);
 
                 JButton previousButton = new JButton("<<");
                 previousButton.addActionListener(new NavigateActionListener(this, -2));
-                navigationPanel.add(previousButton, BorderLayout.CENTER);
+                buttonPanel.add(previousButton, BorderLayout.CENTER);
                 
                 break;
         	}
         }
         JButton previousGradientButton = new JButton("<");
         previousGradientButton.addActionListener(new NavigateActionListener(this, -1));
-        navigationPanel.add(previousGradientButton, BorderLayout.CENTER);
+        buttonPanel.add(previousGradientButton, BorderLayout.CENTER);
 
         JButton nextGradientButton = new JButton(">");
         nextGradientButton.addActionListener(new NavigateActionListener(this, 1));
-        navigationPanel.add(nextGradientButton, BorderLayout.CENTER);
+        buttonPanel.add(nextGradientButton, BorderLayout.CENTER);
 
         for(Placement placement:this.placements){
         	if(placement.getName().contains("linear")){
                 JButton nextButton = new JButton(">>");
                 nextButton.addActionListener(new NavigateActionListener(this, 2));
-                navigationPanel.add(nextButton, BorderLayout.CENTER);
+                buttonPanel.add(nextButton, BorderLayout.CENTER);
                 
         		JButton nextFastButton = new JButton(">>>");
                 nextFastButton.addActionListener(new NavigateActionListener(this, 3));
-                navigationPanel.add(nextFastButton, BorderLayout.CENTER);
+                buttonPanel.add(nextFastButton, BorderLayout.CENTER);
                 
                 break;
         	}
@@ -127,7 +135,7 @@ public class PlacementVisualizer {
         
         JButton enableMouse = new JButton("Info");
         enableMouse.addActionListener(new MouseActionListener(this));
-        navigationPanel.add(enableMouse, BorderLayout.CENTER);
+        buttonPanel.add(enableMouse, BorderLayout.CENTER);
 
         
         //BB Cost plot
@@ -136,7 +144,7 @@ public class PlacementVisualizer {
         		if(placement.hasBBCost()){
                     JButton enablePlot = new JButton("Plot");
                     enablePlot.addActionListener(new PlotActionListener(this));
-                    navigationPanel.add(enablePlot, BorderLayout.CENTER);
+                    buttonPanel.add(enablePlot, BorderLayout.CENTER);
                     
                     int bbPlacements = 0;
                     for(Placement bbPlacement:this.placements){

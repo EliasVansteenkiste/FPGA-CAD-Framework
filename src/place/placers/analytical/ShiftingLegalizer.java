@@ -29,7 +29,7 @@ public class ShiftingLegalizer extends Legalizer {
             List<TimingNet> timingNets,
             Map<GlobalBlock, NetBlock> netBlocks) {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, nets, timingNets, netBlocks);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, timingNets, visualizer, netBlocks);
     }
 
     public ShiftingLegalizer(Legalizer legalizer) {

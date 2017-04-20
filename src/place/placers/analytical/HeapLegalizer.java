@@ -42,7 +42,7 @@ class HeapLegalizer extends Legalizer {
             List<TimingNet> timingNets,
             Map<GlobalBlock, NetBlock> netBlocks) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, nets, timingNets, netBlocks);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, timingNets, visualizer, netBlocks);
 
 
         // Initialize the matrix to contain a linked list at each coordinate
