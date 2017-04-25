@@ -139,6 +139,13 @@ public class ColumnSwap {
 			this.overutilizedColumns.remove(largestColumn);
 		}
 		this.timing.time("Column Swap");
+		
+		//Update the column of each block
+		for(Column column:columns){
+			for(Block block:column.blocks){
+				block.column = column;
+			}
+		}
 	}
 	private void getFreeColumns(){
 		this.freeColumns.clear();
