@@ -27,11 +27,6 @@ public class HardblockAnneal {
 		this.random = new Random(seed);
 	}
 	public void doAnneal(Block[] annealBlocks, Column[] annealColumns){
-		for(Column column:annealColumns){
-			for(Block block:column.blocks){
-				block.column = column;
-			}
-		}
 		this.blocks = annealBlocks;
 		this.columns = annealColumns;
 		this.sites = null;
