@@ -38,7 +38,7 @@ public class HardblockConnectionLegalizer{
     private final TimingTree timingTree;
     
     //Visualizer
-    private static final boolean printVisual = true;
+    private static final boolean doVisual = true;
     private final PlacementVisualizer visualizer;
     private final Map<GlobalBlock, NetBlock> netBlocks;
     private final double[] visualX, visualY;
@@ -134,7 +134,7 @@ public class HardblockConnectionLegalizer{
 		
 		this.columnSwap = new ColumnSwap(this.timingTree);
 		this.hardblockAnneal = new HardblockAnneal(this.timingTree, 100);
-		this.columnPlacer = new ColumnPlacer(this.timingTree, this.blocks, this.visualizer, this.netBlocks);
+		this.columnPlacer = new ColumnPlacer(this.timingTree, this.blocks, this.visualizer, this.netBlocks, doVisual);
 	}
 	
 	//ADD BLOCK TYPE
@@ -265,7 +265,7 @@ public class HardblockConnectionLegalizer{
 			}
 			this.timingTree.time("Anneal columns");
 		}else{
-			this.columnPlacer.doPlacement(columns, legalizeBlocks, legalizeNets, this.critConn, 1, this.gridHeigth - blockHeight);
+			this.columnPlacer.doPlacement(legalizeBlocks, legalizeNets, this.critConn, 1, this.gridHeigth - blockHeight);
 		}
 		
 		this.addVisual(this.blockType + " => After column placement");
@@ -419,6 +419,17 @@ public class HardblockConnectionLegalizer{
 			}
 		}
 
+		double criticality(){
+			double criticality = 0;
+			for(Net net:this.nets){
+				criticality += net.netWeight;
+			}
+			for(Crit crit:this.criticalConnections){
+				criticality += crit.weight;
+			}
+			return criticality;
+		}
+		
 		void setCoordinates(int x, int y){
 			this.x = x;
 			this.y = y;
@@ -847,7 +858,7 @@ public class HardblockConnectionLegalizer{
     ///////////////////////////////////// COLUMN ////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
     protected void addVisual(String name){
-    	if(printVisual){
+    	if(doVisual){
         	for(Block block:this.blocks){
         		this.visualX[block.index] = block.x;
         		this.visualY[block.index] = block.y;
