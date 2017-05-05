@@ -36,3 +36,4 @@ vpr
 *.pyc
 *.log
 **/__pycache__
+/build/
