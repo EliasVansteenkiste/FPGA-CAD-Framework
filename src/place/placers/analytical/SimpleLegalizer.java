@@ -1,7 +1,6 @@
 package place.placers.analytical;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -14,10 +13,11 @@ import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.visual.PlacementVisualizer;
 
-
 class SimpleLegalizer extends Legalizer {
-	
-    
+	private int numRow = this.height + 2;
+	private ArrayList<ArrayList<Cluster>> clustersLists = new ArrayList<ArrayList<Cluster>>(numRow);
+	private int[] tmpLegalX = new int[this.linearX.length];
+	private int[] tmpLegalY = new int[this.linearY.length];
 	SimpleLegalizer(
             Circuit circuit,
             List<BlockType> blockTypes,
@@ -35,240 +35,194 @@ class SimpleLegalizer extends Legalizer {
 
     @Override
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-//    	double[] expandedLinearX = doExpansion(this.linearX, blocksStart, blocksEnd, this.width);
-//    	double[] expandedLinearY = doExpansion(this.linearY, blocksStart, blocksEnd, this.height);
-//    	System.out.println("max expandedLinearX: " + max(expandedLinearX) + ", " + "max expandedLinearY: " + max(expandedLinearY));
-//    	System.out.println("min expandedLinearX: " + min(expandedLinearX) + ", " + "min expandedLinearY: " + min(expandedLinearY));
-//    	String name = "expansion";
-//    	this.addVisual(name, expandedLinearX, expandedLinearY);
-    	
-    	List<LegalizerBlock> blocks = new ArrayList<LegalizerBlock>();  	
-    	for(int index = blocksStart; index < blocksEnd; index++) {
-    		LegalizerBlock legalizerBlock = new LegalizerBlock(index, this.linearX[index], this.linearY[index]);
+    	ArrayList<LegalizerBlock> blocks = new ArrayList<LegalizerBlock>();  	
+    	for(int id = blocksStart; id < blocksEnd; id++) {
+    		LegalizerBlock legalizerBlock = new LegalizerBlock(id, this.linearX[id], this.linearY[id], 1, 1);
     		blocks.add(legalizerBlock);
     	}
     	Collections.sort(blocks, Comparators.HORIZONTAL);
-
-    	System.out.println(blocks.get(blocks.size()/2).x);
     	
-    	int numColumn = this.width + 2;
-    	int numRow = this.height + 2;
-    	int maxCost = this.width + this.height;
-    	int centX = (int)Math.ceil(blocks.get(blocks.size()/2).x);
-    	int[] rowLeftMost = new int[numColumn];
-    	for(int rowIndex = 0; rowIndex < numRow; rowIndex++) {
-    		
-            rowLeftMost[rowIndex] = centX;
-        }
-    	int[] rowRightMost = new int[numColumn];
-    	for(int rowIndex = 0; rowIndex < numRow; rowIndex++) {
-    		
-    		rowRightMost[rowIndex] = centX-1;
-        }
-    	boolean[][] occupiedSite = new boolean[this.width+2][this.height+2];
-    	for(int row = 1; row < this.height+1; row++){
-    		for(int column = 1; column < numColumn; column++){
-    			occupiedSite[column][row] = false;
-    		}
+    	int maxCost = (this.width + this.height)*(blocksEnd - blocksStart);
+    	ArrayList<Row> blockRows = new ArrayList<Row>(numRow);
+    	for(int row = 0; row < this.numRow; row++){
+    		blockRows.add(new Row(row, new ArrayList<LegalizerBlock>()));
     	}
-    	
-    	//for(LegalizerBlock block: blocks){
-    	for(int i = blocks.size()/2 - 1; i >= 0; i--){
-    		LegalizerBlock block = blocks.get(i);
+    	for(int row = 0; row < this.numRow; row++){
+    		this.clustersLists.add(new ArrayList<Cluster>());
+    	}
+    	for(LegalizerBlock block : blocks){
     		int bestRow = 1;
     		double bestCost = maxCost;
-    		for (int row = 1; row < numRow; row++){
-    			rowRightMost[row] = (int)Math.round(Math.min(this.linearX[block.id], rowRightMost[row]));
-    			double cost = calculateMovement(this.linearX[block.id], this.linearY[block.id], rowRightMost[row], row);
-//    			System.out.println("rowLeftMost is: "+ rowLeftMost +" " + "cost is :" + cost);
+    		for (int row = 1; row < this.numRow-1; row++){
+    			blockRows.get(row).addBlock(block);
+    			blockRows.get(row).placeRow();//block should be inserted into this row firstly and removed at the end
+//    			double cost = blockRows.get(row).cost();
+    			double cost = calculateMD(this.linearX[block.getId()], this.linearY[block.getId()], this.tmpLegalX[block.getId()], this.tmpLegalY[block.getId()]);
     			if(cost < bestCost){
     				bestCost = cost;
     				bestRow = row;
-    			}	
+    			}
+    			blockRows.get(row).removeBlock();
     		}
-    		this.legalX[block.id] = rowRightMost[bestRow];
-        	this.legalY[block.id] = bestRow;
-        	occupiedSite[rowRightMost[bestRow]][bestRow] = true;
-//    		this.legalX[block.id] = (int)Math.round(this.linearX[block.id]);
-//        	this.legalY[block.id] = (int)Math.round(this.linearY[block.id]);;
-    		if(rowRightMost[bestRow] > 1){
-    			rowRightMost[bestRow]--;
-    		} else{
-    			rowRightMost[bestRow] = 1;
+        	//insert block to the best row best .add(block)
+        	block.x = this.tmpLegalX[block.getId()];
+//        	block.y = bestRow;
+        	blockRows.get(bestRow).addBlock(block);
+        	blockRows.get(bestRow).placeRow();
+    	}
+    	String name = "tmpLegal";
+    	this.addVisual(name, this.tmpLegalX, this.tmpLegalY);
+    	for(LegalizerBlock blocki : blocks){
+    		this.legalX[blocki.getId()] = this.tmpLegalX[blocki.getId()];
+    		this.legalY[blocki.getId()] = this.tmpLegalY[blocki.getId()];
+    	}
+    }
+    private class Row{
+    	int row;
+    	ArrayList<LegalizerBlock> blockRow;
+    	Row(int row, ArrayList<LegalizerBlock> blockRow){
+    		this.row = row;
+    		this.blockRow = blockRow;
+    	}
+    	private void addBlock(LegalizerBlock block){
+    		block.y = this.row;
+    		this.blockRow.add(block);
+    	}
+    	private double cost(){
+    		double cost = totalMovement(this.blockRow); 
+    		return cost;
+    	}    	
+    	private void removeBlock(){
+    		this.blockRow.remove(this.blockRow.size()-1);
+    	}
+    	//input: one row with N cells
+    	//output tmplegalXs
+    	private void placeRow(){
+    		Cluster lastCluster = null;
+    		for (int i = 0; i < this.blockRow.size(); i++){
+    			if((i == 0)){
+    				Cluster cluster = new Cluster(lastCluster, new ArrayList<LegalizerBlock>(), 0, 0, 0, 0);
+    					cluster.addBlock(this.blockRow.get(i));
+    					cluster.optimalX = (int)Math.round(this.blockRow.get(i).getX());
+    					clustersLists.get(this.row).add(cluster);
+    					lastCluster = cluster;
+    			}else{
+    				if(lastCluster.optimalX + lastCluster.width < this.blockRow.get(i).getX()){
+    					Cluster cluster = new Cluster(lastCluster, new ArrayList<LegalizerBlock>(), 0, 0, 0, 0);
+    					cluster.addBlock( this.blockRow.get(i));
+    					cluster.optimalX = (int)Math.round(this.blockRow.get(i).getX());
+    					clustersLists.get(this.row).add(cluster);
+    					lastCluster = cluster;
+    				}else{
+    					lastCluster.addBlock(this.blockRow.get(i));
+    					collapse(this.row, lastCluster);	
+    				}	
+    			}
+    			optimiseBlocks(this.row, lastCluster);//place cells
     		}
     	}
-    	for(int i = blocks.size()/2; i < blocks.size(); i++){
-    		LegalizerBlock block = blocks.get(i);
+	}
+    private class Cluster{
+	   Cluster previous;
+	   ArrayList<LegalizerBlock> clustersBlock;
+	   int optimalX;
+	   int width;
+	   int weight;
+	   double qc;
+	   Cluster(Cluster previous, ArrayList<LegalizerBlock> clustersBlock,int optimalX, int width, int weight, int qc) {
+		   this.previous = previous;
+		   this.clustersBlock = clustersBlock;
+		   this.optimalX = optimalX;
+		   this.width = width;
+		   this.weight = weight;
+		   this.qc = qc;
+	   }
+	   private void addBlock(LegalizerBlock block){
+		   this.clustersBlock.add(block);
+		   this.weight += block.weight;
+		   this.qc += block.weight * (block.getX() - this.weight);//how it comes to be minus? too much overlapped?
+		   this.width += block.width;
+	   }	   
+   }
+   private void mergeCluster(Cluster lastCluster, Cluster cluster){
+	   lastCluster.clustersBlock = mergeTwoLists(lastCluster.clustersBlock, cluster.clustersBlock);
+	   lastCluster.weight += cluster.weight;
+	   lastCluster.width += cluster.width;
+	   lastCluster.qc += cluster.qc;
+   }
+   private ArrayList<LegalizerBlock> mergeTwoLists(ArrayList<LegalizerBlock> list1, ArrayList<LegalizerBlock> list2){
+	   list1.addAll(list2);
+	   return list1;	   
+   }
+    private void collapse(int row, Cluster cluster){
+    	//place cluster
+    	cluster.optimalX = (int)Math.round(cluster.qc / cluster.weight);//integer division
+    	//limit position in the row	
+    	if(cluster.optimalX > this.width - cluster.width){
+//    		System.out.println("collapse outside the right of the row " + cluster.optimalX + " " + cluster.width);
+    		cluster.optimalX = this.width - cluster.width;
+    	}
+    	if(cluster.optimalX < 1){
+//    		System.out.println("collapse outside the left of the row " + cluster.optimalX+ " " + cluster.width);
+    		cluster.optimalX = 1;
     		
-    		int bestRow = 1;
-    		double bestCost = maxCost;
-    		for (int row = 1; row < numRow; row++){
-    			rowLeftMost[row] = (int)Math.round(Math.max(this.linearX[block.id], rowLeftMost[row]));
-    			double cost = calculateMovement(this.linearX[block.id], this.linearY[block.id], rowLeftMost[row], row);
-    			if(cost < bestCost){
-    				bestCost = cost;
-    				bestRow = row;
-    			}	
-    		}
-    		this.legalX[block.id] = rowLeftMost[bestRow];
-        	this.legalY[block.id] = bestRow;
-        	occupiedSite[rowLeftMost[bestRow]][bestRow] = true;
-        		
-    		if(rowLeftMost[bestRow] < this.width){
-    			rowLeftMost[bestRow]++;
-    		} else{
-    			rowLeftMost[bestRow] = this.width;
-    		}
+    	}
+    	if(cluster.previous!=null){//if cluster's predecessor exists
+    		if(cluster.previous.optimalX + cluster.previous.width > cluster.optimalX){
+        		mergeCluster(cluster.previous, cluster);
+        		this.clustersLists.get(row).remove(cluster);
+        		collapse(row, cluster.previous);
+        	}
     	}
     }
-    
-    
-    private double max(double[] array){
-    	double max = 0;
-    	for (int index = 0; index < array.length; index++){
-    		if (array[index] > max)
-    			max = array[index];
+    //transform cluster position to cell positions
+    private void optimiseBlocks(int row, Cluster cluster){   	
+    	int x = cluster.optimalX;
+    	for(LegalizerBlock block : cluster.clustersBlock){
+    		this.tmpLegalX[block.getId()] = x;
+    		this.tmpLegalY[block.getId()] = row;
+    		x++;
     	}
-    	return max;
     }
-    
-    private double min(double[] array){
-    	double min = array[0];
-    	for (int index= 0; index < array.length; index++){
-    		if (array[index] < min)
-    			min = array[index];
-    	}
-    	return min;
+    private double totalMovement(List<LegalizerBlock> blocks){
+		double movement = 0;
+			for(LegalizerBlock block : blocks){
+				movement += calculateMD(this.linearX[block.getId()], this.linearY[block.getId()], this.tmpLegalX[block.getId()], this.tmpLegalY[block.getId()]);
+	    	}
+	    	return movement;
     }
-	private double[] doExpansion(double[] array, int blocksStart, int blocksEnd, int maxEdge){
-		int numBlocks = blocksEnd - blocksStart;
-    	double[] tmpArray = new double[numBlocks];
-    	System.arraycopy( array, blocksStart, tmpArray, 0, numBlocks );
 
-    	double maxX = max(tmpArray);
-    	double minX = min(tmpArray);
-    	double centerX = (maxX + minX)/2;
-    	double scaleXRight = Math.abs((maxEdge - centerX)/(maxX - centerX));
-    	double scaleXLeft = Math.abs((centerX - 1)/(centerX - minX));
-    	
-    	for(int index = 0; index < numBlocks; index++){
-    		if (tmpArray[index] > centerX){ 
-    			tmpArray[index] = centerX + scaleXRight * (tmpArray[index] - centerX);
-    		}
-    		else {
-    			tmpArray[index] = centerX - scaleXLeft * (centerX - tmpArray[index]);
-    		}
-    	}
-    	double[] expandedArray = new double[array.length];
-    	for(int index = 0; index < blocksStart; index++){
-    		expandedArray[index] = array[index];
-    	}
-    	for(int index = 0; index < numBlocks; index++){
-    		expandedArray[index + blocksStart] = tmpArray[index];
-    	}
-    	for(int index = blocksEnd; index < array.length; index++){
-    		expandedArray[index] = array[index];
-    	}
-//    	System.out.println("blocksStart: " + blocksStart + " blocksEnd: " + blocksEnd + " numBlocks: " + numBlocks);
-		return expandedArray;
-    }    
-
-	private double calculateMovement( double x1, double y1, int x, int y ){
-    	double movement = Math.abs(x1 - x) + Math.abs(y1 - y);
-    	return movement;
-		  	
-    }
+	private double calculateMD( double x1, double y1, int x, int y ){
+		double movement = Math.abs(x1 - x)  + Math.abs(y1 - y);
+		return movement;
+	}
+  
     private class LegalizerBlock {
     	int id;
     	double x;
     	double y;
+    	int width;
+    	int weight;   	
     	
-    	LegalizerBlock(int id, double x, double y){
+    	LegalizerBlock(int id, double x, double y, int width, int weight){
     		this.id = id;
     		this.x = x;
     		this.y = y;
+    		this.width = width;
+    		this.weight = weight;
     	}
-       		    	
-        boolean inRow(Row row){
-        	return (this.x >= row.left && this.x < row.right && this.y >= row.bottom && this.y < row.top);
-        }
+    	private double getX(){
+    		return this.x;
+    	}
+       	private int getId(){
+       		return this.id;
+       	}
         
         @Override
         public String toString() {
             return String.format("[%.2f, %.2f]", this.x, this.y);
         }
-    }
-    
-    private class Row {
-    	int left, right, bottom, top;
-        List<LegalizerBlock> blocks;
-        
-
-        Row(int left, int right, int bottom, int top, List<LegalizerBlock> blocks) {
-            this.left = left;
-            this.right = right;
-            this.bottom = bottom;
-            this.top = this.bottom + 1;
-            
-            this.blocks = new ArrayList<LegalizerBlock>();
-            
-            for(LegalizerBlock block:blocks){
-            	if(block.inRow(this)){
-            		this.blocks.add(block);
-            	}
-            }
-        }
-        
-       
-        
-        
-        LegalizerBlock getFirstBlock(Comparator<LegalizerBlock> comparator){
-        	LegalizerBlock firstBlock = this.blocks.get(0);
-        	for(LegalizerBlock block: this.blocks){
-        		if(comparator.compare(block, firstBlock) < 0){
-        			firstBlock = block;
-        		}
-        	}
-        	return firstBlock;
-        }
-        LegalizerBlock getLastBlock(Comparator<LegalizerBlock> comparator){
-        	LegalizerBlock lastBlock = this.blocks.get(0);
-        	for(LegalizerBlock block: this.blocks){
-        		if(comparator.compare(block, lastBlock) > 0){
-        			lastBlock = block;
-        		}
-        	}
-        	return lastBlock;
-        }
-        
-        
-        int capacity(){
-        	return this.area();
-        }
-        
-        int occupation(){
-        	return this.blocks.size();
-        }
-        
-        double utilisation(){
-        	return (double)this.occupation() / (double)this.capacity();
-        }
-
-        int width(){
-        	return this.right - this.left;
-        }
-        int height(){
-        	return this.top - this.bottom;
-        }
-        int area(){
-        	return this.width() * this.height();
-        }
-        
-        @Override
-        public String toString() {
-            return String.format("h: [%d, %d],\tv: [%d, %d]\t%d\t%d blocks", this.left, this.right, this.bottom, this.top, this.area(), this.blocks.size());
-        }
-    }
+    }    
     
     public static class Comparators {
         public static Comparator<LegalizerBlock> HORIZONTAL = new Comparator<LegalizerBlock>() {
