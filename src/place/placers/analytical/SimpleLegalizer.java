@@ -56,7 +56,6 @@ class SimpleLegalizer extends Legalizer {
     		for (int row = 1; row < this.numRow-1; row++){
     			blockRows.get(row).addBlock(block);
     			blockRows.get(row).placeRow();//block should be inserted into this row firstly and removed at the end
-//    			double cost = blockRows.get(row).cost();
     			double cost = calculateMD(this.linearX[block.getId()], this.linearY[block.getId()], this.tmpLegalX[block.getId()], this.tmpLegalY[block.getId()]);
     			if(cost < bestCost){
     				bestCost = cost;
@@ -66,12 +65,11 @@ class SimpleLegalizer extends Legalizer {
     		}
         	//insert block to the best row best .add(block)
         	block.x = this.tmpLegalX[block.getId()];
-//        	block.y = bestRow;
         	blockRows.get(bestRow).addBlock(block);
         	blockRows.get(bestRow).placeRow();
     	}
-    	String name = "tmpLegal";
-    	this.addVisual(name, this.tmpLegalX, this.tmpLegalY);
+//    	String name = "tmpLegal";
+//    	this.addVisual(name, this.tmpLegalX, this.tmpLegalY);
     	for(LegalizerBlock blocki : blocks){
     		this.legalX[blocki.getId()] = this.tmpLegalX[blocki.getId()];
     		this.legalY[blocki.getId()] = this.tmpLegalY[blocki.getId()];
@@ -159,11 +157,9 @@ class SimpleLegalizer extends Legalizer {
     	cluster.optimalX = (int)Math.round(cluster.qc / cluster.weight);//integer division
     	//limit position in the row	
     	if(cluster.optimalX > this.width - cluster.width){
-//    		System.out.println("collapse outside the right of the row " + cluster.optimalX + " " + cluster.width);
     		cluster.optimalX = this.width - cluster.width;
     	}
     	if(cluster.optimalX < 1){
-//    		System.out.println("collapse outside the left of the row " + cluster.optimalX+ " " + cluster.width);
     		cluster.optimalX = 1;
     		
     	}
