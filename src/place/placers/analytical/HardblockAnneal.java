@@ -1,22 +1,33 @@
 package place.placers.analytical;
 
 import java.util.Random;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 import place.placers.analytical.HardblockConnectionLegalizer.Block;
 import place.placers.analytical.HardblockConnectionLegalizer.Column;
+import place.placers.analytical.HardblockConnectionLegalizer.Crit;
+import place.placers.analytical.HardblockConnectionLegalizer.Net;
 import place.placers.analytical.HardblockConnectionLegalizer.Site;
 import place.util.TimingTree;
 
 public class HardblockAnneal {
 	private Block[] blocks;
-	private Column[] columns;
 	private Site[] sites;
 	
-	private int numBlocks;
-	private int numSites;
+	private final Set<Net> nets;
+	private final Set<Crit> crits;
+	
+	private int numBlocks, numSites;
 	
 	private double temperature;
 	private int movesPerTemperature;
+	
+	private double cost;
+	
+	private final List<Double> costHistory;
 	
 	private final Random random;
 
@@ -25,51 +36,120 @@ public class HardblockAnneal {
 	HardblockAnneal(TimingTree timing, int seed){
 		this.timing = timing;
 		this.random = new Random(seed);
-	}
-	public void doAnneal(Block[] annealBlocks, Column[] annealColumns){
-		this.blocks = annealBlocks;
-		this.columns = annealColumns;
-		this.sites = null;
 		
-		this.doAnneal();
+		this.nets = new HashSet<>();
+		this.crits = new HashSet<>();
+		
+		this.costHistory = new ArrayList<>();
 	}
 	public void doAnneal(Column column){
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
-		this.columns = null;
 		this.sites = column.sites;
 		
 		this.doAnneal();
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites){
 		this.blocks = annealBlocks;
-		this.columns = null;
 		this.sites = annealSites;
-		
+
 		this.doAnneal();
 	}
 	private void doAnneal(){
 		this.timing.start("Anneal");
 		
+		boolean printStatistics = false;
+
 		this.numBlocks = this.blocks.length;
-		if(this.sites == null){
-			this.numSites = this.columns[0].sites.length;
-		}else{
-			this.numSites = this.sites.length;
-		}
+		this.numSites = this.sites.length;
 		
+		this.timing.start("Find nets and crits");
+		this.nets.clear();
+		this.crits.clear();
+		for(Block block:this.blocks){
+			for(Net net:block.nets){
+				this.nets.add(net);
+			}
+			for(Crit crit:block.crits){
+				this.crits.add(crit);
+			}
+		}
+		this.timing.time("Find nets and crits");
+		
+		this.timing.start("Calculate cost");
+		this.cost = 0.0;
+		for(Net net:this.nets){
+			this.cost += net.connectionCost();
+		}
+		for(Crit crit:this.crits){
+			this.cost += crit.timingCost();
+		}
+		this.timing.time("Calculate cost");
+		
+		for(Net net:this.nets) net.initializeConnectionCost();
+		for(Crit crit:this.crits) crit.initializeTimingCost();
+
+		this.timing.start("Initialize anneal");
 		this.temperature = this.calculateInitialTemperature();
 		this.movesPerTemperature = (int)Math.pow(this.numBlocks, 4/3);
+		this.timing.time("Initialize anneal");
+		
+		int iteration = 0;
 
-		while(this.temperature > 0.01){
+		if(printStatistics){
+			System.out.println("Anneal " + this.blocks.length + " blocks:");
+			System.out.println("\tit\talpha\ttemp\tcost");
+			System.out.println("\t--\t-----\t----\t----");
+		}
+		
+		boolean finalIteration = false;
+		this.costHistory.clear();
+		
+		this.timing.start("Do anneal");
+		while(!finalIteration){
 			double numSwaps = this.doSwapIteration(this.movesPerTemperature, true);
 			double alpha = numSwaps / this.movesPerTemperature;
+
+			if(printStatistics) System.out.printf("\t%d\t%.2f\t%.2f\t%.2f\n", iteration, alpha, this.temperature, this.cost);
+
 			this.updateTemperature(alpha);
+			iteration++;
+			
+			finalIteration = this.finalIteration(this.cost);
 		}
+		this.timing.time("Do anneal");
+		
+		if(printStatistics) System.out.println();
 
 		this.timing.time("Anneal");
 	}
+	private boolean finalIteration(double cost){
+		this.costHistory.add(this.cost);
+		if(this.costHistory.size() > 10){
+			double max = this.costHistory.get(this.costHistory.size() - 1);
+			double min = this.costHistory.get(this.costHistory.size() - 1);
+			
+			for(int i = 0; i < 10; i++){
+				double value = this.costHistory.get(this.costHistory.size() - 1 - i);
+				if(value > max){
+					max = value;
+				}
+				if(value < min){
+					min = value;
+				}
+			}
+			double ratio = max / min;
+			
+			if(ratio < 1.001){
+				return true;
+			}else{
+				return false;
+			}
+		}else{
+			return false;
+		}
+	}
     private double calculateInitialTemperature(){
-        int numSamples = this.blocks.length;
+        int numSamples = this.numBlocks;
         double stdDev = this.doSwapIteration(numSamples, false);
         return stdDev;
     }
@@ -78,8 +158,6 @@ public class HardblockAnneal {
         	 this.temperature *= 0.5;
         } else if (alpha > 0.8) {
         	 this.temperature *= 0.9;
-        } else if (alpha > 0.15 ) {
-        	 this.temperature *= 0.92;
         } else {
         	 this.temperature *= 0.95;
         }
@@ -89,41 +167,24 @@ public class HardblockAnneal {
 
 		double sumDeltaCost = 0;
 		double quadSumDeltaCost = 0;
-
-		Block block1 = null, block2 = null;
-		Site site1 = null, site2 = null;
 		
         for(int i = 0; i < moves; i++){
 			
-			block1 = this.blocks[this.random.nextInt(this.numBlocks)];
-			site1 = block1.getSite();
-			
-			if(this.sites == null){
-				Column column = block1.column;
-				site2 = column.sites[this.random.nextInt(this.numSites)];
-				while(site1.equals(site2)){
-					site2 = column.sites[this.random.nextInt(this.numSites)];
-				}
-			}else{
-				site2 = this.sites[this.random.nextInt(this.numSites)];
-				while(site1.equals(site2)){
-					site2 = this.sites[this.random.nextInt(this.numSites)];
-				}
-			}
-			block2 = site2.getBlock();
-			
-			double deltaCost = this.deltaCost(block1, site1, block2, site2);
+        	Swap swap = this.getSwap();
+    		swap.deltaCost();
 			
 			if(pushTrough){
-				if(deltaCost <= 0 || random.nextDouble() < Math.exp(-deltaCost / temperature)) {
-					this.pushTrough(block1, site1, block2, site2);
+				if(swap.deltaCost <= 0 || this.random.nextDouble() < Math.exp(-swap.deltaCost / this.temperature)) {
+					numSwaps++;
+					swap.pushTrough();
+					this.cost += swap.deltaCost;
 				}else{
-					this.revert(block1, site1, block2, site2);
+					swap.revert();
 				}
 			}else{
-				this.revert(block1, site1, block2, site2);
-                sumDeltaCost += deltaCost;
-                quadSumDeltaCost += deltaCost * deltaCost;
+				swap.revert();
+                sumDeltaCost += swap.deltaCost;
+                quadSumDeltaCost += swap.deltaCost * swap.deltaCost;
 			}
 		}
         if(pushTrough){
@@ -138,46 +199,103 @@ public class HardblockAnneal {
             return Math.sqrt(Math.abs(sumQuads / numBlocks - quadSum / quadNumBlocks));
         }
 	}
-	private double deltaCost(Block block1, Site site1, Block block2, Site site2){
-		double oldCost = 0.0;
-		if(block1 != null) oldCost += block1.connectionCost();
-		if(block2 != null) oldCost += block2.connectionCost();
-
-		if(block1 != null){
-			block1.setSite(site2);
-			site2.setBlock(block1);
-		}
+	Swap getSwap(){
+		Block block1 = this.blocks[this.random.nextInt(this.numBlocks)];
+		Site site1 = block1.getSite();
 		
-		if(block2 != null){
-			block2.setSite(site1);
-			site1.setBlock(block2);
+		Site site2 = this.sites[this.random.nextInt(this.numSites)];
+		while(site1.equals(site2) ){
+			site2 = this.sites[this.random.nextInt(this.numSites)];
 		}
+		Block block2 = site2.getBlock();
 		
-		if(block1 == null) site2.removeBlock();
-		if(block2 == null) site1.removeBlock();
+		Swap swap = new Swap(block1, site1, block2, site2);
+		return swap;
+	}
+	class Swap {
+		final Block block1;
+		final Block block2;
+		
+		final Site site1;
+		final Site site2;
+		
+		final boolean block1valid;
+		final boolean block2valid;
+		
+		double deltaCost;
+		
+		Swap(Block block1, Site site1, Block block2, Site site2){
+			this.block1 = block1;
+			this.site1 = site1;
+			this.block2 = block2;
+			this.site2 = site2;
 			
-		double newCost = 0.0;
-		if(block1 != null) newCost += block1.connectionCost(site1.column, site2.column, site1.row, site2.row);
-		if(block2 != null) newCost += block2.connectionCost(site2.column, site1.column, site2.row, site1.row);
+			this.block1valid = this.block1 != null;
+			this.block2valid = this.block2 != null;
+		}
+		void deltaCost(){
+			this.deltaCost = 0.0;
+			
+			this.site1.removeBlock();
+			this.site2.removeBlock();
+			
+			if(this.block1valid){
+				this.block1.setSite(this.site2);
+				this.site2.setBlock(this.block1);
+				this.block1.tryLegal(this.site2.column, this.site2.row);
+			}
+			
+			if(this.block2valid){
+				this.block2.setSite(this.site1);
+				this.site1.setBlock(this.block2);
+				this.block2.tryLegal(this.site1.column, this.site1.row);
+			}
+				
+			if(this.block1valid){
+				for(Net net:this.block1.nets){
+					this.deltaCost += net.deltaHorizontalConnectionCost();
+					this.deltaCost += net.deltaVerticalConnectionCost();
+				}
+				for(Crit crit:this.block1.crits){
+					this.deltaCost += crit.deltaHorizontalTimingCost();
+					this.deltaCost += crit.deltaVerticalTimingCost();
+				}
+			}
+			if(this.block2valid){
+				for(Net net:this.block2.nets){
+					this.deltaCost += net.deltaHorizontalConnectionCost();
+					this.deltaCost += net.deltaVerticalConnectionCost();
 
-		return newCost - oldCost;
-	}
-	private void pushTrough(Block block1, Site site1, Block block2, Site site2){
-		if(block1 != null) block1.updateConnectionCost();
-		if(block2 != null) block2.updateConnectionCost();
-	}
-	private void revert(Block block1, Site site1, Block block2, Site site2){
-		if(block1 != null){
-			block1.setSite(site1);
-			site1.setBlock(block1);
+				}
+				for(Crit crit:this.block2.crits){
+					this.deltaCost += crit.deltaHorizontalTimingCost();
+					this.deltaCost += crit.deltaVerticalTimingCost();
+				}
+			}
 		}
-		
-		if(block2 != null){
-			site2.setBlock(block2);
-			block2.setSite(site2);
+		void pushTrough(){
+			if(this.block1valid){
+				this.block1.pushTrough();
+			}
+			if(this.block2valid){
+				this.block2.pushTrough();
+			}
 		}
-		
-		if(block1 == null) site1.removeBlock();
-		if(block2 == null) site2.removeBlock();
+		void revert(){
+			this.site1.removeBlock();
+			this.site2.removeBlock();
+			
+			if(this.block1valid){
+				this.block1.setSite(this.site1);
+				this.site1.setBlock(this.block1);
+				this.block1.revert();
+			}
+			
+			if(this.block2valid){
+				this.site2.setBlock(this.block2);
+				this.block2.setSite(this.site2);
+				this.block2.revert();
+			}
+		}
 	}
 }

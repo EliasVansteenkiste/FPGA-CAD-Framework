@@ -49,18 +49,13 @@ public class ColumnSwap {
 			
 			//Make cost table
 			for(Block block:largestColumn.blocks){
-				int blockX = block.x;
-				int blockY = block.y;
-
-				double currentCost = block.connectionCost();
+				double currentCost = block.horizontalCost();
 				double[] costMatrix = new double[columns.length];
 
 				for(Column column:this.freeColumns){
-					int columnX = column.coordinate;
-
-					block.x = columnX;
-					double newCost = block.connectionCost(blockX, columnX, blockY, blockY);
-					block.x = blockX;
+					block.tryLegalX(column.coordinate);
+					double newCost = block.horizontalCost();
+					block.revert();
 					costMatrix[column.index] = newCost - currentCost;
 				}
 				this.costIncreaseTable.put(block.index, costMatrix);
@@ -94,12 +89,7 @@ public class ColumnSwap {
 				largestColumn.removeBlock(bestBlock);
 				bestColumn.addBlock(bestBlock);
 				
-				for(Net net:bestBlock.nets){
-					net.checkForHorizontalChange();
-				}
-				
-				bestBlock.x = bestColumn.coordinate;
-				bestBlock.updateConnectionCost(largestColumn.coordinate, bestColumn.coordinate, bestBlock.y, bestBlock.y);
+				bestBlock.setLegalX(bestColumn.coordinate);
 				
 				this.costIncreaseTable.remove(bestBlock.index);
 
@@ -119,18 +109,14 @@ public class ColumnSwap {
 					}
 				}
 				for(Block block:this.influencedBlocks){
-					int blockX = block.x;
-					int blockY = block.y;
-
-					double currentCost = block.connectionCost();
+					double currentCost = block.horizontalCost();
 					double[] costMatrix = new double[columns.length];
 
 					for(Column column:this.freeColumns){
-						int columnX = column.coordinate;
 
-						block.x = columnX;
-						double newCost = block.connectionCost(blockX, columnX, blockY, blockY);
-						block.x = blockX;
+						block.tryLegalX(column.coordinate);
+						double newCost = block.horizontalCost();
+						block.revert();
 						costMatrix[column.index] = newCost - currentCost;
 					}
 					this.costIncreaseTable.put(block.index, costMatrix);

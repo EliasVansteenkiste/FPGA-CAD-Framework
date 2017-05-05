@@ -23,12 +23,10 @@ public class HardblockConnectionLegalizer{
 
     private final Block[] blocks;
     private final Net[] nets;
-
-    private final List<Crit> critConn;
+    private final List<Crit> crits;
 
     private final ColumnSwap columnSwap;
     private final HardblockAnneal hardblockAnneal;
-    private final ColumnPlacer columnPlacer;
     
     private final Map<BlockType, Block[]> blocksPerBlocktype;
     private final Map<BlockType, Net[]> netsPerBlocktype;
@@ -38,7 +36,7 @@ public class HardblockConnectionLegalizer{
     private final TimingTree timingTree;
     
     //Visualizer
-    private static final boolean doVisual = true;
+    private static final boolean doVisual = false;
     private final PlacementVisualizer visualizer;
     private final Map<GlobalBlock, NetBlock> netBlocks;
     private final double[] visualX, visualY;
@@ -56,7 +54,7 @@ public class HardblockConnectionLegalizer{
 			PlacementVisualizer visualizer,
 			Map<GlobalBlock, NetBlock> blockIndexes){
 
-		this.timingTree = new TimingTree(true);
+		this.timingTree = new TimingTree(false);
 		
 		this.timingTree.start("Initialize Hardblock Connection Legalizer Data");
 		
@@ -122,7 +120,7 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Initialize Hardblock Connection Legalizer Data");
 		
-		this.critConn = new ArrayList<>();
+		this.crits = new ArrayList<>();
 		
 		this.blocksPerBlocktype = new HashMap<>();
 		this.netsPerBlocktype = new HashMap<>();
@@ -134,7 +132,6 @@ public class HardblockConnectionLegalizer{
 		
 		this.columnSwap = new ColumnSwap(this.timingTree);
 		this.hardblockAnneal = new HardblockAnneal(this.timingTree, 100);
-		this.columnPlacer = new ColumnPlacer(this.timingTree, this.blocks, this.visualizer, this.netBlocks, doVisual);
 	}
 	
 	//ADD BLOCK TYPE
@@ -174,19 +171,19 @@ public class HardblockConnectionLegalizer{
 		
 		//Clear all data
 		for(Block block:this.blocks){
-			block.criticalConnections.clear();
+			block.crits.clear();
 		}
-		this.critConn.clear();
+		this.crits.clear();
 		
 		for(CriticalConnection critConn:criticalConnections){
         	Block sourceBlock = this.blocks[critConn.sourceIndex];
         	Block sinkBlock = this.blocks[critConn.sinkIndex];
         	
         	Crit conn = new Crit(sourceBlock, sinkBlock, critConn.weight);
-        	sourceBlock.criticalConnections.add(conn);
-        	sinkBlock.criticalConnections.add(conn);
+        	sourceBlock.addCrit(conn);
+        	sinkBlock.addCrit(conn);
         	
-        	this.critConn.add(conn);
+        	this.crits.add(conn);
 		}
 		
 		this.timingTree.time("Update critical connections in hardblock connection legalizer");
@@ -219,7 +216,7 @@ public class HardblockConnectionLegalizer{
 		}
 		
 		//Update the coordinates off all blocks based on the current legal placement
-		this.updateBlockCoordinates();
+		this.initializeLegalization(legalizeNets);
 
 		this.timingTree.start("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
@@ -227,12 +224,10 @@ public class HardblockConnectionLegalizer{
 		
 		//Update the coordinates of the current hard block type based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
-			double linearX = this.linearX[block.index];
-			double linearY = this.linearY[block.index];
-			int columnIndex = (int) Math.round(Math.max(Math.min((linearX - firstColumn) / columnRepeat, numColumns - 1), 0));
-			int rowIndex = (int) Math.round(Math.max(Math.min((linearY - firstRow) / rowRepeat, numRows - 1), 0));
+			int columnIndex = (int) Math.round(Math.max(Math.min((block.linearX - firstColumn) / columnRepeat, numColumns - 1), 0));
+			int rowIndex = (int) Math.round(Math.max(Math.min((block.linearY - firstRow) / rowRepeat, numRows - 1), 0));
 
-			block.setCoordinates(firstColumn + columnIndex * columnRepeat, firstRow + rowIndex * rowRepeat);
+			block.setLegal(firstColumn + columnIndex * columnRepeat, firstRow + rowIndex * rowRepeat);
 			columns[columnIndex].addBlock(block);
 		}
 		
@@ -240,33 +235,27 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
-		//All blocks have a coordinate, initialize the connection cost based on the coordinates
-		this.initializeConnectionCost(legalizeBlocks, legalizeNets);
-
+		//Column swap
 		this.columnSwap.doSwap(columns);
 		
 		this.addVisual("After column swap");
-		
-		boolean annealNotColumnPlacer = false;
-		if(annealNotColumnPlacer){
-			this.timingTree.start("Legalize columns");
-			for(Column column:columns){
-				column.legalize();
-			}
-			this.timingTree.time("Legalize columns");
-			
-			this.addVisual("After legalize");
-			
-			this.timingTree.start("Anneal columns");
-			for(Column column:columns){
-				if(column.usedPos() > 0){
-					this.hardblockAnneal.doAnneal(column);
-				}
-			}
-			this.timingTree.time("Anneal columns");
-		}else{
-			this.columnPlacer.doPlacement(legalizeBlocks, legalizeNets, this.critConn, 1, this.gridHeigth - blockHeight);
+
+		this.timingTree.start("Legalize columns");
+		for(Column column:columns){
+			column.legalize();
 		}
+		this.timingTree.time("Legalize columns");
+		
+		this.addVisual("After legalize");
+		
+		this.timingTree.start("Anneal columns");
+		for(Column column:columns){
+			if(column.usedPos() > 0){
+				this.hardblockAnneal.doAnneal(column);
+			}
+		}
+		this.timingTree.time("Anneal columns");
+
 		
 		this.addVisual(this.blockType + " => After column placement");
 		
@@ -302,23 +291,19 @@ public class HardblockConnectionLegalizer{
 		}
 		
 		//Update the coordinates of the current hard block type based on the current linear placement
-		this.updateBlockCoordinates();
+		this.initializeLegalization(legalizeNets);
 		
 		this.timingTree.start("Find best site for all IO blocks based on minimal displacement cost");
 		
 		//Update the coordinates of the io blocks based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
-			double linearX = this.linearX[block.index];
-			double linearY = this.linearY[block.index];
 			
 			double minimumCost = Double.MAX_VALUE;
 			Site bestFreeSite = null;
 			
 			for(Site site:legalizeSites){
 				if(!site.hasBlock()){
-					
-					block.setCoordinates(site.column, site.row);
-					double cost = (site.column - linearX) * (site.column - linearX) + (site.row - linearY) * (site.row - linearY);
+					double cost = (site.column - block.linearX) * (site.column - block.linearX) + (site.row - block.linearY) * (site.row - block.linearY);
 					if(cost < minimumCost){
 						minimumCost = cost;
 						bestFreeSite = site;
@@ -327,12 +312,10 @@ public class HardblockConnectionLegalizer{
 			}
 			block.setSite(bestFreeSite);
 			bestFreeSite.setBlock(block);
+			
+			block.setLegal(bestFreeSite.column, bestFreeSite.row);
 		}
-		
 		this.timingTree.time("Find best site for all IO blocks based on minimal displacement cost");
-
-		//All blocks have a coordinate, initialize the connection cost based on the coordinates
-		this.initializeConnectionCost(legalizeBlocks, legalizeNets);
 
 		//Anneal the IOs to find a good placement
 		this.hardblockAnneal.doAnneal(legalizeBlocks, legalizeSites);
@@ -342,38 +325,30 @@ public class HardblockConnectionLegalizer{
 		
 		this.timingTree.time("Legalize IO");
 	}
-	private void updateBlockCoordinates(){
+	private void initializeLegalization(Net[] legalizeNets){
 		this.timingTree.start("Update block coordinates");
 		
         for(Block block:this.blocks){
-        	block.setCoordinates(this.legalX[block.index], this.legalY[block.index]);
+        	block.legalX = this.legalX[block.index];
+        	block.legalY = this.legalY[block.index];
+        	block.linearX = this.linearX[block.index];
+        	block.linearY = this.linearY[block.index];
+        }
+        for(Net net:legalizeNets){
+        	net.initializeConnectionCost();
+        }
+        for(Crit crit:this.crits){
+        	crit.initializeTimingCost();
         }
         
         this.timingTree.time("Update block coordinates");
-	}
-	private void initializeConnectionCost(Block[] legalizeBlocks, Net[] legalizeNets){
-		this.timingTree.start("Initialize connection cost");
-
-		this.timingTree.start("Update nets");
-		for(Net net:legalizeNets){
-			net.initializeConnectionCost();
-		}
-		this.timingTree.time("Update nets");
-		
-		this.timingTree.start("Update blocks");
-		for(Block block:legalizeBlocks){
-			block.initializeConnectionCost();
-		}
-		this.timingTree.time("Update blocks");
-
-		this.timingTree.time("Initialize connection cost");
 	}
     private void updateLegal(){
     	this.timingTree.start("Update legal");
     	
     	for(Block block:this.blocks){
-    		this.legalX[block.index] = block.x;
-    		this.legalY[block.index] = block.y;
+    		this.legalX[block.index] = block.legalX;
+    		this.legalY[block.index] = block.legalY;
     	}
     	
     	this.timingTree.time("Update legal");
@@ -382,7 +357,7 @@ public class HardblockConnectionLegalizer{
     	this.timingTree.start("Clean data");
     	
     	for(Block block:this.blocks){
-    		block.reset();
+    		block.site = null;
     	}
     	
     	this.timingTree.time("Clean data");
@@ -394,106 +369,131 @@ public class HardblockConnectionLegalizer{
 	class Block{
 		final int index;
 		final float offset;
-		int x, y;
-		Site site;
+
+		int legalX, legalY;
+		int oldLegalX, oldLegalY;
+		double linearX, linearY;
+		boolean alreadySaved;
 
 		final List<Net> nets;
-		final List<Crit> criticalConnections;
+		final List<Crit> crits;
 
-		double connectionCost;
+		double criticality;
 		
+		Site site;
 		Column column;
 
 		Block(int index, float offset){
 			this.index = index;
 			this.offset = offset;
+			this.alreadySaved = false;
 
 			this.nets = new ArrayList<Net>();
-			this.criticalConnections = new ArrayList<Crit>();
+			this.crits = new ArrayList<Crit>();
 
 			this.site = null;
+			this.column = null;
 		}
 		void addNet(Net net){
 			if(!this.nets.contains(net)){
 				this.nets.add(net);
 			}
 		}
-
-		double criticality(){
-			double criticality = 0;
-			for(Net net:this.nets){
-				criticality += net.netWeight;
+		void addCrit(Crit crit){
+			if(!this.crits.contains(crit)){
+				this.crits.add(crit);
 			}
-			for(Crit crit:this.criticalConnections){
-				criticality += crit.weight;
-			}
-			return criticality;
 		}
 		
-		void setCoordinates(int x, int y){
-			this.x = x;
-			this.y = y;
-		}
-		void reset(){
-			this.site = null;
+		//Criticality
+		void updateCriticality(){
+			this.criticality = 0.0;
+			for(Net net:this.nets) this.criticality += net.weight;
+			for(Crit crit:this.crits) this.criticality += crit.weight;
 		}
 
-		//// Connection cost ////
-		void initializeConnectionCost(){
-			this.connectionCost = 0.0;
-			
-			for(Net net:this.nets){
-				this.connectionCost += net.connectionCost();
-			}
-			for(Crit conn:this.criticalConnections){
-				this.connectionCost += conn.timingCost();
-			}
-		}
-		double connectionCost(){
-			return this.connectionCost;
-		}
-		double connectionCost(int oldX, int newX, int oldY, int newY){
+		//// Cost ////
+		double cost(){
 			double cost = 0.0;
-
-			for(Net net:this.nets){
-				cost += net.horizontalConnectionCost(oldX, newX);
-				cost += net.verticalConnectionCost(oldY, newY);
-			}
-
-			for(Crit conn:this.criticalConnections){
-				cost += conn.timingCost();
-			}
-			
+			for(Net net:this.nets) cost += net.connectionCost();
+			for(Crit crit:this.crits) cost += crit.timingCost();
 			return cost;
 		}
-		void updateConnectionCost(int oldX, int newX, int oldY, int newY){
-			this.connectionCost = 0.0;
+		double horizontalCost(){
+			double cost = 0.0;
+			for(Net net:this.nets) cost += net.horizontalConnectionCost();
+			for(Crit crit:this.crits) cost += crit.horizontalTimingCost();
+			return cost;
+		}
+		double verticalCost(){
+			double cost = 0.0;
+			for(Net net:this.nets) cost += net.verticalConnectionCost();
+			for(Crit crit:this.crits) cost += crit.verticalTimingCost();
+			return cost;
+		}
 
-			for(Net net:this.nets){
-				this.connectionCost += net.updateHorizontalConnectionCost(oldX, newX);
-				this.connectionCost += net.updateVerticalConnectionCost(oldY, newY);
-			}
-			for(Crit conn:this.criticalConnections){
-				this.connectionCost += conn.timingCost();
+		void setLegal(int newLegalX, int newLegalY){
+			this.tryLegal(newLegalX, newLegalY);
+			this.pushTrough();
+		}
+		void setLegalX(int newLegalX){
+			this.tryLegalX(newLegalX);
+			this.pushTrough();
+		}
+		void setLegalY(int newLegalY){
+			this.tryLegalY(newLegalY);
+			this.pushTrough();
+		}
+		
+		
+		void pushTrough(){
+			this.alreadySaved = false;
+			
+			for(Net net:this.nets) net.pushTrough();
+			for(Crit crit:this.crits) crit.pushTrough();
+		}
+		void revert(){
+			this.legalX = this.oldLegalX;
+			this.legalY = this.oldLegalY;
+			this.alreadySaved = false;
+				
+			for(Net net:this.nets) net.revert();
+			for(Crit crit:this.crits) crit.revert();
+		}
+
+		void saveState(){
+			if(!this.alreadySaved){
+				this.oldLegalX = this.legalX;
+				this.oldLegalY = this.legalY;
+				this.alreadySaved = true;
 			}
 		}
-		void updateConnectionCost(){
-			this.connectionCost = 0.0;
-
-			for(Net net:this.nets){
-				this.connectionCost += net.updateHorizontalConnectionCost();
-				this.connectionCost += net.updateVerticalConnectionCost();
-			}
-			for(Crit conn:this.criticalConnections){
-				this.connectionCost += conn.timingCost();
+		void tryLegal(int newLegalX, int newLegalY){
+			this.tryLegalX(newLegalX);
+			this.tryLegalY(newLegalY);
+		}
+		void tryLegalX(int newLegalX){
+			this.saveState();
+			
+			if(this.legalX != newLegalX){
+				this.legalX = newLegalX;
+				for(Net net:this.nets) net.tryHorizontalConnectionCost(this.oldLegalX, this.legalX);
+				for(Crit crit:this.crits) crit.tryHorizontalTimingCost();
 			}
 		}
-    	
+		void tryLegalY(int newLegalY){
+			this.saveState();
+			
+			if(this.legalY != newLegalY){
+				this.legalY = newLegalY;
+				for(Net net:this.nets) net.tryVerticalConnectionCost(this.oldLegalY, this.legalY);
+				for(Crit crit:this.crits) crit.tryVerticalTimingCost();
+			}
+		}
+
     	//Site
     	void setSite(Site site){
     		this.site = site;
-    		this.x = site.column;
-    		this.y = site.row;
     	}
     	boolean hasSite(){
     		return this.site != null;
@@ -535,231 +535,211 @@ public class HardblockConnectionLegalizer{
 	class Net{
 		final int index;
 		final List<Block> blocks;
-		final double netWeight;
-		
+		final double weight;
+
 		int minX, maxX;
 		int minY, maxY;
+		int oldMinX, oldMaxX;
+		int oldMinY, oldMaxY;
+		boolean alreadySaved;
 		
-		int tempMinX, tempMaxX;
-		int tempMinY, tempMaxY;
-		
-		double horizontalConnectionCost;
-		double verticalConnectionCost;
-		
-		boolean checkHorizontalChange;
-		boolean horizontalChange;
-		boolean checkVerticalChange;
-		boolean verticalChange;
+		boolean horizontalChange, verticalChange;
+		boolean horizontalDeltaCostIncluded, verticalDeltaCostIncluded;
 
 		Net(int index, double netWeight){
 			this.index = index;
 			this.blocks = new ArrayList<Block>();
 			
-			this.netWeight = netWeight;
+			this.weight = netWeight;
 			
-			this.checkHorizontalChange = false;
-			this.checkVerticalChange = false;
+			this.alreadySaved = false;
 			this.horizontalChange = false;
 			this.verticalChange = false;
+			this.horizontalDeltaCostIncluded = false;
+			this.verticalDeltaCostIncluded = false;
 		}
 		void addBlock(Block block){
 			if(!this.blocks.contains(block)){
 				this.blocks.add(block);
 			}
 		}
-		
-		void checkForHorizontalChange(){
-			this.checkHorizontalChange = true;
-			this.horizontalChange = false;
-		}
-		void checkForVerticalChange(){
-			this.checkVerticalChange = true;
-			this.verticalChange = false;
-		}
 
 		//// Connection cost ////
 		void initializeConnectionCost(){
 			Block initialBlock = this.blocks.get(0);
-	        this.minX = initialBlock.x;
-	        this.maxX = initialBlock.x;
+	        this.minX = initialBlock.legalX;
+	        this.maxX = initialBlock.legalX;
 	        
-	        this.minY = initialBlock.y;
-	        this.maxY = initialBlock.y;
+	        this.minY = initialBlock.legalY;
+	        this.maxY = initialBlock.legalY;
 	        
-	        for(int i = 1; i < this.blocks.size(); i++){
-	        	Block block = this.blocks.get(i);
-	            if(block.x < this.minX) {
-	                this.minX = block.x;
-	            }else if(block.x > this.maxX){
-	            	this.maxX = block.x;
+	        for(Block block:this.blocks){
+	            if(block.legalX < this.minX) {
+	                this.minX = block.legalX;
+	            }else if(block.legalX > this.maxX){
+	            	this.maxX = block.legalX;
 	            }
-	            if(block.y < this.minY) {
-	                this.minY = block.y;
-	            }else if(block.y > this.maxY){
-	            	this.maxY = block.y;
+	            if(block.legalY < this.minY) {
+	                this.minY = block.legalY;
+	            }else if(block.legalY > this.maxY){
+	            	this.maxY = block.legalY;
 	            }
 	        }
-
-			this.horizontalConnectionCost = (this.maxX - this.minX + 1) * this.netWeight;
-			this.verticalConnectionCost = (this.maxY - this.minY + 1) * this.netWeight;
 		}
+		
 		double connectionCost(){
-			return this.horizontalConnectionCost + this.verticalConnectionCost;
+			return this.horizontalConnectionCost() + this.verticalConnectionCost();
 		}
-
+		double horizontalConnectionCost(){
+			return (this.maxX - this.minX + 1) * this.weight;
+		}
+		double verticalConnectionCost(){
+			return (this.maxY - this.minY + 1) * this.weight;
+		}
+		
+		void revert(){
+			if(this.horizontalChange){
+				this.minX = this.oldMinX;
+				this.maxX = this.oldMaxX;
+				this.horizontalChange = false;
+			}
+			if(this.verticalChange){
+				this.minY = this.oldMinY;
+				this.maxY = this.oldMaxY;
+				this.verticalChange = false;
+			}
+			
+			this.alreadySaved = false;
+		}
+		void pushTrough(){
+			this.alreadySaved = false;
+		}
+		
+		void saveState(){
+			if(!this.alreadySaved){
+				this.oldMinX = this.minX;
+				this.oldMaxX = this.maxX;
+				this.oldMinY = this.minY;
+				this.oldMaxY = this.maxY;
+				
+				this.alreadySaved = true;
+			}
+		}
 		// Horizontal
-		double horizontalConnectionCost(int oldX, int newX){
-            this.updateTempMinX(oldX, newX);
-            this.updateTempMaxX(oldX, newX);
-            return (this.tempMaxX - this.tempMinX + 1) * this.netWeight;
-		}
-		double updateHorizontalConnectionCost(int oldX, int newX){
-            this.updateTempMinX(oldX, newX);
-            this.updateTempMaxX(oldX, newX);
+		void tryHorizontalConnectionCost(int oldX, int newX){
+			this.saveState();
+			
+            this.updateMinX(oldX, newX);
+            this.updateMaxX(oldX, newX);
             
-            if(this.checkHorizontalChange){
-                if(this.minX != this.tempMinX){
-                	this.horizontalChange = true;
-                }else if(this.maxX != this.tempMaxX){
-                	this.horizontalChange = true;
-                }
-                this.checkHorizontalChange = false;
+            if(this.minX != this.oldMinX || this.maxX != this.oldMaxX){
+            	this.horizontalChange = true;
+            	this.horizontalDeltaCostIncluded = false;
+            }else{
+            	this.horizontalChange = false;
+            	this.horizontalDeltaCostIncluded = true;
             }
-
-			this.minX = this.tempMinX;
-			this.maxX = this.tempMaxX;
-			
-			this.horizontalConnectionCost = (this.maxX - this.minX + 1) * this.netWeight;
-			
-			return this.horizontalConnectionCost;
 		}
-		double updateHorizontalConnectionCost(){
-			this.minX = this.tempMinX;
-			this.maxX = this.tempMaxX;
-			
-			this.horizontalConnectionCost = (this.maxX - this.minX + 1) * this.netWeight;
-			
-			return this.horizontalConnectionCost;
+		double deltaHorizontalConnectionCost(){
+			if(!this.horizontalDeltaCostIncluded){
+				this.horizontalDeltaCostIncluded = true;
+				return (this.maxX - this.minX - this.oldMaxX + this.oldMinX) * this.weight;
+			}else{
+				return 0.0;
+			}
 		}
-		void updateTempMinX(int oldX, int newX){
-			if(oldX == newX){
-				this.tempMinX = this.minX;
-			}else if(newX <= this.minX){
-            	this.tempMinX = newX;
+		void updateMinX(int oldX, int newX){
+			if(newX <= this.minX){
+            	this.minX = newX;
 			}else if(oldX == this.minX){
-            	this.tempMinX = this.getMinX();
-            }else{
-            	this.tempMinX = this.minX;
+            	this.minX = this.getMinX();
             }
 		}
-		void updateTempMaxX(int oldX, int newX){
-			if(oldX == newX){
-				this.tempMaxX = this.maxX;
-			}else if(newX >= this.maxX){
-            	this.tempMaxX = newX;
+		void updateMaxX(int oldX, int newX){
+			if(newX >= this.maxX){
+            	this.maxX = newX;
             }else if(oldX == this.maxX){
-            	this.tempMaxX = this.getMaxX();
-            }else{
-            	this.tempMaxX = this.maxX;
+            	this.maxX = this.getMaxX();
             }
 		}
 		int getMinX(){
 			Block initialBlock = this.blocks.get(0);
-	        int minX = initialBlock.x;
+	        int minX = initialBlock.legalX;
 	        for(int i = 1; i < this.blocks.size(); i++){
 	        	Block block = this.blocks.get(i);
-	            if(block.x < minX) {
-	                minX = block.x;
+	            if(block.legalX < minX) {
+	                minX = block.legalX;
 	            }
 	        }
 	        return minX;
 		}
 		int getMaxX(){
 			Block initialBlock = this.blocks.get(0);
-	        int maxX = initialBlock.x;
+	        int maxX = initialBlock.legalX;
 	        for(int i = 1; i < this.blocks.size(); i++){
 	        	Block block = this.blocks.get(i);
-	            if(block.x > maxX) {
-	                maxX = block.x;
+	            if(block.legalX > maxX) {
+	                maxX = block.legalX;
 	            }
 	        }
 	        return maxX;
 		}
 
 		// Vertical
-		double verticalConnectionCost(int oldY, int newY){
-			this.updateTempMinY(oldY, newY);
-            this.updateTempMaxY(oldY, newY);
-            return (this.tempMaxY - this.tempMinY + 1) * this.netWeight;
-		}
-		double updateVerticalConnectionCost(int oldY, int newY){
-			this.updateTempMinY(oldY, newY);
-            this.updateTempMaxY(oldY, newY);
+		void tryVerticalConnectionCost(int oldY, int newY){
+			this.saveState();
+			
+			this.updateMinY(oldY, newY);
+            this.updateMaxY(oldY, newY);
             
-            if(this.checkVerticalChange){
-                if(this.minY != this.tempMinY){
-                	this.verticalChange = true;
-                }else if(this.maxY != this.tempMaxY){
-                	this.verticalChange = true;
-                }
-                this.checkVerticalChange = false;
+            if(this.minY != this.oldMinY || this.maxY != this.oldMaxY){
+            	this.verticalChange = true;
+            	this.verticalDeltaCostIncluded = false;
+            }else{
+            	this.verticalChange = false;
+            	this.verticalDeltaCostIncluded = true;
             }
-            
-			this.minY = this.tempMinY;
-			this.maxY = this.tempMaxY;
-			
-			this.verticalConnectionCost = (this.maxY - this.minY + 1) * this.netWeight;
-			
-			return this.verticalConnectionCost;
+        }
+		double deltaVerticalConnectionCost(){
+			if(!this.verticalDeltaCostIncluded){
+				this.verticalDeltaCostIncluded = true;
+				return (this.maxY - this.minY - this.oldMaxY + this.oldMinY) * this.weight;
+			}else{
+				return 0.0;
+			}
 		}
-		double updateVerticalConnectionCost(){
-			this.minY = this.tempMinY;
-			this.maxY = this.tempMaxY;
-			
-			this.verticalConnectionCost = (this.maxY - this.minY + 1) * this.netWeight;
-			
-			return this.verticalConnectionCost;
-		}
-		void updateTempMinY(int oldY, int newY){
-			if(oldY == newY){
-				this.tempMinY = this.minY;
-			}else if(newY <= this.minY){
-            	this.tempMinY = newY;
+		void updateMinY(int oldY, int newY){
+			if(newY <= this.minY){
+            	this.minY = newY;
 			}else if(oldY == this.minY){
-				this.tempMinY = this.getMinY();
-            }else{
-            	this.tempMinY = this.minY;
+				this.minY = this.getMinY();
             }
 		}
-		void updateTempMaxY(int oldY, int newY){
-			if(oldY == newY){
-				this.tempMaxY = this.maxY;
-			}else if(newY >= this.maxY){
-            	this.tempMaxY = newY;
+		void updateMaxY(int oldY, int newY){
+			if(newY >= this.maxY){
+            	this.maxY = newY;
             }else if(oldY == this.maxY){
-            	this.tempMaxY = this.getMaxY();
-            }else{
-            	this.tempMaxY = this.maxY;
+            	this.maxY = this.getMaxY();
             }
 		}
 		private int getMinY(){
 			Block initialBlock = this.blocks.get(0);
-	        int minY = initialBlock.y;
+	        int minY = initialBlock.legalY;
 	        for(int i = 1; i < this.blocks.size(); i++){
 	        	Block block = this.blocks.get(i);
-	            if(block.y < minY) {
-	                minY = block.y;
+	            if(block.legalY < minY) {
+	                minY = block.legalY;
 	            }
 	        }
 	        return minY;
 		}
 		private int getMaxY(){
 			Block initialBlock = this.blocks.get(0);
-	        int maxY = initialBlock.y;
+	        int maxY = initialBlock.legalY;
 	        for(int i = 1; i < this.blocks.size(); i++){
 	        	Block block = this.blocks.get(i);
-	            if(block.y > maxY) {
-	                maxY = block.y;
+	            if(block.legalY > maxY) {
+	                maxY = block.legalY;
 	            }
 	        }
 	        return maxY;
@@ -772,16 +752,139 @@ public class HardblockConnectionLegalizer{
 		Block sourceBlock, sinkBlock;
 		double weight;
 		
+		int minX, maxX;
+		int minY, maxY;
+		int oldMinX, oldMaxX;
+		int oldMinY, oldMaxY;
+		boolean alreadySaved;
+		
+		boolean horizontalChange, verticalChange;
+		boolean horizontalDeltaCostIncluded, verticalDeltaCostIncluded;
+		
 		Crit(Block sourceBlock, Block sinkBlock, double weight){
 			this.sourceBlock = sourceBlock;
 			this.sinkBlock = sinkBlock;
 			this.weight = weight;
+			
+			this.alreadySaved = false;
+			this.horizontalChange = false;
+			this.verticalChange = false;
 		}
-		int manhattanDistance(){
-			return Math.abs(this.sourceBlock.x - this.sinkBlock.x) + Math.abs(this.sourceBlock.y - this.sinkBlock.y);
+		
+		void initializeTimingCost(){
+			if(this.sourceBlock.legalX < this.sinkBlock.legalX){
+				this.minX = this.sourceBlock.legalX;
+				this.maxX = this.sinkBlock.legalX;
+			}else{
+				this.minX = this.sinkBlock.legalX;
+				this.maxX = this.sourceBlock.legalX;
+			}
+			
+			if(this.sourceBlock.legalY < this.sinkBlock.legalY){
+				this.minY = this.sourceBlock.legalY;
+				this.maxY = this.sinkBlock.legalY;
+			}else{
+				this.minY = this.sinkBlock.legalY;
+				this.maxY = this.sourceBlock.legalY;
+			}
 		}
+		
+		void pushTrough(){
+			this.alreadySaved = false;
+		}
+		void revert(){
+			if(this.horizontalChange){
+				this.minX = this.oldMinX;
+				this.maxX = this.oldMaxX;
+				this.horizontalChange = false;
+			}
+			if(this.verticalChange){
+				this.minY = this.oldMinY;
+				this.maxY = this.oldMaxY;
+				this.verticalChange = false;
+			}
+
+			this.alreadySaved = false;
+		}
+
+		
 		double timingCost(){
-			return this.weight * this.manhattanDistance();
+			return this.horizontalTimingCost() + this.verticalTimingCost();
+		}
+		double horizontalTimingCost(){
+			return (this.maxX - this.minX) * this.weight;
+		}
+		double verticalTimingCost(){
+			return (this.maxY - this.minY) * this.weight;
+		}
+		
+		void saveState(){
+			if(!this.alreadySaved){
+				this.oldMinX = this.minX;
+				this.oldMaxX = this.maxX;
+				this.oldMinY = this.minY;
+				this.oldMaxY = this.maxY;
+				
+				this.alreadySaved = true;
+			}
+		}
+		
+		void tryHorizontalTimingCost(){
+			this.saveState();
+			
+			if(this.sourceBlock.legalX < this.sinkBlock.legalX){
+				this.minX = this.sourceBlock.legalX;
+				this.maxX = this.sinkBlock.legalX;
+			}else{
+				this.minX = this.sinkBlock.legalX;
+				this.maxX = this.sourceBlock.legalX;
+			}
+			
+			if(this.minX != this.oldMinX || this.maxX != this.oldMaxX){
+				this.horizontalChange = true;
+				this.horizontalDeltaCostIncluded = false;
+			}else{
+				this.horizontalChange = false;
+				this.horizontalDeltaCostIncluded = true;
+			}
+        }
+		double deltaHorizontalTimingCost(){
+			if(!this.horizontalDeltaCostIncluded){
+				this.horizontalDeltaCostIncluded = true;
+				return (this.maxX - this.minX - this.oldMaxX + this.oldMinX) * this.weight;
+			}else{
+				return 0.0;
+			}
+			
+		}
+		
+		void tryVerticalTimingCost(){
+			this.saveState();
+			
+			if(this.sourceBlock.legalY < this.sinkBlock.legalY){
+				this.minY = this.sourceBlock.legalY;
+				this.maxY = this.sinkBlock.legalY;
+			}else{
+				this.minY = this.sinkBlock.legalY;
+				this.maxY = this.sourceBlock.legalY;
+			}
+			
+			if(this.minY != this.oldMinY || this.maxY != this.oldMaxY){
+				this.verticalChange = true;
+				this.verticalDeltaCostIncluded = false;
+			}else{
+				this.verticalChange = false;
+				this.verticalDeltaCostIncluded = true;
+			}
+        }
+		double deltaVerticalTimingCost(){
+			if(!this.verticalDeltaCostIncluded){
+				this.verticalDeltaCostIncluded = true;
+				return (this.maxY - this.minY - this.oldMaxY + this.oldMinY) * this.weight;
+			}else{
+				return 0.0;
+			}
+			
 		}
 	}
 	
@@ -814,37 +917,42 @@ public class HardblockConnectionLegalizer{
 			return this.blocks.size();
 		}
 		void legalize(){
-			if(this.usedPos() > this.numPos()){
-				System.out.println("To many blocks in column to legalize");
-			}else{
+			if(this.usedPos() <= this.numPos()){
 				for(Block block:this.blocks){
-					int origX = block.x;
-					int origY = block.y;
+					block.updateCriticality();
+					block.site = null;
+				}
+				
+				for(int i = 0; i < this.blocks.size(); i++){
+					Block largestCriticalityBlock = null;
 					
-					Site site = this.getBestFreeSite(block);
-					block.setSite(site);
-					site.setBlock(block);
-					
-					block.updateConnectionCost(origX, site.column, origY, site.row);
+					for(Block block:this.blocks){
+						if(!block.hasSite()){
+							if(largestCriticalityBlock == null){
+								largestCriticalityBlock = block;
+							}else if(block.criticality > largestCriticalityBlock.criticality){
+								largestCriticalityBlock = block;
+							}
+						}
+					}
+					Site bestSite = this.getBestFreeSite(largestCriticalityBlock);
+					largestCriticalityBlock.setSite(bestSite);
+					bestSite.setBlock(largestCriticalityBlock);
+					largestCriticalityBlock.setLegalY(bestSite.row);
 				}
 			}
 		}
 		Site getBestFreeSite(Block block){
-			
 			Site bestSite = null;
 			double minimumCost = Double.MAX_VALUE;
 			
 			for(Site site:this.sites){
 				if(!site.hasBlock()){
-					int oldX = block.x;
-					int oldY = block.y;
 					
-					int newX = site.column;
-					int newY = site.row;
-					
-					block.setCoordinates(newX, newY);
-					double cost = block.connectionCost(oldX, newX, oldY, newY);
-					
+					block.tryLegalY(site.row);
+					double cost = block.verticalCost();
+					block.revert();
+
 					if(cost < minimumCost){
 						minimumCost = cost;
 						bestSite = site;
@@ -855,13 +963,13 @@ public class HardblockConnectionLegalizer{
 		}
 	}
     /////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////// COLUMN ////////////////////////////////////
+    ///////////////////////////////////// VISUAL ////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
     protected void addVisual(String name){
     	if(doVisual){
         	for(Block block:this.blocks){
-        		this.visualX[block.index] = block.x;
-        		this.visualY[block.index] = block.y;
+        		this.visualX[block.index] = block.legalX;
+        		this.visualY[block.index] = block.legalY;
         	}
         	this.visualizer.addPlacement(name, this.netBlocks, this.visualX, this.visualY, -1);
     	}

@@ -130,8 +130,6 @@ abstract class Legalizer {
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
     void legalize(double tileCapacity, List<CriticalConnection> criticalConnections) {
-    	long start = System.nanoTime();
-    	
     	this.tileCapacity = tileCapacity;
         
         this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
@@ -145,10 +143,6 @@ abstract class Legalizer {
         //Legalize the IO blocks at the end
         this.blockType = this.blockTypes.get(0);
         this.legalizeBlockType(0);
-        
-    	long end = System.nanoTime();
-    	double time = (end -  start) * Math.pow(10, -6);
-    	System.out.printf("Legalization took %.0f ms\n", time);
     }
     
     private void legalizeBlockType(int i){
@@ -166,11 +160,7 @@ abstract class Legalizer {
             }
 
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
-            	long start = System.nanoTime();
             	this.legalizeBlockType(blocksStart, blocksEnd);
-            	long end = System.nanoTime();
-            	double time = (end -  start) * Math.pow(10, -6);
-            	System.out.printf("Legalize LAB took %.0f ms\n", time);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
         		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
