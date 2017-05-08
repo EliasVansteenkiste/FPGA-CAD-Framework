@@ -37,7 +37,7 @@ class SimpleLegalizer extends Legalizer {
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
     	ArrayList<LegalizerBlock> blocks = new ArrayList<LegalizerBlock>();  	
     	for(int id = blocksStart; id < blocksEnd; id++) {
-    		LegalizerBlock legalizerBlock = new LegalizerBlock(id, this.linearX[id], this.linearY[id], 1, 1);
+    		LegalizerBlock legalizerBlock = new LegalizerBlock(id, this.linearX[id], this.linearY[id], 1, 1, null);
     		blocks.add(legalizerBlock);
     	}
     	Collections.sort(blocks, Comparators.HORIZONTAL);
@@ -99,14 +99,14 @@ class SimpleLegalizer extends Legalizer {
     		Cluster lastCluster = null;
     		for (int i = 0; i < this.blockRow.size(); i++){
     			if((i == 0)){
-    				Cluster cluster = new Cluster(lastCluster, new ArrayList<LegalizerBlock>(), 0, 0, 0, 0);
+    				Cluster cluster = new Cluster(lastCluster, null, null, 0, 0, 0, 0);
     					cluster.addBlock(this.blockRow.get(i));
     					cluster.optimalX = (int)Math.round(this.blockRow.get(i).getX());
     					clustersLists.get(this.row).add(cluster);
     					lastCluster = cluster;
     			}else{
     				if(lastCluster.optimalX + lastCluster.width < this.blockRow.get(i).getX()){
-    					Cluster cluster = new Cluster(lastCluster, new ArrayList<LegalizerBlock>(), 0, 0, 0, 0);
+    					Cluster cluster = new Cluster(lastCluster, null, null, 0, 0, 0, 0);
     					cluster.addBlock( this.blockRow.get(i));
     					cluster.optimalX = (int)Math.round(this.blockRow.get(i).getX());
     					clustersLists.get(this.row).add(cluster);
@@ -122,36 +122,46 @@ class SimpleLegalizer extends Legalizer {
 	}
     private class Cluster{
 	   Cluster previous;
-	   ArrayList<LegalizerBlock> clustersBlock;
+	   
+	   //linked list blocks
+	   LegalizerBlock head;
+	   LegalizerBlock tail;
+	   
 	   int optimalX;
 	   int width;
 	   int weight;
 	   double qc;
-	   Cluster(Cluster previous, ArrayList<LegalizerBlock> clustersBlock,int optimalX, int width, int weight, int qc) {
+	   Cluster(Cluster previous, LegalizerBlock head, LegalizerBlock tail, int optimalX, int width, int weight, int qc) {
 		   this.previous = previous;
-		   this.clustersBlock = clustersBlock;
+		   this.head = head;
+		   this.tail = tail;
 		   this.optimalX = optimalX;
 		   this.width = width;
 		   this.weight = weight;
 		   this.qc = qc;
 	   }
 	   private void addBlock(LegalizerBlock block){
-		   this.clustersBlock.add(block);
+		   if(this.head == null){
+			   this.head = block;
+			   this.head.setNext(null);
+			   this.tail = this.head;
+		   }else{
+			   LegalizerBlock pointer = this.tail.next;
+			   pointer = block;
+			   pointer.setNext(null);
+			   this.tail = pointer;			   
+		   }
 		   this.weight += block.weight;
 		   this.qc += block.weight * (block.getX() - this.weight);//how it comes to be minus? too much overlapped?
 		   this.width += block.width;
 	   }	   
-   }
-   private void mergeCluster(Cluster lastCluster, Cluster cluster){
-	   lastCluster.clustersBlock = mergeTwoLists(lastCluster.clustersBlock, cluster.clustersBlock);
-	   lastCluster.weight += cluster.weight;
-	   lastCluster.width += cluster.width;
-	   lastCluster.qc += cluster.qc;
-   }
-   private ArrayList<LegalizerBlock> mergeTwoLists(ArrayList<LegalizerBlock> list1, ArrayList<LegalizerBlock> list2){
-	   list1.addAll(list2);
-	   return list1;	   
-   }
+    }
+    private void mergeCluster(Cluster lastCluster, Cluster cluster){
+    	lastCluster.tail.next = cluster.head;
+    	lastCluster.weight += cluster.weight;
+    	lastCluster.width += cluster.width;
+    	lastCluster.qc += cluster.qc;
+    }
     private void collapse(int row, Cluster cluster){
     	//place cluster
     	cluster.optimalX = (int)Math.round(cluster.qc / cluster.weight);//integer division
@@ -174,9 +184,15 @@ class SimpleLegalizer extends Legalizer {
     //transform cluster position to cell positions
     private void optimiseBlocks(int row, Cluster cluster){   	
     	int x = cluster.optimalX;
-    	for(LegalizerBlock block : cluster.clustersBlock){
-    		this.tmpLegalX[block.getId()] = x;
-    		this.tmpLegalY[block.getId()] = row;
+    	LegalizerBlock pointer = cluster.head;
+    	if(cluster.head.next != null){
+    		System.out.println(pointer.next.id);
+    	}
+    	
+    	while(pointer != null){
+    		this.tmpLegalX[pointer.getId()] = x;
+    		this.tmpLegalY[pointer.getId()] = row;
+    		pointer = pointer.next;
     		x++;
     	}
     }
@@ -199,13 +215,15 @@ class SimpleLegalizer extends Legalizer {
     	double y;
     	int width;
     	int weight;   	
+    	LegalizerBlock next;
     	
-    	LegalizerBlock(int id, double x, double y, int width, int weight){
+    	LegalizerBlock(int id, double x, double y, int width, int weight, LegalizerBlock next){
     		this.id = id;
     		this.x = x;
     		this.y = y;
     		this.width = width;
     		this.weight = weight;
+    		this.next = next;
     	}
     	private double getX(){
     		return this.x;
@@ -213,7 +231,9 @@ class SimpleLegalizer extends Legalizer {
        	private int getId(){
        		return this.id;
        	}
-        
+        private void setNext(LegalizerBlock next){
+        	this.next = next;
+        }
         @Override
         public String toString() {
             return String.format("[%.2f, %.2f]", this.x, this.y);
