@@ -49,9 +49,10 @@ class PushingSpreader {
 
     protected void doSpreading(LegalizerBlock[] blocks, int iterations) {
     	this.blocks = blocks;
+
+    	this.trimToSize();
     	
-    	//TODO Dynamic grid force calculation
-    	double gridForce = 0.002;
+    	double gridForce = 0.005;
     	this.iteration = 0;
     	do{
         	this.applyPushingForces(gridForce);
@@ -90,7 +91,6 @@ class PushingSpreader {
     	}
 
     	for(LegalizerBlock block:this.blocks){
-        	
     		int x = (int)Math.ceil(block.horizontal.coordinate * 2.0);
     		int y = (int)Math.ceil(block.vertical.coordinate * 2.0);
     		
@@ -137,7 +137,7 @@ class PushingSpreader {
     		
     		int x = (int)Math.ceil(block.horizontal.coordinate * 2.0);
     		int y = (int)Math.ceil(block.vertical.coordinate * 2.0);
-    		
+
     		for(int h = 0; h < block.height; h++){
         		southWest += block.a1 * this.massMap[x - 1][y - 1];
         		southWest += block.a2 * this.massMap[x - 1][y];
@@ -171,6 +171,15 @@ class PushingSpreader {
     	}    	
     	
     	if(timing) this.timer.time("Gravity Push Forces");
+    }
+    private void trimToSize(){
+    	for(LegalizerBlock block:this.blocks){
+    		if(block.horizontal.coordinate > this.width) block.horizontal.coordinate = this.width;
+    		if(block.horizontal.coordinate < 1) block.horizontal.coordinate = 1;
+
+    		if(block.vertical.coordinate + block.height - 1 > this.height) block.vertical.coordinate = this.height - block.height + 1;
+    		if(block.vertical.coordinate < 1) block.vertical.coordinate = 1;
+    	}
     }
     private void solve(){
     	if(timing) this.timer.start("Solve");
