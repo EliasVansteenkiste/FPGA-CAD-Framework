@@ -54,7 +54,7 @@ class DetailedLegalizer{
     		double bestCost = Double.MAX_VALUE;
     		
     		for(Column column:this.columns){
-    			if(column.usedHeight + block.height <= column.height){
+    			if(column.usedSize + block.height <= column.height){
         			double cost = column.tryBlock(block);
 
         			if(cost < bestCost){
@@ -92,7 +92,7 @@ class DetailedLegalizer{
 
     	final Site[] sites;
     	
-    	int usedHeight;
+    	int usedSize;
     	
     	Site lastUsedSite, oldLastUsedSite;
     	Site firstFreeSite, oldFirstFreeSite;
@@ -112,14 +112,14 @@ class DetailedLegalizer{
     			if(i < this.height - 1) this.sites[i].next = this.sites[i + 1];
     		}
     		
-    		this.usedHeight = 0;
+    		this.usedSize = 0;
     		this.cost = 0.0;
     	}
     	void clear(){
     		for(Site site:this.sites){
     			site.block = null;
     		}
-    		this.usedHeight = 0;
+    		this.usedSize = 0;
     		
     		this.cost = 0.0;
     	}
@@ -155,7 +155,7 @@ class DetailedLegalizer{
     		return newCost - oldCost;
     	}
     	private void addBlock(LegalizerBlock block){
-    		this.usedHeight += block.height;
+    		this.usedSize += block.height;
 
     		int optimalY = Math.max(Math.min((int)Math.round(block.vertical.coordinate - 1), this.height - 1),  0);
     		
@@ -204,7 +204,7 @@ class DetailedLegalizer{
     		}
     	}
     	private void removeBlock(LegalizerBlock block){
-    		this.usedHeight -= block.height;
+    		this.usedSize -= block.height;
     	}
     	private boolean move(){
     		this.firstFreeSite = this.lastUsedSite;
