@@ -9,7 +9,7 @@ class DimensionSolverGradient {
 
     private double[] directions, totalPositiveNetSize, totalNegativeNetSize;
     private double[] numPositiveNets, numNegativeNets;
-    private final double halfMaxConnectionLength;
+    private final double halfMaxConnectionLength, speedAveraging;
 
     private double oldStepSize, stepSize;
 
@@ -31,6 +31,7 @@ class DimensionSolverGradient {
         this.coordinates = coordinates;
         this.oldStepSize = stepSize;
         this.halfMaxConnectionLength = maxConnectionLength / 2;
+        this.speedAveraging = speedAveraging;
 
         int numBlocks = coordinates.length;
 
@@ -112,17 +113,30 @@ class DimensionSolverGradient {
     	}else{
     		return;
     	}
-
-    	double g;
-    	if(this.legalIsSet){
-        	g = netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate;
-        }else{
-        	g = netGoal - currentCoordinate;
-        }
     	
-    	this.momentum[i] = this.beta1 * this.momentum[i] + (1 - this.beta1) * g;
-    	this.speeds[i] = this.beta2 * this.speeds[i] + (1 - this.beta2) * g * g;
+    	boolean useAdam = false;
+    	if(useAdam){
+    		double g;
+        	if(this.legalIsSet){
+            	g = netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate;
+            }else{
+            	g = netGoal - currentCoordinate;
+            }
+        	
+        	this.momentum[i] = this.beta1 * this.momentum[i] + (1 - this.beta1) * g;
+        	this.speeds[i] = this.beta2 * this.speeds[i] + (1 - this.beta2) * g * g;
 
-    	this.coordinates[i] += this.stepSize * this.momentum[i] / (Math.sqrt(this.speeds[i]) + this.eps);
+        	this.coordinates[i] += this.stepSize * this.momentum[i] / (Math.sqrt(this.speeds[i]) + this.eps);
+    	}else{
+    		double newSpeed;
+        	if(this.legalIsSet){
+        		newSpeed = this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
+        	}else{
+        		newSpeed = this.stepSize * (netGoal - currentCoordinate);
+        	}
+       
+        	this.speeds[i] = this.speedAveraging * this.speeds[i] + (1 - this.speedAveraging) * newSpeed;
+        	this.coordinates[i] += this.speeds[i];
+    	}   	
     }
 }
