@@ -9,27 +9,37 @@ class DimensionSolverGradient {
 
     private double[] directions, totalPositiveNetSize, totalNegativeNetSize;
     private double[] numPositiveNets, numNegativeNets;
-    private final double halfMaxConnectionLength, speedAveraging;
+    private final double halfMaxConnectionLength;
 
-    private final double stepSize;
+    private double oldStepSize, stepSize;
 
     private final double[] speeds;
+    private final double[] momentum;
+    private final double beta1;
+    private final double beta2;
+    private final double eps;
 
     private double pseudoWeight = 0;
     private boolean legalIsSet = false;
     private int[] legalCoordinates;
     
+    private int iteration;
+    
     private boolean[] fixed;
 
     DimensionSolverGradient(double[] coordinates, double stepSize, double maxConnectionLength, double speedAveraging, boolean[] fixed) {
         this.coordinates = coordinates;
-        this.stepSize = stepSize;
+        this.oldStepSize = stepSize;
         this.halfMaxConnectionLength = maxConnectionLength / 2;
-        this.speedAveraging = speedAveraging;
 
         int numBlocks = coordinates.length;
 
         this.speeds = new double[numBlocks];
+        this.momentum = new double[numBlocks];
+        
+        this.beta1 = 0.9;
+        this.beta2 = 0.999;
+        this.eps = 1e-8;
 
         this.directions = new double[numBlocks];
         this.numPositiveNets = new double[numBlocks];
@@ -40,7 +50,10 @@ class DimensionSolverGradient {
         this.fixed = fixed;
     }
 
-
+    void initialize(){
+    	this.iteration = 0;
+    	this.stepSize = this.oldStepSize;
+    }
     void initializeIteration(double pseudoWeight) {
         this.pseudoWeight = pseudoWeight;
 
@@ -51,6 +64,12 @@ class DimensionSolverGradient {
 
         Arrays.fill(this.totalPositiveNetSize, 0.0);
         Arrays.fill(this.totalNegativeNetSize, 0.0);
+        
+        this.iteration++;
+        
+        if(this.iteration > 5){
+        	this.stepSize *= 0.95;
+        }
     }
 
     void setLegal(int[] legal) {
@@ -82,47 +101,28 @@ class DimensionSolverGradient {
         }
     }
     void doSolve(int i){
-    	/* This calculation is a bit complex. There are 3 coordinates at play:
-    	 * - The current coordinate (C1)
-    	 * - The "optimal" coordinate, based on the connected nets (N)
-    	 * - The legal coordinate, based on the previous legalization iteration (L)
-    	 *
-    	 * We calculate a weighted coordinate W in between N and L, based on the
-    	 * pseudoWeight P:
-    	 * W = P * L + (1-P) * N
-    	 *
-    	 * Then we calculate the next coordinate C2 of this block, using step size S:
-    	 * C2 = S * W + (1-S) * C1
-    	 *
-    	 * => C2 = (1-S)*C1 + S*(P*L + (1-P)*N)
-    	 *
-    	 * In place, we can rewrite as:
-    	 * => C1 += S * (N + P*(L-N) - C1)
-    	 */
-
     	double direction = this.directions[i];
     	double currentCoordinate = this.coordinates[i];
 
     	double netGoal = currentCoordinate;
-    	if(direction > 0) {
+    	if(direction > 0){
     		netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
-
-
-    	} else if(direction < 0) {
+    	}else if(direction < 0){
     		netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
-
-    	} else {
+    	}else{
     		return;
     	}
 
-    	double newSpeed;
-    	if(this.legalIsSet) {
-    		newSpeed = this.stepSize * (netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate);
-    	} else {
-    		newSpeed = this.stepSize * (netGoal - currentCoordinate);
-    	}
-   
-    	this.speeds[i] = this.speedAveraging * this.speeds[i] + (1 - this.speedAveraging) * newSpeed;
-    	this.coordinates[i] += this.speeds[i];
+    	double g;
+    	if(this.legalIsSet){
+        	g = netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate;
+        }else{
+        	g = netGoal - currentCoordinate;
+        }
+    	
+    	this.momentum[i] = this.beta1 * this.momentum[i] + (1 - this.beta1) * g;
+    	this.speeds[i] = this.beta2 * this.speeds[i] + (1 - this.beta2) * g * g;
+
+    	this.coordinates[i] += this.stepSize * this.momentum[i] / (Math.sqrt(this.speeds[i]) + this.eps);
     }
 }

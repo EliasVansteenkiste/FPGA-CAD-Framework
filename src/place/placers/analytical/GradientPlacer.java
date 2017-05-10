@@ -177,7 +177,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new ColumnLegalizer(
+        this.legalizer = new HeapLegalizer(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
@@ -244,6 +244,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	}
     	this.updateCoordinateValues();
 
+    	this.solver.initialize();
+
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {
             this.solveLinearIteration();
@@ -264,6 +266,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	Arrays.fill(this.fixed, true);
     	this.freeBlockType(movableBlockType);
     	this.updateCoordinateValues();
+    	
+    	this.solver.initialize();
 
         this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
         for(int i = 0; i < this.iterationEffortLevel; i++) {

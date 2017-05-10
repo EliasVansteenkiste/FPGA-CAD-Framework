@@ -27,7 +27,12 @@ class LinearSolverGradient {
         this.solverX = new DimensionSolverGradient(coordinatesX, stepSize, maxConnectionLength, speedAveraging, fixed);
         this.solverY = new DimensionSolverGradient(coordinatesY, stepSize, maxConnectionLength, speedAveraging, fixed);
     }
-
+    
+    public void initialize(){
+    	this.solverX.initialize();
+    	this.solverY.initialize();
+    }
+    
     public void initializeIteration(double pseudoWeight) {
         this.solverX.initializeIteration(pseudoWeight);
         this.solverY.initializeIteration(pseudoWeight);

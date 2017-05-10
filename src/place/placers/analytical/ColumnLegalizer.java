@@ -11,7 +11,9 @@ import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
 import place.util.TimingTree;
 import place.visual.PlacementVisualizer;
 
@@ -31,10 +33,9 @@ class ColumnLegalizer extends Legalizer {
             int[] legalY,
             int[] heights,
             PlacementVisualizer visualizer,
-            Map<GlobalBlock, NetBlock> blockIndexes) throws IllegalArgumentException {
+            Map<GlobalBlock, NetBlock> netBlocks) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, blockIndexes);
-
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, visualizer, netBlocks);
 
         this.heights = heights;
 
@@ -56,9 +57,10 @@ class ColumnLegalizer extends Legalizer {
     	this.timingTree.start("Make sorted blocks");
     	this.blocks.clear();
     	for(int index = blocksStart; index < blocksEnd; index++) {
-    		double weight = 1.0;
+    		int height = this.heights[index];
+    		double weight = 1.0 / height;
     		
-    		Block block = new Block(index, this.linearX[index], this.linearY[index], this.heights[index], weight);
+    		Block block = new Block(index, this.linearX[index], this.linearY[index], height, weight);
     		this.blocks.add(block);
     	}
     	Collections.sort(this.blocks, Comparators.VERTICAL);
@@ -76,7 +78,7 @@ class ColumnLegalizer extends Legalizer {
     		Column bestColumn = null;
     		double bestCost = Double.MAX_VALUE;
     		
-    		for(Column column:this.columns){//TODO MUCH FASTER
+    		for(Column column:this.columns){
     			if(column.usedSize + block.size <= column.size){
         			double cost = column.tryBlock(block);
 
@@ -89,13 +91,19 @@ class ColumnLegalizer extends Legalizer {
     		bestColumn.addBlock(block);
     	}
     	this.timingTree.time("Place blocks");
-    	
+
     	this.timingTree.start("Update legal");
+    	for(Block block:this.blocks){
+    		block.processed = false;
+    	}
     	for(Column column:this.columns){
-    		for(Site site:column.sites){//TODO MACRO PROBLEM
+    		for(Site site:column.sites){
     			if(site.hasBlock()){
-        			this.legalX[site.block.index] = site.x;
-        			this.legalY[site.block.index] = site.y;
+    				if(!site.block.processed){
+            			this.legalX[site.block.index] = site.x;
+            			this.legalY[site.block.index] = site.y;
+            			site.block.processed = true;
+    				}
     			}
     		}
     	}
@@ -111,8 +119,10 @@ class ColumnLegalizer extends Legalizer {
     	
     	int usedSize;
     	
-    	Site lastUsedSite;//TODO FASTER
-    	Site firstFreeSite;//TODO FASTER
+    	Site lastUsedSite, oldLastUsedSite;
+    	Site firstFreeSite, oldFirstFreeSite;
+    	
+    	double cost, oldCost;
     	
     	Column(int column, int size){
     		this.column = column;
@@ -128,35 +138,45 @@ class ColumnLegalizer extends Legalizer {
     		}
     		
     		this.usedSize = 0;
+    		this.cost = 0.0;
     	}
     	void clear(){
     		for(Site site:this.sites){
     			site.block = null;
     		}
     		this.usedSize = 0;
+    		
+    		this.cost = 0.0;
     	}
     	
     	private void saveState(){
     		for(Site site:this.sites){
     			site.saveState();
     		}
+    		this.oldLastUsedSite = this.lastUsedSite;
+    		this.oldFirstFreeSite = this.firstFreeSite;
+    		
+    		this.oldCost = this.cost;
     	}
     	private void restoreState(){
     		for(Site site:this.sites){
     			site.restoreState();
     		}
+    		this.lastUsedSite = this.oldLastUsedSite;
+    		this.firstFreeSite = this.oldFirstFreeSite;
+    		
+    		this.cost = this.oldCost;
     	}
     	private double tryBlock(Block block){
-    		double oldCost = this.cost();
-    		
     		this.saveState();
+
+    		double oldCost = this.cost;
     		this.addBlock(block);
-    		
-    		double newCost = this.cost();
-    		
+    		double newCost = this.cost;
+
     		this.removeBlock(block);
     		this.restoreState();
-    		
+
     		return newCost - oldCost;
     	}
     	private void addBlock(Block block){
@@ -166,28 +186,52 @@ class ColumnLegalizer extends Legalizer {
     		
     		Site bestSite = this.sites[optimalY];
     		if(bestSite.hasBlock()){
-    			while(bestSite.hasBlock()){//TODO FASTER
-    				if(bestSite.next == null){//TODO MACRO PROBLEM
-    					this.move();
-    					break;
-    				}else{
-    					bestSite = bestSite.next;
-    				}
+        		Site currentSite = this.lastUsedSite;
+        		for(int s = 0; s < block.size; s++){
+        			if(currentSite.next == null){
+        				this.move();
+        			}else{
+        				currentSite = currentSite.next;
+        			}
+        		}
+        		
+        		bestSite = this.lastUsedSite.next;
+        		
+        		this.putBlock(block, bestSite);
+    		}else{
+    			Site currentSite = bestSite;
+        		for(int s = 0; s < block.size - 1; s++){
+        			if(currentSite.next == null){
+        				bestSite = bestSite.previous;
+        				if(bestSite.hasBlock()){
+        					this.lastUsedSite = bestSite;
+        					this.move();
+        				}
+        			}else{
+        				currentSite = currentSite.next;
+        			}
+        		}
+        		this.putBlock(block, bestSite);
+    		}
+			this.minimumCostShift();
+    	}
+    	private void putBlock(Block block, Site site){
+    		for(int s = 0; s < block.size; s++){
+    			if(site == null){
+    				System.out.println("Not enough space to put block at end of column");
+    			}else{
+    				site.setBlock(block);
+    				this.lastUsedSite = site;
+    				this.cost += site.block.cost(site.x, site.y);
+        			
+        			site = site.next;
     			}
     		}
-    		bestSite.setBlock(block);
-			this.minimumCostShift();
     	}
     	private void removeBlock(Block block){
     		this.usedSize -= block.size;
     	}
     	private boolean move(){
-    		this.lastUsedSite = null;//TODO FASTER
-    		for(Site site:this.sites){
-    			if(site.hasBlock()){
-    				this.lastUsedSite = site;
-    			}
-    		}
     		this.firstFreeSite = this.lastUsedSite;
     		while(this.firstFreeSite.hasBlock()){
     			this.firstFreeSite = this.firstFreeSite.previous;
@@ -199,25 +243,34 @@ class ColumnLegalizer extends Legalizer {
     		
     		Site currentSite = this.firstFreeSite;
     		while(currentSite != this.lastUsedSite){
+    			
+    			this.cost -= currentSite.next.block.cost(currentSite.next.x, currentSite.next.y);
     			currentSite.block = currentSite.next.block;
+    			this.cost += currentSite.block.cost(currentSite.x, currentSite.y);
+    			
     			currentSite = currentSite.next;
     		}
     		this.lastUsedSite.block = null;
+    		this.lastUsedSite = this.lastUsedSite.previous;
     		
     		return true;
     	}
     	private void revert(){
+    		this.lastUsedSite = this.lastUsedSite.next;
     		Site currentSite = this.lastUsedSite;
     		while(currentSite != this.firstFreeSite){
+    			this.cost -= currentSite.previous.block.cost(currentSite.previous.x, currentSite.previous.y);
     			currentSite.block = currentSite.previous.block;
+    			this.cost += currentSite.block.cost(currentSite.x, currentSite.y);
+    			
     			currentSite = currentSite.previous;
     		}
     		this.firstFreeSite.block = null;
     	}
     	private void minimumCostShift(){
-    		double minimumCost = this.cost();
+    		double minimumCost = this.cost;
     		while(this.move()){
-    			double cost = this.cost();
+    			double cost = this.cost;
     			if(cost < minimumCost){
     				minimumCost = cost;
     			}else{
@@ -225,15 +278,6 @@ class ColumnLegalizer extends Legalizer {
     				return;
     			}
     		}
-    	}
-    	private double cost(){//TODO MUCH FASTER
-    		double cost = 0.0;
-    		for(Site site:this.sites){//TODO MACRO PROBLEM
-    			if(site.hasBlock()){
-    				cost += site.block.cost(site.x, site.y);
-    			}
-    		}
-    		return cost;
     	}
 	}
     private class Block {
@@ -243,6 +287,8 @@ class ColumnLegalizer extends Legalizer {
   	  
   	   int size;
   	   double weight;
+  	   
+  	   boolean processed;
       	
   	   Block(int index, double linearX, double linearY, int width, double weight){
   		   this.index = index;
@@ -252,13 +298,13 @@ class ColumnLegalizer extends Legalizer {
   		   this.weight = weight;
   	   }
   	   double cost(int legalX, int legalY){
-  		   return this.weight * ((this.linearX - legalX) * (this.linearX - legalX) + (this.linearY - legalY) * (this.linearY - legalY));//TODO OFFSET PROBLEM
+  		   return this.weight * ((this.linearX - legalX) * (this.linearX - legalX) + (this.linearY - legalY) * (this.linearY - legalY));
   	   }
     }
     private class Site {
     	final int x,y;
-    	Block block;
-    	Block oldBlock;
+    	
+    	Block block, oldBlock;
     	
     	Site previous;
     	Site next;
@@ -290,10 +336,11 @@ class ColumnLegalizer extends Legalizer {
  		   }
  	   };
     }
-    @Override
-    protected void initializeLegalizationAreas(){
+	@Override
+	 protected void initializeLegalizationAreas(){
     	return;
     }
+
     @Override
     protected HashMap<BlockType,ArrayList<int[]>> getLegalizationAreas(){
     	return new HashMap<BlockType,ArrayList<int[]>>();
