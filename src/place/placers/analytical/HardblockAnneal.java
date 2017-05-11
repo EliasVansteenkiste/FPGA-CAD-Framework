@@ -27,7 +27,6 @@ public class HardblockAnneal {
 	private int iteration;
 	
 	private double cost;
-	
 	private final List<Double> costHistory;
 	
 	private final Random random;
@@ -42,6 +41,30 @@ public class HardblockAnneal {
 		this.crits = new HashSet<>();
 		
 		this.costHistory = new ArrayList<>();
+	}
+	public void doAnneal(Column[] columns){
+		int numBlocks = 0;
+		int numSites = 0;
+		
+		for(Column column:columns){
+			numBlocks += column.blocks.size();
+			numSites += column.sites.length;
+		}
+		
+		this.blocks = new Block[numBlocks];
+		this.sites = new Site[numSites];
+		
+		int blockIndex = 0, siteIndex = 0;
+		for(Column column:columns){
+			for(Block block:column.blocks){
+				this.blocks[blockIndex++] = block;
+			}
+			for(Site site:column.sites){
+				this.sites[siteIndex++] = site;
+			}
+		}
+		
+		this.doAnneal();
 	}
 	public void doAnneal(Column column){
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
