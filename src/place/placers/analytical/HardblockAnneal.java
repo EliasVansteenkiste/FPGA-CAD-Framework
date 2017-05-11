@@ -24,6 +24,7 @@ public class HardblockAnneal {
 	
 	private double temperature;
 	private int movesPerTemperature;
+	private int iteration;
 	
 	private double cost;
 	
@@ -93,7 +94,7 @@ public class HardblockAnneal {
 		this.movesPerTemperature = (int)Math.pow(this.numBlocks, 4/3);
 		this.timing.time("Initialize anneal");
 		
-		int iteration = 0;
+		this.iteration = 0;
 
 		if(printStatistics){
 			System.out.println("Anneal " + this.blocks.length + " blocks:");
@@ -109,10 +110,10 @@ public class HardblockAnneal {
 			double numSwaps = this.doSwapIteration(this.movesPerTemperature, true);
 			double alpha = numSwaps / this.movesPerTemperature;
 
-			if(printStatistics) System.out.printf("\t%d\t%.2f\t%.2f\t%.2f\n", iteration, alpha, this.temperature, this.cost);
+			if(printStatistics) System.out.printf("\t%d\t%.2f\t%.2f\t%.2f\n", this.iteration, alpha, this.temperature, this.cost);
 
 			this.updateTemperature(alpha);
-			iteration++;
+			this.iteration++;
 			
 			finalIteration = this.finalIteration(this.cost);
 		}
@@ -137,6 +138,12 @@ public class HardblockAnneal {
 					min = value;
 				}
 			}
+			
+			if(min < 1){//TODO Is this a bug or is sudoku_check a special case?
+				System.out.println("TODO => How can the cost be smaller than 1???");
+				return true;
+			}
+			
 			double ratio = max / min;
 			
 			if(ratio < 1.001){
