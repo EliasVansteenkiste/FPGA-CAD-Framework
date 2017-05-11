@@ -298,6 +298,11 @@ public class Main {
             numClb = 0,
             numHardBlock = 0,
             numIo = 0;
+        
+        int numPLL = 0,
+        	numM9K = 0, 
+        	numM144K = 0, 
+        	numDSP = 0;
 
         for(BlockType blockType : BlockType.getBlockTypes()) {
 
@@ -316,6 +321,16 @@ public class Main {
 
             } else if(category == BlockCategory.HARDBLOCK) {
                 numHardBlock += numBlocks;
+                
+                if(blockType.equals(BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(0))){
+                	numPLL += numBlocks;
+                }else if(blockType.equals(BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(1))){
+                	numDSP += numBlocks;
+                }else if(blockType.equals(BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(2))){
+                	numM9K += numBlocks;
+                }else if(blockType.equals(BlockType.getBlockTypes(BlockCategory.HARDBLOCK).get(3))){
+                	numM144K += numBlocks;
+                }
 
             } else if(category == BlockCategory.IO) {
                 numIo += numBlocks;
@@ -324,8 +339,9 @@ public class Main {
 
         this.logger.println("Number of blocks:");
         this.logger.printf(
-                "clb: %d\nlut: %d\nff: %d\nio: %d\nhardblock: %d\n\n",
-                numClb, numLut, numFf, numIo, numHardBlock);
+                "clb: %d\nlut: %d\nff: %d\nio: %d\nhardblock: %d\n\tPLL: %d\n\tDSP: %d\n\tM9K: %d\n\tM144K: %d\n\n",
+                numClb, numLut, numFf, numIo, numHardBlock, numPLL, numDSP, numM9K, numM144K);
+        
     }
 
 

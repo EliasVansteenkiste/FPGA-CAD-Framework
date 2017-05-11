@@ -173,10 +173,11 @@ public class Circuit {
          */
         if(this.architecture.isAutoSized()) {
         	this.autoSize(ioType, blockTypes);
+        	System.out.println("Auto size: " +  this.width + "x" + this.height + "\n");
         } else {
-        	System.out.println("Fixed size: " +  this.architecture.getWidth() + "x" + this.architecture.getHeight() + "\n");
             this.width = this.architecture.getWidth();
             this.height = this.architecture.getHeight();
+            System.out.println("Fixed size: " +  this.width + "x" + this.height + "\n");
         }
     }
 
