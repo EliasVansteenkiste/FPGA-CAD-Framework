@@ -7,7 +7,10 @@ import place.interfaces.Options;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class GradientPlacerTD extends GradientPlacer {
@@ -36,7 +39,7 @@ public class GradientPlacerTD extends GradientPlacer {
         options.add(
                 O_RECALCULATE_CRITICALITIES,
                 "frequency of criticalities recalculation; 0 = never, 1 = every iteration",
-                new Double(0.4));
+                new Double(1));
 
         options.add(
                 O_RECALCULATE_PRIORITY,
@@ -161,12 +164,13 @@ public class GradientPlacerTD extends GradientPlacer {
     protected void processNets() {
         // Process all nets wirelength driven
         super.processNets();
-
+        
         // Process the most critical source-sink connections
-        for(CriticalConnection c:this.criticalConnections){
-        	this.solver.processConnection(c.sourceIndex, c.sinkIndex, c.offset, c.weight);
+        for(CriticalConnection critConn:this.criticalConnections){
+        	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.offset, critConn.weight);
         }
     }
+
 
     @Override
     protected void updateLegalIfNeeded(int iteration) {
@@ -186,9 +190,9 @@ public class GradientPlacerTD extends GradientPlacer {
     	final int sourceIndex, sinkIndex;
     	final float offset, weight;
     	
-    	CriticalConnection(int source, int sink, float offset, float weight){
-    		this.sourceIndex = source;
-    		this.sinkIndex = sink;
+    	CriticalConnection(int sourceIndex, int sinkIndex, float offset, float weight){
+    		this.sourceIndex = sourceIndex;
+    		this.sinkIndex = sinkIndex;
     		this.offset = offset;
     		this.weight = weight;
     	}
