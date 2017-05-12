@@ -21,15 +21,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_ANCHOR_WEIGHT_START = "anchor weight start",
         O_ANCHOR_WEIGHT_STEP = "anchor weight step",
         O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
-        O_STEP_SIZE = "step size",
+        O_LEARNING_RATE_START = "learning rate start",
+        O_LEARNING_RATE_STOP = "learning rate stop",
+        O_STEADY_LEARNING_RATE = "steady learning rate",
         O_MAX_CONNECTION_LENGTH = "max connection length",
         O_SPEED_AVERAGING = "speed averaging",
         O_EFFORT_LEVEL = "effort level",
-        O_FIRST_EFFORT = "first effort",
-        O_LAST_EFFORT = "last effort",
         O_PRINT_OUTER_COST = "print outer cost",
-        O_PRINT_INNER_COST = "print inner cost",
-        O_FIXED_IO = "fixed io blocks";
+        O_PRINT_INNER_COST = "print inner cost";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -50,11 +49,21 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 "anchor weight at which the placement is finished (max: 1)",
                 new Double(0.85));
 
-
+        
         options.add(
-                O_STEP_SIZE,
+                O_LEARNING_RATE_START,
                 "ratio of distance to optimal position that is moved",
-                new Double(0.4));
+                new Double(0.6));
+        
+        options.add(
+                O_LEARNING_RATE_STOP,
+                "ratio of distance to optimal position that is moved",
+                new Double(0.2));
+        
+        options.add(
+                O_STEADY_LEARNING_RATE,
+                "number of epochs with constant learning rate",
+                new Integer(5));
 
         options.add(
                 O_MAX_CONNECTION_LENGTH,
@@ -66,21 +75,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 "averaging factor for block speeds",
                 new Double(0.2));
 
-
         options.add(
                 O_EFFORT_LEVEL,
                 "number of gradient steps to take in each outer iteration",
-                new Integer(15));
-
-        options.add(
-                O_FIRST_EFFORT,
-                "multiplier for the effort level in the first outer iteration",
-                new Double(1));
-
-        options.add(
-                O_LAST_EFFORT,
-                "multiplier for the effort level in the last outer iteration",
-                new Double(0.07));
+                new Integer(50));
 
         options.add(
                 O_PRINT_OUTER_COST,
@@ -91,21 +89,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_PRINT_INNER_COST,
                 "print the WLD cost after each inner iteration",
                 new Boolean(false));
-        
-        options.add(
-                O_FIXED_IO,
-                "fixed io blocks during gradient descent",
-                new Boolean(true));
     }
 
 
     protected double anchorWeight;
     protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
 
-    private double stepSize, maxConnectionLength, speedAveraging;
+    private double maxConnectionLength, speedAveraging;
+    private double learningRate, learningRateMultiplier;
+    private int steadyLearningRate;
 
     private int effortLevel;
-    private double firstEffortMultiplier, lastEffortMultiplier;
 
     protected double tradeOff; // Only used by GradientPlacerTD
 
@@ -115,7 +109,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double utilization;
 
     protected int numIterations;
-    private int iterationEffortLevel;
 
     protected Legalizer legalizer;
     
@@ -141,14 +134,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
-        this.stepSize = this.options.getDouble(O_STEP_SIZE);
         this.maxConnectionLength = this.options.getDouble(O_MAX_CONNECTION_LENGTH);
         this.speedAveraging = this.options.getDouble(O_SPEED_AVERAGING);
 
     	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
-        this.firstEffortMultiplier = this.options.getDouble(O_FIRST_EFFORT);
-        this.lastEffortMultiplier = this.options.getDouble(O_LAST_EFFORT);
-
 
         if(!this.options.isSet(O_ANCHOR_WEIGHT_STEP)) {
             this.options.set(O_ANCHOR_WEIGHT_STEP, new Double(0.7 / this.effortLevel));
@@ -156,6 +145,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
 
         this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
+        
+        this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
+        this.steadyLearningRate = Math.min(this.options.getInteger(O_STEADY_LEARNING_RATE), this.numIterations);
+        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - this.steadyLearningRate));
 
         this.printInnerCost = this.options.getBoolean(O_PRINT_INNER_COST);
         this.printOuterCost = this.options.getBoolean(O_PRINT_OUTER_COST);
@@ -214,20 +207,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.fixed = new boolean[this.legalX.length];
     	Arrays.fill(this.fixed, false);
-    	if(this.options.getBoolean(O_FIXED_IO)){
-    		this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
-    	}
+    	this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
 
         this.solver = new LinearSolverGradient(
                 this.linearX,
                 this.linearY,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
-                this.stepSize,
                 this.maxConnectionLength,
                 this.speedAveraging,
                 this.fixed);
-
+        
         if(this.printInnerCost || this.printOuterCost) {
             this.costCalculator = new CostCalculatorWLD(this.nets);
         }
@@ -242,11 +232,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
     }
-
+    
+    
     @Override
     protected void solveLinear(int iteration) {
-        this.iterationEffortLevel = this.getIterationEffortLevel(iteration);
-        for(int i = 0; i < this.iterationEffortLevel; i++) {
+
+    	if(iteration > this.steadyLearningRate){
+    		this.learningRate *= this.learningRateMultiplier;
+    	}
+    	
+
+        for(int i = 0; i < this.effortLevel; i++) {
             this.solveLinearIteration();
 
             //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
@@ -257,15 +253,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             }
         }
     }
-    private int getIterationEffortLevel(int iteration) {
-    	int effortLevel = this.effortLevel;
-        int iterationEffortLevel = (int) Math.round(effortLevel * (1 + (this.lastEffortMultiplier - 1) * iteration / (this.numIterations - 1)));
-        if(iteration == 0) {
-            iterationEffortLevel *= this.firstEffortMultiplier;
-        }
-        return iterationEffortLevel;
-    }
-    
+
     /*
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
@@ -274,7 +262,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_BUILD_LINEAR);
 
         // Set value of alpha and reset the solver
-        this.solver.initializeIteration(this.anchorWeight);
+        this.solver.initializeIteration(this.anchorWeight, this.learningRate);
 
         // Process nets
         this.processNets();
@@ -323,9 +311,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected void addStatTitles(List<String> titles) {
         titles.add("iteration");
+        titles.add("learning rate");
         titles.add("anchor weight");
         titles.add("utilization");
-        titles.add("effort level");
 
         if(this.printOuterCost) {
             titles.add("BB linear cost");
@@ -344,9 +332,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         List<String> stats = new ArrayList<>();
 
         stats.add(Integer.toString(iteration));
+        stats.add(String.format("%.3f", this.learningRate));
         stats.add(String.format("%.3f", this.anchorWeight));
         stats.add(String.format("%.3g", this.utilization));
-        stats.add(Integer.toString(this.iterationEffortLevel));
 
         if(this.printOuterCost) {
             this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
@@ -368,6 +356,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected boolean stopCondition(int iteration) {
-    	return iteration + 1 >= this.numIterations || this.getIterationEffortLevel(iteration + 1) == 0;
+    	return iteration + 1 >= this.numIterations;
     }
 }
