@@ -162,8 +162,7 @@ public class HardblockAnneal {
 				}
 			}
 			
-			if(min < 1){//TODO Is this a bug or is sudoku_check a special case?
-				System.out.println("TODO => How can the cost be smaller than 1???");
+			if(min < 1){
 				return true;
 			}
 			
