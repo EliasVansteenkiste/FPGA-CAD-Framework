@@ -117,17 +117,4 @@ public class DelayTables implements Serializable {
 
         return this.getTable(fromCategory, toCategory).get(deltaY).get(deltaX);
     }
-
-    public double getIoToIo(int x, int y) {
-        return this.ioToIo.get(x).get(y);
-    }
-    public double getIoToClb(int x, int y) {
-        return this.ioToClb.get(x).get(y);
-    }
-    public double getClbToIo(int x, int y) {
-        return this.clbToIo.get(x).get(y);
-    }
-    public double getClbToClb(int x, int y) {
-        return this.clbToClb.get(x).get(y);
-    }
 }
