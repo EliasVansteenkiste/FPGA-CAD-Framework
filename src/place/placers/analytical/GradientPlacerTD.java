@@ -8,7 +8,6 @@ import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -61,7 +60,7 @@ public class GradientPlacerTD extends GradientPlacer {
     private static String
         T_UPDATE_CRIT_CON = "update critical connections";
     
-    private List<CriticalConnection> criticalConnections = new ArrayList<CriticalConnection>();
+    private List<CritConn> criticalConnections = new ArrayList<CritConn>();
 
     private double criticalityExponent, criticalityThreshold;
     private TimingGraph timingGraph;
@@ -149,14 +148,46 @@ public class GradientPlacerTD extends GradientPlacer {
                 if(criticality > this.criticalityThreshold) {
 
                     if(source.blockIndex != sink.blockIndex) {
-                    	CriticalConnection c = new CriticalConnection(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * criticality));
+                    	CritConn c = new CritConn(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * criticality));
                     	this.criticalConnections.add(c);
                     }
                 }
             }
         }
+
+        Map<Integer,ArrayList<CritConn>> nextConn = new HashMap<>();
+        for(CritConn conn:this.criticalConnections){
+        	if(!nextConn.containsKey(conn.sourceIndex)){
+        		nextConn.put(conn.sourceIndex, new ArrayList<CritConn>());
+        	}
+        	if(!nextConn.containsKey(conn.sinkIndex)){
+        		nextConn.put(conn.sinkIndex, new ArrayList<CritConn>());
+        	}
+        }
+        for(CritConn conn:this.criticalConnections){
+        	nextConn.get(conn.sourceIndex).add(conn);
+        }
+        
+        int numConn = this.criticalConnections.size();
+        for(int i = 0; i < numConn; i++){
+        	CritConn conn1 = this.criticalConnections.get(i);
+        	for(CritConn conn2:nextConn.get(conn1.sinkIndex)){
+        		if(this.sameWeight(conn1, conn2) && !conn2.equals(conn1)){
+        			if(conn1.sourceIndex != conn2.sinkIndex){
+        				this.criticalConnections.add(new CritConn(conn1.sourceIndex, conn2.sinkIndex, 0, conn1.weight / 2));
+        			}
+        		}
+        	}
+        }
     }
-    public List<CriticalConnection> getCriticalConnections(){
+    private boolean sameWeight(CritConn c1, CritConn c2){
+    	if(Math.abs(c1.weight - c2.weight) < 0.0001){
+    		return true;
+    	}else{
+    		return false;
+    	}
+    }
+    public List<CritConn> getCriticalConnections(){
     	return this.criticalConnections;
     }
 
@@ -166,7 +197,7 @@ public class GradientPlacerTD extends GradientPlacer {
         super.processNets();
         
         // Process the most critical source-sink connections
-        for(CriticalConnection critConn:this.criticalConnections){
+        for(CritConn critConn:this.criticalConnections){
         	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.offset, critConn.weight);
         }
     }
@@ -186,11 +217,11 @@ public class GradientPlacerTD extends GradientPlacer {
         return "Timing driven gradient placer";
     }
     
-    public class CriticalConnection{
+    public class CritConn{
     	final int sourceIndex, sinkIndex;
     	final float offset, weight;
     	
-    	CriticalConnection(int sourceIndex, int sinkIndex, float offset, float weight){
+    	CritConn(int sourceIndex, int sinkIndex, float offset, float weight){
     		this.sourceIndex = sourceIndex;
     		this.sinkIndex = sinkIndex;
     		this.offset = offset;
