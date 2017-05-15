@@ -79,6 +79,7 @@ public class HardblockConnectionLegalizer{
 				numNets += 1;
 			}
 		}
+		System.out.println();
 
 		//Make all objects
 		this.blocks = new Block[legalX.length];
