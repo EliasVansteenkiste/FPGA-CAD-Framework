@@ -11,7 +11,7 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
-import place.placers.analytical.GradientPlacerTD.CriticalConnection;
+import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.util.TimingTree;
 import place.visual.PlacementVisualizer;
 
@@ -166,7 +166,7 @@ public class HardblockConnectionLegalizer{
 	}
 
 	//UPDATE CRITICAL CONNECTIONS
-	public void updateCriticalConnections(List<CriticalConnection> criticalConnections){
+	public void updateCriticalConnections(List<CritConn> criticalConnections){
 		this.timingTree.start("Update critical connections in hardblock connection legalizer");
 		
 		//Clear all data
@@ -175,7 +175,7 @@ public class HardblockConnectionLegalizer{
 		}
 		this.crits.clear();
 		
-		for(CriticalConnection critConn:criticalConnections){
+		for(CritConn critConn:criticalConnections){
         	Block sourceBlock = this.blocks[critConn.sourceIndex];
         	Block sinkBlock = this.blocks[critConn.sinkIndex];
         	

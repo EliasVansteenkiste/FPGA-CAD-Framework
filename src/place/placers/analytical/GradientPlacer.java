@@ -7,7 +7,7 @@ import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.interfaces.Options.Required;
-import place.placers.analytical.GradientPlacerTD.CriticalConnection;
+import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
@@ -156,7 +156,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     protected abstract void initializeIteration(int iteration);
     protected abstract void updateLegalIfNeeded(int iteration);
-    protected abstract List<CriticalConnection> getCriticalConnections();
+    protected abstract List<CritConn> getCriticalConnections();
 
 
     @Override

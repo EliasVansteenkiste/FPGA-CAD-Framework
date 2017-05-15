@@ -10,7 +10,7 @@ import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
-import place.placers.analytical.GradientPlacerTD.CriticalConnection;
+import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.visual.PlacementVisualizer;
 
 abstract class Legalizer {
@@ -129,7 +129,7 @@ abstract class Legalizer {
 
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
-    void legalize(double tileCapacity, List<CriticalConnection> criticalConnections) {
+    void legalize(double tileCapacity, List<CritConn> criticalConnections) {
     	this.tileCapacity = tileCapacity;
         
         this.hardblockLegalizer.updateCriticalConnections(criticalConnections);

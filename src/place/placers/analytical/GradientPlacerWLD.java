@@ -3,7 +3,7 @@ package place.placers.analytical;
 import place.circuit.Circuit;
 import place.interfaces.Logger;
 import place.interfaces.Options;
-import place.placers.analytical.GradientPlacerTD.CriticalConnection;
+import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
@@ -35,8 +35,8 @@ public class GradientPlacerWLD extends GradientPlacer {
         this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
     }
     
-    public List<CriticalConnection> getCriticalConnections(){
-    	return new ArrayList<CriticalConnection>();
+    public List<CritConn> getCriticalConnections(){
+    	return new ArrayList<CritConn>();
     }
 
     @Override
