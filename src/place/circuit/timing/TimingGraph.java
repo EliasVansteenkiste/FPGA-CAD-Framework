@@ -147,6 +147,10 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                 this.traverseFromSource(node, clockDelays.get(i));
             }
         }
+        
+        for(TimingNode node : this.timingNodes) {
+            node.compact();
+        }
     }
 
     private boolean isConstantGenerator(LeafBlock block) {
@@ -300,7 +304,6 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
             todo.add(node);
         }
 
-
         /* For each node and clock domain: store how many sources
          * that node has that have a reverse path to a node that
          * is clocked on that clock domain.
@@ -347,6 +350,10 @@ public class TimingGraph implements Iterable<TimingGraph.TimingGraphEntry> {
                     node.addClockDomainSink(clockDomain, sink, edge);
                 }
             }
+        }
+        
+        for(TimingNode node : nodes) {
+            node.compact();
         }
     }
 

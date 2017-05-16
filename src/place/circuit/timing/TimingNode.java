@@ -36,8 +36,8 @@ public class TimingNode {
 
     private int[] clockDomainNumSources;
 
-    private ArrayList<ArrayList<TimingNode>> clockDomainSinks = new ArrayList<>();
-    private ArrayList<ArrayList<TimingEdge>> clockDomainSinkEdges = new ArrayList<>();
+    private ArrayList<ArrayList<TimingNode>> clockDomainSinks;
+    private ArrayList<ArrayList<TimingEdge>> clockDomainSinkEdges;
     private int[] clockDomainNumSinks;
 
 
@@ -63,9 +63,6 @@ public class TimingNode {
     void compact() {
         this.sinks.trimToSize();
         this.sinkEdges.trimToSize();
-
-        this.clockDomainSinks.trimToSize();
-        this.clockDomainSinkEdges.trimToSize();
 
         for(int clockDomain = 0; clockDomain < this.numClockDomains; clockDomain++) {
             this.clockDomainSinks.get(clockDomain).trimToSize();
@@ -154,10 +151,13 @@ public class TimingNode {
 
         this.clockDomainNumSources = new int[numClockDomains];
         this.clockDomainNumSinks = new int[numClockDomains];
+        
+        this.clockDomainSinks = new ArrayList<>(numClockDomains);
+        this.clockDomainSinkEdges = new ArrayList<>(numClockDomains);
 
         for(int clockDomain = 0; clockDomain < numClockDomains; clockDomain++) {
-            this.clockDomainSinks.add(clockDomain, new ArrayList<TimingNode>());
-            this.clockDomainSinkEdges.add(clockDomain, new ArrayList<TimingEdge>());
+            this.clockDomainSinks.add(new ArrayList<TimingNode>());
+            this.clockDomainSinkEdges.add(new ArrayList<TimingEdge>());
         }
     }
 
