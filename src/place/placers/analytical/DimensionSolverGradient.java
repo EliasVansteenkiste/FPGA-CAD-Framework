@@ -27,7 +27,7 @@ class DimensionSolverGradient {
     
     private final boolean useAdam;
 
-    DimensionSolverGradient(double[] coordinates, double maxConnectionLength, double speedAveraging, boolean[] fixed) {
+    DimensionSolverGradient(double[] coordinates, double maxConnectionLength, double speedAveraging, boolean[] fixed, double beta1, double beta2, double eps) {
         this.coordinates = coordinates;
         this.halfMaxConnectionLength = maxConnectionLength / 2;
         this.speedAveraging = speedAveraging;
@@ -37,9 +37,9 @@ class DimensionSolverGradient {
         this.speeds = new double[numBlocks];
         this.momentum = new double[numBlocks];
         
-        this.beta1 = 0.9;
-        this.beta2 = 0.999;
-        this.eps = 1e-8;
+        this.beta1 = beta1;
+        this.beta2 = beta2;
+        this.eps = eps;
 
         this.directions = new double[numBlocks];
         this.numPositiveNets = new double[numBlocks];

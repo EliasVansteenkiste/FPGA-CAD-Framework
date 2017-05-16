@@ -24,6 +24,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_LEARNING_RATE_START = "learning rate start",
         O_LEARNING_RATE_STOP = "learning rate stop",
         O_STEADY_LEARNING_RATE = "steady learning rate",
+        O_BETA1 = "beta1",
+        O_BETA2 = "beta2",
+        O_EPS = "eps",
         O_MAX_CONNECTION_LENGTH = "max connection length",
         O_SPEED_AVERAGING = "speed averaging",
         O_EFFORT_LEVEL = "effort level",
@@ -64,6 +67,21 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_STEADY_LEARNING_RATE,
                 "number of epochs with constant learning rate",
                 new Integer(5));
+        
+        options.add(
+                O_BETA1,
+                "adam gradient descent beta1 parameter",
+                new Double(0.9));
+
+        options.add(
+                O_BETA2,
+                "adam gradient descent beta2 parameter",
+                new Double(0.999));
+
+        options.add(
+                O_EPS,
+                "adam gradient descent eps parameter",
+                new Double(10e-9));
 
         options.add(
                 O_MAX_CONNECTION_LENGTH,
@@ -95,15 +113,16 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double anchorWeight;
     protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
 
-    private double maxConnectionLength, speedAveraging;
+    private final double maxConnectionLength, speedAveraging;
     private double learningRate, learningRateMultiplier;
-    private int steadyLearningRate;
+    private final int steadyLearningRate;
+    private final double beta1, beta2, eps;
 
-    private int effortLevel;
+    private final int effortLevel;
 
     protected double tradeOff; // Only used by GradientPlacerTD
 
-    private boolean printInnerCost, printOuterCost;
+    private final boolean printInnerCost, printOuterCost;
     private CostCalculator costCalculator; // Only used if printOuterCost or printInnerCost is true
 
     protected double utilization;
@@ -150,6 +169,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.steadyLearningRate = Math.min(this.options.getInteger(O_STEADY_LEARNING_RATE), this.numIterations);
         this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - this.steadyLearningRate));
 
+        this.beta1 = this.options.getInteger(O_BETA1);
+        this.beta2 = this.options.getInteger(O_BETA2);
+        this.eps = this.options.getInteger(O_EPS);
+        
         this.printInnerCost = this.options.getBoolean(O_PRINT_INNER_COST);
         this.printOuterCost = this.options.getBoolean(O_PRINT_OUTER_COST);
     }
@@ -216,7 +239,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.netBlockOffsets,
                 this.maxConnectionLength,
                 this.speedAveraging,
-                this.fixed);
+                this.fixed,
+                this.beta1, 
+                this.beta2, 
+                this.eps);
         
         if(this.printInnerCost || this.printOuterCost) {
             this.costCalculator = new CostCalculatorWLD(this.nets);
