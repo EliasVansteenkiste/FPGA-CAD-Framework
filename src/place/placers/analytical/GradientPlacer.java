@@ -169,9 +169,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.steadyLearningRate = Math.min(this.options.getInteger(O_STEADY_LEARNING_RATE), this.numIterations);
         this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - this.steadyLearningRate));
 
-        this.beta1 = this.options.getInteger(O_BETA1);
-        this.beta2 = this.options.getInteger(O_BETA2);
-        this.eps = this.options.getInteger(O_EPS);
+        this.beta1 = this.options.getDouble(O_BETA1);
+        this.beta2 = this.options.getDouble(O_BETA2);
+        this.eps = this.options.getDouble(O_EPS);
         
         this.printInnerCost = this.options.getBoolean(O_PRINT_INNER_COST);
         this.printOuterCost = this.options.getBoolean(O_PRINT_OUTER_COST);
