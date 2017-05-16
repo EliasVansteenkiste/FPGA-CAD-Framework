@@ -102,9 +102,11 @@ class CriticalityCalculator{
     	return sum / list.size();
     }
 
-    public void calculate(int[] x, int[] y) {
+    public double calculate(int[] x, int[] y) {
         this.updateDelays(x, y);
         this.timingGraph.calculateCriticalities(false);
+        
+        return this.timingGraph.getMaxDelay();
     }
 
     private void updateDelays(int[] x, int[] y) {

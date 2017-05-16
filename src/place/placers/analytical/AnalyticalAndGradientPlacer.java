@@ -38,14 +38,18 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
     protected int[] heights;
+    
+    protected int[] bestX, bestY;
+    protected double minimumCost;
+    protected double maxDelay;
+    
+    protected double linearCost;
+    protected double legalCost;
 
     private boolean[] hasNets;
     protected int numNets, numRealNets;
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
-    
-    protected double linearCost;
-    protected double legalCost;
 
     private static final String
         O_START_UTILIZATION = "start utilization";
@@ -77,6 +81,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected abstract void solveLinear(int iteration);
     protected abstract void solveLegal(int iteration);
+    protected abstract void calculateCost();
+    protected abstract void updateBestSolution();
     protected abstract boolean stopCondition(int iteration);
     protected abstract void initializeIteration(int iteration);
 
@@ -119,9 +125,14 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.legalX = new int[numBlocks];
         this.legalY = new int[numBlocks];
         this.hasNets = new boolean[numBlocks];
-
+        
         this.heights = new int[numBlocks];
         Arrays.fill(this.heights, 1);
+        
+        this.bestX = new int[numBlocks];
+        this.bestY = new int[numBlocks];
+        
+        this.minimumCost = Double.MAX_VALUE;
 
         this.blockTypeIndexStarts = new ArrayList<>();
         this.blockTypeIndexStarts.add(0);
@@ -305,6 +316,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
 
+            this.calculateCost();
+            this.updateBestSolution();
+
             this.printStatistics(iteration, time, this.calculateDisplacement(), this.overlap());
 
             iteration++;
@@ -425,8 +439,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             int index = netBlock.blockIndex;
             int offset = (int) Math.ceil(netBlock.offset);
             
-            int column = this.legalX[index];
-            int row = this.legalY[index] + offset * block.getType().getHeight();
+            int column = this.bestX[index];
+            int row = this.bestY[index] + offset * block.getType().getHeight();
             
             if(block.getCategory() != BlockCategory.IO) {
                 Site site = (Site) this.circuit.getSite(column, row, true);

@@ -117,6 +117,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private double learningRate, learningRateMultiplier;
     private final int steadyLearningRate;
     private final double beta1, beta2, eps;
+    private double cost;
 
     private final int effortLevel;
 
@@ -335,16 +336,36 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
+    protected void calculateCost(){
+    	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+        this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
+    }
+
+    @Override
+    protected void updateBestSolution(){
+    	this.cost = this.maxDelay * this.legalCost;
+    	if(this.cost < this.minimumCost){
+    		for(int i = 0; i < this.legalX.length; i++){
+    			this.bestX[i] = this.legalX[i];
+    			this.bestY[i] = this.legalY[i];
+    		}
+    		this.minimumCost = this.cost;
+    	}
+    }
+
+    @Override
     protected void addStatTitles(List<String> titles) {
         titles.add("iteration");
         titles.add("learning rate");
         titles.add("anchor weight");
-        titles.add("utilization");
+        titles.add("max delay");
 
         if(this.printOuterCost) {
             titles.add("BB linear cost");
             titles.add("BB legal cost");
         }
+        
+        titles.add("best");
 
         titles.add("time (ms)");
         
@@ -360,14 +381,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(Integer.toString(iteration));
         stats.add(String.format("%.3f", this.learningRate));
         stats.add(String.format("%.3f", this.anchorWeight));
-        stats.add(String.format("%.3g", this.utilization));
+        stats.add(String.format("%.3g", this.maxDelay));
 
         if(this.printOuterCost) {
-            this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-            this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
-
             stats.add(String.format("%.0f", this.linearCost));
             stats.add(String.format("%.0f", this.legalCost));
+        }
+        
+        if(this.cost == this.minimumCost){
+        	stats.add("yes");
+        }else{
+        	stats.add("");
         }
 
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
