@@ -68,16 +68,35 @@ public class HardblockConnectionLegalizer{
 		this.gridHeigth = gridHeight;
 
 		//Count the number of nets
-		System.out.println("Nets with large fanout:");
+		System.out.println("Nets with large fanout are left out:");
 		int maxFanout = 100;
 		int numNets = 0;
+		Map<Integer,Integer> fanoutMap = new HashMap<>();
 		for(int i = 0; i < placerNets.size(); i++){
 			int fanout = placerNets.get(i).blocks.length;
 			if(fanout > maxFanout){
-				System.out.println("\tNet with fanout " + fanout + " is left out");
+				if(!fanoutMap.containsKey(fanout)) fanoutMap.put(fanout, 0);
+				fanoutMap.put(fanout, fanoutMap.get(fanout) + 1);
 			}else{
 				numNets += 1;
 			}
+		}
+		boolean notEmpty = true;
+		int min = maxFanout;
+		int max = maxFanout * 2;
+		while(notEmpty){
+			notEmpty = false;
+			int counter = 0;
+			for(Integer key:fanoutMap.keySet()){
+				if(key >= min && key < max){
+					counter += fanoutMap.get(key);
+				}else if(key >= max){
+					notEmpty = true;
+				}
+			}
+			System.out.println("\t" + counter + " nets with fanout between " + min + " and " + max);
+			min = max;
+			max *= 2;
 		}
 		System.out.println();
 
