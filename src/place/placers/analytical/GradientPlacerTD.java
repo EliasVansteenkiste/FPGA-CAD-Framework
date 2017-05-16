@@ -64,6 +64,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
     private double criticalityExponent, criticalityThreshold;
     private TimingGraph timingGraph;
+    
     private CriticalityCalculator criticalityCalculator;
 
     private double recalculateCriticalities, recalculatePriority;
@@ -136,7 +137,7 @@ public class GradientPlacerTD extends GradientPlacer {
         }
     }
     private void updateCriticalConnections() {
-    	this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+    	this.maxDelay = this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
 
         this.criticalConnections.clear();
 
@@ -144,6 +145,7 @@ public class GradientPlacerTD extends GradientPlacer {
             NetBlock source = net.source;
 
             for(TimingNetBlock sink : net.sinks) {
+
                 double criticality = sink.timingEdge.getCriticality();
                 if(criticality > this.criticalityThreshold) {
 
@@ -167,21 +169,23 @@ public class GradientPlacerTD extends GradientPlacer {
         for(CritConn conn:this.criticalConnections){
         	nextConn.get(conn.sourceIndex).add(conn);
         }
-        
+
         int numConn = this.criticalConnections.size();
         for(int i = 0; i < numConn; i++){
         	CritConn conn1 = this.criticalConnections.get(i);
         	for(CritConn conn2:nextConn.get(conn1.sinkIndex)){
-        		if(this.sameWeight(conn1, conn2) && !conn2.equals(conn1)){
-        			if(conn1.sourceIndex != conn2.sinkIndex){
-        				this.criticalConnections.add(new CritConn(conn1.sourceIndex, conn2.sinkIndex, 0, conn1.weight / 2));
+        		if(!conn1.equals(conn2)){
+        			if(this.sameWeight(conn2, conn1)){
+                		if(conn1.sourceIndex != conn2.sinkIndex){
+                			this.criticalConnections.add(new CritConn(conn1.sourceIndex, conn2.sinkIndex, 0, conn1.weight / 2));
+                		}
         			}
         		}
         	}
         }
     }
-    private boolean sameWeight(CritConn c1, CritConn c2){
-    	if(Math.abs(c1.weight - c2.weight) < 0.0001){
+    private boolean sameWeight(CritConn conn1, CritConn conn2){
+    	if(Math.abs(conn1.weight - conn2.weight) < 0.00001){
     		return true;
     	}else{
     		return false;
@@ -201,7 +205,6 @@ public class GradientPlacerTD extends GradientPlacer {
         	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.offset, critConn.weight);
         }
     }
-
 
     @Override
     protected void updateLegalIfNeeded(int iteration) {
