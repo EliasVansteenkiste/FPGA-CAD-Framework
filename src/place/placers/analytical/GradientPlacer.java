@@ -71,12 +71,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_BETA1,
                 "adam gradient descent beta1 parameter",
-                new Double(0.9));
+                new Double(0.6));
 
         options.add(
                 O_BETA2,
                 "adam gradient descent beta2 parameter",
-                new Double(0.999));
+                new Double(0.7));
 
         options.add(
                 O_EPS,

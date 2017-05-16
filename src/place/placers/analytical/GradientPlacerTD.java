@@ -28,12 +28,12 @@ public class GradientPlacerTD extends GradientPlacer {
         options.add(
                 O_CRITICALITY_EXPONENT,
                 "criticality exponent of connections",
-                new Double(4));
+                new Double(3));
 
         options.add(
                 O_CRITICALITY_THRESHOLD,
                 "minimal criticality for adding TD constraints",
-                new Double(0.8));
+                new Double(0.7));
 
         options.add(
                 O_RECALCULATE_CRITICALITIES,
