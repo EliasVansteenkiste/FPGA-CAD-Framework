@@ -42,6 +42,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected int[] bestX, bestY;
     protected double minimumCost;
     protected double maxDelay;
+    private boolean useBestItertion;
     
     protected double linearCost;
     protected double legalCost;
@@ -52,9 +53,15 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected List<TimingNet> timingNets;
 
     private static final String
+    	O_BEST_ITERATION = "use best iteration",
         O_START_UTILIZATION = "start utilization";
 
     public static void initOptions(Options options) {
+        options.add(
+                O_BEST_ITERATION,
+                "use the best iteration instead of the last iteration",
+                new Boolean(false));
+        
         options.add(
                 O_START_UTILIZATION,
                 "utilization of tiles at first legalization",
@@ -74,6 +81,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         super(circuit, options, random, logger, visualizer);
 
         this.startUtilization = options.getDouble(O_START_UTILIZATION);
+        this.useBestItertion = options.getBoolean(O_BEST_ITERATION);
     }
 
 
@@ -317,7 +325,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             double time = (timerEnd - timerBegin) * 1e-9;
 
             this.calculateCost();
-            this.updateBestSolution();
+            
+            if(this.useBestItertion){
+            	this.updateBestSolution();
+            }
 
             this.printStatistics(iteration, time, this.calculateDisplacement(), this.overlap());
 
@@ -426,6 +437,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
     protected void updateCircuit() throws PlacementException {
+    	if(this.useBestItertion){
+    		for(int i = 0; i < this.legalX.length; i++){
+    			this.legalX[i] = this.bestX[i];
+    			this.legalY[i] = this.bestY[i];
+    		}
+    	}
         // Clear all previous locations
         for(GlobalBlock block : this.netBlocks.keySet()) {
             block.removeSite();
@@ -439,8 +456,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             int index = netBlock.blockIndex;
             int offset = (int) Math.ceil(netBlock.offset);
             
-            int column = this.bestX[index];
-            int row = this.bestY[index] + offset * block.getType().getHeight();
+            int column = this.legalX[index];
+            int row = this.legalY[index] + offset * block.getType().getHeight();
             
             if(block.getCategory() != BlockCategory.IO) {
                 Site site = (Site) this.circuit.getSite(column, row, true);
