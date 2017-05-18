@@ -135,6 +135,7 @@ public class GradientPlacerTD extends GradientPlacer {
         if(iteration > 0) {
             this.anchorWeight += this.anchorWeightStep;
         }
+        this.learningRate *= this.learningRateMultiplier;
     }
     private void updateCriticalConnections() {
     	this.maxDelay = this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
@@ -145,44 +146,52 @@ public class GradientPlacerTD extends GradientPlacer {
             NetBlock source = net.source;
 
             for(TimingNetBlock sink : net.sinks) {
+                sink.updateCriticality();
 
-                double criticality = sink.timingEdge.getCriticality();
-                if(criticality > this.criticalityThreshold) {
+                if(sink.criticality > this.criticalityThreshold) {
 
                     if(source.blockIndex != sink.blockIndex) {
-                    	CritConn c = new CritConn(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * criticality));
+                    	CritConn c = new CritConn(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * sink.criticality));
                     	this.criticalConnections.add(c);
                     }
                 }
             }
         }
 
-        Map<Integer,ArrayList<CritConn>> nextConn = new HashMap<>();
-        for(CritConn conn:this.criticalConnections){
-        	if(!nextConn.containsKey(conn.sourceIndex)){
-        		nextConn.put(conn.sourceIndex, new ArrayList<CritConn>());
-        	}
-        	if(!nextConn.containsKey(conn.sinkIndex)){
-        		nextConn.put(conn.sinkIndex, new ArrayList<CritConn>());
-        	}
-        }
-        for(CritConn conn:this.criticalConnections){
-        	nextConn.get(conn.sourceIndex).add(conn);
-        }
-
-        int numConn = this.criticalConnections.size();
-        for(int i = 0; i < numConn; i++){
-        	CritConn conn1 = this.criticalConnections.get(i);
-        	for(CritConn conn2:nextConn.get(conn1.sinkIndex)){
-        		if(!conn1.equals(conn2)){
-        			if(this.sameWeight(conn2, conn1)){
-                		if(conn1.sourceIndex != conn2.sinkIndex){
-                			this.criticalConnections.add(new CritConn(conn1.sourceIndex, conn2.sinkIndex, 0, conn1.weight / 2));
-                		}
-        			}
-        		}
-        	}
-        }
+//        //ADD MULTIPLE HOP CRITICAL CONNECTIONS
+//        Map<Integer,ArrayList<CritConn>> nextConn = new HashMap<>();
+//        Map<Integer,ArrayList<CritConn>> prevConn = new HashMap<>();
+//        for(CritConn conn:this.criticalConnections){
+//        	if(!nextConn.containsKey(conn.sourceIndex)){
+//        		nextConn.put(conn.sourceIndex, new ArrayList<CritConn>());
+//        	}
+//        	if(!nextConn.containsKey(conn.sinkIndex)){
+//        		nextConn.put(conn.sinkIndex, new ArrayList<CritConn>());
+//        	}
+//        	if(!prevConn.containsKey(conn.sourceIndex)){
+//        		prevConn.put(conn.sourceIndex, new ArrayList<CritConn>());
+//        	}
+//        	if(!prevConn.containsKey(conn.sinkIndex)){
+//        		prevConn.put(conn.sinkIndex, new ArrayList<CritConn>());
+//        	}
+//        }
+//        for(CritConn conn:this.criticalConnections){
+//        	nextConn.get(conn.sourceIndex).add(conn);
+//        }
+//
+//        int numConn = this.criticalConnections.size();
+//        for(int i = 0; i < numConn; i++){
+//        	CritConn conn1 = this.criticalConnections.get(i);
+//        	for(CritConn conn2:nextConn.get(conn1.sinkIndex)){
+//        		if(!conn1.equals(conn2)){
+//        			if(this.sameWeight(conn2, conn1)){
+//                		if(conn1.sourceIndex != conn2.sinkIndex){
+//                			this.criticalConnections.add(new CritConn(conn1.sourceIndex, conn2.sinkIndex, 0, conn1.weight / 2));
+//                		}
+//        			}
+//        		}
+//        	}
+//        }
     }
     private boolean sameWeight(CritConn conn1, CritConn conn2){
     	if(Math.abs(conn1.weight - conn2.weight) < 0.00001){
@@ -219,7 +228,7 @@ public class GradientPlacerTD extends GradientPlacer {
     public String getName() {
         return "Timing driven gradient placer";
     }
-    
+
     public class CritConn{
     	final int sourceIndex, sinkIndex;
     	final float offset, weight;

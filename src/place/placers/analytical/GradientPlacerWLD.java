@@ -26,6 +26,7 @@ public class GradientPlacerWLD extends GradientPlacer {
         if(iteration > 0) {
             this.anchorWeight += this.anchorWeightStep;
         }
+        this.learningRate *= this.learningRateMultiplier;
     }
 
     @Override

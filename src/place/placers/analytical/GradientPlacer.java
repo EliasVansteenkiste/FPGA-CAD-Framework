@@ -23,11 +23,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
         O_LEARNING_RATE_START = "learning rate start",
         O_LEARNING_RATE_STOP = "learning rate stop",
-        O_STEADY_LEARNING_RATE = "steady learning rate",
         O_BETA1 = "beta1",
         O_BETA2 = "beta2",
         O_EPS = "eps",
-        O_MAX_CONNECTION_LENGTH = "max connection length",
         O_SPEED_AVERAGING = "speed averaging",
         O_EFFORT_LEVEL = "effort level",
         O_PRINT_OUTER_COST = "print outer cost",
@@ -62,31 +60,23 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
                 new Double(0.2));
-        
-        options.add(
-                O_STEADY_LEARNING_RATE,
-                "number of epochs with constant learning rate",
-                new Integer(5));
-        
+
+
         options.add(
                 O_BETA1,
                 "adam gradient descent beta1 parameter",
-                new Double(0.6));
+                new Double(0.9));
 
         options.add(
                 O_BETA2,
                 "adam gradient descent beta2 parameter",
-                new Double(0.7));
+                new Double(0.999));
 
         options.add(
                 O_EPS,
                 "adam gradient descent eps parameter",
-                new Double(10e-9));
+                new Double(10e-8));
 
-        options.add(
-                O_MAX_CONNECTION_LENGTH,
-                "length to which connection lengths are platformed",
-                new Double(30));
 
         options.add(
                 O_SPEED_AVERAGING,
@@ -97,6 +87,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_EFFORT_LEVEL,
                 "number of gradient steps to take in each outer iteration",
                 new Integer(50));
+ 
 
         options.add(
                 O_PRINT_OUTER_COST,
@@ -114,10 +105,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
 
     private final double maxConnectionLength, speedAveraging;
-    private double learningRate, learningRateMultiplier;
-    private final int steadyLearningRate;
+    protected double learningRate, learningRateMultiplier;
     private final double beta1, beta2, eps;
-    private double cost;
 
     private final int effortLevel;
 
@@ -131,15 +120,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected int numIterations;
 
     protected Legalizer legalizer;
-    
     protected LinearSolverGradient solver;
-
 
     private int[] netEnds;
     private int[] netBlockIndexes;
     private float[] netBlockOffsets;
 
     protected boolean[] fixed;
+    private double[] coordinatesX;
+    private double[] coordinatesY;
 
     public GradientPlacer(
             Circuit circuit,
@@ -154,7 +143,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
-        this.maxConnectionLength = this.options.getDouble(O_MAX_CONNECTION_LENGTH);
+        this.maxConnectionLength = this.circuit.getWidth() / 2;
         this.speedAveraging = this.options.getDouble(O_SPEED_AVERAGING);
 
     	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
@@ -165,15 +154,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
 
         this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
-        
+
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
-        this.steadyLearningRate = Math.min(this.options.getInteger(O_STEADY_LEARNING_RATE), this.numIterations);
-        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - this.steadyLearningRate));
+        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / this.numIterations);
+        this.learningRate /= this.learningRateMultiplier;
 
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
-        
+
         this.printInnerCost = this.options.getBoolean(O_PRINT_INNER_COST);
         this.printOuterCost = this.options.getBoolean(O_PRINT_OUTER_COST);
     }
@@ -181,7 +170,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected abstract void initializeIteration(int iteration);
     protected abstract void updateLegalIfNeeded(int iteration);
     protected abstract List<CritConn> getCriticalConnections();
-
 
     @Override
     public void initializeData() {
@@ -232,10 +220,13 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.fixed = new boolean[this.legalX.length];
     	Arrays.fill(this.fixed, false);
     	this.fixBlockType(BlockType.getBlockTypes(BlockCategory.IO).get(0));
+    	
+    	this.coordinatesX = new double[this.legalX.length];
+    	this.coordinatesY = new double[this.legalY.length];
 
         this.solver = new LinearSolverGradient(
-                this.linearX,
-                this.linearY,
+                this.coordinatesX,
+                this.coordinatesY,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
                 this.maxConnectionLength,
@@ -259,26 +250,51 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
     }
-    
-    
-    @Override
-    protected void solveLinear(int iteration) {
 
-    	if(iteration > this.steadyLearningRate){
-    		this.learningRate *= this.learningRateMultiplier;
+    @Override
+    protected void solveLinear(int iteration, BlockCategory category) {
+    	Arrays.fill(this.fixed, false);
+		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
+			this.fixBlockType(blockType);
+		}
+		
+    	if(category.equals(BlockCategory.CLB)){
+    		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+    			this.fixBlockType(blockType);
+    		}
+    	}else if(category.equals(BlockCategory.HARDBLOCK)){
+    		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
+    			this.fixBlockType(blockType);
+    		}
     	}
     	
-
+		for(int i = 0; i < this.legalX.length; i++){
+			if(this.fixed[i]){
+				this.coordinatesX[i] = this.legalX[i];
+				this.coordinatesY[i] = this.legalY[i];
+			}else{
+				this.coordinatesX[i] = this.linearX[i];
+				this.coordinatesY[i] = this.linearY[i];
+			}
+		}
+		
         for(int i = 0; i < this.effortLevel; i++) {
             this.solveLinearIteration();
 
-            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), null, -1);
+            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), -1);
             
             if(this.printInnerCost) {
                 double cost = this.costCalculator.calculate(this.linearX, this.linearY);
                 System.out.printf("Cost inner iteration %3d: %.4g\n", i, cost);
             }
         }
+        
+		for(int i = 0; i < this.legalX.length; i++){
+			if(!this.fixed[i]){
+				this.linearX[i] = this.coordinatesX[i];
+				this.linearY[i] = this.coordinatesY[i];
+			}
+		}
     }
 
     /*
@@ -322,35 +338,23 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void solveLegal(int iteration) {
+    protected void solveLegal(int iteration, BlockCategory category) {
         double slope = (this.startUtilization - 1) / (this.anchorWeightStart - this.anchorWeightStop);
         this.utilization = Math.max(1, 1 + slope * (this.anchorWeight - this.anchorWeightStop));
 
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(this.utilization, this.getCriticalConnections());
+        if(category.equals(BlockCategory.CLB)){
+        	this.legalizer.legalizeLab(this.utilization);
+        }else if(category.equals(BlockCategory.HARDBLOCK)){
+        	this.legalizer.legalizeHardblock(this.utilization, this.getCriticalConnections());
+        }else if(category.equals(BlockCategory.IO)){
+        	this.legalizer.legalizeIO(this.utilization, this.getCriticalConnections());
+        }
         this.stopTimer(T_LEGALIZE);
 
         this.startTimer(T_UPDATE_CIRCUIT);
         this.updateLegalIfNeeded(iteration);
         this.stopTimer(T_UPDATE_CIRCUIT);
-    }
-
-    @Override
-    protected void calculateCost(){
-    	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-        this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
-    }
-
-    @Override
-    protected void updateBestSolution(){
-    	this.cost = this.maxDelay * this.legalCost;
-    	if(this.cost < this.minimumCost){
-    		for(int i = 0; i < this.legalX.length; i++){
-    			this.bestX[i] = this.legalX[i];
-    			this.bestY[i] = this.legalY[i];
-    		}
-    		this.minimumCost = this.cost;
-    	}
     }
 
     @Override
@@ -364,8 +368,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             titles.add("BB linear cost");
             titles.add("BB legal cost");
         }
-        
-        titles.add("best");
 
         titles.add("time (ms)");
         
@@ -384,14 +386,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(String.format("%.3g", this.maxDelay));
 
         if(this.printOuterCost) {
+        	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+            this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
+            
             stats.add(String.format("%.0f", this.linearCost));
             stats.add(String.format("%.0f", this.legalCost));
-        }
-        
-        if(this.cost == this.minimumCost){
-        	stats.add("yes");
-        }else{
-        	stats.add("");
         }
 
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));

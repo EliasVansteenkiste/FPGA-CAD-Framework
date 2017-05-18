@@ -38,14 +38,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
     protected int[] heights;
-    
-    protected int[] bestX, bestY;
-    protected double minimumCost;
-    protected double maxDelay;
-    private boolean useBestItertion;
-    
+
     protected double linearCost;
     protected double legalCost;
+    protected double maxDelay;
 
     private boolean[] hasNets;
     protected int numNets, numRealNets;
@@ -53,15 +49,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected List<TimingNet> timingNets;
 
     private static final String
-    	O_BEST_ITERATION = "use best iteration",
         O_START_UTILIZATION = "start utilization";
 
     public static void initOptions(Options options) {
-        options.add(
-                O_BEST_ITERATION,
-                "use the best iteration instead of the last iteration",
-                new Boolean(false));
-        
         options.add(
                 O_START_UTILIZATION,
                 "utilization of tiles at first legalization",
@@ -81,16 +71,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         super(circuit, options, random, logger, visualizer);
 
         this.startUtilization = options.getDouble(O_START_UTILIZATION);
-        this.useBestItertion = options.getBoolean(O_BEST_ITERATION);
     }
 
 
     protected abstract boolean isTimingDriven();
 
-    protected abstract void solveLinear(int iteration);
-    protected abstract void solveLegal(int iteration);
-    protected abstract void calculateCost();
-    protected abstract void updateBestSolution();
+    protected abstract void solveLinear(int iteration, BlockCategory category);
+    protected abstract void solveLegal(int iteration, BlockCategory category);
     protected abstract boolean stopCondition(int iteration);
     protected abstract void initializeIteration(int iteration);
 
@@ -136,11 +123,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         
         this.heights = new int[numBlocks];
         Arrays.fill(this.heights, 1);
-        
-        this.bestX = new int[numBlocks];
-        this.bestY = new int[numBlocks];
-        
-        this.minimumCost = Double.MAX_VALUE;
 
         this.blockTypeIndexStarts = new ArrayList<>();
         this.blockTypeIndexStarts.add(0);
@@ -314,21 +296,22 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.initializeIteration(iteration);
             
             // Solve linear
-            this.solveLinear(iteration);
+            this.solveLinear(iteration, BlockCategory.CLB);
         	this.addLinearPlacement(iteration);
-        	this.solveLegal(iteration);
+        	this.solveLegal(iteration, BlockCategory.CLB);
         	this.addLegalPlacement(iteration);
+        	
+            this.solveLinear(iteration, BlockCategory.HARDBLOCK);
+        	this.addLinearPlacement(iteration);
+        	this.solveLegal(iteration, BlockCategory.HARDBLOCK);
+        	this.addLegalPlacement(iteration);
+        	
+        	this.solveLegal(iteration, BlockCategory.IO);
 
             isLastIteration = this.stopCondition(iteration);
 
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
-
-            this.calculateCost();
-            
-            if(this.useBestItertion){
-            	this.updateBestSolution();
-            }
 
             this.printStatistics(iteration, time, this.calculateDisplacement(), this.overlap());
 
@@ -437,12 +420,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
     protected void updateCircuit() throws PlacementException {
-    	if(this.useBestItertion){
-    		for(int i = 0; i < this.legalX.length; i++){
-    			this.legalX[i] = this.bestX[i];
-    			this.legalY[i] = this.bestY[i];
-    		}
-    	}
         // Clear all previous locations
         for(GlobalBlock block : this.netBlocks.keySet()) {
             block.removeSite();
@@ -577,15 +554,25 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         final int blockIndex;
         final float offset;
         final TimingEdge timingEdge;
+        
+        double criticality;
+        
+        //final List<Double> criticalityHistory;
 
         TimingNetBlock(int blockIndex, float offset, TimingEdge timingEdge) {
             this.blockIndex = blockIndex;
             this.offset = offset;
             this.timingEdge = timingEdge;
+            
+            this.criticality = 0.0;
         }
 
         TimingNetBlock(NetBlock block, TimingEdge timingEdge) {
             this(block.blockIndex, block.offset, timingEdge);
+        }
+        
+        void updateCriticality(){
+        	this.criticality = this.criticality * 0.2 + this.timingEdge.getCriticality() * 0.8;
         }
     }
 

@@ -129,20 +129,26 @@ abstract class Legalizer {
 
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
-    void legalize(double tileCapacity, List<CritConn> criticalConnections) {
+    void legalizeIO(double tileCapacity, List<CritConn> criticalConnections){
     	this.tileCapacity = tileCapacity;
-        
-        this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
+    	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
 
-        // Skip i = 0: these are IO blocks
-        for(int i = 1; i < this.blockTypes.size(); i++) {
+        this.blockType = this.blockTypes.get(0);
+        this.legalizeBlockType(0);
+    }
+    void legalizeHardblock(double tileCapacity, List<CritConn> criticalConnections) {
+    	this.tileCapacity = tileCapacity;
+    	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
+
+        for(int i = 2; i < this.blockTypes.size(); i++) {
             this.blockType = this.blockTypes.get(i);
             this.legalizeBlockType(i);
         }
-        
-        //Legalize the IO blocks at the end
-        this.blockType = this.blockTypes.get(0);
-        this.legalizeBlockType(0);
+    }
+    void legalizeLab(double tileCapacity) {
+    	this.tileCapacity = tileCapacity;
+    	this.blockType = this.blockTypes.get(1);
+        this.legalizeBlockType(1);
     }
     
     private void legalizeBlockType(int i){
@@ -166,7 +172,7 @@ abstract class Legalizer {
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType);
 
-        		for(int b = blocksStart; b < blocksEnd; b++){
+        		for(int b = blocksStart; b < blocksEnd; b++){//TODO NOT REQUIRED?
         			this.linearX[b] = this.legalX[b];
         			this.linearY[b] = this.legalY[b];
         		 }
