@@ -142,6 +142,42 @@ public class HardblockAnneal {
 		}
 		this.timing.time("Do anneal");
 		
+		//CONTROL FUNCTIONALITY => TURN OFF IN FINAL VERSION!
+		boolean test1 = false;
+		boolean test2 = false;
+		
+		if(test1){
+			System.out.println("Warning: test1 is turned on");
+			
+			double testCost1 = 0.0;
+			for(Net net:this.nets){
+				testCost1 += net.connectionCost();
+			}
+			for(Crit crit:this.crits){
+				testCost1 += crit.timingCost();
+			}
+			if(Math.abs(testCost1 - this.cost) > 0.1){
+				System.out.println("TestCost is not equal to cost =>\n\tTestCost: " + testCost1 + "\n\tCost: " + this.cost);
+			}
+		}
+		if(test2){
+			System.out.println("Warning: test2 is turned on");
+			
+			for(Net net:this.nets) net.initializeConnectionCost();
+			for(Crit crit:this.crits) crit.initializeTimingCost();
+			
+			double testCost2 = 0.0;
+			for(Net net:this.nets){
+				testCost2 += net.connectionCost();
+			}
+			for(Crit crit:this.crits){
+				testCost2 += crit.timingCost();
+			}
+			if(Math.abs(testCost2 - this.cost) > 0.1){
+				System.out.println("TestCost is not equal to cost =>\n\tTestCost: " + testCost2 + "\n\tCost: " + this.cost);
+			}
+		}
+		
 		if(printStatistics) System.out.println();
 
 		this.timing.time("Anneal");
@@ -168,7 +204,7 @@ public class HardblockAnneal {
 			
 			double ratio = max / min;
 			
-			if(ratio < 1.001){
+			if(ratio < 1.0001){
 				return true;
 			}else{
 				return false;
@@ -187,8 +223,10 @@ public class HardblockAnneal {
         	 this.temperature *= 0.5;
         } else if (alpha > 0.8) {
         	 this.temperature *= 0.9;
-        } else {
+        } else if (alpha > 0.15){
         	 this.temperature *= 0.95;
+        } else {
+        	this.temperature *= 0.8;
         }
     }
 	private double doSwapIteration(int moves, boolean pushTrough){
