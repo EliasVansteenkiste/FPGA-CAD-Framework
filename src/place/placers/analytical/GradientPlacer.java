@@ -75,7 +75,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_EPS,
                 "adam gradient descent eps parameter",
-                new Double(10e-8));
+                new Double(10e-10));
 
 
         options.add(
