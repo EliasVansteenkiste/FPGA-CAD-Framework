@@ -572,7 +572,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
         
         void updateCriticality(){
-        	this.criticality = this.criticality * 0.2 + this.timingEdge.getCriticality() * 0.8;
+        	this.criticality = this.criticality * 0.8 + this.timingEdge.getCriticality() * 0.2;
         }
     }
 
