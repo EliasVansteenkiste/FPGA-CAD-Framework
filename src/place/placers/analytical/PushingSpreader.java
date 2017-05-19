@@ -18,7 +18,7 @@ class PushingSpreader {
 
 	private final boolean debug = false;
 	private TimingTree timer;
-    private final boolean timing;
+
 
     PushingSpreader(
     		int width, 
@@ -39,12 +39,7 @@ class PushingSpreader {
     	//MassMap
     	this.massMap = new double[this.gridWidth][this.gridHeight];
     	
-    	if(timingTree != null){
-    		this.timer = timingTree;
-    		this.timing = true;
-    	}else{
-    		this.timing = false;
-    	}
+    	this.timer = timingTree;
     }
 
     protected void doSpreading(LegalizerBlock[] blocks, int iterations) {
@@ -62,27 +57,27 @@ class PushingSpreader {
 
     //PUSHING GRAVITY FORCES
     private void applyPushingForces(double gridForce){
-    	if(timing) this.timer.start("Apply Pushing Forces");
+    	this.timer.start("Apply Pushing Forces");
     	
     	this.updateArea();
     	this.initializeMassMap();
 		this.fpgaPushForces(gridForce);
 		this.solve();
 		
-		if(timing) this.timer.time("Apply Pushing Forces");
+		this.timer.time("Apply Pushing Forces");
     }
 
     private void updateArea(){
-    	if(timing) this.timer.start("Update area");
+    	this.timer.start("Update area");
     	
     	for(LegalizerBlock block:this.blocks){
     		block.updateArea();
     	}
     	
-    	if(timing) this.timer.time("Update area");
+    	this.timer.time("Update area");
     }
     private void initializeMassMap(){
-    	if(timing) this.timer.start("Initialize Mass Map");
+    	this.timer.start("Initialize Mass Map");
 
     	for(int x = 0; x < this.gridWidth; x++){
     		for(int y = 0; y < this.gridHeight; y++){
@@ -121,10 +116,10 @@ class PushingSpreader {
         	System.out.printf("Blocks: %d\tMass: %.0f\n", this.blocks.length, sum);
     	}
 
-    	if(timing) this.timer.time("Initialize Mass Map");
+    	this.timer.time("Initialize Mass Map");
     }
     private void fpgaPushForces(double gridForce){
-    	if(timing) this.timer.start("Gravity Push Forces");
+    	this.timer.start("Gravity Push Forces");
 
     	double nordWest, nordEast, southWest, southEast;
     	
@@ -170,7 +165,7 @@ class PushingSpreader {
 	    	block.vertical.setForce(   (southWest - nordWest + southEast - nordEast + yGrid) / (mass + yGrid));
     	}    	
     	
-    	if(timing) this.timer.time("Gravity Push Forces");
+    	this.timer.time("Gravity Push Forces");
     }
     private void trimToSize(){
     	for(LegalizerBlock block:this.blocks){
@@ -182,7 +177,7 @@ class PushingSpreader {
     	}
     }
     private void solve(){
-    	if(timing) this.timer.start("Solve");
+    	this.timer.start("Solve");
 
     	for(LegalizerBlock block:this.blocks){
     		//Horizontal
@@ -198,6 +193,6 @@ class PushingSpreader {
     		if(block.vertical.coordinate < 1) block.vertical.coordinate = 1;
     	}
 
-    	if(timing) this.timer.time("Solve");
+    	this.timer.time("Solve");
     }
 }
