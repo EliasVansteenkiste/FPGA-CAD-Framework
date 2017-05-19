@@ -20,7 +20,6 @@ class GradientLegalizer extends Legalizer {
     final PushingSpreader spreader;
     private final DetailedLegalizer detailedLegalizer;
 
-    private static final boolean timing = false;
 	private TimingTree timer = null;
     private static final boolean visual = true;
 
@@ -44,7 +43,7 @@ class GradientLegalizer extends Legalizer {
 
     	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, timingNets, visualizer, netBlocks);
 
-    	this.timer = new TimingTree(timing);
+    	this.timer = new TimingTree(false);
     	
     	this.spreader = new PushingSpreader(
     			this.width,			//width
@@ -62,24 +61,28 @@ class GradientLegalizer extends Legalizer {
     }
  
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-        if(timing) this.timer.start("Legalize BlockType");
+        this.timer.start("Legalize BlockType");
 
         this.initializeData(blocksStart, blocksEnd);
         	
+        this.timer.start("Spreading");
         this.spreader.doSpreading(this.blocks, this.blocks.length);
         this.addVisual("Initial spreading");
+        this.timer.time("Spreading");
         
+        this.timer.start("Detailed legalizer");
         this.detailedLegalizer.legalize(this.blocks);
         this.addVisual("Detailed legalizer");
+        this.timer.time("Detailed legalizer");
 
        	this.updateLegal();
         
-       	if(timing) this.timer.time("Legalize BlockType");
+       	this.timer.time("Legalize BlockType");
     }
 
     //INITIALISATION
     private void initializeData(int blocksStart, int blocksEnd){
-    	if(timing) this.timer.start("Initialize Data");
+    	this.timer.start("Initialize Data");
 
     	//Initialize all blocks
     	this.blocks = new LegalizerBlock[blocksEnd - blocksStart];
@@ -101,12 +104,12 @@ class GradientLegalizer extends Legalizer {
     		}
     	}
     	
-    	if(timing) this.timer.time("Initialize Data");
+    	this.timer.time("Initialize Data");
     }
     
     //Set legal coordinates of all blocks
     private void updateLegal(){
-    	if(timing) this.timer.start("Update Legal");
+    	this.timer.start("Update Legal");
     	
     	for(LegalizerBlock block:this.blocks){
     		int x = (int) Math.round(block.horizontal.coordinate);
@@ -119,21 +122,17 @@ class GradientLegalizer extends Legalizer {
     		this.legalY[block.index] = y  - block.offset;
     	}
     	
-    	if(timing) this.timer.time("Update Legal");
+    	this.timer.time("Update Legal");
     }
     
     // Visual
     private void addVisual(String name){
     	if(visual){
-    		if(timing) this.timer.start("Add Inter Visual");
-    		
     		for(LegalizerBlock block:this.blocks){
     			this.visualX[block.index] = block.horizontal.coordinate;
     			this.visualY[block.index] = block.vertical.coordinate - block.offset;
     		}
     		this.addVisual(name, this.visualX, this.visualY);
-    		
-    		if(timing) this.timer.time("Add Inter Visual");
     	}
 	}
     
