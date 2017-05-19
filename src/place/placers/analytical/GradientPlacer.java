@@ -111,6 +111,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private final int effortLevel;
 
     protected double tradeOff; // Only used by GradientPlacerTD
+    protected double critConnPercentage;
 
     private final boolean printInnerCost, printOuterCost;
     private CostCalculator costCalculator; // Only used if printOuterCost or printInnerCost is true
@@ -374,6 +375,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("displacement");
         
         titles.add("overlap");
+        
+        titles.add("crit conn [%]");
     }
 
     @Override
@@ -398,6 +401,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(String.format("%.0f", displacement));
         
         stats.add(String.format("%d", overlap));
+        
+        stats.add(String.format("%.2f",this.critConnPercentage));
 
         this.printStats(stats.toArray(new String[0]));
     }

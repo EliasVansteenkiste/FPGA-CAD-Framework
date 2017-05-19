@@ -7,9 +7,7 @@ import place.interfaces.Options;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 public class GradientPlacerTD extends GradientPlacer {
@@ -48,7 +46,7 @@ public class GradientPlacerTD extends GradientPlacer {
         options.add(
                 O_TRADE_OFF,
                 "0 = purely wirelength driven, higher = more timing driven",
-                new Double(10));
+                new Double(15));
         
         options.add(
                 O_ALWAYS_UPDATE,
@@ -137,61 +135,34 @@ public class GradientPlacerTD extends GradientPlacer {
         }
         this.learningRate *= this.learningRateMultiplier;
     }
+
     private void updateCriticalConnections() {
+    	
+    	int numConn = 0, numCritConn = 0;
+    	
     	this.maxDelay = this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
 
         this.criticalConnections.clear();
-
         for(TimingNet net : this.timingNets) {
             NetBlock source = net.source;
 
             for(TimingNetBlock sink : net.sinks) {
-                sink.updateCriticality();
-
-                if(sink.criticality > this.criticalityThreshold) {
-
-                    if(source.blockIndex != sink.blockIndex) {
-                    	CritConn c = new CritConn(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * sink.criticality));
-                    	this.criticalConnections.add(c);
-                    }
-                }
+            	sink.updateCriticality();
+            	
+            	if(source.blockIndex != sink.blockIndex) {
+            		numConn++;
+            		if(sink.criticality > this.criticalityThreshold) {
+            			numCritConn++;
+            			CritConn c = new CritConn(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * sink.criticality));
+            			this.criticalConnections.add(c);
+            		}
+            	}
             }
         }
 
-        //ADD MULTIPLE HOP CRITICAL CONNECTIONS
-        Map<Integer,ArrayList<CritConn>> nextConn = new HashMap<>();
-        for(CritConn conn:this.criticalConnections){
-        	if(!nextConn.containsKey(conn.sourceIndex)){
-        		nextConn.put(conn.sourceIndex, new ArrayList<CritConn>());
-        	}
-        	if(!nextConn.containsKey(conn.sinkIndex)){
-        		nextConn.put(conn.sinkIndex, new ArrayList<CritConn>());
-        	}
-        }
-        for(CritConn conn:this.criticalConnections){
-        	nextConn.get(conn.sourceIndex).add(conn);
-        }
-
-        int numConn = this.criticalConnections.size();
-        for(int i = 0; i < numConn; i++){
-        	CritConn conn1 = this.criticalConnections.get(i);
-        	for(CritConn conn2:nextConn.get(conn1.sinkIndex)){
-        		if(!conn2.equals(conn1)){
-        			if(conn1.sourceIndex != conn2.sinkIndex){
-        				this.criticalConnections.add(new CritConn(conn1.sourceIndex, conn2.sinkIndex, 0, (conn1.weight + conn2.weight) / 4));
-        			}
-        		}
-        	}
-        }
+        this.critConnPercentage = (double)numCritConn / numConn * 100;
     }
-    private boolean sameWeight(CritConn conn1, CritConn conn2){
-    	if(Math.abs(conn1.weight - conn2.weight) < 0.00001){
-    		return true;
-    	}else{
-    		return false;
-    	}
-    }
-    public List<CritConn> getCriticalConnections(){
+    public List<CritConn> getCriticalConnections() {
     	return this.criticalConnections;
     }
 
@@ -201,7 +172,7 @@ public class GradientPlacerTD extends GradientPlacer {
         super.processNets();
         
         // Process the most critical source-sink connections
-        for(CritConn critConn:this.criticalConnections){
+        for(CritConn critConn:this.criticalConnections) {
         	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.offset, critConn.weight);
         }
     }
@@ -224,7 +195,7 @@ public class GradientPlacerTD extends GradientPlacer {
     	final int sourceIndex, sinkIndex;
     	final float offset, weight;
     	
-    	CritConn(int sourceIndex, int sinkIndex, float offset, float weight){
+    	CritConn(int sourceIndex, int sinkIndex, float offset, float weight) {
     		this.sourceIndex = sourceIndex;
     		this.sinkIndex = sinkIndex;
     		this.offset = offset;
