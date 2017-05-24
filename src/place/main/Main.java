@@ -337,9 +337,7 @@ public class Main {
             }
         }
 
-        this.logger.println("Number of blocks:");
-        this.logger.printf(
-                "clb: %d\nlut: %d\nff: %d\nio: %d\nhardblock: %d\n\tPLL: %d\n\tDSP: %d\n\tM9K: %d\n\tM144K: %d\n\n",
+        this.logger.printf("Number of blocks\n   clb: %d\n   lut: %d\n   ff: %d\n   io: %d\n   hardblock: %d\n      PLL: %d\n      DSP: %d\n      M9K: %d\n      M144K: %d\n\n",
                 numClb, numLut, numFf, numIo, numHardBlock, numPLL, numDSP, numM9K, numM144K);
         
     }
