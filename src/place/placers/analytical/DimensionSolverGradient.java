@@ -112,6 +112,5 @@ class DimensionSolverGradient {
         this.speeds[i] = this.beta2 * this.speeds[i] + (1 - this.beta2) * gradient * gradient;
 
         this.coordinates[i] += this.stepSize * this.momentum[i] / (Math.sqrt(this.speeds[i]) + this.eps);
- 	
     }
 }

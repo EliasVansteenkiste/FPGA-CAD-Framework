@@ -189,6 +189,14 @@ abstract class Legalizer {
         return this.legalY;
     }
     
+    int getLegalX(int i) {
+        return this.legalX[i];
+    }
+    int getLegalY(int i) {
+        return this.legalY[i];
+    }
+    
+    
     protected void addVisual(String name, double[] linearX, double[] linearY){
     	this.visualizer.addPlacement(name, this.netBlocks, linearX, linearY, -1);
     }
