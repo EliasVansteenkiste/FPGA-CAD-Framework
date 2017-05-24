@@ -22,8 +22,6 @@ abstract class Legalizer {
     private List<Integer> blockTypeIndexStarts;
     private int numBlocks, numIOBlocks;
 
-    protected double tileCapacity;
-
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
     protected int[] heights;
@@ -129,29 +127,21 @@ abstract class Legalizer {
 
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
-    void legalizeIO(double tileCapacity, List<CritConn> criticalConnections){
-    	this.tileCapacity = tileCapacity;
+    void updateCriticalConnections(List<CritConn> criticalConnections){
     	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
-
-        this.blockType = this.blockTypes.get(0);
-        this.legalizeBlockType(0);
     }
-    void legalizeHardblock(double tileCapacity, List<CritConn> criticalConnections) {
-    	this.tileCapacity = tileCapacity;
-    	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
 
-        for(int i = 2; i < this.blockTypes.size(); i++) {
-            this.blockType = this.blockTypes.get(i);
-            this.legalizeBlockType(i);
+    void legalize(BlockCategory category) {    	
+        for(int i = 0; i < this.blockTypes.size(); i++) {
+        	if(this.blockTypes.get(i).getCategory().equals(category)){
+        		this.legalizeBlockType(i);
+        	}
         }
     }
-    void legalizeLab(double tileCapacity) {
-    	this.tileCapacity = tileCapacity;
-    	this.blockType = this.blockTypes.get(1);
-        this.legalizeBlockType(1);
-    }
-    
+
     private void legalizeBlockType(int i){
+    	this.blockType = this.blockTypes.get(i);
+    	
         int blocksStart = this.blockTypeIndexStarts.get(i);
         int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
@@ -171,11 +161,10 @@ abstract class Legalizer {
         		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType);
-
-        		for(int b = blocksStart; b < blocksEnd; b++){//TODO NOT REQUIRED?
+        		for(int b = blocksStart; b < blocksEnd; b++){
         			this.linearX[b] = this.legalX[b];
         			this.linearY[b] = this.legalY[b];
-        		 }
+        		}
         	}else{
         		System.out.println("unrecognized block type: " + this.blockType);
         	}
@@ -188,15 +177,13 @@ abstract class Legalizer {
     int[] getLegalY() {
         return this.legalY;
     }
-    
     int getLegalX(int i) {
         return this.legalX[i];
     }
     int getLegalY(int i) {
         return this.legalY[i];
     }
-    
-    
+
     protected void addVisual(String name, double[] linearX, double[] linearY){
     	this.visualizer.addPlacement(name, this.netBlocks, linearX, linearY, -1);
     }

@@ -226,7 +226,6 @@ class HeapLegalizer extends Legalizer {
                 this.linearY,
                 x,
                 y,
-                this.tileCapacity,
                 this.blockHeight,
                 this.blockRepeat);
 
@@ -747,7 +746,6 @@ class HeapLegalizer extends Legalizer {
 
         private boolean absorbed = false;
 
-        private double areaTileCapacity;
         private int areaBlockHeight, areaBlockRepeat;
 
         private int numTiles = 0;
@@ -757,7 +755,7 @@ class HeapLegalizer extends Legalizer {
         private boolean[] originalDirection = {true, true, true, true};
         private int growDirectionIndex = -1;
 
-        GrowingArea(double[] linearX, double[] linearY, int column, int row, double tileCapacity, int blockHeight, int blockRepeat) {
+        GrowingArea(double[] linearX, double[] linearY, int column, int row, int blockHeight, int blockRepeat) {
             super(column, column - blockRepeat, row, row);
 
             // Thanks to this two-dimensionally linked list, we
@@ -766,7 +764,6 @@ class HeapLegalizer extends Legalizer {
             // in linear time.
             this.blockIndexes = new TwoDimLinkedList(linearX, linearY);
 
-            this.areaTileCapacity = tileCapacity;
             this.areaBlockHeight = blockHeight;
             this.areaBlockRepeat = blockRepeat;
         }
@@ -776,7 +773,6 @@ class HeapLegalizer extends Legalizer {
 
             this.blockIndexes = new TwoDimLinkedList(area.blockIndexes);
 
-            this.areaTileCapacity = area.areaTileCapacity;
             this.areaBlockHeight = area.areaBlockHeight;
             this.areaBlockRepeat = area.areaBlockRepeat;
 
@@ -797,7 +793,7 @@ class HeapLegalizer extends Legalizer {
             this.numTiles++;
         }
         double getCapacity() {
-            return this.numTiles * this.areaTileCapacity;
+            return this.numTiles;
         }
 
 
