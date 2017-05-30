@@ -38,24 +38,32 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
     protected int[] heights;
+    
+    private double criticalityLearningRate;
 
     protected double linearCost;
     protected double legalCost;
-    protected double maxDelay;
+    protected double timingCost;
 
     private boolean[] hasNets;
-    protected int numNets, numRealNets;
+    protected int numNets, numRealNets, numRealConn;
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
 
     private static final String
-        O_START_UTILIZATION = "start utilization";
+        O_START_UTILIZATION = "start utilization",
+        O_CRIT_LEARNING_RATE = "crit learning rate";
 
     public static void initOptions(Options options) {
         options.add(
                 O_START_UTILIZATION,
                 "utilization of tiles at first legalization",
                 new Double(1.0));
+        
+        options.add(
+                O_CRIT_LEARNING_RATE,
+                "criticality learning rate of the critical connections",
+                new Double(0.7));
     }
 
     protected final static String
@@ -71,17 +79,20 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         super(circuit, options, random, logger, visualizer);
 
         this.startUtilization = options.getDouble(O_START_UTILIZATION);
+        this.criticalityLearningRate = options.getDouble(O_CRIT_LEARNING_RATE);
     }
 
-
     protected abstract boolean isTimingDriven();
-
-    protected abstract void solveLinear(int iteration, BlockCategory category);
-    protected abstract void solveLegal(int iteration, BlockCategory category);
-    protected abstract boolean stopCondition(int iteration);
+    
     protected abstract void initializeIteration(int iteration);
+    protected abstract void solveLinear();
+    protected abstract void solveLegal();
+    protected abstract void solveLinear(BlockCategory category);
+    protected abstract void solveLegal(BlockCategory category);
+    protected abstract void updateLegalIfNeeded();
+    protected abstract boolean stopCondition(int iteration);
 
-    protected abstract void printStatistics(int iteration, double time, double displacement, int overlap);
+    protected abstract void printStatistics(int iteration, double time, int overlap);
 
 
     @Override
@@ -212,6 +223,11 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
 
         this.numRealNets = this.nets.size();
+        
+        this.numRealConn = 0;
+        for(Net net:this.nets){
+        	this.numRealConn += net.blocks.length - 1;
+        }
 
         for(NetBlock block : this.netBlocks.values()) {
             if(!this.hasNets[block.blockIndex]) {
@@ -240,7 +256,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         boolean allFixed = this.isFixed(sourceBlock.blockIndex);
 
         for(int sinkIndex = 0; sinkIndex < numSinks; sinkIndex++) {
-            GlobalBlock sinkGlobalBlock = sourceNode.getSink(sinkIndex).getGlobalBlock();
+            GlobalBlock sinkGlobalBlock = sourceNode.getSinkEdge(sinkIndex).getSink().getGlobalBlock();
             NetBlock sinkBlock = this.netBlocks.get(sinkGlobalBlock);
 
             if(allFixed) {
@@ -249,7 +265,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             TimingEdge timingEdge = sourceNode.getSinkEdge(sinkIndex);
 
-            timingNet.sinks[sinkIndex] = new TimingNetBlock(sinkBlock, timingEdge);
+            timingNet.sinks[sinkIndex] = new TimingNetBlock(sinkBlock, timingEdge, this.criticalityLearningRate);
         }
 
         if(allFixed) {
@@ -294,26 +310,34 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             double timerBegin = System.nanoTime();
 
             this.initializeIteration(iteration);
+
+            if(iteration % 2 == 0){
+            	this.solveLinear();
+            	this.addLinearPlacement(iteration);
+            	this.solveLegal();
+            	this.addLegalPlacement(iteration);
+            }else{
+                this.solveLinear(BlockCategory.CLB);
+                this.addLinearPlacement(iteration);
+                this.solveLegal(BlockCategory.CLB);
+                this.addLegalPlacement(iteration);
+
+                this.solveLinear(BlockCategory.HARDBLOCK);
+                this.addLinearPlacement(iteration);
+            	this.solveLegal(BlockCategory.HARDBLOCK);
+                this.addLegalPlacement(iteration);
+            	
+            	this.solveLegal(BlockCategory.IO);
+            }
             
-            // Solve linear
-            this.solveLinear(iteration, BlockCategory.CLB);
-        	this.addLinearPlacement(iteration);
-        	this.solveLegal(iteration, BlockCategory.CLB);
-        	this.addLegalPlacement(iteration);
-        	
-            this.solveLinear(iteration, BlockCategory.HARDBLOCK);
-        	this.addLinearPlacement(iteration);
-        	this.solveLegal(iteration, BlockCategory.HARDBLOCK);
-        	this.addLegalPlacement(iteration);
-        	
-        	this.solveLegal(iteration, BlockCategory.IO);
+            this.updateLegalIfNeeded();
 
             isLastIteration = this.stopCondition(iteration);
 
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
 
-            this.printStatistics(iteration, time, this.calculateDisplacement(), this.overlap());
+            this.printStatistics(iteration, time, this.overlap());
 
             iteration++;
         }
@@ -347,20 +371,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected void updateLegal(int[] newLegalX, int[] newLegalY) {
         System.arraycopy(newLegalX, 0, this.legalX, 0, this.legalX.length);
         System.arraycopy(newLegalY, 0, this.legalY, 0, this.legalY.length);
-    }
-    
-    //Manhattan displacement
-    private double calculateDisplacement(){
-    	int numBlocks = this.legalX.length;
-    	
-    	double manhattanDisplacement = 0.0;
-    	for(int b=0; b < numBlocks; b++){
-    		manhattanDisplacement += manhattanDisplacement(b);
-    	}
-    	return manhattanDisplacement;
-    }
-    private double manhattanDisplacement(int index){
-    	return Math.abs(this.linearX[index] - this.legalX[index]) + Math.abs(this.linearY[index] - this.legalY[index]);
     }
     
     //Overlap
@@ -555,24 +565,23 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         final float offset;
         final TimingEdge timingEdge;
         
-        double criticality;
-        
-        //final List<Double> criticalityHistory;
+        double criticality, criticalityLearningRate;
 
-        TimingNetBlock(int blockIndex, float offset, TimingEdge timingEdge) {
+        TimingNetBlock(int blockIndex, float offset, TimingEdge timingEdge, double criticalityLearningRate) {
             this.blockIndex = blockIndex;
             this.offset = offset;
             this.timingEdge = timingEdge;
             
             this.criticality = 0.0;
+            this.criticalityLearningRate = criticalityLearningRate;
         }
 
-        TimingNetBlock(NetBlock block, TimingEdge timingEdge) {
-            this(block.blockIndex, block.offset, timingEdge);
+        TimingNetBlock(NetBlock block, TimingEdge timingEdge, double criticalityLearningRate) {
+            this(block.blockIndex, block.offset, timingEdge, criticalityLearningRate);
         }
         
         void updateCriticality(){
-        	this.criticality = this.criticality * 0.8 + this.timingEdge.getCriticality() * 0.2;
+        	this.criticality = this.criticality * (1 - this.criticalityLearningRate) + this.timingEdge.getCriticality() * this.criticalityLearningRate;
         }
     }
 
