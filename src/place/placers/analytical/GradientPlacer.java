@@ -134,7 +134,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
-        this.maxConnectionLength = this.circuit.getWidth() / 2;
+        this.maxConnectionLength = 30;
 
     	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
 
