@@ -77,8 +77,8 @@ class LinearSolverGradient {
 
         double minX = this.coordinatesX[minXIndex],
                maxX = this.coordinatesX[maxXIndex],
-               minY = this.coordinatesY[minYIndex] + this.netBlockOffsets[minYIndex],
-               maxY = this.coordinatesY[maxYIndex] + this.netBlockOffsets[maxYIndex];
+               minY = this.coordinatesY[minYIndex] + this.netBlockOffsets[netStart],
+               maxY = this.coordinatesY[maxYIndex] + this.netBlockOffsets[netStart];
 
         for(int i = netStart + 1; i < netEnd; i++) {
             int blockIndex = this.netBlockIndexes[i];
