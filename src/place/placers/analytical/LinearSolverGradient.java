@@ -75,13 +75,10 @@ class LinearSolverGradient {
             minYIndex = this.netBlockIndexes[netStart],
             maxYIndex = this.netBlockIndexes[netStart];
 
-        float minYOffset = this.netBlockOffsets[netStart],
-              maxYOffset = this.netBlockOffsets[netStart];
-
         double minX = this.coordinatesX[minXIndex],
                maxX = this.coordinatesX[maxXIndex],
-               minY = this.coordinatesY[minYIndex] + minYOffset,
-               maxY = this.coordinatesY[maxYIndex] + maxYOffset;
+               minY = this.coordinatesY[minYIndex] + this.netBlockOffsets[minYIndex],
+               maxY = this.coordinatesY[maxYIndex] + this.netBlockOffsets[maxYIndex];
 
         for(int i = netStart + 1; i < netEnd; i++) {
             int blockIndex = this.netBlockIndexes[i];
@@ -107,7 +104,7 @@ class LinearSolverGradient {
 
         // Add connections between the min and max block
         this.solverX.addConnection(minXIndex, maxXIndex, maxX - minX, weight);
-        this.solverY.addConnection(minYIndex, maxYIndex, maxY + maxYOffset - minY - minYOffset, weight);
+        this.solverY.addConnection(minYIndex, maxYIndex, maxY - minY, weight);
     }
 
     void processConnection(int blockIndex1, int blockIndex2, float offset, float weight) {
