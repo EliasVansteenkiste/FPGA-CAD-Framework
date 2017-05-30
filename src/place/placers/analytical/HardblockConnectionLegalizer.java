@@ -10,7 +10,6 @@ import java.util.Set;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
-import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
 import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.util.TimingTree;
 import place.visual.PlacementVisualizer;
@@ -50,7 +49,6 @@ public class HardblockConnectionLegalizer{
 			int gridWidth,
 			int gridHeight,
 			List<AnalyticalAndGradientPlacer.Net> placerNets,
-			List<TimingNet> timingNets,
 			PlacementVisualizer visualizer,
 			Map<GlobalBlock, NetBlock> blockIndexes){
 

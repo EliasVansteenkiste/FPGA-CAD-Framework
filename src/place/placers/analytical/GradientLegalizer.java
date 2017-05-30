@@ -41,7 +41,7 @@ class GradientLegalizer extends Legalizer {
             List<TimingNet> timingNets,
             Map<GlobalBlock, NetBlock> netBlocks){
 
-    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, timingNets, visualizer, netBlocks);
+    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, netBlocks);
 
     	this.timer = new TimingTree(false);
     	

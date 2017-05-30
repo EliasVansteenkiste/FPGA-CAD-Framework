@@ -9,7 +9,6 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
-import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
 import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.visual.PlacementVisualizer;
 
@@ -48,7 +47,6 @@ abstract class Legalizer {
             int[] legalY,
             int[] heights,
             List<Net> nets,
-            List<TimingNet> timingNets,
             PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> netBlocks) {
 
@@ -90,7 +88,7 @@ abstract class Legalizer {
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
         
-        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, timingNets, this.visualizer, this.netBlocks);
+        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, this.visualizer, this.netBlocks);
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
             if(hardblockType.getCategory().equals(BlockCategory.HARDBLOCK) || hardblockType.getCategory().equals(BlockCategory.IO)){
