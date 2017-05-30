@@ -17,8 +17,7 @@ public class GradientPlacerTD extends GradientPlacer {
         O_CRITICALITY_EXPONENT = "criticality exponent",
         O_CRITICALITY_THRESHOLD = "criticality threshold",
         O_MAX_PER_CRIT_EDGE = "max per crit edge",
-        O_TRADE_OFF = "trade off",
-        O_ALWAYS_UPDATE = "always update legal solution";
+        O_TRADE_OFF = "trade off";
 
     public static void initOptions(Options options) {
         GradientPlacer.initOptions(options);
@@ -42,11 +41,6 @@ public class GradientPlacerTD extends GradientPlacer {
                 O_TRADE_OFF,
                 "0 = purely wirelength driven, higher = more timing driven",
                 new Double(30));
-        
-        options.add(
-                O_ALWAYS_UPDATE,
-                "always update the legal solution, even if it leads to worse quality than the best legal solution",
-                new Boolean(true));
     }
 
 
@@ -163,9 +157,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void calculateTimingCost() {
-    	this.startTimer(T_UPDATE_CRIT_CON);
         this.timingCost = this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
-        this.stopTimer(T_UPDATE_CRIT_CON);
     }
 
     @Override

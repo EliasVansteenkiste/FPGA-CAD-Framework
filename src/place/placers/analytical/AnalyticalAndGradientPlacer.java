@@ -33,7 +33,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected final Map<GlobalBlock, NetBlock> netBlocks = new HashMap<>();
 
     protected int numIOBlocks, numMovableBlocks;
-    protected double startUtilization;
 
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
@@ -51,15 +50,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected List<TimingNet> timingNets;
 
     private static final String
-        O_START_UTILIZATION = "start utilization",
         O_CRIT_LEARNING_RATE = "crit learning rate";
 
     public static void initOptions(Options options) {
-        options.add(
-                O_START_UTILIZATION,
-                "utilization of tiles at first legalization",
-                new Double(1.0));
-        
         options.add(
                 O_CRIT_LEARNING_RATE,
                 "criticality learning rate of the critical connections",
@@ -78,7 +71,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     public AnalyticalAndGradientPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
         super(circuit, options, random, logger, visualizer);
 
-        this.startUtilization = options.getDouble(O_START_UTILIZATION);
         this.criticalityLearningRate = options.getDouble(O_CRIT_LEARNING_RATE);
     }
 
@@ -313,24 +305,21 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             if(iteration % 2 == 0){
             	this.solveLinear();
-            	this.addLinearPlacement(iteration);
             	this.solveLegal();
-            	this.addLegalPlacement(iteration);
             }else{
                 this.solveLinear(BlockCategory.CLB);
-                this.addLinearPlacement(iteration);
                 this.solveLegal(BlockCategory.CLB);
-                this.addLegalPlacement(iteration);
-
+                
                 this.solveLinear(BlockCategory.HARDBLOCK);
-                this.addLinearPlacement(iteration);
             	this.solveLegal(BlockCategory.HARDBLOCK);
-                this.addLegalPlacement(iteration);
             	
             	this.solveLegal(BlockCategory.IO);
             }
             
             this.updateLegalIfNeeded();
+            
+            this.addLinearPlacement(iteration);
+            this.addLegalPlacement(iteration);
 
             isLastIteration = this.stopCondition(iteration);
 
