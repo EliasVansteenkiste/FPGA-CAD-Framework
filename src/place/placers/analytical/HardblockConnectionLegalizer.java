@@ -193,15 +193,19 @@ public class HardblockConnectionLegalizer{
 		}
 		this.crits.clear();
 		
+		int index = 0;
+		
 		for(CritConn critConn:criticalConnections){
         	Block sourceBlock = this.blocks[critConn.sourceIndex];
         	Block sinkBlock = this.blocks[critConn.sinkIndex];
         	
-        	Crit conn = new Crit(sourceBlock, sinkBlock, critConn.weight);
+        	Crit conn = new Crit(sourceBlock, sinkBlock, index, critConn.weight);
         	sourceBlock.addCrit(conn);
         	sinkBlock.addCrit(conn);
         	
         	this.crits.add(conn);
+        	
+        	index++;
 		}
 		
 		this.timingTree.time("Update critical connections in hardblock connection legalizer");
@@ -519,6 +523,11 @@ public class HardblockConnectionLegalizer{
     	Site getSite(){
     		return this.site;
     	}
+    	
+	    @Override
+	    public int hashCode() {
+	        return this.index;
+	    }
 	}
     /////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////// SITE //////////////////////////////////////
@@ -762,6 +771,11 @@ public class HardblockConnectionLegalizer{
 	        }
 	        return maxY;
 		}
+		
+	    @Override
+	    public int hashCode() {
+	        return this.index;
+	    }
 	}
     /////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// CRITICAL CONNECTION //////////////////////////////
@@ -770,6 +784,8 @@ public class HardblockConnectionLegalizer{
 		Block sourceBlock, sinkBlock;
 		double weight;
 		
+		int index;
+
 		int minX, maxX;
 		int minY, maxY;
 		int oldMinX, oldMaxX;
@@ -778,8 +794,8 @@ public class HardblockConnectionLegalizer{
 		
 		boolean horizontalChange, verticalChange;
 		boolean horizontalDeltaCostIncluded, verticalDeltaCostIncluded;
-		
-		Crit(Block sourceBlock, Block sinkBlock, double weight){
+
+		Crit(Block sourceBlock, Block sinkBlock, int index, double weight){
 			this.sourceBlock = sourceBlock;
 			this.sinkBlock = sinkBlock;
 			this.weight = weight;
@@ -787,8 +803,10 @@ public class HardblockConnectionLegalizer{
 			this.alreadySaved = false;
 			this.horizontalChange = false;
 			this.verticalChange = false;
+			
+			this.index = index;
 		}
-		
+
 		void initializeTimingCost(){
 			if(this.sourceBlock.legalX < this.sinkBlock.legalX){
 				this.minX = this.sourceBlock.legalX;
@@ -806,7 +824,7 @@ public class HardblockConnectionLegalizer{
 				this.maxY = this.sourceBlock.legalY;
 			}
 		}
-		
+
 		void pushTrough(){
 			this.alreadySaved = false;
 		}
@@ -825,7 +843,7 @@ public class HardblockConnectionLegalizer{
 			this.alreadySaved = false;
 		}
 
-		
+
 		double timingCost(){
 			return this.horizontalTimingCost() + this.verticalTimingCost();
 		}
@@ -835,7 +853,7 @@ public class HardblockConnectionLegalizer{
 		double verticalTimingCost(){
 			return (this.maxY - this.minY) * this.weight;
 		}
-		
+
 		void saveState(){
 			if(!this.alreadySaved){
 				this.oldMinX = this.minX;
@@ -846,10 +864,10 @@ public class HardblockConnectionLegalizer{
 				this.alreadySaved = true;
 			}
 		}
-		
+
 		void tryHorizontalTimingCost(){
 			this.saveState();
-			
+
 			if(this.sourceBlock.legalX < this.sinkBlock.legalX){
 				this.minX = this.sourceBlock.legalX;
 				this.maxX = this.sinkBlock.legalX;
@@ -857,7 +875,7 @@ public class HardblockConnectionLegalizer{
 				this.minX = this.sinkBlock.legalX;
 				this.maxX = this.sourceBlock.legalX;
 			}
-			
+
 			if(this.minX != this.oldMinX || this.maxX != this.oldMaxX){
 				this.horizontalChange = true;
 				this.horizontalDeltaCostIncluded = false;
@@ -875,7 +893,7 @@ public class HardblockConnectionLegalizer{
 			}
 			
 		}
-		
+
 		void tryVerticalTimingCost(){
 			this.saveState();
 			
@@ -886,7 +904,7 @@ public class HardblockConnectionLegalizer{
 				this.minY = this.sinkBlock.legalY;
 				this.maxY = this.sourceBlock.legalY;
 			}
-			
+
 			if(this.minY != this.oldMinY || this.maxY != this.oldMaxY){
 				this.verticalChange = true;
 				this.verticalDeltaCostIncluded = false;
@@ -902,10 +920,14 @@ public class HardblockConnectionLegalizer{
 			}else{
 				return 0.0;
 			}
-			
 		}
+		
+	    @Override
+	    public int hashCode() {
+	        return this.index;
+	    }
 	}
-	
+
     /////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////// COLUMN ////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
@@ -927,7 +949,7 @@ public class HardblockConnectionLegalizer{
 		void removeBlock(Block block){
 			this.blocks.remove(block);
 		}
-		
+
 		int numPos(){
 			return this.sites.length;
 		}
@@ -979,6 +1001,11 @@ public class HardblockConnectionLegalizer{
 			}
 			return bestSite;
 		}
+
+	    @Override
+	    public int hashCode() {
+	        return this.index;
+	    }
 	}
     /////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////// VISUAL ////////////////////////////////////
