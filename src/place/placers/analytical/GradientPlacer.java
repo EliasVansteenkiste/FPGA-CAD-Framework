@@ -134,7 +134,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
-        this.maxConnectionLength = 30;
+        this.maxConnectionLength = this.circuit.getWidth();
 
     	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
 
@@ -423,7 +423,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         
         stats.add(this.latestCost == this.minCost ? "yes" : "");
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
-        stats.add(String.format("%d",this.critConn));
+        stats.add(String.format("%d", this.critConn));
         stats.add(String.format("%d", overlap));
 
         this.printStats(stats.toArray(new String[0]));
