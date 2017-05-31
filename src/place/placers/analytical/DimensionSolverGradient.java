@@ -66,8 +66,14 @@ class DimensionSolverGradient {
     }
 
 
-    void addConnection(int minIndex, int maxIndex, double coorDifference, double weight) {
-
+    void processConnection(int firstIndex, int secondIndex, double coorDifference, double weight) {
+    	if(coorDifference > 0.0){
+    		this.addConnection(firstIndex, secondIndex, coorDifference, weight);
+    	}else if(coorDifference < 0.0){
+    		this.addConnection(secondIndex, firstIndex, -coorDifference, weight);
+    	}
+    }
+    private void addConnection(int minIndex, int maxIndex, double coorDifference, double weight) {
         double netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
 
         this.totalPositiveNetSize[minIndex] += weight * netSize;
