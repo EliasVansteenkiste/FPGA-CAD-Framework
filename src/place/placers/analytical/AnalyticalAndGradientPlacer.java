@@ -276,7 +276,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
          * cancels out.
          */
         int numUniqueBlocks = net.blocks.length;
-        if(numUniqueBlocks > 1) {
+        if(numUniqueBlocks > 1 && numUniqueBlocks < this.circuit.getGlobalBlocks().size() / 2) {
             this.nets.add(net);
 
             for(NetBlock block : net.blocks) {
@@ -309,7 +309,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }else{
                 this.solveLinear(BlockCategory.CLB);
                 this.solveLegal(BlockCategory.CLB);
-                
+            	
                 this.solveLinear(BlockCategory.HARDBLOCK);
             	this.solveLegal(BlockCategory.HARDBLOCK);
             	
