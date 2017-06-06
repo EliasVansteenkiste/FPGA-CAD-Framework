@@ -56,7 +56,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
-                new Double(0.2));
+                new Double(0.25));
 
         options.add(
                 O_BETA1,
@@ -134,7 +134,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
-        this.maxConnectionLength = this.circuit.getWidth();
+        this.maxConnectionLength = this.circuit.getWidth() / 2;
 
     	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
 

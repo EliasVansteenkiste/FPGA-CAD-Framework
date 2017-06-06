@@ -40,7 +40,7 @@ public class GradientPlacerTD extends GradientPlacer {
         options.add(
                 O_TRADE_OFF,
                 "0 = purely wirelength driven, higher = more timing driven",
-                new Double(30));
+                new Double(20));
     }
 
 
@@ -151,7 +151,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
         // Process the most critical source-sink connections
         for(CritConn critConn:this.criticalConnections) {
-        	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.offset, critConn.weight);
+        	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.offset, critConn.weight, true);
         }
     }
 
