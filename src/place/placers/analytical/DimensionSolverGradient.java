@@ -58,6 +58,8 @@ class DimensionSolverGradient {
 
         Arrays.fill(this.totalPositiveNetSize, 0.0);
         Arrays.fill(this.totalNegativeNetSize, 0.0);
+        
+
     }
 
     void setLegal(int[] legal) {
@@ -66,23 +68,35 @@ class DimensionSolverGradient {
     }
 
 
-    void processConnection(int firstIndex, int secondIndex, double coorDifference, double weight) {
+    void processConnection(int firstIndex, int secondIndex, double coorDifference, double weight, boolean critical) {
     	if(coorDifference > 0.0){
-    		this.addConnection(firstIndex, secondIndex, coorDifference, weight);
+    		this.addConnection(firstIndex, secondIndex, coorDifference, weight, critical);
     	}else if(coorDifference < 0.0){
-    		this.addConnection(secondIndex, firstIndex, -coorDifference, weight);
+    		this.addConnection(secondIndex, firstIndex, -coorDifference, weight, critical);
     	}
     }
-    private void addConnection(int minIndex, int maxIndex, double coorDifference, double weight) {
-        double netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
+    private void addConnection(int minIndex, int maxIndex, double coorDifference, double weight, boolean critical) {
+    	if(critical){
+            double netSize = 2 * (4 * this.halfMaxConnectionLength) * coorDifference / ((4 * this.halfMaxConnectionLength) + coorDifference);
 
-        this.totalPositiveNetSize[minIndex] += weight * netSize;
-        this.numPositiveNets[minIndex] += weight;
-        this.directions[minIndex] += weight;
+            this.totalPositiveNetSize[minIndex] += weight * netSize;
+            this.numPositiveNets[minIndex] += weight;
+            this.directions[minIndex] += weight;
 
-        this.totalNegativeNetSize[maxIndex] += weight * netSize;
-        this.numNegativeNets[maxIndex] += weight;
-        this.directions[maxIndex] -= weight;
+            this.totalNegativeNetSize[maxIndex] += weight * netSize;
+            this.numNegativeNets[maxIndex] += weight;
+            this.directions[maxIndex] -= weight;
+    	}else{
+            double netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
+
+            this.totalPositiveNetSize[minIndex] += weight * netSize;
+            this.numPositiveNets[minIndex] += weight;
+            this.directions[minIndex] += weight;
+
+            this.totalNegativeNetSize[maxIndex] += weight * netSize;
+            this.numNegativeNets[maxIndex] += weight;
+            this.directions[maxIndex] -= weight;
+    	}
     }
 
     void solve() {

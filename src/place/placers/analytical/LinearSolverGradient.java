@@ -53,11 +53,11 @@ class LinearSolverGradient {
             
             coordinate1 = this.coordinatesY[blockIndex1] + this.netBlockOffsets[netStart];
             coordinate2 = this.coordinatesY[blockIndex2] + this.netBlockOffsets[netStart + 1];
-            this.solverY.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
+            this.solverY.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight, false);
 
             coordinate1 = this.coordinatesX[blockIndex1];
             coordinate2 = this.coordinatesX[blockIndex2];
-            this.solverX.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight);
+            this.solverX.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight, false);
 
             return;
         }
@@ -97,18 +97,18 @@ class LinearSolverGradient {
         }
 
         // Add connections between the min and max block
-        this.solverX.processConnection(minXIndex, maxXIndex, maxX - minX, weight);
-        this.solverY.processConnection(minYIndex, maxYIndex, maxY - minY, weight);
+        this.solverX.processConnection(minXIndex, maxXIndex, maxX - minX, weight, false);
+        this.solverY.processConnection(minYIndex, maxYIndex, maxY - minY, weight, false);
     }
 
-    void processConnection(int blockIndex1, int blockIndex2, float offset, float weight) {
+    void processConnection(int blockIndex1, int blockIndex2, float offset, float weight, boolean critical) {
         double x1 = this.coordinatesX[blockIndex1],
                x2 = this.coordinatesX[blockIndex2],
                y1 = this.coordinatesY[blockIndex1],
                y2 = this.coordinatesY[blockIndex2];
 
-        this.solverX.processConnection(blockIndex1, blockIndex2, x2 - x1, weight);
-        this.solverY.processConnection(blockIndex1, blockIndex2, y2 - y1 + offset, weight);
+        this.solverX.processConnection(blockIndex1, blockIndex2, x2 - x1, weight, critical);
+        this.solverY.processConnection(blockIndex1, blockIndex2, y2 - y1 + offset, weight, critical);
     }
 
     void solve() {
