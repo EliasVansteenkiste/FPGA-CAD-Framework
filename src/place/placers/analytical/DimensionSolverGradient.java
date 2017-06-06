@@ -58,8 +58,6 @@ class DimensionSolverGradient {
 
         Arrays.fill(this.totalPositiveNetSize, 0.0);
         Arrays.fill(this.totalNegativeNetSize, 0.0);
-        
-
     }
 
     void setLegal(int[] legal) {
@@ -76,27 +74,20 @@ class DimensionSolverGradient {
     	}
     }
     private void addConnection(int minIndex, int maxIndex, double coorDifference, double weight, boolean critical) {
+    	double netSize;
     	if(critical){
-            double netSize = 2 * (4 * this.halfMaxConnectionLength) * coorDifference / ((4 * this.halfMaxConnectionLength) + coorDifference);
-
-            this.totalPositiveNetSize[minIndex] += weight * netSize;
-            this.numPositiveNets[minIndex] += weight;
-            this.directions[minIndex] += weight;
-
-            this.totalNegativeNetSize[maxIndex] += weight * netSize;
-            this.numNegativeNets[maxIndex] += weight;
-            this.directions[maxIndex] -= weight;
+            netSize = coorDifference;//2 * (4 * this.halfMaxConnectionLength) * coorDifference / ((4 * this.halfMaxConnectionLength) + coorDifference);
     	}else{
-            double netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
-
-            this.totalPositiveNetSize[minIndex] += weight * netSize;
-            this.numPositiveNets[minIndex] += weight;
-            this.directions[minIndex] += weight;
-
-            this.totalNegativeNetSize[maxIndex] += weight * netSize;
-            this.numNegativeNets[maxIndex] += weight;
-            this.directions[maxIndex] -= weight;
+            netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
     	}
+
+        this.totalPositiveNetSize[minIndex] += weight * netSize;
+        this.numPositiveNets[minIndex] += weight;
+        this.directions[minIndex] += weight;
+
+        this.totalNegativeNetSize[maxIndex] += weight * netSize;
+        this.numNegativeNets[maxIndex] += weight;
+        this.directions[maxIndex] -= weight;
     }
 
     void solve() {
