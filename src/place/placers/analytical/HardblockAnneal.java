@@ -108,9 +108,6 @@ public class HardblockAnneal {
 			this.cost += crit.timingCost();
 		}
 		this.timing.time("Calculate cost");
-		
-		for(Net net:this.nets) net.initializeConnectionCost();
-		for(Crit crit:this.crits) crit.initializeTimingCost();
 
 		this.timing.start("Initialize anneal");
 		this.temperature = this.calculateInitialTemperature();
@@ -158,23 +155,6 @@ public class HardblockAnneal {
 			}
 			if(Math.abs(testCost1 - this.cost) > 0.1){
 				System.out.println("TestCost is not equal to cost =>\n\tTestCost: " + testCost1 + "\n\tCost: " + this.cost);
-			}
-		}
-		if(test2){
-			System.out.println("Warning: test2 is turned on");
-			
-			for(Net net:this.nets) net.initializeConnectionCost();
-			for(Crit crit:this.crits) crit.initializeTimingCost();
-			
-			double testCost2 = 0.0;
-			for(Net net:this.nets){
-				testCost2 += net.connectionCost();
-			}
-			for(Crit crit:this.crits){
-				testCost2 += crit.timingCost();
-			}
-			if(Math.abs(testCost2 - this.cost) > 0.1){
-				System.out.println("TestCost is not equal to cost =>\n\tTestCost: " + testCost2 + "\n\tCost: " + this.cost);
 			}
 		}
 		

@@ -256,7 +256,7 @@ public class HardblockConnectionLegalizer{
 		this.addVisual(this.blockType + " => After best position for each hard block");
 		
 		this.timingTree.time("Find best legal coordinates for all blocks based on minimal displacement cost");
-		
+
 		//Column swap
 		this.columnSwap.doSwap(columns);
 		
@@ -475,12 +475,14 @@ public class HardblockConnectionLegalizer{
 			for(Crit crit:this.crits) crit.pushTrough();
 		}
 		void revert(){
-			this.legalX = this.oldLegalX;
-			this.legalY = this.oldLegalY;
-			this.alreadySaved = false;
-				
-			for(Net net:this.nets) net.revert();
-			for(Crit crit:this.crits) crit.revert();
+			if(this.alreadySaved){
+				this.legalX = this.oldLegalX;
+				this.legalY = this.oldLegalY;
+				this.alreadySaved = false;
+						
+				for(Net net:this.nets) net.revert();
+				for(Crit crit:this.crits) crit.revert();
+			}
 		}
 
 		void saveState(){
@@ -626,18 +628,20 @@ public class HardblockConnectionLegalizer{
 		}
 		
 		void revert(){
-			if(this.horizontalChange){
-				this.minX = this.oldMinX;
-				this.maxX = this.oldMaxX;
-				this.horizontalChange = false;
+			if(this.alreadySaved){
+				if(this.horizontalChange){
+					this.minX = this.oldMinX;
+					this.maxX = this.oldMaxX;
+					this.horizontalChange = false;
+				}
+				if(this.verticalChange){
+					this.minY = this.oldMinY;
+					this.maxY = this.oldMaxY;
+					this.verticalChange = false;
+				}
+				
+				this.alreadySaved = false;
 			}
-			if(this.verticalChange){
-				this.minY = this.oldMinY;
-				this.maxY = this.oldMaxY;
-				this.verticalChange = false;
-			}
-			
-			this.alreadySaved = false;
 		}
 		void pushTrough(){
 			this.alreadySaved = false;
@@ -831,18 +835,20 @@ public class HardblockConnectionLegalizer{
 			this.alreadySaved = false;
 		}
 		void revert(){
-			if(this.horizontalChange){
-				this.minX = this.oldMinX;
-				this.maxX = this.oldMaxX;
-				this.horizontalChange = false;
-			}
-			if(this.verticalChange){
-				this.minY = this.oldMinY;
-				this.maxY = this.oldMaxY;
-				this.verticalChange = false;
-			}
+			if(this.alreadySaved){
+				if(this.horizontalChange){
+					this.minX = this.oldMinX;
+					this.maxX = this.oldMaxX;
+					this.horizontalChange = false;
+				}
+				if(this.verticalChange){
+					this.minY = this.oldMinY;
+					this.maxY = this.oldMaxY;
+					this.verticalChange = false;
+				}
 
-			this.alreadySaved = false;
+				this.alreadySaved = false;
+			}
 		}
 
 
@@ -959,29 +965,26 @@ public class HardblockConnectionLegalizer{
 			return this.blocks.size();
 		}
 		void legalize(){
-			if(this.usedPos() <= this.numPos()){
-				for(Block block:this.blocks){
-					block.updateCriticality();
-					block.site = null;
-				}
+			for(Block block:this.blocks){
+				block.updateCriticality();
+			}
+
+			for(int i = 0; i < this.blocks.size(); i++){
+				Block largestCriticalityBlock = null;
 				
-				for(int i = 0; i < this.blocks.size(); i++){
-					Block largestCriticalityBlock = null;
-					
-					for(Block block:this.blocks){
-						if(!block.hasSite()){
-							if(largestCriticalityBlock == null){
-								largestCriticalityBlock = block;
-							}else if(block.criticality > largestCriticalityBlock.criticality){
-								largestCriticalityBlock = block;
-							}
+				for(Block block:this.blocks){
+					if(!block.hasSite()){
+						if(largestCriticalityBlock == null){
+							largestCriticalityBlock = block;
+						}else if(block.criticality > largestCriticalityBlock.criticality){
+							largestCriticalityBlock = block;
 						}
 					}
-					Site bestSite = this.getBestFreeSite(largestCriticalityBlock);
-					largestCriticalityBlock.setSite(bestSite);
-					bestSite.setBlock(largestCriticalityBlock);
-					largestCriticalityBlock.setLegalY(bestSite.row);
 				}
+				Site bestSite = this.getBestFreeSite(largestCriticalityBlock);
+				largestCriticalityBlock.setSite(bestSite);
+				bestSite.setBlock(largestCriticalityBlock);
+				largestCriticalityBlock.setLegalY(bestSite.row);
 			}
 		}
 		Site getBestFreeSite(Block block){
@@ -990,7 +993,7 @@ public class HardblockConnectionLegalizer{
 			
 			for(Site site:this.sites){
 				if(!site.hasBlock()){
-					
+
 					block.tryLegalY(site.row);
 					double cost = block.verticalCost();
 					block.revert();
