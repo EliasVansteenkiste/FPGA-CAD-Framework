@@ -36,7 +36,7 @@ class ColumnLegalizer extends Legalizer {
             List<TimingNet> timingNets,
             Map<GlobalBlock, NetBlock> netBlocks) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, timingNets, visualizer, netBlocks);
+        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, netBlocks);
 
         this.heights = heights;
 
