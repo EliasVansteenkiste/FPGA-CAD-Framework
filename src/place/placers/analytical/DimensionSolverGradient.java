@@ -76,7 +76,7 @@ class DimensionSolverGradient {
     private void addConnection(int minIndex, int maxIndex, double coorDifference, double weight, boolean critical) {
     	double netSize;
     	if(critical){
-            netSize = coorDifference;//2 * (4 * this.halfMaxConnectionLength) * coorDifference / ((4 * this.halfMaxConnectionLength) + coorDifference);
+            netSize = 2 * (4 * this.halfMaxConnectionLength) * coorDifference / ((4 * this.halfMaxConnectionLength) + coorDifference);
     	}else{
             netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
     	}
