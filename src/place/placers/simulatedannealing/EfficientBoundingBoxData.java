@@ -160,6 +160,10 @@ class EfficientBoundingBoxData {
     public double getNetCost() {
         return this.boundingBox * this.weight;
     }
+    
+    public double getFanoutWeightedNetCost() {
+        return this.boundingBox * this.weight / this.blocks.length;
+    }
 
 
     public void calculateBoundingBoxFromScratch()  {
@@ -271,7 +275,6 @@ class EfficientBoundingBoxData {
         }
 
         this.weight *= 0.01;
-        //this.weight = 0.01;
     }
 
 }

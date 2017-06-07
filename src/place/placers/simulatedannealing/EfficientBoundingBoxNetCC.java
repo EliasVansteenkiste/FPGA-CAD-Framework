@@ -97,6 +97,15 @@ public class EfficientBoundingBoxNetCC {
         return totalCost;
     }
 
+    public double calculateBlockCost(GlobalBlock block){
+    	double cost = 0.0;
+    	if(this.bbDataMap.containsKey(block)){
+        	for(EfficientBoundingBoxData data:this.bbDataMap.get(block)){
+        		cost += data.getFanoutWeightedNetCost();
+        	}
+    	}
+    	return cost;
+    }
 
     public double calculateDeltaCost(Swap swap) {
         this.toRevert.clear();

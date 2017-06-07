@@ -6,6 +6,7 @@ import place.circuit.architecture.ArchitectureCacher;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.architecture.ParseException;
+import place.circuit.block.GlobalBlock;
 import place.circuit.exceptions.InvalidFileFormatException;
 import place.circuit.exceptions.PlacementException;
 import place.circuit.io.BlockNotFoundException;
@@ -424,6 +425,14 @@ public class Main {
         // Calculate BB cost
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
+        
+        this.logger.print("\n\n");
+        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
+        	String output = block.getName() + "\t" + block.getIndex() + "\t" + block.getCategory() + "\t" + effcc.calculateBlockCost(block) + "\t" + block.getColumn() + "\t" + block.getRow();
+        	this.logger.println(output.replace(".", ","));
+        }
+        this.logger.print("\n\n");
+        
         this.logger.printf(format, "BB cost", totalWLCost, "");
 
         // Calculate timing cost
