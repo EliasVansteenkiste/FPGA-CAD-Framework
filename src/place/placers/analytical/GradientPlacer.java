@@ -17,6 +17,7 @@ import java.util.Random;
 public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     private static final String
+    	O_MAX_CONN_LENGTH_RATIO = "max conn length ratio",
         O_ANCHOR_WEIGHT_START = "anchor weight start",
         O_ANCHOR_WEIGHT_STEP = "anchor weight step",
         O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
@@ -32,6 +33,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
 
+        options.add(
+                O_MAX_CONN_LENGTH_RATIO,
+                "maximum connection length is a ratio of circuit width",
+                new Double(0.5));
+        
         options.add(
                 O_ANCHOR_WEIGHT_START,
                 "starting anchor weight",
@@ -134,7 +140,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = this.anchorWeightStart;
 
-        this.maxConnectionLength = this.circuit.getWidth() / 2;
+        this.maxConnectionLength = this.circuit.getWidth() * this.options.getDouble(O_MAX_CONN_LENGTH_RATIO);
 
     	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
 
