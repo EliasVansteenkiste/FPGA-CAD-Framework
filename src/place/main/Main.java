@@ -24,9 +24,12 @@ import place.placers.simulatedannealing.EfficientBoundingBoxNetCC;
 import place.util.Timer;
 import place.visual.PlacementVisualizer;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
@@ -426,12 +429,20 @@ public class Main {
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
         
-        this.logger.print("\n\n");
-        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
-        	String output = block.getName() + "\t" + block.getIndex() + "\t" + block.getCategory() + "\t" + effcc.calculateBlockCost(block) + "\t" + block.getColumn() + "\t" + block.getRow();
-        	this.logger.println(output.replace(".", ","));
-        }
-        this.logger.print("\n\n");
+        
+        String costFile = this.outputPlaceFile.getPath().replace(".place", ".cost");
+        PrintWriter writer = null;
+        try {
+			writer = new PrintWriter(new BufferedWriter(new FileWriter(costFile)));
+	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
+	        	String output = block.getName() + "\t" + block.getIndex() + "\t" + block.getCategory() + "\t" + Math.round(effcc.calculateBlockCost(block)*1000.0)/1000.0 + "\t" + block.getColumn() + "\t" + block.getRow() + "\n";
+	        	writer.write(output.replace(".", ","));
+	        }
+	        writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
         
         this.logger.printf(format, "BB cost", totalWLCost, "");
 
