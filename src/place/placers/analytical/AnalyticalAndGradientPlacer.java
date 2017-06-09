@@ -56,7 +56,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         options.add(
                 O_CRIT_LEARNING_RATE,
                 "criticality learning rate of the critical connections",
-                new Double(0.7));
+                new Double(0.4));
     }
 
     protected final static String
