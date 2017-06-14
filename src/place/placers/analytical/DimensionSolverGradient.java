@@ -2,7 +2,6 @@ package place.placers.analytical;
 
 import java.util.Arrays;
 
-
 class DimensionSolverGradient {
 
     private final double[] coordinates;
@@ -76,7 +75,7 @@ class DimensionSolverGradient {
     private void addConnection(int minIndex, int maxIndex, double coorDifference, double weight, boolean critical) {
     	double netSize;
     	if(critical){
-            netSize = 2 * (4 * this.halfMaxConnectionLength) * coorDifference / ((4 * this.halfMaxConnectionLength) + coorDifference);
+            netSize = 2 * (5 * this.halfMaxConnectionLength) * coorDifference / ((5 * this.halfMaxConnectionLength) + coorDifference);
     	}else{
             netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
     	}
