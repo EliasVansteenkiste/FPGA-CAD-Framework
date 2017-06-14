@@ -25,6 +25,8 @@ abstract class Legalizer {
     protected int[] legalX, legalY;
     protected int[] heights;
 
+    private double quality;
+
     // Properties of the blockType that is currently being legalized
     protected BlockType blockType;
     protected BlockCategory blockCategory;
@@ -88,7 +90,7 @@ abstract class Legalizer {
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
         
-        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, this.visualizer, this.netBlocks);
+        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
             if(hardblockType.getCategory().equals(BlockCategory.HARDBLOCK) || hardblockType.getCategory().equals(BlockCategory.IO)){
@@ -129,9 +131,11 @@ abstract class Legalizer {
     	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
     }
 
-    void legalize(BlockCategory category) {    	
+    void legalize(BlockType legalizeType, double quality) {
+    	this.quality = quality;
+
         for(int i = 0; i < this.blockTypes.size(); i++) {
-        	if(this.blockTypes.get(i).getCategory().equals(category)){
+        	if(this.blockTypes.get(i).equals(legalizeType)){
         		this.legalizeBlockType(i);
         	}
         }
@@ -156,9 +160,9 @@ abstract class Legalizer {
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
             	this.legalizeBlockType(blocksStart, blocksEnd);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight);
+        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.quality);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
-        		this.hardblockLegalizer.legalizeIO(this.blockType);
+        		this.hardblockLegalizer.legalizeIO(this.blockType, this.quality);
         		for(int b = blocksStart; b < blocksEnd; b++){
         			this.linearX[b] = this.legalX[b];
         			this.linearY[b] = this.legalY[b];
