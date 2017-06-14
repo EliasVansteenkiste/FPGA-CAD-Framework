@@ -11,12 +11,12 @@ import place.placers.analytical.HardblockConnectionLegalizer.Column;
 import place.placers.analytical.HardblockConnectionLegalizer.Crit;
 import place.placers.analytical.HardblockConnectionLegalizer.Net;
 import place.placers.analytical.HardblockConnectionLegalizer.Site;
-import place.util.TimingTree;
 
 public class HardblockAnneal {
 	private Block[] blocks;
 	private Site[] sites;
 	
+	private double quality;
 	private final Set<Net> nets;
 	private final Set<Crit> crits;
 	
@@ -30,11 +30,8 @@ public class HardblockAnneal {
 	private final List<Double> costHistory;
 	
 	private final Random random;
-
-	private TimingTree timing;
 	
-	HardblockAnneal(TimingTree timing, int seed){
-		this.timing = timing;
+	HardblockAnneal(int seed){
 		this.random = new Random(seed);
 		
 		this.nets = new HashSet<>();
@@ -42,7 +39,7 @@ public class HardblockAnneal {
 		
 		this.costHistory = new ArrayList<>();
 	}
-	public void doAnneal(Column[] columns){
+	public void doAnneal(Column[] columns, double quality){
 		int numBlocks = 0;
 		int numSites = 0;
 		
@@ -63,30 +60,33 @@ public class HardblockAnneal {
 				this.sites[siteIndex++] = site;
 			}
 		}
-		
+
+		this.quality = quality;
+
 		this.doAnneal();
 	}
-	public void doAnneal(Column column){
+	public void doAnneal(Column column, double quality){
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.sites = column.sites;
-		
+
+		this.quality = quality;
+
 		this.doAnneal();
 	}
-	public void doAnneal(Block[] annealBlocks, Site[] annealSites){
+	public void doAnneal(Block[] annealBlocks, Site[] annealSites, double quality){
 		this.blocks = annealBlocks;
 		this.sites = annealSites;
+
+		this.quality = quality;
 
 		this.doAnneal();
 	}
 	private void doAnneal(){
-		this.timing.start("Anneal");
-		
 		boolean printStatistics = false;
 
 		this.numBlocks = this.blocks.length;
 		this.numSites = this.sites.length;
-		
-		this.timing.start("Find nets and crits");
+
 		this.nets.clear();
 		this.crits.clear();
 		for(Block block:this.blocks){
@@ -97,9 +97,7 @@ public class HardblockAnneal {
 				this.crits.add(crit);
 			}
 		}
-		this.timing.time("Find nets and crits");
-		
-		this.timing.start("Calculate cost");
+
 		this.cost = 0.0;
 		for(Net net:this.nets){
 			this.cost += net.connectionCost();
@@ -107,13 +105,10 @@ public class HardblockAnneal {
 		for(Crit crit:this.crits){
 			this.cost += crit.timingCost();
 		}
-		this.timing.time("Calculate cost");
 
-		this.timing.start("Initialize anneal");
 		this.temperature = this.calculateInitialTemperature();
 		this.movesPerTemperature = (int)Math.pow(this.numBlocks, 4/3);
-		this.timing.time("Initialize anneal");
-		
+
 		this.iteration = 0;
 
 		if(printStatistics){
@@ -124,8 +119,7 @@ public class HardblockAnneal {
 		
 		boolean finalIteration = false;
 		this.costHistory.clear();
-		
-		this.timing.start("Do anneal");
+
 		while(!finalIteration){
 			double numSwaps = this.doSwapIteration(this.movesPerTemperature, true);
 			double alpha = numSwaps / this.movesPerTemperature;
@@ -137,11 +131,9 @@ public class HardblockAnneal {
 			
 			finalIteration = this.finalIteration(this.cost);
 		}
-		this.timing.time("Do anneal");
 		
 		//CONTROL FUNCTIONALITY => TURN OFF IN FINAL VERSION!
 		boolean test1 = false;
-		boolean test2 = false;
 		
 		if(test1){
 			System.out.println("Warning: test1 is turned on");
@@ -159,8 +151,6 @@ public class HardblockAnneal {
 		}
 		
 		if(printStatistics) System.out.println();
-
-		this.timing.time("Anneal");
 	}
 	private boolean finalIteration(double cost){
 		this.costHistory.add(this.cost);
@@ -183,8 +173,8 @@ public class HardblockAnneal {
 			}
 			
 			double ratio = max / min;
-			
-			if(ratio < 1.0001){
+
+			if(ratio < 1 + this.quality){
 				return true;
 			}else{
 				return false;
