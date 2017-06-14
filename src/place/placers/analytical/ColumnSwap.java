@@ -8,45 +8,38 @@ import java.util.Set;
 import place.placers.analytical.HardblockConnectionLegalizer.Block;
 import place.placers.analytical.HardblockConnectionLegalizer.Column;
 import place.placers.analytical.HardblockConnectionLegalizer.Net;
-import place.util.TimingTree;
 
 public class ColumnSwap {
 	private Column[] columns;
-	
+
 	private final Set<Column> freeColumns;
 	private final Set<Column> overutilizedColumns;
-	
+
 	private final Set<Block> influencedBlocks;
-	
+
 	private final Map<Integer, double[]> costIncreaseTable;
-	
-	private TimingTree timing;
-	
-	ColumnSwap(TimingTree timing){
-		this.timing = timing;
-		
+
+	ColumnSwap(){
 		this.freeColumns = new HashSet<>();
 		this.overutilizedColumns = new HashSet<>();
 		this.influencedBlocks = new HashSet<>();
 		this.costIncreaseTable = new HashMap<>();
 	}
 	public void doSwap(Column[] columns){
-		this.timing.start("Column Swap");
-		
 		this.columns = columns;
-		
+
 		this.getFreeColumns();
 		this.getOverutilizedColumns();
-		
+
 		this.influencedBlocks.clear();
 		this.costIncreaseTable.clear();
-		
+
 		while(!this.overutilizedColumns.isEmpty()){
 			Column largestColumn = this.getLargestColumn();
-			
+
 			//Clear cost table
 			this.costIncreaseTable.clear();
-			
+
 			//Make cost table
 			for(Block block:largestColumn.blocks){
 				double currentCost = block.horizontalCost();
@@ -60,10 +53,10 @@ public class ColumnSwap {
 				}
 				this.costIncreaseTable.put(block.index, costMatrix);
 			}
-			
+
 			//Move blocks until the number of blocks is equal to the number of positions
 			while(largestColumn.usedPos() > largestColumn.numPos()){
-				
+
 				//Find the best block based on the cost table
 				Block bestBlock = null;
 				Column bestColumn = null;
@@ -96,7 +89,7 @@ public class ColumnSwap {
 				if(bestColumn.usedPos() == bestColumn.numPos()){
 					this.freeColumns.remove(bestColumn);
 				}
-				
+
 				//Update cost table
 				this.influencedBlocks.clear();
 				for(Net net: bestBlock.nets){
@@ -124,8 +117,7 @@ public class ColumnSwap {
 			}
 			this.overutilizedColumns.remove(largestColumn);
 		}
-		this.timing.time("Column Swap");
-		
+
 		//Update the column of each block
 		for(Column column:columns){
 			for(Block block:column.blocks){
