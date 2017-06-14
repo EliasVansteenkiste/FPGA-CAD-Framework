@@ -198,6 +198,9 @@ public class Main {
         	this.options.insertRandomPlacer();
         }
 
+        System.out.println("Before place we enfore garbage collection to clean up memory");
+        System.gc();
+
         // Loop through the placers
         int numPlacers = this.options.getNumPlacers();
         for(int placerIndex = 0; placerIndex < numPlacers; placerIndex++) {
@@ -308,6 +311,12 @@ public class Main {
         	numM144K = 0, 
         	numDSP = 0;
 
+        int numPins = 0;
+        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
+        	numPins += block.numClockPins();
+        	numPins += block.numInputPins();
+        	numPins += block.numOutputPins();
+        }
         for(BlockType blockType : BlockType.getBlockTypes()) {
 
             String name = blockType.getName();
@@ -343,7 +352,8 @@ public class Main {
 
         this.logger.printf("Number of blocks\n   clb: %d\n   lut: %d\n   ff: %d\n   io: %d\n   hardblock: %d\n      PLL: %d\n      DSP: %d\n      M9K: %d\n      M144K: %d\n\n",
                 numClb, numLut, numFf, numIo, numHardBlock, numPLL, numDSP, numM9K, numM144K);
-        
+        this.logger.println("   Dense: " + this.circuit.dense() + "\n");
+        this.logger.println("   Num pins: " + numPins + "\n");
     }
 
 
