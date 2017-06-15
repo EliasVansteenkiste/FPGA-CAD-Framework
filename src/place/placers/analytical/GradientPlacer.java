@@ -27,7 +27,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_BETA1 = "beta1",
         O_BETA2 = "beta2",
         O_EPS = "eps",
-        O_EFFORT_LEVEL = "effort level",
+        O_OUTER_EFFORT_LEVEL = "outer effort level",
+        O_INNER_EFFORT_LEVEL = "inner effort level",
         O_PRINT_OUTER_COST = "print outer cost",
         O_PRINT_INNER_COST = "print inner cost";
 
@@ -80,10 +81,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Double(10e-10));
 
         options.add(
-                O_EFFORT_LEVEL,
+                O_OUTER_EFFORT_LEVEL,
+                "number of solve-legalize iterations",
+                new Integer(40));
+
+        options.add(
+                O_INNER_EFFORT_LEVEL,
                 "number of gradient steps to take in each outer iteration",
-                new Integer(50));
- 
+                new Integer(40));
+
         options.add(
                 O_PRINT_OUTER_COST,
                 "print the WLD cost after each outer iteration",
@@ -105,7 +111,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     
     private double latestCost, minCost;
 
-    private final int effortLevel;
+    protected final int numIterations, effortLevel;
     protected double quality, qualityMultiplier;
 
     protected double tradeOff; // Only used by GradientPlacerTD
@@ -113,8 +119,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     private final boolean printInnerCost, printOuterCost;
     private CostCalculator costCalculator; // Only used if printOuterCost or printInnerCost is true
-
-    protected int numIterations;
 
     protected Legalizer legalizer;
     protected LinearSolverGradient solver;
@@ -142,8 +146,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = 0.0;
 
-    	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
-        this.numIterations = this.effortLevel;
+    	this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL);
+    	this.effortLevel = this.options.getInteger(O_INNER_EFFORT_LEVEL);
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
         this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / this.numIterations);
