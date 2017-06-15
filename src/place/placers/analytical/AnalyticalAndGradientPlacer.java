@@ -49,14 +49,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected List<Net> nets;
     protected List<TimingNet> timingNets;
 
+    private boolean[] solveSeparate;
+
     private static final String
         O_CRIT_LEARNING_RATE = "crit learning rate";
 
     public static void initOptions(Options options) {
         options.add(
                 O_CRIT_LEARNING_RATE,
-                "criticality learning rate of the critical connections",
-                new Double(0.4));
+                "criticality learning rate of the critical connections in sparce placement",
+                new Double(0.6));
     }
 
     protected final static String
@@ -79,10 +81,11 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void initializeIteration(int iteration);
     protected abstract void solveLinear();
     protected abstract void solveLegal();
-    protected abstract void solveLinear(BlockCategory category);
-    protected abstract void solveLegal(BlockCategory category);
+    protected abstract void solveLinear(BlockType category);
+    protected abstract void solveLegal(BlockType category);
     protected abstract void updateLegalIfNeeded();
     protected abstract boolean stopCondition(int iteration);
+    protected abstract int numIterations();
 
     protected abstract void printStatistics(int iteration, double time, int overlap);
 
@@ -155,7 +158,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     this.legalY[blockCounter] = row + (int) Math.floor(-offset);
                     this.heights[blockCounter] = height;
 
-                    this.netBlocks.put(block, new NetBlock(blockCounter, offset));
+                    this.netBlocks.put(block, new NetBlock(blockCounter, offset, blockType));
 
                     blockCounter++;
 
@@ -175,7 +178,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             int macroHeight = block.getMacro().getHeight();
             int offset = (1 - macroHeight) / 2 + block.getMacroOffsetY();
 
-            this.netBlocks.put(block, new NetBlock(sourceIndex, offset));
+            this.netBlocks.put(block, new NetBlock(sourceIndex, offset, macroSource.getType()));
             blockCounter++;
         }
 
@@ -228,6 +231,33 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
 
         this.numNets = this.nets.size();
+
+
+        //Separate solving
+        int numIterations = this.numIterations();
+        this.solveSeparate = new boolean[numIterations];
+        double nextFunctionValue = 0;
+
+        double priority = 0.75, fequency = 0.3, min = 5;
+
+        StringBuilder recalculationsString = new StringBuilder();
+        for(int i = 0; i < numIterations; i++) {
+            double functionValue = Math.pow((1. * i) / numIterations, 1. / priority);
+            if(functionValue >= nextFunctionValue) {
+                nextFunctionValue += 1.0 / (fequency * numIterations);
+                if(i > min){
+                	this.solveSeparate[i] = true;
+                	recalculationsString.append("|");
+                }else{
+                	this.solveSeparate[i] = false;
+                	recalculationsString.append(".");
+                }
+            } else {
+            	this.solveSeparate[i] = false;
+                recalculationsString.append(".");
+            }
+        }
+        System.out.println("Solve separate: " + recalculationsString + "\n");
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
@@ -303,19 +333,24 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             this.initializeIteration(iteration);
 
-            if(iteration % 2 == 0){
+            if(this.solveSeparate[iteration]){
+            	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
+                    this.solveLinear(blockType);
+                	this.solveLegal(blockType);
+                }
+                for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+                    this.solveLinear(blockType);
+                	this.solveLegal(blockType);
+                }
+                for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
+                    this.solveLinear(blockType);
+                	this.solveLegal(blockType);
+                }
+            }else{
             	this.solveLinear();
             	this.solveLegal();
-            }else{
-                this.solveLinear(BlockCategory.CLB);
-                this.solveLegal(BlockCategory.CLB);
-            	
-                this.solveLinear(BlockCategory.HARDBLOCK);
-            	this.solveLegal(BlockCategory.HARDBLOCK);
-            	
-            	this.solveLegal(BlockCategory.IO);
             }
-            
+
             this.updateLegalIfNeeded();
             
             this.addLinearPlacement(iteration);
@@ -514,13 +549,17 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         final int blockIndex;
         final float offset;
 
-        NetBlock(int blockIndex, float offset) {
+        final BlockType blockType;
+
+        NetBlock(int blockIndex, float offset, BlockType blockType) {
             this.blockIndex = blockIndex;
             this.offset = offset;
+
+            this.blockType = blockType;
         }
 
         NetBlock(TimingNetBlock timingNetBlock) {
-            this(timingNetBlock.blockIndex, timingNetBlock.offset);
+            this(timingNetBlock.blockIndex, timingNetBlock.offset, timingNetBlock.blockType);
         }
 
         public int getBlockIndex() {
@@ -553,20 +592,24 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         final int blockIndex;
         final float offset;
         final TimingEdge timingEdge;
-        
+
+        final BlockType blockType;
+
         double criticality, criticalityLearningRate;
 
-        TimingNetBlock(int blockIndex, float offset, TimingEdge timingEdge, double criticalityLearningRate) {
+        TimingNetBlock(int blockIndex, float offset, TimingEdge timingEdge, double criticalityLearningRate, BlockType blockType) {
             this.blockIndex = blockIndex;
             this.offset = offset;
             this.timingEdge = timingEdge;
             
             this.criticality = 0.0;
             this.criticalityLearningRate = criticalityLearningRate;
+
+            this.blockType = blockType;
         }
 
         TimingNetBlock(NetBlock block, TimingEdge timingEdge, double criticalityLearningRate) {
-            this(block.blockIndex, block.offset, timingEdge, criticalityLearningRate);
+            this(block.blockIndex, block.offset, timingEdge, criticalityLearningRate, block.blockType);
         }
         
         void updateCriticality(){
