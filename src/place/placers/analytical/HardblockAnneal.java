@@ -17,6 +17,8 @@ public class HardblockAnneal {
 	private Site[] sites;
 	
 	private double quality;
+	private double effortLevel;
+
 	private final Set<Net> nets;
 	private final Set<Crit> crits;
 	
@@ -26,7 +28,7 @@ public class HardblockAnneal {
 	private int movesPerTemperature;
 	private int iteration;
 	
-	private double cost;
+	private double cost, minimumCost;
 	private final List<Double> costHistory;
 	
 	private final Random random;
@@ -62,6 +64,7 @@ public class HardblockAnneal {
 		}
 
 		this.quality = quality;
+		this.effortLevel = 1.0;
 
 		this.doAnneal();
 	}
@@ -70,6 +73,7 @@ public class HardblockAnneal {
 		this.sites = column.sites;
 
 		this.quality = quality;
+		this.effortLevel = 1.0;
 
 		this.doAnneal();
 	}
@@ -78,6 +82,7 @@ public class HardblockAnneal {
 		this.sites = annealSites;
 
 		this.quality = quality;
+		this.effortLevel = Math.max(0.01 / quality, 1.0);
 
 		this.doAnneal();
 	}
@@ -105,9 +110,10 @@ public class HardblockAnneal {
 		for(Crit crit:this.crits){
 			this.cost += crit.timingCost();
 		}
+		this.minimumCost = this.cost;
 
 		this.temperature = this.calculateInitialTemperature();
-		this.movesPerTemperature = (int)Math.pow(this.numBlocks, 4/3);
+		this.movesPerTemperature = (int)Math.round(this.effortLevel * Math.pow(this.numBlocks, 4/3));
 
 		this.iteration = 0;
 
@@ -120,6 +126,10 @@ public class HardblockAnneal {
 		boolean finalIteration = false;
 		this.costHistory.clear();
 
+		for(Block block:this.blocks){
+			block.initializeOptimalSite();
+		}
+
 		while(!finalIteration){
 			double numSwaps = this.doSwapIteration(this.movesPerTemperature, true);
 			double alpha = numSwaps / this.movesPerTemperature;
@@ -129,8 +139,22 @@ public class HardblockAnneal {
 			this.updateTemperature(alpha);
 			this.iteration++;
 			
+			if(this.cost < this.minimumCost){
+				this.minimumCost = this.cost;
+				
+				for(Block block:this.blocks){
+					block.saveOptimalSite();
+				}
+			}
 			finalIteration = this.finalIteration(this.cost);
 		}
+		
+		if(this.minimumCost < this.cost){
+			for(Block block:this.blocks){
+				block.setOptimalSite();
+			}
+		}
+
 		
 		//CONTROL FUNCTIONALITY => TURN OFF IN FINAL VERSION!
 		boolean test1 = false;

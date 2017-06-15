@@ -388,6 +388,8 @@ public class HardblockConnectionLegalizer{
 		
 		Site site;
 		Column column;
+		
+		Site optimalSite;
 
 		Block(int index, float offset){
 			this.index = index;
@@ -509,6 +511,19 @@ public class HardblockConnectionLegalizer{
     	}
     	Site getSite(){
     		return this.site;
+    	}
+    	
+    	//Optimal site
+    	void initializeOptimalSite(){
+    		this.optimalSite = this.site;
+    	}
+    	void saveOptimalSite(){
+    		this.optimalSite = this.site;
+    	}
+    	void setOptimalSite(){
+    		this.site = this.optimalSite;
+    		this.setLegal(this.site.column, this.site.row);
+    		this.site.setBlock(this);
     	}
     	
 	    @Override
