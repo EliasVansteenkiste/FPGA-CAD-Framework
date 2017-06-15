@@ -6,23 +6,24 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
-import place.interfaces.Options.Required;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     private static final String
-    	O_MAX_CONN_LENGTH_RATIO = "max conn length ratio",
-        O_ANCHOR_WEIGHT_START = "anchor weight start",
-        O_ANCHOR_WEIGHT_STEP = "anchor weight step",
+        O_ANCHOR_WEIGHT_EXPONENT = "anchor weight exponent",
         O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
         O_LEARNING_RATE_START = "learning rate start",
         O_LEARNING_RATE_STOP = "learning rate stop",
+        O_MAX_CONN_LENGTH_RATIO_SPARSE = "max conn length ratio sparse",
+        O_MAX_CONN_LENGTH_DENSE = "max conn length dense",
         O_BETA1 = "beta1",
         O_BETA2 = "beta2",
         O_EPS = "eps",
@@ -34,35 +35,34 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         AnalyticalAndGradientPlacer.initOptions(options);
 
         options.add(
-                O_MAX_CONN_LENGTH_RATIO,
-                "maximum connection length is a ratio of circuit width",
-                new Double(0.5));
-        
-        options.add(
-                O_ANCHOR_WEIGHT_START,
-                "starting anchor weight",
-                new Double(0.0));
-
-        options.add(
-                O_ANCHOR_WEIGHT_STEP,
-                "value that is added to the anchor weight in each iteration (default: 1/effort level)",
-                Double.class,
-                Required.FALSE);
+                O_ANCHOR_WEIGHT_EXPONENT,
+                "anchor weight exponent",
+                new Double(2));
 
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
                 new Double(0.85));
-        
+
         options.add(
                 O_LEARNING_RATE_START,
                 "ratio of distance to optimal position that is moved",
-                new Double(0.6));
-        
+                new Double(1));
+
         options.add(
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
+                new Double(0.1));
+
+        options.add(
+                O_MAX_CONN_LENGTH_RATIO_SPARSE,
+                "maximum connection length in sparse placement is ratio of circuit width",
                 new Double(0.25));
+
+        options.add(
+                O_MAX_CONN_LENGTH_DENSE,
+                "maximum connection length in dense placement",
+                new Integer(30));
 
         options.add(
                 O_BETA1,
@@ -84,7 +84,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 "number of gradient steps to take in each outer iteration",
                 new Integer(50));
  
-
         options.add(
                 O_PRINT_OUTER_COST,
                 "print the WLD cost after each outer iteration",
@@ -98,7 +97,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
 
     protected double anchorWeight;
-    protected double anchorWeightStart, anchorWeightStop, anchorWeightStep;
+    protected final double anchorWeightStop, anchorWeightExponent;
 
     private final double maxConnectionLength;
     protected double learningRate, learningRateMultiplier;
@@ -107,6 +106,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private double latestCost, minCost;
 
     private final int effortLevel;
+    protected double quality, qualityMultiplier;
 
     protected double tradeOff; // Only used by GradientPlacerTD
     protected int critConn;
@@ -119,6 +119,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected Legalizer legalizer;
     protected LinearSolverGradient solver;
 
+    private Map<BlockType, boolean[]> netMap;
+    private boolean[] allTrue;
     private int[] netEnds;
     private int[] netBlockIndexes;
     private float[] netBlockOffsets;
@@ -136,24 +138,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         super(circuit, options, random, logger, visualizer);
 
-        this.anchorWeightStart = this.options.getDouble(O_ANCHOR_WEIGHT_START);
+        this.anchorWeightExponent = this.options.getDouble(O_ANCHOR_WEIGHT_EXPONENT);
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
-        this.anchorWeight = this.anchorWeightStart;
-
-        this.maxConnectionLength = this.circuit.getWidth() * this.options.getDouble(O_MAX_CONN_LENGTH_RATIO);
+        this.anchorWeight = 0.0;
 
     	this.effortLevel = this.options.getInteger(O_EFFORT_LEVEL);
-
-        if(!this.options.isSet(O_ANCHOR_WEIGHT_STEP)) {
-            this.options.set(O_ANCHOR_WEIGHT_STEP, new Double(0.7 / this.effortLevel));
-        }
-        this.anchorWeightStep = this.options.getDouble(O_ANCHOR_WEIGHT_STEP);
-
-        this.numIterations = (int) Math.ceil((this.anchorWeightStop - this.anchorWeightStart) / this.anchorWeightStep + 1);
+        this.numIterations = this.effortLevel;
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
         this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / this.numIterations);
-        this.learningRate /= this.learningRateMultiplier;
 
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
@@ -164,6 +157,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         
         this.latestCost = Double.MAX_VALUE;
         this.minCost = Double.MAX_VALUE;
+        
+        this.quality = 0.1;
+        this.qualityMultiplier = 0.9;
+
+        if(this.circuit.dense()) {
+        	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
+        } else {
+        	this.maxConnectionLength = this.circuit.getWidth() * this.options.getDouble(O_MAX_CONN_LENGTH_RATIO_SPARSE);
+        }
     }
 
     protected abstract void initializeIteration(int iteration);
@@ -194,6 +196,24 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int i = 0; i < this.numRealNets; i++) {
             netBlockSize += this.nets.get(i).blocks.length;
         }
+        
+
+
+        this.allTrue = new boolean[this.numRealNets];
+        Arrays.fill(this.allTrue, true);
+        this.netMap = new HashMap<>();
+        for(BlockType blockType:BlockType.getBlockTypes(BlockCategory.CLB)){
+        	this.netMap.put(blockType, new boolean[this.numRealNets]);
+        	Arrays.fill(this.netMap.get(blockType), false);
+        }
+        for(BlockType blockType:BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+        	this.netMap.put(blockType, new boolean[this.numRealNets]);
+        	Arrays.fill(this.netMap.get(blockType), false);
+        }
+        for(BlockType blockType:BlockType.getBlockTypes(BlockCategory.IO)){
+        	this.netMap.put(blockType, new boolean[this.numRealNets]);
+        	Arrays.fill(this.netMap.get(blockType), false);
+        }
 
         this.netEnds = new int[this.numRealNets];
         this.netBlockIndexes = new int[netBlockSize];
@@ -208,6 +228,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.netBlockOffsets[netBlockCounter] = block.offset;
 
                 netBlockCounter++;
+
+                this.netMap.get(block.blockType)[netCounter] = true;
             }
 
             this.netEnds[netCounter] = netBlockCounter;
@@ -243,27 +265,28 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 			this.fixBlockType(blockType);
 		}
 
-		this.doSolveLinear();
+		this.doSolveLinear(this.allTrue);
     }
     
     @Override
-    protected void solveLinear(BlockCategory category) {
+    protected void solveLinear(BlockType solveType) {
     	Arrays.fill(this.fixed, false);
 		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
 			this.fixBlockType(blockType);
 		}
 
-		if(category.equals(BlockCategory.CLB)){
-    		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+    	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
+    		if(!blockType.equals(solveType)){
     			this.fixBlockType(blockType);
     		}
-    	}else if(category.equals(BlockCategory.HARDBLOCK)){
-    		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
+    	}
+    	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+    		if(!blockType.equals(solveType)){
     			this.fixBlockType(blockType);
     		}
     	}
  
-		this.doSolveLinear();
+		this.doSolveLinear(this.netMap.get(solveType));
     }
 
     private void fixBlockType(BlockType fixBlockType){
@@ -274,7 +297,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
     }
-    private void doSolveLinear(){
+    private void doSolveLinear(boolean[] processNets){
 		for(int i = 0; i < this.legalX.length; i++){
 			if(this.fixed[i]){
 				this.coordinatesX[i] = this.legalizer.getLegalX(i);
@@ -286,7 +309,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 		}
 		
         for(int i = 0; i < this.effortLevel; i++) {
-            this.solveLinearIteration();
+            this.solveLinearIteration(processNets);
 
             //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), -1);
             
@@ -308,14 +331,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
-    protected void solveLinearIteration() {
+    protected void solveLinearIteration(boolean[] processNets) {
         this.startTimer(T_BUILD_LINEAR);
 
         // Set value of alpha and reset the solver
         this.solver.initializeIteration(this.anchorWeight, this.learningRate);
 
         // Process nets
-        this.processNets();
+        this.processNets(processNets);
 
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
@@ -332,7 +355,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_SOLVE_LINEAR);
     }
 
-    protected void processNets() {
+    protected void processNets(boolean[] processNet) {
         int numNets = this.netEnds.length;
 
         int netStart, netEnd = 0;
@@ -340,27 +363,31 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             netStart = netEnd;
             netEnd = this.netEnds[netIndex];
 
-            this.solver.processNet(netStart, netEnd);
+        	if(processNet[netIndex]){
+                this.solver.processNet(netStart, netEnd);
+        	}
         }
     }
     
     @Override
     protected void solveLegal() {
         this.startTimer(T_LEGALIZE);
-
-        this.legalizer.legalize(BlockCategory.CLB);
-        this.legalizer.legalize(BlockCategory.HARDBLOCK);
-        this.legalizer.legalize(BlockCategory.IO);
-
+        for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.CLB)){
+        	this.legalizer.legalize(legalizeType, this.quality);
+        }
+        for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+        	this.legalizer.legalize(legalizeType, this.quality);
+        }
+        for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.IO)){
+        	this.legalizer.legalize(legalizeType, this.quality);
+        }
         this.stopTimer(T_LEGALIZE);
     }
 
     @Override
-    protected void solveLegal(BlockCategory category) {
+    protected void solveLegal(BlockType legalizeType) {
         this.startTimer(T_LEGALIZE);
-
-        this.legalizer.legalize(category);
-
+        this.legalizer.legalize(legalizeType, this.quality);
         this.stopTimer(T_LEGALIZE);
     }
     
@@ -372,7 +399,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	
     	if(this.isTimingDriven()){
     		this.calculateTimingCost();
-    		this.latestCost = this.legalCost * this.timingCost;
+    		this.latestCost = Math.pow(this.legalCost, 1) * Math.pow(this.timingCost, 1);
     	}else{
     		this.latestCost = this.legalCost;
     	}
@@ -394,6 +421,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("it");
         titles.add("stepsize");
         titles.add("anchor");
+        titles.add("max conn length");
 
         if(this.printOuterCost) {
             titles.add("BB linear");
@@ -417,6 +445,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(Integer.toString(iteration));
         stats.add(String.format("%.3f", this.learningRate));
         stats.add(String.format("%.3f", this.anchorWeight));
+        stats.add(String.format("%.1f", this.maxConnectionLength));
 
         if(this.printOuterCost) {
             stats.add(String.format("%.0f", this.linearCost));
@@ -435,6 +464,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.printStats(stats.toArray(new String[0]));
     }
 
+    @Override
+    protected int numIterations() {
+    	return this.numIterations;
+    }
 
     @Override
     protected boolean stopCondition(int iteration) {

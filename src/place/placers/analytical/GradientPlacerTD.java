@@ -94,18 +94,20 @@ public class GradientPlacerTD extends GradientPlacer {
     	this.stopTimer(T_UPDATE_CRIT_CON);
 
         if(iteration > 0) {
-            this.anchorWeight += this.anchorWeightStep;
+            this.anchorWeight = Math.pow((double)iteration / this.numIterations * Math.pow(this.anchorWeightStop, 1.0/this.anchorWeightExponent), this.anchorWeightExponent);
+            this.learningRate *= this.learningRateMultiplier;
+            this.quality *= this.qualityMultiplier;
         }
-        this.learningRate *= this.learningRateMultiplier;
     }
 
     private void updateCriticalConnections() {
-    	
+
         for(TimingNet net : this.timingNets) {
             for(TimingNetBlock sink : net.sinks) {
             	sink.updateCriticality();
             }
         }
+
 
         this.criticalities.clear();
         for(TimingNet net : this.timingNets) {
@@ -138,16 +140,16 @@ public class GradientPlacerTD extends GradientPlacer {
             	}
             }
         }
-    	
+
         this.legalizer.updateCriticalConnections(this.criticalConnections);
-        
+
         this.critConn = this.criticalConnections.size();
     }
 
     @Override
-    protected void processNets() {
+    protected void processNets(boolean[] processNets) {
         // Process all nets wirelength driven
-        super.processNets();
+        super.processNets(processNets);
 
         // Process the most critical source-sink connections
         for(CritConn critConn:this.criticalConnections) {

@@ -25,8 +25,9 @@ public class GradientPlacerWLD extends GradientPlacer {
     protected void initializeIteration(int iteration) {
         if(iteration > 0) {
             this.anchorWeight += this.anchorWeightStep;
+            this.learningRate *= this.learningRateMultiplier;
+            this.quality *= this.qualityMultiplier;
         }
-        this.learningRate *= this.learningRateMultiplier;
     }
     
     public List<CritConn> getCriticalConnections(){
