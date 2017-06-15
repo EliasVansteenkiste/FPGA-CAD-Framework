@@ -531,6 +531,24 @@ public class Circuit {
     }
 
 
+    public boolean dense(){
+        int numCLB = 0;
+        int numCLBPos = 0;
+        for(BlockType clbType:BlockType.getBlockTypes(BlockCategory.CLB)){
+        	numCLB += this.getBlocks(clbType).size();
+        	numCLBPos += this.getColumnsPerBlockType(clbType).size() * this.getHeight();
+        }
+        double ratio = (double)numCLB / numCLBPos;
+        if(ratio > 0.45){
+        	return true;
+        }else {
+        	return false;
+        }
+    }
+    public boolean sparse(){
+    	return !this.dense();
+    }
+
 
     @Override
     public String toString() {
