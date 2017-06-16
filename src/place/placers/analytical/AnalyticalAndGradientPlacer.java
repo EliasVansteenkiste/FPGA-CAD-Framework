@@ -92,7 +92,12 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     @Override
     public void initializeData() {
-
+    	
+    	// GRADIENT PLACER VERSIONS
+    	System.out.println("LIQUID VERSIONS SINCE 15/06/2017");
+    	System.out.println("V1.0 POLYNOMAL LEARNING RATE, FAST DROP AT END");
+    	System.out.println("");
+    	
         this.startTimer(T_INITIALIZE_DATA);
 
         // Count the number of blocks

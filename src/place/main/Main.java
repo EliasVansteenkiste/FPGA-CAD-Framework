@@ -198,7 +198,7 @@ public class Main {
         	this.options.insertRandomPlacer();
         }
 
-        System.out.println("Before place we enfore garbage collection to clean up memory");
+        System.out.println("Garbage collection\n");
         System.gc();
 
         // Loop through the placers

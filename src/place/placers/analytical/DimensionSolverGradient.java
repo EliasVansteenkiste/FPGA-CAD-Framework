@@ -102,20 +102,17 @@ class DimensionSolverGradient {
     	double direction = this.directions[i];
     	double currentCoordinate = this.coordinates[i];
 
-    	double netGoal = currentCoordinate;
+    	double gradient;
     	if(direction > 0) {
-    		netGoal += this.totalPositiveNetSize[i] / this.numPositiveNets[i];
+    		gradient = this.totalPositiveNetSize[i] / this.numPositiveNets[i];
     	} else if(direction < 0) {
-    		netGoal -= this.totalNegativeNetSize[i] / this.numNegativeNets[i];
+    		gradient = - this.totalNegativeNetSize[i] / this.numNegativeNets[i];
     	} else {
     		return;
     	}
-    	
-    	double gradient;
+
     	if(this.legalIsSet){
-        	gradient = netGoal + this.pseudoWeight * (this.legalCoordinates[i] - netGoal) - currentCoordinate;
-        }else{
-        	gradient = netGoal - currentCoordinate;
+        	gradient = (1 - this.pseudoWeight) * gradient + this.pseudoWeight * (this.legalCoordinates[i] - currentCoordinate);
         }
 
         this.momentum[i] = this.beta1 * this.momentum[i] + (1 - this.beta1) * gradient;
