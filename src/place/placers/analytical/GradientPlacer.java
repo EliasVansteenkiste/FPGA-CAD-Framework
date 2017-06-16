@@ -53,7 +53,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
-                new Double(0.1));
+                new Double(0.2));
 
         options.add(
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
@@ -146,11 +146,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
         this.anchorWeight = 0.0;
 
-    	this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL);
+    	this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL) + 1;
     	this.effortLevel = this.options.getInteger(O_INNER_EFFORT_LEVEL);
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
-        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / this.numIterations);
+        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - 1.0));
 
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
@@ -311,7 +311,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 				this.coordinatesY[i] = this.linearY[i];
 			}
 		}
-		
+
         for(int i = 0; i < this.effortLevel; i++) {
             this.solveLinearIteration(processNets);
 
@@ -425,6 +425,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("it");
         titles.add("stepsize");
         titles.add("anchor");
+        titles.add("anneal Q");
         titles.add("max conn length");
 
         if(this.printOuterCost) {
@@ -449,6 +450,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(Integer.toString(iteration));
         stats.add(String.format("%.3f", this.learningRate));
         stats.add(String.format("%.3f", this.anchorWeight));
+        stats.add(String.format("%.5f", this.quality));
         stats.add(String.format("%.1f", this.maxConnectionLength));
 
         if(this.printOuterCost) {
