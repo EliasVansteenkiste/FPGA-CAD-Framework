@@ -22,7 +22,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_ANCHOR_WEIGHT_STOP = "anchor weight stop",
         O_LEARNING_RATE_START = "learning rate start",
         O_LEARNING_RATE_STOP = "learning rate stop",
-        O_LEARNING_RATE_EXPONENT = "learning rate exponent",
         O_MAX_CONN_LENGTH_RATIO_SPARSE = "max conn length ratio sparse",
         O_MAX_CONN_LENGTH_DENSE = "max conn length dense",
         O_BETA1 = "beta1",
@@ -55,11 +54,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
                 new Double(0.2));
-        
-        options.add(
-                O_LEARNING_RATE_EXPONENT,
-                "ratio of distance to optimal position that is moved",
-                new Double(2));
 
         options.add(
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
@@ -112,8 +106,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected final double anchorWeightStop, anchorWeightExponent;
 
     private final double maxConnectionLength;
-    protected final double learningRateStart, learningRateStop, learningRateExponent;
-    protected double learningRate;
+    protected double learningRate, learningRateMultiplier;
     private final double beta1, beta2, eps;
     
     private double latestCost, minCost;
@@ -157,10 +150,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	this.effortLevel = this.options.getInteger(O_INNER_EFFORT_LEVEL);
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
-        
-        this.learningRateStart = this.options.getDouble(O_LEARNING_RATE_START);
-        this.learningRateStop = this.options.getDouble(O_LEARNING_RATE_STOP);
-        this.learningRateExponent = this.options.getDouble(O_LEARNING_RATE_EXPONENT);
+        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - 1.0));
+
+
 
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
