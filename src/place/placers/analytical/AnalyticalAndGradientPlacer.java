@@ -58,7 +58,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         options.add(
                 O_CRIT_LEARNING_RATE,
                 "criticality learning rate of the critical connections in sparce placement",
-                new Double(0.6));
+                new Double(0.7));
     }
 
     protected final static String
@@ -92,11 +92,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     @Override
     public void initializeData() {
-    	
-    	// GRADIENT PLACER VERSIONS
-    	System.out.println("LIQUID VERSIONS SINCE 15/06/2017");
-    	System.out.println("V1.0 POLYNOMAL LEARNING RATE, FAST DROP AT END");
-    	System.out.println("");
     	
         this.startTimer(T_INITIALIZE_DATA);
 
