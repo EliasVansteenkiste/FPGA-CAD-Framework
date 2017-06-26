@@ -539,11 +539,13 @@ public class Circuit {
         	numCLBPos += this.getColumnsPerBlockType(clbType).size() * this.getHeight();
         }
         double ratio = (double)numCLB / numCLBPos;
-        if(ratio > 0.45){
-        	return true;
-        }else {
+        	
+        if(ratio < 0.4){
         	return false;
+        }else {
+        	return true;
         }
+
     }
     public boolean sparse(){
     	return !this.dense();
