@@ -14,9 +14,11 @@ import place.circuit.architecture.PortType;
 import place.circuit.block.AbstractBlock;
 import place.circuit.block.GlobalBlock;
 import place.circuit.block.LeafBlock;
+import place.circuit.exceptions.PlacementException;
 import place.circuit.pin.AbstractPin;
 import place.circuit.pin.LeafPin;
 import place.circuit.timing.TimingNode.Position;
+import place.placers.simulatedannealing.Swap;
 import place.util.Pair;
 
 public class TimingGraph {
@@ -33,6 +35,8 @@ public class TimingGraph {
 
     private List<TimingNode> timingNodes = new ArrayList<>();
     private List<TimingNode> rootNodes, leafNodes;
+    
+    private List<TimingNode> affectedNodes = new ArrayList<>();
 
     private List<TimingEdge> timingEdges  = new ArrayList<>();
     private List<List<TimingEdge>> timingNets = new ArrayList<>();
@@ -69,117 +73,6 @@ public class TimingGraph {
         this.setRootAndLeafNodes();
         
         this.cutCombLoop();
-    }
-
-    private void cutCombLoop(){
-
-    	long start = System.nanoTime();
-
-    	System.out.println("Cut combinational loops iteratively");
-
-    	int iteration = 0;
-    	boolean finalIteration = false;
-    	
-    	while(!finalIteration){
-
-    		int cutLoops = 0;
-    		finalIteration = true;
-
-    		//Initialize iteration
-        	this.index = 0;
-        	this.stack = new Stack<>();
-        	this.scc = new ArrayList<>();
-        	for(TimingNode v:this.timingNodes){
-        		v.reset();
-        	}
-
-        	//Find SCC
-        	for(TimingNode v:this.timingNodes){
-        		if(v.undefined()){
-        			strongConnect(v);
-        		}
-        	}
-
-        	//Analyze SCC
-        	for(SCC scc:this.scc){
-        		if(scc.size > 1){
-        			this.timingEdges.remove(scc.cutLoop());
-        			finalIteration = false;
-        			cutLoops++;
-        		}
-        	}
-        	
-        	System.out.println("\titeration " + iteration + " | " + cutLoops + " loops cut");
-    	}
-    	
-    	long end = System.nanoTime();
-    	double time = (end - start) * 1e-9;
-
-    	System.out.printf("\n\tcut loops took %.2f s\n\n", time);
-    }
-    private void strongConnect(TimingNode v){
-    	v.setIndex(this.index);
-    	v.setLowLink(this.index);
-    	this.index++;
-
-    	this.stack.add(v);
-    	v.putOnStack();
-
-    	for(TimingEdge e:v.getSinks()){
-    		TimingNode w = e.getSink();
-    		if(w.undefined()){
-    			strongConnect(w);
-    			
-    			int lowLink = Math.min(v.getLowLink(), w.getLowLink());
-    			v.setLowLink(lowLink);
-    		}else if(w.onStack()){
-    			int lowLink = Math.min(v.getLowLink(), w.getIndex());
-    			v.setLowLink(lowLink);
-    		}
-    	}
-    	
-    	if(v.getLowLink() == v.getIndex()){
-    		TimingNode w;
-    		SCC scc = new SCC();
-    		do{
-    			w = this.stack.pop();
-    			w.removeFromStack();
-    			scc.addElement(w);
-    		}while(w != v);
-    		this.scc.add(scc);
-    	}
-    }
-    
-    public class SCC {
-    	//Class for strongly connected component
-    	List<TimingNode> elements;
-    	int size;
-
-    	SCC(){
-    		this.elements = new ArrayList<>();
-    		this.size = 0;
-    	}
-
-    	void addElement(TimingNode v){
-    		this.elements.add(v);
-    		this.size++;
-    	}
-
-    	TimingEdge cutLoop(){
-    		TimingNode v = this.elements.get(this.elements.size()-1);
-
-    		for(TimingEdge e:v.getSinks()){
-    			TimingNode w = e.getSink();
-    			if(w == this.elements.get(this.elements.size()-2)){
-    	    		v.removeSink(e);
-    	    		w.removeSource(e);
-
-    	    		return e;
-    			}
-    		}
-    		System.out.println("Edge not cut correctly");
-    		return null;
-    	}
     }
 
     private void buildGraph() {
@@ -393,7 +286,6 @@ public class TimingGraph {
         }
     }
 
-    
     private void setRootAndLeafNodes(){
     	this.rootNodes = new ArrayList<>();
     	this.leafNodes = new ArrayList<>();
@@ -407,6 +299,121 @@ public class TimingGraph {
         }
     }
 
+    /****************************************************
+     * Functionality to find combinational loops with   *
+     * Tarjan's strongly connected components algorithm *
+     ****************************************************/
+    private void cutCombLoop(){
+
+    	long start = System.nanoTime();
+
+    	System.out.println("Cut combinational loops iteratively");
+
+    	int iteration = 0;
+    	boolean finalIteration = false;
+    	
+    	while(!finalIteration){
+
+    		int cutLoops = 0;
+    		finalIteration = true;
+
+    		//Initialize iteration
+        	this.index = 0;
+        	this.stack = new Stack<>();
+        	this.scc = new ArrayList<>();
+        	for(TimingNode v:this.timingNodes){
+        		v.reset();
+        	}
+
+        	//Find SCC
+        	for(TimingNode v:this.timingNodes){
+        		if(v.undefined()){
+        			strongConnect(v);
+        		}
+        	}
+
+        	//Analyze SCC
+        	for(SCC scc:this.scc){
+        		if(scc.size > 1){
+        			this.timingEdges.remove(scc.cutLoop());
+        			finalIteration = false;
+        			cutLoops++;
+        		}
+        	}
+        	
+        	System.out.println("\titeration " + iteration + " | " + cutLoops + " loops cut");
+    	}
+
+    	long end = System.nanoTime();
+    	double time = (end - start) * 1e-9;
+
+    	System.out.printf("\n\tcut loops took %.2f s\n\n", time);
+    }
+    private void strongConnect(TimingNode v){
+    	v.setIndex(this.index);
+    	v.setLowLink(this.index);
+    	this.index++;
+
+    	this.stack.add(v);
+    	v.putOnStack();
+
+    	for(TimingEdge e:v.getSinks()){
+    		TimingNode w = e.getSink();
+    		if(w.undefined()){
+    			strongConnect(w);
+    			
+    			int lowLink = Math.min(v.getLowLink(), w.getLowLink());
+    			v.setLowLink(lowLink);
+    		}else if(w.onStack()){
+    			int lowLink = Math.min(v.getLowLink(), w.getIndex());
+    			v.setLowLink(lowLink);
+    		}
+    	}
+    	
+    	if(v.getLowLink() == v.getIndex()){
+    		TimingNode w;
+    		SCC scc = new SCC();
+    		do{
+    			w = this.stack.pop();
+    			w.removeFromStack();
+    			scc.addElement(w);
+    		}while(w != v);
+    		this.scc.add(scc);
+    	}
+    }
+    
+    public class SCC {
+    	//Class for strongly connected component
+    	List<TimingNode> elements;
+    	int size;
+
+    	SCC(){
+    		this.elements = new ArrayList<>();
+    		this.size = 0;
+    	}
+
+    	void addElement(TimingNode v){
+    		this.elements.add(v);
+    		this.size++;
+    	}
+
+    	TimingEdge cutLoop(){
+    		TimingNode v = this.elements.get(this.elements.size()-1);
+
+    		for(TimingEdge e:v.getSinks()){
+    			TimingNode w = e.getSink();
+    			if(w == this.elements.get(this.elements.size()-2)){
+    	    		v.removeSink(e);
+    	    		w.removeSource(e);
+
+    	    		return e;
+    			}
+    		}
+    		System.out.println("Edge not cut correctly");
+    		return null;
+    	}
+    }
+
     /****************************************************************
      * These functions calculate the criticality of all connections *
      ****************************************************************/
@@ -416,8 +423,6 @@ public class TimingGraph {
             this.criticalityLookupTable[i] = Math.pow(i * 0.05, criticalityExponent);
         }
     }
-
-
 
     public double getMaxDelay() {
         return this.globalMaxDelay * 1e9;
@@ -474,13 +479,6 @@ public class TimingGraph {
                 int i = Math.min(19, (int) val);
                 double linearInterpolation = val - i;
 
-                if(i < 0){
-                	System.out.println(
-                			"source arrival " + edge.getSource().getArrivalTime() + "\n"
-                			+ "sink required " + edge.getSink().getRequiredTime() + "\n"
-                			+ "edge delay " + edge.getTotalDelay() + "\n"
-                			);
-                }
                 edge.setCriticality(
                         (1 - linearInterpolation) * this.criticalityLookupTable[i]
                         + linearInterpolation * this.criticalityLookupTable[i+1]);
@@ -490,25 +488,89 @@ public class TimingGraph {
 
     public void calculateWireDelays() {
     	for(TimingEdge edge:this.timingEdges){
-    		edge.calculateWireDelay();
+    		edge.setWireDelay(edge.calculateWireDelay());
     	}
     }
 
+    
+    /*************************************************
+     * Functions that facilitate simulated annealing *
+     *************************************************/
+    
     public double calculateTotalCost() {
-        double totalCost = 0;
+    	double totalCost = 0;
 
-        for(List<TimingEdge> net : this.timingNets) {
-            double netCost = 0;
-            for(TimingEdge edge : net) {
-                double cost = edge.getCost();
-                if(cost > netCost) {
-                    netCost = cost;
-                }
-            }
+    	for(List<TimingEdge> net : this.timingNets) {
+    		double netCost = 0;
+    		for(TimingEdge edge : net) {
+    			double cost = edge.getCost();
+    			if(cost > netCost) {
+    				netCost = cost;
+    			}
+    		}
+ 
+    		totalCost += netCost;
+    	}
 
-            totalCost += netCost;
-        }
+    	return totalCost;
+    }
 
-        return totalCost;
+    public double calculateDeltaCost(Swap swap) {
+    	double cost = 0;
+    	
+    	this.affectedNodes.clear();
+
+    	// Switch the positions of the blocks
+    	try {
+    		swap.apply();
+    	} catch(PlacementException e) {
+    		e.printStackTrace();
+    	}
+
+    	int numBlocks = swap.getNumBlocks();
+    	for(int i = 0; i < numBlocks; i++) {
+    		GlobalBlock block1 = swap.getBlock1(i);
+    		GlobalBlock block2 = swap.getBlock2(i);
+
+    		if(block1 != null) {
+    			cost += this.calculateDeltaCost(block1, block2);
+    		}
+    		if(block2 != null) {
+    			cost += this.calculateDeltaCost(block2, block1);
+    		}
+    	}
+
+
+
+    	// Put the blocks back in their original position
+    	try {
+    		swap.undoApply();
+    	} catch(PlacementException e) {
+    		e.printStackTrace();
+    	}
+
+    	return cost;
+    }
+
+    private double calculateDeltaCost(GlobalBlock block1, GlobalBlock block2) {
+    	List<TimingNode> nodes1 = block1.getTimingNodes();
+    	this.affectedNodes.addAll(nodes1);
+
+    	double cost = 0;
+    	for(TimingNode node : nodes1) {
+    		cost += node.calculateDeltaCost(block2);
+    	}
+
+    	return cost;
+    }
+
+    public void pushThrough() {
+    	for(TimingNode node : this.affectedNodes) {
+    		node.pushThrough();
+    	}
+    }
+
+    public void revert() {
+    	// Do nothing
     }
 }

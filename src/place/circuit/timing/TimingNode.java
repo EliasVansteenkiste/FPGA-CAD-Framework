@@ -21,10 +21,10 @@ public class TimingNode {
     private final ArrayList<TimingEdge> sourceEdges = new ArrayList<>();
     private final ArrayList<TimingEdge> sinkEdges = new ArrayList<>();
     private int numSources = 0, numSinks = 0;
-    
+
     private double arrivalTime, requiredTime;
     private boolean hasArrivalTime, hasRequiredTime;
-    
+
     //Tarjan's strongly connected components algorithm
     private int index;
     private int lowLink;
@@ -58,7 +58,6 @@ public class TimingNode {
         return this.position;
     }
 
-
     private void addSource(TimingNode source, TimingEdge edge) {
         this.sourceEdges.add(edge);
         this.numSources++;
@@ -73,7 +72,7 @@ public class TimingNode {
 
         return edge;
     }
-    
+
     void removeSource(TimingEdge source){
     	if(this.sourceEdges.contains(source)){
     		this.sourceEdges.remove(source);
@@ -81,7 +80,6 @@ public class TimingNode {
     	}else{
     		System.out.println("This node does not contain source edge");
     	}
-    	
     }
     void removeSink(TimingEdge sink){
     	if(this.sinkEdges.contains(sink)){
@@ -91,8 +89,6 @@ public class TimingNode {
     		System.out.println("This sink does not contain sink edge");
     	}
     }
-    
-    
 
     public List<TimingEdge> getSources() {
         return this.sourceEdges;
@@ -115,7 +111,7 @@ public class TimingNode {
         return this.sinkEdges.get(sinkIndex);
     }
 
-
+    //Arrival time
     void resetArrivalTime() {
         this.hasArrivalTime = false;
     }
@@ -129,7 +125,6 @@ public class TimingNode {
     double getArrivalTime() {
     	return this.arrivalTime;
     }
-
 	double recursiveArrivalTime() {
 		if(this.hasArrivalTime()) {
 			return this.getArrivalTime();
@@ -146,6 +141,7 @@ public class TimingNode {
 		}		
 	}
 
+	//Required time
     void resetRequiredTime() {
     	this.hasRequiredTime = false;
     }
@@ -175,7 +171,10 @@ public class TimingNode {
     	}
     }
 
-    //Tarjan's strongly connected components algorithm
+
+   /****************************************************
+    * Tarjan's strongly connected components algorithm *
+    ****************************************************/
     void reset(){
     	this.index = -1;
     	this.lowLink = -1;
@@ -205,6 +204,57 @@ public class TimingNode {
     boolean onStack(){
     	return this.onStack;
     }
+
+
+    /*************************************************
+     * Functions that facilitate simulated annealing *
+     *************************************************/
+
+    double calculateDeltaCost(GlobalBlock otherBlock) {
+    	/*
+    	 * When this method is called, we assume that this block and
+    	 * the block with which this block will be swapped, already
+    	 * have their positions updated (temporarily).
+    	 */
+    	double cost = 0;
+
+    	for(int sinkIndex = 0; sinkIndex < this.numSinks; sinkIndex++) {
+    		TimingEdge edge = this.sinkEdges.get(sinkIndex);
+    		TimingNode sink = edge.getSink();
+
+    		cost += this.calculateDeltaCost(sink, edge);
+    	}
+
+    	for(int sourceIndex = 0; sourceIndex < this.numSources; sourceIndex++) {
+    		TimingEdge edge = this.sourceEdges.get(sourceIndex);
+    		TimingNode source = edge.getSource();
+
+    		if(source.globalBlock != otherBlock) {
+    			cost += this.calculateDeltaCost(source, edge);
+    		}
+    	}
+
+    	return cost;
+    }
+    private double calculateDeltaCost(TimingNode otherNode, TimingEdge edge){
+    	if(otherNode.globalBlock == this.globalBlock){
+    		edge.resetStagedDelay();
+    		return 0;
+    	}else{
+    		edge.setStagedWireDelay(edge.calculateWireDelay());
+    		return edge.getDeltaCost();
+    	}
+    }
+
+    void pushThrough(){
+    	for(TimingEdge edge : this.sinkEdges){
+    		edge.pushThrough();
+    	}
+    	for(TimingEdge edge : this.sourceEdges){
+    		edge.pushThrough();
+    	}
+    }
+
 
     @Override
     public String toString() {
