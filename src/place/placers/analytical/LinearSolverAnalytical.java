@@ -1,51 +1,44 @@
 package place.placers.analytical;
 
+import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
-import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNet;
-import place.placers.analytical.AnalyticalAndGradientPlacer.TimingNetBlock;
 
 class LinearSolverAnalytical {
 
     private double[] coordinatesX, coordinatesY;
-    private int numIOBlocks;
-
     private DimensionSolverAnalytical solverX, solverY;
-    private double criticalityThreshold, tradeOff;
+
+    private boolean[] fixed;
 
     LinearSolverAnalytical(
             double[] coordinatesX,
             double[] coordinatesY,
-            int numIOBlocks,
             double pseudoWeight,
-            double criticalityThreshold,
-            double tradeOff,
-            double epsilon) {
+            double epsilon,
+            boolean[] fixed) {
 
         this.coordinatesX = coordinatesX;
         this.coordinatesY = coordinatesY;
 
-        this.numIOBlocks = numIOBlocks;
+        this.fixed = fixed;
 
-        this.criticalityThreshold = criticalityThreshold;
-        this.tradeOff = tradeOff;
-
-        this.solverX = new DimensionSolverAnalytical(coordinatesX, numIOBlocks, pseudoWeight, epsilon);
-        this.solverY = new DimensionSolverAnalytical(coordinatesY, numIOBlocks, pseudoWeight, epsilon);
+        this.solverX = new DimensionSolverAnalytical(coordinatesX, pseudoWeight, epsilon, fixed);
+        this.solverY = new DimensionSolverAnalytical(coordinatesY, pseudoWeight, epsilon, fixed);
     }
 
 
     void addPseudoConnections(int[] legalX, int[] legalY) {
         int numBlocks = this.coordinatesX.length;
-        for(int blockIndex = this.numIOBlocks; blockIndex < numBlocks; blockIndex++) {
-            this.solverX.addPseudoConnection(blockIndex, legalX[blockIndex]);
-            this.solverY.addPseudoConnection(blockIndex, legalY[blockIndex]);
+        for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
+        	if(!this.isFixed(blockIndex)){
+                this.solverX.addPseudoConnection(blockIndex, legalX[blockIndex]);
+                this.solverY.addPseudoConnection(blockIndex, legalY[blockIndex]);
+        	}
         }
     }
 
-
     void processNetWLD(Net net) {
-
         int numNetBlocks = net.blocks.length;
         double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks) / (numNetBlocks - 1);
 
@@ -59,7 +52,6 @@ class LinearSolverAnalytical {
                    offset2 = block2.offset;
             boolean fixed1 = this.isFixed(blockIndex1),
                     fixed2 = this.isFixed(blockIndex2);
-
 
             this.solverX.addConnection(
                     fixed1, blockIndex1, this.coordinatesX[blockIndex1], 0,
@@ -159,43 +151,26 @@ class LinearSolverAnalytical {
         }
     }
 
+    void processNetTD(CritConn critConn){
+        boolean sourceFixed = this.isFixed(critConn.sourceIndex);
+        boolean sinkFixed = this.isFixed(critConn.sinkIndex);
 
-    void processNetTD(TimingNet net) {
-        int numSinks = net.sinks.length;
-        int sourceIndex = net.source.blockIndex;
-        double sourceOffset = net.source.offset;
+        this.solverX.addConnection(
+                sourceFixed, critConn.sourceIndex, this.coordinatesX[critConn.sourceIndex], 0,
+                sinkFixed, critConn.sinkIndex, this.coordinatesX[critConn.sinkIndex], 0,
+                critConn.weight);
 
-        for(TimingNetBlock sink : net.sinks) {
-            double criticality = sink.timingEdge.getCriticality();
-
-            if(criticality > this.criticalityThreshold) {
-                double weight = this.tradeOff / numSinks * criticality;
-
-                int sinkIndex = sink.blockIndex;
-                double sinkOffset = sink.offset;
-
-                boolean sourceFixed = this.isFixed(sourceIndex);
-                boolean sinkFixed = this.isFixed(sinkIndex);
-
-                this.solverX.addConnection(
-                        sourceFixed, sourceIndex, this.coordinatesX[sourceIndex], 0,
-                        sinkFixed, sinkIndex, this.coordinatesX[sinkIndex], 0,
-                        weight);
-
-                this.solverY.addConnection(
-                        sourceFixed, sourceIndex, this.coordinatesY[sourceIndex] + sourceOffset, sourceOffset,
-                        sinkFixed, sinkIndex, this.coordinatesY[sinkIndex] + sinkOffset, sinkOffset,
-                        weight);
-            }
-        }
+        this.solverY.addConnection(
+                sourceFixed, critConn.sourceIndex, this.coordinatesY[critConn.sourceIndex] + critConn.sourceOffset, critConn.sourceOffset,
+                sinkFixed, critConn.sinkIndex, this.coordinatesY[critConn.sinkIndex] + critConn.sinkOffset, critConn.sinkOffset,
+                critConn.weight);
     }
 
-
-    private boolean isFixed(int blockIndex) {
-        return blockIndex < this.numIOBlocks;
+    private boolean isFixed(int blockIndex){
+        return this.fixed[blockIndex];
     }
 
-    void solve() {
+    void solve(){
         this.solverX.solve();
         this.solverY.solve();
     }

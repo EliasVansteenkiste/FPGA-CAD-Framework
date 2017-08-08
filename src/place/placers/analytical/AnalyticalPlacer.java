@@ -1,31 +1,32 @@
 package place.placers.analytical;
 
 import place.circuit.Circuit;
+import place.circuit.architecture.BlockCategory;
+import place.circuit.architecture.BlockType;
+import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.visual.PlacementVisualizer;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
     private static final double EPSILON = 0.005;
 
-    private double ratio;
-
     private static final String
-        O_STOP_RATIO = "stop ratio",
-        O_ANCHOR_WEIGHT = "anchor weight",
-        O_ANCHOR_WEIGHT_MULTIPLIER = "anchor weight multiplier";
+    	O_ANCHOR_WEIGHT = "anchor weight",
+    	O_ANCHOR_WEIGHT_MULTIPLIER = "anchor weight multiplier",
+
+    	O_OUTER_EFFORT_LEVEL = "outer effort level";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
-
-        options.add(
-                O_STOP_RATIO,
-                "ratio between linear and legal cost to stop placement",
-                new Double(0.9));
 
         options.add(
                 O_ANCHOR_WEIGHT,
@@ -34,34 +35,60 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         options.add(
                 O_ANCHOR_WEIGHT_MULTIPLIER,
-                "anchor weight multiplier in each iteration",
+                "anchor weight multiplier",
                 new Double(1.1));
+
+        options.add(
+                O_OUTER_EFFORT_LEVEL,
+                "number of solve-legalize iterations",
+                new Integer(40));
     }
 
+    protected double anchorWeight;
+    protected final double anchorWeightMultiplier;
 
-    private double stopRatio, anchorWeight, anchorWeightMultiplier;
-    protected double criticalityThreshold, tradeOff; // This is only used by AnalyticalPlacerTD
+    private double latestCost, minCost;
 
-    private double linearCost;
-    protected double legalCost = Double.MAX_VALUE;
+    protected int numIterations;
 
-    private Legalizer legalizer;
+    // This is only used by AnalyticalPlacerTD
+    protected double tradeOff;
+    protected List<CritConn> criticalConnections;
+
     protected CostCalculator costCalculator;
 
+    protected Legalizer legalizer;
+    protected LinearSolverAnalytical solver;
 
-    public AnalyticalPlacer(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
+    private Map<BlockType, boolean[]> netMap;
+    private boolean[] allTrue;
+
+    protected boolean[] fixed;
+    private double[] coordinatesX;
+    private double[] coordinatesY;
+
+    public AnalyticalPlacer(
+    		Circuit circuit, 
+    		Options options, 
+    		Random random, 
+    		Logger logger, 
+    		PlacementVisualizer visualizer){
+
         super(circuit, options, random, logger, visualizer);
 
-        this.stopRatio = options.getDouble(O_STOP_RATIO);
+        this.anchorWeight = this.options.getDouble(O_ANCHOR_WEIGHT);
+        this.anchorWeightMultiplier = this.options.getDouble(O_ANCHOR_WEIGHT_MULTIPLIER);
 
-        this.anchorWeight = options.getDouble(O_ANCHOR_WEIGHT);
-        this.anchorWeightMultiplier = options.getDouble(O_ANCHOR_WEIGHT_MULTIPLIER);
+        this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL) + 1;
+
+        this.latestCost = Double.MAX_VALUE;
+        this.minCost = Double.MAX_VALUE;
+
+        this.criticalConnections = new ArrayList<>();
     }
 
-
-    protected abstract CostCalculator createCostCalculator();
-    protected abstract void updateLegalIfNeeded(int[] x, int[] y);
-
+    protected abstract void initializeIteration(int iteration);
+    protected abstract void calculateTimingCost();
 
     @Override
     public void initializeData() {
@@ -69,6 +96,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
+        //Legalizer
         this.legalizer = new HeapLegalizer(
                 this.circuit,
                 this.blockTypes,
@@ -80,123 +108,245 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.heights,
                 this.visualizer,
                 this.nets,
-                this.timingNets,
                 this.netBlocks);
+        this.legalizer.setQuality(0.1, 0.9);
 
-        this.costCalculator = this.createCostCalculator();
+        //Make a list of all the nets for each blockType
+        this.allTrue = new boolean[this.numRealNets];
+        Arrays.fill(this.allTrue, true);
+
+        this.netMap = new HashMap<>();
+        for(BlockType blockType:BlockType.getBlockTypes(BlockCategory.CLB)){
+        	this.netMap.put(blockType, new boolean[this.numRealNets]);
+        	Arrays.fill(this.netMap.get(blockType), false);
+        }
+        for(BlockType blockType:BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+        	this.netMap.put(blockType, new boolean[this.numRealNets]);
+        	Arrays.fill(this.netMap.get(blockType), false);
+        }
+        for(BlockType blockType:BlockType.getBlockTypes(BlockCategory.IO)){
+        	this.netMap.put(blockType, new boolean[this.numRealNets]);
+        	Arrays.fill(this.netMap.get(blockType), false);
+        }
+
+        for(int netCounter = 0; netCounter < this.numRealNets; netCounter++) {
+            Net net = this.nets.get(netCounter);
+            for(NetBlock block : net.blocks) {
+                this.netMap.get(block.blockType)[netCounter] = true;
+            }
+        }
+
+        this.fixed = new boolean[this.legalX.length];
+
+    	this.coordinatesX = new double[this.legalX.length];
+    	this.coordinatesY = new double[this.legalY.length];
+
+    	this.costCalculator = new CostCalculatorWLD(this.nets);
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
 
     @Override
     protected void solveLinear(int iteration) {
-    	
-        if(iteration > 0) {
-            this.anchorWeight *= this.anchorWeightMultiplier;
-        }
+    	Arrays.fill(this.fixed, false);
+		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
+			this.fixBlockType(blockType);
+		}
 
-        int innerIterations = iteration == 0 ? 5 : 1;
-        for(int i = 0; i < innerIterations; i++) {
-
-            LinearSolverAnalytical solver = new LinearSolverAnalytical(
-                    this.linearX,
-                    this.linearY,
-                    this.numIOBlocks,
-                    this.anchorWeight,
-                    this.criticalityThreshold,
-                    this.tradeOff,
-                    AnalyticalPlacer.EPSILON);
-            this.solveLinearIteration(solver, iteration);
-        }
-
-        this.startTimer(T_CALCULATE_COST);
-        this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-        this.stopTimer(T_CALCULATE_COST);
+    	this.doSolveLinear(this.allTrue, iteration);
     }
 
-    protected void solveLinearIteration(LinearSolverAnalytical solver, int iteration) {
+    @Override
+    protected void solveLinear(BlockType solveType, int iteration) {
+    	Arrays.fill(this.fixed, false);
+		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
+			this.fixBlockType(blockType);
+		}
+
+    	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
+    		if(!blockType.equals(solveType)){
+    			this.fixBlockType(blockType);
+    		}
+    	}
+    	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+    		if(!blockType.equals(solveType)){
+    			this.fixBlockType(blockType);
+    		}
+    	}
+
+    	this.doSolveLinear(this.netMap.get(solveType), iteration);
+    }
+
+    private void fixBlockType(BlockType fixBlockType){
+    	for(GlobalBlock block:this.netBlocks.keySet()){
+    		if(block.getType().equals(fixBlockType)){
+    			int blockIndex = this.netBlocks.get(block).getBlockIndex();
+    			this.fixed[blockIndex] = true;
+    		}
+    	}
+    }
+
+    protected void doSolveLinear(boolean[] processNets, int iteration){
+		for(int i = 0; i < this.legalX.length; i++){
+			if(this.fixed[i]){
+				this.coordinatesX[i] = this.legalizer.getLegalX(i);
+				this.coordinatesY[i] = this.legalizer.getLegalY(i);
+			}else{
+				this.coordinatesX[i] = this.linearX[i];
+				this.coordinatesY[i] = this.linearY[i];
+			}
+		}
+
+    	int innerIterations = iteration == 0 ? 5 : 1;
+        for(int i = 0; i < innerIterations; i++) {
+
+            this.solver = new LinearSolverAnalytical(
+                    this.coordinatesX,
+                    this.coordinatesY,
+                    this.anchorWeight,
+                    AnalyticalPlacer.EPSILON,
+                    this.fixed);
+            this.solveLinearIteration(processNets, iteration);
+        }
+
+		for(int i = 0; i < this.legalX.length; i++){
+			if(!this.fixed[i]){
+				this.linearX[i] = this.coordinatesX[i];
+				this.linearY[i] = this.coordinatesY[i];
+			}
+		}
+    }
+    protected void solveLinearIteration(boolean[] processNets, int iteration) {
 
         this.startTimer(T_BUILD_LINEAR);
 
         // Add connections between blocks that are connected by a net
-        this.processNetsWLD(solver);
-
-        this.processNetsTD(solver);
+        this.processNetsWLD(processNets);
+        
+        this.processNetsTD();
 
         // Add pseudo connections
         if(iteration > 0) {
             // this.legalX and this.legalY store the solution with the lowest cost
             // For anchors, the last (possibly suboptimal) solution usually works better
-            solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+            this.solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
         }
 
         this.stopTimer(T_BUILD_LINEAR);
 
-
         // Solve and save result
         this.startTimer(T_SOLVE_LINEAR);
-        solver.solve();
+        this.solver.solve();
         this.stopTimer(T_SOLVE_LINEAR);
     }
 
-    protected void processNetsWLD(LinearSolverAnalytical solver) {
-        for(Net net : this.nets) {
-            solver.processNetWLD(net);
+    protected void processNetsWLD(boolean[] processNet) {
+        for(Net net : this.nets){
+            this.solver.processNetWLD(net);
         }
     }
-
-    protected void processNetsTD(LinearSolverAnalytical solver) {
-        // If the Placer is not timing driven, this.timingNets is empty
-        int numNets = this.timingNets.size();
-        for(int netIndex = 0; netIndex < numNets; netIndex++) {
-            solver.processNetTD(this.timingNets.get(netIndex));
+    protected void processNetsTD() {
+        for(CritConn critConn:this.criticalConnections){
+        	this.solver.processNetTD(critConn);
         }
     }
 
     @Override
-    protected void solveLegal(int iteration) {
+    protected void solveLegal() {
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(1);
+        for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.CLB)){
+        	this.legalizer.legalize(legalizeType);
+        }
+        for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+        	this.legalizer.legalize(legalizeType);
+        }
+        for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.IO)){
+        	this.legalizer.legalize(legalizeType);
+        }
         this.stopTimer(T_LEGALIZE);
+    }
 
-        int[] newLegalX = this.legalizer.getLegalX();
-        int[] newLegalY = this.legalizer.getLegalY();
-        this.updateLegalIfNeeded(newLegalX, newLegalY);
-        this.ratio = this.linearCost / this.legalCost;
+    @Override
+    protected void solveLegal(BlockType legalizeType) {
+        this.startTimer(T_LEGALIZE);
+        this.legalizer.legalize(legalizeType);
+        this.stopTimer(T_LEGALIZE);
     }
     
     @Override
-    protected void initializeIteration(int iteration){
-    	//DO NOTHING
+    protected void updateLegalIfNeeded(){
+    	this.startTimer(T_UPDATE_CIRCUIT);
+    	
+    	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
+        this.legalCost = this.costCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+    	
+    	if(this.isTimingDriven()){
+    		this.calculateTimingCost();
+    		this.latestCost = Math.pow(this.legalCost, 1) * Math.pow(this.timingCost, 1);
+    	}else{
+    		this.latestCost = this.legalCost;
+    	}
+
+    	if(this.latestCost < this.minCost){
+    		this.minCost = this.latestCost;
+    		this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+    	}
+    	this.stopTimer(T_UPDATE_CIRCUIT);
     }
-
-    @Override
-    protected boolean stopCondition(int iteration) {
-        return this.ratio > this.stopRatio;
-    }
-
-
 
     @Override
     protected void addStatTitles(List<String> titles) {
-        titles.add("iteration");
-        titles.add("anchor weight");
-        titles.add("linear cost");
-        titles.add("legal cost");
-        titles.add("time");
-        titles.add("displacement");
+        titles.add("it");
+        titles.add("anchor");
+        titles.add("anneal Q");
+        
+        //Wirelength cost
+        titles.add("BB linear");
+        titles.add("BB legal");
+        
+        //Timing cost
+        if(this.isTimingDriven()){
+        	titles.add("max delay");
+        }
+        
+        titles.add("best");
+        titles.add("time (ms)");
+        titles.add("crit conn");
         titles.add("overlap");
     }
 
     @Override
-    protected void printStatistics(int iteration, double time, double displacement, int overlap) {
-        this.printStats(
-                Integer.toString(iteration),
-                String.format("%.2f", this.anchorWeight),
-                String.format("%.5g", this.linearCost),
-                String.format("%.5g", this.legalCost),
-                String.format("%.3g", time),
-                String.format("%.2f", displacement),
-                String.format("%d",   overlap));
+    protected void printStatistics(int iteration, double time, int overlap) {
+    	List<String> stats = new ArrayList<>();
+
+    	stats.add(Integer.toString(iteration));
+    	stats.add(String.format("%.2f", this.anchorWeight));
+    	stats.add(String.format("%.5g", this.legalizer.getQuality()));
+
+        //Wirelength cost
+        stats.add(String.format("%.0f", this.linearCost));
+        stats.add(String.format("%.0f", this.legalCost));
+
+        //Timing cost
+        if(this.isTimingDriven()){
+        	stats.add(String.format("%.4g", this.timingCost));
+        }
+
+        stats.add(this.latestCost == this.minCost ? "yes" : "");
+        stats.add(String.format("%.0f", time*Math.pow(10, 3)));
+        stats.add(String.format("%d", this.criticalConnections.size()));
+    	stats.add(String.format("%d", overlap));
+
+    	this.printStats(stats.toArray(new String[0]));
+    }
+
+    @Override
+    protected int numIterations() {
+    	return this.numIterations;
+    }
+
+    @Override
+    protected boolean stopCondition(int iteration) {
+    	return iteration + 1 >= this.numIterations;
     }
 }
