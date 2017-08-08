@@ -79,9 +79,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract boolean isTimingDriven();
     
     protected abstract void initializeIteration(int iteration);
-    protected abstract void solveLinear();
+    protected abstract void solveLinear(int iteration);
     protected abstract void solveLegal();
-    protected abstract void solveLinear(BlockType category);
+    protected abstract void solveLinear(BlockType category, int iteration);
     protected abstract void solveLegal(BlockType category);
     protected abstract void updateLegalIfNeeded();
     protected abstract boolean stopCondition(int iteration);
@@ -335,19 +335,19 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             if(this.solveSeparate[iteration]){
             	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
-                    this.solveLinear(blockType);
+                    this.solveLinear(blockType, iteration);
                 	this.solveLegal(blockType);
                 }
                 for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
-                    this.solveLinear(blockType);
+                    this.solveLinear(blockType, iteration);
                 	this.solveLegal(blockType);
                 }
                 for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
-                    this.solveLinear(blockType);
+                    this.solveLinear(blockType, iteration);
                 	this.solveLegal(blockType);
                 }
             }else{
-            	this.solveLinear();
+            	this.solveLinear(iteration);
             	this.solveLegal();
             }
 
@@ -646,5 +646,21 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.source = source;
             this.sinks = new TimingNetBlock[numSinks];
         }
+    }
+    
+    class CritConn{
+    	final int sourceIndex, sinkIndex;
+    	final float sourceOffset, sinkOffset;
+    	final float weight;
+    	
+    	CritConn(int sourceIndex, int sinkIndex, float sourceOffset, float sinkOffset, float weight) {
+    		this.sourceIndex = sourceIndex;
+    		this.sinkIndex = sinkIndex;
+    		
+    		this.sourceOffset = sourceOffset;
+    		this.sinkOffset = sinkOffset;
+
+    		this.weight = weight;
+    	}
     }
 }

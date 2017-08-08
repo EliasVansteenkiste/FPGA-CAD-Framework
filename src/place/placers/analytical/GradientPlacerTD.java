@@ -46,8 +46,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
     private static String
         T_UPDATE_CRIT_CON = "update critical connections";
-    
-    private List<CritConn> criticalConnections = new ArrayList<>();
+
     private List<Double> criticalities = new ArrayList<>();
 
     private double criticalityExponent, criticalityThreshold, maxPerCritEdge;
@@ -96,7 +95,7 @@ public class GradientPlacerTD extends GradientPlacer {
         if(iteration > 0) {
             this.anchorWeight = Math.pow((double)iteration / (this.numIterations - 1.0), this.anchorWeightExponent) * this.anchorWeightStop;
             this.learningRate *= this.learningRateMultiplier;
-            this.quality *= this.qualityMultiplier;
+            this.legalizer.increaseQuality();
         }
     }
 
@@ -107,7 +106,6 @@ public class GradientPlacerTD extends GradientPlacer {
             	sink.updateCriticality();
             }
         }
-
 
         this.criticalities.clear();
         for(TimingNet net : this.timingNets) {
@@ -134,7 +132,7 @@ public class GradientPlacerTD extends GradientPlacer {
             for(TimingNetBlock sink : net.sinks) {
             	if(sink.criticality > minimumCriticality) {
             		if(source.blockIndex != sink.blockIndex) {
-            			CritConn c = new CritConn(source.blockIndex, sink.blockIndex, sink.offset - source.offset, (float)(this.tradeOff * sink.criticality));
+            			CritConn c = new CritConn(source.blockIndex, sink.blockIndex, source.offset, sink.offset, (float)(this.tradeOff * sink.criticality));
             			this.criticalConnections.add(c);
             		}
             	}
@@ -142,8 +140,6 @@ public class GradientPlacerTD extends GradientPlacer {
         }
 
         this.legalizer.updateCriticalConnections(this.criticalConnections);
-
-        this.critConn = this.criticalConnections.size();
     }
 
     @Override
@@ -153,7 +149,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
         // Process the most critical source-sink connections
         for(CritConn critConn:this.criticalConnections) {
-        	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.offset, critConn.weight, true);
+        	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.sinkOffset - critConn.sourceOffset, critConn.weight, true);
         }
     }
 
@@ -165,17 +161,5 @@ public class GradientPlacerTD extends GradientPlacer {
     @Override
     public String getName() {
         return "Timing driven gradient placer";
-    }
-
-    public class CritConn{
-    	final int sourceIndex, sinkIndex;
-    	final float offset, weight;
-    	
-    	CritConn(int sourceIndex, int sinkIndex, float offset, float weight) {
-    		this.sourceIndex = sourceIndex;
-    		this.sinkIndex = sinkIndex;
-    		this.offset = offset;
-    		this.weight = weight;
-    	}
     }
 }
