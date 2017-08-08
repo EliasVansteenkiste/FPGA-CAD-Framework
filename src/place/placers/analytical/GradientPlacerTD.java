@@ -31,7 +31,7 @@ public class GradientPlacerTD extends GradientPlacer {
                 O_CRITICALITY_THRESHOLD,
                 "minimal criticality for adding TD constraints",
                 new Double(0.6));
-        
+
         options.add(
                 O_MAX_PER_CRIT_EDGE,
                 "the maximum number of critical edges compared to the total number of edges",
@@ -47,11 +47,9 @@ public class GradientPlacerTD extends GradientPlacer {
     private static String
         T_UPDATE_CRIT_CON = "update critical connections";
 
-    private List<Double> criticalities = new ArrayList<>();
-
     private double criticalityExponent, criticalityThreshold, maxPerCritEdge;
     private TimingGraph timingGraph;
-    
+
     private CriticalityCalculator criticalityCalculator;
 
     public GradientPlacerTD(Circuit circuit, Options options, Random random, Logger logger, PlacementVisualizer visualizer) {
@@ -107,23 +105,22 @@ public class GradientPlacerTD extends GradientPlacer {
             }
         }
 
-        this.criticalities.clear();
+        List<Double> criticalities = new ArrayList<>();
         for(TimingNet net : this.timingNets) {
             NetBlock source = net.source;
             for(TimingNetBlock sink : net.sinks) {
             	if(sink.criticality > this.criticalityThreshold) {
             		if(source.blockIndex != sink.blockIndex) {
-            			this.criticalities.add(sink.criticality);
+            			criticalities.add(sink.criticality);
             		}
             	}
             }
         }
-
         double minimumCriticality = this.criticalityThreshold;
         int maxNumCritConn = (int) Math.round(this.numRealConn * this.maxPerCritEdge / 100);
-        if(this.criticalities.size() > maxNumCritConn){
-        	Collections.sort(this.criticalities);
-        	minimumCriticality = this.criticalities.get(this.criticalities.size() - 1 - maxNumCritConn);
+        if(criticalities.size() > maxNumCritConn){
+        	Collections.sort(criticalities);
+        	minimumCriticality = criticalities.get(criticalities.size() - 1 - maxNumCritConn);
         }
 
         this.criticalConnections.clear();

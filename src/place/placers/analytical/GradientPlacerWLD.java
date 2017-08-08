@@ -3,11 +3,8 @@ package place.placers.analytical;
 import place.circuit.Circuit;
 import place.interfaces.Logger;
 import place.interfaces.Options;
-import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.visual.PlacementVisualizer;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class GradientPlacerWLD extends GradientPlacer {
@@ -24,14 +21,10 @@ public class GradientPlacerWLD extends GradientPlacer {
     @Override
     protected void initializeIteration(int iteration) {
         if(iteration > 0) {
-            this.anchorWeight += this.anchorWeightStep;
+            this.anchorWeight = Math.pow((double)iteration / (this.numIterations - 1.0), this.anchorWeightExponent) * this.anchorWeightStop;
             this.learningRate *= this.learningRateMultiplier;
-            this.quality *= this.qualityMultiplier;
+            this.legalizer.increaseQuality();
         }
-    }
-    
-    public List<CritConn> getCriticalConnections(){
-    	return new ArrayList<CritConn>();
     }
 
     @Override
