@@ -7,9 +7,9 @@ import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
+import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
-import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.visual.PlacementVisualizer;
 
 abstract class Legalizer {
@@ -25,7 +25,7 @@ abstract class Legalizer {
     protected int[] legalX, legalY;
     protected int[] heights;
 
-    private double quality;
+    private double quality, qualityMultiplier;
 
     // Properties of the blockType that is currently being legalized
     protected BlockType blockType;
@@ -124,6 +124,17 @@ abstract class Legalizer {
         this.visualizer = legalizer.visualizer;
         this.netBlocks = legalizer.netBlocks;
     }
+    
+    void setQuality(double initialQuality, double qualityMultiplier){
+    	this.quality = initialQuality;
+    	this.qualityMultiplier = qualityMultiplier;
+    }
+    void increaseQuality(){
+    	this.quality *= this.qualityMultiplier;
+    }
+    double getQuality(){
+    	return this.quality;
+    }
 
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
@@ -131,9 +142,7 @@ abstract class Legalizer {
     	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
     }
 
-    void legalize(BlockType legalizeType, double quality) {
-    	this.quality = quality;
-
+    void legalize(BlockType legalizeType) {
         for(int i = 0; i < this.blockTypes.size(); i++) {
         	if(this.blockTypes.get(i).equals(legalizeType)){
         		this.legalizeBlockType(i);

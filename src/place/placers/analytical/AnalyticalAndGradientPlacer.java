@@ -37,7 +37,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
     protected int[] heights;
-    
+
     private double criticalityLearningRate;
 
     protected double linearCost;
@@ -77,7 +77,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
     protected abstract boolean isTimingDriven();
-    
+
     protected abstract void initializeIteration(int iteration);
     protected abstract void solveLinear(int iteration);
     protected abstract void solveLegal();
@@ -92,7 +92,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     @Override
     public void initializeData() {
-    	
+
         this.startTimer(T_INITIALIZE_DATA);
 
         // Count the number of blocks
@@ -126,7 +126,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.legalX = new int[numBlocks];
         this.legalY = new int[numBlocks];
         this.hasNets = new boolean[numBlocks];
-        
+
         this.heights = new int[numBlocks];
         Arrays.fill(this.heights, 1);
 
@@ -218,7 +218,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
 
         this.numRealNets = this.nets.size();
-        
+
         this.numRealConn = 0;
         for(Net net:this.nets){
         	this.numRealConn += net.blocks.length - 1;
@@ -352,7 +352,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
 
             this.updateLegalIfNeeded();
-            
+
             this.addLinearPlacement(iteration);
             this.addLegalPlacement(iteration);
 
@@ -367,7 +367,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
 
         this.logger.println();
-        
+
         //Only update circuit if the final solution is legal
         if(this.overlap() == 0){
         	this.startTimer(T_UPDATE_CIRCUIT);
@@ -396,7 +396,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         System.arraycopy(newLegalX, 0, this.legalX, 0, this.legalX.length);
         System.arraycopy(newLegalY, 0, this.legalY, 0, this.legalY.length);
     }
-    
+
     //Overlap
     private int overlap(){
     	int gridWidth = this.circuit.getWidth() + 2;
@@ -411,7 +411,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     		legalMap[0][y] = false;
     		legalMap[gridWidth - 1][y] = false;
     	}
-    	
+
     	int overlap = 0;
 
     	// Skip i = 0: these are IO blocks
@@ -427,7 +427,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         			}
         		}
         	}
-        	
+
             int blocksStart = this.blockTypeIndexStarts.get(i);
             int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
@@ -466,10 +466,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             NetBlock netBlock = blockEntry.getValue();
             int index = netBlock.blockIndex;
             int offset = (int) Math.ceil(netBlock.offset);
-            
+
             int column = this.legalX[index];
             int row = this.legalY[index] + offset * block.getType().getHeight();
-            
+
             if(block.getCategory() != BlockCategory.IO) {
                 Site site = (Site) this.circuit.getSite(column, row, true);
                 block.setSite(site);
@@ -601,7 +601,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.blockIndex = blockIndex;
             this.offset = offset;
             this.timingEdge = timingEdge;
-            
+
             this.criticality = 0.0;
             this.criticalityLearningRate = criticalityLearningRate;
 
@@ -611,7 +611,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         TimingNetBlock(NetBlock block, TimingEdge timingEdge, double criticalityLearningRate) {
             this(block.blockIndex, block.offset, timingEdge, criticalityLearningRate, block.blockType);
         }
-        
+
         void updateCriticality(){
         	this.criticality = this.criticality * (1 - this.criticalityLearningRate) + this.timingEdge.getCriticality() * this.criticalityLearningRate;
         }
@@ -647,16 +647,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.sinks = new TimingNetBlock[numSinks];
         }
     }
-    
+
     class CritConn{
     	final int sourceIndex, sinkIndex;
     	final float sourceOffset, sinkOffset;
     	final float weight;
-    	
+
     	CritConn(int sourceIndex, int sinkIndex, float sourceOffset, float sinkOffset, float weight) {
     		this.sourceIndex = sourceIndex;
     		this.sinkIndex = sinkIndex;
-    		
+
     		this.sourceOffset = sourceOffset;
     		this.sinkOffset = sinkOffset;
 
