@@ -9,7 +9,7 @@ import place.placers.analytical.HardblockConnectionLegalizer.Block;
 import place.placers.analytical.HardblockConnectionLegalizer.Column;
 import place.placers.analytical.HardblockConnectionLegalizer.Net;
 
-public class ColumnSwap {
+public class HardblockColumnSwap {
 	private Column[] columns;
 
 	private final Set<Column> freeColumns;
@@ -19,7 +19,7 @@ public class ColumnSwap {
 
 	private final Map<Integer, double[]> costIncreaseTable;
 
-	ColumnSwap(){
+	HardblockColumnSwap(){
 		this.freeColumns = new HashSet<>();
 		this.overutilizedColumns = new HashSet<>();
 		this.influencedBlocks = new HashSet<>();

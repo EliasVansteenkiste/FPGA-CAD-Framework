@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 import place.circuit.architecture.BlockType;
+import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
-import place.placers.analytical.GradientPlacerTD.CritConn;
 import place.util.TimingTree;
 
 public class HardblockConnectionLegalizer{
@@ -22,7 +22,7 @@ public class HardblockConnectionLegalizer{
     private final Net[] nets;
     private final List<Crit> crits;
 
-    private final ColumnSwap columnSwap;
+    private final HardblockColumnSwap columnSwap;
     private final HardblockAnneal hardblockAnneal;
     
     private final Map<BlockType, Block[]> blocksPerBlocktype;
@@ -56,8 +56,8 @@ public class HardblockConnectionLegalizer{
 		this.gridHeigth = gridHeight;
 
 		//Count the number of nets
-		System.out.println("Nets with large fanout are left out:");
 		int maxFanout = 100;
+		System.out.println("Nets with fanout larger than " + maxFanout + " are left out:");
 		int numNets = 0;
 		Map<Integer,Integer> fanoutMap = new HashMap<>();
 		for(int i = 0; i < placerNets.size(); i++){
@@ -138,7 +138,7 @@ public class HardblockConnectionLegalizer{
 		this.blocksPerBlocktype = new HashMap<>();
 		this.netsPerBlocktype = new HashMap<>();
 
-		this.columnSwap = new ColumnSwap();
+		this.columnSwap = new HardblockColumnSwap();
 		this.hardblockAnneal = new HardblockAnneal(100);
 	}
 

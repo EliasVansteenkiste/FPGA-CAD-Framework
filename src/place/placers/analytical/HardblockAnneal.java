@@ -154,25 +154,6 @@ public class HardblockAnneal {
 				block.setOptimalSite();
 			}
 		}
-
-		
-		//CONTROL FUNCTIONALITY => TURN OFF IN FINAL VERSION!
-		boolean test1 = false;
-		
-		if(test1){
-			System.out.println("Warning: test1 is turned on");
-			
-			double testCost1 = 0.0;
-			for(Net net:this.nets){
-				testCost1 += net.connectionCost();
-			}
-			for(Crit crit:this.crits){
-				testCost1 += crit.timingCost();
-			}
-			if(Math.abs(testCost1 - this.cost) > 0.1){
-				System.out.println("TestCost is not equal to cost =>\n\tTestCost: " + testCost1 + "\n\tCost: " + this.cost);
-			}
-		}
 		
 		if(printStatistics) System.out.println();
 	}
@@ -203,6 +184,7 @@ public class HardblockAnneal {
 			}else{
 				return false;
 			}
+
 		}else{
 			return false;
 		}
