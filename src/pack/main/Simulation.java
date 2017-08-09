@@ -22,7 +22,7 @@ public class Simulation{
 		this.addOption(new Option("architecture","description_todo", String.class));//TODO Description
 		
 		this.addOption(new Option("max_pack_size","The maxmimum number of blocks in the independent subcircuits for seed based packing", 2500));
-		this.addOption(new Option("num_threads","The number of available threads", 4));
+		this.addOption(new Option("num_threads","The number of available threads", 2));
 		this.addOption(new Option("max_fanout","The maximum fanout of the added nets during partitioning", 100));
 		this.addOption(new Option("hmetis_quality","description_todo", 2));//TODO Descriptions
 		this.addOption(new Option("unbalance_factor","description_todo", 25));//TODO Description

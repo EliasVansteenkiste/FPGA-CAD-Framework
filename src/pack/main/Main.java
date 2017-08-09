@@ -87,12 +87,10 @@ public class Main {
 		pack.packing();
 		seedBasedPackingTimer.stop();
 		Output.println("\tSeed based packing took " + seedBasedPackingTimer.toString());
-		Output.newLine();
 		
 		//////// PACKING TIMER ////////
 		multiPartTimer.stop();
 		Output.println("\tMultiPart took " + multiPartTimer.toString());
-		Output.newLine();
 		///////////////////////////////
 		
 		pack.writeNetlistFile();

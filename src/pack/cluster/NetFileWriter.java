@@ -109,8 +109,7 @@ public class NetFileWriter {
 		closeNetFile();
 
 		this.t.stop();
-		Output.println("\tNetfile writer took " + this.t.toString() + " seconds");
-		Output.newLine();
+		Output.println("\tNetfile writer took " + this.t.toString());
 	}
 	
 	//// WRITERS ////
