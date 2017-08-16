@@ -93,11 +93,11 @@ public class Main {
 		Output.println("\tMultiPart took " + multiPartTimer.toString());
 		///////////////////////////////
 		
+		pack.writeHierarchyFile();
 		pack.writeNetlistFile();
 		
 		Info.finish(simulation);
-		
-		Output.newLine();
+
 		Output.flush();	
 	}
 }

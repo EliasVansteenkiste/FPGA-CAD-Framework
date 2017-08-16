@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import pack.architecture.Architecture;
+import pack.cluster.LogicBlock;
 import pack.main.Simulation;
 import pack.netlist.Model;
 import pack.partition.HardBlockGroup;
@@ -34,8 +36,12 @@ public class Netlist{
 	private int level;
 	private int number;
 	
+	private String hierarchyIdentifier;
+	
 	private Netlist parent;
 	private ArrayList<Netlist> children;
+	
+	private ArrayList<LogicBlock> logicBlocks;
 	
 	private Data data;
 	
@@ -105,6 +111,8 @@ public class Netlist{
 		Output.println("\tInputs: " + i);
 		Output.println("\tOutputs: " + o);
 		Output.newLine();
+		
+		this.hierarchyIdentifier = "";
 		
 		this.trim();
 	}
@@ -651,7 +659,7 @@ public class Netlist{
 				if(lines[i+1].equals("1 1")){
 					String[] words = lines[i].split(" ");
 					if(!latch_inputs.contains(words[2]) && !outputs.contains(words[2])){
-						//TODO: MCML HACKED
+						//TODO: There is a problem with MCML for the buffered nets, the functionality below is required to fix the problem
 						if(this.get_blif().equals("mcml")){
 							bufferedNets.put(words[2], words[1]);
 						}else{
@@ -1885,7 +1893,7 @@ public class Netlist{
 				
 				B shareBlock = b;
 				while(shareBlock.has_output_port("shareout")){
-					shareBlock = shareBlock.get_next_block_in_chain("shareout");//TODO
+					shareBlock = shareBlock.get_next_block_in_chain("shareout");
 					shareChain.add(shareBlock);
 				}
 				shareChains.add(shareChain);
@@ -2963,5 +2971,39 @@ public class Netlist{
 			}
 		}
 		return maxArea;
+	}
+
+	//Hierarchy
+	public void setRecursiveHierarchyIdentifier(String val){
+		//Test functionality
+		if(this.children.size() > 2){
+			ErrorLog.print("Each netlist should have a maximum of 2 children");
+		}
+		if(this.children.size() == 1){
+			ErrorLog.print("Each netlist should have 0 or 2 children");
+		}
+		
+		this.hierarchyIdentifier = val;
+		
+		int index = 0;
+		for(Netlist child:this.children){
+			child.setRecursiveHierarchyIdentifier(this.hierarchyIdentifier + Util.str(index));
+			index++;
+		}
+	}
+	public String getHierarchyIdentifier(){
+		return this.hierarchyIdentifier;
+	}
+	public void addLogicBlock(LogicBlock logicBlock){
+		if(this.children.size() != 0){
+			ErrorLog.print("Only leaf nodes can have logic blocks");
+		}
+		if(this.logicBlocks == null){
+			this.logicBlocks = new ArrayList<LogicBlock>();
+		}
+		this.logicBlocks.add(logicBlock);
+	}
+	public List<LogicBlock> getLogicBlocks(){
+		return this.logicBlocks;
 	}
 }

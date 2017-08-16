@@ -15,27 +15,27 @@ public class PathWeight {
 	private Netlist root;
 	private Architecture arch;
 	private Simulation simulation;
-	
+
 	private ArrayList<P> startPins;
 	private ArrayList<P> endPins;
-	
+
 	private int maxArrivalTime;
 
 	private int numEdges;
 	private int timingEdges;
-	
+
 	private DelayMap delayMap;
-	
+
 	private ArrayList<CombLoop> tempCut;
-	
+
 	public PathWeight(Netlist netlist, Architecture architecture, Simulation simulation){
 		this.root = netlist;
 		this.arch = architecture;
 		this.simulation = simulation;
-		
+
 		this.numEdges = 0;
 		this.timingEdges = 0;
-		
+
 		this.tempCut = new ArrayList<CombLoop>();
 	}
 	public int get_max_arr_time(){
@@ -43,24 +43,24 @@ public class PathWeight {
 	}
 	public void assign_net_weight(){
 		Output.println("Timing edges:");
-		
+
 		Timing pathTimer = new Timing();
 		pathTimer.start();
-		
+
 		this.initializeConnectionDelayMap();
-		
+
 		this.set_pins();
 		this.cut_combinational_loops();
 		this.initialise_timing_information();
 		this.reconnect_combinational_loops();
 		this.set_pins();
-		
+
 		Output.newLine();
 		this.critical_edges();
-		
+
 		Output.println("\tThere are " + this.timingEdges + " timing edges added to the circuit out of a total of " + this.numEdges + " which is " + Util.round(((float)this.timingEdges)/this.numEdges*100,2) + "% of the total number of edges");
 		Output.newLine();
-		
+
 		pathTimer.stop();
 		Output.println("\tPath took " + pathTimer.time());
 		Output.newLine();
@@ -98,7 +98,7 @@ public class PathWeight {
 		this.assign_arrival_time();
 		this.max_arrival_time();
 		if(printDistribution)this.arr_dist();
-		
+
 		this.assign_required_time();
 		if(printDistribution)this.req_dist();
 	}
@@ -137,10 +137,10 @@ public class PathWeight {
 	}
 	private void cut_combinational_loops(){
 		this.tempCut = new ArrayList<CombLoop>();
-		
+
 		Timing t = new Timing();
 		t.start();
-		
+
 		HashSet<P> analyzed = new HashSet<P>();
 		HashSet<P> visited = new HashSet<P>();
 		int comb = 0;
@@ -156,11 +156,13 @@ public class PathWeight {
 				}
 			}
 		}
-		
+
 		t.stop();
-		Output.println("\tFind combinational loops took " + t.toString() + " netlist has " + comb + " combinational loops");
+
+		Output.print("\tFind combinational loops took " + t.toString());
+		Output.println("\tNetlist has " + comb + " combinational loops");
 		Output.newLine();
-		
+
 		//Add the cut sink pins to the end pins
 		for(CombLoop combLoop:this.tempCut){
 			this.endPins.add(combLoop.getPin());
@@ -242,7 +244,7 @@ public class PathWeight {
 		}
 		return comb;
 	}
-	
+
 	//DEPTH AND REQ
 	private void assign_arrival_time(){
 		for(P endPin:this.endPins){
@@ -283,7 +285,7 @@ public class PathWeight {
 			}
 		}
 	}
-	
+
 	//PRINT DISTRIBUTION
 	private void arr_dist(){
 		Output.println("\tArrival time distribution [ps] (MAX " + this.maxArrivalTime + "ps):");
@@ -340,7 +342,7 @@ public class PathWeight {
 		Output.newLine();
 		Output.newLine();
 	}
-	
+
 	//ASSIGN CRITICAL EDGES
 	public void critical_edges(){
 
@@ -356,17 +358,17 @@ public class PathWeight {
 		//THIS TYPE HAS A MORE COMPLEX METHOD TO DEFINE THE CRITICAL EDGES AS USED IN THE FPL2016 PAPER
 		double minCriticality = this.simulation.getDoubleValue("min_crit");
 		int maxPercentageCriticalEdges = this.simulation.getIntValue("max_per_crit_edge");
-		
+
 		Output.println("\tMinimum criticality               | " + minCriticality);
 		Output.println("\tMaximum percentage critical edges | " + maxPercentageCriticalEdges);
 		Output.newLine();
 
 		//HashSet<P> edges = this.find_all_edges_and_assign_criticality_to_each_edge();
 		//this.print_edge_criticality(edges);
-		
+
 		ArrayList<P> edges = new ArrayList<P>(this.find_all_edges_and_assign_criticality_to_each_edge());
 		Collections.sort(edges, P.PinCriticalityComparator);
-		
+
 		//Test edge sort
 		Timing t1 = new Timing();
 		t1.start();
@@ -388,7 +390,7 @@ public class PathWeight {
 				criticalEdges.add(edge);
 			}
 		}
-		
+
 		//Test criticalEdge sort
 		Timing t2 = new Timing();
 		t2.start();
@@ -402,10 +404,10 @@ public class PathWeight {
 			}
 		}
 		t2.stop();
-		
+
 		Output.println("\tTest sort took " + (t1.time() + t2.time()));
 		Output.newLine();
-		
+
 		//Limit amount of critical edges
 		int maximumNumberOfCriticalEdges = (int)Math.round(edges.size()*maxPercentageCriticalEdges*0.01);
 		Output.println("\tThe netlist has " + criticalEdges.size() + " critical edges, max is equal to " + maximumNumberOfCriticalEdges);
@@ -415,7 +417,7 @@ public class PathWeight {
 			Output.println("\t\t=> New criticality is equivalent to " + Util.round(criticalEdges.get(criticalEdges.size()-1).criticality(),3));
 		}
 		Output.newLine();
-		
+
 		this.assign_critical_edges(criticalEdges);
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -475,13 +477,13 @@ public class PathWeight {
 	public void assign_critical_edges(ArrayList<P> criticalEdges){
 		int weightFactor = this.simulation.getIntValue("timing_weight");
 		double multiplyFactor = this.simulation.getDoubleValue("multiply_factor");
-		
+
 		Output.println("\tAssign critical edges:");
 		Output.println("\t\tMultiply factor           | " + multiplyFactor);
 		Output.println("\t\tInter weight factor       | " + weightFactor);
 		Output.println("\t\tIntra weight factor       | " + (int)Math.round(multiplyFactor*weightFactor));
 		Output.newLine();
-		
+
 		for(P sinkPin:criticalEdges){
 			N net = sinkPin.get_net();
 			P sourcePin = null;
@@ -500,7 +502,7 @@ public class PathWeight {
 			if(sourcePin == null){
 				ErrorLog.print("No source pin found for this net: " + net.toString());
 			}
-			
+
 			if(sourcePin.has_terminal() || sinkPin.has_terminal()){
 				//GLOBAL INTERCONNECTION
 				sinkPin.set_net_weight((int)(Math.round(sinkPin.criticality()*weightFactor)));

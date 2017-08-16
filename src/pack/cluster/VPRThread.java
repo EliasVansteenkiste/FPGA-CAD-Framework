@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import pack.main.Simulation;
+import pack.netlist.Netlist;
 import pack.util.Info;
 import pack.util.Output;
 import pack.util.Util;
@@ -15,36 +16,15 @@ public class VPRThread {
 	private Simulation simulation;
 	private String run;
 	private int size;
+	private Netlist netlist;
 
-	public VPRThread( int thread, Simulation simulation){
+	public VPRThread( int thread, Simulation simulation, Netlist netlist){
 		this.thread = thread;
 		this.simulation = simulation;
 		this.run = new String();
+		this.netlist = netlist;
 	}
-	public boolean isRunning() {
-	    try {
-	       this.proc.exitValue();
-	       
-	       BufferedReader reader =  new BufferedReader(new InputStreamReader(this.proc.getInputStream()));
-	      
-	       String line = reader.readLine();
-	       double runtime = 0.0;
-	       while(line != null){
-	    	   if(line.contains("Packing took")){
-	    		   line = line.replace("Packing took ", "");
-	    		   line = line.replace(" seconds", "");
-	    		   runtime = Double.parseDouble(line);
-	    	   }
-	    	   line = reader.readLine();
-	       }
-	       String output = "size" + "\t" + this.size + "\t" + "total_runtime" + "\t" + Util.round(runtime, 4) + "\t" + "runtime_per_block" + "\t" + Util.round(runtime/this.size*1000.0, 4);
-	       output = output.replace(".", ",");
-	       Info.add("rpb", output);
-	       return false;
-	    } catch (Exception e) {
-	       return true;
-	    }
-	}
+
 	public void run(int size, int area){
 		String circuit = this.simulation.getStringValue("circuit");
 		String vpr_folder = this.simulation.getStringValue("vpr_folder");
@@ -70,10 +50,38 @@ public class VPRThread {
 		
     	//System.out.println("\t\t\t" + this.run);
 	}
+	public boolean isRunning() {
+	    try {
+	       this.proc.exitValue();
+	       
+	       BufferedReader reader =  new BufferedReader(new InputStreamReader(this.proc.getInputStream()));
+	      
+	       String line = reader.readLine();
+	       double runtime = 0.0;
+	       while(line != null){
+	    	   if(line.contains("Packing took")){
+	    		   line = line.replace("Packing took ", "");
+	    		   line = line.replace(" seconds", "");
+	    		   runtime = Double.parseDouble(line);
+	    	   }
+	    	   line = reader.readLine();
+	       }
+	       String output = "size" + "\t" + this.size + "\t" + "total_runtime" + "\t" + Util.round(runtime, 4) + "\t" + "runtime_per_block" + "\t" + Util.round(runtime/this.size*1000.0, 4);
+	       output = output.replace(".", ",");
+	       Info.add("rpb", output);
+	       return false;
+	    } catch (Exception e) {
+	       return true;
+	    }
+	}
+
 	public String getCommand(){
 		return this.run;
 	}
 	public int getThread(){
 		return this.thread;
+	}
+	public Netlist getNetlist(){
+		return this.netlist;
 	}
 }

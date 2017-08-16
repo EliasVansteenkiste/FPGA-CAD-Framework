@@ -215,12 +215,6 @@ public class Model {
 		Timing t = new Timing();
 		t.start();
 		
-		//STRATIX IV ACTUAL SIZE ESTIMATION
-		//int lab = 780;
-		//int m9k = 6*lab;
-		//int m144k = 103*lab;
-		//int dsp = 5*lab;//TODO
-		
 		//VPR DESCRIPTION SIZE (WIDTH = 1 FOR ALL BLOCKS)
 		int lab = 780;
 		int m9k = lab;

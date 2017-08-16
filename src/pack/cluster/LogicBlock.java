@@ -3,6 +3,7 @@ package pack.cluster;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import pack.netlist.Netlist;
 import pack.util.ErrorLog;
 import pack.util.Util;
 
@@ -11,16 +12,18 @@ public class LogicBlock {
 	private String instance;
 	private int instanceNumber;
 	private String mode;
-	
+
 	private HashMap<String, String[]> inputs;
 	private HashMap<String, String[]> outputs;
 	private HashMap<String, String[]> clocks;
-	
+
 	private ArrayList<LogicBlock> childBlocks;
-	
+
+	private final Netlist netlist;
+
 	private static int num = 0;
-	
-	public LogicBlock(String name, String instance, int instanceNumber,  String mode, int level, LogicBlock parent){
+
+	public LogicBlock(String name, String instance, int instanceNumber,  String mode, int level, LogicBlock parent, Netlist leafNetlist){
 		this.name = name;
 		this.instance = instance;
 		this.instanceNumber = instanceNumber;
@@ -31,8 +34,9 @@ public class LogicBlock {
 		this.clocks = new HashMap<String, String[]>();
 		
 		this.childBlocks = new ArrayList<LogicBlock>();
+		this.netlist = leafNetlist;
 	}
-	
+
 	//SET PARAMETERS
 	public void setName(){
 		this.name = "lb" + LogicBlock.num;
@@ -41,7 +45,7 @@ public class LogicBlock {
 	public void setInstanceNumber(int instanceNumber){
 		this.instanceNumber = instanceNumber;
 	}
-	
+
 	//HAS PARAMETER
 	public boolean hasName(){
 		return !(this.name == null);
@@ -55,7 +59,7 @@ public class LogicBlock {
 	public boolean isEmpty(){
 		return !this.hasName();
 	}
-	
+
 	//GET PARAMETER
 	public String getName(){
 		if(this.hasName()){
@@ -100,7 +104,7 @@ public class LogicBlock {
 			ErrorLog.print("Input port " + port + " not found");
 		}
 	}
-	
+
 	//CHILD LOGIC BLOCKS
 	public ArrayList<LogicBlock> getNonEmptyChildBlocks(){
 		ArrayList<LogicBlock> result = new ArrayList<LogicBlock>();
@@ -120,7 +124,7 @@ public class LogicBlock {
 		}
 		return res;
 	}
-	
+
 	//IO SPECIFIC FUNCTIONS
 	public void removeInpadBlock(){
 		boolean inpadRemoved = false;
@@ -215,7 +219,7 @@ public class LogicBlock {
 		ErrorLog.print("Postition not found");
 		return -1;
 	}
-	
+
 	//ADD
 	public void addInput(String port, String[] pins){
 		this.inputs.put(port, pins);
@@ -229,7 +233,7 @@ public class LogicBlock {
 	public void addChildBlock(LogicBlock childBlock){
 		this.childBlocks.add(childBlock);
 	}
-	
+
 	//TO NET STRING
 	public String toNetString(int tabs){
 		StringBuilder sb = new StringBuilder();
@@ -309,7 +313,7 @@ public class LogicBlock {
 			sb.append(Util.tabs(tabs+1));
 			sb.append("</outputs>");
 			sb.append("\n");
-			
+
 			//Clocks
 			sb.append(Util.tabs(tabs+1));
 			sb.append("<clocks>");
@@ -330,15 +334,22 @@ public class LogicBlock {
 			sb.append(Util.tabs(tabs+1));
 			sb.append("</clocks>");
 			sb.append("\n");
-			
+
 			for(LogicBlock childBlock:this.childBlocks){
 				sb.append(childBlock.toNetString(tabs+1));
 			}
-			
+
 			sb.append(Util.tabs(tabs));
 			sb.append("</block>");
 			sb.append("\n");
 		}
 		return sb.toString();
+	}
+	public String getInfo(){
+		return "<block name=\"" + this.name + "\" instance=\"" + this.instance + "[" + Util.str(this.instanceNumber) + "]\" mode=\"" + this.mode +"\">";
+	}
+
+	public Netlist getLeafNetlist(){
+		return this.netlist;
 	}
 }

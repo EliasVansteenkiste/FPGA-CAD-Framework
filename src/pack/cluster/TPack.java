@@ -106,7 +106,20 @@ public class TPack {
 		Output.newLine();
 		
 		this.subcircuits = this.root.get_leaf_nodes();
-		
+
+		//Analyze the leaf nodes
+		for(Netlist leafNode:this.subcircuits){
+			if(leafNode.has_children()){
+				ErrorLog.print("A leaf node should not have children!");
+			}
+		}
+
+		//Analyze the hierarchy recursively and give each netlist a hierarchy identifier
+		this.root.setRecursiveHierarchyIdentifier("");
+		//for(Netlist subcircuit:this.subcircuits){
+		//	System.out.println(subcircuit.getHierarchyIdentifier());
+		//}
+
 		double unpackTime = 0.0;
 		for(Netlist subcircuit:this.subcircuits){
 			unpackTime += subcircuit.unpack_all_molecules();
@@ -163,7 +176,7 @@ public class TPack {
 	private void startTPack(Set<B> floatingBlocks){
 		int thread = this.threadPool.getThread();
 		Netlist.write_blif(this.vpr_folder + "vpr/files/", thread, floatingBlocks, this.root.get_blif(), this.root.get_models(), this.simulation.getSimulationID());
-		VPRThread vpr = new VPRThread(thread, this.simulation);
+		VPRThread vpr = new VPRThread(thread, this.simulation, null);
 		vpr.run(floatingBlocks.size(), 0);
 		this.packPool.add(vpr);
 	}
@@ -199,7 +212,7 @@ public class TPack {
 			int thread = this.threadPool.getThread();
 			leafNode.writeSDC(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
 			leafNode.writeBlif(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
-			VPRThread vpr = new VPRThread(thread, this.simulation);
+			VPRThread vpr = new VPRThread(thread, this.simulation, leafNode);
 			vpr.run(leafNode.atom_count(), leafNode.get_area());
 			this.packPool.add(vpr);
 		}
@@ -219,7 +232,7 @@ public class TPack {
 		 			Output.newLine();
 		 			ErrorLog.print("Netfile " + file + ".net" + " " + "not available");
 		 		}
-				this.processNetlistFile(file);
+				this.processNetlistFile(file, vpr.getNetlist());
 				this.startTPack();
 				i--;
 			}
@@ -242,7 +255,7 @@ public class TPack {
  		String[] result = new String[lines.size()];
  		return lines.toArray(result);
 	}
- 	private void processNetlistFile(String file){
+ 	private void processNetlistFile(String file, Netlist netlist){
  		if(!Util.fileExists(file + ".net")){
  			ErrorLog.print("Netfile " + file + ".net" + " " + "not available");
  		}else{
@@ -255,7 +268,8 @@ public class TPack {
  					pbLevel += 1;
  				}
  				if(line.contains("<block") && pbLevel > 0){
- 					currentBlock[pbLevel] = new LogicBlock(getName(line), getInstance(line), getInstanceNumber(line), getMode(line), pbLevel, null);
+ 					currentBlock[pbLevel] = new LogicBlock(getName(line), getInstance(line), getInstanceNumber(line), getMode(line), pbLevel, null, netlist);
+
  					if(testM9K){
  	 					if(getInstance(line).equals("M9K")){
  	 						this.M9Kused += 1;
@@ -332,7 +346,7 @@ public class TPack {
 					pbLevel -= 1;
 					if(pbLevel == 0){
 						LogicBlock lb = currentBlock[pbLevel+1];
-						//lb.setName();//TODO REMOVED
+						if(netlist != null)netlist.addLogicBlock(lb);//Floating blocks have no netlist
 						this.logicBlocks.add(lb);
 					}else{
 						currentBlock[pbLevel].addChildBlock(currentBlock[pbLevel+1]);
