@@ -37,6 +37,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double[] linearX, linearY;
     protected int[] legalX, legalY;
     protected int[] heights;
+    protected String[] leafNode;
 
     private double criticalityLearningRate;
 
@@ -129,6 +130,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         this.heights = new int[numBlocks];
         Arrays.fill(this.heights, 1);
+        
+        this.leafNode = new String[numBlocks];
 
         this.blockTypeIndexStarts = new ArrayList<>();
         this.blockTypeIndexStarts.add(0);
@@ -151,6 +154,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     // For the legal position of macro's with an even number of blocks,
                     // the position of the macro is rounded down
                     float offset = (1 - height) / 2f;
+                    
+                    this.leafNode[blockCounter] = block.getHierarchyNode();
 
                     this.linearX[blockCounter] = column;
                     this.linearY[blockCounter] = row - offset;

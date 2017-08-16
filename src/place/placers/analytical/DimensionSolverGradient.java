@@ -23,8 +23,9 @@ class DimensionSolverGradient {
     private int[] legalCoordinates;
     
     private boolean[] fixed;
+    private final String[] leafNode;
 
-    DimensionSolverGradient(double[] coordinates, double maxConnectionLength, boolean[] fixed, double beta1, double beta2, double eps) {
+    DimensionSolverGradient(double[] coordinates, double maxConnectionLength, boolean[] fixed, String[] leafNode, double beta1, double beta2, double eps) {
         this.coordinates = coordinates;
         this.halfMaxConnectionLength = maxConnectionLength / 2;
 
@@ -44,6 +45,7 @@ class DimensionSolverGradient {
         this.totalNegativeNetSize = new double[numBlocks];
 
         this.fixed = fixed;
+        this.leafNode = leafNode;
     }
 
     void initializeIteration(double pseudoWeight, double learningRate) {
@@ -78,6 +80,12 @@ class DimensionSolverGradient {
             netSize = 2 * (5 * this.halfMaxConnectionLength) * coorDifference / ((5 * this.halfMaxConnectionLength) + coorDifference);
     	}else{
             netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
+            
+        	if(this.leafNode[minIndex].equals(this.leafNode[maxIndex])){
+        		//netSize *= 1.75;
+        	}else{
+        		//netSize *= 0.8;
+        	}
     	}
 
         this.totalPositiveNetSize[minIndex] += weight * netSize;

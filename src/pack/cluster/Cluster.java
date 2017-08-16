@@ -40,14 +40,12 @@ public class Cluster {
 				logicBlockCounter++;
 			}
 		}
-		Info.add("hierarchy", "Floating blocks (" + logicBlockCounter + " lb)");
+		Info.add("hierarchy", "Leaf Node: floating blocks (" + logicBlockCounter + " lb)");
 		for(LogicBlock lb:this.logicBlocks){
 			if(lb.getLeafNetlist() == null){
 				Info.add("hierarchy", "\t" + lb.getInfo());
 			}
 		}
-		Info.add("hierarchy", "");
-		
 		for(Netlist leafNode:this.leafNodes){
 			Info.add("hierarchy", "Leaf Node: " + leafNode.getHierarchyIdentifier() + " (" + leafNode.getLogicBlocks().size() + " lb)");
 			for(LogicBlock lb:leafNode.getLogicBlocks()){

@@ -10,6 +10,7 @@ import place.circuit.block.GlobalBlock;
 import place.circuit.exceptions.InvalidFileFormatException;
 import place.circuit.exceptions.PlacementException;
 import place.circuit.io.BlockNotFoundException;
+import place.circuit.io.HierarchyParser;
 import place.circuit.io.IllegalSizeException;
 import place.circuit.io.NetParser;
 import place.circuit.io.PlaceDumper;
@@ -45,7 +46,7 @@ public class Main {
     private long randomSeed;
 
     private String circuitName;
-    private File blifFile, netFile, inputPlaceFile, partialPlaceFile, outputPlaceFile;
+    private File blifFile, netFile, inputPlaceFile, inputHierarchyFile, partialPlaceFile, outputPlaceFile;
     private File architectureFile;
 
     private boolean useVprTiming;
@@ -69,6 +70,7 @@ public class Main {
         O_BLIF_FILE = "blif file",
         O_NET_FILE = "net file",
         O_INPUT_PLACE_FILE = "input place file",
+        O_INPUT_HIERARCHY_FILE = "input hierarchy file",
         O_PARTIAL_PLACE_FILE = "partial place file",
         O_OUTPUT_PLACE_FILE = "output place file",
         O_VPR_TIMING = "vpr timing",
@@ -84,6 +86,7 @@ public class Main {
 
         options.add(O_NET_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
         options.add(O_INPUT_PLACE_FILE, "if omitted the initial placement is random", File.class, Required.FALSE);
+        options.add(O_INPUT_HIERARCHY_FILE, "if omitted no hierarchy information is used", File.class, Required.FALSE);
         options.add(O_PARTIAL_PLACE_FILE, "placement of a part of the blocks", File.class, Required.FALSE);
         options.add(O_OUTPUT_PLACE_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
 
@@ -108,6 +111,7 @@ public class Main {
         this.randomSeed = options.getLong(O_RANDOM_SEED);
 
         this.inputPlaceFile = options.getFile(O_INPUT_PLACE_FILE);
+        this.inputHierarchyFile = options.getFile(O_INPUT_HIERARCHY_FILE);
         this.partialPlaceFile = options.getFile(O_PARTIAL_PLACE_FILE);
 
         this.blifFile = options.getFile(O_BLIF_FILE);
@@ -196,6 +200,15 @@ public class Main {
             this.printStatistics("Placement parser", false);
         }else{
         	this.options.insertRandomPlacer();
+        }
+        
+        if(this.inputHierarchyFile != null){
+        	HierarchyParser hierarchyParser = new HierarchyParser(this.circuit, this.inputHierarchyFile);
+        	try {
+        		hierarchyParser.parse();
+        	} catch(IOException error) {
+                 this.logger.raise("Something went wrong while parsing the hierarchy file", error);
+			}
         }
 
         //Garbage collection

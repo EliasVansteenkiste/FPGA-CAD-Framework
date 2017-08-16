@@ -45,7 +45,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
-                new Double(0.85));
+                new Double(0.7));
 
         options.add(
                 O_LEARNING_RATE_START,
@@ -238,6 +238,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.netBlockOffsets,
                 this.maxConnectionLength,
                 this.fixed,
+                this.leafNode,
                 this.beta1, 
                 this.beta2, 
                 this.eps);

@@ -19,9 +19,27 @@ public class GlobalBlock extends AbstractBlock {
 
     private Macro macro;
     private int macroOffsetY = 0;
+    
+    private String hierarchyNode;
 
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
+        
+        this.hierarchyNode = null;
+    }
+    
+    //Hierarchy node
+    public void setHierarchyNode(String hierarchyNode){
+    	this.hierarchyNode = hierarchyNode;
+    }
+    public String getHierarchyNode(){
+    	if(!this.hasHierarchyNode()){
+    		System.out.println("This global block has no hierarchy node assigned!");
+    	}
+    	return this.hierarchyNode;
+    }
+    public boolean hasHierarchyNode(){
+    	return !(this.hierarchyNode == null);
     }
 
     @Override
