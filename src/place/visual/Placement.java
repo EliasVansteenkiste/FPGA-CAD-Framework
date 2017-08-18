@@ -27,7 +27,6 @@ class Placement {
         this.bbCost = -1.0;
     }
 
-
     Placement(String name, Circuit circuit, Map<GlobalBlock, NetBlock> blockIndexes, int[] x, int[] y, double bbCost) {
         this.initializeData(name, circuit);
 
@@ -67,8 +66,6 @@ class Placement {
 
         this.blocks = new HashMap<GlobalBlock, Coordinate>();
     }
-
-
 
     public String getName() {
         return this.name;

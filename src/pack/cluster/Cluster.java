@@ -7,6 +7,7 @@ import pack.main.Simulation;
 import pack.netlist.Netlist;
 import pack.partition.Partition;
 import pack.util.Info;
+import pack.util.Util;
 
 public class Cluster {
 	private Netlist root;
@@ -40,18 +41,21 @@ public class Cluster {
 				logicBlockCounter++;
 			}
 		}
-		Info.add("hierarchy", "Leaf Node: floating blocks (" + logicBlockCounter + " lb)");
+		Info.add("hierarchy", "Leaf Node: floating blocks (" + logicBlockCounter + " lb) " + this.randomColor());
 		for(LogicBlock lb:this.logicBlocks){
 			if(lb.getLeafNetlist() == null){
 				Info.add("hierarchy", "\t" + lb.getInfo());
 			}
 		}
 		for(Netlist leafNode:this.leafNodes){
-			Info.add("hierarchy", "Leaf Node: " + leafNode.getHierarchyIdentifier() + " (" + leafNode.getLogicBlocks().size() + " lb)");
+			Info.add("hierarchy", "Leaf Node: " + leafNode.getHierarchyIdentifier() + " (" + leafNode.getLogicBlocks().size() + " lb) " + this.randomColor());
 			for(LogicBlock lb:leafNode.getLogicBlocks()){
 				Info.add("hierarchy", "\t" + lb.getInfo());
 			}
 		}
+	}
+	private String randomColor(){
+		return "[Color: (" + Util.str((int)(Math.random()*255)) + "," + Util.str((int)(Math.random()*255)) + "," + Util.str((int)(Math.random()*255)) + ")]";
 	}
 	public void writeNetlistFile(){
 		NetFileWriter writer = new NetFileWriter(this.logicBlocks, this.root);

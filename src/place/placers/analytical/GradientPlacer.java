@@ -238,7 +238,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.netBlockOffsets,
                 this.maxConnectionLength,
                 this.fixed,
-                this.leafNode,
                 this.beta1, 
                 this.beta2, 
                 this.eps);
