@@ -37,13 +37,13 @@ public class Cluster {
 	public void writeHierarchyFile(){
 		int logicBlockCounter = 0;
 		for(LogicBlock lb:this.logicBlocks){
-			if(lb.getLeafNetlist() == null){
+			if(lb.isFloating()){
 				logicBlockCounter++;
 			}
 		}
 		Info.add("hierarchy", "Leaf Node: floating blocks (" + logicBlockCounter + " lb) " + this.randomColor());
 		for(LogicBlock lb:this.logicBlocks){
-			if(lb.getLeafNetlist() == null){
+			if(lb.isFloating()){
 				Info.add("hierarchy", "\t" + lb.getInfo());
 			}
 		}

@@ -3,7 +3,6 @@ package pack.cluster;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import pack.netlist.Netlist;
 import pack.util.ErrorLog;
 import pack.util.Util;
 
@@ -18,12 +17,11 @@ public class LogicBlock {
 	private HashMap<String, String[]> clocks;
 
 	private ArrayList<LogicBlock> childBlocks;
+	
+	private boolean enabled;
+	private final boolean floating;
 
-	private final Netlist netlist;
-
-	private static int num = 0;
-
-	public LogicBlock(String name, String instance, int instanceNumber,  String mode, int level, LogicBlock parent, Netlist leafNetlist){
+	public LogicBlock(String name, String instance, int instanceNumber,  String mode, int level, boolean floating){
 		this.name = name;
 		this.instance = instance;
 		this.instanceNumber = instanceNumber;
@@ -34,14 +32,12 @@ public class LogicBlock {
 		this.clocks = new HashMap<String, String[]>();
 		
 		this.childBlocks = new ArrayList<LogicBlock>();
-		this.netlist = leafNetlist;
+		
+		this.enabled = true;
+		this.floating = floating;
 	}
 
 	//SET PARAMETERS
-	public void setName(){
-		this.name = "lb" + LogicBlock.num;
-		LogicBlock.num += 1;
-	}
 	public void setInstanceNumber(int instanceNumber){
 		this.instanceNumber = instanceNumber;
 	}
@@ -236,6 +232,8 @@ public class LogicBlock {
 
 	//TO NET STRING
 	public String toNetString(int tabs){
+		if(!this.enabled()) System.out.println("This function is only applicable for enabled logic blocks!");
+
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append(Util.tabs(tabs));
@@ -348,8 +346,19 @@ public class LogicBlock {
 	public String getInfo(){
 		return "<block name=\"" + this.name + "\" instance=\"" + this.instance + "[" + Util.str(this.instanceNumber) + "]\" mode=\"" + this.mode +"\">";
 	}
-
-	public Netlist getLeafNetlist(){
-		return this.netlist;
+	
+	public boolean enabled(){
+		return this.enabled;
+	}
+	public void disable(){
+		this.enabled = false;
+		for(LogicBlock child:this.childBlocks){
+			child.disable();
+		}
+	}
+	
+	//Floating blocks have no connections with other blocks, only with IO pins
+	public boolean isFloating(){
+		return this.floating;
 	}
 }

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import pack.architecture.Architecture;
@@ -30,14 +31,14 @@ public class TPack {
 	
 	private String vpr_folder;
 	
-	private HashSet<String> netlistInputs;
-	private HashSet<String> netlistOutputs;
+	private Set<String> netlistInputs;
+	private Set<String> netlistOutputs;
 		
-	private ArrayList<Netlist> subcircuits;
-	private ArrayList<LogicBlock> logicBlocks;
+	private List<Netlist> subcircuits;
+	private List<LogicBlock> logicBlocks;
 
 	private ThreadPool threadPool;
-	private ArrayList<VPRThread> packPool;
+	private List<VPRThread> packPool;
 	
 	private static final boolean testM9K = Boolean.FALSE;
 	private int M9Krequired = 0;
@@ -167,9 +168,21 @@ public class TPack {
 		Output.newLine();
 		
 		this.removeCutTerminalsFromIOBlocks();
+		this.updateEnabledLogicBlocks();
+		for(Netlist netlist: this.root.get_leaf_nodes()){
+			netlist.updateEnabledLogicBlocks();
+		}
 	}
-	
-	public ArrayList<LogicBlock> getLogicBlocks(){
+	private void updateEnabledLogicBlocks(){
+		List<LogicBlock> temp = this.logicBlocks;
+		this.logicBlocks = new ArrayList<LogicBlock>();
+		for(LogicBlock block:temp){
+			if(block.enabled()){
+				this.logicBlocks.add(block);
+			}
+		}
+	}
+	public List<LogicBlock> getLogicBlocks(){
 		return this.logicBlocks;
 	}
 
@@ -268,7 +281,8 @@ public class TPack {
  					pbLevel += 1;
  				}
  				if(line.contains("<block") && pbLevel > 0){
- 					currentBlock[pbLevel] = new LogicBlock(getName(line), getInstance(line), getInstanceNumber(line), getMode(line), pbLevel, null, netlist);
+ 					boolean floating = (netlist == null);
+ 					currentBlock[pbLevel] = new LogicBlock(getName(line), getInstance(line), getInstanceNumber(line), getMode(line), pbLevel, floating);
 
  					if(testM9K){
  	 					if(getInstance(line).equals("M9K")){
@@ -346,7 +360,7 @@ public class TPack {
 					pbLevel -= 1;
 					if(pbLevel == 0){
 						LogicBlock lb = currentBlock[pbLevel+1];
-						if(netlist != null)netlist.addLogicBlock(lb);//Floating blocks have no netlist
+						if(!lb.isFloating()) netlist.addLogicBlock(lb);//Floating blocks have no netlist
 						this.logicBlocks.add(lb);
 					}else{
 						currentBlock[pbLevel].addChildBlock(currentBlock[pbLevel+1]);
@@ -443,7 +457,6 @@ public class TPack {
  	}
  	private void removeCutTerminalsFromIOBlocks(){
  		boolean newLine = false;
- 		ArrayList<LogicBlock> removedLogicBlocks = new ArrayList<LogicBlock>();
  		for(LogicBlock parent:this.logicBlocks){
  			if(parent.getMode().equals("io")){
  				for(LogicBlock child:parent.getNonEmptyChildBlocks()){
@@ -452,7 +465,7 @@ public class TPack {
  	 						String name = child.getName();
  	 						if(!this.netlistInputs.contains(name)){
  	 							if(parent.numberOfNonEmptyChildBlocks()==1){
- 	 								removedLogicBlocks.add(parent);
+ 	 								parent.disable();//This io block is a cut terminal
  	 							}else{
  	 								parent.removeInpadBlock();
  	 								
@@ -490,7 +503,7 @@ public class TPack {
  	 						String name = child.getName();
  	 						if(!this.netlistOutputs.contains(name)){
  	 							if(parent.numberOfNonEmptyChildBlocks()==1){
- 	 								removedLogicBlocks.add(parent);
+ 	 								parent.disable();//This io block is a cut terminal
  	 							}else{					
  	 								parent.removeOutpadBlock();
  	 							}
@@ -501,9 +514,6 @@ public class TPack {
  					}
  				}
  			}
- 		}
- 		for(LogicBlock lb:removedLogicBlocks){
- 			this.logicBlocks.remove(lb);
  		}
  		if(newLine)Output.newLine();
  	}

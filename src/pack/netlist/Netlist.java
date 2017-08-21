@@ -2876,34 +2876,19 @@ public class Netlist{
 	}
 
 	//// PACKING ////
-	public ArrayList<Netlist> get_leaf_nodes(){
-		ArrayList<Netlist> leaf_nodes = new ArrayList<Netlist>();
-		
-		ArrayList<Netlist> currentWork = new ArrayList<Netlist>();
-		ArrayList<Netlist> nextWork = new ArrayList<Netlist>();
-		
+	public List<Netlist> get_leaf_nodes(){
+		List<Netlist> result = new ArrayList<Netlist>();
+		this.getLeafNodes(result);
+		return result;
+	}
+	private void getLeafNodes(List<Netlist> result){
 		if(this.has_children()){
-			nextWork.add(this);	
-		}else{
-			leaf_nodes.add(this);
-			return leaf_nodes;
-		}
-		
-		while(nextWork.size()>0){
-			currentWork = new ArrayList<Netlist>(nextWork);
-			nextWork = new ArrayList<Netlist>();
-			while(currentWork.size()>0){
-				Netlist parent = currentWork.remove(0);
-				for(Netlist child:parent.get_children()){
-					if(child.has_children()){
-						nextWork.add(child);
-					}else{
-						leaf_nodes.add(child);
-					}
-				}
+			for(Netlist child:this.children){
+				child.getLeafNodes(result);
 			}
+		}else{
+			result.add(this);
 		}
-		return leaf_nodes;
 	}
 
 	//FLOATING BLOCKS
@@ -3002,6 +2987,15 @@ public class Netlist{
 			this.logicBlocks = new ArrayList<LogicBlock>();
 		}
 		this.logicBlocks.add(logicBlock);
+	}
+	public void updateEnabledLogicBlocks(){
+		List<LogicBlock> temp = this.logicBlocks;
+		this.logicBlocks = new ArrayList<LogicBlock>();
+		for(LogicBlock block:temp){
+			if(block.enabled()){
+				this.logicBlocks.add(block);
+			}
+		}
 	}
 	public List<LogicBlock> getLogicBlocks(){
 		return this.logicBlocks;
