@@ -452,22 +452,23 @@ public class Main {
         // Calculate BB cost
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
-        
-        
-        String costFile = this.outputPlaceFile.getPath().replace(".place", ".cost");
-        PrintWriter writer = null;
-        try {
-			writer = new PrintWriter(new BufferedWriter(new FileWriter(costFile)));
-	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
-	        	String output = block.getName() + "\t" + block.getIndex() + "\t" + block.getCategory() + "\t" + Math.round(effcc.calculateBlockCost(block)*1000.0)/1000.0 + "\t" + block.getColumn() + "\t" + block.getRow() + "\n";
-	        	writer.write(output.replace(".", ","));
-	        }
-	        writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
-        
+        boolean printCostOfEachBlockToFile = false;
+        if(printCostOfEachBlockToFile){
+            String costFile = this.outputPlaceFile.getPath().replace(".place", ".cost");
+            PrintWriter writer = null;
+            try {
+    			writer = new PrintWriter(new BufferedWriter(new FileWriter(costFile)));
+    	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
+    	        	String output = block.getName() + "\t" + block.getIndex() + "\t" + block.getCategory() + "\t" + Math.round(effcc.calculateBlockCost(block)*1000.0)/1000.0 + "\t" + block.getColumn() + "\t" + block.getRow() + "\n";
+    	        	writer.write(output.replace(".", ","));
+    	        }
+    	        writer.close();
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+        }
+
         this.logger.printf(format, "BB cost", totalWLCost, "");
 
         // Calculate timing cost
