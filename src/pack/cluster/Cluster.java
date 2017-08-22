@@ -1,12 +1,14 @@
 package pack.cluster;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import pack.architecture.Architecture;
 import pack.main.Simulation;
 import pack.netlist.Netlist;
 import pack.partition.Partition;
-import pack.util.Info;
 import pack.util.Util;
 
 public class Cluster {
@@ -35,24 +37,36 @@ public class Cluster {
 		this.leafNodes.addAll(this.root.get_leaf_nodes());
 	}
 	public void writeHierarchyFile(){
+		try {
+			this.tryWriteHierarchyFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	public void tryWriteHierarchyFile() throws IOException{
+		FileWriter w = new FileWriter(this.simulation.getStringValue("result_folder") + root.get_blif() + ".hierarchy");
+		BufferedWriter writer = new BufferedWriter(w);
+
 		int logicBlockCounter = 0;
 		for(LogicBlock lb:this.logicBlocks){
 			if(lb.isFloating()){
 				logicBlockCounter++;
 			}
 		}
-		Info.add("hierarchy", "Leaf Node: floating blocks (" + logicBlockCounter + " lb) " + this.randomColor());
+		writer.write("Leaf Node: floating blocks (" + logicBlockCounter + " lb) " + this.randomColor() + "\n");
 		for(LogicBlock lb:this.logicBlocks){
 			if(lb.isFloating()){
-				Info.add("hierarchy", "\t" + lb.getInfo());
+				writer.write("\t" + lb.getInfo() + "\n");
 			}
 		}
 		for(Netlist leafNode:this.leafNodes){
-			Info.add("hierarchy", "Leaf Node: " + leafNode.getHierarchyIdentifier() + " (" + leafNode.getLogicBlocks().size() + " lb) " + this.randomColor());
+			writer.write("Leaf Node: " + leafNode.getHierarchyIdentifier() + " (" + leafNode.getLogicBlocks().size() + " lb) " + this.randomColor() + "\n");
 			for(LogicBlock lb:leafNode.getLogicBlocks()){
-				Info.add("hierarchy", "\t" + lb.getInfo());
+				writer.write("\t" + lb.getInfo() + "\n");
 			}
 		}
+
+		writer.close();
 	}
 	private String randomColor(){
 		return "[Color: (" + Util.str((int)(Math.random()*255)) + "," + Util.str((int)(Math.random()*255)) + "," + Util.str((int)(Math.random()*255)) + ")]";

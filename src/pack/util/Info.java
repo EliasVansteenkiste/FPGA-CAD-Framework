@@ -9,29 +9,38 @@ import pack.main.Simulation;
 
 public class Info {
 	private static HashMap<String,ArrayList<String>> info = new HashMap<String,ArrayList<String>>();
+	private static boolean enabled = false;
+	
+	public static void enabled(boolean enabled){
+		Info.enabled = enabled;
+	}
 	public synchronized static void add(String type, String line){
-		if(Info.info.containsKey(type)){
-			Info.info.get(type).add(line);
-		}else{
-			ArrayList<String> temp = new ArrayList<String>();
-			temp.add(line);
-			Info.info.put(type, temp);
+		if(Info.enabled){
+			if(Info.info.containsKey(type)){
+				Info.info.get(type).add(line);
+			}else{
+				ArrayList<String> temp = new ArrayList<String>();
+				temp.add(line);
+				Info.info.put(type, temp);
+			}
 		}
 	}
 	public static void finish(Simulation simulation){
-		for(String key:Info.info.keySet()){
-			FileWriter file = null;
-			try {
-				file = new FileWriter(simulation.getStringValue("result_folder") + "stats" + "." + key.replace(" ", "") + ".txt");
-				for(String line:Info.info.get(key)){
-					file.write(line + "\n");
+		if(Info.enabled){
+			for(String key:Info.info.keySet()){
+				FileWriter file = null;
+				try {
+					file = new FileWriter(simulation.getStringValue("result_folder") + "stats" + "." + key.replace(" ", "") + ".txt");
+					for(String line:Info.info.get(key)){
+						file.write(line + "\n");
+					}
+					file.flush();
+					file.close();
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
-				file.flush();
-				file.close();
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
+			Info.info = new HashMap<String,ArrayList<String>>();
 		}
-		Info.info = new HashMap<String,ArrayList<String>>();
 	}
 }

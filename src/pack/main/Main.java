@@ -11,9 +11,11 @@ import pack.util.Timing;
 
 public class Main {
 	public static void main(String[] args){
-		
+
 		Simulation simulation = new Simulation();
 		simulation.parseArgs(args);
+		
+		Info.enabled(simulation.getBooleanValue("print_stats_to_file"));
 
 		Output.path(simulation);//Set path of output
 		Output.println(simulation.toValueString());
@@ -59,7 +61,7 @@ public class Main {
 		//Pre-packing
 		netlist.pre_pack_carry();
 		netlist.pre_pack_share();
-		
+
 		netlist.pre_pack_lut_ff();
 
 		netlist.pre_pack_mixed_width_ram();
@@ -68,34 +70,34 @@ public class Main {
 		netlist.netlist_checker();
 
 		Partition partition = new Partition(netlist, archLight, simulation, path.get_max_arr_time());
-		
+
 		Timing partitioningTimer = new Timing();
 		partitioningTimer.start();
 		partition.partitionate();
 		partitioningTimer.stop();
 		Output.println("\tPartitioning took " + partitioningTimer.toString());
 		Output.newLine();
-		
+
 		netlist.test_dsp_distribution();
-		
+
 		Info.finish(simulation);
-		
+
 		Cluster pack = new Cluster(netlist, archLight, partition, simulation);
-		
+
 		Timing seedBasedPackingTimer = new Timing();
 		seedBasedPackingTimer.start();
 		pack.packing();
 		seedBasedPackingTimer.stop();
 		Output.println("\tSeed based packing took " + seedBasedPackingTimer.toString());
-		
+
 		//////// PACKING TIMER ////////
 		multiPartTimer.stop();
 		Output.println("\tMultiPart took " + multiPartTimer.toString());
 		///////////////////////////////
-		
+
 		pack.writeHierarchyFile();
 		pack.writeNetlistFile();
-		
+
 		Info.finish(simulation);
 
 		Output.flush();	
