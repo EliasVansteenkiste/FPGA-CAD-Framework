@@ -44,7 +44,7 @@ public class Cluster {
 		}
 	}
 	public void tryWriteHierarchyFile() throws IOException{
-		FileWriter w = new FileWriter(this.simulation.getStringValue("result_folder") + root.get_blif() + ".hierarchy");
+		FileWriter w = new FileWriter(this.simulation.getStringValue("result_folder") + root.get_blif() + ".multipart.hierarchy");
 		BufferedWriter writer = new BufferedWriter(w);
 
 		int logicBlockCounter = 0;
