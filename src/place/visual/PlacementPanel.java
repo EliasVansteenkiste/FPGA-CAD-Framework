@@ -17,8 +17,17 @@ import javax.swing.JPanel;
 public class PlacementPanel extends JPanel {
     private static final long serialVersionUID = -2621200118414334047L;
 
+    private Logger logger;
+
     private final Color gridColorLight = new Color(150, 150, 150);
     private final Color gridColorDark = new Color(0, 0, 0);
+    private final Color clbColor = new Color(255, 0, 0, 50);
+    private final Color macroColor = new Color(100, 0, 0, 50);
+    private final Color ioColor = new Color(255, 255, 0, 50);
+    private final Color dspColor = new Color(0, 255, 0, 50);
+    private final Color m9kColor = new Color(0, 0, 255, 50);
+    private final Color m144kColor = new Color(0, 255, 255, 50);
+    private final Color hardBlockColor = new Color(0, 0, 0, 50);
 
     private transient Placement placement;
 
@@ -28,7 +37,9 @@ public class PlacementPanel extends JPanel {
     private boolean mouseEnabled = false, plotEnabled = false;
     private double[] bbCost;
 
-    PlacementPanel(Logger logger) {};
+    PlacementPanel(Logger logger) {
+        this.logger = logger;
+    }
 
     void setPlacement(Placement placement) {
         this.placement = placement;
@@ -215,8 +226,43 @@ public class PlacementPanel extends JPanel {
         int top = (int) (this.top + 1 + this.blockSize * coordinate.getY());
         int size = this.blockSize - 1;
 
-        g.setColor(block.getColor());
-
+        Color color;
+        if(block.hasLeafNode()){
+        	color = block.getLeafNode().getColor();
+        }else{
+            switch(block.getCategory()) {
+	            case IO:
+	                color = this.ioColor;
+	                break;
+	
+	            case CLB:
+	                color = this.clbColor;
+	                break;
+	            	
+	            case HARDBLOCK:
+	            	if(block.getType().getName().equals("DSP")){
+	            		color = this.dspColor;
+	            	}else if(block.getType().getName().equals("M9K")){
+	            		color = this.m9kColor;
+	            	}else if(block.getType().getName().equals("M144K")){
+	            		color = this.m144kColor;
+	            	}else{
+	            		color = this.hardBlockColor;
+	            	}
+	            	break;
+	
+	            default:
+	                try {
+	                    throw new InvalidBlockCategoryException(block);
+	                } catch(InvalidBlockCategoryException error) {
+	                    this.logger.raise(error);
+	                }
+	                color = null;
+            }
+            if(block.isInMacro()) color = this.macroColor;
+        }
+        
+        g.setColor(color);
         if(block.getType().getHeight() > 1){
             for(int i=0;i<block.getType().getHeight();i++){
             	top = (int) (this.top + 1 + this.blockSize * (coordinate.getY()+i));

@@ -1,6 +1,5 @@
 package place.circuit.block;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +11,7 @@ import place.circuit.exceptions.PlacedBlockException;
 import place.circuit.exceptions.UnplacedBlockException;
 import place.circuit.pin.GlobalPin;
 import place.circuit.timing.TimingNode;
+import place.hierarchy.LeafNode;
 
 public class GlobalBlock extends AbstractBlock {
 
@@ -21,54 +21,23 @@ public class GlobalBlock extends AbstractBlock {
     private Macro macro;
     private int macroOffsetY = 0;
 
-    private String hierarchyNode;
-    private Color color;
+    private LeafNode leafNode;
 
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
 
-        this.hierarchyNode = null;
-        switch(this.getCategory()) {
-	        case IO:
-	            this.color = new Color(255, 255, 0, 50);
-	            break;
-	
-	        case CLB:
-	            this.color = new Color(255, 0, 0, 50);
-	            break;
-	        	
-	        case HARDBLOCK:
-	        	if(this.getType().getName().equals("DSP")){
-	        		this.color = new Color(0, 255, 0, 50);
-	        	}else if(this.getType().getName().equals("M9K")){
-	        		this.color = new Color(0, 0, 255, 50);
-	        	}else if(this.getType().getName().equals("M144K")){
-	        		this.color = new Color(0, 255, 255, 50);
-	        	}else{
-	        		this.color = new Color(0, 0, 0, 50);
-	        	}
-	        	break;
-	
-	        default:
-	        	this.color = null;
-        }
+        this.leafNode = null;
     }
 
-    //Hierarchy node
-    public void setHierarchyNode(String hierarchyNode){
-    	this.hierarchyNode = hierarchyNode;
+    //Leaf node
+    public void setLeafNode(LeafNode hierarchyNode){
+    	this.leafNode = hierarchyNode;
     }
-    public String getHierarchyNode(){
-    	return this.hierarchyNode;
+    public LeafNode getLeafNode(){
+    	return this.leafNode;
     }
-    public boolean hasHierarchyNode(){
-    	return !(this.hierarchyNode == null);
-    }
-    public void setColor(Color color){
-    	this.color = color;
-    }
-    public Color getColor(){
-    	return this.color;
+    public boolean hasLeafNode(){
+    	return !(this.leafNode == null);
     }
 
     @Override

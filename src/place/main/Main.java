@@ -15,6 +15,7 @@ import place.circuit.io.IllegalSizeException;
 import place.circuit.io.NetParser;
 import place.circuit.io.PlaceDumper;
 import place.circuit.io.PlaceParser;
+import place.hierarchy.LeafNode;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.interfaces.OptionsManager;
@@ -23,6 +24,7 @@ import place.interfaces.Options.Required;
 import place.placers.Placer;
 import place.placers.simulatedannealing.EfficientBoundingBoxNetCC;
 import place.util.Timer;
+import place.visual.LineChart;
 import place.visual.PlacementVisualizer;
 
 import java.io.BufferedWriter;
@@ -39,6 +41,7 @@ import java.util.Random;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.jfree.ui.RefineryUtilities;
 import org.xml.sax.SAXException;
 
 public class Main {
@@ -234,6 +237,8 @@ public class Main {
                 this.logger.raise("Failed to write to place file: " + this.outputPlaceFile, error);
             }
         }
+        
+        this.printBlockDistance();
 
         this.stopAndPrintTimer(totalString);
 
@@ -241,9 +246,6 @@ public class Main {
 
         this.visualizer.createAndDrawGUI();
     }
-
-
-
 
     private void loadCircuit() {
         ArchitectureCacher architectureCacher = new ArchitectureCacher(
@@ -481,7 +483,95 @@ public class Main {
 
         this.logger.println();
     }
+    private void printBlockDistance(){
+    	//this.printDistance("Cut Level");
+    	//this.printDistance("Total Distance");
+    	//this.printDistance("Test");
+    }
+    private void printDistance(String type){
+    	int maxFPGADistance = this.circuit.getWidth() + this.circuit.getHeight();
+    	Map<Integer, int[]> distanceCharts = new HashMap<Integer, int[]>();
+    	for(GlobalBlock sourceBlock:this.circuit.getGlobalBlocks()){
+    		if(!sourceBlock.getLeafNode().isFloating()){
+    			for(GlobalBlock sinkBlock:this.circuit.getGlobalBlocks()){
+    				if(!sinkBlock.getLeafNode().isFloating()){
+    					if(sourceBlock.getIndex() != sinkBlock.getIndex()){
+            				int fpgaDistance = this.fpgaDistance(sourceBlock, sinkBlock);
+            				int hierarchyDistance = this.hierarchyDistance(type, sourceBlock, sinkBlock);
 
+            				if(!distanceCharts.containsKey(hierarchyDistance)){
+            					distanceCharts.put(hierarchyDistance, new int[maxFPGADistance + 1]);
+            				}
+            				distanceCharts.get(hierarchyDistance)[fpgaDistance]++;
+            			}
+    				}
+        		}
+    		}
+    	}
+    	this.makeGraph(type, distanceCharts);
+    }
+    
+    //Distance
+    private int fpgaDistance(GlobalBlock b1, GlobalBlock b2){
+		int horizontalDistance = Math.abs(b1.getSite().getColumn() - b2.getSite().getColumn());
+		int verticalDistance = Math.abs(b1.getSite().getRow() - b2.getSite().getRow());
+		int fpgaDistance = horizontalDistance + verticalDistance;
+		return fpgaDistance;
+    }
+    private int hierarchyDistance(String type, GlobalBlock b1, GlobalBlock b2){
+    	LeafNode ln1 = b1.getLeafNode();
+    	LeafNode ln2 = b2.getLeafNode();
+    	
+    	if(type.equals("Cut Level")){
+    		return ln1.cutLevel(ln2);
+    	}else if(type.equals("Total Distance")){
+    		return ln1.totalDistance(ln2);
+    	}else if(type.equals("Test")){
+    		return ln1.cutSeparation(ln2) - ln1.cutLevel(ln2);
+    	}else{
+    		System.out.println("Unknown type hierarchy distance type: " + type);
+    		return 0;
+    	}
+    }
+    
+    private boolean hasValues(int[] array){
+    	int l = array.length;
+    	for(int i = 0; i < l; i++){
+    		if(array[i] > 0){
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    private void makeGraph(String name, Map<Integer, int[]> distanceCharts){
+        LineChart chart = new LineChart(name, "Distance", "Number of connections");
+        for(int hierarchyDistance = 0; hierarchyDistance < 1000 ; hierarchyDistance++){
+        	if(distanceCharts.containsKey(hierarchyDistance)){
+            	int[] temp = distanceCharts.get(hierarchyDistance);
+            	if(this.hasValues(temp)){
+                	int maxValue = 0;
+                	for(int value:temp){
+                		if(value > maxValue){
+                			maxValue = value;
+                		}
+                	}
+                	
+                	maxValue = 1;
+                	
+                	for(int fpgaDistance = 0; fpgaDistance <= temp.length * 2 / 3; fpgaDistance++){
+                		double value = temp[fpgaDistance] * (1.0 / maxValue);
+        	        	chart.addData("" + hierarchyDistance, fpgaDistance, value);
+        	        }
+            	}
+        	}
+        }
+        chart.pack( );
+        RefineryUtilities.centerFrameOnScreen(chart);
+        chart.setVisible(true);
+    }
+
+    
+    
 
     private void stopAndPrintTimer() {
         this.stopAndPrintTimer(this.mostRecentTimerName);
