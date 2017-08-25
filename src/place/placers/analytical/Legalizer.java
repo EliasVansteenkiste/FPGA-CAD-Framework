@@ -25,6 +25,7 @@ abstract class Legalizer {
     protected int[] legalX, legalY;
     protected int[] heights;
 
+    protected double gridForce, gridForceMultiplier;
     private double quality, qualityMultiplier;
 
     // Properties of the blockType that is currently being legalized
@@ -125,12 +126,18 @@ abstract class Legalizer {
         this.netBlocks = legalizer.netBlocks;
     }
     
-    void setQuality(double initialQuality, double qualityMultiplier){
+    void setQuality(double initialQuality, double finalQuality, int numIterations){
     	this.quality = initialQuality;
-    	this.qualityMultiplier = qualityMultiplier;
+    	this.qualityMultiplier = Math.pow(finalQuality / initialQuality, 1.0 / (numIterations - 1));
     }
-    void increaseQuality(){
+    void setGridForce(double initialGridForce, double finalGridForce, int numIterations){
+    	this.gridForce = initialGridForce;
+    	this.gridForceMultiplier = Math.pow(finalGridForce / initialGridForce, 1.0 / (numIterations - 1));
+    }
+    void increaseQualityAndGridForce(){
     	this.quality *= this.qualityMultiplier;
+    	this.gridForce *= this.gridForceMultiplier;
+    	System.out.println(this.gridForce);
     }
     double getQuality(){
     	return this.quality;
