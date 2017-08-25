@@ -93,7 +93,7 @@ public class GradientPlacerTD extends GradientPlacer {
         if(iteration > 0) {
             this.anchorWeight = Math.pow((double)iteration / (this.numIterations - 1.0), this.anchorWeightExponent) * this.anchorWeightStop;
             this.learningRate *= this.learningRateMultiplier;
-            this.legalizer.increaseQuality();
+            this.legalizer.increaseQualityAndGridForce();
         }
     }
 
@@ -152,7 +152,7 @@ public class GradientPlacerTD extends GradientPlacer {
 
     @Override
     protected void calculateTimingCost() {
-        this.timingCost = this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+        this.timingCost = this.criticalityCalculator.calculate(this.getCurrentLegalX(), this.getCurrentLegalY());
     }
 
     @Override

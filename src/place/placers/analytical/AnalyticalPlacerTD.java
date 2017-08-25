@@ -90,7 +90,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
         if(iteration > 0) {
             this.anchorWeight *= this.anchorWeightMultiplier;
-            this.legalizer.increaseQuality();
+            this.legalizer.increaseQualityAndGridForce();
         }
     }
 
@@ -138,7 +138,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
     @Override
     protected void calculateTimingCost() {
-        this.timingCost = this.criticalityCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+        this.timingCost = this.criticalityCalculator.calculate(this.getCurrentLegalX(), this.getCurrentLegalY());
     }
 
     @Override

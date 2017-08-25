@@ -35,7 +35,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected int numIOBlocks, numMovableBlocks;
 
     protected double[] linearX, linearY;
-    protected int[] legalX, legalY;
+    protected int[] bestLegalX, bestLegalY;
     protected int[] heights;
 
     private double criticalityLearningRate;
@@ -123,8 +123,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         // Add all global blocks, in the order of 'blockTypes'
         this.linearX = new double[numBlocks];
         this.linearY = new double[numBlocks];
-        this.legalX = new int[numBlocks];
-        this.legalY = new int[numBlocks];
+        this.bestLegalX = new int[numBlocks];
+        this.bestLegalY = new int[numBlocks];
         this.hasNets = new boolean[numBlocks];
 
         this.heights = new int[numBlocks];
@@ -154,8 +154,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
                     this.linearX[blockCounter] = column;
                     this.linearY[blockCounter] = row - offset;
-                    this.legalX[blockCounter] = column;
-                    this.legalY[blockCounter] = row + (int) Math.floor(-offset);
+                    this.bestLegalX[blockCounter] = column;
+                    this.bestLegalY[blockCounter] = row + (int) Math.floor(-offset);
                     this.heights[blockCounter] = height;
 
                     this.netBlocks.put(block, new NetBlock(blockCounter, offset, blockType));
@@ -387,13 +387,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     private void addLegalPlacement(int iteration){
         this.visualizer.addPlacement(
                 String.format("iteration %d: legal", iteration),
-                this.netBlocks, this.legalX, this.legalY,
+                this.netBlocks, this.getCurrentLegalX(), this.getCurrentLegalY(),
                 this.legalCost);
     }
 
+    protected abstract int[] getCurrentLegalX();
+    protected abstract int[] getCurrentLegalY();
+    
     protected void updateLegal(int[] newLegalX, int[] newLegalY) {
-        System.arraycopy(newLegalX, 0, this.legalX, 0, this.legalX.length);
-        System.arraycopy(newLegalY, 0, this.legalY, 0, this.legalY.length);
+        System.arraycopy(newLegalX, 0, this.bestLegalX, 0, this.bestLegalX.length);
+        System.arraycopy(newLegalY, 0, this.bestLegalY, 0, this.bestLegalY.length);
     }
 
     //Overlap
@@ -432,8 +435,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             if(blocksEnd > blocksStart) {
             	for(int blockIndex = blocksStart; blockIndex < blocksEnd; blockIndex++){
-            		int x = this.legalX[blockIndex];
-                	int y = this.legalY[blockIndex];
+            		int x = this.bestLegalX[blockIndex];
+                	int y = this.bestLegalY[blockIndex];
 
                 	int height = this.heights[blockIndex];
 
@@ -466,8 +469,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             int index = netBlock.blockIndex;
             int offset = (int) Math.ceil(netBlock.offset);
 
-            int column = this.legalX[index];
-            int row = this.legalY[index] + offset * block.getType().getHeight();
+            int column = this.bestLegalX[index];
+            int row = this.bestLegalY[index] + offset * block.getType().getHeight();
 
             if(block.getCategory() != BlockCategory.IO) {
                 Site site = (Site) this.circuit.getSite(column, row, true);

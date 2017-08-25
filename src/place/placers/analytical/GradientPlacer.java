@@ -45,7 +45,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
-                new Double(0.7));
+                new Double(0.6));
 
         options.add(
                 O_LEARNING_RATE_START,
@@ -85,12 +85,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL,
                 "number of solve-legalize iterations",
-                new Integer(40));
+                new Integer(20));
 
         options.add(
                 O_INNER_EFFORT_LEVEL,
                 "number of gradient steps to take in each outer iteration",
-                new Integer(40));
+                new Integer(50));
     }
 
     protected double anchorWeight;
@@ -167,19 +167,21 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new HeapLegalizer(
+        this.legalizer = new GradientLegalizer(
+        //this.legalizer = new HeapLegalizer(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
                 this.linearX,
                 this.linearY,
-                this.legalX,
-                this.legalY,
+                this.bestLegalX,
+                this.bestLegalY,
                 this.heights,
                 this.visualizer,
                 this.nets,
                 this.netBlocks);
-        this.legalizer.setQuality(0.1,  0.9);
+        this.legalizer.setQuality(0.1,  0.001, this.numIterations);
+        this.legalizer.setGridForce(0.001, 0.01, this.numIterations);
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
@@ -226,10 +228,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             this.netEnds[netCounter] = netBlockCounter;
         }
 
-        this.fixed = new boolean[this.legalX.length];
+        this.fixed = new boolean[this.linearX.length];
 
-    	this.coordinatesX = new double[this.legalX.length];
-    	this.coordinatesY = new double[this.legalY.length];
+    	this.coordinatesX = new double[this.linearX.length];
+    	this.coordinatesY = new double[this.linearY.length];
 
         this.solver = new LinearSolverGradient(
                 this.coordinatesX,
@@ -287,7 +289,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	}
     }
     private void doSolveLinear(boolean[] processNets){
-		for(int i = 0; i < this.legalX.length; i++){
+		for(int i = 0; i < this.linearX.length; i++){
 			if(this.fixed[i]){
 				this.coordinatesX[i] = this.legalizer.getLegalX(i);
 				this.coordinatesY[i] = this.legalizer.getLegalY(i);
@@ -303,7 +305,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), -1);
         }
         
-		for(int i = 0; i < this.legalX.length; i++){
+		for(int i = 0; i < this.linearX.length; i++){
 			if(!this.fixed[i]){
 				this.linearX[i] = this.coordinatesX[i];
 				this.linearY[i] = this.coordinatesY[i];
@@ -328,7 +330,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         if(this.anchorWeight != 0.0) {
             // this.legalX and this.legalY store the solution with the lowest cost
             // For anchors, the last (possibly suboptimal) solution usually works better
-            this.solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+            this.solver.addPseudoConnections(this.getCurrentLegalX(), this.getCurrentLegalY());
         }
 
         this.stopTimer(T_BUILD_LINEAR);
@@ -380,7 +382,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	this.startTimer(T_UPDATE_CIRCUIT);
 
     	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-    	this.legalCost = this.costCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+    	this.legalCost = this.costCalculator.calculate(this.getCurrentLegalX(), this.getCurrentLegalY());
 
     	if(this.isTimingDriven()){
     		this.calculateTimingCost();
@@ -391,9 +393,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     	if(this.latestCost < this.minCost){
     		this.minCost = this.latestCost;
-    		this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+    		this.updateLegal(this.getCurrentLegalX(), this.getCurrentLegalY());
     	}
     	this.stopTimer(T_UPDATE_CIRCUIT);
+    }
+    
+    @Override
+    protected int[] getCurrentLegalX(){
+    	return this.legalizer.getLegalX();
+    }
+    protected int[] getCurrentLegalY(){
+    	return this.legalizer.getLegalY();
     }
 
     @Override
