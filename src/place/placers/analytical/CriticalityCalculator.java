@@ -39,32 +39,35 @@ class CriticalityCalculator{
         this.nets = nets;
     }
 
-    public double calculate(int[] x, int[] y) {
+    public double calculate(double[] x, double[] y) {
         this.updateDelays(x, y);
         this.timingGraph.calculateCriticalities(false);
         
         return this.timingGraph.getMaxDelay();
     }
 
-    private void updateDelays(int[] x, int[] y) {
+    private void updateDelays(double[] x, double[] y) {
         for(TimingNet net : this.nets) {
             int sourceIndex = net.source.blockIndex;
             BlockCategory sourceCategory = this.blockCategories[sourceIndex];
 
-            int sourceX = x[sourceIndex];
-            int sourceY = y[sourceIndex];
+            double sourceX = x[sourceIndex];
+            double sourceY = y[sourceIndex];
 
             for(TimingNetBlock sink : net.sinks) {
                 int sinkIndex = sink.blockIndex;
                 BlockCategory sinkCategory = this.blockCategories[sinkIndex];
 
-                int sinkX = x[sinkIndex];
-                int sinkY = y[sinkIndex];
+                double sinkX = x[sinkIndex];
+                double sinkY = y[sinkIndex];
 
-                int deltaX = Math.abs(sinkX - sourceX);
-                int deltaY = Math.abs(sinkY - sourceY);
+                double deltaX = Math.abs(sinkX - sourceX);
+                double deltaY = Math.abs(sinkY - sourceY);
+                
+                int intDeltaX = (int) Math.round(deltaX);
+                int intDeltaY = (int) Math.round(deltaY);
 
-                double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
+                double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, intDeltaX, intDeltaY);
                 sink.timingEdge.setWireDelay(wireDelay);
             }
         }

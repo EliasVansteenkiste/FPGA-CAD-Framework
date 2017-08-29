@@ -44,7 +44,7 @@ class DimensionSolverAnalytical {
     }
 
 
-    void addPseudoConnection(int blockIndex, int legalCoordinate) {
+    void addPseudoConnection(int blockIndex, double legalCoordinate) {
         double weight = this.pseudoWeight;
         int relativeIndex = this.forwardIndexMap.get(blockIndex);
 

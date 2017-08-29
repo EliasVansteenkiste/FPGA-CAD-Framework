@@ -103,13 +103,15 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.blockTypeIndexStarts,
                 this.linearX,
                 this.linearY,
-                this.bestLegalX,
-                this.bestLegalY,
+                this.legalX,
+                this.legalY,
                 this.heights,
+                this.leafNode,
                 this.visualizer,
                 this.nets,
-                this.netBlocks);
-        this.legalizer.setQuality(0.1, 0.001, this.numIterations);
+                this.netBlocks,
+                this.logger);
+        this.legalizer.setAnnealQuality(0.1, 0.001, this.numIterations);
 
         //Make a list of all the nets for each blockType
         this.allTrue = new boolean[this.numRealNets];
@@ -189,8 +191,8 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     protected void doSolveLinear(boolean[] processNets, int iteration){
 		for(int i = 0; i < this.linearX.length; i++){
 			if(this.fixed[i]){
-				this.coordinatesX[i] = this.legalizer.getLegalX(i);
-				this.coordinatesY[i] = this.legalizer.getLegalY(i);
+				this.coordinatesX[i] = this.legalX[i];
+				this.coordinatesY[i] = this.legalY[i];
 			}else{
 				this.coordinatesX[i] = this.linearX[i];
 				this.coordinatesY[i] = this.linearY[i];
@@ -229,7 +231,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         if(iteration > 0) {
             // this.legalX and this.legalY store the solution with the lowest cost
             // For anchors, the last (possibly suboptimal) solution usually works better
-            this.solver.addPseudoConnections(this.getCurrentLegalX(), this.getCurrentLegalY());
+            this.solver.addPseudoConnections(this.legalX, this.legalY);
         }
 
         this.stopTimer(T_BUILD_LINEAR);
@@ -274,34 +276,18 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
     
     @Override
-    protected void updateLegalIfNeeded(){
+    protected void calculateCost(){
     	this.startTimer(T_UPDATE_CIRCUIT);
     	
     	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-        this.legalCost = this.costCalculator.calculate(this.getCurrentLegalX(), this.getCurrentLegalY());
+        this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
     	
     	if(this.isTimingDriven()){
     		this.calculateTimingCost();
-    		this.latestCost = Math.pow(this.legalCost, 1) * Math.pow(this.timingCost, 1);
-    	}else{
-    		this.latestCost = this.legalCost;
     	}
 
-    	if(this.latestCost < this.minCost){
-    		this.minCost = this.latestCost;
-    		this.updateLegal(this.getCurrentLegalX(), this.getCurrentLegalY());
-    	}
     	this.stopTimer(T_UPDATE_CIRCUIT);
     }
-    
-    @Override
-    protected int[] getCurrentLegalX(){
-    	return this.legalizer.getLegalX();
-    }
-    protected int[] getCurrentLegalY(){
-    	return this.legalizer.getLegalY();
-    }
-
 
     @Override
     protected void addStatTitles(List<String> titles) {

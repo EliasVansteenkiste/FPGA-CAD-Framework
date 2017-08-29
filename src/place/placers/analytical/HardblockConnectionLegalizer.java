@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 import place.circuit.architecture.BlockType;
+import place.circuit.exceptions.OffsetException;
+import place.interfaces.Logger;
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.util.TimingTree;
@@ -16,7 +18,7 @@ public class HardblockConnectionLegalizer{
 	private BlockType blockType;
 
 	private final double[] linearX, linearY;
-    private final int[] legalX, legalY;
+    private final double[] legalX, legalY;
 
     private final Block[] blocks;
     private final Net[] nets;
@@ -31,18 +33,21 @@ public class HardblockConnectionLegalizer{
     private final int gridWidth, gridHeigth;
     
     private final TimingTree timingTree;
+    private Logger logger;
 
 	HardblockConnectionLegalizer(
 			double[] linearX,
 			double[] linearY,
-			int[] legalX, 
-			int[] legalY,
+			double[] legalX, 
+			double[] legalY,
 			int[] heights,
 			int gridWidth,
 			int gridHeight,
-			List<AnalyticalAndGradientPlacer.Net> placerNets){
+			List<AnalyticalAndGradientPlacer.Net> placerNets,
+			Logger logger) {
 
 		this.timingTree = new TimingTree(false);
+		this.logger = logger;
 
 		this.timingTree.start("Initialize Hardblock Connection Legalizer Data");
 
@@ -57,7 +62,7 @@ public class HardblockConnectionLegalizer{
 
 		//Count the number of nets
 		int maxFanout = 100;
-		System.out.println("Nets with fanout larger than " + maxFanout + " are left out:");
+		this.logger.println("Nets with fanout larger than " + maxFanout + " are left out:");
 		int numNets = 0;
 		Map<Integer,Integer> fanoutMap = new HashMap<>();
 		for(int i = 0; i < placerNets.size(); i++){
@@ -82,49 +87,19 @@ public class HardblockConnectionLegalizer{
 					notEmpty = true;
 				}
 			}
-			System.out.println("\t" + counter + " nets with fanout between " + min + " and " + max);
+			this.logger.println("\t" + counter + " nets with fanout between " + min + " and " + max);
 			min = max;
 			max *= 2;
 		}
-		System.out.println();
+		this.logger.println();
 
-		//Make all objects
+		//Make all objects and connect them
 		this.blocks = new Block[legalX.length];
 		this.nets = new Net[numNets];
+		this.makeNets(placerNets, maxFanout);
+		this.makeBlocks(heights);
+		this.connectNetsAndBlocks(placerNets, maxFanout);
 
-		int l = 0;
-		for(int i = 0; i < placerNets.size(); i++){
-			int fanout = placerNets.get(i).blocks.length;
-			if(fanout > maxFanout){
-				//Do Nothing
-			}else{
-				double netWeight = AnalyticalAndGradientPlacer.getWeight(fanout);
-				this.nets[l] = new Net(l, netWeight);
-				l++;
-			}
-		}
-		for(int i = 0; i < legalX.length; i++){
-			float offset = (1 - heights[i]) / 2f;
-			this.blocks[i] = new Block(i, offset);
-		}
-
-		//Connect objects
-		l = 0;
-		for(int i = 0; i < placerNets.size(); i++){
-			int fanout = placerNets.get(i).blocks.length;
-			if(fanout > maxFanout){
-				//Do nothing
-			}else{
-				Net legalizerNet = this.nets[l];
-				for(NetBlock block:placerNets.get(i).blocks){
-					Block legalizerBlock = this.blocks[block.blockIndex];
-
-					legalizerNet.addBlock(legalizerBlock);
-					legalizerBlock.addNet(legalizerNet);
-				}
-				l++;
-			}
-		}
 
 		//Finish
 		for(Net net:this.nets){
@@ -141,25 +116,60 @@ public class HardblockConnectionLegalizer{
 		this.columnSwap = new HardblockColumnSwap();
 		this.hardblockAnneal = new HardblockAnneal(100);
 	}
+	private void makeNets(List<AnalyticalAndGradientPlacer.Net> placerNets, int maxFanout){
+		int l = 0;
+		for(int i = 0; i < placerNets.size(); i++){
+			int fanout = placerNets.get(i).blocks.length;
+			if(fanout > maxFanout){
+				//Do Nothing
+			}else{
+				double netWeight = AnalyticalAndGradientPlacer.getWeight(fanout);
+				this.nets[l] = new Net(l, netWeight);
+				l++;
+			}
+		}
+	}
+	private void makeBlocks(int[] heights){
+		for(int i = 0; i < legalX.length; i++){
+			float offset = (1 - heights[i]) / 2f;
+			this.blocks[i] = new Block(i, offset);
+		}
+	}
+	private void connectNetsAndBlocks(List<AnalyticalAndGradientPlacer.Net> placerNets, int maxFanout){
+		int l = 0;
+		for(int i = 0; i < placerNets.size(); i++){
+			int fanout = placerNets.get(i).blocks.length;
+			if(fanout > maxFanout){
+				//Do nothing
+			}else{
+				Net legalizerNet = this.nets[l];
+				for(NetBlock block:placerNets.get(i).blocks){
+					Block legalizerBlock = this.blocks[block.blockIndex];
+
+					legalizerNet.addBlock(legalizerBlock);
+					legalizerBlock.addNet(legalizerNet);
+				}
+				l++;
+			}
+		}
+	}
 
 	//ADD BLOCK TYPE
-	public void addBlocktype(BlockType blockType, int firstBlockIndex, int lastBlockIndex){
+	public void addBlocktype(BlockType blockType, int firstBlockIndex, int lastBlockIndex) throws OffsetException{
 		Block[] legalizeBlocks = this.getLegalizeBlocks(firstBlockIndex, lastBlockIndex);
 		Net[] legalizeNets = this.getLegalizeNets(legalizeBlocks);
 
 		this.blocksPerBlocktype.put(blockType, legalizeBlocks);
 		this.netsPerBlocktype.put(blockType, legalizeNets);
 	}
-	private Block[] getLegalizeBlocks(int firstBlockIndex, int lastBlockIndex){
+	private Block[] getLegalizeBlocks(int firstBlockIndex, int lastBlockIndex) throws OffsetException{
 		Block[] legalizeBlocks = new Block[lastBlockIndex - firstBlockIndex];
 		for(int i = firstBlockIndex; i < lastBlockIndex; i++){
 			Block legalizeBlock = this.blocks[i];
-			legalizeBlocks[i - firstBlockIndex] = legalizeBlock;
 			
-	        //Offset test -> hard blocks have no offset
-	        if(legalizeBlock.offset != 0){
-	        	System.out.println("The offset of hard block is equal to " + legalizeBlock.offset + ", should be 0");
-	        }
+			//Offset test -> hard blocks have no offset
+			if(legalizeBlock.offset != 0) throw new OffsetException();
+			legalizeBlocks[i - firstBlockIndex] = legalizeBlock;
 		}
 		return legalizeBlocks;
 	}
@@ -335,8 +345,8 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.start("Update block coordinates");
 		
         for(Block block:this.blocks){
-        	block.legalX = this.legalX[block.index];
-        	block.legalY = this.legalY[block.index];
+        	block.legalX = (int) Math.round(this.legalX[block.index]);
+        	block.legalY = (int) Math.round(this.legalY[block.index]);
         	block.linearX = this.linearX[block.index];
         	block.linearY = this.linearY[block.index];
         }
