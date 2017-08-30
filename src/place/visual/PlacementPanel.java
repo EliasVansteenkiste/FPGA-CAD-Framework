@@ -1,5 +1,6 @@
 package place.visual;
 
+import place.circuit.architecture.BlockCategory;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 
@@ -227,7 +228,7 @@ public class PlacementPanel extends JPanel {
         int size = this.blockSize - 1;
 
         Color color;
-        if(block.hasLeafNode()){
+        if(block.hasLeafNode() && !block.getCategory().equals(BlockCategory.HARDBLOCK)){
         	color = block.getLeafNode().getColor();
         }else{
             switch(block.getCategory()) {
