@@ -1,34 +1,32 @@
 package place.placers.analytical;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
+import place.interfaces.Logger;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
-import place.util.TimingTree;
 import place.visual.PlacementVisualizer;
 
 class GradientLegalizer extends Legalizer {
-
-	private LegalizerBlock[] blocks;
+	private Block[] blocks;
+	private Cluster mainCluster;
+	private Cluster[] hierarchyClusters;
 
 	private final double stepSize, speedAveraging;
 
-    private final PushingSpreader spreader;
-    private final DetailedLegalizer detailedLegalizer;
-
     private final List<Integer> legalColumns;
     private final List<Integer> illegalColumns;
-    private Map<Integer, Integer> columnMap;
-
-	private TimingTree timer = null;
+    private final Map<Integer, Integer> columnMap;
+    private final double scalingFactor;
 
     GradientLegalizer(
             Circuit circuit,
@@ -36,14 +34,16 @@ class GradientLegalizer extends Legalizer {
             List<Integer> blockTypeIndexStarts,
             double[] linearX,
             double[] linearY,
-            int[] legalX,
-            int[] legalY,
+            double[] legalX,
+            double[] legalY,
             int[] heights,
+            int[] leafNode,
             PlacementVisualizer visualizer,
             List<Net> nets,
-            Map<GlobalBlock, NetBlock> netBlocks){
+            Map<GlobalBlock, NetBlock> netBlocks,
+            Logger logger){
 
-    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, nets, visualizer, netBlocks);
+    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
 
     	this.legalColumns = new ArrayList<>();
     	this.illegalColumns = new ArrayList<>();
@@ -58,6 +58,7 @@ class GradientLegalizer extends Legalizer {
     			}
     		}
     	}
+    	this.scalingFactor = (double)this.legalColumns.size() / (this.legalColumns.size() + this.illegalColumns.size());
     	
     	this.columnMap = new HashMap<>();
     	int substract = 0;
@@ -68,155 +69,226 @@ class GradientLegalizer extends Legalizer {
     		this.columnMap.put(c - substract, substract);
     	}
 
-    	this.stepSize = 0.6;
+    	this.stepSize = 2;
     	this.speedAveraging = 0.2;
-
-    	this.timer = new TimingTree(false);
-
-    	this.spreader = new PushingSpreader(
-    			this.legalColumns.size(),	//width
-    			this.height,				//height
-    			this.timer);
-
-    	this.detailedLegalizer = new DetailedLegalizer(circuit);
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-        this.timer.start("Legalize BlockType");
-
-        this.initializeData(blocksStart, blocksEnd);
-
-        float scalingFactor = (float)this.legalColumns.size() / (this.legalColumns.size() + this.illegalColumns.size());
-
-        for(LegalizerBlock block:this.blocks){
-        	block.horizontal.coordinate = block.horizontal.coordinate * scalingFactor;
-        }
-            
-        this.timer.start("Spreading");
-        this.spreader.doSpreading(this.blocks, this.blocks.length, this.gridForce);
-        this.timer.time("Spreading");
-           
-        for(LegalizerBlock block:this.blocks){
-        	int column = (int)Math.floor(block.horizontal.coordinate - 0.25);
-        	
-        	block.horizontal.coordinate += this.columnMap.get(column);
-        }
-        
-        this.timer.start("Detailed legalizer");
-        this.detailedLegalizer.legalize(this.blocks);
-        this.timer.time("Detailed legalizer");
-
+        this.initializeData(blocksStart, blocksEnd, this.legalColumns.size(), this.height);
+        this.visual("Before spreading");
+        this.doSpreading(1000);
+        this.visual("After spreading");
        	this.updateLegal();
-
-       	this.timer.time("Legalize BlockType");
     }
 
-    //INITIALISATION
-    private void initializeData(int blocksStart, int blocksEnd){
-    	this.timer.start("Initialize Data");
-
-    	double x, y;
-
-    	//Initialize all blocks
-    	this.blocks = new LegalizerBlock[blocksEnd - blocksStart];
+    private void initializeData(int blocksStart, int blocksEnd, int gridWidth, int gridHeight){
+    	//Initialize blocks
+    	this.blocks = new Block[blocksEnd - blocksStart];
     	for(int b = blocksStart; b < blocksEnd; b++){
-			x = this.linearX[b];
-			y = this.linearY[b];
+			double x = this.linearX[b];
+			double y = this.linearY[b];
 
-    		int height = this.heights[b];
+    		int blockHeight = this.heights[b];
+    		float offset = (1 - blockHeight) / 2f;
 
-    		int offset = (1- height) / 2;
-    		this.blocks[b - blocksStart] = new LegalizerBlock(b, x, y, offset, height * this.blockType.getHeight(), this.stepSize, this.speedAveraging);
+    		int ln = this.leafNode[b];
+
+    		//Add offset
+    		y = y + offset;
+
+    		//Scale
+    		x *= this.scalingFactor;
+
+    		this.blocks[b - blocksStart] = new Block(b, x, y, offset, blockHeight * this.blockType.getHeight(), this.stepSize, this.speedAveraging, ln, gridWidth, gridHeight);
     	}
 
-    	this.timer.time("Initialize Data");
-    }
+    	//Initialize clusters
+    	Set<Integer> clusterIndex = new HashSet<>();
+    	for(int ln:this.leafNode){
+    		clusterIndex.add(ln);
+    	}
+    	this.hierarchyClusters = new Cluster[clusterIndex.size()];
+    	for(int i = 0; i < this.hierarchyClusters.length; i++){
+    		this.hierarchyClusters[i] = new Cluster(gridWidth, gridHeight);
+    	}
+    	this.mainCluster = new Cluster(gridWidth, gridHeight);
 
-    //Set legal coordinates of all blocks
+    	for(Block lb:this.blocks){
+    		this.hierarchyClusters[lb.leafNode].addBlock(lb);
+    		this.mainCluster.addBlock(lb);
+    	}
+
+    	this.mainCluster.initializeMassMap();
+    	for(Cluster hierarchyCluster:this.hierarchyClusters){
+    		hierarchyCluster.initializeMassMap();
+    		this.mainCluster.addCluster(hierarchyCluster);
+    	}
+    }
+    private void doSpreading(int numIterations){
+    	int iteration = 0;
+    	do{
+    		this.mainCluster.applyPushingBlockForces(this.gridForce, false);
+    		this.mainCluster.applyPushingBlockForces(this.gridForce, true);
+    		iteration++;
+    	}while(iteration < 250);
+    }
     private void updateLegal(){
-    	this.timer.start("Update Legal");
+    	for(Block block:this.blocks){//TODO IMPROVE EXPAND FUNCTIONALITY
+    		double x = block.horizontal.coordinate;
+    		double y = block.vertical.coordinate;
 
-    	for(LegalizerBlock block:this.blocks){
-    		this.legalX[block.index] = (int)Math.round(block.horizontal.coordinate);
-    		this.legalY[block.index] = (int)Math.round(block.vertical.coordinate  - block.offset);
+    		//Expand with column map
+    		int column = (int)Math.floor(x - 0.25);
+    		x += this.columnMap.get(column);
+
+    		//Add vertical offset
+    		y = y - block.offset;
+
+    		this.legalX[block.index] = x;
+    		this.legalY[block.index] = y;
+    	}
+    }
+    private void visual(int id){
+    	this.visual("" + id);
+    }
+    private void visual(String name){
+    	double[] coorX = new double[this.linearX.length];
+    	double[] coorY = new double[this.linearX.length];
+    	
+    	for(int i = 0; i < this.linearX.length; i++){
+    		coorX[i] = this.linearX[i];
+    		coorY[i] = this.linearY[i];
+    	}
+    	for(Block block:this.blocks){
+    		coorX[block.index] = block.horizontal.coordinate;
+    		coorY[block.index] = block.vertical.coordinate;
     	}
 
-    	this.timer.time("Update Legal");
+    	this.addVisual(name, coorX, coorY);
     }
 
-    class LegalizerBlock {
-    	final int index;
 
-    	final Dimension horizontal;
-    	final Dimension vertical;
+    public class Block {
+    	final int index, gridWidth, gridHeight;
 
-    	final int offset;
-    	final int height;
+    	final Dimension horizontal, vertical;
 
-    	int ceilx, ceilxlow, ceilxhigh;
-    	int ceily, ceilylow, ceilyhigh;
-    	float sw, nw, se, ne;
+    	final float offset;
+    	final int height, leafNode;
 
-    	boolean processed;
+    	int ceilx, ceily;
 
-    	LegalizerBlock(int index, double x, double y, int offset, int height, double stepSize, double speedAveraging){
+    	Area area;
+    	Force force;
+
+    	public Block(int index, double x, double y, float offset, int height, double stepSize, double speedAveraging, int leafNode, int gridWidth, int gridHeight){
     		this.index = index;
 
     		this.horizontal = new Dimension(x, stepSize, speedAveraging);
-    		this.vertical = new Dimension(y + offset, stepSize, speedAveraging);
+    		this.vertical = new Dimension(y, stepSize, speedAveraging);
 
     		this.offset = offset;
     		this.height = height;
+    		
+    		this.leafNode = leafNode;
+    		
+    		this.area = new Area();
+    		this.force = new Force();
+    		
+    		this.gridWidth = gridWidth;
+    		this.gridHeight = gridHeight;
+    		
+    		this.trim();
+    		this.update();
     	}
+        void doForce(int gridWidth, int gridHeight){
+        	this.solve();
+    		this.trim();
+    		this.update();
+        }
+        void solve(){
+        	this.horizontal.solve();
+        	this.vertical.solve();
+        }
+        void trim(){
+    		if(this.horizontal.coordinate > this.gridWidth) this.horizontal.coordinate = this.gridWidth;
+    		if(this.horizontal.coordinate < 1) this.horizontal.coordinate = 1;
+    		
+    		if(this.vertical.coordinate + this.height - 1 > this.gridHeight) this.vertical.coordinate = this.gridHeight - this.height + 1;
+    		if(this.vertical.coordinate < 1) this.vertical.coordinate = 1;
+        }
     	void update(){
         	this.ceilx = (int)Math.ceil(this.horizontal.coordinate + this.horizontal.coordinate);
         	this.ceily = (int)Math.ceil(this.vertical.coordinate + this.vertical.coordinate);
+        	
+    		double xLeft = (this.ceilx * 0.5) - this.horizontal.coordinate;
+    		double xRight = 0.5 - xLeft;
 
-        	this.ceilxlow = this.ceilx - 1;
-        	this.ceilxhigh = this.ceilx + 1;
+    		double yLeft = (this.ceily * 0.5) - this.vertical.coordinate;
+    		double yRight = 0.5 - yLeft;
 
-        	this.ceilylow = this.ceily - 1;
-        	this.ceilyhigh = this.ceily + 1;
-
-    		float xLeft = (this.ceilx * 0.5f) - this.horizontal.coordinate;
-    		float xRight = 0.5f - xLeft;
-
-    		float yLeft = (this.ceily * 0.5f) - this.vertical.coordinate;
-    		float yRight = 0.5f - yLeft;
-
-    		this.sw = xLeft * yLeft;
-    		this.nw = xLeft * yRight;
-    		this.se = xRight * yLeft;
-    		this.ne = xRight * yRight;
+    		this.area.sw = xLeft * yLeft;
+    		this.area.nw = xLeft * yRight;
+    		this.area.se = xRight * yLeft;
+    		this.area.ne = xRight * yRight;
+    	}
+    }
+    class Direction {
+    	double sw, se, nw, ne, sum;
+    	
+    	public Direction(){
+    		this.sw = 0.0;
+    		this.se = 0.0;
+    		this.ne = 0.0;
+    		this.nw = 0.0;
+    		this.sum = 0.0;
+    	}
+    	public void setSum(){
+    		this.sum = this.sw + this.nw + this.se + this.ne;
+    	}
+    }
+    class Area extends Direction {
+    	public Area(){
+    		super();
+    	}
+    }
+    class Force extends Direction {
+    	private double xgrid;
+    	private double ygrid;
+    	
+    	public Force(){
+    		super();
     	}
 
-    	double cost(int legalX, int legalY){
-    		return (this.horizontal.coordinate - legalX) * (this.horizontal.coordinate - legalX) + (this.vertical.coordinate - legalY) * (this.vertical.coordinate - legalY);
+    	public double horizontal(){
+    		return (this.sw + this.nw - this.se - this.ne + this.xgrid) / (this.sum + this.xgrid);
+    	}
+    	public double vertical(){
+    		return (this.sw - this.nw + this.se - this.ne + this.ygrid) / (this.sum + this.ygrid);
     	}
     }
     class Dimension {
-    	float coordinate;
-    	float speed;
-    	float force;
+    	double coordinate;
+    	double speed;
+    	double force;
 
-    	final float stepSize;
-    	final float speedAveraging;
+    	final double stepSize;
+    	final double speedAveraging;
 
     	Dimension(double coordinate,  double stepSize, double speedAveraging){
-    		this.coordinate = (float) coordinate;
+    		this.coordinate = coordinate;
     		this.speed = 0;
     		this.force = 0;
 
-    		this.stepSize = (float) stepSize;
-    		this.speedAveraging = (float) speedAveraging;
+    		this.stepSize = stepSize;
+    		this.speedAveraging = speedAveraging;
     	}
-    	void setForce(float force){
+    	void setForce(double force){
     		this.force = force;
     	}
-
     	void solve(){
     		if(this.force != 0.0){
-    			float newSpeed = this.stepSize * this.force;
+    			double newSpeed = this.stepSize * this.force;
 
             	this.speed = this.speedAveraging * this.speed + (1 - this.speedAveraging) * newSpeed;
 
@@ -224,12 +296,212 @@ class GradientLegalizer extends Legalizer {
     		}
     	}
     }
-    public static class Comparators {
-    	public static Comparator<LegalizerBlock> VERTICAL = new Comparator<LegalizerBlock>() {
-    		@Override
-    		public int compare(LegalizerBlock b1, LegalizerBlock b2) {
-    			return Double.compare(b1.vertical.coordinate, b2.vertical.coordinate);
+    
+    class Cluster {
+    	final int width, height;
+    	final MassMap massMap;
+    	
+    	final List<Block> blocks;
+    	final List<Cluster> clusters;
+    	
+    	Cluster(int width, int height){
+        	this.width = width;
+        	this.height = height;
+        	this.massMap = new MassMap(this.width, this.height);
+        	
+    		this.blocks = new ArrayList<>();
+    		this.clusters = new ArrayList<>();
+    	}
+    	
+    	public void addBlock(Block block){
+    		this.blocks.add(block);
+    	}
+    	public void addCluster(Cluster cluster){
+    		this.clusters.add(cluster);
+    	}
+
+        public void initializeMassMap(){
+        	this.massMap.reset();
+        	
+        	for(Block block:this.blocks){
+        		this.massMap.add(block);
+        	}
+        }
+        private void applyPushingBlockForces(double gridForce, boolean clusterBased){
+        	this.massMap.setGridForce(gridForce);
+        	if(clusterBased){
+        		for(Cluster cluster:this.clusters){
+	        		for(Block block:cluster.blocks){
+	        			this.massMap.setForce(block);
+	        		}
+	
+	        		double horizontalForce = 0.0;
+	        		double verticalForce = 0.0;
+	        		
+	        		for(Block block:cluster.blocks){
+	        			horizontalForce += block.horizontal.force;
+	        			verticalForce += block.vertical.force;
+	        		}
+	
+	        		horizontalForce /= 0.5 * cluster.blocks.size();
+	        		verticalForce /= 0.5 * cluster.blocks.size();
+	
+	        		for(Block block:cluster.blocks){
+	        			block.horizontal.setForce(horizontalForce);
+	        			block.vertical.setForce(verticalForce);
+	        		}
+	        		
+	        		for(Block block:cluster.blocks){
+	        			this.massMap.substract(block);
+	        			block.doForce(this.width, this.height);
+	            		this.massMap.add(block);
+	        		}
+        		}
+        	}else{
+            	for(Block block:this.blocks){
+            		this.massMap.setForce(block);
+            		this.massMap.substract(block);
+            		block.doForce(this.width, this.height);
+            		this.massMap.add(block);
+            	}
+        	}
+        }
+    }
+    
+    class MassMap {
+    	private final int width, height;
+    	private final int gridWidth, gridHeight;
+        private final double[][] massMap;
+        
+        private double gridForce;
+        
+        public MassMap(int width, int height){
+        	this.width = width;
+        	this.height = height;
+        	this.gridWidth = (this.width + 2) * 2;
+        	this.gridHeight = (this.height + 2) * 2;
+
+        	this.massMap = new double[this.gridWidth][this.gridHeight];
+        	
+        	this.reset();
+        }
+        public void reset(){
+        	for(int x = 0; x < this.gridWidth; x++){
+        		for(int y = 0; y < this.gridHeight; y++){
+        			this.massMap[x][y] = 0;
+        		}
+        	}
+        }
+
+        public void setGridForce(double gridForce){
+        	this.gridForce = gridForce;
+        }
+        public void setForce(Block block){
+    		this.setPushingForce(block);
+    		this.setGridForce(block);
+
+    		block.force.setSum();
+
+    		block.horizontal.setForce(block.force.horizontal());
+    		block.vertical.setForce(block.force.vertical());
+        }
+        private void setPushingForce(Block block){
+        	int x = block.ceilx;
+    		int y = block.ceily;
+    		
+    		block.force.nw = 0.0;
+    		block.force.ne = 0.0;
+    		block.force.sw = 0.0;
+    		block.force.se = 0.0;
+
+        	for(int h = 0; h < block.height; h++){
+        		block.force.nw += block.area.sw * this.massMap[x - 1][y];
+        		block.force.nw += block.area.nw * this.massMap[x - 1][y + 1];
+        		block.force.nw += block.area.se * this.massMap[x][y];
+        		block.force.nw += block.area.ne * this.massMap[x][y + 1];
+
+        		block.force.ne += block.area.sw * this.massMap[x][y];
+        		block.force.ne += block.area.nw * this.massMap[x][y + 1];
+        		block.force.ne += block.area.se * this.massMap[x + 1][y];
+        		block.force.ne += block.area.ne * this.massMap[x + 1][y + 1];
+
+        		block.force.sw += block.area.sw * this.massMap[x - 1][y - 1];
+        		block.force.sw += block.area.nw * this.massMap[x - 1][y];
+        		block.force.sw += block.area.se * this.massMap[x][y - 1];
+        		block.force.sw += block.area.ne * this.massMap[x][y];
+
+        		block.force.se += block.area.sw * this.massMap[x][y - 1];
+        		block.force.se += block.area.nw * this.massMap[x][y];
+        		block.force.se += block.area.se * this.massMap[x + 1][y - 1];
+        		block.force.se += block.area.ne * this.massMap[x + 1][y];
+
+        		y += 2;
     		}
-    	};
+        }
+        private void setGridForce(Block block){
+        	//GridForce
+    		double xval = block.horizontal.coordinate - Math.floor(block.horizontal.coordinate);
+    		double yval = block.vertical.coordinate - Math.floor(block.vertical.coordinate);
+
+    		if(xval < 0.25){
+    			block.force.xgrid = - xval;
+    		}else if(xval < 0.75){
+    			block.force.xgrid = -0.5 + xval;
+    		}else{
+    			block.force.xgrid = 1 - xval;
+    		}
+	
+    		if(yval < 0.25){
+    			block.force.ygrid = - yval;
+    		}else if(yval < 0.75){
+    			block.force.ygrid = -0.5 + yval;
+    		}else{
+    			block.force.ygrid = 1 - yval;
+    		}
+
+    		block.force.xgrid *= this.gridForce;
+    		block.force.ygrid *= this.gridForce;
+        }
+
+        public void add(Block block){
+    		int x = block.ceilx;
+    		int y = block.ceily;
+
+    		for(int h = 0; h < block.height; h++){
+        		this.massMap[x - 1][y - 1] += block.area.sw;
+        		this.massMap[x][y - 1] += block.area.se + block.area.sw;
+        		this.massMap[x + 1][y - 1] += block.area.se;
+
+        		this.massMap[x - 1][y] += block.area.sw + block.area.nw;
+        		this.massMap[x][y] += 0.25;
+        		this.massMap[x + 1][y] += block.area.se + block.area.ne;
+
+        		this.massMap[x - 1][y + 1] += block.area.nw;
+        		this.massMap[x][y + 1] += block.area.nw + block.area.ne;
+        		this.massMap[x + 1][y + 1] += block.area.ne;
+
+        		y += 2;
+    		}
+        }
+        public void substract(Block block){
+    		int x = block.ceilx;
+    		int y = block.ceily;
+
+        	for(int h = 0; h < block.height; h++){
+            	this.massMap[x - 1][y - 1] -= block.area.sw;
+            	this.massMap[x][y - 1] -= block.area.se + block.area.sw;
+            	this.massMap[x + 1][y - 1] -= block.area.se;
+
+            	this.massMap[x - 1][y] -= block.area.sw + block.area.nw;
+            	this.massMap[x][y] -= 0.25;
+            	this.massMap[x + 1][y] -= block.area.se + block.area.ne;
+
+            	this.massMap[x - 1][y + 1] -= block.area.nw;
+            	this.massMap[x][y + 1] -= block.area.nw + block.area.ne;
+            	this.massMap[x + 1][y + 1] -= block.area.ne;
+
+            	y += 2;
+        	}
+        }
     }
 }
