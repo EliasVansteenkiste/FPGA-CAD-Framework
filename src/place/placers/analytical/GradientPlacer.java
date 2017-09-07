@@ -42,22 +42,22 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_EXPONENT,
                 "anchor weight exponent",
-                new Double(2));
+                new Double(2));//TODO OPTIMIZE
 
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
-                new Double(0.7));
+                new Double(0.85));//TODO OPTIMIZE
 
         options.add(
                 O_LEARNING_RATE_START,
                 "ratio of distance to optimal position that is moved",
-                new Double(1));
+                new Double(1));//TODO OPTIMIZE
 
         options.add(
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
-                new Double(0.2));
+                new Double(0.2));//TODO OPTIMIZE
 
         options.add(
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
@@ -87,7 +87,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL,
                 "number of solve-legalize iterations",
-                new Integer(20));
+                new Integer(10));
 
         options.add(
                 O_INNER_EFFORT_LEVEL_START,
@@ -174,7 +174,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        this.legalizer = new GradientLegalizer(
+        //this.legalizer = new GradientLegalizer(
+        this.legalizer = new GradientLegalizerFlatFast(
         //this.legalizer = new HeapLegalizer(
                 this.circuit,
                 this.blockTypes,
@@ -189,8 +190,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.nets,
                 this.netBlocks,
                 this.logger);
-        this.legalizer.setAnnealQuality(0.1,  0.001, this.numIterations);
-        this.legalizer.setGridForce(0.01, 0.05, this.numIterations);
+        this.legalizer.setAnnealQuality(0.1,  0.001, this.numIterations);//TODO OPTIMIZE
+        this.legalizer.setGridForce(0.0025, 0.075, this.numIterations);//TODO OPTIMIZE
+        //this.legalizer.setGridForce(0.005, 0.075, this.numIterations);//TODO OPTIMIZE
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
