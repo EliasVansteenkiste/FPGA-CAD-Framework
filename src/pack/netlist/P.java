@@ -269,11 +269,8 @@ public class P implements Comparable<P>{
 		if(this.get_net().has_source()){
 			P sourcePin = this.get_net().get_source_pin();
 			if(sourcePin.is_start_pin()){
-				sourcePin.set_arrival_time(0);//CLOCK_TO_Q_TIME ZIT IN CONNECTION DELAY
-				
-				//this.set_arrival_time(sourcePin.get_arrival_time() + arch.get_connection_delay(sourcePin, this));
+				sourcePin.set_arrival_time(0);
 				this.set_arrival_time(sourcePin.get_arrival_time() + connectionDelay.getDelay(sourcePin, this));
-				
 				return this.get_arrival_time();
 			}else{
 				B sourceBlock = sourcePin.get_block();
@@ -288,19 +285,12 @@ public class P implements Comparable<P>{
 						}
 					}
 					sourcePin.set_arrival_time(maxArrivalTime);
-					
-					//this.set_arrival_time(sourcePin.get_arrival_time() + arch.get_connection_delay(sourcePin, this));
 					this.set_arrival_time(sourcePin.get_arrival_time() + connectionDelay.getDelay(sourcePin, this));
-					
 					return this.get_arrival_time();
 				}else{
 					//Constant generator
-					//Output.println("Block " + source_block.get_name() + " is a constant generator");
 					sourcePin.set_arrival_time(0);
-					
-					//this.set_arrival_time(sourcePin.get_arrival_time() + arch.get_connection_delay(sourcePin, this));
 					this.set_arrival_time(sourcePin.get_arrival_time() + connectionDelay.getDelay(sourcePin, this));
-					
 					return this.get_arrival_time();
 				}
 			}
@@ -323,11 +313,8 @@ public class P implements Comparable<P>{
 					Output.println("This source pin of the pad should be a start pin");
 				}
 			}
-			sourcePin.set_arrival_time(0);//CLOCK TO OUTPIT ZIT IN CONNECTION DELAY
-			
-			//this.set_arrival_time(sourcePin.get_arrival_time() + arch.get_connection_delay(sourcePin, this));
+			sourcePin.set_arrival_time(0);
 			this.set_arrival_time(sourcePin.get_arrival_time() + connectionDelay.getDelay(sourcePin, this));
-			
 			return this.get_arrival_time();
 		}
 	}
@@ -369,16 +356,14 @@ public class P implements Comparable<P>{
 		if(this.is_source_pin()){
 			int minRequiredTime = Integer.MAX_VALUE;
 			for(P sinkPin:this.get_net().get_sink_pins()){
-				
-				//int localRequiredTime = sinkPin.recursive_required_time(arch, connectionDelay) - arch.get_connection_delay(this, sinkPin);
 				int localRequiredTime = sinkPin.recursive_required_time(arch, connectionDelay) - connectionDelay.getDelay(this, sinkPin);
-				
-				if(localRequiredTime < minRequiredTime) minRequiredTime = localRequiredTime;
+
+				if(localRequiredTime < minRequiredTime){
+					minRequiredTime = localRequiredTime;
+				}
 			}
 			for(P terminalPin:this.get_net().get_terminal_pins()){
 				if(terminalPin.is_end_pin()){
-					
-					//int localRequiredTime = terminalPin.recursive_required_time(arch, connectionDelay) - arch.get_connection_delay(this, terminalPin);
 					int localRequiredTime = terminalPin.recursive_required_time(arch, connectionDelay) - connectionDelay.getDelay(this, terminalPin);
 					
 					if(localRequiredTime < minRequiredTime){
@@ -588,7 +573,7 @@ public class P implements Comparable<P>{
 			if(p1.criticality() == p2.criticality()){
 				return 0;
 			}else if(p1.criticality() > p2.criticality()){
-				return -1;//VAN GROOT NAAR KLEIN
+				return -1;
 			}else{
 				return 1;
 			}

@@ -13,7 +13,6 @@ import pack.util.Output;
 public class B {
 	private String name;
 	private int number;
-	private int area;
 	private String type;
 	
 	private HashMap<String,ArrayList<P>> inputPins;
@@ -28,17 +27,16 @@ public class B {
 	
 	private HardBlockGroup hbg;
 
-	public B(String name, int number, int area, String type, String clock, HardBlockGroup rg){
+	public B(String name, int number, String type, String clock, HardBlockGroup rg){
 		this.name = name;
 		this.number = number;
-		
-		this.area = area;
+
 		this.type = type;
-		
+
 		this.inputPins = new HashMap<String,ArrayList<P>>();
 		this.outputPins = new HashMap<String,ArrayList<P>>();
 		this.clock = clock;
-		
+
 		this.hbg = rg;
 	}
 	
@@ -69,18 +67,6 @@ public class B {
 	}
 	public int get_number(){
 		return this.number;
-	}
-	public int get_area(){
-		return this.area;
-	}
-	public void set_area(int area){
-		if(this.area != 0){
-			System.out.println(this.area);
-			System.out.println(this.type);
-			ErrorLog.print("Block " + this.toString() + " already has an area assigned");
-		}else{
-			this.area = area;
-		}
 	}
 	public void set_type(String type){
 		if(!type.contains("stratixiv_ram_block")){
@@ -344,7 +330,7 @@ public class B {
 		if(this.hasHardBlockGroup()){
 			rg = this.getHardBlockGroup();
 		}
-		B cleanCopy = new B(this.get_name(), this.get_number(), this.get_area(), this.get_type(), this.get_clock(), rg);
+		B cleanCopy = new B(this.get_name(), this.get_number(), this.get_type(), this.get_clock(), rg);
 		if(this.has_atoms()){
 			for(B atom:this.get_atoms()){
 				cleanCopy.add_atom(atom);
@@ -413,8 +399,6 @@ public class B {
 			hashedInputs.add("portbwe");
 			hashedInputs.add("portaaddrstall");
 			hashedInputs.add("portbaddrstall");
-			
-			//HASHED INPUTS ADDED
 			hashedInputs.add("portabyteenamasks");
 			hashedInputs.add("portbbyteenamasks");
 			
@@ -432,7 +416,6 @@ public class B {
 		}else{
 			Output.println("BlockType is " + this.get_type() + ", should be stratixiv_ram_block");
 		}
-		//System.out.println(hash.toString());
 		return hash.toString();
 	}
 	
@@ -633,7 +616,8 @@ public class B {
 			return null;
 		}
 	}
-	@Override public boolean equals(Object other){
+	@Override
+	public boolean equals(Object other){
 	    if (other == null) return false;
 	    if (other == this) return true;
 	    if (!(other instanceof B)) return false;
@@ -652,9 +636,7 @@ public class B {
 					ErrorLog.print("Error in ram block " + this.toString() + " on input pin " + "portadatain" + " => " + pins.size() + " pins");
 				}
 				dataInputPins.add(pins.get(0));
-			}//else{
-			//	ErrorLog.print("Block " + this.toString() + " does not have a portadatain input");
-			//}
+			}
 			if(this.has_input_port("portbdatain")){
 				ArrayList<P> pins = this.get_input_pins("portbdatain");
 				if(pins.size() != 1){

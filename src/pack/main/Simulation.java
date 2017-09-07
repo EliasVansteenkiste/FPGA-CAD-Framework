@@ -33,8 +33,7 @@ public class Simulation{
 		this.addOption(new Option("fixed_size","description_todo", true));//TODO Description
 		
 		this.addOption(new Option("logfile","Print console output to logfile", false));
-		
-		this.addOption(new Option("area_exponent_alpha","Scaling power exponent for area", 0.0));
+
 		this.addOption(new Option("timing_edge_weight_update", "Update the weight on the critical paths with a cut edge", true));
 
 		this.simulationID = (int)Math.round(Math.random()*1000000);
@@ -68,8 +67,6 @@ public class Simulation{
 		}
 		return null;
 	}
-
-	
 
 	public void setOptionValue(String name, Object value){
 		if(this.hasOption(name)){

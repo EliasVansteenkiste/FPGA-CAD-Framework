@@ -29,35 +29,33 @@ public class Netlist{
 	private HashMap<Integer,N> nets;
 	private HashMap<Integer,T> terminals;
 	private ArrayList<String> clocks;
-	
+
 	private HashMap<String,Model> models;
 	private int level;
 	private int number;
-	
+
 	private Netlist parent;
 	private ArrayList<Netlist> children;
-	
+
 	private Data data;
-	
+
 	//SAVE INFORMATION AFTER CLEAN UP
 	private boolean cleaned = false;
 	private Map<String,Integer> blockCount = null;
-	private boolean holdArea = false;
-	private int area = 0;
 	private int terminalCount = 0;
-	
+
 	private Simulation simulation;
-		
+
 	public Netlist(Simulation simulation){
 		this.simulation = simulation;
-		
+
 		this.data = new Data();
 		this.set_blif(simulation.getStringValue("circuit"));
-		
+
 		this.blocks = new HashMap<Integer,B>();
 		this.nets = new HashMap<Integer,N>();
 		this.terminals = new HashMap<Integer,T>();
-		
+
 		this.models = new HashMap<String,Model>();
 		this.blockCount = new HashMap<String,Integer>();
 		
@@ -114,6 +112,13 @@ public class Netlist{
 		Timing blifTiming = new Timing();
 		blifTiming.start();
 		Output.print("Read " + this.get_blif());
+		
+		//Mixed width ram is currently not supported yet
+		ArrayList<String> mixedWidthRamBlockTypes = new ArrayList<String>();
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{reg}");
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{comb}");
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{reg}");
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{comb}");
 		
 		//Read file
 		Timing readFile = new Timing();
@@ -183,7 +188,7 @@ public class Netlist{
 				model.increment_occurences();
 				
 				words = line.split(" ");
-				B b = new B(words[words.length-1], blockNumber++, 0, model.get_name(), null, null);
+				B b = new B(words[words.length-1], blockNumber++, model.get_name(), null, null);
 				this.add_block(b);
 				
 				//INPUTS
@@ -228,6 +233,7 @@ public class Netlist{
 				//Model
 				Model model = this.get_model(words[1]);
 				model.increment_occurences();
+
 				
 				//Name
 				String name = null;
@@ -279,7 +285,7 @@ public class Netlist{
 				}
 				
 				//Block
-				B b = new B(name, blockNumber++, 0, model.get_name(), clock, null);
+				B b = new B(name, blockNumber++, model.get_name(), clock, null);
 				this.add_block(b);
 				
 				//Inputs and outputs
@@ -343,7 +349,7 @@ public class Netlist{
 				model.increment_occurences();
 				
 				words = line.split(" ");
-				B b = new B(words[2], blockNumber++, 0, model.get_name(), words[4], null);
+				B b = new B(words[2], blockNumber++, model.get_name(), words[4], null);
 				this.add_block(b);
 
 				//INPUT
@@ -457,7 +463,6 @@ public class Netlist{
 					}else{
 						//Output.println("Unused line -> " + line);
 					}
-					//Output.println("Truth table\n"+truthTable);
 				}
 			}
 		}
@@ -603,6 +608,13 @@ public class Netlist{
 		return removedBuffers;
 	}
 	private void assign_models(String[] lines){
+		//Mixed width ram blocks are currently not supported, however only a few designs contain such a ram blocks. 
+		ArrayList<String> mixedWidthRamBlockTypes = new ArrayList<String>();
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{reg}");
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{comb}");
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{reg}");
+		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{comb}");
+		
 		boolean topModel_passed = false;
 		for(int i=0; i<lines.length;i++) {
 			String line = lines[i];
@@ -611,7 +623,12 @@ public class Netlist{
 				if(!topModel_passed){
 					topModel_passed = true;
 				}else{
-					Model model = new Model(words[1], this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("architecture"));
+					String modelName = words[1];
+					if(mixedWidthRamBlockTypes.contains(modelName)){
+						ErrorLog.print("This design contains mxied width ram blocks which is not supported yet");
+					}
+					
+					Model model = new Model(modelName, this.simulation.getStringValue("result_folder") + this.simulation.getStringValue("architecture"));
 					this.add_model(model);
 					line = lines[++i];
 					while(!line.contains(".end")){
@@ -651,12 +668,7 @@ public class Netlist{
 				if(lines[i+1].equals("1 1")){
 					String[] words = lines[i].split(" ");
 					if(!latch_inputs.contains(words[2]) && !outputs.contains(words[2])){
-						//TODO: MCML HACKED
-						if(this.get_blif().equals("mcml")){
-							bufferedNets.put(words[2], words[1]);
-						}else{
-							Output.println("Net " + words[2] + " is not buffered because the net is not connected with a latch or outputpin!");
-						}
+						Output.println("Net " + words[2] + " is not buffered because the net is not connected with a latch or outputpin!");
 					}else{
 						bufferedNets.put(words[2], words[1]);
 					}
@@ -761,7 +773,6 @@ public class Netlist{
 			this.blockCount.put(blockType,0);
 		}
 		this.blockCount.put(blockType, this.blockCount.get(blockType)+1);
-		if(!this.holdArea)this.area += b.get_area();
 	}
 	private void remove_block(B b){
 		if(this.blocks.remove(b.get_number())==null){
@@ -773,7 +784,6 @@ public class Netlist{
 		}else{
 			ErrorLog.print("There are no blocks of this type left in the netlist");
 		}
-		if(!this.holdArea)this.area -= b.get_area();
 	}
 	private void add_terminal(T t){
 		if(this.terminals.containsKey(t.get_number())){
@@ -1009,20 +1019,7 @@ public class Netlist{
 	//// BLIF WRITER ////
 	public void writeBlif(String folder, int num, Partition partition, int simulationID){
 		Blif blif = new Blif(folder, this.get_blif(), num, simulationID);	
-		
-		//Clock is not always an input, only input clocks of the netlist are added. 
-		//This is done automatically because now the clocks are also added as a net.
-		//
-		//Set<String> clocks = new HashSet<String>();
-		//for(B b:this.get_blocks()){
-		//	if(b.has_clock()){
-		//		clocks.add(b.get_clock());
-		//	}
-		//}
-		//for(String clock:clocks){
-		//	blif.add_input(clock);
-		//}
-		
+
 		//Cut nets
 		HashSet<String> cutNets = partition.getCutEdges().getCutNetNames();
 
@@ -1187,7 +1184,6 @@ public class Netlist{
 	public void netlist_checker(){
 		int maxFanout = 10000;
 		this.test_fanout(maxFanout);
-		this.test_area();
 		this.test_pins();
 		this.test_nets();
 		this.test_blocks();
@@ -1210,22 +1206,7 @@ public class Netlist{
 		}
 		return s;
 	}
-	//Test area
-	private void test_area(){
-		boolean hasArea = false;
-		for(B b:this.get_blocks()){
-			if(b.get_area()>0){
-				hasArea = true;
-			}
-		}
-		if(hasArea){
-			for(B b:this.get_blocks()){
-				if(b.get_area() <= 0){
-					Output.println("Block " + b.toString() + " with type " + b.get_type() + " has area " + b.get_area());
-				}
-			}
-		}
-	}
+
 	//Pin
 	public void test_pins(){
 		this.test_each_pin_has_a_net();
@@ -1386,71 +1367,7 @@ public class Netlist{
 	public HashMap<String,Model> get_models(){
 		return this.models;
 	}
-	
-	//// AREA ASSIGNMENT ////
-	public void assign_area(){
-		Timing t = new Timing();
-		t.start();
-		HashMap<String,Integer> areaMap = new HashMap<String,Integer>();
-		HashMap<String,Integer> totalAreaMap = new HashMap<String,Integer>();
-		Output.println("Area assignment:");
-		for(B b:this.get_blocks()){	
-			if(b.get_type().equals(".latch")){
-				b.set_area(1);
-				if(!areaMap.containsKey(".latch")){areaMap.put(".latch",1);}
-				if(!totalAreaMap.containsKey(".latch")){totalAreaMap.put(".latch",0);}
-				totalAreaMap.put(".latch",totalAreaMap.get(".latch") + 1);
-			}else if(b.get_type().equals(".names")){
-				b.set_area(25);
-				if(!areaMap.containsKey(".names")){areaMap.put(".names",25);}
-				if(!totalAreaMap.containsKey(".names")){totalAreaMap.put(".names",0);}
-				totalAreaMap.put(".names",totalAreaMap.get(".names") + 25);
-			}else{
-				Model model = this.get_model(b.get_type());
-				//Output.println(model.get_name() + " " + model.get_area());
-				b.set_area(model.get_area());
-				
-				if(!areaMap.containsKey(b.get_type())){areaMap.put(b.get_type(),b.get_area());}
-				if(!totalAreaMap.containsKey(b.get_type())){totalAreaMap.put(b.get_type(),0);}
-				totalAreaMap.put(b.get_type(),totalAreaMap.get(b.get_type()) + b.get_area());
-			}
-		}
-		Output.println("\tThe netlist has an area equal to " + this.get_area());
-		Output.newLine();
-		int maxTypeLength = 0;
-		for(String type:areaMap.keySet()){
-			if(type.length() > maxTypeLength){
-				maxTypeLength = type.length();
-			}
-		}
-		Output.println("\tArea of the block types");
-		for(String type:areaMap.keySet()){
-			int a = areaMap.get(type);
-			while(type.length() < maxTypeLength){
-				type = type + " ";
-			}
-			Output.println("\t\t" + type + "\t" + a);
-		}
-		Output.newLine();
-		Output.println("\tTotal area of each block type");
-		
-		int totalArea = 0;
-		for(String type:totalAreaMap.keySet()){
-			totalArea += totalAreaMap.get(type);
-		}
-		for(String type:totalAreaMap.keySet()){
-			int a = totalAreaMap.get(type);
-			double p = Util.round((1.0*a)/totalArea * 100,2);
-			while(type.length() < maxTypeLength){
-				type = type + " ";
-			}
-			Output.println("\t\t" + type + "\t" + Util.parseDigit(a) + "\t" + p + " %");
-		}	
-		Output.newLine();
-		t.stop();
-		Output.println("\tTook " + t.toString());
-		Output.newLine();
-	}
+
 	//// COMMON DATA ////
 	private Data get_data(){
 		return this.data;
@@ -1591,7 +1508,7 @@ public class Netlist{
 			if(b.hasHardBlockGroup()){
 				rg = b.getHardBlockGroup();
 			}
-			B newB = new B(b.get_name(), b.get_number(), b.get_area(), b.get_type(), b.get_clock(), rg);
+			B newB = new B(b.get_name(), b.get_number(), b.get_type(), b.get_clock(), rg);
 			if(b.has_atoms()){
 				for(B atom:b.get_atoms()){
 					newB.add_atom(atom);
@@ -1885,7 +1802,7 @@ public class Netlist{
 				
 				B shareBlock = b;
 				while(shareBlock.has_output_port("shareout")){
-					shareBlock = shareBlock.get_next_block_in_chain("shareout");//TODO
+					shareBlock = shareBlock.get_next_block_in_chain("shareout");
 					shareChain.add(shareBlock);
 				}
 				shareChains.add(shareChain);
@@ -2088,37 +2005,6 @@ public class Netlist{
 		}
 		return bestHash;
 	}
-	public void pre_pack_mixed_width_ram(){
-		ArrayList<String> mixedWidthRamBlockTypes = new ArrayList<String>();
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{reg}");
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{comb}");
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{reg}");
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{comb}");
-		
-		boolean newLine = false;
-		for(String mixedWidthRamBlockType: mixedWidthRamBlockTypes){
-			ArrayList<B> blocks = getBlocksOfType(mixedWidthRamBlockType);
-			HashMap<String,ArrayList<B>> singleClockBlocks = new HashMap<String, ArrayList<B>>();
-			for(B b:blocks){
-				if(!singleClockBlocks.containsKey(b.get_clock())){
-					singleClockBlocks.put(b.get_clock(), new ArrayList<B>());
-				}
-				singleClockBlocks.get(b.get_clock()).add(b);
-			}
-			for(ArrayList<B> atoms:singleClockBlocks.values()){
-				if(newLine == false){
-					Output.println("Mixed width ram pre partition:");
-					newLine = true;
-				}
-				Output.println("\tMixed width ram molecule with " + atoms.size() + " atoms and clock " + atoms.get(0).get_clock());
-				this.pack_to_molecule(atoms, "MWR");
-				newLine = true;
-			}
-		}
-		if(newLine == true){
-			Output.newLine();
-		}
-	}
 	public ArrayList<B> getBlocksOfType(String type){
 		ArrayList<B> blocks = new ArrayList<B>();
 		for(B b:this.get_blocks()){
@@ -2180,25 +2066,6 @@ public class Netlist{
 			}else{
 				reqM144K += Math.ceil((1.0*hashedRam.get(hash).size())/model.get_stratixiv_ram_slices_144());
 			}
-		}
-		
-		//This is a temporary bug fix for the mixed width ram blocks. 
-		//Only 3 circuits have such a ram blocks, and only a small 
-		//percentage of the ram blocks are mixed width ram.
-		//The overall performance of the tool will not be influenced
-		//by this fix.
-		if(this.get_blif().equals("CHERI")){//TEMP BUG FIX
-			reqM9K += 1;//FOR THE bidir_dual_port_combout_mixed_width RAM
-		}else if(this.get_blif().equals("MMM")){//TEMP BUG FIX
-			reqM9K += 52;//FOR THE dual_port_reg-out_mixed_width RAM
-			reqM144K += 8;//FOR THE dual_port_reg-out_mixed_width RAM
-			reqM9K += 16;//FOR THE dual_port_combout_mixed_width RAM
-			reqM144K += 4;//FOR THE dual_port_combout_mixed_width RAM
-			
-			reqM9K += 15;//Safety margin
-			reqM144K += 0;//Safety margin
-		}else if(this.get_blif().equals("LU230")){//TEMP BUG FIX
-			reqM9K += 384;// FOR THE dual_port_reg-out_mixed_width RAM
 		}
 		
 		//MAKE FPGA
@@ -2372,8 +2239,6 @@ public class Netlist{
 		t.start();
 		ArrayList<B> molecules = new ArrayList<B>();
 		
-		this.holdArea = true;//DSP PRIMITIVES HAVE NO AREA, THEREFORE THE AREA WILL BE LESS AFTER UNPACKING OF THE MOLECULES
-		
 		for(B b:this.get_blocks()){
 			if(Util.isMoleculeType(b.get_type())){
 				molecules.add(b);
@@ -2386,10 +2251,8 @@ public class Netlist{
 		return t.time();
 	}
 	public void pack_to_molecule(ArrayList<B> atoms, String moleculeType){
-		int totalArea = 0;
 		String clock = null;
 		for(B atom:atoms){
-			totalArea += atom.get_area();
 			if(atom.has_clock()){
 				if(clock == null){
 					clock = atom.get_clock();
@@ -2400,7 +2263,7 @@ public class Netlist{
 		}
 		
 		//Generate molecule block
-		B molecule = new B(atoms.get(0).get_name(), atoms.get(0).get_number(), totalArea, moleculeType, clock, null/*A MOLECULE CAN NOT BE A PART OF A RGROUP*/);
+		B molecule = new B(atoms.get(0).get_name(), atoms.get(0).get_number(), moleculeType, clock, null/*A MOLECULE CAN NOT BE A PART OF A RGROUP*/);
 		for(B atom:atoms){
 			molecule.add_atom(atom.clean_copy());
 		}
@@ -2498,7 +2361,7 @@ public class Netlist{
 			if(cleanAtom.hasHardBlockGroup()){
 				rg = cleanAtom.getHardBlockGroup();
 			}
-			this.add_block(new B(cleanAtom.get_name(), cleanAtom.get_number(), cleanAtom.get_area(), cleanAtom.get_type(), cleanAtom.get_clock(), rg));
+			this.add_block(new B(cleanAtom.get_name(), cleanAtom.get_number(), cleanAtom.get_type(), cleanAtom.get_clock(), rg));
 			if(!this.has_model(cleanAtom.get_type())){
 				//Search for the the model in the tree structure, if an atom in this unpacked block contains a model, then one of the parents should have this model
 				Model atomModel = null;
@@ -2660,23 +2523,7 @@ public class Netlist{
 	public int pin_count(){
 		return this.terminals.size();
 	}
-	//AREA
-	public int get_area(){
-		if(this.holdArea){
-			return this.area;
-		}else if(this.cleaned){
-			return this.area;
-		}else{
-			this.calculate_area();
-			return this.area;
-		}
-	}
-	public void calculate_area(){
-		this.area = 0;
-		for(B b:this.get_blocks()){
-			this.area += b.get_area();
-		}
-	}
+
 	//TERMINALS
 	public int get_terminal_count(){
 		if(this.cleaned){
@@ -2756,13 +2603,9 @@ public class Netlist{
 		for(B b:this.get_blocks()){
 			b.trim();
 		}
-		//for(N n:this.get_nets()){
-		//	n.trim();
-		//}
 	}
 	public void clean_up(){
 		if(!this.cleaned){
-			this.calculate_area();
 			this.calculate_terminal_count();
 				
 			for(B b:this.get_blocks()){
@@ -2850,8 +2693,6 @@ public class Netlist{
 		s += this.block_count() + " blocks";
 		s += " -- ";
 		s += this.net_count() + " nets";
-		s += " -- ";
-		s += "area: " + this.get_area();
 		
 		int inputPins = 0;
 		int outputPins = 0;
@@ -2954,14 +2795,5 @@ public class Netlist{
 			}
 			Output.newLine();
 		}
-	}
-	public int max_block_area(){
-		int maxArea = 0;
-		for(B b:this.get_blocks()){
-			if(b.get_area() > maxArea){
-				maxArea = b.get_area();
-			}
-		}
-		return maxArea;
 	}
 }

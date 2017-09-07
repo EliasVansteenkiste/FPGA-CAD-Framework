@@ -35,8 +35,6 @@ public class Partition{
 	private int metisIt;
 	private CutEdges cutEdges;
 	
-	private double scale;
-	
 	private static final boolean debug = false;
 	
 	private int numberOfCutEdges = 0;
@@ -45,21 +43,14 @@ public class Partition{
 		this.root = netlist;
 		this.architecture = architecture;
 		this.simulation = simulation;
-		
-		
+
 		Output.println("PHASE 1: PARTITIONING");
 		Output.newLine();
 		Output.println("\tSettings: ");
-		
+
 		//Stop criterium
 		this.maxNetlistSize = this.simulation.getIntValue("max_pack_size");
 		Output.println("\t\tMaximum netlist size: " + Util.parseDigit(this.maxNetlistSize));
-		Output.newLine();
-		
-		Output.println("\t\tMax area: " + netlist.max_block_area());
-		this.scale = this.simulation.getDoubleValue("area_exponent_alpha");
-		
-		Output.println("\t\tScaled area exponent factor alpha: " + this.scale);
 		Output.newLine();
 		
 		Output.println("\t\tTiming edge weight update: " + this.simulation.getBooleanValue("timing_edge_weight_update"));
@@ -203,16 +194,7 @@ public class Partition{
 			X = result[0];
 			Y = result[1];
 		}
-		
-		int totalArea = parent.get_area();
-		double areaX = X.area();
-		double areaY = Y.area();
-		
-		double relX = Util.round(areaX/totalArea*100,2);
-		double relY = Util.round(areaY/totalArea*100,2);
-		
-		Info.add("unbalance", Util.str(relX).replace(".", ",") + "\t" + Util.str(relY).replace(".", ","));
-		
+
 		//CUT CRITICAL EDGES
 		for(Edge critEdge:hMetis.cutCriticalEdges(this.architecture)){
 			this.cutEdges.addCriticalEdge(critEdge);//THESE CRITICAL EDGES ARE ADDED TO SDC FILE

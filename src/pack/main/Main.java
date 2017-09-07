@@ -20,7 +20,7 @@ public class Main {
 		Output.newLine();
 
 		//NETLIST
-		Netlist netlist = new Netlist(simulation);
+		Netlist netlist = new Netlist(simulation);	
 
 		//////// PACKING TIMER ////////
 		Timing multiPartTimer = new Timing();
@@ -50,20 +50,15 @@ public class Main {
 		PathWeight path = new PathWeight(netlist, archLight, simulation);
 		path.assign_net_weight();
 
-		//DSP Pre-packing
-		netlist.pre_pack_dsp();
-
-		//Area assignment
-		netlist.assign_area();
-
 		//Pre-packing
+		netlist.pre_pack_dsp();
+		
 		netlist.pre_pack_carry();
 		netlist.pre_pack_share();
 		
 		netlist.pre_pack_lut_ff();
 
-		netlist.pre_pack_mixed_width_ram();
-		netlist.pre_pack_ram(archLight);//MOET ALS LAATSTE, GEBRUIKT INFO OVER AANTAL DSP BLOKKEN
+		netlist.pre_pack_ram(archLight);
 
 		netlist.netlist_checker();
 

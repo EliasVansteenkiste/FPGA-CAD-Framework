@@ -195,7 +195,6 @@ public class NetFileWriter {
 		}
 	}
 	private void writeToNetFile(String line){
-		//System.out.print(line);
 		try {
 			this.writer.write(line);
 		} catch (IOException e) {

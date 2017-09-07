@@ -15,7 +15,6 @@ public class Param{
 	private int vCycle;
 	private int reconst;
 	private int dbglvl;
-	private double alpha;
 	
 	private int maxFanout;
 	
@@ -32,8 +31,6 @@ public class Param{
 		int quality = simulation.getIntValue("hmetis_quality");
 		this.ubfactor =  simulation.getIntValue("unbalance_factor");
 		this.maxFanout = simulation.getIntValue("max_fanout");
-		
-		this.alpha = simulation.getDoubleValue("area_exponent_alpha");
 		
 		if(quality == 1){
 			this.cType = 1;
@@ -110,9 +107,6 @@ public class Param{
 	public int maxFanout(){
 		return this.maxFanout;
 	}
-	public double alpha(){
-		return this.alpha;
-	}
 	public String getGraphFile(int thread){
 		return this.hmetis_folder + "files/" + this.circuitName + "_" + this.simulationID + "_" + thread;
 	}
@@ -127,14 +121,12 @@ public class Param{
 	}
 	public String getInfoLine(Netlist netlist, int edges, int criticalEdges, int metisIteration, int thread){
 		int blockCount = netlist.atom_count();
-		int area = netlist.get_area();
 		
 		StringBuffer outputLine = new StringBuffer();
     	outputLine.append("\t\t");
     	outputLine.append(netlist.get_blif() + " | ");
     	outputLine.append("Thread: " + Util.fill(thread, 2) + " | ");
     	outputLine.append("Blocks: " + Util.fill(blockCount, 7) + " | ");
-    	outputLine.append("Area: "+ Util.fill(Util.parseDigit(area),7) + " | ");
     	outputLine.append("Parts: " + this.nparts + " | ");
     	outputLine.append(Util.fill(criticalEdges, 6) + " crit edges | ");
     	double percentageCritEdges = Util.round(((1.0*criticalEdges)/(1.0*edges)*100.0),2);

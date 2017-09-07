@@ -105,13 +105,6 @@ public class Part {
 	public int size(){
 		return this.blocks.size();
 	}
-	public int area(){
-		int area = 0;
-		for(B b:this.blocks){
-			area += b.get_area();
-		}
-		return area;
-	}
 
 	public boolean hasBlock(B b){
 		return (b.get_part() == this.getPartNumber());

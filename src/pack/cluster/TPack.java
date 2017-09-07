@@ -117,21 +117,16 @@ public class TPack {
 		Output.println("\tLeaf nodes: " + this.subcircuits.size());
 		Output.print("\t\t");
 		int no = 0;
-		int totalArea = 0;
 		for(Netlist nl:this.subcircuits){
 			if(no == 10){
 				Output.newLine();
 				Output.print("\t\t");
 				no = 0;
 			}
-			Output.print(nl.get_area() + " ");
-			totalArea += nl.get_area();
+			System.out.print(nl.atom_count() + " ");
 			no += 1;
 		}
 		Output.newLine();
-		Output.newLine();
-		
-		Output.println("\t\tTotal area is equal to " + totalArea);
 		Output.newLine();
 		
 		int poolSize = this.simulation.getIntValue("num_threads");
@@ -164,7 +159,7 @@ public class TPack {
 		int thread = this.threadPool.getThread();
 		Netlist.write_blif(this.vpr_folder + "vpr/files/", thread, floatingBlocks, this.root.get_blif(), this.root.get_models(), this.simulation.getSimulationID());
 		VPRThread vpr = new VPRThread(thread, this.simulation);
-		vpr.run(floatingBlocks.size(), 0);
+		vpr.run(floatingBlocks.size());
 		this.packPool.add(vpr);
 	}
 	public void startTPack(){
@@ -200,7 +195,7 @@ public class TPack {
 			leafNode.writeSDC(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
 			leafNode.writeBlif(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
 			VPRThread vpr = new VPRThread(thread, this.simulation);
-			vpr.run(leafNode.atom_count(), leafNode.get_area());
+			vpr.run(leafNode.atom_count());
 			this.packPool.add(vpr);
 		}
 	}
@@ -332,7 +327,6 @@ public class TPack {
 					pbLevel -= 1;
 					if(pbLevel == 0){
 						LogicBlock lb = currentBlock[pbLevel+1];
-						//lb.setName();//TODO REMOVED
 						this.logicBlocks.add(lb);
 					}else{
 						currentBlock[pbLevel].addChildBlock(currentBlock[pbLevel+1]);
@@ -441,7 +435,7 @@ public class TPack {
  	 								removedLogicBlocks.add(parent);
  	 							}else{
  	 								parent.removeInpadBlock();
- 	 								
+
  	 								//If the removed input pad that results from a cut net is an input to io_cells then this connections should be restored by adding an input to the io block
  	 								for(LogicBlock ioCell:parent.getNonEmptyChildBlocks()){
  	 									if(ioCell.getInstance().equals("io_cell")){

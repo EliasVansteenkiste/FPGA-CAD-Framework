@@ -212,7 +212,7 @@ public class N implements Comparable<N>{
 		if(this.get_number() == n.get_number()){
 			return 0;
 		}else if(this.get_number() > n.get_number()){
-			return 1;//VAN KLEIN NAAR GROOT
+			return 1;
 		}else{
 			return -1;
 		}
@@ -222,7 +222,7 @@ public class N implements Comparable<N>{
 			if(n1.fanout() == n2.fanout()){
 				return 0;
 			}else if(n1.fanout() > n2.fanout()){
-				return 1;//VAN KLEIN NAAR GROOT
+				return 1;
 			}else{
 				return -1;
 			}

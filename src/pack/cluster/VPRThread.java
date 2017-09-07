@@ -45,7 +45,7 @@ public class VPRThread {
 	       return true;
 	    }
 	}
-	public void run(int size, int area){
+	public void run(int size){
 		String circuit = this.simulation.getStringValue("circuit");
 		String vpr_folder = this.simulation.getStringValue("vpr_folder");
 		String result_folder = this.simulation.getStringValue("result_folder");
@@ -64,11 +64,9 @@ public class VPRThread {
 			e.printStackTrace();
 		}
     	
-		Output.println("\t\t" + circuit + " | " + "Thread: " + Util.fill(this.thread,2) + " | Blocks: " + Util.fill(size,5) + " | Area: " + area);
+		Output.println("\t\t" + circuit + " | " + "Thread: " + Util.fill(this.thread,2) + " | Blocks: " + Util.fill(size,5));
 		
 		this.size = size;
-		
-    	//System.out.println("\t\t\t" + this.run);
 	}
 	public String getCommand(){
 		return this.run;

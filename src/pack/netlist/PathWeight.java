@@ -62,7 +62,7 @@ public class PathWeight {
 		Output.newLine();
 		
 		pathTimer.stop();
-		Output.println("\tPath took " + pathTimer.time());
+		Output.println("\tPath took " + pathTimer.toString());
 		Output.newLine();
 	}
 	private void initializeConnectionDelayMap(){
@@ -174,7 +174,6 @@ public class PathWeight {
 	public int analyze_pin(P startPin, int comb, HashSet<P> visited, HashSet<P> analyzed){
 		visited.add(startPin);
 		for(P sinkPin:new HashSet<P>(startPin.get_net().get_sink_pins())){
-		//for(P sinkPin:startPin.get_net().get_sink_pins()){
 			if(sinkPin.has_block()){
 				B b = sinkPin.get_block();
 				if(b.is_sequential()){
@@ -343,7 +342,6 @@ public class PathWeight {
 	
 	//ASSIGN CRITICAL EDGES
 	public void critical_edges(){
-
 		Output.println("\t###############################################################");
 		Output.println("\t########################### TIMING  ###########################");
 		Output.println("\t###############################################################");
@@ -361,9 +359,6 @@ public class PathWeight {
 		Output.println("\tMaximum percentage critical edges | " + maxPercentageCriticalEdges);
 		Output.newLine();
 
-		//HashSet<P> edges = this.find_all_edges_and_assign_criticality_to_each_edge();
-		//this.print_edge_criticality(edges);
-		
 		ArrayList<P> edges = new ArrayList<P>(this.find_all_edges_and_assign_criticality_to_each_edge());
 		Collections.sort(edges, P.PinCriticalityComparator);
 		
