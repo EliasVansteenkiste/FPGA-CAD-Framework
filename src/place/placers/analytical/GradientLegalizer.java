@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import place.circuit.Circuit;
@@ -69,14 +70,14 @@ class GradientLegalizer extends Legalizer {
     		this.columnMap.put(c - substract, substract);
     	}
 
-    	this.stepSize = 2;
+    	this.stepSize = 2.0;
     	this.speedAveraging = 0.2;
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
         this.initializeData(blocksStart, blocksEnd, this.legalColumns.size(), this.height);
         this.visual("Before spreading");
-        this.doSpreading(1000);
+        this.doSpreading(2500);
         this.visual("After spreading");
        	this.updateLegal();
     }
@@ -126,11 +127,30 @@ class GradientLegalizer extends Legalizer {
     }
     private void doSpreading(int numIterations){
     	int iteration = 0;
-    	do{
-    		this.mainCluster.applyPushingBlockForces(this.gridForce, false);
-    		this.mainCluster.applyPushingBlockForces(this.gridForce, true);
-    		iteration++;
-    	}while(iteration < 250);
+    	int visual = 0;
+    	
+    	this.mainCluster.applyPushingBlockForces(this.gridForce);
+
+		
+//    	do{
+//        	//for(int i = 0; i < 5; i++){
+//        	for(Cluster cluster:this.hierarchyClusters){
+//        		cluster.applyPushingBlockForces(this.gridForce);
+//        	}
+//        	this.visual(visual++);
+//        	//}
+//        	for(int i = 0; i < 10; i++){
+//        		this.mainCluster.applyPushingClusterForces(this.gridForce);
+//        		this.visual(visual++);
+//        	}
+//        	for(int i = 0; i < 10; i++){
+//        		//this.mainCluster.applyPushingBlockForces(this.gridForce);
+//        	}
+//        	
+//        	this.mainCluster.applyPushingBlockForces(this.gridForce);
+//        	
+//    		iteration++;
+//    	}while(iteration < numIterations);
     }
     private void updateLegal(){
     	for(Block block:this.blocks){//TODO IMPROVE EXPAND FUNCTIONALITY
@@ -177,6 +197,8 @@ class GradientLegalizer extends Legalizer {
     	final int height, leafNode;
 
     	int ceilx, ceily;
+    	
+    	boolean processed;
 
     	Area area;
     	Force force;
@@ -232,6 +254,9 @@ class GradientLegalizer extends Legalizer {
     		this.area.se = xRight * yLeft;
     		this.area.ne = xRight * yRight;
     	}
+    	double cost(int legalX, int legalY){
+    		return (this.horizontal.coordinate - legalX) * (this.horizontal.coordinate - legalX) + (this.vertical.coordinate - legalY) * (this.vertical.coordinate - legalY);
+    	}
     }
     class Direction {
     	double sw, se, nw, ne, sum;
@@ -261,10 +286,18 @@ class GradientLegalizer extends Legalizer {
     	}
 
     	public double horizontal(){
-    		return (this.sw + this.nw - this.se - this.ne + this.xgrid) / (this.sum + this.xgrid);
+    		if(this.sum == 0){
+    			return 0.0;
+    		}else{
+        		return (this.sw + this.nw - this.se - this.ne + this.xgrid) / (this.sum + this.xgrid);
+    		}    	
     	}
     	public double vertical(){
-    		return (this.sw - this.nw + this.se - this.ne + this.ygrid) / (this.sum + this.ygrid);
+    		if(this.sum == 0){
+    			return 0;
+    		}else{
+    			return (this.sw - this.nw + this.se - this.ne + this.ygrid) / (this.sum + this.ygrid);
+    		}
     	}
     }
     class Dimension {
@@ -304,6 +337,8 @@ class GradientLegalizer extends Legalizer {
     	final List<Block> blocks;
     	final List<Cluster> clusters;
     	
+    	double horizontalCenterOfMass, verticalCenterOfMass;
+    	
     	Cluster(int width, int height){
         	this.width = width;
         	this.height = height;
@@ -327,44 +362,89 @@ class GradientLegalizer extends Legalizer {
         		this.massMap.add(block);
         	}
         }
-        private void applyPushingBlockForces(double gridForce, boolean clusterBased){
-        	this.massMap.setGridForce(gridForce);
-        	if(clusterBased){
-        		for(Cluster cluster:this.clusters){
-	        		for(Block block:cluster.blocks){
-	        			this.massMap.setForce(block);
-	        		}
-	
-	        		double horizontalForce = 0.0;
-	        		double verticalForce = 0.0;
-	        		
-	        		for(Block block:cluster.blocks){
-	        			horizontalForce += block.horizontal.force;
-	        			verticalForce += block.vertical.force;
-	        		}
-	
-	        		horizontalForce /= 0.5 * cluster.blocks.size();
-	        		verticalForce /= 0.5 * cluster.blocks.size();
-	
-	        		for(Block block:cluster.blocks){
-	        			block.horizontal.setForce(horizontalForce);
-	        			block.vertical.setForce(verticalForce);
-	        		}
-	        		
-	        		for(Block block:cluster.blocks){
-	        			this.massMap.substract(block);
-	        			block.doForce(this.width, this.height);
-	            		this.massMap.add(block);
-	        		}
+        public void initializeMassMap(Cluster cluster){//TODO SLOW FUNCTIONALITY SPEED THIS UP
+        	this.massMap.reset();
+        	
+        	for(Block block:this.blocks){
+        		if(!cluster.blocks.contains(block)){
+        			this.massMap.add(block);
         		}
-        	}else{
-            	for(Block block:this.blocks){
-            		this.massMap.setForce(block);
-            		this.massMap.substract(block);
-            		block.doForce(this.width, this.height);
+        	}
+        }
+        private void applyPushingBlockForces(double gridForce){
+        	this.massMap.setGridForce(gridForce);
+        	
+        	//this.initializeMassMap();
+        	
+        	int numBlocks = this.blocks.size();
+        	int iteration = 0;
+        	int numIterations = 250 * (int)Math.round(Math.pow((double)this.blocks.size(), 1.33));
+        	
+        	Random random = new Random();
+        	do{
+        		Block block = this.blocks.get(random.nextInt(numBlocks));
+        		this.massMap.setForce(block);
+        		this.massMap.substract(block);
+        		block.doForce(this.width, this.height);
+        		this.massMap.add(block);
+        		
+        		iteration++;
+        	}while(iteration < numIterations);
+        }
+		private void applyPushingClusterForces(double gridForce){
+        	this.massMap.setGridForce(gridForce);
+        	
+    		for(Cluster cluster:this.clusters){
+    			
+    			this.initializeMassMap(cluster);
+    			
+    			cluster.setCenterOffMass();
+    			
+        		double horizontalForce = 0.0;
+        		double verticalForce = 0.0;
+        		
+        		for(Block block:cluster.blocks){
+        			double force = this.massMap.getTotalForce(block);
+        			
+        			if(block.horizontal.coordinate < cluster.horizontalCenterOfMass){
+        				horizontalForce += force;
+        			}else{
+        				horizontalForce -= force;
+        			}
+        			
+        			if(block.vertical.coordinate < cluster.verticalCenterOfMass){
+        				verticalForce += force;
+        			}else{
+        				verticalForce -= force;
+        			}
+        		}
+
+        		horizontalForce /= 10 * cluster.blocks.size();
+        		verticalForce /= 10 * cluster.blocks.size();
+
+        		for(Block block:cluster.blocks){
+        			block.horizontal.setForce(horizontalForce);
+        			block.vertical.setForce(verticalForce);
+        		}
+        		
+        		for(Block block:cluster.blocks){
+        			this.massMap.substract(block);
+        			block.doForce(this.width, this.height);
             		this.massMap.add(block);
             	}
         	}
+		}
+        public void setCenterOffMass(){
+        	double horizontal = 0.0;
+        	double vertical = 0.0;
+        	
+        	for(Block block:this.blocks){
+        		horizontal += block.horizontal.coordinate * block.height;
+        		vertical += block.vertical.coordinate * block.height;
+        	}
+        	
+        	this.horizontalCenterOfMass = horizontal / this.blocks.size();
+        	this.verticalCenterOfMass = vertical / this.blocks.size();
         }
     }
     
@@ -398,14 +478,14 @@ class GradientLegalizer extends Legalizer {
         }
         public void setForce(Block block){
     		this.setPushingForce(block);
-    		this.setGridForce(block);
+    		//this.setGridForce(block);
 
     		block.force.setSum();
 
     		block.horizontal.setForce(block.force.horizontal());
     		block.vertical.setForce(block.force.vertical());
         }
-        private void setPushingForce(Block block){
+        private void setPushingForce(Block block){//TODO Relative to center of mass
         	int x = block.ceilx;
     		int y = block.ceily;
     		
@@ -437,6 +517,38 @@ class GradientLegalizer extends Legalizer {
 
         		y += 2;
     		}
+        }
+        private double getTotalForce(Block block){//TODO Relative to center of mass
+        	int x = block.ceilx;
+    		int y = block.ceily;
+    		
+    		double force = 0.0;
+
+        	for(int h = 0; h < block.height; h++){
+        		force += block.area.sw * this.massMap[x - 1][y];
+        		force += block.area.nw * this.massMap[x - 1][y + 1];
+        		force += block.area.se * this.massMap[x][y];
+        		force += block.area.ne * this.massMap[x][y + 1];
+
+        		force += block.area.sw * this.massMap[x][y];
+        		force += block.area.nw * this.massMap[x][y + 1];
+        		force += block.area.se * this.massMap[x + 1][y];
+        		force += block.area.ne * this.massMap[x + 1][y + 1];
+
+        		force += block.area.sw * this.massMap[x - 1][y - 1];
+        		force += block.area.nw * this.massMap[x - 1][y];
+        		force += block.area.se * this.massMap[x][y - 1];
+        		force += block.area.ne * this.massMap[x][y];
+
+        		force += block.area.sw * this.massMap[x][y - 1];
+        		force += block.area.nw * this.massMap[x][y];
+        		force += block.area.se * this.massMap[x + 1][y - 1];
+        		force += block.area.ne * this.massMap[x + 1][y];
+
+        		y += 2;
+    		}
+        	
+        	return force;
         }
         private void setGridForce(Block block){
         	//GridForce
