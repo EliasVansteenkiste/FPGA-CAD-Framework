@@ -986,7 +986,7 @@ public class Architecture {
 			this.removedModels.addAll(removedBlock.get_blif_models());
 		}
 		
-		//FIRSTL LEVEL
+		//FIRST LEVEL
 		while(!nextLevel.isEmpty()){
 			currentLevel = nextLevel;
 			nextLevel = new ArrayList<Element>();
@@ -1039,16 +1039,6 @@ public class Architecture {
 				if(!block.valid_connection(sourcePortName, sinkPortName)){
 					validConnection = false;
 				}
-			}
-		}
-		if(!validConnection){
-			if(sourcePortName.equals("sharein") && sinkPortName.equals("shareout")){
-			}else if(sourcePortName.equals("sharein") && sinkPortName.equals("combout")){
-				//THIS IS CORRECT, THERE IS NO VALID CONNECTION IN ARCHITECTURE
-			}else if(sourcePortName.equals("cin") && sinkPortName.equals("combout")){
-				//THIS IS CORRECT, THERE IS NO VALID CONNECTION IN ARCHITECTURE
-			}else{
-				Output.println("No valid connection for blif type " + blifModel + " between " + sourcePortName + " and " + sinkPortName + " => Control if this is correct" );
 			}
 		}
 		return validConnection;

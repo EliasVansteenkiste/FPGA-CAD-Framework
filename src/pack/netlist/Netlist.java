@@ -1919,61 +1919,6 @@ public class Netlist{
 		}
 		return hashedRam;
 	}
-	private HashSet<String> test_ports(){
-		HashSet<String> testPorts = new HashSet<String>();
-		testPorts.add("clr0");
-		testPorts.add("clr1");
-		testPorts.add("ena0");
-		testPorts.add("ena1");
-		testPorts.add("ena2");
-		testPorts.add("ena3");
-		testPorts.add("portaaddrstall");
-		testPorts.add("portbaddrstall");
-		testPorts.add("portare");
-		testPorts.add("portbre");
-		testPorts.add("portawe");
-		testPorts.add("portbwe");
-		testPorts.add("clk0");
-		return testPorts;
-	}
-	private void test_hashed_ram(HashMap<String,ArrayList<B>> hashedRam){
-		for(String hash:hashedRam.keySet()){
-			ArrayList<B> memorySlices = hashedRam.get(hash);
-			for(String testPort:this.test_ports()){
-				String netName = null;
-				boolean hasPort = false;
-				for(B slice:memorySlices){
-					if(slice.has_port(testPort)){
-						hasPort = true;
-					}
-				}
-				if(hasPort){
-					for(B slice:memorySlices){
-						if(!slice.has_port(testPort)){
-							ErrorLog.print("Slice " + slice.get_name() + " does not have port " + testPort);
-						}
-					}
-					for(B slice:memorySlices){
-						ArrayList<P> pins = slice.get_pins(testPort);
-						if(pins.size() != 1){
-							ErrorLog.print(testPort + " has " + pins.size() + " pins on slice " + slice.get_name());
-						}
-					}
-					for(B slice:memorySlices){
-						ArrayList<P> pins = slice.get_pins(testPort);
-						if(netName == null){
-							netName = pins.get(0).get_net().get_name();
-						}else if(netName != pins.get(0).get_net().get_name()){
-							Output.println("Problem in hash function: ");
-							Output.println("\tnetName: " + netName);
-							Output.println("\tpins.get(0).get_net().get_name(): " + pins.get(0).get_net().get_name());
-							ErrorLog.print("Problem in hash function: ");
-						}
-					}
-				}
-			}
-		}
-	}
 	private void print_hashed_ram(HashMap<String,ArrayList<B>> hashedRam){
 		boolean printHashedRam = false;
 		if(printHashedRam){
@@ -2024,7 +1969,6 @@ public class Netlist{
 		this.print_ram_blocks(ramBlocks);
 		
 		HashMap<String, ArrayList<B>> hashedRam = this.get_ram_groups(ramBlocks);
-		this.test_hashed_ram(hashedRam);
 		this.print_hashed_ram(hashedRam);
 		
 		// MAKE M9K AND M144K RAM BLOCK

@@ -382,6 +382,7 @@ public class B {
 	
 	//HASH
 	public String get_hash(){
+		//Required to determine if memory slices have the same control signals
 		StringBuffer hash = new StringBuffer();
 		if(this.get_type().contains("stratixiv_ram_block")){
 			ArrayList<String> hashedInputs = new ArrayList<String>();
