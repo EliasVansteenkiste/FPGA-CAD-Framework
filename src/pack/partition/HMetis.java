@@ -47,7 +47,6 @@ public class HMetis {
 	private double partitioningRuntime;
 	private int numberOfcutEdges;
 
-	
 	public HMetis(Netlist netlist, int thread, int metisIt, Param param){
 		this.netlist = netlist;
 		this.size = this.netlist.atom_count();

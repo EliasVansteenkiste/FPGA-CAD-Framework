@@ -10,12 +10,13 @@ import pack.util.ErrorLog;
 
 public class Model {
 	private String name;
-	private ArrayList<String> inputPorts;//CLK IS NO INPUT PORT
+	private ArrayList<String> inputPorts;
 	private ArrayList<String> outputPorts;
 	private HashMap<String,Integer> pinsOnPort;
 	private String internals;
 	private int occurences;
 	
+	//TODO make architecture independent
 	private int ramSlices9;
 	private int ramSlices144;
 

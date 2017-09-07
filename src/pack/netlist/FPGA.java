@@ -2,6 +2,7 @@ package pack.netlist;
 
 import pack.util.ErrorLog;
 
+//Stratixiv architecture
 //LAB <loc priority="1" type="fill"/>								=> 1
 //M9K <loc priority="5" repeat="26" start="5" type="col"/>			=> 2
 //M114K <loc priority="10" repeat="43" start="33" type="col"/>		=> 3
@@ -21,7 +22,7 @@ public class FPGA {
 	private int availableDSP;
 	private int availablePLL;
 	
-	public FPGA(){
+	public FPGA(){//TODO get the properties from architecture file
 		this.maxSize = 500;
 		this.arch = new int[this.maxSize];
 		for(int i=0;i<this.maxSize;i++){

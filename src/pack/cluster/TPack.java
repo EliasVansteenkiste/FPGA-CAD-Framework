@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,12 +37,6 @@ public class TPack {
 
 	private ThreadPool threadPool;
 	private ArrayList<VPRThread> packPool;
-	
-	private static final boolean testM9K = Boolean.FALSE;
-	private int M9Krequired = 0;
-	private int M9Kused = 0;
-	private HashMap<String,Integer> usedModes = new HashMap<String,Integer>();
-	private boolean search = false;
 	
 	public TPack(Netlist root, Partition partition, Architecture architecture, Simulation simulation){
 		this.root = root;
@@ -165,32 +158,6 @@ public class TPack {
 	public void startTPack(){
 		while(!this.subcircuits.isEmpty() && !this.threadPool.isEmpty()){
 			Netlist leafNode = this.subcircuits.remove(0);
-			if(testM9K){
-				ArrayList<B> ramBlocksM9K = new ArrayList<B>();
-				for(B b:leafNode.get_blocks()){
-					if(b.get_type().contains("stratixiv_ram_block") && b.get_type().contains("M9K")){
-						ramBlocksM9K.add(b);
-					}
-				}
-				HashMap<String,ArrayList<B>> hashedRam = new HashMap<String,ArrayList<B>>();
-				for(B slice:ramBlocksM9K){
-					String hash = slice.get_hash();
-					if(!hashedRam.containsKey(hash)){
-						hashedRam.put(hash, new ArrayList<B>());
-					}
-					hashedRam.get(hash).add(slice);
-				}
-				for(String hash:hashedRam.keySet()){
-					int availablePositions = leafNode.get_model(hashedRam.get(hash).get(0).get_type()).get_stratixiv_ram_slices_9();
-					this.M9Krequired += (int)Math.ceil((1.0*hashedRam.get(hash).size())/availablePositions);
-				}
-				Output.println("\t\tThe netlist reauires " + this.M9Krequired + " M9K blocks");
-				for(String hash:hashedRam.keySet()){
-					int availablePositions = leafNode.get_model(hashedRam.get(hash).get(0).get_type()).get_stratixiv_ram_slices_9();
-					Output.println("\t\t\t" + (int)Math.ceil((1.0*hashedRam.get(hash).size())/availablePositions) + " of type " + hashedRam.get(hash).get(0).get_type());
-				}
-				
-			}
 			int thread = this.threadPool.getThread();
 			leafNode.writeSDC(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
 			leafNode.writeBlif(this.vpr_folder + "vpr/files/", thread, this.partition, this.simulation.getSimulationID());
@@ -251,19 +218,6 @@ public class TPack {
  				}
  				if(line.contains("<block") && pbLevel > 0){
  					currentBlock[pbLevel] = new LogicBlock(getName(line), getInstance(line), getInstanceNumber(line), getMode(line), pbLevel, null);
- 					if(testM9K){
- 	 					if(getInstance(line).equals("M9K")){
- 	 						this.M9Kused += 1;
- 	 						this.search = true;
- 	 					}else if(this.search == true){
- 	 						String mode = getMode(line);
-	 	 					if(!this.usedModes.containsKey(mode)){
-	 	 						this.usedModes.put(mode, 0);
-	 	 					}
-	 	 					this.usedModes.put(mode, this.usedModes.get(mode)+1);
-	 	 					this.search = false;
- 	 					}
- 					}
  					if(line.contains("/>")){
  	 					pbLevel -= 1;
  	 					if(pbLevel == 0){
@@ -332,20 +286,6 @@ public class TPack {
 						currentBlock[pbLevel].addChildBlock(currentBlock[pbLevel+1]);
 					}
  				}
- 			}
- 			if(testM9K){
- 	 			Output.println("\t\tThe netfile has " + this.M9Kused + " M9K blocks");
- 	 			for(String mode:this.usedModes.keySet()){
- 	 				Output.println("\t\t\t" + this.usedModes.get(mode) + " with mode " + mode);
- 	 			}
- 	 			Output.newLine(); 
- 	 			if(this.M9Krequired != this.M9Kused){
- 	 				System.exit(1);
- 	 			}
- 	 			this.M9Krequired = 0;
- 	 			this.M9Kused = 0;
- 	 			this.usedModes = new HashMap<String,Integer>();
- 	 			this.search = false;
  			}
  			
  			//Delete the files

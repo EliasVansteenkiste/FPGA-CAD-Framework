@@ -185,7 +185,6 @@ public class N implements Comparable<N>{
 				if(this.get_sink_pins().size()<=maxFanout){
 					return true;
 				}else{
-					//this.test_net_for_critical_connections();
 					return false;
 				}
 			}else{
@@ -196,7 +195,6 @@ public class N implements Comparable<N>{
 				if(this.get_sink_pins().size()<=maxFanout){
 					return true;
 				}else{
-					//this.test_net_for_critical_connections();
 					return false;
 				}
 			}else{
@@ -206,9 +204,9 @@ public class N implements Comparable<N>{
 			return false;
 		}
 	}
-	
-	//OVERRIDE
-	@Override public int compareTo(N n){
+
+	@Override 
+	public int compareTo(N n){
 		if(this.get_number() == n.get_number()){
 			return 0;
 		}else if(this.get_number() > n.get_number()){
@@ -228,7 +226,8 @@ public class N implements Comparable<N>{
 			}
 		}
 	};
-	@Override public boolean equals(Object other){
+	@Override 
+	public boolean equals(Object other){
 	    if (other == null) return false;
 	    if (other == this) return true;
 	    if (!(other instanceof N)) return false;
@@ -236,7 +235,8 @@ public class N implements Comparable<N>{
 	    if(otherMyClass.get_number() == this.get_number()) return true;
 	    return false;
 	}
-	@Override public int hashCode() {
+	@Override 
+	public int hashCode() {
 		return this.number;
     }
 }

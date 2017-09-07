@@ -985,8 +985,7 @@ public class Architecture {
 			this.complexBlocks.remove(removedBlock);
 			this.removedModels.addAll(removedBlock.get_blif_models());
 		}
-		
-		//FIRST LEVEL
+
 		while(!nextLevel.isEmpty()){
 			currentLevel = nextLevel;
 			nextLevel = new ArrayList<Element>();

@@ -112,14 +112,7 @@ public class Netlist{
 		Timing blifTiming = new Timing();
 		blifTiming.start();
 		Output.print("Read " + this.get_blif());
-		
-		//Mixed width ram is currently not supported yet
-		ArrayList<String> mixedWidthRamBlockTypes = new ArrayList<String>();
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{reg}");
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{comb}");
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{reg}");
-		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{bidir_dual_port}.output_type{comb}");
-		
+
 		//Read file
 		Timing readFile = new Timing();
 		readFile.start();
@@ -466,9 +459,6 @@ public class Netlist{
 				}
 			}
 		}
-		this.set_max_block_number(blockNumber-1);
-		this.set_max_net_number(netNumber-1);
-		this.set_max_pin_number(terminalNumber-1);
 		
 		blifTiming.stop();
 		Output.println(" | Read file took " + readFile.toString() + " | Total time " + blifTiming.toString());
@@ -608,7 +598,7 @@ public class Netlist{
 		return removedBuffers;
 	}
 	private void assign_models(String[] lines){
-		//Mixed width ram blocks are currently not supported, however only a few designs contain such a ram blocks. 
+		//TODO Mixed width ram is currently not supported
 		ArrayList<String> mixedWidthRamBlockTypes = new ArrayList<String>();
 		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{reg}");
 		mixedWidthRamBlockTypes.add("stratixiv_ram_block.opmode{dual_port}.output_type{comb}");
@@ -879,6 +869,7 @@ public class Netlist{
 			}
 		}
 	}
+
 	//// SDC WRITER ////
 	public void writeSDC(String folder, int num, Partition partition, int simulationID){
 		try {
@@ -996,26 +987,11 @@ public class Netlist{
 			}
 			bw.flush();
 			bw.close();
-			
-			//DEBUG MODE
-			boolean printSDCFiles = false;
-			if(printSDCFiles){
-				BufferedReader r = new BufferedReader(new FileReader(folder + this.get_blif() + "_" + num + ".sdc"));
-				System.out.println();
-				String line = r.readLine();
-				while(line != null){
-					System.out.println(line);
-					line = r.readLine();
-				}
-				r.close();
-				System.out.println();
-				System.out.println();
-				System.out.println();
-			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+
 	//// BLIF WRITER ////
 	public void writeBlif(String folder, int num, Partition partition, int simulationID){
 		Blif blif = new Blif(folder, this.get_blif(), num, simulationID);	
@@ -1210,129 +1186,33 @@ public class Netlist{
 	//Pin
 	public void test_pins(){
 		this.test_each_pin_has_a_net();
-		//this.each_pin_has_a_unique_number_test();
 	}
-	public void test_each_pin_has_a_net(){
+	private void test_each_pin_has_a_net(){
 		for(T p:this.get_terminals()){
 			if(!p.has_pin()){
 				ErrorLog.print("Pin " + p.toString() + " has no pin");
 			}
 		}
 	}
-	public void test_each_pin_has_a_unique_number(){
-		int maxPinNumber = this.get_max_pin_number();
-		for(int pinNumber = 0; pinNumber < maxPinNumber ; pinNumber++){
-			int counter = 0;
-			for(T p:this.get_terminals()){
-				if(p.get_number() == pinNumber){
-					counter += 1;
-				}
-			}
-			if(counter > 1){
-				ErrorLog.print("The pin number " + pinNumber + " occurs two times in netlist");
-			}
-		}
-	}
+
 	//Net
 	public void test_nets(){
 		this.test_each_net_has_two_nodes();
-		//this.test_each_net_has_a_source();
-		//this.each_net_has_a_unique_number_test();
 	}
-	public void test_each_net_has_two_nodes(){
+	private void test_each_net_has_two_nodes(){
 		for(N n:this.get_nets()){
 			n.has_two_nodes();
 		}
 	}
-	public void test_each_net_has_a_source(){
-		for(N n:this.get_nets()){
-			boolean hasSource = false;
-			if(n.has_source()){
-				hasSource = true;
-			}
-			if(n.has_terminals()){
-				for(P p:n.get_terminal_pins()){
-					if(p.has_block()){
-						ErrorLog.print("Terminal pin should not have a block");
-					}else{
-						if(p.get_terminal().is_input_type()){
-							if(hasSource){
-								ErrorLog.print("Net " + n.toString() + " has two sources");
-							}else{
-								hasSource = true;
-							}
-						}
-					}
-				}
-			}
-			if(!hasSource){
-				Output.println("Net " + n.toString() + " has no source");
-			}
-		}
-	}
-	public void test_each_net_has_a_unique_number(){
-		int maxNetNumber = this.get_max_net_number();
-		for(int netNumber = 0; netNumber < maxNetNumber ; netNumber++){
-			int counter = 0;
-			for(N n:this.get_nets()){
-				if(n.get_number() == netNumber){
-					counter += 1;
-				}
-			}
-			if(counter > 1){
-				ErrorLog.print("The net number " + netNumber + " occurs two times in netlist");
-			}
-		}
-	}
+
 	//Block
 	public void test_blocks(){
-		//this.test_each_block_has_inputs();
-		//this.test_each_block_has_outputs();
 		this.test_each_block_has_nets();
-		//this.test_each_block_is_connected_with_other_block();
-		//this.test_each_block_has_a_unique_number();
 	}
-	public void test_each_block_has_inputs(){
-		for(B b:this.get_blocks()){
-			if(!b.has_inputs()){
-				Output.println("Block " + b.toString() + " has no input nets");
-			}
-		}
-	}
-	public void test_each_block_has_outputs(){
-		for(B b:this.get_blocks()){
-			if(!b.has_outputs()){
-				ErrorLog.print("Block " + b.toString() + " has no output nets");
-			}
-		}
-	}
-	public void test_each_block_has_nets(){
+	private void test_each_block_has_nets(){
 		for(B b:this.get_blocks()){
 			if(!b.has_pins()){
 				ErrorLog.print("Block " + b.toString() + " has no nets");
-			}
-		}
-	}
-	public void test_each_block_is_connected_with_other_block(){
-		if(this.block_count()>1){
-			for(B b:this.get_blocks()){
-				if(!b.is_connected_with_other_block()){
-					Output.println("Block " + b.toString() + " is not connected with other blocks | Netlist has " + this.block_count() + " blocks");
-				}
-			}
-		}
-	}
-	public void test_each_block_has_a_unique_number(){
-		int maxBlockNumber = this.get_max_block_number();
-		for(int blockNumber = 0; blockNumber < maxBlockNumber ; blockNumber++){
-			int counter = 0;
-			for(N n:this.get_nets()){
-				if(n.get_number() == blockNumber){
-					counter += 1;
-				}
-			}
-			if(counter > 1){
-				ErrorLog.print("The block number " + blockNumber + " occurs two times in netlist");
 			}
 		}
 	}
@@ -1377,25 +1257,6 @@ public class Netlist{
 	}
 	public String get_blif(){
 		return this.get_data().get_blif();
-	}
-	
-	private void set_max_net_number(int max){
-		this.get_data().set_max_net_number(max);
-	}
-	public int get_max_net_number(){
-		return this.get_data().get_max_net_number();
-	}
-	private void set_max_block_number(int max){
-		this.get_data().set_max_block_number(max);
-	}
-	public int get_max_block_number(){
-		return this.get_data().get_max_block_number();
-	}
-	private void set_max_pin_number(int max){
-		this.get_data().set_max_pin_number(max);
-	}
-	public int get_max_pin_number(){
-		return this.get_data().get_max_pin_number();
 	}
 	
 	public HashSet<B> get_floating_blocks(){
