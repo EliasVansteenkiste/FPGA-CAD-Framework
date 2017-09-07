@@ -2,26 +2,39 @@ package place.placers.analytical;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
-import place.placers.analytical.GradientLegalizer.Comparators;
-import place.placers.analytical.GradientLegalizer.LegalizerBlock;
-import place.util.TimingTree;
+import place.circuit.block.GlobalBlock;
+import place.interfaces.Logger;
+import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.visual.PlacementVisualizer;
 
-class DetailedLegalizer{
+class DetailedLegalizer extends Legalizer{
+	private final List<Block> blocks;
 	private final List<Column> columns;
-    private final List<LegalizerBlock> blocks;
 
-	private TimingTree timingTree;
+    DetailedLegalizer(
+            Circuit circuit,
+            List<BlockType> blockTypes,
+            List<Integer> blockTypeIndexStarts,
+            double[] linearX,
+            double[] linearY,
+            double[] legalX,
+            double[] legalY,
+            int[] heights,
+            int[] leafNode,
+            PlacementVisualizer visualizer,
+            Map<GlobalBlock, NetBlock> netBlocks,
+            Logger logger){
 
-	DetailedLegalizer(Circuit circuit) {
-        this.timingTree = new TimingTree(false);
+    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, leafNode, visualizer, netBlocks, logger);
 
-        this.blocks = new ArrayList<>();
-
+    	this.blocks = new ArrayList<>();
         this.columns = new ArrayList<>();
         for(int columnIndex:circuit.getColumnsPerBlockType(BlockType.getBlockTypes(BlockCategory.CLB).get(0))){
         	Column column = new Column(columnIndex, circuit.getHeight());
@@ -29,34 +42,45 @@ class DetailedLegalizer{
         }
 	}
 
-    public void legalize(LegalizerBlock[] legalizerBlocks) {
-    	this.timingTree.start("Column legalizer");
-    	
-    	this.timingTree.start("Make sorted blocks");
-    	this.blocks.clear();
-    	
-    	for(LegalizerBlock block:legalizerBlocks){
+	@Override
+	protected void legalizeBlockType(int blocksStart, int blocksEnd) {
+		//Initialize all blocks
+		this.blocks.clear();
+    	for(int b = blocksStart; b < blocksEnd; b++){
+    		double x,y;
+    		boolean startFromLegal = false;
+    		if(startFromLegal){
+    			x = Math.round(this.legalX[b]);
+    			y = Math.round(this.legalY[b]);
+    		}else{
+    			x = Math.round(this.linearX[b]);
+    			y = Math.round(this.linearY[b]);
+    		}
+			
+    		int height = this.heights[b];
+
+    		float offset = (1 - height) / 2f;
+
+    		Block block = new Block(b, x, y, offset, height * this.blockType.getHeight());
+
     		this.blocks.add(block);
     	}
     	Collections.sort(this.blocks, Comparators.VERTICAL);
-    	this.timingTree.time("Make sorted blocks");
-    	
-    	this.timingTree.start("Clear columns");
+
+    	//Clear columns
     	for(Column column:this.columns){
     		column.clear();
     	}
-    	this.timingTree.time("Clear columns");
 
-    	this.timingTree.start("Place blocks");
-    	for(LegalizerBlock block:this.blocks){
-    		
+    	//Place blocks
+    	for(Block block:this.blocks){
     		Column bestColumn = null;
     		double bestCost = Double.MAX_VALUE;
-    		
+
     		for(Column column:this.columns){
     			if(column.usedSize + block.height <= column.height){
         			double cost = column.tryBlock(block);
-
+        			
         			if(cost < bestCost){
         				bestColumn = column;
         				bestCost = cost;
@@ -65,30 +89,51 @@ class DetailedLegalizer{
     		}
     		bestColumn.addBlock(block);
     	}
-    	this.timingTree.time("Place blocks");
 
-    	this.timingTree.start("Update legal");
-    	for(LegalizerBlock block:this.blocks){
+    	//Update legal
+    	for(Block block:this.blocks){
     		block.processed = false;
     	}
     	for(Column column:this.columns){
     		for(Site site:column.sites){
     			if(site.hasBlock()){
-    				if(!site.block.processed){
-    					site.block.horizontal.coordinate = site.x;
-    					site.block.vertical.coordinate = site.y;
-            			site.block.processed = true;
+    				Block block = site.block;
+    				if(!block.processed){
+    					block.x = site.x;
+    					block.y = site.y;
+
+    					this.legalX[block.index] = block.x;
+    					this.legalY[block.index] = block.y + Math.floor(-block.offset);
+            			block.processed = true;
     				}
     			}
     		}
     	}
-    	this.timingTree.time("Update legal");
+    }
+
+    class Block {
+    	final int index, height;
+    	final float offset;
+    	double x, y;
     	
-    	this.timingTree.time("Column legalizer");
+    	boolean processed;
+
+    	Block(int index, double x, double y, float offset, int height){
+    		this.index = index;
+
+    		this.x = x;
+    		this.y = y + Math.ceil(offset);
+
+    		this.offset = offset;
+    		this.height = height;
+    	}
+    	
+    	double cost(int legalX, int legalY){
+    		return (this.x - legalX) * (this.x - legalX) + (this.y - legalY) * (this.y - legalY);
+    	}
     }
     private class Column{
-    	final int column;
-    	final int height;
+    	final int column, height;
 
     	final Site[] sites;
     	
@@ -142,7 +187,7 @@ class DetailedLegalizer{
     		
     		this.cost = this.oldCost;
     	}
-    	private double tryBlock(LegalizerBlock block){
+    	private double tryBlock(Block block){
     		this.saveState();
 
     		double oldCost = this.cost;
@@ -154,10 +199,10 @@ class DetailedLegalizer{
 
     		return newCost - oldCost;
     	}
-    	private void addBlock(LegalizerBlock block){
+    	private void addBlock(Block block){
     		this.usedSize += block.height;
 
-    		int optimalY = Math.max(Math.min((int)Math.round(block.vertical.coordinate - 1), this.height - 1),  0);
+    		int optimalY = Math.max(Math.min((int)Math.round(block.y - 1), this.height - 1),  0);
     		
     		Site bestSite = this.sites[optimalY];
     		if(bestSite.hasBlock()){
@@ -190,7 +235,7 @@ class DetailedLegalizer{
     		}
 			this.minimumCostShift();
     	}
-    	private void putBlock(LegalizerBlock block, Site site){
+    	private void putBlock(Block block, Site site){
     		for(int s = 0; s < block.height; s++){
     			if(site == null){
     				System.out.println("Not enough space to put block at end of column");
@@ -203,7 +248,7 @@ class DetailedLegalizer{
     			}
     		}
     	}
-    	private void removeBlock(LegalizerBlock block){
+    	private void removeBlock(Block block){
     		this.usedSize -= block.height;
     	}
     	private boolean move(){
@@ -258,7 +303,7 @@ class DetailedLegalizer{
     class Site {
     	final int x,y;
     	
-    	LegalizerBlock block, oldBlock;
+    	Block block, oldBlock;
     	
     	Site previous;
     	Site next;
@@ -271,7 +316,7 @@ class DetailedLegalizer{
     	boolean hasBlock(){
     		return this.block != null;
     	}
-    	void setBlock(LegalizerBlock block){
+    	void setBlock(Block block){
     		this.block = block;
     	}
     	
@@ -281,5 +326,13 @@ class DetailedLegalizer{
     	void restoreState(){
     		this.block = this.oldBlock;
     	}
+    }
+    public static class Comparators {
+    	public static Comparator<Block> VERTICAL = new Comparator<Block>() {
+    		@Override
+    		public int compare(Block b1, Block b2) {
+    			return Double.compare(b1.y, b2.y);
+    		}
+    	};
     }
 }
