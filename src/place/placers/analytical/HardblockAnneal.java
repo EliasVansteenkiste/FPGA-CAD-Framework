@@ -26,14 +26,12 @@ public class HardblockAnneal {
 	private int iteration;
 	
 	private double cost, minimumCost;
-	private final List<Double> costHistory;
+	private List<Double> costHistory;
 	
 	private final Random random;
 	
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
-
-		this.costHistory = new ArrayList<>();
 	}
 	public void doAnneal(Column[] columns, double quality){
 		int numBlocks = 0;
@@ -118,7 +116,7 @@ public class HardblockAnneal {
 		}
 		
 		boolean finalIteration = false;
-		this.costHistory.clear();
+		this.costHistory = new ArrayList<>();
 
 		for(Block block:this.blocks){
 			block.initializeOptimalSite();
