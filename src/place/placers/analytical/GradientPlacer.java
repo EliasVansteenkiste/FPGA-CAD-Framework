@@ -42,22 +42,22 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_EXPONENT,
                 "anchor weight exponent",
-                new Double(2));//TODO OPTIMIZE
+                new Double(2));
 
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
-                new Double(0.85));//TODO OPTIMIZE
+                new Double(0.85));
 
         options.add(
                 O_LEARNING_RATE_START,
                 "ratio of distance to optimal position that is moved",
-                new Double(1));//TODO OPTIMIZE
+                new Double(1));
 
         options.add(
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
-                new Double(0.2));//TODO OPTIMIZE
+                new Double(0.2));
 
         options.add(
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
@@ -87,7 +87,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL,
                 "number of solve-legalize iterations",
-                new Integer(10));
+                new Integer(20));
 
         options.add(
                 O_INNER_EFFORT_LEVEL_START,
@@ -174,12 +174,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.startTimer(T_INITIALIZE_DATA);
 
-        //this.legalizer = new GradientLegalizer(
-        this.legalizer = new GradientLegalizerFlatFast(
         //this.legalizer = new HeapLegalizer(
+        this.legalizer = new GradientLegalizerFlatFast(
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
+                this.numIterations,
                 this.linearX,
                 this.linearY,
                 this.legalX,
@@ -190,9 +190,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.nets,
                 this.netBlocks,
                 this.logger);
-        this.legalizer.setAnnealQuality(0.1,  0.001, this.numIterations);//TODO OPTIMIZE
-        this.legalizer.setGridForce(0.0025, 0.075, this.numIterations);//TODO OPTIMIZE
-        //this.legalizer.setGridForce(0.005, 0.075, this.numIterations);//TODO OPTIMIZE
+        this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
+        this.legalizer.addSetting("step_size", 3, 0.5);
+        this.legalizer.addSetting("speed_averaging", 0.75, 0.2);
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
@@ -245,7 +245,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.netBlockOffsets,
                 this.maxConnectionLength,
                 this.fixed,
-                this.leafNode,
                 this.beta1, 
                 this.beta2, 
                 this.eps);
@@ -357,24 +356,24 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void solveLegal() {
+    protected void solveLegal(boolean isLastIteration) {
         this.startTimer(T_LEGALIZE);
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.CLB)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.IO)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         this.stopTimer(T_LEGALIZE);
     }
 
     @Override
-    protected void solveLegal(BlockType legalizeType) {
+    protected void solveLegal(BlockType legalizeType, boolean lastIteration) {
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(legalizeType);
+        this.legalizer.legalize(legalizeType, lastIteration);
         this.stopTimer(T_LEGALIZE);
     }
 
@@ -397,7 +396,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("effort level");
         titles.add("stepsize");
         titles.add("anchor");
-        titles.add("anneal Q");
         titles.add("max conn length");
 
         //Wirelength cost
@@ -411,18 +409,20 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         titles.add("time (ms)");
         titles.add("crit conn");
-        titles.add("overlap");
+        
+        for(String setting:this.legalizer.getLegalizerSetting()){
+        	titles.add(setting);
+        }
     }
 
     @Override
-    protected void printStatistics(int iteration, double time, int overlap) {
+    protected void printStatistics(int iteration, double time) {
         List<String> stats = new ArrayList<>();
 
         stats.add(Integer.toString(iteration));
         stats.add(Integer.toString(this.effortLevel));
         stats.add(String.format("%.3f", this.learningRate));
         stats.add(String.format("%.3f", this.anchorWeight));
-        stats.add(String.format("%.5f", this.legalizer.getQuality()));
         stats.add(String.format("%.1f", this.maxConnectionLength));
 
         //Wirelength cost
@@ -436,7 +436,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
         stats.add(String.format("%d", this.criticalConnections.size()));
-        stats.add(String.format("%d", overlap));
+        
+        for(String setting:this.legalizer.getLegalizerSetting()){
+        	stats.add(String.format("%.3f", this.legalizer.getSettingValue(setting)));
+        }
 
         this.printStats(stats.toArray(new String[0]));
     }
@@ -449,5 +452,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected boolean stopCondition(int iteration) {
     	return iteration + 1 >= this.numIterations;
+    }
+    
+    @Override
+    public void printLegalizationRuntime(){
+    	this.legalizer.printLegalizationRuntime();
     }
 }
