@@ -19,6 +19,7 @@ public class ShiftingLegalizer extends Legalizer {
             Circuit circuit,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
+            int numIterations,
             double[] linearX,
             double[] linearY,
             double[] legalX,
@@ -30,7 +31,7 @@ public class ShiftingLegalizer extends Legalizer {
             Map<GlobalBlock, NetBlock> netBlocks,
             Logger logger) {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
+        super(circuit, blockTypes, blockTypeIndexStarts, numIterations, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
     }
     
     @Override

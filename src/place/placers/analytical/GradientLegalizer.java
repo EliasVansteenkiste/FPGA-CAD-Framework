@@ -33,6 +33,7 @@ class GradientLegalizer extends Legalizer {
             Circuit circuit,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
+            int numIterations,
             double[] linearX,
             double[] linearY,
             double[] legalX,
@@ -44,7 +45,7 @@ class GradientLegalizer extends Legalizer {
             Map<GlobalBlock, NetBlock> netBlocks,
             Logger logger){
 
-    	super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
+    	super(circuit, blockTypes, blockTypeIndexStarts, numIterations, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
 
     	this.legalColumns = new ArrayList<>();
     	this.illegalColumns = new ArrayList<>();
@@ -129,7 +130,7 @@ class GradientLegalizer extends Legalizer {
     	int iteration = 0;
     	int visual = 0;
     	
-    	this.mainCluster.applyPushingBlockForces(this.gridForce);
+    	this.mainCluster.applyPushingBlockForces(this.getSettingValue("grid_force"));
 
 		
 //    	do{

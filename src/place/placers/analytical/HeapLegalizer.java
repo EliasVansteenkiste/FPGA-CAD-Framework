@@ -32,6 +32,7 @@ class HeapLegalizer extends Legalizer {
             Circuit circuit,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
+            int numIterations,
             double[] linearX,
             double[] linearY,
             double[] legalX,
@@ -43,7 +44,7 @@ class HeapLegalizer extends Legalizer {
             Map<GlobalBlock, NetBlock> netBlocks,
             Logger logger) throws IllegalArgumentException {
 
-        super(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
+        super(circuit, blockTypes, blockTypeIndexStarts, numIterations,linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
 
 
         // Initialize the matrix to contain a linked list at each coordinate
