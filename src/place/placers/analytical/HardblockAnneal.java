@@ -82,7 +82,7 @@ public class HardblockAnneal {
 		this.sites = annealSites;
 
 		this.quality = quality;
-		this.effortLevel = Math.max(0.01 / quality, 1.0);
+		this.effortLevel = 1.0;
 
 		this.doAnneal();
 	}
