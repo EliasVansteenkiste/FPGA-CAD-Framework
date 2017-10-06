@@ -90,7 +90,7 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
         if(iteration > 0) {
             this.anchorWeight *= this.anchorWeightMultiplier;
-            this.legalizer.increaseAnnealQualityAndGridForce();
+            this.legalizer.multiplySettings();
         }
     }
 

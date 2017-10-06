@@ -101,6 +101,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
+                this.numIterations,
                 this.linearX,
                 this.linearY,
                 this.legalX,
@@ -111,7 +112,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.nets,
                 this.netBlocks,
                 this.logger);
-        this.legalizer.setAnnealQuality(0.1, 0.001, this.numIterations);
+        this.legalizer.addSetting("anneal_quality", 0.1, 0.001);
 
         //Make a list of all the nets for each blockType
         this.allTrue = new boolean[this.numRealNets];
@@ -254,24 +255,24 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void solveLegal() {
+    protected void solveLegal(boolean isLastIteration) {
         this.startTimer(T_LEGALIZE);
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.CLB)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.IO)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         this.stopTimer(T_LEGALIZE);
     }
 
     @Override
-    protected void solveLegal(BlockType legalizeType) {
+    protected void solveLegal(BlockType legalizeType, boolean isLastIteration) {
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(legalizeType);
+        this.legalizer.legalize(legalizeType, isLastIteration);
         this.stopTimer(T_LEGALIZE);
     }
     
@@ -307,16 +308,15 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         titles.add("best");
         titles.add("time (ms)");
         titles.add("crit conn");
-        titles.add("overlap");
     }
 
     @Override
-    protected void printStatistics(int iteration, double time, int overlap) {
+    protected void printStatistics(int iteration, double time) {
     	List<String> stats = new ArrayList<>();
 
     	stats.add(Integer.toString(iteration));
     	stats.add(String.format("%.2f", this.anchorWeight));
-    	stats.add(String.format("%.5g", this.legalizer.getQuality()));
+    	stats.add(String.format("%.5g", this.legalizer.getSettingValue("anneal_quality")));
 
         //Wirelength cost
         stats.add(String.format("%.0f", this.linearCost));
@@ -330,7 +330,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         stats.add(this.latestCost == this.minCost ? "yes" : "");
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
         stats.add(String.format("%d", this.criticalConnections.size()));
-    	stats.add(String.format("%d", overlap));
 
     	this.printStats(stats.toArray(new String[0]));
     }
@@ -343,5 +342,10 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected boolean stopCondition(int iteration) {
     	return iteration + 1 >= this.numIterations;
+    }
+    
+    @Override
+    public void printLegalizationRuntime(){
+    	this.legalizer.printLegalizationRuntime();
     }
 }
