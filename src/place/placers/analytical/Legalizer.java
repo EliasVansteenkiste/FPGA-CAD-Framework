@@ -1,7 +1,9 @@
 package place.placers.analytical;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.BlockCategory;
@@ -27,18 +29,19 @@ abstract class Legalizer {
     protected int[] heights;
     protected int[] leafNode;
 
-    //Grid force and anneal quality
-    protected double gridForce, gridForceMultiplier;
-    private double annealQuality, annealQualityMultiplier;
+    //Legalizer settings
+    private final int numIterations;
+    protected boolean isLastIteration;
+    private final Map<String,LegalizerSetting> legalizerSettings;
 
     // Properties of the blockType that is currently being legalized
     protected BlockType blockType;
     protected BlockCategory blockCategory;
     protected int blockStart, blockRepeat, blockHeight;
-    
+
     //Hard Block Legalizer
     private HardblockConnectionLegalizer hardblockLegalizer;
-    
+
     //Visualizer
     private final PlacementVisualizer visualizer;
     private final Map<GlobalBlock, NetBlock> netBlocks;
@@ -46,10 +49,14 @@ abstract class Legalizer {
     //Logger
     protected Logger logger;
 
+    //Legalization runtime for each blocktype
+    private final Map<BlockType,Integer> legalizationRuntime;
+
     Legalizer(
             Circuit circuit,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
+            int numIterations,
             double[] linearX,
             double[] linearY,
             double[] legalX,
@@ -59,11 +66,12 @@ abstract class Legalizer {
             PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> netBlocks,
             Logger logger) {
-        
+
         // Store easy stuff
         this.circuit = circuit;
         this.width = this.circuit.getWidth();
         this.height = this.circuit.getHeight();
+        this.numIterations = numIterations;
 
         // Store block types
         if(blockTypes.get(0).getCategory() != BlockCategory.IO) {
@@ -92,12 +100,17 @@ abstract class Legalizer {
 
         //Logger
         this.logger = logger;
+
+        //Legalizer setting
+        this.legalizerSettings = new HashMap<>();
+        this.legalizationRuntime = new HashMap<>();
     }
 
     Legalizer(
             Circuit circuit,
             List<BlockType> blockTypes,
             List<Integer> blockTypeIndexStarts,
+            int numIterations,
             double[] linearX,
             double[] linearY,
             double[] legalX,
@@ -108,8 +121,8 @@ abstract class Legalizer {
             PlacementVisualizer visualizer,
             Map<GlobalBlock, NetBlock> netBlocks,
             Logger logger) {
-        
-    	this(circuit, blockTypes, blockTypeIndexStarts, linearX, linearY, legalX, legalY, heights, leafNode, visualizer, netBlocks, logger);
+
+    	this(circuit, blockTypes, blockTypeIndexStarts, numIterations, linearX, linearY, legalX, legalY, heights, leafNode, visualizer, netBlocks, logger);
 
         try {
 			this.initializeHardblockLegalizer(nets);
@@ -132,20 +145,20 @@ abstract class Legalizer {
         }
     }
 
-    void setAnnealQuality(double initialQuality, double finalQuality, int numIterations){
-    	this.annealQuality = initialQuality;
-    	this.annealQualityMultiplier = Math.pow(finalQuality / initialQuality, 1.0 / (numIterations - 1));
+    //Legalizer settings
+    void addSetting(String parameter, double initialValue, double finalValue){
+    	this.legalizerSettings.put(parameter, new LegalizerSetting(initialValue, finalValue, this.numIterations));
     }
-    void setGridForce(double initialGridForce, double finalGridForce, int numIterations){
-    	this.gridForce = initialGridForce;
-    	this.gridForceMultiplier = Math.pow(finalGridForce / initialGridForce, 1.0 / (numIterations - 1));
+    double getSettingValue(String parameter){
+    	return this.legalizerSettings.get(parameter).getValue();
     }
-    void increaseAnnealQualityAndGridForce(){
-    	this.annealQuality *= this.annealQualityMultiplier;
-    	this.gridForce *= this.gridForceMultiplier;
+    void multiplySettings(){
+    	for(LegalizerSetting setting:this.legalizerSettings.values()){
+    		setting.multiply();
+    	}
     }
-    double getQuality(){
-    	return this.annealQuality;
+    Set<String> getLegalizerSetting(){
+    	return this.legalizerSettings.keySet();
     }
 
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
@@ -154,7 +167,10 @@ abstract class Legalizer {
     	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
     }
 
-    void legalize(BlockType legalizeType) {
+    void legalize(BlockType legalizeType, boolean isLastIteration) {
+    	long startTime = System.nanoTime();
+
+    	this.isLastIteration = isLastIteration;
         for(int i = 0; i < this.blockTypes.size(); i++) {
         	if(this.blockTypes.get(i).equals(legalizeType)){
         		try {
@@ -164,11 +180,19 @@ abstract class Legalizer {
 				}
         	}
         }
+
+        long endTime = System.nanoTime();
+        int time = (int)Math.round((endTime - startTime) * Math.pow(10, -6));
+        if(this.legalizationRuntime.containsKey(legalizeType)){
+        	this.legalizationRuntime.put(legalizeType, this.legalizationRuntime.get(legalizeType) + time);
+        }else{
+        	this.legalizationRuntime.put(legalizeType, time);
+        }
     }
 
     private void legalizeBlockType(int i) throws BlockTypeException{
     	this.blockType = this.blockTypes.get(i);
-    	
+
         int blocksStart = this.blockTypeIndexStarts.get(i);
         int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
@@ -185,9 +209,9 @@ abstract class Legalizer {
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
             	this.legalizeBlockType(blocksStart, blocksEnd);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.annealQuality);
+        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.legalizerSettings.get("anneal_quality").getValue());
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
-        		this.hardblockLegalizer.legalizeIO(this.blockType, this.annealQuality);
+        		this.hardblockLegalizer.legalizeIO(this.blockType, this.legalizerSettings.get("anneal_quality").getValue());
         		for(int b = blocksStart; b < blocksEnd; b++){
         			this.linearX[b] = this.legalX[b];
         			this.linearY[b] = this.legalY[b];
@@ -200,5 +224,23 @@ abstract class Legalizer {
 
     protected void addVisual(String name, double[] coorX, double[] coorY){
     	this.visualizer.addPlacement(name, this.netBlocks, coorX, coorY, -1);
+    }
+
+    public void printLegalizationRuntime(){
+    	this.logger.println();
+    	this.logger.println("----\t---------\t-------");
+    	this.logger.println("Type\tTime (ms)\tRel(%)");
+    	this.logger.println("----\t---------\t-------");
+
+    	int totalTime = 0;
+    	for(BlockType legalizeType:this.legalizationRuntime.keySet()){
+    		totalTime += this.legalizationRuntime.get(legalizeType);
+    	}
+
+    	for(BlockType legalizeType:this.legalizationRuntime.keySet()){
+    		this.logger.printf("%s\t%d\t\t%2.2f\n",legalizeType, this.legalizationRuntime.get(legalizeType), (100.0 * this.legalizationRuntime.get(legalizeType)) / totalTime);
+    	}
+    	this.logger.println("----\t---------\t-------");
+    	this.logger.println("");
     }
 }
