@@ -455,22 +455,6 @@ public class Main {
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
 
-        boolean printCostOfEachBlockToFile = false;
-        if(printCostOfEachBlockToFile){
-            String costFile = this.outputPlaceFile.getPath().replace(".place", ".cost");
-            PrintWriter writer = null;
-            try {
-    			writer = new PrintWriter(new BufferedWriter(new FileWriter(costFile)));
-    	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
-    	        	String output = block.getName() + "\t" + block.getIndex() + "\t" + block.getCategory() + "\t" + Math.round(effcc.calculateBlockCost(block)*1000.0)/1000.0 + "\t" + block.getColumn() + "\t" + block.getRow() + "\n";
-    	        	writer.write(output.replace(".", ","));
-    	        }
-    	        writer.close();
-    		} catch (IOException e) {
-    			e.printStackTrace();
-    		}
-        }
-
         this.logger.printf(format, "BB cost", totalWLCost, "");
 
         // Calculate timing cost
@@ -481,6 +465,27 @@ public class Main {
         this.logger.printf(format, "timing cost", totalTimingCost, "");
         this.logger.printf(format, "max delay", maxDelay, " ns");
 
+        this.logger.println();
+        
+        boolean printCostOfEachBlockToFile = true;
+        if(printCostOfEachBlockToFile){
+        	Map<BlockType, Double> costPerBlockType = new HashMap<>();
+	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
+	        	double cost = effcc.calculateBlockCost(block);
+	        	if(!costPerBlockType.containsKey(block.getType())){
+	        		costPerBlockType.put(block.getType(), 0.0);
+	        	}
+	        	costPerBlockType.put(block.getType(), costPerBlockType.get(block.getType()) + cost);
+	        }
+            this.logger.println("----\t-------");
+            this.logger.println("Type\tBB Cost");
+            this.logger.println("----\t-------");
+            for(BlockType blockType:costPerBlockType.keySet()){
+            	this.logger.printf("%s\t%.0f\n", blockType.toString().split("<")[0], costPerBlockType.get(blockType));
+            }
+            this.logger.println("----\t-------");
+            	
+        }
         this.logger.println();
     }
     private void printBlockDistance(){
