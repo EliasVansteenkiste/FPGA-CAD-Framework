@@ -24,6 +24,7 @@ public class HardblockConnectionLegalizer{
 
     private final HardblockColumnSwap columnSwap;
     private final HardblockAnneal hardblockAnneal;
+    private final HardblockSwarm hardblockSwarm;//TODO
     
     private final Map<BlockType, Block[]> blocksPerBlocktype;
     private final Map<BlockType, Net[]> netsPerBlocktype;
@@ -31,6 +32,7 @@ public class HardblockConnectionLegalizer{
     private final int gridWidth, gridHeigth;
     
     private final TimingTree timingTree;
+
 
 	HardblockConnectionLegalizer(
 			double[] linearX,
@@ -140,6 +142,7 @@ public class HardblockConnectionLegalizer{
 
 		this.columnSwap = new HardblockColumnSwap();
 		this.hardblockAnneal = new HardblockAnneal(100);
+		this.hardblockSwarm = new HardblockSwarm(100);//TODO
 	}
 
 	//ADD BLOCK TYPE
@@ -248,7 +251,7 @@ public class HardblockConnectionLegalizer{
 		this.columnSwap.doSwap(columns);
 		this.timingTree.time("Column swap");
 
-		//Column legalize
+//		Column legalize
 		this.timingTree.start("Legalize columns");
 		for(Column column:columns){
 			column.legalize();
@@ -259,7 +262,8 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.start("Anneal columns");
 		for(Column column:columns){
 			if(column.usedPos() > 0){
-				this.hardblockAnneal.doAnneal(column, quality);
+//				this.hardblockAnneal.doAnneal(column, quality);
+				this.hardblockSwarm.doPSO(column, this.blockType);//TODO
 			}
 		}
 		this.timingTree.time("Anneal columns");
@@ -276,7 +280,6 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.start("Legalize IO");
 		
 		this.blockType = blockType;
-		
 		int siteCapacity = 2;
 		
 		Block[] legalizeBlocks = this.blocksPerBlocktype.get(this.blockType);
@@ -306,7 +309,6 @@ public class HardblockConnectionLegalizer{
 			
 			double minimumCost = Double.MAX_VALUE;
 			Site bestFreeSite = null;
-			
 			for(Site site:legalizeSites){
 				if(!site.hasBlock()){
 					double cost = (site.column - block.linearX) * (site.column - block.linearX) + (site.row - block.linearY) * (site.row - block.linearY);
