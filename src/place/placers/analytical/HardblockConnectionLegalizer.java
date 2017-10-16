@@ -342,7 +342,7 @@ public class HardblockConnectionLegalizer{
         	block.linearX = this.linearX[block.index];
         	block.linearY = this.linearY[block.index];
         }
-        for(Net net:legalizeNets){
+        for(Net net:legalizeNets){ //TODO to initialize for each particle 
         	net.initializeConnectionCost();
         }
         for(Crit crit:this.crits){
@@ -629,6 +629,7 @@ public class HardblockConnectionLegalizer{
 	            	this.maxY = block.legalY;
 	            }
 	        }
+//	        System.out.println(this.minX + " " + this.maxX + " " + this.minY + " " + this.maxY);//TODO
 		}
 		
 		double connectionCost(){

@@ -29,6 +29,7 @@ public class HardblockAnneal {
 	private List<Double> costHistory;
 	
 	private final Random random;
+//	private int counter;
 	
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
@@ -83,7 +84,7 @@ public class HardblockAnneal {
 	}
 	private void doAnneal(){
 		boolean printStatistics = false;
-
+//		this.counter = 0;
 		this.numBlocks = this.blocks.length;//TODO
 		this.numSites = this.sites.length;
 
@@ -149,7 +150,7 @@ public class HardblockAnneal {
 				block.setOptimalSite();
 			}
 		}
-		
+//		System.out.println(this.counter);
 		if(printStatistics) System.out.println();
 	}
 	private boolean finalIteration(double cost){
@@ -207,7 +208,7 @@ public class HardblockAnneal {
 		double quadSumDeltaCost = 0;
 		
         for(int i = 0; i < moves; i++){
-			
+//			this.counter++;
         	Swap swap = this.getSwap();
     		swap.deltaCost();
 			
