@@ -10,19 +10,19 @@ public class Simulation{
 	private int maxNameSize;
 	private int maxDescriptionSize;
 	private int simulationID;
-	
+
 	public Simulation(){
 		this.options = new LinkedHashMap<String, Option>();
-		
+
 		this.addOption(new Option("result_folder","description_todo", String.class));//TODO Description
 		this.addOption(new Option("vpr_folder","description_todo", String.class));//TODO Description
 		this.addOption(new Option("hmetis_folder","description_todo", String.class));//TODO Description
-		
+
 		this.addOption(new Option("circuit","description_todo", String.class));//TODO Description
 		this.addOption(new Option("architecture","description_todo", String.class));//TODO Description
-		
+
 		this.addOption(new Option("max_pack_size","The maxmimum number of blocks in the independent subcircuits for seed based packing", 2500));
-		this.addOption(new Option("num_threads","The number of available threads", 4));
+		this.addOption(new Option("num_threads","The number of available threads", 2));
 		this.addOption(new Option("max_fanout","The maximum fanout of the added nets during partitioning", 100));
 		this.addOption(new Option("hmetis_quality","description_todo", 2));//TODO Descriptions
 		this.addOption(new Option("unbalance_factor","description_todo", 25));//TODO Description
@@ -31,8 +31,9 @@ public class Simulation{
 		this.addOption(new Option("timing_weight","description_todo", 10));//TODO Description
 		this.addOption(new Option("multiply_factor","description_todo", 1.0));//TODO Description
 		this.addOption(new Option("fixed_size","description_todo", true));//TODO Description
-		
+
 		this.addOption(new Option("logfile","Print console output to logfile", false));
+		this.addOption(new Option("print_stats_to_file","Print additional information of MultiPart algorithm to separate stats files", false));
 
 		this.addOption(new Option("timing_edge_weight_update", "Update the weight on the critical paths with a cut edge", true));
 
@@ -75,7 +76,7 @@ public class Simulation{
 			ErrorLog.print("Option " + name + " not found");
 		}
 	}
-	
+
 	public String getStringValue(String name){
 		Option option = this.getOption(name);
 		if(!option.getType().equals(String.class)) {
@@ -104,11 +105,11 @@ public class Simulation{
     	}
     	return (Boolean)option.getValue();
 	}
-	
+
 	public int getSimulationID(){
 		return this.simulationID;
 	}
-	
+
 	public boolean isDouble(String word){
 		if(Pattern.matches("([0-9]*)\\.([0-9]*)", word)){
 			return true;
@@ -169,7 +170,7 @@ public class Simulation{
 		String description = "DESCRIPTION";
 		while(description.length() < this.maxDescriptionSize) description = description + " ";
 		output += "\t\t" + name + "    " + description + "    " + "DEFAULT" + "\n\n";
-		
+
 		for(Option option:this.options.values()){
 			name = option.getName();
 			while(name.length() < this.maxNameSize) name = name + " ";

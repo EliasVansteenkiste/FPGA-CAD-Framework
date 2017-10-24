@@ -2,6 +2,7 @@ package pack.cluster;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import pack.util.ErrorLog;
 import pack.util.Util;
@@ -11,37 +12,37 @@ public class LogicBlock {
 	private String instance;
 	private int instanceNumber;
 	private String mode;
-	
-	private HashMap<String, String[]> inputs;
-	private HashMap<String, String[]> outputs;
-	private HashMap<String, String[]> clocks;
-	
+
+	private Map<String, String[]> inputs;
+	private Map<String, String[]> outputs;
+	private Map<String, String[]> clocks;
+
 	private ArrayList<LogicBlock> childBlocks;
-	
-	private static int num = 0;
-	
-	public LogicBlock(String name, String instance, int instanceNumber,  String mode, int level, LogicBlock parent){
+
+	private boolean enabled;
+	private final boolean floating;
+
+	public LogicBlock(String name, String instance, int instanceNumber,  String mode, int level, boolean floating){
 		this.name = name;
 		this.instance = instance;
 		this.instanceNumber = instanceNumber;
 		this.mode = mode;
+
+		this.inputs = new HashMap<>();
+		this.outputs = new HashMap<>();
+		this.clocks = new HashMap<>();
+
+		this.childBlocks = new ArrayList<>();
 		
-		this.inputs = new HashMap<String, String[]>();
-		this.outputs = new HashMap<String, String[]>();
-		this.clocks = new HashMap<String, String[]>();
-		
-		this.childBlocks = new ArrayList<LogicBlock>();
+		this.enabled = true;
+		this.floating = floating;
 	}
 	
 	//SET PARAMETERS
-	public void setName(){
-		this.name = "lb" + LogicBlock.num;
-		LogicBlock.num += 1;
-	}
 	public void setInstanceNumber(int instanceNumber){
 		this.instanceNumber = instanceNumber;
 	}
-	
+
 	//HAS PARAMETER
 	public boolean hasName(){
 		return !(this.name == null);
@@ -55,7 +56,7 @@ public class LogicBlock {
 	public boolean isEmpty(){
 		return !this.hasName();
 	}
-	
+
 	//GET PARAMETER
 	public String getName(){
 		if(this.hasName()){
@@ -100,7 +101,7 @@ public class LogicBlock {
 			ErrorLog.print("Input port " + port + " not found");
 		}
 	}
-	
+
 	//CHILD LOGIC BLOCKS
 	public ArrayList<LogicBlock> getNonEmptyChildBlocks(){
 		ArrayList<LogicBlock> result = new ArrayList<LogicBlock>();
@@ -120,7 +121,7 @@ public class LogicBlock {
 		}
 		return res;
 	}
-	
+
 	//IO SPECIFIC FUNCTIONS
 	public void removeInpadBlock(){
 		boolean inpadRemoved = false;
@@ -215,7 +216,7 @@ public class LogicBlock {
 		ErrorLog.print("Postition not found");
 		return -1;
 	}
-	
+
 	//ADD
 	public void addInput(String port, String[] pins){
 		this.inputs.put(port, pins);
@@ -229,11 +230,13 @@ public class LogicBlock {
 	public void addChildBlock(LogicBlock childBlock){
 		this.childBlocks.add(childBlock);
 	}
-	
+
 	//TO NET STRING
 	public String toNetString(int tabs){
+		if(!this.enabled()) ErrorLog.print("This function is only applicable for enabled logic blocks!");
+
 		StringBuilder sb = new StringBuilder();
-		
+
 		sb.append(Util.tabs(tabs));
 		sb.append("<block name=\"");
 		if(this.hasName()){
@@ -256,7 +259,7 @@ public class LogicBlock {
 			sb.append(this.mode);
 			sb.append("\"");
 		}
-		
+
 		if(this.isEmpty()){
 			if(!this.inputs.isEmpty())ErrorLog.print("Open block should not have inputs");
 			if(!this.outputs.isEmpty())ErrorLog.print("Open block should not have outputs");
@@ -267,7 +270,7 @@ public class LogicBlock {
 		}else{
 			sb.append(">");
 			sb.append("\n");
-			
+
 			//Inputs
 			sb.append(Util.tabs(tabs+1));
 			sb.append("<inputs>");
@@ -309,7 +312,7 @@ public class LogicBlock {
 			sb.append(Util.tabs(tabs+1));
 			sb.append("</outputs>");
 			sb.append("\n");
-			
+
 			//Clocks
 			sb.append(Util.tabs(tabs+1));
 			sb.append("<clocks>");
@@ -330,15 +333,34 @@ public class LogicBlock {
 			sb.append(Util.tabs(tabs+1));
 			sb.append("</clocks>");
 			sb.append("\n");
-			
+
 			for(LogicBlock childBlock:this.childBlocks){
 				sb.append(childBlock.toNetString(tabs+1));
 			}
-			
+
 			sb.append(Util.tabs(tabs));
 			sb.append("</block>");
 			sb.append("\n");
 		}
 		return sb.toString();
+	}
+
+	public String getInfo(){
+		return "<block name=\"" + this.name + "\" instance=\"" + this.instance + "[" + Util.str(this.instanceNumber) + "]\" mode=\"" + this.mode +"\">";
+	}
+
+	public boolean enabled(){
+		return this.enabled;
+	}
+	public void disable(){
+		this.enabled = false;
+		for(LogicBlock child:this.childBlocks){
+			child.disable();
+		}
+	}
+
+	//Floating blocks have no connections with other blocks, only with IO pins
+	public boolean isFloating(){
+		return this.floating;
 	}
 }

@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import pack.architecture.Architecture;
+import pack.cluster.LogicBlock;
 import pack.main.Simulation;
 import pack.netlist.Model;
 import pack.partition.HardBlockGroup;
@@ -34,8 +36,12 @@ public class Netlist{
 	private int level;
 	private int number;
 
+	private String hierarchyIdentifier;
+
 	private Netlist parent;
 	private ArrayList<Netlist> children;
+
+	private ArrayList<LogicBlock> logicBlocks;
 
 	private Data data;
 
@@ -103,7 +109,9 @@ public class Netlist{
 		Output.println("\tInputs: " + i);
 		Output.println("\tOutputs: " + o);
 		Output.newLine();
-		
+
+		this.hierarchyIdentifier = "";
+
 		this.trim();
 	}
 
@@ -2514,34 +2522,19 @@ public class Netlist{
 	}
 
 	//// PACKING ////
-	public ArrayList<Netlist> get_leaf_nodes(){
-		ArrayList<Netlist> leaf_nodes = new ArrayList<Netlist>();
-		
-		ArrayList<Netlist> currentWork = new ArrayList<Netlist>();
-		ArrayList<Netlist> nextWork = new ArrayList<Netlist>();
-		
+	public List<Netlist> get_leaf_nodes(){
+		List<Netlist> result = new ArrayList<Netlist>();
+		this.getLeafNodes(result);
+		return result;
+	}
+	private void getLeafNodes(List<Netlist> result){
 		if(this.has_children()){
-			nextWork.add(this);	
-		}else{
-			leaf_nodes.add(this);
-			return leaf_nodes;
-		}
-		
-		while(nextWork.size()>0){
-			currentWork = new ArrayList<Netlist>(nextWork);
-			nextWork = new ArrayList<Netlist>();
-			while(currentWork.size()>0){
-				Netlist parent = currentWork.remove(0);
-				for(Netlist child:parent.get_children()){
-					if(child.has_children()){
-						nextWork.add(child);
-					}else{
-						leaf_nodes.add(child);
-					}
-				}
+			for(Netlist child:this.children){
+				child.getLeafNodes(result);
 			}
+		}else{
+			result.add(this);
 		}
-		return leaf_nodes;
 	}
 
 	//FLOATING BLOCKS
@@ -2600,5 +2593,48 @@ public class Netlist{
 			}
 			Output.newLine();
 		}
+	}
+
+	//Hierarchy
+	public void setRecursiveHierarchyIdentifier(String val){
+		//Test functionality
+		if(this.children.size() > 2){
+			ErrorLog.print("Each netlist should have a maximum of 2 children");
+		}
+		if(this.children.size() == 1){
+			ErrorLog.print("Each netlist should have 0 or 2 children");
+		}
+
+		this.hierarchyIdentifier = val;
+		
+		int index = 0;
+		for(Netlist child:this.children){
+			child.setRecursiveHierarchyIdentifier(this.hierarchyIdentifier + Util.str(index));
+			index++;
+		}
+	}
+	public String getHierarchyIdentifier(){
+		return this.hierarchyIdentifier;
+	}
+	public void addLogicBlock(LogicBlock logicBlock){
+		if(this.children.size() != 0){
+			ErrorLog.print("Only leaf nodes can have logic blocks");
+		}
+		if(this.logicBlocks == null){
+			this.logicBlocks = new ArrayList<LogicBlock>();
+		}
+		this.logicBlocks.add(logicBlock);
+	}
+	public void updateEnabledLogicBlocks(){
+		List<LogicBlock> temp = this.logicBlocks;
+		this.logicBlocks = new ArrayList<LogicBlock>();
+		for(LogicBlock block:temp){
+			if(block.enabled()){
+				this.logicBlocks.add(block);
+			}
+		}
+	}
+	public List<LogicBlock> getLogicBlocks(){
+		return this.logicBlocks;
 	}
 }

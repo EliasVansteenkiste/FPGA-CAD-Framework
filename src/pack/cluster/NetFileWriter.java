@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import pack.netlist.B;
 import pack.netlist.N;
@@ -17,10 +18,10 @@ import pack.util.Util;
 public class NetFileWriter {
 	private Netlist root;
 	
-	private ArrayList<LogicBlock> logicBlocks;
+	private List<LogicBlock> logicBlocks;
 	
-	private ArrayList<N> netlistInputs;
-	private ArrayList<N> netlistOutputs;
+	private List<N> netlistInputs;
+	private List<N> netlistOutputs;
 
 	private BufferedWriter writer;
 	
@@ -31,7 +32,7 @@ public class NetFileWriter {
 
 	private int blockC;
 	
-	public NetFileWriter(ArrayList<LogicBlock> logicBlocks, Netlist root){
+	public NetFileWriter(List<LogicBlock> logicBlocks, Netlist root){
 		this.root = root;
 		
 		this.logicBlocks = logicBlocks;
@@ -42,10 +43,10 @@ public class NetFileWriter {
 		this.blockC = 0;
 		
 		this.tabs = 0;
-		this.names = new ArrayList<String>();
+		this.names = new ArrayList<>();
 	}
 	public void netlistInputs(){
-		this.netlistInputs = new ArrayList<N>();
+		this.netlistInputs = new ArrayList<>();
 		for(B b:this.root.get_blocks()){
 			for(N n:b.get_input_nets()){
 				if(!n.has_source() && n.has_terminals()){
@@ -58,7 +59,7 @@ public class NetFileWriter {
 		Collections.sort(this.netlistInputs, N.NetFanoutComparator);
 	}
 	public void netlistOutputs(){
-		this.netlistOutputs = new ArrayList<N>();
+		this.netlistOutputs = new ArrayList<>();
 		for(B b:this.root.get_blocks()){
 			for(N n:b.get_output_nets()){
 				if(n.has_terminals()){
@@ -109,8 +110,7 @@ public class NetFileWriter {
 		closeNetFile();
 
 		this.t.stop();
-		Output.println("\tNetfile writer took " + this.t.toString() + " seconds");
-		Output.newLine();
+		Output.println("\tNetfile writer took " + this.t.toString());
 	}
 	
 	//// WRITERS ////
