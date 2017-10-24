@@ -18,9 +18,6 @@ public class HardblockAnneal {
 	
 	private double quality;
 	private double effortLevel;
-
-	private final Set<Net> nets;
-	private final Set<Crit> crits;
 	
 	private int numBlocks, numSites;
 	
@@ -29,17 +26,12 @@ public class HardblockAnneal {
 	private int iteration;
 	
 	private double cost, minimumCost;
-	private final List<Double> costHistory;
+	private List<Double> costHistory;
 	
 	private final Random random;
 	
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
-		
-		this.nets = new HashSet<>();
-		this.crits = new HashSet<>();
-		
-		this.costHistory = new ArrayList<>();
 	}
 	public void doAnneal(Column[] columns, double quality){
 		int numBlocks = 0;
@@ -82,7 +74,7 @@ public class HardblockAnneal {
 		this.sites = annealSites;
 
 		this.quality = quality;
-		this.effortLevel = 1.0;
+		this.effortLevel = Math.max(0.01 / quality, 1.0);
 
 		this.doAnneal();
 	}
@@ -92,22 +84,22 @@ public class HardblockAnneal {
 		this.numBlocks = this.blocks.length;
 		this.numSites = this.sites.length;
 
-		this.nets.clear();
-		this.crits.clear();
+		Set<Net> nets = new HashSet<>();
+		Set<Crit> crits = new HashSet<>();
 		for(Block block:this.blocks){
 			for(Net net:block.nets){
-				this.nets.add(net);
+				nets.add(net);
 			}
 			for(Crit crit:block.crits){
-				this.crits.add(crit);
+				crits.add(crit);
 			}
 		}
 
 		this.cost = 0.0;
-		for(Net net:this.nets){
+		for(Net net:nets){
 			this.cost += net.connectionCost();
 		}
-		for(Crit crit:this.crits){
+		for(Crit crit:crits){
 			this.cost += crit.timingCost();
 		}
 		this.minimumCost = this.cost;
@@ -124,7 +116,7 @@ public class HardblockAnneal {
 		}
 		
 		boolean finalIteration = false;
-		this.costHistory.clear();
+		this.costHistory = new ArrayList<>();
 
 		for(Block block:this.blocks){
 			block.initializeOptimalSite();
