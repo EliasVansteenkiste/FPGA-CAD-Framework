@@ -47,7 +47,6 @@ public class HMetis {
 	private double partitioningRuntime;
 	private int numberOfcutEdges;
 
-	
 	public HMetis(Netlist netlist, int thread, int metisIt, Param param){
 		this.netlist = netlist;
 		this.size = this.netlist.atom_count();
@@ -183,14 +182,8 @@ public class HMetis {
 				if(this.blockMap.get(b.get_number()) != blockNumber){
 					ErrorLog.print("Error in the block numbering");
 				}
-				int area = b.get_area();
-				area = (int)Math.ceil(Math.pow(area, this.param.alpha()));
-				
-				//Safety build in to assure that alpha exponent is equal to zero
-				if(area != 1){
-					ErrorLog.print("Area should be equal to 1, instead it is equal to " + area);
-				}
-				bw.write(area + "");
+
+				bw.write(1 + "");//TODO Should we use 1 or the atom count?
 				bw.newLine();
 
 				blockNumber += 1;
@@ -259,7 +252,6 @@ public class HMetis {
         	ProcessBuilder pb = new ProcessBuilder(this.param.getHMetisLine(this.thread));	
         	this.proc = pb.start();
         	Output.println(this.param.getInfoLine(this.netlist, this.numberOfEdges, this.numberOfCriticalEdges, this.metisIt, this.thread));
-        	//this.param.printHMetisLine(this.thread);
         } catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -2,6 +2,7 @@ package pack.cluster;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import pack.util.ErrorLog;
 import pack.util.Util;
@@ -12,12 +13,12 @@ public class LogicBlock {
 	private int instanceNumber;
 	private String mode;
 
-	private HashMap<String, String[]> inputs;
-	private HashMap<String, String[]> outputs;
-	private HashMap<String, String[]> clocks;
+	private Map<String, String[]> inputs;
+	private Map<String, String[]> outputs;
+	private Map<String, String[]> clocks;
 
 	private ArrayList<LogicBlock> childBlocks;
-	
+
 	private boolean enabled;
 	private final boolean floating;
 
@@ -26,17 +27,17 @@ public class LogicBlock {
 		this.instance = instance;
 		this.instanceNumber = instanceNumber;
 		this.mode = mode;
-		
-		this.inputs = new HashMap<String, String[]>();
-		this.outputs = new HashMap<String, String[]>();
-		this.clocks = new HashMap<String, String[]>();
-		
-		this.childBlocks = new ArrayList<LogicBlock>();
+
+		this.inputs = new HashMap<>();
+		this.outputs = new HashMap<>();
+		this.clocks = new HashMap<>();
+
+		this.childBlocks = new ArrayList<>();
 		
 		this.enabled = true;
 		this.floating = floating;
 	}
-
+	
 	//SET PARAMETERS
 	public void setInstanceNumber(int instanceNumber){
 		this.instanceNumber = instanceNumber;
@@ -232,10 +233,10 @@ public class LogicBlock {
 
 	//TO NET STRING
 	public String toNetString(int tabs){
-		if(!this.enabled()) System.out.println("This function is only applicable for enabled logic blocks!");
+		if(!this.enabled()) ErrorLog.print("This function is only applicable for enabled logic blocks!");
 
 		StringBuilder sb = new StringBuilder();
-		
+
 		sb.append(Util.tabs(tabs));
 		sb.append("<block name=\"");
 		if(this.hasName()){
@@ -258,7 +259,7 @@ public class LogicBlock {
 			sb.append(this.mode);
 			sb.append("\"");
 		}
-		
+
 		if(this.isEmpty()){
 			if(!this.inputs.isEmpty())ErrorLog.print("Open block should not have inputs");
 			if(!this.outputs.isEmpty())ErrorLog.print("Open block should not have outputs");
@@ -269,7 +270,7 @@ public class LogicBlock {
 		}else{
 			sb.append(">");
 			sb.append("\n");
-			
+
 			//Inputs
 			sb.append(Util.tabs(tabs+1));
 			sb.append("<inputs>");
@@ -343,10 +344,11 @@ public class LogicBlock {
 		}
 		return sb.toString();
 	}
+
 	public String getInfo(){
 		return "<block name=\"" + this.name + "\" instance=\"" + this.instance + "[" + Util.str(this.instanceNumber) + "]\" mode=\"" + this.mode +"\">";
 	}
-	
+
 	public boolean enabled(){
 		return this.enabled;
 	}
@@ -356,7 +358,7 @@ public class LogicBlock {
 			child.disable();
 		}
 	}
-	
+
 	//Floating blocks have no connections with other blocks, only with IO pins
 	public boolean isFloating(){
 		return this.floating;

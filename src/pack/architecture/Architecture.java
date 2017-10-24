@@ -519,15 +519,11 @@ public class Architecture {
 			}
 		}
 		if(loadConnections){
-			//Measuring delays of actual wires using Quartus II resulted in the following average delays:
-            //	R4:  116 ps
-            //	C4:  148 ps
-            //	R20: 305 ps
-            //	C12: 273 ps
-			//Averaging accross wires of the same type we attempted to make the wires (including drivers) correlate to the following values:
-		    //	L4:  132 ps
-		    //	L16: 289 ps
-			int interconnectDelay = 132;//ps
+			//Delay of short connection in global routing architecture 
+			//      => this value is architecture specific! 
+			//TODO Determine this value based on architecture file
+			int interconnectDelay = 132;
+
 			for(Block sourceBlock:this.complexBlocks){
 				for(Port sourcePort:sourceBlock.get_output_ports()){
 					for(Pin sourcePin:sourcePort.get_pins()){
@@ -581,14 +577,6 @@ public class Architecture {
 							this.blifPins.get(outputPin.get_name()).add(outputPin);
 						}
 					}
-					//if(blifBlock.has_clock()){
-					//	for(Pin clockPin:blifBlock.get_clock_port().get_pins()){
-					//		if(!this.blifPins.containsKey(clockPin.get_name())){
-					//			this.blifPins.put(clockPin.get_name(), new ArrayList<Pin>());
-					//		}
-					//		this.blifPins.get(clockPin.get_name()).add(clockPin);
-					//	}
-					//}
 				}
 			}
 			//Assign neighbours of each pin
@@ -997,8 +985,7 @@ public class Architecture {
 			this.complexBlocks.remove(removedBlock);
 			this.removedModels.addAll(removedBlock.get_blif_models());
 		}
-		
-		//FIRSTL LEVEL
+
 		while(!nextLevel.isEmpty()){
 			currentLevel = nextLevel;
 			nextLevel = new ArrayList<Element>();
@@ -1025,14 +1012,6 @@ public class Architecture {
 				if(line.contains("</")){
 					tabs -= 1;
 				}
-				//if(line.contains("layout")){
-				//	bw.write(Util.tabs(tabs) + "<layout width=\"270\" height=\"200\"/>");
-				//	bw.newLine();
-				//}else{
-				//	bw.write(Util.tabs(tabs) + line);
-				//	bw.newLine();
-				//}
-				//The fixed area method does not work because then the total vpr pack time increases a lot (cholesky_mc: 270 -> 690)
 				bw.write(Util.tabs(tabs) + line);
 				bw.newLine();
 				
@@ -1059,16 +1038,6 @@ public class Architecture {
 				if(!block.valid_connection(sourcePortName, sinkPortName)){
 					validConnection = false;
 				}
-			}
-		}
-		if(!validConnection){
-			if(sourcePortName.equals("sharein") && sinkPortName.equals("shareout")){
-			}else if(sourcePortName.equals("sharein") && sinkPortName.equals("combout")){
-				//THIS IS CORRECT, THERE IS NO VALID CONNECTION IN ARCHITECTURE
-			}else if(sourcePortName.equals("cin") && sinkPortName.equals("combout")){
-				//THIS IS CORRECT, THERE IS NO VALID CONNECTION IN ARCHITECTURE
-			}else{
-				Output.println("No valid connection for blif type " + blifModel + " between " + sourcePortName + " and " + sinkPortName + " => Control if this is correct" );
 			}
 		}
 		return validConnection;
@@ -1167,7 +1136,6 @@ public class Architecture {
 			ErrorLog.print("Architecture does not contain sink pin " + sinkPinName);
 			return Integer.MAX_VALUE;
 		}
-		//Output.print(this.delayCalculations++ + " | Connection delay between " + sourcePinName + " and " + sinkPinName + ": ");
 		
 		PriorityQueue<Pin> q = new PriorityQueue<Pin>();
 		for(Pin p:this.pins){

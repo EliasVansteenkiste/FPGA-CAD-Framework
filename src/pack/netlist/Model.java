@@ -7,21 +7,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import pack.util.ErrorLog;
-import pack.util.Output;
-import pack.util.Timing;
 
 public class Model {
 	private String name;
-	private ArrayList<String> inputPorts;//CLK IS NO INPUT PORT
+	private ArrayList<String> inputPorts;
 	private ArrayList<String> outputPorts;
 	private HashMap<String,Integer> pinsOnPort;
 	private String internals;
 	private int occurences;
 	
+	//TODO make architecture independent
 	private int ramSlices9;
 	private int ramSlices144;
-	
-	private int area;
 
 	public Model(String name, String archFile){
 		this.name = name;
@@ -30,13 +27,8 @@ public class Model {
 		this.pinsOnPort = new HashMap<String,Integer>();
 		this.occurences = 0;
 		
-		this.area = 0;
-		
 		if(this.name.contains("stratixiv_ram_block")){
-			//System.out.println("Stratix ram block: " + this.name);
 			this.assign_stratixiv_ram_slices(archFile);
-			//System.out.println("\tM9K Slices: " + this.ramSlices9);
-			//System.out.println("\tM144K Slices: " + this.ramSlices144);
 		}
 	}
 	public Model(Model model){
@@ -86,22 +78,9 @@ public class Model {
 		}else{
 			ErrorLog.print("Unexpexted name for new model: " + newName);
 		}
-		//this.ramSlices9 = model.get_stratixiv_ram_slices_9();
-		//this.ramSlices144 = model.get_stratixiv_ram_slices_144();
 	}
 	public String get_name() {
 		return name;
-	}
-	public int get_area(){
-		if(this.area == 0){
-			this.assign_area();
-		}
-		if(this.area > 0){
-			return area;
-		}else{
-			ErrorLog.print("Area should be larger than 0");
-			return -1;
-		}
 	}
 	public void increment_occurences() {
 		this.occurences++;
@@ -210,68 +189,6 @@ public class Model {
 		out += "\n";
 		return out;
 	}
-	
-	public void assign_area(){
-		Timing t = new Timing();
-		t.start();
-		
-		//VPR DESCRIPTION SIZE (WIDTH = 1 FOR ALL BLOCKS)
-		int lab = 780;
-		int m9k = lab;
-		int m144k = 8*lab;
-		int dsp = 4*lab;
-		
-		if(this.name.equals("stratixiv_lcell_comb") || this.name.equals(".names")){
-			this.area = 25;
-		}else if(this.name.equals("dffeas") || this.name.equals(".latch") || this.name.equals("dffeas_pad")){
-			this.area = 1;
-		}else if(this.name.contains("stratixiv_mlab_cell")){
-			this.area = lab;
-		}else if(this.name.contains("stratixiv_ram_block")){
-			this.area = this.get_ram_area(m9k, m144k);
-		}else if(this.name.contains("HALF_DSP")){
-			this.area = this.get_half_dsp_area(dsp);
-		}else if(this.name.contains("DSP")){
-			this.area = dsp;
-		}else if(this.name.equals("inpad") || this.name.equals("outpad")){
-			this.area = lab/2;
-		}else if(this.name.equals("stratixiv_io_ibuf") || this.name.equals("stratixiv_io_obuf") || this.name.equals("stratixiv_ddio_out") || this.name.equals("stratixiv_ddio_oe") || this.name.equals("stratixiv_ddio_in") || this.name.equals("stratixiv_delay_chain") || this.name.equals("stratixiv_dll") || this.name.equals("stratixiv_dqs_config") || this.name.equals("stratixiv_dqs_delay_chain") || this.name.equals("stratixiv_dqs_enable") || this.name.equals("stratixiv_dqs_enable_ctrl") || this.name.equals("stratixiv_io_config") || this.name.equals("stratixiv_pseudo_diff_out") || this.name.equals("stratixiv_termination") || this.name.equals("stratixiv_termination_logic") || this.name.equals("stratixiv_input_phase_alignment") || this.name.equals("stratixiv_output_phase_alignment") || this.name.equals("stratixiv_output_phase_alignment_ddio_out") || this.name.equals("stratixiv_output_phase_alignment_ddio_in") || this.name.equals("stratixiv_output_phase_alignment_oe") || this.name.equals("stratixiv_output_phase_alignment_rtena")){
-			this.area = lab/10;
-		}else{
-			Output.println("\tUnrecognized model type in area assignment: " + this.name);
-			this.area = 1;
-		}
-		t.stop();
-	}
-	private int get_ram_area(int area9, int area144){
-		int area_M9K = 0;
-		int area_M144K = 0;
-		if(this.ramSlices9 > 0){
-			area_M9K = area9 / this.ramSlices9;
-		}
-		if(this.ramSlices144 > 0){
-			area_M144K = area144 / this.ramSlices144;
-		}
-		
-		if(area_M9K > 0){
-			if(area_M144K > 0){
-				if(area_M9K < area_M144K){
-					return area_M9K;
-				}else{
-					return area_M144K;
-				}
-			}else{
-				return area_M9K;
-			}
-		}else{
-			if(area_M144K > 0){
-				return area_M144K;
-			}else{
-				ErrorLog.print("Both areas are equal to zero");
-				return -1;
-			}
-		}
-	}
 	private int parse(String line){
 		String[] words = line.split(" ");
 		for(String word:words){
@@ -285,9 +202,6 @@ public class Model {
 		}
 		ErrorLog.print("No num_pins object found");
 		return -1;
-	}
-	private int get_half_dsp_area(int areaDSP){
-		return areaDSP/2;
 	}
 	
 	//RAM SLICES
@@ -384,9 +298,7 @@ public class Model {
 						}
 					}
 					if(memorySlices == 0){
-						//Info.add("WARNING","Warning: Mixed width ram block with " + num_pb + " slices" + " " + this.name);
 						memorySlices = num_pb;
-						//ErrorLog.print(this.name + "\n\tdata_in1\t" + dataIn1 + "\n\tdata_in2\t" + dataIn2 + "\n\tdata_out1\t" + dataOut1 + "\n\tdata_out2\t" + dataOut2);
 					}
 					
 					if(M9K){

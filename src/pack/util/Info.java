@@ -4,16 +4,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import pack.main.Simulation;
 
 public class Info {
-	private static HashMap<String,ArrayList<String>> info = new HashMap<String,ArrayList<String>>();
+	private static Map<String,ArrayList<String>> info = new HashMap<>();
 	private static boolean enabled = false;
 	
 	public static void enabled(boolean enabled){
 		Info.enabled = enabled;
 	}
+	
 	public synchronized static void add(String type, String line){
 		if(Info.enabled){
 			if(Info.info.containsKey(type)){

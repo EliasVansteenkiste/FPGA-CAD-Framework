@@ -26,18 +26,18 @@ public class Timing {
 	public String toString(){
 		double time = this.totalTime * Math.pow(10, -9);
 		if(time > 1){
-			return String.format("%.0f s\n", time);
+			return String.format("%.0f s", time);
 		}
 
 		time *= 1000;//ms
 
 		if(time > 1){
-			return String.format("%.0f ms\n", time);
+			return String.format("%.0f ms", time);
 		}
     	
 		time *= 1000;//ns
 
-		return String.format("%.0f ns\n", time);
+		return String.format("%.0f ns", time);
 	}
 	public double time(){
 		return Util.round(1.0*this.totalTime*Math.pow(10, -9),3);

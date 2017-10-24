@@ -62,7 +62,7 @@ public class PathWeight {
 		Output.newLine();
 
 		pathTimer.stop();
-		Output.println("\tPath took " + pathTimer.time());
+		Output.println("\tPath took " + pathTimer.toString());
 		Output.newLine();
 	}
 	private void initializeConnectionDelayMap(){
@@ -158,7 +158,6 @@ public class PathWeight {
 		}
 
 		t.stop();
-
 		Output.print("\tFind combinational loops took " + t.toString());
 		Output.println("\tNetlist has " + comb + " combinational loops");
 		Output.newLine();
@@ -176,7 +175,6 @@ public class PathWeight {
 	public int analyze_pin(P startPin, int comb, HashSet<P> visited, HashSet<P> analyzed){
 		visited.add(startPin);
 		for(P sinkPin:new HashSet<P>(startPin.get_net().get_sink_pins())){
-		//for(P sinkPin:startPin.get_net().get_sink_pins()){
 			if(sinkPin.has_block()){
 				B b = sinkPin.get_block();
 				if(b.is_sequential()){
@@ -345,7 +343,6 @@ public class PathWeight {
 
 	//ASSIGN CRITICAL EDGES
 	public void critical_edges(){
-
 		Output.println("\t###############################################################");
 		Output.println("\t########################### TIMING  ###########################");
 		Output.println("\t###############################################################");
@@ -358,17 +355,14 @@ public class PathWeight {
 		//THIS TYPE HAS A MORE COMPLEX METHOD TO DEFINE THE CRITICAL EDGES AS USED IN THE FPL2016 PAPER
 		double minCriticality = this.simulation.getDoubleValue("min_crit");
 		int maxPercentageCriticalEdges = this.simulation.getIntValue("max_per_crit_edge");
-
+		
 		Output.println("\tMinimum criticality               | " + minCriticality);
 		Output.println("\tMaximum percentage critical edges | " + maxPercentageCriticalEdges);
 		Output.newLine();
 
-		//HashSet<P> edges = this.find_all_edges_and_assign_criticality_to_each_edge();
-		//this.print_edge_criticality(edges);
-
 		ArrayList<P> edges = new ArrayList<P>(this.find_all_edges_and_assign_criticality_to_each_edge());
 		Collections.sort(edges, P.PinCriticalityComparator);
-
+		
 		//Test edge sort
 		Timing t1 = new Timing();
 		t1.start();
@@ -456,10 +450,10 @@ public class PathWeight {
 			for(P terminalPin:net.get_terminal_pins()){
 				if(terminalPin.is_sink_pin()){
 					P sinkPin = terminalPin;
-					
+
 					Integer slack = this.arch.slack(sourcePin, sinkPin);
 					double criticality = 1.0 - (slack.doubleValue()/this.maxArrivalTime);
-					
+
 					sinkPin.set_criticality(criticality);
 					edges.add(sinkPin);
 					this.numEdges += 1;
@@ -477,13 +471,13 @@ public class PathWeight {
 	public void assign_critical_edges(ArrayList<P> criticalEdges){
 		int weightFactor = this.simulation.getIntValue("timing_weight");
 		double multiplyFactor = this.simulation.getDoubleValue("multiply_factor");
-
+		
 		Output.println("\tAssign critical edges:");
 		Output.println("\t\tMultiply factor           | " + multiplyFactor);
 		Output.println("\t\tInter weight factor       | " + weightFactor);
 		Output.println("\t\tIntra weight factor       | " + (int)Math.round(multiplyFactor*weightFactor));
 		Output.newLine();
-
+		
 		for(P sinkPin:criticalEdges){
 			N net = sinkPin.get_net();
 			P sourcePin = null;
@@ -502,7 +496,7 @@ public class PathWeight {
 			if(sourcePin == null){
 				ErrorLog.print("No source pin found for this net: " + net.toString());
 			}
-
+			
 			if(sourcePin.has_terminal() || sinkPin.has_terminal()){
 				//GLOBAL INTERCONNECTION
 				sinkPin.set_net_weight((int)(Math.round(sinkPin.criticality()*weightFactor)));

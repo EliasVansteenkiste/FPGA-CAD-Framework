@@ -18,14 +18,14 @@ public class VPRThread {
 	private int size;
 	private Netlist netlist;
 
-	public VPRThread( int thread, Simulation simulation, Netlist netlist){
+	public VPRThread(int thread, Simulation simulation, Netlist netlist){
 		this.thread = thread;
 		this.simulation = simulation;
 		this.run = new String();
 		this.netlist = netlist;
 	}
 
-	public void run(int size, int area){
+	public void run(int size){
 		String circuit = this.simulation.getStringValue("circuit");
 		String vpr_folder = this.simulation.getStringValue("vpr_folder");
 		String result_folder = this.simulation.getStringValue("result_folder");
@@ -44,35 +44,34 @@ public class VPRThread {
 			e.printStackTrace();
 		}
     	
-		Output.println("\t\t" + circuit + " | " + "Thread: " + Util.fill(this.thread,2) + " | Blocks: " + Util.fill(size,5) + " | Area: " + area);
+		Output.println("\t\t" + circuit + " | " + "Thread: " + Util.fill(this.thread,2) + " | Blocks: " + Util.fill(size,5));
 		
 		this.size = size;
-		
-    	//System.out.println("\t\t\t" + this.run);
 	}
+	
 	public boolean isRunning() {
-	    try {
-	       this.proc.exitValue();
-	       
-	       BufferedReader reader =  new BufferedReader(new InputStreamReader(this.proc.getInputStream()));
-	      
-	       String line = reader.readLine();
-	       double runtime = 0.0;
-	       while(line != null){
-	    	   if(line.contains("Packing took")){
-	    		   line = line.replace("Packing took ", "");
-	    		   line = line.replace(" seconds", "");
-	    		   runtime = Double.parseDouble(line);
-	    	   }
-	    	   line = reader.readLine();
-	       }
-	       String output = "size" + "\t" + this.size + "\t" + "total_runtime" + "\t" + Util.round(runtime, 4) + "\t" + "runtime_per_block" + "\t" + Util.round(runtime/this.size*1000.0, 4);
-	       output = output.replace(".", ",");
-	       Info.add("rpb", output);
-	       return false;
-	    } catch (Exception e) {
-	       return true;
-	    }
+		try {
+			this.proc.exitValue();
+
+			BufferedReader reader =  new BufferedReader(new InputStreamReader(this.proc.getInputStream()));
+
+			String line = reader.readLine();
+			double runtime = 0.0;
+			while(line != null){
+				if(line.contains("Packing took")){
+					line = line.replace("Packing took ", "");
+					line = line.replace(" seconds", "");
+					runtime = Double.parseDouble(line);
+				}
+				line = reader.readLine();
+			}
+			String output = "size" + "\t" + this.size + "\t" + "total_runtime" + "\t" + Util.round(runtime, 4) + "\t" + "runtime_per_block" + "\t" + Util.round(runtime/this.size*1000.0, 4);
+			output = output.replace(".", ",");
+			Info.add("rpb", output);
+			return false;
+		} catch (Exception e) {
+			return true;
+		}
 	}
 
 	public String getCommand(){

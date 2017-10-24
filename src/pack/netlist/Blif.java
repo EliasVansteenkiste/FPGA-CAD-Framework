@@ -11,17 +11,18 @@ public class Blif {
 	private String folder;
 	private int num;
 	private int simulationID;
-	
+
 	private HashSet<String> inputs;
 	private HashSet<String> outputs;
-	
+
 	private ArrayList<String> latches;
 	private ArrayList<String> gates;
-	
-	private HashSet<Model> models;
-	private ArrayList<String> subcircuits;
+
 	private ArrayList<String> pll;
-	
+	private ArrayList<String> subcircuits;
+
+	private HashSet<Model> models;
+
 	private int dummy_counter;
 	
 	public Blif(String folder, String blif, int num, int simulationID){
@@ -121,27 +122,26 @@ public class Blif {
 			}
 			bufferedWriter.newLine();
 			bufferedWriter.newLine();
-			
-			//PLL SHOULD BE PUT ON TOP OF BLIF FILE
+
 			for(String pll:this.pll){
 				bufferedWriter.write(pll);
 				bufferedWriter.newLine();
 				bufferedWriter.newLine();
 			}
 			bufferedWriter.newLine();
-			
+
 			for(String latch:this.latches){
 				bufferedWriter.write(latch);
 				bufferedWriter.newLine();
 			}
 			bufferedWriter.newLine();
-			
+
 			for(String gate:this.gates){
 				bufferedWriter.write(gate);
 				bufferedWriter.newLine();
 			}
 			bufferedWriter.newLine();
-			
+
 			for(String subcircuit:this.subcircuits){
 				bufferedWriter.write(subcircuit);
 				bufferedWriter.newLine();

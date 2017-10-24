@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import pack.architecture.Architecture;
 import pack.main.Simulation;
@@ -17,9 +18,9 @@ public class Cluster {
 	private Architecture architecture;
 	private Simulation simulation;
 
-	private ArrayList<Netlist> leafNodes;
-	private ArrayList<LogicBlock> logicBlocks;
-	
+	private List<LogicBlock> logicBlocks;
+	private List<Netlist> leafNodes;
+
 	public Cluster(Netlist netlist, Architecture architecture, Partition partition, Simulation simulation){
 		this.root = netlist;
 		this.partition = partition;
@@ -27,15 +28,29 @@ public class Cluster {
 		this.simulation = simulation;
 	}
 	public void packing(){
-		this.logicBlocks = new ArrayList<LogicBlock>();
-		this.leafNodes = new ArrayList<Netlist>();
-		
+		this.logicBlocks = new ArrayList<>();
+		this.leafNodes = new ArrayList<>();
+
 		TPack tpack = new TPack(this.root, this.partition, this.architecture, this.simulation);
 		tpack.seedBasedPacking();
-		
 		this.logicBlocks.addAll(tpack.getLogicBlocks());
 		this.leafNodes.addAll(this.root.get_leaf_nodes());
 	}
+
+	public void writeNetlistFile(){
+		NetFileWriter writer = new NetFileWriter(this.logicBlocks, this.root);
+		String result_folder = this.simulation.getStringValue("result_folder");
+
+		writer.netlistInputs();
+		writer.netlistOutputs();
+
+		writer.makeNetFile(result_folder);
+
+		writer.printHeaderToNetFile(result_folder);
+		writer.printLogicBlocksToNetFile();
+		writer.finishNetFile();
+	}
+
 	public void writeHierarchyFile(){
 		try {
 			this.tryWriteHierarchyFile();
@@ -70,18 +85,5 @@ public class Cluster {
 	}
 	private String randomColor(){
 		return "[Color: (" + Util.str((int)(Math.random()*255)) + "," + Util.str((int)(Math.random()*255)) + "," + Util.str((int)(Math.random()*255)) + ")]";
-	}
-	public void writeNetlistFile(){
-		NetFileWriter writer = new NetFileWriter(this.logicBlocks, this.root);
-		String result_folder = this.simulation.getStringValue("result_folder");
-			
-		writer.netlistInputs();
-		writer.netlistOutputs();
-			
-		writer.makeNetFile(result_folder);
-		
-		writer.printHeaderToNetFile(result_folder);
-		writer.printLogicBlocksToNetFile();
-		writer.finishNetFile();
 	}
 }
