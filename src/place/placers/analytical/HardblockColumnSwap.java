@@ -5,9 +5,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import place.placers.analytical.HardblockConnectionLegalizer.Block;
-import place.placers.analytical.HardblockConnectionLegalizer.Column;
-import place.placers.analytical.HardblockConnectionLegalizer.Net;
+//import place.placers.analytical.HardblockConnectionLegalizer.Block;
+//import place.placers.analytical.HardblockConnectionLegalizer.Column;
+//import place.placers.analytical.HardblockConnectionLegalizer.Net;
+
+import place.placers.analytical.HardblockSwarmLegalizer.Block;
+import place.placers.analytical.HardblockSwarmLegalizer.Column;
+import place.placers.analytical.HardblockSwarmLegalizer.Net;
 
 public class HardblockColumnSwap {
 	private Column[] columns;

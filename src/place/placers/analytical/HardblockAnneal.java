@@ -6,11 +6,17 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import place.placers.analytical.HardblockConnectionLegalizer.Block;
-import place.placers.analytical.HardblockConnectionLegalizer.Column;
-import place.placers.analytical.HardblockConnectionLegalizer.Crit;
-import place.placers.analytical.HardblockConnectionLegalizer.Net;
-import place.placers.analytical.HardblockConnectionLegalizer.Site;
+//import place.placers.analytical.HardblockConnectionLegalizer.Block;
+//import place.placers.analytical.HardblockConnectionLegalizer.Column;
+//import place.placers.analytical.HardblockConnectionLegalizer.Crit;
+//import place.placers.analytical.HardblockConnectionLegalizer.Net;
+//import place.placers.analytical.HardblockConnectionLegalizer.Site;
+
+import place.placers.analytical.HardblockSwarmLegalizer.Block;
+import place.placers.analytical.HardblockSwarmLegalizer.Column;
+import place.placers.analytical.HardblockSwarmLegalizer.Crit;
+import place.placers.analytical.HardblockSwarmLegalizer.Net;
+import place.placers.analytical.HardblockSwarmLegalizer.Site;
 
 public class HardblockAnneal {
 	private Block[] blocks;

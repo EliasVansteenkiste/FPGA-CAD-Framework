@@ -12,11 +12,13 @@ import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.util.TimingTree;
 
-public class HardblockConnectionLegalizer{
+public class HardblockSwarmLegalizer{
 	private BlockType blockType;
 
 	private final double[] linearX, linearY;
     private final int[] legalX, legalY;
+    
+    private static final int SWARM_SIZE = 5;
 
     private final Block[] blocks;
     private final Net[] nets;
@@ -24,7 +26,6 @@ public class HardblockConnectionLegalizer{
 
     private final HardblockColumnSwap columnSwap;
     private final HardblockAnneal hardblockAnneal;
-    private static final int SWARM_SIZE = 5;
     private final HardblockSwarm hardblockSwarm;//TODO
     
     private final Map<BlockType, Block[]> blocksPerBlocktype;
@@ -35,7 +36,7 @@ public class HardblockConnectionLegalizer{
     private final TimingTree timingTree;
 
 
-	HardblockConnectionLegalizer(
+	HardblockSwarmLegalizer(
 			double[] linearX,
 			double[] linearY,
 			int[] legalX, 
@@ -253,18 +254,18 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.time("Column swap");
 
 //		Column legalize
-		this.timingTree.start("Legalize columns");
-		for(Column column:columns){
-			column.legalize();
-		}
-		this.timingTree.time("Legalize columns");
+//		this.timingTree.start("Legalize columns");
+//		for(Column column:columns){
+//			column.legalize();
+//		}
+//		this.timingTree.time("Legalize columns");
 
 		//Column anneal
 		this.timingTree.start("Anneal columns");
 		for(Column column:columns){
 			if(column.usedPos() > 0){
-				this.hardblockAnneal.doAnneal(column, quality);
-//				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE);//TODO
+//				this.hardblockAnneal.doAnneal(column, quality);
+				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE);//TODO
 			}
 		}
 		this.timingTree.time("Anneal columns");
@@ -343,12 +344,12 @@ public class HardblockConnectionLegalizer{
         	block.linearX = this.linearX[block.index];
         	block.linearY = this.linearY[block.index];
         }
-        for(Net net:legalizeNets){ //TODO to initialize for each particle 
-        	net.initializeConnectionCost();
-        }
-        for(Crit crit:this.crits){
-        	crit.initializeTimingCost();
-        }
+//        for(Net net:legalizeNets){ //TODO to initialize for each particle 
+//        	net.initializeConnectionCost();
+//        }
+//        for(Crit crit:this.crits){
+//        	crit.initializeTimingCost();
+//        }
         
         this.timingTree.time("Update block coordinates");
 	}
@@ -384,8 +385,7 @@ public class HardblockConnectionLegalizer{
 		double linearX, linearY;
 		boolean alreadySaved;
 		
-		int[] tmpLegalX = new int[SWARM_SIZE];
-		int[] tmpLegalY = new int[SWARM_SIZE];//TODO added for PSO
+		int[] tmpLegalX, tmpLegalY;//TODO added for PSO
 
 		final List<Net> nets;
 		final List<Crit> crits;
@@ -408,6 +408,9 @@ public class HardblockConnectionLegalizer{
 
 			this.site = null;
 			this.column = null;
+			
+			this.tmpLegalX = new int[SWARM_SIZE];
+			this.tmpLegalY = new int[SWARM_SIZE];
 		}
 		void addNet(Net net){
 			if(!this.nets.contains(net)){
@@ -418,6 +421,17 @@ public class HardblockConnectionLegalizer{
 			if(!this.crits.contains(crit)){
 				this.crits.add(crit);
 			}
+		}
+		//TODO set block's tmpLeagl
+		void setTmpLegal(int pIndex, int x, int y){
+			this.setTmpLeaglX(pIndex, x);
+			this.setTmpLegalY(pIndex, y);
+		}
+		void setTmpLeaglX(int pIndex, int x){
+			this.tmpLegalX[pIndex] = x;
+		}
+		void setTmpLegalY(int pIndex, int y){
+			this.tmpLegalY[pIndex] = y;
 		}
 		
 		//Criticality
@@ -544,6 +558,7 @@ public class HardblockConnectionLegalizer{
 	class Site {
 	    final int column, row, height;
 	    Block block;
+	    boolean alreadyPicked = false;
 
 	    public Site(int column, int row, int height) {
 	        this.column = column;
@@ -563,7 +578,8 @@ public class HardblockConnectionLegalizer{
 	        return this.block;
 	    }
 	    public void removeBlock(){
-	    	this.block = null;
+	    	this.block = null
+	    			;
 	    }
 	}
     /////////////////////////////////////////////////////////////////////////////////
@@ -613,24 +629,24 @@ public class HardblockConnectionLegalizer{
 		}
 
 		//// Connection cost ////
-		void initializeConnectionCost(){
+		void initializeConnectionCost(int index){
 			Block initialBlock = this.blocks[0];
-	        this.minX = initialBlock.legalX;
-	        this.maxX = initialBlock.legalX;
+	        this.minX = initialBlock.tmpLegalX[index];
+	        this.maxX = initialBlock.tmpLegalX[index];
 	        
-	        this.minY = initialBlock.legalY;
-	        this.maxY = initialBlock.legalY;
+	        this.minY = initialBlock.tmpLegalY[index];
+	        this.maxY = initialBlock.tmpLegalY[index];
 	        
 	        for(Block block:this.blocks){
-	            if(block.legalX < this.minX) {
-	                this.minX = block.legalX;
-	            }else if(block.legalX > this.maxX){
-	            	this.maxX = block.legalX;
+	            if(block.tmpLegalX[index] < this.minX) {
+	                this.minX = block.tmpLegalX[index];
+	            }else if(block.tmpLegalX[index] > this.maxX){
+	            	this.maxX = block.tmpLegalX[index];
 	            }
-	            if(block.legalY < this.minY) {
-	                this.minY = block.legalY;
-	            }else if(block.legalY > this.maxY){
-	            	this.maxY = block.legalY;
+	            if(block.tmpLegalY[index] < this.minY) {
+	                this.minY = block.tmpLegalY[index];
+	            }else if(block.tmpLegalY[index] > this.maxY){
+	            	this.maxY = block.tmpLegalY[index];
 	            }
 	        }
 //	        System.out.println(this.minX + " " + this.maxX + " " + this.minY + " " + this.maxY);//TODO
@@ -848,21 +864,21 @@ public class HardblockConnectionLegalizer{
 			this.index = index;
 		}
 
-		void initializeTimingCost(){
-			if(this.sourceBlock.legalX < this.sinkBlock.legalX){
-				this.minX = this.sourceBlock.legalX;
-				this.maxX = this.sinkBlock.legalX;
+		void initializeTimingCost(int index){
+			if(this.sourceBlock.tmpLegalX[index] < this.sinkBlock.tmpLegalX[index]){
+				this.minX = this.sourceBlock.tmpLegalX[index];
+				this.maxX = this.sinkBlock.tmpLegalX[index];
 			}else{
-				this.minX = this.sinkBlock.legalX;
-				this.maxX = this.sourceBlock.legalX;
+				this.minX = this.sinkBlock.tmpLegalX[index];
+				this.maxX = this.sourceBlock.tmpLegalX[index];
 			}
 			
-			if(this.sourceBlock.legalY < this.sinkBlock.legalY){
-				this.minY = this.sourceBlock.legalY;
-				this.maxY = this.sinkBlock.legalY;
+			if(this.sourceBlock.tmpLegalY[index] < this.sinkBlock.tmpLegalY[index]){
+				this.minY = this.sourceBlock.tmpLegalY[index];
+				this.maxY = this.sinkBlock.tmpLegalY[index];
 			}else{
-				this.minY = this.sinkBlock.legalY;
-				this.maxY = this.sourceBlock.legalY;
+				this.minY = this.sinkBlock.tmpLegalY[index];
+				this.maxY = this.sourceBlock.tmpLegalY[index];
 			}
 		}
 
