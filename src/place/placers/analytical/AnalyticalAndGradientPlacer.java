@@ -38,6 +38,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     protected double[] linearX, linearY;
     protected double[] legalX, legalY;
+    protected double[] bestLinearX, bestLinearY;
+    protected double[] bestLegalX, bestLegalY;
     protected int[] leafNode;
     protected int[] heights;
 
@@ -46,6 +48,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected double linearCost;
     protected double legalCost;
     protected double timingCost;
+    
+    protected double currentCost, bestCost;
 
     private boolean[] hasNets;
     protected int numRealNets, numRealConn;
@@ -141,14 +145,22 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
 
-        this.linearCost = -1.0;
-        this.legalCost = -1.0;
+        this.linearCost = Double.NaN;
+        this.legalCost = Double.NaN;
+        this.timingCost = Double.NaN;
+        
+        this.currentCost = Double.MAX_VALUE;
+        this.bestCost = Double.MAX_VALUE;
 
         // Add all global blocks, in the order of 'blockTypes'
         this.linearX = new double[numBlocks];
         this.linearY = new double[numBlocks];
         this.legalX = new double[numBlocks];
         this.legalY = new double[numBlocks];
+        this.bestLinearX = new double[numBlocks];
+        this.bestLinearY = new double[numBlocks];
+        this.bestLegalX = new double[numBlocks];
+        this.bestLegalY = new double[numBlocks];
         this.leafNode = new int[numBlocks];
         this.hasNets = new boolean[numBlocks];
         
@@ -348,8 +360,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         while(!isLastIteration) {
             double timerBegin = System.nanoTime();
-            
-            isLastIteration = this.stopCondition(iteration);
 
             this.initializeIteration(iteration);
 
@@ -380,10 +390,24 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             double time = (timerEnd - timerBegin) * 1e-9;
 
             this.printStatistics(iteration, time);
+            
+            isLastIteration = this.stopCondition(iteration);
 
             iteration++;
         }
-
+        
+        //////////// Final legalization of the LABs ////////////
+		for(int i = 0; i < this.linearX.length; i++){
+			this.linearX[i] = this.bestLinearX[i];
+			this.linearY[i] = this.bestLinearY[i];
+			this.legalX[i] = this.bestLegalX[i];
+			this.legalY[i] = this.bestLegalY[i];
+		}
+    	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
+        	this.solveLegal(blockType, isLastIteration);
+        }
+    	////////////////////////////////////////////////////////
+    	
         this.printLegalizationRuntime();
         
         this.logger.println();

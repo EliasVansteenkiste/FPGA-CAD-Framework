@@ -383,9 +383,22 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
     	this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
+    	
+    	this.currentCost = this.legalCost;
 
     	if(this.isTimingDriven()){
     		this.calculateTimingCost();
+    		this.currentCost *= this.timingCost;
+    	}
+    	
+    	if(this.currentCost < this.bestCost){
+    		this.bestCost = this.currentCost;
+    		for(int i = 0; i < this.linearX.length; i++){
+    			this.bestLinearX[i] = this.linearX[i];
+    			this.bestLinearY[i] = this.linearY[i];
+    			this.bestLegalX[i] = this.legalX[i];
+    			this.bestLegalY[i] = this.legalY[i];
+    		}
     	}
     	this.stopTimer(T_UPDATE_CIRCUIT);
     }
@@ -406,6 +419,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         if(this.isTimingDriven()){
         	titles.add("max delay");
         }
+        
+        titles.add("best");
 
         titles.add("time (ms)");
         titles.add("crit conn");
@@ -433,6 +448,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         if(this.isTimingDriven()){
         	stats.add(String.format("%.4g", this.timingCost));
         }
+        
+        stats.add(this.currentCost == this.bestCost ? "yes" : "");
 
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
         stats.add(String.format("%d", this.criticalConnections.size()));
