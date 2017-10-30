@@ -139,10 +139,10 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
             }
         }
 
-        this.fixed = new boolean[this.linearX.length];
+        this.fixed = new boolean[this.legalX.length];
 
-    	this.coordinatesX = new double[this.linearX.length];
-    	this.coordinatesY = new double[this.linearY.length];
+    	this.coordinatesX = new double[this.legalX.length];
+    	this.coordinatesY = new double[this.legalY.length];
 
     	this.costCalculator = new CostCalculatorWLD(this.nets);
 
@@ -190,7 +190,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     protected void doSolveLinear(boolean[] processNets, int iteration){
-		for(int i = 0; i < this.linearX.length; i++){
+		for(int i = 0; i < this.legalX.length; i++){
 			if(this.fixed[i]){
 				this.coordinatesX[i] = this.legalX[i];
 				this.coordinatesY[i] = this.legalY[i];
@@ -212,7 +212,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
             this.solveLinearIteration(processNets, iteration);
         }
 
-		for(int i = 0; i < this.linearX.length; i++){
+		for(int i = 0; i < this.legalX.length; i++){
 			if(!this.fixed[i]){
 				this.linearX[i] = this.coordinatesX[i];
 				this.linearY[i] = this.coordinatesY[i];

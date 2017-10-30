@@ -92,19 +92,6 @@ public class PlaceParser {
         }
         reader.close();
     }
-    
-    public void readHierarchy() throws IOException, IllegalSizeException {
-    	System.out.println("READ HIERARCHY");
-    	
-        BufferedReader reader = new BufferedReader(new FileReader(this.file));
-
-        String line;
-        while((line = reader.readLine()) != null) {
-            System.out.println(line);
-        }
-
-        reader.close();
-    }
 
     private void processLine(String line) throws IllegalSizeException {
         Matcher sizeMatcher = sizePattern.matcher(line);

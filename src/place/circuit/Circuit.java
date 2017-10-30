@@ -43,6 +43,7 @@ public class Circuit {
 
     private AbstractSite[][] sites;
 
+
     public Circuit(String name, Architecture architecture, Map<BlockType, List<AbstractBlock>> blocks) {
         this.name = name;
         this.architecture = architecture;
@@ -549,6 +550,7 @@ public class Circuit {
     public boolean sparse(){
     	return !this.dense();
     }
+
 
     @Override
     public String toString() {

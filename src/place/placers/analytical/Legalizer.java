@@ -124,11 +124,11 @@ abstract class Legalizer {
 
     	this(circuit, blockTypes, blockTypeIndexStarts, numIterations, linearX, linearY, legalX, legalY, heights, leafNode, visualizer, netBlocks, logger);
 
-        try {
-			this.initializeHardblockLegalizer(nets);
-		} catch (OffsetException error) {
-			this.logger.raise("Offset problem in hardblock connection legalizer", error);
-		}
+    	try {
+    		this.initializeHardblockLegalizer(nets);
+    	} catch (OffsetException error) {
+    		this.logger.raise("Offset problem in hardblock connection legalizer", error);
+    	}
     }
     private void initializeHardblockLegalizer(List<Net> nets) throws OffsetException{
         this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, this.logger);

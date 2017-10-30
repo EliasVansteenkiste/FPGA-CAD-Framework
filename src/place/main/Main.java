@@ -27,12 +27,9 @@ import place.util.Timer;
 import place.visual.LineChart;
 import place.visual.PlacementVisualizer;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
@@ -238,7 +235,10 @@ public class Main {
             }
         }
         
-        this.printBlockDistance();
+        boolean printBlockDistance = false;
+        if(printBlockDistance){
+        	this.printBlockDistance();
+        }
 
         this.stopAndPrintTimer(totalString);
 
@@ -467,7 +467,7 @@ public class Main {
 
         this.logger.println();
         
-        boolean printCostOfEachBlockToFile = true;
+        boolean printCostOfEachBlockToFile = false;
         if(printCostOfEachBlockToFile){
         	Map<BlockType, Double> costPerBlockType = new HashMap<>();
 	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
@@ -489,9 +489,9 @@ public class Main {
         this.logger.println();
     }
     private void printBlockDistance(){
-    	//this.printDistance("Cut Level");
-    	//this.printDistance("Total Distance");
-    	//this.printDistance("Test");
+    	this.printDistance("Cut Level");
+    	this.printDistance("Total Distance");
+    	this.printDistance("Test");
     }
     private void printDistance(String type){
     	int maxFPGADistance = this.circuit.getWidth() + this.circuit.getHeight();
