@@ -87,7 +87,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL,
                 "number of solve-legalize iterations",
-                new Integer(20));
+                new Integer(30));
 
         options.add(
                 O_INNER_EFFORT_LEVEL_START,
