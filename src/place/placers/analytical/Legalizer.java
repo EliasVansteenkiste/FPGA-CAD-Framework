@@ -90,7 +90,7 @@ abstract class Legalizer {
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
         
-        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
+        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.circuit, this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
             if(hardblockType.getCategory().equals(BlockCategory.HARDBLOCK) || hardblockType.getCategory().equals(BlockCategory.IO)){
