@@ -208,6 +208,7 @@ public class TPack {
 		 			Output.newLine();
 		 			ErrorLog.print("Netfile " + file + ".net" + " " + "not available");
 		 		}
+
 		 		this.processNetlistFile(file, vpr.getNetlist());
 				this.startTPack();
 				i--;

@@ -112,7 +112,7 @@ public class Architecture {
 		this.lines = this.read_file(this.simulation.getStringValue("result_folder") + "arch.light.xml");
 		this.get_models();
 		this.get_complex_blocks(true);
-		this.setDimensions();
+		this.initializeDimensions();
 		Output.newLine();
 	}
 	private void get_models(){
@@ -675,7 +675,7 @@ public class Architecture {
 	}
 	
 	//Architecture dimensions
-	public void setDimensions(){
+	public void initializeDimensions(){
 		for(int i=0; i<this.lines.size();i++){
 			String line = this.lines.get(i);
 			if(line.contains("layout") && line.contains("width") && line.contains("height")){
@@ -713,13 +713,9 @@ public class Architecture {
 	public void generate_light_architecture(Set<String> usedModelsInNetlist){
 		Output.println("Generate light architecture:");
 		
-		boolean fixedSize = this.simulation.getBooleanValue("fixed_size");
-		Output.println("\tFixed size: " + fixedSize);
 		this.lines = this.read_file(this.simulation.getStringValue("result_folder") + this.name);
-		if(fixedSize){
-			this.setDimensions();
-			Output.println("\t\tSizeX: " + this.sizeX + " | SizeY: " + this.sizeY);
-		}
+		this.initializeDimensions();
+		Output.println("\tSizeX: " + this.sizeX + " | SizeY: " + this.sizeY);
 		
 		this.get_models();
 		this.get_complex_blocks(false);
@@ -780,6 +776,12 @@ public class Architecture {
 				lightArch.add(temp.get(t));
 			}
 		}
+		
+		//Models for the dummy blocks
+		for(Block block:this.complexBlocks){
+			lightArch.addAll(block.getDummyModels());
+		}
+		
 		lightArch.add("</models>");
 		for(String d:device){
 			lightArch.add(d);
@@ -797,14 +799,10 @@ public class Architecture {
 	public void generate_pack_architecture(Set<String> usedModelsInNetlist){
 		Output.println("Generate pack architecture:");
 		
-		boolean fixedSize = this.simulation.getBooleanValue("fixed_size");
-		Output.println("\tFixed size: " + fixedSize);
 		this.lines = this.read_file(this.simulation.getStringValue("result_folder") + this.name);
-		if(fixedSize){
-			this.setDimensions();
-			this.removeDimensions();
-			Output.println("\t\tSizeX: " + this.sizeX + " | SizeY: " + this.sizeY);
-		}
+		this.initializeDimensions();
+		this.removeDimensions();
+		Output.println("\tSizeX: " + this.sizeX + " | SizeY: " + this.sizeY);
 		
 		this.get_models();
 		this.get_complex_blocks(false);
@@ -948,6 +946,12 @@ public class Architecture {
 				for(int t=0;t<temp.size();t++) packArch.add(temp.get(t));
 			}
 		}
+		
+		//Models for the dummy blocks
+		for(Block block:this.complexBlocks){
+			packArch.addAll(block.getDummyModels());
+		}
+		
 		packArch.add("</models>");
 		for(String d:device){
 			packArch.add(d);
@@ -1011,6 +1015,10 @@ public class Architecture {
 			for(String line:arch){
 				if(line.contains("</")){
 					tabs -= 1;
+					
+					if(line.replace("</", "").contains("<")){
+						tabs += 1;
+					}
 				}
 				bw.write(Util.tabs(tabs) + line);
 				bw.newLine();

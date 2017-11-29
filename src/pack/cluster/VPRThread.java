@@ -30,8 +30,11 @@ public class VPRThread {
 		String vpr_folder = this.simulation.getStringValue("vpr_folder");
 		String result_folder = this.simulation.getStringValue("result_folder");
 		
+		if(vpr_folder.lastIndexOf("/") != vpr_folder.length() - 1) vpr_folder += "/";
+		if(result_folder.lastIndexOf("/") != result_folder.length() - 1) result_folder += "/";
+		
 		this.run = new String();
-		this.run += vpr_folder + "/vpr/vpr" + " ";
+		this.run += vpr_folder + "vpr/vpr" + " ";
     	this.run += result_folder + "arch.pack.xml" + " ";
     	this.run += vpr_folder + "vpr/files/" + circuit + "_" + this.simulation.getSimulationID() + "_" + this.thread + " ";
     	this.run += "-pack" + " ";

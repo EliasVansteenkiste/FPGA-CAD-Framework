@@ -158,7 +158,7 @@ public class PathWeight {
 		}
 
 		t.stop();
-		Output.print("\tFind combinational loops took " + t.toString());
+		Output.println("\tFind combinational loops took " + t.toString());
 		Output.println("\tNetlist has " + comb + " combinational loops");
 		Output.newLine();
 
@@ -399,7 +399,7 @@ public class PathWeight {
 		}
 		t2.stop();
 
-		Output.println("\tTest sort took " + (t1.time() + t2.time()));
+		Output.println("\tTest sort took " + (t1.time() + t2.time()) + " s");
 		Output.newLine();
 
 		//Limit amount of critical edges
@@ -470,12 +470,9 @@ public class PathWeight {
 	}
 	public void assign_critical_edges(ArrayList<P> criticalEdges){
 		int weightFactor = this.simulation.getIntValue("timing_weight");
-		double multiplyFactor = this.simulation.getDoubleValue("multiply_factor");
 		
 		Output.println("\tAssign critical edges:");
-		Output.println("\t\tMultiply factor           | " + multiplyFactor);
-		Output.println("\t\tInter weight factor       | " + weightFactor);
-		Output.println("\t\tIntra weight factor       | " + (int)Math.round(multiplyFactor*weightFactor));
+		Output.println("\t\tWeight factor       | " + weightFactor);
 		Output.newLine();
 		
 		for(P sinkPin:criticalEdges){
@@ -510,7 +507,7 @@ public class PathWeight {
 					this.timingEdges += 1;
 				}else{
 					//LOCAL INTRACONNECTION
-					sinkPin.set_net_weight((int)(Math.round(sinkPin.criticality()*multiplyFactor*weightFactor)));
+					sinkPin.set_net_weight((int)(Math.round(sinkPin.criticality()*weightFactor)));
 					this.timingEdges += 1;
 				}
 			}
