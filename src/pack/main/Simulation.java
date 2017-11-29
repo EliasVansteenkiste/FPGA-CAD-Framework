@@ -13,30 +13,30 @@ public class Simulation{
 
 	public Simulation(){
 		this.options = new LinkedHashMap<String, Option>();
-
-		this.addOption(new Option("result_folder","description_todo", String.class));//TODO Description
-		this.addOption(new Option("vpr_folder","description_todo", String.class));//TODO Description
-		this.addOption(new Option("hmetis_folder","description_todo", String.class));//TODO Description
-
-		this.addOption(new Option("circuit","description_todo", String.class));//TODO Description
-		this.addOption(new Option("architecture","description_todo", String.class));//TODO Description
-
-		this.addOption(new Option("max_pack_size","The maxmimum number of blocks in the independent subcircuits for seed based packing", 2500));
-		this.addOption(new Option("num_threads","The number of available threads", 2));
-		this.addOption(new Option("max_fanout","The maximum fanout of the added nets during partitioning", 100));
-		this.addOption(new Option("hmetis_quality","description_todo", 2));//TODO Descriptions
-		this.addOption(new Option("unbalance_factor","description_todo", 25));//TODO Description
-		this.addOption(new Option("min_crit","description_todo", 0.7));//TODO Description
-		this.addOption(new Option("max_per_crit_edge","description_todo", 20));//TODO Description
-		this.addOption(new Option("timing_weight","description_todo", 10));//TODO Description
-		this.addOption(new Option("multiply_factor","description_todo", 1.0));//TODO Description
-		this.addOption(new Option("fixed_size","description_todo", true));//TODO Description
-
-		this.addOption(new Option("logfile","Print console output to logfile", false));
-		this.addOption(new Option("print_stats_to_file","Print additional information of MultiPart algorithm to separate stats files", false));
-
-		this.addOption(new Option("timing_edge_weight_update", "Update the weight on the critical paths with a cut edge", true));
-
+		
+		this.addOption(new Option("result_folder","folder with source files and output files", String.class));
+		
+		this.addOption(new Option("circuit","name of the design", String.class));
+		this.addOption(new Option("architecture","name of the architecture", String.class));
+		
+		this.addOption(new Option("vpr_folder","folder with VPR (required for seed based packing phase) ", String.class));
+		
+		this.addOption(new Option("hmetis_folder","folder with hMetis (required for partitioning phase)", String.class));
+		this.addOption(new Option("hmetis_quality","quality setting for hMetis paritioning", 2));
+		this.addOption(new Option("unbalance_factor","unbalance factor of hMetis paritioning", 25));
+		this.addOption(new Option("max_pack_size","the maxmimum number of blocks in the independent subcircuits for seed based packing", 2500));
+		this.addOption(new Option("max_fanout","the maximum fanout of the added nets during partitioning", 100));
+		
+		this.addOption(new Option("num_threads","the number of available threads", 25));
+		
+		this.addOption(new Option("min_crit","minimum criticality of the critical connections", 0.7));
+		this.addOption(new Option("max_per_crit_edge","maximum percentage of critical connections", 20));
+		this.addOption(new Option("timing_weight","weight of critical connections", 10));
+		this.addOption(new Option("timing_edge_weight_update", "update the weight on the critical paths with a cut edge", true));
+		
+		this.addOption(new Option("logfile","print console output to logfile", false));
+		this.addOption(new Option("print_stats_to_file","print additional information of MultiPart algorithm to separate stats files", false));
+		
 		this.simulationID = (int)Math.round(Math.random()*1000000);
 	}
 	public boolean hasOption(Option option){
@@ -166,7 +166,7 @@ public class Simulation{
 		output += "\tMultiPart: a partitioning based packing tool\n\n";
 		output += "\tCommand line options:\n\n";
 		String name = "OPTION";
-		while(name.length() < this.maxNameSize) name = name + " ";
+		while(name.length() < this.maxNameSize + 1) name = name + " ";
 		String description = "DESCRIPTION";
 		while(description.length() < this.maxDescriptionSize) description = description + " ";
 		output += "\t\t" + name + "    " + description + "    " + "DEFAULT" + "\n\n";

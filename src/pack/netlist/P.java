@@ -204,15 +204,15 @@ public class P implements Comparable<P>{
 		return this.port;
 	}
 	public String get_port_name(){
-		if(this.port.contains("[") && this.port.contains("]")){
-			return this.port.substring(0,this.port.indexOf("["));
+		if(this.port.endsWith("]")){
+			return this.port.substring(0, this.port.lastIndexOf("["));
 		}else{
 			return this.port;
 		}
 	}
 	public int get_pin_num(){
-		if(this.port.contains("[") && this.port.contains("]")){
-			return Integer.parseInt(this.port.substring(this.port.indexOf("[")+1,this.port.indexOf("]")));
+		if(this.port.endsWith("]")){
+			return Integer.parseInt(this.port.substring(this.port.lastIndexOf("[") + 1, this.port.length() - 1));
 		}else{
 			return 0;
 		}
@@ -522,6 +522,9 @@ public class P implements Comparable<P>{
 		if(this.has_block()){
 			if(this.get_block().has_atoms()){
 				if(Util.isMoleculeType(this.get_block().get_type())){
+					if(pinPortName.indexOf(".") < 0){
+						System.out.println(this.block.get_type());
+					}
 					String blockName = pinPortName.substring(0, pinPortName.indexOf("."));
 					String portName = pinPortName.substring(pinPortName.indexOf(".") + 1,pinPortName.length());
 					B atomBlock = null;

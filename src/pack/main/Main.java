@@ -57,7 +57,7 @@ public class Main {
 		netlist.pre_pack_carry();
 		netlist.pre_pack_share();
 
-		netlist.pre_pack_lut_ff();
+		//netlist.pre_pack_lut_ff();
 
 		netlist.pre_pack_ram(archLight);
 

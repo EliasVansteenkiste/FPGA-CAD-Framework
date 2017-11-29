@@ -257,7 +257,11 @@ public class Model {
 						dataIn2 = 0;
 						dataOut1 = 0;
 						dataOut2 = 0;
-						num_pb = Integer.parseInt(line.substring(line.indexOf("num_pb=\"")+8,line.indexOf("\" blif_model")));
+
+						int start = line.indexOf("num_pb=");
+						start = line.indexOf("\"", start+1);
+						int stop = line.indexOf("\"", start+1);
+						num_pb = Integer.parseInt(line.substring(start+1, stop));
 					}
 				}
 				if(readPort){

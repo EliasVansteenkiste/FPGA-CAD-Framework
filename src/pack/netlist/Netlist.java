@@ -246,8 +246,8 @@ public class Netlist{
 					String port = gate[0];
 					netName = gate[1];
 					
-					if(port.contains("[") && port.contains("]")){
-						port = port.substring(0,port.indexOf("["));
+					if(port.endsWith("]")){
+						port = port.substring(0, port.lastIndexOf("["));
 					}
 					if(model.is_output(port)){
 						if(!model.get_first_output_port().equals(port)){
@@ -274,8 +274,8 @@ public class Netlist{
 					}
 					String port = gate[0];
 					netName = gate[1];
-					if(port.contains("[") && port.contains("]")){
-						port = port.substring(0,port.indexOf("["));
+					if(port.endsWith("]")){
+						port = port.substring(0, port.lastIndexOf("["));
 					}
 					if(model.is_input(port)){
 						if(is_clock(port)){
@@ -289,6 +289,11 @@ public class Netlist{
 				B b = new B(name, blockNumber++, model.get_name(), clock, null);
 				this.add_block(b);
 				
+				if(name.contains("subckt51360~eccstatus")){
+					System.out.println("Block with name " + name);
+
+				}
+				
 				//Inputs and outputs
 				for(int j=2; j<words.length;j++){
 					String[] gate = words[j].split("=");
@@ -298,8 +303,8 @@ public class Netlist{
 					String port = gate[0];
 					netName = gate[1];
 					
-					if(port.contains("[") && port.contains("]")){
-						port = port.substring(0,port.indexOf("["));
+					if(port.endsWith("]")){
+						port = port.substring(0, port.lastIndexOf("["));
 					}
 
 					if(valid_net(netName)){
@@ -324,7 +329,7 @@ public class Netlist{
 								netMap.put(netName, n);
 							}
 							P p = new P(b, n, gate[0], true, false, 0, null, null, b.is_sequential(), false);
-
+							
 							n.set_source(p);
 							b.add_output_pin(port, p);
 						}else{
@@ -644,8 +649,8 @@ public class Netlist{
 							String[] ports = line.split(" ");
 							for(int k=1;k<ports.length;k++){
 								String port = ports[k];
-								if(port.contains("[") && port.contains("]")){
-									port = port.substring(0,port.indexOf("["));
+								if(port.endsWith("]")){
+									port = port.substring(0, port.lastIndexOf("["));
 								}
 								model.add_output_port(port);
 							}
@@ -700,8 +705,8 @@ public class Netlist{
 					}
 					String port = gate[0];
 					String netName = gate[1];
-					if(port.contains("[") && port.contains("]")){
-						port = port.substring(0,port.indexOf("["));
+					if(port.endsWith("]")){
+						port = port.substring(0, port.lastIndexOf("["));
 					}
 					if(model.is_input(port)){
 						if(is_clock(port)){
@@ -901,6 +906,7 @@ public class Netlist{
 			bw.write("#############################" + "\n");
 			for(String clock:localClocks){
 				String oldClock = clock;
+				clock = clock.replace("\\", "\\\\");
 				clock = clock.replace("|", "\\|");
 				clock = clock.replace("[", "\\[");
 				clock = clock.replace("]", "\\]");
@@ -946,6 +952,12 @@ public class Netlist{
 								}
 							}
 						}
+						
+						outputNet = outputNet.replace("\\", "\\\\");
+						outputNet = outputNet.replace("|", "\\|");
+						outputNet = outputNet.replace("[", "\\[");
+						outputNet = outputNet.replace("]", "\\]");
+						
 						String line = "set_output_delay" + " " + "-clock" + " " + "dummy_clock" + " " + "-max" + " " + (delay.doubleValue()/1000) + " " + "[get_ports{" + outputNet + "}]" + "\n";
 						sdcLines.add(line);
 					}
@@ -955,6 +967,12 @@ public class Netlist{
 					if(remainingInputTime.containsKey(inputNet)){
 						if(remainingInputTime.get(inputNet).containsKey(inputPin.get_id())){
 							Integer delay = remainingInputTime.get(inputNet).get(inputPin.get_id());
+							
+							inputNet = inputNet.replace("\\", "\\\\");
+							inputNet = inputNet.replace("|", "\\|");
+							inputNet = inputNet.replace("[", "\\[");
+							inputNet = inputNet.replace("]", "\\]");
+							
 							String line = "set_input_delay" + " " + "-clock" + " " + "dummy_clock" + " " + "-max" + " " + (delay.doubleValue()/1000) + " " + "[get_ports{" + inputNet + "}]" + "\n";
 							sdcLines.add(line);
 						}
@@ -981,6 +999,7 @@ public class Netlist{
 				s += " ";
 				s += "-exclusive";
 				for(String clock:localClocks){
+					clock = clock.replace("\\", "\\\\");
 					clock = clock.replace("|", "\\|");
 					clock = clock.replace("[", "\\[");
 					clock = clock.replace("]", "\\]");
@@ -1883,18 +1902,14 @@ public class Netlist{
 		
 		//MAKE FPGA
 		FPGA fpga = new FPGA();
-		if(this.simulation.getBooleanValue("fixed_size")){
-			fpga.set_size(architecture.getSizeX(), architecture.getSizeY());
-			Output.println("\tFIXED FPGA SIZE: " + fpga.sizeX() + " x " + fpga.sizeY());
-			Output.println("\t\tLAB | AV: " + Util.fill(fpga.LAB(), 3));
-			Output.println("\t\tDSP | AV: " + Util.fill(fpga.DSP(), 3) + " | REQ: " + reqDSP);
-			Output.println("\t\tM9K | AV: " + Util.fill(fpga.M9K(), 3) + " | REQ: " + reqM9K);
-			Output.println("\t\tM144K | AV: " + Util.fill(fpga.M144K(), 3) + " | REQ: " + reqM144K);
-			Output.newLine();
-		}else{
-			ErrorLog.print("Only fixed size mode is supported");
-		}
-		
+		fpga.set_size(architecture.getSizeX(), architecture.getSizeY());
+		Output.println("\tFIXED FPGA SIZE: " + fpga.sizeX() + " x " + fpga.sizeY());
+		Output.println("\t\tLAB | AV: " + Util.fill(fpga.LAB(), 3));
+		Output.println("\t\tDSP | AV: " + Util.fill(fpga.DSP(), 3) + " | REQ: " + reqDSP);
+		Output.println("\t\tM9K | AV: " + Util.fill(fpga.M9K(), 3) + " | REQ: " + reqM9K);
+		Output.println("\t\tM144K | AV: " + Util.fill(fpga.M144K(), 3) + " | REQ: " + reqM144K);
+		Output.newLine();
+
 		//ASSIGN M9K RAM BLOCKS T0 M144K RAM BLOCKS IF NECCESARY
 		if(reqM9K > fpga.M9K() && reqM144K < fpga.M144K()){
 			HashSet<String> availableHashes = new HashSet<String>(hashedRam.keySet());
@@ -1959,8 +1974,6 @@ public class Netlist{
 		this.print_hashed_ram(hashedRam);
 		
 		//PACK TO RAM MOLECULE IF ALL SLICES FIT INTO A SINGLE RAM OR IF A RAM CONTAINS ONLY ONE SLICE
-		Output.println("\tPACK TO RAM MOLECULE IF ALL SLICES FIT INTO A SINGLE RAM OR IF A RAM CONTAINS ONLY ONE SLICE");
-		Output.newLine();
 		HashSet<ArrayList<B>> ramMolecules = new HashSet<ArrayList<B>>();
 		HashSet<String> removedHashes = new HashSet<String>();
 		for(String hash:hashedRam.keySet()){

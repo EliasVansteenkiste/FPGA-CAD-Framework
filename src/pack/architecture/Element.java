@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import pack.util.ErrorLog;
@@ -393,7 +394,11 @@ public class Element {
 		for(String outputPort:this.clockToOutput.keySet()){
 			res.add(this.clockToOutput(outputPort));
 		}
-
+		
+		if(this.requiresDummyModel()){
+			res.addAll(this.getDummyBlock());
+		}
+		
 		for(Element child:this.children){
 			res.addAll(child.toStringList());
 		}
@@ -691,5 +696,96 @@ public class Element {
 		for(Element child:this.get_children()){
 			child.modify_blif_model_names(append);
 		}
+	}
+	
+	//DUMMY BLOCKS
+	public List<String> getDummyBlock(){
+		List<String> res = new ArrayList<>();
+		
+		int connectionNumber = 0;
+		String dummy_name = this.name + "_dummy_block";
+		res.add("<mode name=\"" + dummy_name + "\">");
+		res.add("<pb_type name=\"" + dummy_name + "\" blif_model=\".subckt " + this.name + "_dummy\" num_pb=\"1\">");
+		
+		for(Port input:this.inputPorts.values()) res.add(input.toString());
+		for(Port output:this.outputPorts.values()) res.add(output.toString());
+		if(this.has_clock()){
+			res.add(this.clockPort.toString());
+			for(Port input:this.inputPorts.values()) res.add("<T_setup port=\"" + dummy_name + "." + input.get_name() + "\" clock=\"" + this.clockPort.get_name() + "\" value=\"0.0\"/>"); 
+			for(Port output:this.outputPorts.values()) res.add("<T_clock_to_Q port=\"" + dummy_name + "." + output.get_name() + "\" clock=\"" + this.clockPort.get_name() + "\" max=\"0.0\"/>"); 
+		}
+		res.add("</pb_type>");
+		res.add("<interconnect>");
+		
+		for(Port input:this.inputPorts.values()){
+			if(input.get_num_pins() > 1){
+				res.add("<direct input=\"" + this.name + "." + input.get_name() + "[" + (input.get_num_pins()-1) + ":0]\" name=\"conn" + connectionNumber++ + "\" output=\"" + dummy_name + "." + input.get_name() + "[" + (input.get_num_pins()-1) + ":0]\"/>");
+			}else{
+				res.add("<direct input=\"" + this.name + "." + input.get_name() + "[0]\" name=\"conn" + connectionNumber++ + "\" output=\"" + dummy_name + "." + input.get_name() + "[0]\"/>");
+			}
+		}
+		for(Port output:this.outputPorts.values()){
+			if(output.get_num_pins() > 1){
+				res.add("<direct input=\"" + dummy_name + "." + output.get_name() + "[" + (output.get_num_pins()-1) + ":0]\" name=\"conn" + connectionNumber++ + "\" output=\"" + this.name + "." + output.get_name() + "[" + (output.get_num_pins()-1) + ":0]\"/>");
+			}else{
+				res.add("<direct input=\"" + dummy_name + "." + output.get_name() + "[0]\" name=\"conn" + connectionNumber++ + "\" output=\"" + this.name + "." + output.get_name() + "[0]\"/>");
+			}
+		}
+		if(this.has_clock()){
+			if(this.clockPort.get_num_pins() > 1){
+				res.add("<direct input=\"" + this.name + "." + this.clockPort.get_name() + "[" + (this.clockPort.get_num_pins()-1) + ":0]\" name=\"conn" + connectionNumber++ + "\" output=\"" + dummy_name + "." + this.clockPort.get_name() + "[" + (this.clockPort.get_num_pins()-1) + ":0]\"/>");
+			}else{
+				res.add("<direct input=\"" + this.name + "." + this.clockPort.get_name() + "[0]\" name=\"conn" + connectionNumber++ + "\" output=\"" + dummy_name + "." + this.clockPort.get_name() + "[0]\"/>");
+			}
+		}
+		
+		res.add("</interconnect>");
+		res.add("</mode>");
+		
+		return res;
+	}
+	public List<String> getDummyModels(){
+		List<String> dummyModels = new ArrayList<>();
+		
+		if(this.requiresDummyModel()){
+			dummyModels.addAll(this.getDummyModel());
+		}else{
+			for(Element child:this.children){
+				dummyModels.addAll(child.getDummyModels());
+			}
+		}
+		return dummyModels;
+	}
+	public boolean requiresDummyModel(){
+		if(this.children.isEmpty()){
+			return !this.has_blif_model();
+		}else{
+			if(this.name.equals("ram_block_M9K") || this.name.equals("ram_block_M144K") || this.name.equals("mac_out") || this.name.equals("mac_mult")){
+				return true;
+			}else{
+				return false;
+			}
+		}
+	}
+	public List<String> getDummyModel(){
+		List<String> dummyModel = new ArrayList<>();
+		
+		dummyModel.add("<model name=\"" + this.name + "_dummy\">");
+		dummyModel.add("<input_ports>");
+		for(String input:this.inputPorts.keySet()){
+			dummyModel.add("<port name=\"" + input + "\"/>");
+		}
+		if(this.has_clock()){
+			dummyModel.add("<port name=\"" + this.clockPort.get_name() + "\" is_clock=\"1\"/>");
+		}
+		dummyModel.add("</input_ports>");
+		dummyModel.add("<output_ports>");
+		for(String output:this.outputPorts.keySet()){
+			dummyModel.add("<port name=\"" + output + "\"/>");
+		}
+		dummyModel.add("</output_ports>");
+		dummyModel.add("</model>");
+		
+		return dummyModel;
 	}
 }

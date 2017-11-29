@@ -25,8 +25,12 @@ public class Timing {
 	}
 	public String toString(){
 		double time = this.totalTime * Math.pow(10, -9);
-		if(time > 1){
+		if(time > 100){
 			return String.format("%.0f s", time);
+		}else if(time > 10){
+			return String.format("%.1f s", time);
+		}else if(time > 1){
+			return String.format("%.2f s", time);
 		}
 
 		time *= 1000;//ms
