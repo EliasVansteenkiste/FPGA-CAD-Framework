@@ -10,6 +10,10 @@ import java.util.Set;
 import place.circuit.architecture.BlockType;
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.placers.analytical.HardblockSwarmLegalizer.Block;
+import place.placers.analytical.HardblockSwarmLegalizer.Column;
+import place.placers.analytical.HardblockSwarmLegalizer.Crit;
+import place.placers.analytical.HardblockSwarmLegalizer.Net;
 import place.util.TimingTree;
 
 public class HardblockConnectionLegalizer{
@@ -24,8 +28,6 @@ public class HardblockConnectionLegalizer{
 
     private final HardblockColumnSwap columnSwap;
     private final HardblockAnneal hardblockAnneal;
-    private static final int SWARM_SIZE = 5;
-    private final HardblockSwarm hardblockSwarm;//TODO
     
     private final Map<BlockType, Block[]> blocksPerBlocktype;
     private final Map<BlockType, Net[]> netsPerBlocktype;
@@ -143,7 +145,6 @@ public class HardblockConnectionLegalizer{
 
 		this.columnSwap = new HardblockColumnSwap();
 		this.hardblockAnneal = new HardblockAnneal(100);
-		this.hardblockSwarm = new HardblockSwarm(100);//TODO
 	}
 
 	//ADD BLOCK TYPE
@@ -263,14 +264,77 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.start("Anneal columns");
 		for(Column column:columns){
 			if(column.usedPos() > 0){
+				
+				Set<Net> columnNets = new HashSet<>();
+				Set<Crit> columnCrits = new HashSet<>();
+				for(Block block:column.blocks){
+					for(Net net:block.nets){
+						columnNets.add(net);
+					}
+					for(Crit crit:block.crits){
+						columnCrits.add(crit);
+					}
+				}
+				for(Net net:columnNets){
+					net.initializeConnectionCost();
+				}
+				for(Crit crit:columnCrits){
+					crit.initializeTimingCost();
+				}
+
+				double cost = 0.0;
+				for(Net net:columnNets){
+					cost += net.connectionCost();
+				}
+				for(Crit crit:columnCrits){
+					cost += crit.timingCost();
+				}
+				System.out.printf(this.blockType + " column" +  + column.coordinate + " => Num sites: " + column.sites.length + " => Num blocks: " + column.blocks.size());
+				System.out.printf(" ->columncost " + String.format("%.2f", cost));
+			
+//				System.out.printf(this.blockType + "" + column.index + " ->numSites " + column.sites.length + " ->numBlocks " + column.blocks.size());
 				this.hardblockAnneal.doAnneal(column, quality);
 //				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE);//TODO
+				
+				
 			}
 		}
+		
 		this.timingTree.time("Anneal columns");
 
 		//Finish
 		this.updateLegal(legalizeBlocks);
+		for(Column c : columns){
+			if(c.usedPos() > 0){
+				Set<Net> columnNets = new HashSet<>();
+				Set<Crit> columnCrits = new HashSet<>();
+				for(Block block:c.blocks){
+					for(Net net:block.nets){
+						columnNets.add(net);
+					}
+					for(Crit crit:block.crits){
+						columnCrits.add(crit);
+					}
+				}
+				
+				for(Net net:columnNets){
+					net.initializeConnectionCost();
+				}
+				for(Crit crit:columnCrits){
+					crit.initializeTimingCost();
+				}
+
+				double cost = 0.0;
+				for(Net net:columnNets){
+					cost += net.connectionCost();
+				}
+				for(Crit crit:columnCrits){
+					cost += crit.timingCost();
+				}
+				System.out.printf(this.blockType + " column" +  + c.index + " => Num sites: " + c.sites.length + " => Num blocks: " + c.blocks.size());
+				System.out.println(" ->finalcost " + String.format("%.2f", cost));
+			}
+		}
 		this.cleanData();
 		
 		this.timingTree.time("Legalize " + blockType + " hardblock");
@@ -327,6 +391,7 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.time("Find best site for all IO blocks based on minimal displacement cost");
 
 		//Anneal the IOs to find a good placement
+		System.out.printf(this.blockType + "->numBlocks"+ legalizeBlocks.length);
 		this.hardblockAnneal.doAnneal(legalizeBlocks, legalizeSites, quality);
 		
 		this.updateLegal(legalizeBlocks);
@@ -383,9 +448,6 @@ public class HardblockConnectionLegalizer{
 		int oldLegalX, oldLegalY;
 		double linearX, linearY;
 		boolean alreadySaved;
-		
-		int[] tmpLegalX = new int[SWARM_SIZE];
-		int[] tmpLegalY = new int[SWARM_SIZE];//TODO added for PSO
 
 		final List<Net> nets;
 		final List<Crit> crits;

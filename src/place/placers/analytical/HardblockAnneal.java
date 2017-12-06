@@ -12,6 +12,7 @@ import java.util.List;
 //import place.placers.analytical.HardblockConnectionLegalizer.Net;
 //import place.placers.analytical.HardblockConnectionLegalizer.Site;
 
+///////////////////////TODO for PSO/////////////////////////////////
 import place.placers.analytical.HardblockSwarmLegalizer.Block;
 import place.placers.analytical.HardblockSwarmLegalizer.Column;
 import place.placers.analytical.HardblockSwarmLegalizer.Crit;
@@ -40,39 +41,9 @@ public class HardblockAnneal {
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
 	}
-	public void doAnneal(Column[] columns, double quality){
-		int numBlocks = 0;
-		int numSites = 0;
-		
-		for(Column column:columns){
-			numBlocks += column.blocks.size();
-			numSites += column.sites.length;
-		}
-		
-		this.blocks = new Block[numBlocks];
-		this.sites = new Site[numSites];
-		
-		int blockIndex = 0, siteIndex = 0;
-		for(Column column:columns){
-			for(Block block:column.blocks){
-				this.blocks[blockIndex++] = block;
-			}
-			for(Site site:column.sites){
-				this.sites[siteIndex++] = site;
-			}
-		}
-
-		this.quality = quality;
-		this.effortLevel = 1.0;
-
-		this.doAnneal();
-	}
 	public void doAnneal(Column column, double quality){
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.sites = column.sites;
-		
-//		this.numBlocks = this.blocks.length;
-//		this.numSites = this.sites.length;//TODO
 
 		this.quality = quality;
 		this.effortLevel = 1.0;
@@ -91,7 +62,7 @@ public class HardblockAnneal {
 	private void doAnneal(){
 		boolean printStatistics = false;
 //		this.counter = 0;
-		this.numBlocks = this.blocks.length;//TODO
+		this.numBlocks = this.blocks.length;
 		this.numSites = this.sites.length;
 
 		Set<Net> nets = new HashSet<>();
@@ -150,13 +121,28 @@ public class HardblockAnneal {
 			}
 			finalIteration = this.finalIteration(this.cost);
 		}
-		
+
 		if(this.minimumCost < this.cost){
 			for(Block block:this.blocks){
 				block.setOptimalSite();
 			}
 		}
-//		System.out.println(this.counter);
+//		TODO print cost for each column
+		for(Net net:nets){
+			net.initializeConnectionCost();
+		}
+		for(Crit crit:crits){
+			crit.initializeTimingCost();
+		}
+		
+		double sacost = 0.0;
+		for(Net net:nets){
+			sacost += net.connectionCost();
+		}
+		for(Crit crit:crits){
+			sacost += crit.timingCost();
+		}
+		System.out.println(" ->SAminCost "+ String.format("%.2f",  sacost));
 		if(printStatistics) System.out.println();
 	}
 	private boolean finalIteration(double cost){
@@ -245,7 +231,6 @@ public class HardblockAnneal {
         }
 	}
 	Swap getSwap(){
-//		System.out .println(this.blocks.length + " " + this.numBlocks);//TODO
 		Block block1 = this.blocks[this.random.nextInt(this.numBlocks)];
 		Site site1 = block1.getSite();
 		

@@ -32,7 +32,7 @@ abstract class Legalizer {
     protected BlockCategory blockCategory;
     protected int blockStart, blockRepeat, blockHeight;
     
-    //Hard Block Legalizer
+    //Hard Block Legalizer TODO switch between two hard block legalizer
 //    private HardblockConnectionLegalizer hardblockLegalizer;
     private HardblockSwarmLegalizer hardblockLegalizer;
     
@@ -91,7 +91,7 @@ abstract class Legalizer {
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
         
-//      this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
+//        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
         this.hardblockLegalizer = new HardblockSwarmLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
@@ -171,7 +171,7 @@ abstract class Legalizer {
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
             	this.legalizeBlockType(blocksStart, blocksEnd);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		//this.legalizeBlockType(blocksStart, blocksEnd);//TODO change to HeAP legalizer
+//        		this.legalizeBlockType(blocksStart, blocksEnd);//TODO change to HeAP legalizer
         		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.quality);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType, this.quality);

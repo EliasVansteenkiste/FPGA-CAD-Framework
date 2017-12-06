@@ -9,6 +9,7 @@ import java.util.Set;
 //import place.placers.analytical.HardblockConnectionLegalizer.Column;
 //import place.placers.analytical.HardblockConnectionLegalizer.Net;
 
+////////////////////////////TODO For PSO/////////////////////////////
 import place.placers.analytical.HardblockSwarmLegalizer.Block;
 import place.placers.analytical.HardblockSwarmLegalizer.Column;
 import place.placers.analytical.HardblockSwarmLegalizer.Net;
