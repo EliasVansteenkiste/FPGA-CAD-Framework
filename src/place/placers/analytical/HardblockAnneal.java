@@ -142,7 +142,7 @@ public class HardblockAnneal {
 		for(Crit crit:crits){
 			sacost += crit.timingCost();
 		}
-		System.out.println(" ->SAminCost "+ String.format("%.2f",  sacost));
+//		System.out.println(" ->SAminCost "+ String.format("%.2f",  sacost));
 		if(printStatistics) System.out.println();
 	}
 	private boolean finalIteration(double cost){

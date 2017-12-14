@@ -34,7 +34,7 @@ public class HardblockSwarm {
 		
 	//PSO
 	private int numParticles;
-	private static final int MAX_ITERATION = 30;
+	private static final int MAX_ITERATION = 400;
 
 	private static final double COGNITIVE_L = 0.01;
 	private static final double COGNITIVE_H = 1.6;
@@ -101,7 +101,7 @@ public class HardblockSwarm {
 				this.columnCrits.add(crit);
 			}
 		}	
-		
+		System.out.println(blockType + "" + column.index + " numNets -> " + this.columnNets.size() + " numCrits -> " + this.columnCrits.size());
 		this.numParticles = numParticles;
 		
 		this.gBestIndexList = new int[this.numSites];
@@ -176,7 +176,7 @@ public class HardblockSwarm {
 		}
 	}
 	private void setBlockLegal(){
-		System.out.println(" psogBest -> " + String.format("%.2f",  this.gBest));
+//		System.out.println(" psogBest -> " + String.format("%.2f",  this.gBest));
 		if(!this.printout){
 			for(int m = 0; m < this.numSites; m++){
 				System.out.println(this.gBestIndexList[m] + "\t" + m);
@@ -210,12 +210,6 @@ public class HardblockSwarm {
 		return pos;
 	}
 	private double getCost(){
-//		for(Net net:this.columnNets){
-//			net.initializeConnectionCost();;
-//		}
-//		for(Crit crit:this.columnCrits){
-//			crit.initializeTimingCost();
-//		}
 		double cost = 0.0;
 		for(Net net:this.columnNets){
 			cost += net.connectionCost();
@@ -230,15 +224,14 @@ public class HardblockSwarm {
 		this.swarm.clear();
 		
 //		Particle baseLineParticle = new Particle(0, this.numSites);
-//		baseLineParticle.setLocation(this.sites);
-//		this.pBest[0] = this.getCost();
+//		baseLineParticle.pBest = this.getCost();
 //		this.swarm.add(baseLineParticle);
 //		int j = 0;
 //		for(Site site : this.sites){
 //			if(site.hasBlock()){
-//				this.blockIndexMatrix[0][j] = site.block.index;
+//				baseLineParticle.blockIndexList[j] = site.block.index;
 //				site.block.setLegal(site.column, site.row);
-//			}else this.blockIndexMatrix[0][j] = 0;
+//			}else baseLineParticle.blockIndexList[j] = -1;
 //			j++;
 //		}
 		
@@ -454,7 +447,7 @@ public class HardblockSwarm {
 		int indexInblocks2 = this.getIndexInBlocks(blockIndex2);
 		if(blockIndex1 != -1){
 			block1 = this.blocks[indexInblocks1];
-			block1.tryLegal(this.legalcordinateX, toY);
+			block1.tryLegal(this.legalcordinateX, toY);//TODO setLegalXY
 //			block1.tryLegalY(toY);
 		}
 		if(blockIndex2 != -1){
@@ -534,6 +527,10 @@ public class HardblockSwarm {
 	private class Particle{
 		private final int pIndex;
 		private int numSites;
+		
+		private final Set<Net> pNets;
+		private final Set<Crit> pCrits;
+		
 		private int[] blockIndexList;
 		private List<Swap> velocity;
 		
@@ -545,6 +542,10 @@ public class HardblockSwarm {
 		Particle(int index, int numSites){
 			this.pIndex = index;
 			this.numSites = numSites;
+			
+			this.pNets = new HashSet<Net>();
+			this.pCrits = new HashSet<Crit>();
+			
 			this.velocity = new ArrayList<Swap>();
 			this.blockIndexList = new int[numSites];
 			

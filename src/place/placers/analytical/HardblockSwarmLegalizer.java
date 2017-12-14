@@ -24,7 +24,7 @@ public class HardblockSwarmLegalizer{
 
 	private int[] legalY;
     
-    private static final int SWARM_SIZE = 30;
+    private static final int SWARM_SIZE = 20;
 
     private final Block[] blocks;
     private final Net[] nets;
@@ -306,37 +306,37 @@ public class HardblockSwarmLegalizer{
 		this.updateLegal(legalizeBlocks);
 		
 		//TODO test////////////////////////////////////////////////////////////////////
-		for(Column c : columns){
-			if(c.usedPos() > 0){
-				Set<Net> columnNets = new HashSet<>();
-				Set<Crit> columnCrits = new HashSet<>();
-				for(Block block:c.blocks){
-					for(Net net:block.nets){
-						columnNets.add(net);
-					}
-					for(Crit crit:block.crits){
-						columnCrits.add(crit);
-					}
-				}
-				
-				for(Net net:columnNets){
-					net.initializeConnectionCost();;
-				}
-				for(Crit crit:columnCrits){
-					crit.initializeTimingCost();
-				}
-				
-				double cost = 0.0;
-				for(Net net:columnNets){
-					cost += net.connectionCost();
-				}
-				for(Crit crit:columnCrits){
-					cost += crit.timingCost();
-				}
-				System.out.printf(this.blockType + " column" +  + c.index + " => Num sites: " + c.sites.length + " => Num blocks: " + c.blocks.size());
-				System.out.println(" ->finalcost " + String.format("%.2f", cost));
-			}
-		}		
+//		for(Column c : columns){
+//			if(c.usedPos() > 0){
+//				Set<Net> columnNets = new HashSet<>();
+//				Set<Crit> columnCrits = new HashSet<>();
+//				for(Block block:c.blocks){
+//					for(Net net:block.nets){
+//						columnNets.add(net);
+//					}
+//					for(Crit crit:block.crits){
+//						columnCrits.add(crit);
+//					}
+//				}
+//				
+//				for(Net net:columnNets){
+//					net.initializeConnectionCost();;
+//				}
+//				for(Crit crit:columnCrits){
+//					crit.initializeTimingCost();
+//				}
+//				
+//				double cost = 0.0;
+//				for(Net net:columnNets){
+//					cost += net.connectionCost();
+//				}
+//				for(Crit crit:columnCrits){
+//					cost += crit.timingCost();
+//				}
+//				System.out.printf(this.blockType + " column" +  + c.index + " => Num sites: " + c.sites.length + " => Num blocks: " + c.blocks.size());
+//				System.out.println(" ->finalcost " + String.format("%.2f", cost));
+//			}
+//		}		
 //		System.out.println("after updateLegal");
 //		for(Block block:legalizeBlocks){
 //    		System.out.println(block.index + " ->x " + this.legalX[block.index]+ " ->y " + this.legalY[block.index]);
@@ -533,8 +533,17 @@ public class HardblockSwarmLegalizer{
 		}
 		//TODO SETLEGAL FOR PSO
 		void setLegalXY(int x, int y){
-			this.legalX = x;
-			this.legalY = y;
+			this.saveState();
+			if(this.legalX != x){
+				this.legalX = x;
+				for(Net net:this.nets) net.tryHorizontalConnectionCost(this.oldLegalX, this.legalX);
+				for(Crit crit:this.crits) crit.tryHorizontalTimingCost();
+			}
+			if(this.legalY != y){
+				this.legalY = y;
+				for(Net net:this.nets) net.tryVerticalConnectionCost(this.oldLegalY, this.legalY);
+				for(Crit crit:this.crits) crit.tryVerticalTimingCost();
+			}
 		}
 
 		void setLegal(int newLegalX, int newLegalY){
