@@ -34,7 +34,7 @@ public class HardblockSwarm {
 		
 	//PSO
 	private int numParticles;
-	private static final int MAX_ITERATION = 400;
+	private static final int MAX_ITERATION = 1000;
 
 	private static final double COGNITIVE_L = 0.01;
 	private static final double COGNITIVE_H = 1.6;
@@ -134,8 +134,7 @@ public class HardblockSwarm {
 		double r1, r2;
 		
 		for(int iteration = 0;iteration < MAX_ITERATION; iteration++){
-			if(!this.printout)
-				System.out.println("PSO iteration: "+ iteration);//TODO remove
+			if(!this.printout) System.out.println("PSO iteration: "+ iteration);//TODO remove
 			
 			w = W_UPPERBOUND - (((double) iteration) / MAX_ITERATION) * (W_UPPERBOUND - W_LOWERBOUND);
 			r1 = COGNITIVE_H - (((double) iteration) / MAX_ITERATION) * (COGNITIVE_H - COGNITIVE_L); 
@@ -152,11 +151,12 @@ public class HardblockSwarm {
 				//set blocks's tmpLegal by connecting each site with each block in the order from indexList
 				for(Block block : this.blocks){
 					int siteIndex = this.getSiteIndex(p.blockIndexList, block.index);
-					block.setLegal(this.legalcordinateX, siteIndex * this.blockHeight +1);
+					block.setLegalXY(this.legalcordinateX, siteIndex * this.blockHeight +1);
 				}
 				//update pBest
 //				p.pCost += this.deltaCost;
-				p.pCost = this.getCost();
+//				p.pCost = this.getCost();
+				p.pCost = p.getCost();
 				if(p.pCost < p.pBest){
 					p.pBest = p.pCost;
 					System.arraycopy(p.blockIndexList, 0, p.pBestIndexList, 0, this.numSites);
@@ -200,7 +200,7 @@ public class HardblockSwarm {
 	}
 	private int getMinPbestIndex(){
 		int pos = 0;
-		double minValue = this.swarm.get(0).pBest;
+		double minValue = Double.MAX_VALUE;
 		for(Particle particle : this.swarm){
 			if(particle.pBest < minValue){
 				pos = particle.pIndex;
@@ -241,9 +241,7 @@ public class HardblockSwarm {
 //				System.out.println("\t" + a + "\t" + this.blockIndexMatrix[0][a]);
 //			}
 //			System.out.println(this.pBest[0]);
-//		}
-//		
-			
+//		}		
 		for(int i = 0; i < this.numParticles; i++){		
 			this.timingTree.start("randomly assign blocks");
 			for(Site site : this.sites){
@@ -256,7 +254,7 @@ public class HardblockSwarm {
 				}
 				site.setBlock(block);
 //				block.setTmpLegal(i, site.column, site.row);
-				block.setLegal(site.column, site.row);
+				block.setLegalXY(site.column, site.row);
 			}
 			this.timingTree.time("randomly assign blocks");
 			
@@ -288,10 +286,14 @@ public class HardblockSwarm {
 				if(this.sites[m].hasBlock()) particle.blockIndexList[m] = this.sites[m].block.index;
 				else particle.blockIndexList[m] = -1;
 			}
-			particle.pCost = this.getCost();
-			particle.pBest = particle.pCost;
+			particle.setPNets(this.columnNets);
+			particle.setPCrits(this.columnCrits);
+			double tmpCost = particle.getCost();
+			particle.pCost = tmpCost;
+			particle.pBest = particle.pCost;		
+//			double test = this.getCost();
+			if(!this.printout)System.out.println(String.format("%.2f", particle.pCost));
 			
-			if(!this.printout)System.out.println(String.format("%.2f", particle.pBest));
 			this.swarm.add(particle);
 		}
 	}
@@ -526,10 +528,10 @@ public class HardblockSwarm {
 	
 	private class Particle{
 		private final int pIndex;
-		private int numSites;
+		private final int numSites;
 		
-		private final Set<Net> pNets;
-		private final Set<Crit> pCrits;
+		private Set<Net> pNets;
+		private Set<Crit> pCrits;
 		
 		private int[] blockIndexList;
 		private List<Swap> velocity;
@@ -543,12 +545,9 @@ public class HardblockSwarm {
 			this.pIndex = index;
 			this.numSites = numSites;
 			
-			this.pNets = new HashSet<Net>();
-			this.pCrits = new HashSet<Crit>();
-			
 			this.velocity = new ArrayList<Swap>();
 			this.blockIndexList = new int[numSites];
-			
+			this.pCost = 0.0;
 			this.pBest = 0.0;
 			this.pBestIndexList = new int[this.numSites];
 		}
@@ -561,6 +560,22 @@ public class HardblockSwarm {
 				this.velocity.add(vel.get(index));
 			}
 //			System.out.println(this.velocity.size());
+		}
+		private void setPNets(Set<Net> columnNets){
+			this.pNets = new HashSet<Net>(columnNets);
+		}
+		private void setPCrits(Set<Crit> columnCrits){
+			this.pCrits = new HashSet<Crit>(columnCrits);
+		}
+		private double getCost(){
+			double cost = 0.0;
+			if(this.pNets != null){
+				for(Net net:this.pNets) cost += net.connectionCost();
+			}
+			if(this.pCrits != null){
+				for(Crit crit:this.pCrits) cost += crit.timingCost();
+			}
+			return cost;
 		}
 	}
 

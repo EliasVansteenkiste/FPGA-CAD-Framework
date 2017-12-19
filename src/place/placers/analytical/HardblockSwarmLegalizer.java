@@ -260,11 +260,11 @@ public class HardblockSwarmLegalizer{
 		this.timingTree.time("Column swap");
 
 		//3 Column legalize
-		this.timingTree.start("Legalize columns");
-		for(Column column:columns){
+//		this.timingTree.start("Legalize columns");
+//		for(Column column:columns){
 //			column.legalize();
-		}
-		this.timingTree.time("Legalize columns");
+//		}
+//		this.timingTree.time("Legalize columns");
 
 		//4 Column pso
 		this.timingTree.start("Anneal columns");
@@ -531,19 +531,15 @@ public class HardblockSwarmLegalizer{
 			for(Crit crit:this.crits) cost += crit.verticalTimingCost();
 			return cost;
 		}
-		//TODO SETLEGAL FOR PSO
+		//TODO SETLEGAL(only y) FOR PSO
 		void setLegalXY(int x, int y){
 			this.saveState();
-			if(this.legalX != x){
-				this.legalX = x;
-				for(Net net:this.nets) net.tryHorizontalConnectionCost(this.oldLegalX, this.legalX);
-				for(Crit crit:this.crits) crit.tryHorizontalTimingCost();
-			}
 			if(this.legalY != y){
 				this.legalY = y;
 				for(Net net:this.nets) net.tryVerticalConnectionCost(this.oldLegalY, this.legalY);
 				for(Crit crit:this.crits) crit.tryVerticalTimingCost();
 			}
+			this.pushTrough();
 		}
 
 		void setLegal(int newLegalX, int newLegalY){
