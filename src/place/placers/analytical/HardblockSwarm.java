@@ -34,7 +34,7 @@ public class HardblockSwarm {
 		
 	//PSO
 	private int numParticles;
-	private static final int MAX_ITERATION = 1000;
+	private static final int MAX_ITERATION = 300;
 
 	private static final double COGNITIVE_L = 0.01;
 	private static final double COGNITIVE_H = 1.6;
@@ -100,9 +100,16 @@ public class HardblockSwarm {
 			for(Crit crit:block.crits){
 				this.columnCrits.add(crit);
 			}
-		}	
+		}
+		
 		System.out.println(blockType + "" + column.index + " numNets -> " + this.columnNets.size() + " numCrits -> " + this.columnCrits.size());
 		this.numParticles = numParticles;
+		
+		for(int i = 0; i < this.numParticles; i++){
+			Particle particle = new Particle(i, this.numSites);
+			particle.setPCrits(this.columnCrits);
+			particle.setPCrits(this.columnCrits);
+		}
 		
 		this.gBestIndexList = new int[this.numSites];
 		
@@ -210,6 +217,12 @@ public class HardblockSwarm {
 		return pos;
 	}
 	private double getCost(){
+		for(Net net:this.columnNets){
+			net.initializeConnectionCost();
+		}
+		for(Crit crit:this.columnCrits){
+			crit.initializeTimingCost();
+		}
 		double cost = 0.0;
 		for(Net net:this.columnNets){
 			cost += net.connectionCost();
@@ -291,8 +304,8 @@ public class HardblockSwarm {
 			double tmpCost = particle.getCost();
 			particle.pCost = tmpCost;
 			particle.pBest = particle.pCost;		
-//			double test = this.getCost();
-			if(!this.printout)System.out.println(String.format("%.2f", particle.pCost));
+//			double test = this.getCost();//TODO TEST
+			if(!this.printout)System.out.println(String.format("%.2f", particle.pCost));// + " " + String.format("%.2f", test));
 			
 			this.swarm.add(particle);
 		}
@@ -569,14 +582,22 @@ public class HardblockSwarm {
 		}
 		private double getCost(){
 			double cost = 0.0;
+			double timing = 0.0;
+			double conn = 0.0;
 			if(this.pNets != null){
-				for(Net net:this.pNets) cost += net.connectionCost();
+				for(Net net:this.pNets) conn += net.connectionCost();
 			}
-			if(this.pCrits != null){
-				for(Crit crit:this.pCrits) cost += crit.timingCost();
+			int numCrits = this.pCrits.size();
+			if(this.pCrits != null && numCrits != 0){
+				for(Crit crit:this.pCrits) timing += crit.timingCost();
 			}
+			cost = timing + conn;
+//			double product = timing * conn;//TODO TEST 
+//			if(numCrits != 0) System.out.println(String.format("%.2f", timing) + "\t" + String.format("%.2f", conn) + "\t" + String.format("%.2f", cost)+ "\t" + String.format("%.2f", product));
+			
 			return cost;
 		}
+		
 	}
 
 	class Swap {
