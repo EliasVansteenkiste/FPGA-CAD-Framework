@@ -21,6 +21,7 @@ class GradientLegalizer extends Legalizer {
 	private List<Block> blocks;
 	private List<Cluster> clusters;
 	private List<Column> columns;
+	private boolean firstIteration;
 
     private int legalColumns, illegalColumns;
     private final double scalingFactor;
@@ -59,6 +60,8 @@ class GradientLegalizer extends Legalizer {
     	this.scalingFactor = (double)this.legalColumns / (this.legalColumns + this.illegalColumns);
 
     	this.massMap = new MassMap(this.legalColumns, this.height);
+    	
+    	this.firstIteration = true;
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
@@ -66,37 +69,49 @@ class GradientLegalizer extends Legalizer {
     	double speedAveraging = this.getSettingValue("speed_averaging");
 
     	if(this.isLastIteration){
-    		this.initializeBlocks(blocksStart, blocksEnd, this.width, this.height, stepSize, speedAveraging);
+    		this.makeBlocks(blocksStart, blocksEnd, this.width, this.height);
+    		this.initializeBlocks(stepSize, speedAveraging);
     		this.sortBlocks();
     		this.initializeColumns();
     		this.legalizeBlocks();
     		this.updateLegal();
     	}else{
-    		this.initializeBlocks(blocksStart, blocksEnd, this.legalColumns, this.height, stepSize, speedAveraging);
-    		this.initializeClusters();
+    		if(this.firstIteration){
+        		this.makeBlocks(blocksStart, blocksEnd, this.legalColumns, this.height);
+        		this.initializeClusters();
+        		this.firstIteration = false;
+    		}
+    		this.initializeBlocks(stepSize, speedAveraging);
             this.doSpreading();
             this.updateLegal();
     	}
     }
 
     //Initialization
-    private void initializeBlocks(int blocksStart, int blocksEnd, int gridWidth, int gridHeight, double stepSize, double speedAveraging){
+    private void makeBlocks(int blocksStart, int blocksEnd, int gridWidth, int gridHeight){
     	this.blocks = new ArrayList<>(blocksEnd - blocksStart);
     	for(int b = blocksStart; b < blocksEnd; b++){
-			double x = this.linearX[b];
-			double y = this.linearY[b];
-
     		int blockHeight = this.heights[b];
     		float offset = (1 - blockHeight) / 2f;
+    		
+    		int leafNode = this.leafNode[b];
+
+    		this.blocks.add(new Block(b, offset, blockHeight, leafNode, gridWidth, gridHeight));
+    	}
+    }
+    private void initializeBlocks(double stepSize, double speedAveraging){
+		for(Block block:this.blocks){
+			double x = this.linearX[block.index];
+			double y = this.linearY[block.index];
 
     		if(this.isLastIteration){
-    			y = y + Math.ceil(offset);
+    			y = y + Math.ceil(block.offset);
     		}else{
     			x = x * this.scalingFactor;
-    			y = y + offset;
+    			y = y + block.offset;
     		}
-
-    		this.blocks.add(new Block(b, x, y, offset, blockHeight, this.leafNode[b], stepSize, speedAveraging, gridWidth, gridHeight));
+    		
+    		block.initialize(x, y, stepSize, speedAveraging);
     	}
     }
     private void initializeClusters(){
@@ -319,16 +334,20 @@ class GradientLegalizer extends Legalizer {
     	
     	boolean processed;
 
-    	public Block(int index, double x, double y, float offset, int height, int leafNode, double stepSize, double speedAveraging, int gridWidth, int gridHeight){
+    	public Block(int index, float offset, int height, int leafNode, int gridWidth, int gridHeight){
     		this.index = index;
 
     		this.offset = offset;
     		this.height = height;
 
-    		this.horizontal = new Dimension(x, stepSize, speedAveraging, gridWidth);
-    		this.vertical = new Dimension(y, stepSize, speedAveraging, gridHeight - this.height + 1);
+    		this.horizontal = new Dimension(gridWidth);
+    		this.vertical = new Dimension(gridHeight - this.height + 1);
     		
     		this.leafNode = leafNode;
+    	}
+    	void initialize(double horizontalCoordinate, double verticalCoordinate, double stepSize, double speedAveraging){
+    		this.horizontal.initialize(horizontalCoordinate, stepSize, speedAveraging);
+    		this.vertical.initialize(verticalCoordinate, stepSize, speedAveraging);
     		
     		this.area_ne = 0.0;
     		this.area_nw = 0.0;
@@ -383,15 +402,18 @@ class GradientLegalizer extends Legalizer {
     	double coordinate;
     	double force;
     	double speed;
-    	double stepSize, speedAveraging, size;
+    	double stepSize, speedAveraging;
+    	
+    	final int size;
 
-    	Dimension(double coordinate,  double stepSize, double speedAveraging, int size){
+    	Dimension(int size){
+    		this.size = size;
+    	}
+    	void initialize(double coordinate, double stepSize, double speedAveraging){
     		this.coordinate = coordinate;
     		this.force = 0.0;
     		this.speed = 0.0;
     		
-    		this.size = size;
-
     		this.stepSize = stepSize;
     		this.speedAveraging = speedAveraging;
     	}
