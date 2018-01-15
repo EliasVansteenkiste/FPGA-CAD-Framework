@@ -40,7 +40,7 @@ public class GradientPlacerTD extends GradientPlacer {
         options.add(
                 O_TRADE_OFF,
                 "0 = purely wirelength driven, higher = more timing driven",
-                new Double(25));
+                new Double(20));
     }
 
 

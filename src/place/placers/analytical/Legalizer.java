@@ -43,8 +43,8 @@ abstract class Legalizer {
     private HardblockConnectionLegalizer hardblockLegalizer;
 
     //Visualizer
-    private final PlacementVisualizer visualizer;
-    private final Map<GlobalBlock, NetBlock> netBlocks;
+    protected final PlacementVisualizer visualizer;
+    protected final Map<GlobalBlock, NetBlock> netBlocks;
 
     //Logger
     protected Logger logger;
@@ -228,7 +228,9 @@ abstract class Legalizer {
 
     public void printLegalizationRuntime(){
     	this.logger.println();
-    	this.logger.println("----\t---------\t-------");
+    	this.logger.println("-------------------------------");
+    	this.logger.println("---- LEGALIZATION RUNTIME -----");
+    	this.logger.println("-------------------------------");
     	this.logger.println("Type\tTime (ms)\tRel(%)");
     	this.logger.println("----\t---------\t-------");
 
@@ -240,7 +242,7 @@ abstract class Legalizer {
     	for(BlockType legalizeType:this.legalizationRuntime.keySet()){
     		this.logger.printf("%s\t%d\t\t%2.2f\n",legalizeType, this.legalizationRuntime.get(legalizeType), (100.0 * this.legalizationRuntime.get(legalizeType)) / totalTime);
     	}
-    	this.logger.println("----\t---------\t-------");
+    	this.logger.println("-------------------------------");
     	this.logger.println("");
     }
 }

@@ -1,11 +1,11 @@
 package place.placers.analytical;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import place.circuit.Circuit;
@@ -18,16 +18,16 @@ import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.visual.PlacementVisualizer;
 
 class GradientLegalizer extends Legalizer {
-	private Block[] blocks;
-	private Cluster mainCluster;
-	private Cluster[] hierarchyClusters;
+	private List<Block> blocks;
+	private List<Cluster> clusters;
+	private List<Column> columns;
 
-	private final double stepSize, speedAveraging;
-
-    private final List<Integer> legalColumns;
-    private final List<Integer> illegalColumns;
-    private final Map<Integer, Integer> columnMap;
+    private int legalColumns, illegalColumns;
     private final double scalingFactor;
+    
+    private final MassMap massMap;
+    
+    private static final boolean doVisual = false;
 
     GradientLegalizer(
             Circuit circuit,
@@ -46,46 +46,42 @@ class GradientLegalizer extends Legalizer {
             Logger logger){
 
     	super(circuit, blockTypes, blockTypeIndexStarts, numIterations, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
-
-    	this.legalColumns = new ArrayList<>();
-    	this.illegalColumns = new ArrayList<>();
+    	
+    	this.legalColumns = 0;
+    	this.illegalColumns = 0;
     	for(BlockType blockType:this.circuit.getBlockTypes()){
     		if(blockType.getCategory().equals(BlockCategory.CLB)){
-    			for(int column:this.circuit.getColumnsPerBlockType(blockType)){
-    				this.legalColumns.add(column);
-    			}
+    			this.legalColumns += this.circuit.getColumnsPerBlockType(blockType).size();
     		}else if(blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-    			for(int column:this.circuit.getColumnsPerBlockType(blockType)){
-    				this.illegalColumns.add(column);
-    			}
+    			this.illegalColumns += this.circuit.getColumnsPerBlockType(blockType).size();
     		}
     	}
-    	this.scalingFactor = (double)this.legalColumns.size() / (this.legalColumns.size() + this.illegalColumns.size());
-    	
-    	this.columnMap = new HashMap<>();
-    	int substract = 0;
-    	for(int c = 1; c < this.circuit.getWidth() + 1; c++){
-    		if(this.circuit.getColumnType(c).getCategory().equals(BlockCategory.HARDBLOCK)){
-    			substract += 1;
-    		}
-    		this.columnMap.put(c - substract, substract);
-    	}
+    	this.scalingFactor = (double)this.legalColumns / (this.legalColumns + this.illegalColumns);
 
-    	this.stepSize = 2.0;
-    	this.speedAveraging = 0.2;
+    	this.massMap = new MassMap(this.legalColumns, this.height);
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
-        this.initializeData(blocksStart, blocksEnd, this.legalColumns.size(), this.height);
-        this.visual("Before spreading");
-        this.doSpreading(2500);
-        this.visual("After spreading");
-       	this.updateLegal();
+    	double stepSize = this.getSettingValue("step_size");
+    	double speedAveraging = this.getSettingValue("speed_averaging");
+
+    	if(this.isLastIteration){
+    		this.initializeBlocks(blocksStart, blocksEnd, this.width, this.height, stepSize, speedAveraging);
+    		this.sortBlocks();
+    		this.initializeColumns();
+    		this.legalizeBlocks();
+    		this.updateLegal();
+    	}else{
+    		this.initializeBlocks(blocksStart, blocksEnd, this.legalColumns, this.height, stepSize, speedAveraging);
+    		this.initializeClusters();
+            this.doSpreading();
+            this.updateLegal();
+    	}
     }
 
-    private void initializeData(int blocksStart, int blocksEnd, int gridWidth, int gridHeight){
-    	//Initialize blocks
-    	this.blocks = new Block[blocksEnd - blocksStart];
+    //Initialization
+    private void initializeBlocks(int blocksStart, int blocksEnd, int gridWidth, int gridHeight, double stepSize, double speedAveraging){
+    	this.blocks = new ArrayList<>(blocksEnd - blocksStart);
     	for(int b = blocksStart; b < blocksEnd; b++){
 			double x = this.linearX[b];
 			double y = this.linearY[b];
@@ -93,226 +89,308 @@ class GradientLegalizer extends Legalizer {
     		int blockHeight = this.heights[b];
     		float offset = (1 - blockHeight) / 2f;
 
-    		int ln = this.leafNode[b];
+    		if(this.isLastIteration){
+    			y = y + Math.ceil(offset);
+    		}else{
+    			x = x * this.scalingFactor;
+    			y = y + offset;
+    		}
 
-    		//Add offset
-    		y = y + offset;
-
-    		//Scale
-    		x *= this.scalingFactor;
-
-    		this.blocks[b - blocksStart] = new Block(b, x, y, offset, blockHeight * this.blockType.getHeight(), this.stepSize, this.speedAveraging, ln, gridWidth, gridHeight);
+    		this.blocks.add(new Block(b, x, y, offset, blockHeight, this.leafNode[b], stepSize, speedAveraging, gridWidth, gridHeight));
     	}
-
-    	//Initialize clusters
+    }
+    private void initializeClusters(){
+    	boolean hasFloatingBlocks = false;
     	Set<Integer> clusterIndex = new HashSet<>();
     	for(int ln:this.leafNode){
     		clusterIndex.add(ln);
+    		
+    		if(ln == 0){
+    			hasFloatingBlocks = true;
+    		}
     	}
-    	this.hierarchyClusters = new Cluster[clusterIndex.size()];
-    	for(int i = 0; i < this.hierarchyClusters.length; i++){
-    		this.hierarchyClusters[i] = new Cluster(gridWidth, gridHeight);
+    	
+    	this.clusters = new ArrayList<Cluster>();
+    	for(int i = 0; i < clusterIndex.size(); i++){
+    		this.clusters.add(new Cluster(i));
     	}
-    	this.mainCluster = new Cluster(gridWidth, gridHeight);
 
     	for(Block lb:this.blocks){
-    		this.hierarchyClusters[lb.leafNode].addBlock(lb);
-    		this.mainCluster.addBlock(lb);
-    	}
-
-    	this.mainCluster.initializeMassMap();
-    	for(Cluster hierarchyCluster:this.hierarchyClusters){
-    		hierarchyCluster.initializeMassMap();
-    		this.mainCluster.addCluster(hierarchyCluster);
+    		if(hasFloatingBlocks){
+    			this.clusters.get(lb.leafNode).addBlock(lb);
+    		}else{
+    			this.clusters.get(lb.leafNode - 1).addBlock(lb);
+    		}
     	}
     }
-    private void doSpreading(int numIterations){
+    public void sortBlocks(){
+    	Collections.sort(this.blocks, Comparators.VERTICAL);
+    }
+    public void initializeColumns(){
+        this.columns = new ArrayList<>();
+        for(int columnIndex:this.circuit.getColumnsPerBlockType(BlockType.getBlockTypes(BlockCategory.CLB).get(0))){
+        	Column column = new Column(columnIndex, this.height);
+        	this.columns.add(column);
+        }
+    }
+    public void initializeMassMap(){
+    	this.massMap.reset();
+
+    	for(Block block:this.blocks){
+    		this.massMap.add(block);
+    	}
+    }
+    public void initializeMassMap(Cluster cluster){
+    	this.massMap.reset();
+
+    	for(Block block:cluster.blocks){
+    		this.massMap.add(block);
+    	}
+    }
+
+    //Spreading
+    private void doSpreading(){
     	int iteration = 0;
-    	int visual = 0;
-    	
-    	this.mainCluster.applyPushingBlockForces(this.getSettingValue("grid_force"));
-
-		
-//    	do{
-//        	//for(int i = 0; i < 5; i++){
-//        	for(Cluster cluster:this.hierarchyClusters){
-//        		cluster.applyPushingBlockForces(this.gridForce);
-//        	}
-//        	this.visual(visual++);
-//        	//}
-//        	for(int i = 0; i < 10; i++){
-//        		this.mainCluster.applyPushingClusterForces(this.gridForce);
-//        		this.visual(visual++);
-//        	}
-//        	for(int i = 0; i < 10; i++){
-//        		//this.mainCluster.applyPushingBlockForces(this.gridForce);
-//        	}
-//        	
-//        	this.mainCluster.applyPushingBlockForces(this.gridForce);
-//        	
-//    		iteration++;
-//    	}while(iteration < numIterations);
+    	this.initializeMassMap();
+    	while(this.massMap.overlap() / this.blocks.size() > 0.33){
+    		this.spreadClusters(25);
+    		if(doVisual) this.addVisual(iteration);
+    		
+    		this.moveClusters(25);
+    		if(doVisual) this.addVisual(iteration);
+    		
+    		iteration++;
+    		
+    		this.initializeMassMap();
+    	}
+    	this.moveBlocks(200);
+    	if(doVisual) this.addVisual("final");
     }
+    public void spreadClusters(int numIterations){
+		for(Cluster cluster:this.clusters){
+    		this.initializeMassMap(cluster);
+    		
+    		if(doVisual) this.addVisual(cluster);
+    		
+    		for(int i = 0; i < numIterations; i++){
+    			this.applyPushingBlockForces(cluster);
+    			
+    			if(doVisual) this.addVisual(cluster);
+    		}
+    	}
+    }
+    public void moveClusters(int numIterations){
+    	for(int i = 0 ; i < numIterations; i++){
+        	this.initializeMassMap();
+        	
+        	for(Cluster cluster:this.clusters){
+        		cluster.horizontalForce = 0.0;
+        		cluster.verticalForce = 0.0;
+        		
+        		for(Block block:cluster.blocks){
+        			block.setForce(this.massMap);
+        			
+        			cluster.horizontalForce += block.horizontal.force;
+        			cluster.verticalForce += block.vertical.force;
+        		}
+        		
+        		for(Block block:cluster.blocks){
+        			block.horizontal.force = cluster.horizontalForce;
+        			block.vertical.force = cluster.verticalForce;
+        		}
+        		
+        		for(Block block:cluster.blocks){
+        			this.massMap.remove(block);
+        			block.doForce();
+        			this.massMap.add(block);
+        		}
+        	}
+    	}
+	}
+    public void moveBlocks(int numIterations){
+    	this.initializeMassMap();
+    	for(int i = 0; i < numIterations; i++){
+    		this.applyPushingBlockForces();
+    	}
+    }
+    private void applyPushingBlockForces(){
+    	for(Block block: this.blocks){
+    		this.massMap.setForce(block);
+    		this.massMap.remove(block);
+    		block.doForce();
+    		this.massMap.add(block);
+    	}
+    }
+    private void applyPushingBlockForces(Cluster cluster){
+    	for(Block block: cluster.blocks){
+    		block.setForce(this.massMap);
+    		this.massMap.remove(block);
+    		block.doForce();
+    		this.massMap.add(block);
+    	}
+    }
+    
+    //Visual
+    private void addVisual(Cluster cluster){
+    	double[] coorX = new double[this.linearX.length];
+		double[] coorY = new double[this.linearY.length];
+		
+		for(int i = 0; i < this.linearX.length; i++){
+			coorX[i] = -1;
+			coorY[i] = -1;
+		}
+		for(Block block:cluster.blocks){
+			coorX[block.index] = block.horizontal.coordinate;
+			coorY[block.index] = block.vertical.coordinate;
+		}
+		this.addVisual("Cluster: " + cluster.id, coorX, coorY);
+    }
+    private void addVisual(String name){
+    	double[] coorX = new double[this.linearX.length];
+		double[] coorY = new double[this.linearY.length];
+		
+		for(int i = 0; i < this.linearX.length; i++){
+			coorX[i] = -1;
+			coorY[i] = -1;
+		}
+		for(Block block:this.blocks){
+			coorX[block.index] = block.horizontal.coordinate;
+			coorY[block.index] = block.vertical.coordinate;
+		}
+		this.addVisual(name, coorX, coorY);
+    }
+    private void addVisual(int i){
+    	this.addVisual("" + i);
+    }
+    
+    //Finalize
     private void updateLegal(){
-    	for(Block block:this.blocks){//TODO IMPROVE EXPAND FUNCTIONALITY
+    	for(Block block:this.blocks){
     		double x = block.horizontal.coordinate;
     		double y = block.vertical.coordinate;
 
-    		//Expand with column map
-    		int column = (int)Math.floor(x - 0.25);
-    		x += this.columnMap.get(column);
-
-    		//Add vertical offset
-    		y = y - block.offset;
+    		if(this.isLastIteration){
+    			y = y + Math.floor(-block.offset);
+    		}else{
+    			x = x / this.scalingFactor;
+    			y = y - block.offset;
+    		}
 
     		this.legalX[block.index] = x;
     		this.legalY[block.index] = y;
     	}
     }
-    private void visual(int id){
-    	this.visual("" + id);
-    }
-    private void visual(String name){
-    	double[] coorX = new double[this.linearX.length];
-    	double[] coorY = new double[this.linearX.length];
+
+    class Cluster {
+    	final int id;
+    	final List<Block> blocks;
     	
-    	for(int i = 0; i < this.linearX.length; i++){
-    		coorX[i] = this.linearX[i];
-    		coorY[i] = this.linearY[i];
-    	}
-    	for(Block block:this.blocks){
-    		coorX[block.index] = block.horizontal.coordinate;
-    		coorY[block.index] = block.vertical.coordinate;
-    	}
+    	double horizontalForce;
+    	double verticalForce;
 
-    	this.addVisual(name, coorX, coorY);
+    	Cluster(int id){
+    		this.id = id;
+    		this.blocks = new ArrayList<>();
+    	}
+    	
+    	void addBlock(Block block){
+    		if(this.blocks.contains(block)){//TODO REMOVE THIS DEBUG LINE
+    			System.out.println("Duplicate block in cluster!");
+    		}else{
+    			this.blocks.add(block);
+    		}
+    	}
     }
-
-
+    
     public class Block {
-    	final int index, gridWidth, gridHeight;
+    	final int index;
 
     	final Dimension horizontal, vertical;
 
     	final float offset;
-    	final int height, leafNode;
-
+    	final int height;
+    	
+    	final int leafNode;
+    	
     	int ceilx, ceily;
+
+    	double area_ne, area_nw, area_se, area_sw;
+    	double force_ne, force_nw, force_se, force_sw;
     	
     	boolean processed;
 
-    	Area area;
-    	Force force;
-
-    	public Block(int index, double x, double y, float offset, int height, double stepSize, double speedAveraging, int leafNode, int gridWidth, int gridHeight){
+    	public Block(int index, double x, double y, float offset, int height, int leafNode, double stepSize, double speedAveraging, int gridWidth, int gridHeight){
     		this.index = index;
-
-    		this.horizontal = new Dimension(x, stepSize, speedAveraging);
-    		this.vertical = new Dimension(y, stepSize, speedAveraging);
 
     		this.offset = offset;
     		this.height = height;
+
+    		this.horizontal = new Dimension(x, stepSize, speedAveraging, gridWidth);
+    		this.vertical = new Dimension(y, stepSize, speedAveraging, gridHeight - this.height + 1);
     		
     		this.leafNode = leafNode;
     		
-    		this.area = new Area();
-    		this.force = new Force();
+    		this.area_ne = 0.0;
+    		this.area_nw = 0.0;
+    		this.area_se = 0.0;
+    		this.area_sw = 0.0;
     		
-    		this.gridWidth = gridWidth;
-    		this.gridHeight = gridHeight;
+    		this.force_ne = 0.0;
+    		this.force_nw = 0.0;
+    		this.force_se = 0.0;
+    		this.force_sw = 0.0;
     		
     		this.trim();
     		this.update();
     	}
-        void doForce(int gridWidth, int gridHeight){
+    	void setForce(MassMap massMap){
+    		massMap.setForce(this);
+    	}
+        void doForce(){
         	this.solve();
-    		this.trim();
     		this.update();
+        }
+        void trim(){
+    		this.horizontal.trim();
+    		this.vertical.trim();
         }
         void solve(){
         	this.horizontal.solve();
         	this.vertical.solve();
         }
-        void trim(){
-    		if(this.horizontal.coordinate > this.gridWidth) this.horizontal.coordinate = this.gridWidth;
-    		if(this.horizontal.coordinate < 1) this.horizontal.coordinate = 1;
-    		
-    		if(this.vertical.coordinate + this.height - 1 > this.gridHeight) this.vertical.coordinate = this.gridHeight - this.height + 1;
-    		if(this.vertical.coordinate < 1) this.vertical.coordinate = 1;
-        }
     	void update(){
-        	this.ceilx = (int)Math.ceil(this.horizontal.coordinate + this.horizontal.coordinate);
-        	this.ceily = (int)Math.ceil(this.vertical.coordinate + this.vertical.coordinate);
+        	this.ceilx = (int)Math.ceil(2 * this.horizontal.coordinate);
+        	this.ceily = (int)Math.ceil(2 * this.vertical.coordinate);
         	
-    		double xLeft = (this.ceilx * 0.5) - this.horizontal.coordinate;
+    		double xLeft = (0.5 * this.ceilx) - this.horizontal.coordinate;
     		double xRight = 0.5 - xLeft;
 
-    		double yLeft = (this.ceily * 0.5) - this.vertical.coordinate;
+    		double yLeft = (0.5 * this.ceily) - this.vertical.coordinate;
     		double yRight = 0.5 - yLeft;
 
-    		this.area.sw = xLeft * yLeft;
-    		this.area.nw = xLeft * yRight;
-    		this.area.se = xRight * yLeft;
-    		this.area.ne = xRight * yRight;
+    		this.area_sw = xLeft * yLeft;
+    		this.area_nw = xLeft * yRight;
+    		this.area_se = xRight * yLeft;
+    		this.area_ne = xRight * yRight;
     	}
     	double cost(int legalX, int legalY){
-    		return (this.horizontal.coordinate - legalX) * (this.horizontal.coordinate - legalX) + (this.vertical.coordinate - legalY) * (this.vertical.coordinate - legalY);
-    	}
-    }
-    class Direction {
-    	double sw, se, nw, ne, sum;
-    	
-    	public Direction(){
-    		this.sw = 0.0;
-    		this.se = 0.0;
-    		this.ne = 0.0;
-    		this.nw = 0.0;
-    		this.sum = 0.0;
-    	}
-    	public void setSum(){
-    		this.sum = this.sw + this.nw + this.se + this.ne;
-    	}
-    }
-    class Area extends Direction {
-    	public Area(){
-    		super();
-    	}
-    }
-    class Force extends Direction {
-    	private double xgrid;
-    	private double ygrid;
-    	
-    	public Force(){
-    		super();
-    	}
-
-    	public double horizontal(){
-    		if(this.sum == 0){
-    			return 0.0;
-    		}else{
-        		return (this.sw + this.nw - this.se - this.ne + this.xgrid) / (this.sum + this.xgrid);
-    		}    	
-    	}
-    	public double vertical(){
-    		if(this.sum == 0){
-    			return 0;
-    		}else{
-    			return (this.sw - this.nw + this.se - this.ne + this.ygrid) / (this.sum + this.ygrid);
-    		}
+    		double horizontalDistance = this.horizontal.coordinate - legalX;
+    		double verticalDistance = this.vertical.coordinate - legalY;
+    		return Math.sqrt((horizontalDistance * horizontalDistance) + (verticalDistance * verticalDistance));
     	}
     }
     class Dimension {
     	double coordinate;
-    	double speed;
     	double force;
+    	double speed;
+    	double stepSize, speedAveraging, size;
 
-    	final double stepSize;
-    	final double speedAveraging;
-
-    	Dimension(double coordinate,  double stepSize, double speedAveraging){
+    	Dimension(double coordinate,  double stepSize, double speedAveraging, int size){
     		this.coordinate = coordinate;
-    		this.speed = 0;
-    		this.force = 0;
+    		this.force = 0.0;
+    		this.speed = 0.0;
+    		
+    		this.size = size;
 
     		this.stepSize = stepSize;
     		this.speedAveraging = speedAveraging;
@@ -323,144 +401,25 @@ class GradientLegalizer extends Legalizer {
     	void solve(){
     		if(this.force != 0.0){
     			double newSpeed = this.stepSize * this.force;
-
             	this.speed = this.speedAveraging * this.speed + (1 - this.speedAveraging) * newSpeed;
-
             	this.coordinate += this.speed;
+            	
+            	this.trim();
     		}
     	}
+    	void trim(){
+    		if(this.coordinate > this.size) this.coordinate = this.size;
+    		if(this.coordinate < 1) this.coordinate = 1;
+    	}
     }
-    
-    class Cluster {
-    	final int width, height;
-    	final MassMap massMap;
-    	
-    	final List<Block> blocks;
-    	final List<Cluster> clusters;
-    	
-    	double horizontalCenterOfMass, verticalCenterOfMass;
-    	
-    	Cluster(int width, int height){
-        	this.width = width;
-        	this.height = height;
-        	this.massMap = new MassMap(this.width, this.height);
-        	
-    		this.blocks = new ArrayList<>();
-    		this.clusters = new ArrayList<>();
-    	}
-    	
-    	public void addBlock(Block block){
-    		this.blocks.add(block);
-    	}
-    	public void addCluster(Cluster cluster){
-    		this.clusters.add(cluster);
-    	}
 
-        public void initializeMassMap(){
-        	this.massMap.reset();
-        	
-        	for(Block block:this.blocks){
-        		this.massMap.add(block);
-        	}
-        }
-        public void initializeMassMap(Cluster cluster){//TODO SLOW FUNCTIONALITY SPEED THIS UP
-        	this.massMap.reset();
-        	
-        	for(Block block:this.blocks){
-        		if(!cluster.blocks.contains(block)){
-        			this.massMap.add(block);
-        		}
-        	}
-        }
-        private void applyPushingBlockForces(double gridForce){
-        	this.massMap.setGridForce(gridForce);
-        	
-        	//this.initializeMassMap();
-        	
-        	int numBlocks = this.blocks.size();
-        	int iteration = 0;
-        	int numIterations = 250 * (int)Math.round(Math.pow((double)this.blocks.size(), 1.33));
-        	
-        	Random random = new Random();
-        	do{
-        		Block block = this.blocks.get(random.nextInt(numBlocks));
-        		this.massMap.setForce(block);
-        		this.massMap.substract(block);
-        		block.doForce(this.width, this.height);
-        		this.massMap.add(block);
-        		
-        		iteration++;
-        	}while(iteration < numIterations);
-        }
-		private void applyPushingClusterForces(double gridForce){
-        	this.massMap.setGridForce(gridForce);
-        	
-    		for(Cluster cluster:this.clusters){
-    			
-    			this.initializeMassMap(cluster);
-    			
-    			cluster.setCenterOffMass();
-    			
-        		double horizontalForce = 0.0;
-        		double verticalForce = 0.0;
-        		
-        		for(Block block:cluster.blocks){
-        			double force = this.massMap.getTotalForce(block);
-        			
-        			if(block.horizontal.coordinate < cluster.horizontalCenterOfMass){
-        				horizontalForce += force;
-        			}else{
-        				horizontalForce -= force;
-        			}
-        			
-        			if(block.vertical.coordinate < cluster.verticalCenterOfMass){
-        				verticalForce += force;
-        			}else{
-        				verticalForce -= force;
-        			}
-        		}
-
-        		horizontalForce /= 10 * cluster.blocks.size();
-        		verticalForce /= 10 * cluster.blocks.size();
-
-        		for(Block block:cluster.blocks){
-        			block.horizontal.setForce(horizontalForce);
-        			block.vertical.setForce(verticalForce);
-        		}
-        		
-        		for(Block block:cluster.blocks){
-        			this.massMap.substract(block);
-        			block.doForce(this.width, this.height);
-            		this.massMap.add(block);
-            	}
-        	}
-		}
-        public void setCenterOffMass(){
-        	double horizontal = 0.0;
-        	double vertical = 0.0;
-        	
-        	for(Block block:this.blocks){
-        		horizontal += block.horizontal.coordinate * block.height;
-        		vertical += block.vertical.coordinate * block.height;
-        	}
-        	
-        	this.horizontalCenterOfMass = horizontal / this.blocks.size();
-        	this.verticalCenterOfMass = vertical / this.blocks.size();
-        }
-    }
-    
     class MassMap {
-    	private final int width, height;
     	private final int gridWidth, gridHeight;
         private final double[][] massMap;
         
-        private double gridForce;
-        
         public MassMap(int width, int height){
-        	this.width = width;
-        	this.height = height;
-        	this.gridWidth = (this.width + 2) * 2;
-        	this.gridHeight = (this.height + 2) * 2;
+        	this.gridWidth = (width + 2) * 2;
+        	this.gridHeight = (height + 2) * 2;
 
         	this.massMap = new double[this.gridWidth][this.gridHeight];
         	
@@ -469,152 +428,349 @@ class GradientLegalizer extends Legalizer {
         public void reset(){
         	for(int x = 0; x < this.gridWidth; x++){
         		for(int y = 0; y < this.gridHeight; y++){
-        			this.massMap[x][y] = 0;
+        			this.massMap[x][y] = 0.0;
         		}
         	}
         }
-
-        public void setGridForce(double gridForce){
-        	this.gridForce = gridForce;
+        public double overlap(){
+        	double overlap = 0.0;
+        	for(int i = 0; i < this.gridWidth; i++){
+        		for(int j = 0; j < this.gridHeight; j++){
+        			if(this.massMap[i][j] > 0.25){
+        				overlap += this.massMap[i][j] - 0.25;
+        			}
+        		}
+        	}
+        	return overlap;
+        }
+        public double usedRegion(){
+        	double usedRegion = 0.0;
+        	for(int i = 0; i < this.gridWidth; i++){
+        		for(int j = 0; j < this.gridHeight; j++){
+        			if(this.massMap[i][j] > 0.0){
+        				usedRegion += 0.25;
+        			}
+        		}
+        	}
+        	return usedRegion;
         }
         public void setForce(Block block){
     		this.setPushingForce(block);
-    		//this.setGridForce(block);
 
-    		block.force.setSum();
+    		double mass = block.force_sw + block.force_nw + block.force_se + block.force_ne;
 
-    		block.horizontal.setForce(block.force.horizontal());
-    		block.vertical.setForce(block.force.vertical());
-        }
-        private void setPushingForce(Block block){//TODO Relative to center of mass
-        	int x = block.ceilx;
-    		int y = block.ceily;
-    		
-    		block.force.nw = 0.0;
-    		block.force.ne = 0.0;
-    		block.force.sw = 0.0;
-    		block.force.se = 0.0;
-
-        	for(int h = 0; h < block.height; h++){
-        		block.force.nw += block.area.sw * this.massMap[x - 1][y];
-        		block.force.nw += block.area.nw * this.massMap[x - 1][y + 1];
-        		block.force.nw += block.area.se * this.massMap[x][y];
-        		block.force.nw += block.area.ne * this.massMap[x][y + 1];
-
-        		block.force.ne += block.area.sw * this.massMap[x][y];
-        		block.force.ne += block.area.nw * this.massMap[x][y + 1];
-        		block.force.ne += block.area.se * this.massMap[x + 1][y];
-        		block.force.ne += block.area.ne * this.massMap[x + 1][y + 1];
-
-        		block.force.sw += block.area.sw * this.massMap[x - 1][y - 1];
-        		block.force.sw += block.area.nw * this.massMap[x - 1][y];
-        		block.force.sw += block.area.se * this.massMap[x][y - 1];
-        		block.force.sw += block.area.ne * this.massMap[x][y];
-
-        		block.force.se += block.area.sw * this.massMap[x][y - 1];
-        		block.force.se += block.area.nw * this.massMap[x][y];
-        		block.force.se += block.area.se * this.massMap[x + 1][y - 1];
-        		block.force.se += block.area.ne * this.massMap[x + 1][y];
-
-        		y += 2;
-    		}
-        }
-        private double getTotalForce(Block block){//TODO Relative to center of mass
-        	int x = block.ceilx;
-    		int y = block.ceily;
-    		
-    		double force = 0.0;
-
-        	for(int h = 0; h < block.height; h++){
-        		force += block.area.sw * this.massMap[x - 1][y];
-        		force += block.area.nw * this.massMap[x - 1][y + 1];
-        		force += block.area.se * this.massMap[x][y];
-        		force += block.area.ne * this.massMap[x][y + 1];
-
-        		force += block.area.sw * this.massMap[x][y];
-        		force += block.area.nw * this.massMap[x][y + 1];
-        		force += block.area.se * this.massMap[x + 1][y];
-        		force += block.area.ne * this.massMap[x + 1][y + 1];
-
-        		force += block.area.sw * this.massMap[x - 1][y - 1];
-        		force += block.area.nw * this.massMap[x - 1][y];
-        		force += block.area.se * this.massMap[x][y - 1];
-        		force += block.area.ne * this.massMap[x][y];
-
-        		force += block.area.sw * this.massMap[x][y - 1];
-        		force += block.area.nw * this.massMap[x][y];
-        		force += block.area.se * this.massMap[x + 1][y - 1];
-        		force += block.area.ne * this.massMap[x + 1][y];
-
-        		y += 2;
-    		}
+        	double horizontalForce = (block.force_sw + block.force_nw - block.force_se - block.force_ne) / mass;
+        	double verticalForce = (block.force_sw - block.force_nw + block.force_se - block.force_ne) / mass;
         	
-        	return force;
+        	block.horizontal.setForce(horizontalForce);
+        	block.vertical.setForce(verticalForce);
         }
-        private void setGridForce(Block block){
-        	//GridForce
-    		double xval = block.horizontal.coordinate - Math.floor(block.horizontal.coordinate);
-    		double yval = block.vertical.coordinate - Math.floor(block.vertical.coordinate);
+        private void setPushingForce(Block block){
+        	int x = block.ceilx;
+    		int y = block.ceily;
+    		
+    		block.force_nw = 0.0;
+    		block.force_ne = 0.0;
+    		block.force_sw = 0.0;
+    		block.force_se = 0.0;
 
-    		if(xval < 0.25){
-    			block.force.xgrid = - xval;
-    		}else if(xval < 0.75){
-    			block.force.xgrid = -0.5 + xval;
-    		}else{
-    			block.force.xgrid = 1 - xval;
-    		}
-	
-    		if(yval < 0.25){
-    			block.force.ygrid = - yval;
-    		}else if(yval < 0.75){
-    			block.force.ygrid = -0.5 + yval;
-    		}else{
-    			block.force.ygrid = 1 - yval;
-    		}
+        	for(int h = 0; h < block.height; h++){
+        		block.force_nw += block.area_sw * this.massMap[x - 1][y];
+        		block.force_nw += block.area_nw * this.massMap[x - 1][y + 1];
+        		block.force_nw += block.area_se * this.massMap[x][y];
+        		block.force_nw += block.area_ne * this.massMap[x][y + 1];
 
-    		block.force.xgrid *= this.gridForce;
-    		block.force.ygrid *= this.gridForce;
+        		block.force_ne += block.area_sw * this.massMap[x][y];
+        		block.force_ne += block.area_nw * this.massMap[x][y + 1];
+        		block.force_ne += block.area_se * this.massMap[x + 1][y];
+        		block.force_ne += block.area_ne * this.massMap[x + 1][y + 1];
+
+        		block.force_sw += block.area_sw * this.massMap[x - 1][y - 1];
+        		block.force_sw += block.area_nw * this.massMap[x - 1][y];
+        		block.force_sw += block.area_se * this.massMap[x][y - 1];
+        		block.force_sw += block.area_ne * this.massMap[x][y];
+
+        		block.force_se += block.area_sw * this.massMap[x][y - 1];
+        		block.force_se += block.area_nw * this.massMap[x][y];
+        		block.force_se += block.area_se * this.massMap[x + 1][y - 1];
+        		block.force_se += block.area_ne * this.massMap[x + 1][y];
+
+        		y += 2;
+    		}
         }
-
         public void add(Block block){
     		int x = block.ceilx;
     		int y = block.ceily;
 
     		for(int h = 0; h < block.height; h++){
-        		this.massMap[x - 1][y - 1] += block.area.sw;
-        		this.massMap[x][y - 1] += block.area.se + block.area.sw;
-        		this.massMap[x + 1][y - 1] += block.area.se;
+        		this.massMap[x - 1][y - 1] += block.area_sw;
+        		this.massMap[x][y - 1] += block.area_se + block.area_sw;
+        		this.massMap[x + 1][y - 1] += block.area_se;
 
-        		this.massMap[x - 1][y] += block.area.sw + block.area.nw;
+        		this.massMap[x - 1][y] += block.area_sw + block.area_nw;
         		this.massMap[x][y] += 0.25;
-        		this.massMap[x + 1][y] += block.area.se + block.area.ne;
+        		this.massMap[x + 1][y] += block.area_se + block.area_ne;
 
-        		this.massMap[x - 1][y + 1] += block.area.nw;
-        		this.massMap[x][y + 1] += block.area.nw + block.area.ne;
-        		this.massMap[x + 1][y + 1] += block.area.ne;
+        		this.massMap[x - 1][y + 1] += block.area_nw;
+        		this.massMap[x][y + 1] += block.area_nw + block.area_ne;
+        		this.massMap[x + 1][y + 1] += block.area_ne;
 
         		y += 2;
     		}
         }
-        public void substract(Block block){
+        public void remove(Block block){
     		int x = block.ceilx;
     		int y = block.ceily;
 
         	for(int h = 0; h < block.height; h++){
-            	this.massMap[x - 1][y - 1] -= block.area.sw;
-            	this.massMap[x][y - 1] -= block.area.se + block.area.sw;
-            	this.massMap[x + 1][y - 1] -= block.area.se;
+            	this.massMap[x - 1][y - 1] -= block.area_sw;
+            	this.massMap[x][y - 1] -= block.area_se + block.area_sw;
+            	this.massMap[x + 1][y - 1] -= block.area_se;
 
-            	this.massMap[x - 1][y] -= block.area.sw + block.area.nw;
+            	this.massMap[x - 1][y] -= block.area_sw + block.area_nw;
             	this.massMap[x][y] -= 0.25;
-            	this.massMap[x + 1][y] -= block.area.se + block.area.ne;
+            	this.massMap[x + 1][y] -= block.area_se + block.area_ne;
 
-            	this.massMap[x - 1][y + 1] -= block.area.nw;
-            	this.massMap[x][y + 1] -= block.area.nw + block.area.ne;
-            	this.massMap[x + 1][y + 1] -= block.area.ne;
+            	this.massMap[x - 1][y + 1] -= block.area_nw;
+            	this.massMap[x][y + 1] -= block.area_nw + block.area_ne;
+            	this.massMap[x + 1][y + 1] -= block.area_ne;
 
             	y += 2;
         	}
         }
+    }
+    
+    private void legalizeBlocks(){
+    	for(Block block:this.blocks){
+    		Column bestColumn = null;
+    		double bestCost = Double.MAX_VALUE;
+
+    		for(Column column:this.columns){
+    			if(Math.abs(column.index - block.horizontal.coordinate) < 15){
+	    			if(column.usedSize + block.height <= column.height){
+	        			double cost = column.tryBlock(block);
+	        			
+	        			if(cost < bestCost){
+	        				bestColumn = column;
+	        				bestCost = cost;
+	        			}
+	    			}
+    			}
+    		}
+    		bestColumn.addBlock(block);
+    	}
+    	
+    	//Update block coordinates
+    	for(Block block:this.blocks){
+    		block.processed = false;
+    	}
+    	for(Column column:this.columns){
+    		for(Site site:column.sites){
+    			if(site.hasBlock()){
+    				Block block = site.block;
+    				if(!block.processed){
+    					block.horizontal.coordinate = site.x;
+    					block.vertical.coordinate = site.y;
+            			block.processed = true;
+    				}
+    			}
+    		}
+    	}
+    }
+    
+    private class Column{
+    	final int index, height;
+
+    	final Site[] sites;
+
+    	int usedSize;
+
+    	Site lastUsedSite, oldLastUsedSite;
+    	Site firstFreeSite, oldFirstFreeSite;
+
+    	double cost, oldCost;
+
+    	Column(int index, int size){
+    		this.index = index;
+    		this.height = size;
+    		
+    		this.sites = new Site[this.height];
+    		for(int i = 0; i < this.height; i++){
+    			this.sites[i] = new Site(this.index, i + 1);
+    		}
+    		for(int i = 0; i < this.height; i++){
+    			if(i > 0) this.sites[i].previous = this.sites[i - 1];
+    			if(i < this.height - 1) this.sites[i].next = this.sites[i + 1];
+    		}
+
+    		this.usedSize = 0;
+    		this.cost = 0.0;
+    	}
+    	
+    	private void saveState(){
+    		for(Site site:this.sites){
+    			site.saveState();
+    		}
+    		this.oldLastUsedSite = this.lastUsedSite;
+    		this.oldFirstFreeSite = this.firstFreeSite;
+    		
+    		this.oldCost = this.cost;
+    	}
+    	private void restoreState(){
+    		for(Site site:this.sites){
+    			site.restoreState();
+    		}
+    		this.lastUsedSite = this.oldLastUsedSite;
+    		this.firstFreeSite = this.oldFirstFreeSite;
+    		
+    		this.cost = this.oldCost;
+    	}
+    	private double tryBlock(Block block){
+    		this.saveState();
+
+    		double oldCost = this.cost;
+    		this.addBlock(block);
+    		double newCost = this.cost;
+
+    		this.removeBlock(block);
+    		this.restoreState();
+
+    		return newCost - oldCost;
+    	}
+    	private void addBlock(Block block){
+    		this.usedSize += block.height;
+
+    		int optimalY = Math.max(Math.min((int)Math.round(block.vertical.coordinate - 1), this.height - 1),  0);
+    		
+    		Site bestSite = this.sites[optimalY];
+    		if(bestSite.hasBlock()){
+        		Site currentSite = this.lastUsedSite;
+        		for(int s = 0; s < block.height; s++){
+        			if(currentSite.next == null){
+        				this.move();
+        			}else{
+        				currentSite = currentSite.next;
+        			}
+        		}
+
+        		bestSite = this.lastUsedSite.next;
+
+        		this.putBlock(block, bestSite);
+    		}else{
+    			Site currentSite = bestSite;
+        		for(int s = 0; s < block.height - 1; s++){
+        			if(currentSite.next == null){
+        				bestSite = bestSite.previous;
+        				if(bestSite.hasBlock()){
+        					this.lastUsedSite = bestSite;
+        					this.move();
+        				}
+        			}else{
+        				currentSite = currentSite.next;
+        			}
+        		}
+        		this.putBlock(block, bestSite);
+    		}
+			this.minimumCostShift();
+    	}
+    	private void putBlock(Block block, Site site){
+    		for(int s = 0; s < block.height; s++){
+    			if(site == null){
+    				System.out.println("Not enough space to put block at end of column");
+    			}else{
+    				site.setBlock(block);
+    				this.lastUsedSite = site;
+    				this.cost += site.block.cost(site.x, site.y);
+
+        			site = site.next;
+    			}
+    		}
+    	}
+    	private void removeBlock(Block block){
+    		this.usedSize -= block.height;
+    	}
+    	private boolean move(){
+    		this.firstFreeSite = this.lastUsedSite;
+    		while(this.firstFreeSite.hasBlock()){
+    			this.firstFreeSite = this.firstFreeSite.previous;
+    			
+    			if(this.firstFreeSite == null){
+    				return false;
+    			}
+    		}
+
+    		Site currentSite = this.firstFreeSite;
+    		while(currentSite != this.lastUsedSite){
+
+    			this.cost -= currentSite.next.block.cost(currentSite.next.x, currentSite.next.y);
+    			currentSite.block = currentSite.next.block;
+    			this.cost += currentSite.block.cost(currentSite.x, currentSite.y);
+
+    			currentSite = currentSite.next;
+    		}
+    		this.lastUsedSite.block = null;
+    		this.lastUsedSite = this.lastUsedSite.previous;
+
+    		return true;
+    	}
+    	private void revert(){
+    		this.lastUsedSite = this.lastUsedSite.next;
+    		Site currentSite = this.lastUsedSite;
+    		while(currentSite != this.firstFreeSite){
+    			this.cost -= currentSite.previous.block.cost(currentSite.previous.x, currentSite.previous.y);
+    			currentSite.block = currentSite.previous.block;
+    			this.cost += currentSite.block.cost(currentSite.x, currentSite.y);
+
+    			currentSite = currentSite.previous;
+    		}
+    		this.firstFreeSite.block = null;
+    	}
+    	private void minimumCostShift(){
+    		double minimumCost = this.cost;
+    		while(this.move()){
+    			double cost = this.cost;
+    			if(cost < minimumCost){
+    				minimumCost = cost;
+    			}else{
+    				revert();
+    				return;
+    			}
+    		}
+    	}
+	}
+    class Site {
+    	final int x,y;
+    	
+    	Block block, oldBlock;
+    	
+    	Site previous;
+    	Site next;
+    	
+    	public Site(int x, int y){
+    		this.x = x;
+    		this.y = y;
+    		this.block = null;
+    	}
+    	boolean hasBlock(){
+    		return this.block != null;
+    	}
+    	void setBlock(Block block){
+    		this.block = block;
+    	}
+    	
+    	void saveState(){
+    		this.oldBlock = this.block;
+    	}
+    	void restoreState(){
+    		this.block = this.oldBlock;
+    	}
+    }
+    public static class Comparators {
+    	public static Comparator<Block> VERTICAL = new Comparator<Block>() {
+    		@Override
+    		public int compare(Block b1, Block b2) {
+    			return Double.compare(b1.vertical.coordinate, b2.vertical.coordinate);
+    		}
+    	};
     }
 }

@@ -368,7 +368,8 @@ public class Main {
         this.logger.println("Circuit statistics:");
         this.logger.printf("   clb: %d\n      lut: %d\n      ff: %d\n   hardblock: %d\n      PLL: %d\n      DSP: %d\n      M9K: %d\n      M144K: %d\n   io: %d\n\n",
                 numClb, numLut, numFf, numHardBlock, numPLL, numDSP, numM9K, numM144K, numIo);
-        this.logger.print("   Dense: " + this.circuit.dense() + "\n");
+        this.logger.print("   CLB usage ratio: " + String.format("%.2f",this.circuit.ratioUsedCLB())  + "\n");
+        this.logger.print("   Dense circuit: " + this.circuit.dense() + "\n");
         this.logger.print("   Num pins: " + numPins + "\n\n");
     }
 

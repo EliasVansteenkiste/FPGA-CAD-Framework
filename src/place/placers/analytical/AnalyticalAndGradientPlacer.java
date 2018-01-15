@@ -271,8 +271,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 this.addDummyNet(block);
             }
         }
-
-
+        
         //Separate solving
         int numIterations = this.numIterations();
         this.solveSeparate = new boolean[numIterations];
@@ -288,10 +287,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         	}
         }
         this.logger.println("Solve separate: " + recalculationsString + "\n");
-
+        
         this.stopTimer(T_INITIALIZE_DATA);
     }
-
+    
     private void addDummyNet(NetBlock sourceBlock) {
         // These dummy nets are needed for the analytical
         // placer. If they are not added, diagonal elements
@@ -350,8 +349,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
     }
-
-
+    
     @Override
     protected void doPlacement() {
 
@@ -388,11 +386,11 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             double timerEnd = System.nanoTime();
             double time = (timerEnd - timerBegin) * 1e-9;
-
+            
             this.printStatistics(iteration, time);
             
             isLastIteration = this.stopCondition(iteration);
-
+            
             iteration++;
         }
         

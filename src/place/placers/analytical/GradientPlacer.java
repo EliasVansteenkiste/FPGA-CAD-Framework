@@ -23,6 +23,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         O_LEARNING_RATE_START = "learning rate start",
         O_LEARNING_RATE_STOP = "learning rate stop",
+        
+        O_STEP_SIZE_START = "step size start",
+        O_STEP_SIZE_STOP = "step size stop",
 
         O_MAX_CONN_LENGTH_RATIO_SPARSE = "max conn length ratio sparse",
         O_MAX_CONN_LENGTH_DENSE = "max conn length dense",
@@ -47,7 +50,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
-                new Double(0.85));
+                new Double(0.8));
 
         options.add(
                 O_LEARNING_RATE_START,
@@ -58,7 +61,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
                 new Double(0.2));
-
+        
+        options.add(
+                O_STEP_SIZE_START,
+                "initial step size in gradient cluster legalizer",
+                new Double(0.4));
+        
+        options.add(
+                O_STEP_SIZE_STOP,
+                "final step size in gradient cluster legalizer",
+                new Double(0.075));
+        
         options.add(
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
                 "maximum connection length in sparse placement is ratio of circuit width",
@@ -87,7 +100,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL,
                 "number of solve-legalize iterations",
-                new Integer(30));
+                new Integer(20));
 
         options.add(
                 O_INNER_EFFORT_LEVEL_START,
@@ -102,6 +115,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double anchorWeight;
     protected final double anchorWeightStop, anchorWeightExponent;
 
+    private final double stepSizeStart, stepSizeStop;
+    
     private final double maxConnectionLength;
     protected double learningRate, learningRateMultiplier;
     private final double beta1, beta2, eps;
@@ -147,6 +162,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP);
     	this.effortLevel = this.effortLevelStart;
     	
+    	this.stepSizeStart =  this.options.getDouble(O_STEP_SIZE_START);
+    	this.stepSizeStop =  this.options.getDouble(O_STEP_SIZE_STOP);
+    	
     	this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL) + 1;
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
@@ -173,26 +191,50 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         super.initializeData();
 
         this.startTimer(T_INITIALIZE_DATA);
-
-        //this.legalizer = new HeapLegalizer(
-        this.legalizer = new GradientLegalizerFlatFast(
-                this.circuit,
-                this.blockTypes,
-                this.blockTypeIndexStarts,
-                this.numIterations,
-                this.linearX,
-                this.linearY,
-                this.legalX,
-                this.legalY,
-                this.heights,
-                this.leafNode,
-                this.visualizer,
-                this.nets,
-                this.netBlocks,
-                this.logger);
-        this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
-        this.legalizer.addSetting("step_size", 3, 0.5);
-        this.legalizer.addSetting("speed_averaging", 0.75, 0.2);
+        
+        if(this.circuit.ratioUsedCLB() > 0.8){
+        	this.legalizer = new HeapLegalizer(
+                    this.circuit,
+                    this.blockTypes,
+                    this.blockTypeIndexStarts,
+                    this.numIterations,
+                    this.linearX,
+                    this.linearY,
+                    this.legalX,
+                    this.legalY,
+                    this.heights,
+                    this.leafNode,
+                    this.visualizer,
+                    this.nets,
+                    this.netBlocks,
+                    this.logger);
+            this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
+        }else{
+            double widthFactor = Math.pow((1.0 * this.circuit.getWidth()) / 100.0, 1.2);
+            this.logger.println("------------------");
+            this.logger.println("Circuit width: " + this.circuit.getWidth());
+            this.logger.println("Width factor: " + String.format("%.2f", widthFactor));
+            this.logger.println("------------------\n");
+            
+            this.legalizer = new GradientLegalizer(
+                    this.circuit,
+                    this.blockTypes,
+                    this.blockTypeIndexStarts,
+                    this.numIterations,
+                    this.linearX,
+                    this.linearY,
+                    this.legalX,
+                    this.legalY,
+                    this.heights,
+                    this.leafNode,
+                    this.visualizer,
+                    this.nets,
+                    this.netBlocks,
+                    this.logger);
+            this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
+            this.legalizer.addSetting("step_size", widthFactor * this.stepSizeStart, widthFactor * this.stepSizeStop);
+            this.legalizer.addSetting("speed_averaging", 0.2, 0.2);
+        }
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
