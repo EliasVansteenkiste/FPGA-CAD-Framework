@@ -191,12 +191,8 @@ class GradientLegalizer extends Legalizer {
 		for(Cluster cluster:this.clusters){
     		this.initializeMassMap(cluster);
     		
-    		//if(doVisual) this.addVisual(cluster);
-    		
     		for(int i = 0; i < numIterations; i++){
     			this.applyPushingBlockForces(cluster);
-    			
-    			//if(doVisual) this.addVisual(cluster);
     		}
     	}
     }
@@ -242,7 +238,9 @@ class GradientLegalizer extends Legalizer {
     }
     private boolean finalIteration(double overlap){
     	this.overlapHistory.add(overlap);
-    	if(overlap < this.requiredOverlap){
+    	if(this.overlapHistory.size() > 50){
+    		return true;
+    	}else if(overlap < this.requiredOverlap){
     		this.logger.println("Stop condition is the required overlap");
     		return true;
     	}else if(this.overlapHistory.size() > 10){
@@ -288,20 +286,6 @@ class GradientLegalizer extends Legalizer {
     }
     
     //Visual
-    private void addVisual(Cluster cluster){
-    	double[] coorX = new double[this.linearX.length];
-		double[] coorY = new double[this.linearY.length];
-		
-		for(int i = 0; i < this.linearX.length; i++){
-			coorX[i] = -1;
-			coorY[i] = -1;
-		}
-		for(Block block:cluster.blocks){
-			coorX[block.index] = block.horizontal.coordinate;
-			coorY[block.index] = block.vertical.coordinate;
-		}
-		this.addVisual("Cluster: " + cluster.id, coorX, coorY);
-    }
     private void addVisual(String name){
     	double[] coorX = new double[this.linearX.length];
 		double[] coorY = new double[this.linearY.length];
