@@ -28,6 +28,9 @@ class GradientLegalizer extends Legalizer {
     
     private final MassMap massMap;
     
+    private double requiredOverlap;
+    private List<Double> overlapHistory;
+    
     private static final boolean doVisual = false;
 
     GradientLegalizer(
@@ -165,6 +168,9 @@ class GradientLegalizer extends Legalizer {
 
     //Spreading
     private void doSpreading(){
+    	this.overlapHistory = new ArrayList<>();
+    	this.requiredOverlap = this.blocks.size() * 0.01;
+    	
     	int iteration = 0;
     	this.initializeMassMap();
     	while(this.massMap.overlap() / this.blocks.size() > 0.33){
@@ -178,19 +184,19 @@ class GradientLegalizer extends Legalizer {
     		
     		this.initializeMassMap();
     	}
-    	this.moveBlocks(200);
+    	this.moveBlocks();
     	if(doVisual) this.addVisual("final");
     }
     public void spreadClusters(int numIterations){
 		for(Cluster cluster:this.clusters){
     		this.initializeMassMap(cluster);
     		
-    		if(doVisual) this.addVisual(cluster);
+    		//if(doVisual) this.addVisual(cluster);
     		
     		for(int i = 0; i < numIterations; i++){
     			this.applyPushingBlockForces(cluster);
     			
-    			if(doVisual) this.addVisual(cluster);
+    			//if(doVisual) this.addVisual(cluster);
     		}
     	}
     }
@@ -222,18 +228,54 @@ class GradientLegalizer extends Legalizer {
         	}
     	}
 	}
-    public void moveBlocks(int numIterations){
+    public void moveBlocks(){
     	this.initializeMassMap();
-    	for(int i = 0; i < numIterations; i++){
-    		this.applyPushingBlockForces();
+    	
+    	int counter = 0;
+    	
+    	while(!this.finalIteration(this.massMap.overlap())){
+    		this.applyPushingBlockForces(10);
+    		counter += 10;
     	}
+    	
+    	this.logger.println("The gradient legalizer required " + counter + " iterations to legalize the blocks");
     }
-    private void applyPushingBlockForces(){
-    	for(Block block: this.blocks){
-    		this.massMap.setForce(block);
-    		this.massMap.remove(block);
-    		block.doForce();
-    		this.massMap.add(block);
+    private boolean finalIteration(double overlap){
+    	this.overlapHistory.add(overlap);
+    	if(overlap < this.requiredOverlap){
+    		this.logger.println("Stop condition is the required overlap");
+    		return true;
+    	}else if(this.overlapHistory.size() > 10){
+    		double max = this.overlapHistory.get(this.overlapHistory.size() - 1);
+    		double min = this.overlapHistory.get(this.overlapHistory.size() - 1);
+
+    		for(int i = 0; i < 10; i++){
+    			double value = this.overlapHistory.get(this.overlapHistory.size() - 1 - i);
+    			if(value > max){
+    				max = value;
+    			}
+    			if(value < min){
+    				min = value;
+    			}
+    		}
+    		
+    		double ratio = max / min;
+    		if(ratio < 1.1){
+    			this.logger.println("Stop condition is the rico");
+    			return true;
+    		}
+    	}
+    	return false;
+	}
+    
+    private void applyPushingBlockForces(int numIterations){
+    	for(int i = 0; i < numIterations; i++){
+        	for(Block block: this.blocks){
+        		this.massMap.setForce(block);
+        		this.massMap.remove(block);
+        		block.doForce();
+        		this.massMap.add(block);
+        	}
     	}
     }
     private void applyPushingBlockForces(Cluster cluster){
