@@ -169,7 +169,7 @@ abstract class Legalizer {
             }
 
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
-            	this.legalizeBlockType(blocksStart, blocksEnd);
+            	this.legalizeBlockType(blocksStart, blocksEnd);//CLBs are still legalized by HeAP
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
 //        		this.legalizeBlockType(blocksStart, blocksEnd);//TODO change to HeAP legalizer
         		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.quality);

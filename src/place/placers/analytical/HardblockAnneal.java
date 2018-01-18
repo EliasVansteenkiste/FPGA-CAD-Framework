@@ -127,23 +127,23 @@ public class HardblockAnneal {
 				block.setOptimalSite();
 			}
 		}
-//		TODO print cost for each column
-		for(Net net:nets){
-			net.initializeConnectionCost();
-		}
-		for(Crit crit:crits){
-			crit.initializeTimingCost();
-		}
-		
-		double sacost = 0.0;
-		for(Net net:nets){
-			sacost += net.connectionCost();
-		}
-		for(Crit crit:crits){
-			sacost += crit.timingCost();
-		}
+////		TODO print cost for each column
+//		for(Net net:nets){
+//			net.initializeConnectionCost();
+//		}
+//		for(Crit crit:crits){
+//			crit.initializeTimingCost();
+//		}
+//		
+//		double sacost = 0.0;
+//		for(Net net:nets){
+//			sacost += net.connectionCost();
+//		}
+//		for(Crit crit:crits){
+//			sacost += crit.timingCost();
+//		}
 //		System.out.println(" ->SAminCost "+ String.format("%.2f",  sacost));
-		if(printStatistics) System.out.println();
+//		if(printStatistics) System.out.println();
 	}
 	private boolean finalIteration(double cost){
 		this.costHistory.add(this.cost);

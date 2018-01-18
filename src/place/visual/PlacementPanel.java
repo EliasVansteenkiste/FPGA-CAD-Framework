@@ -304,7 +304,7 @@ public class PlacementPanel extends JPanel {
   	    		String s = "[" + coorX + "," + coorY + "]";
   	    		GlobalBlock globalBlock = this.getGlobalBlock(coorX, coorY);
   	    		if(globalBlock != null){
-  	    			s += " " + globalBlock.getName();
+  	    			s += " " + globalBlock.getIndex();//.getName();//TODO getIndex
   	    		}
   	        	int fontSize = 20;
   	      		g.setFont(new Font("TimesRoman", Font.BOLD, fontSize));

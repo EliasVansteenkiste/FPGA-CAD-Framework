@@ -265,35 +265,36 @@ public class HardblockConnectionLegalizer{
 		for(Column column:columns){
 			if(column.usedPos() > 0){
 				
-				Set<Net> columnNets = new HashSet<>();
-				Set<Crit> columnCrits = new HashSet<>();
-				for(Block block:column.blocks){
-					for(Net net:block.nets){
-						columnNets.add(net);
-					}
-					for(Crit crit:block.crits){
-						columnCrits.add(crit);
-					}
-				}
-				for(Net net:columnNets){
-					net.initializeConnectionCost();
-				}
-				for(Crit crit:columnCrits){
-					crit.initializeTimingCost();
-				}
-
-				double cost = 0.0;
-				for(Net net:columnNets){
-					cost += net.connectionCost();
-				}
-				for(Crit crit:columnCrits){
-					cost += crit.timingCost();
-				}
-				System.out.printf(this.blockType + " column" +  + column.coordinate + " => Num sites: " + column.sites.length + " => Num blocks: " + column.blocks.size());
-				System.out.printf(" ->columncost " + String.format("%.2f", cost));
+//				Set<Net> columnNets = new HashSet<>();
+//				Set<Crit> columnCrits = new HashSet<>();
+//				for(Block block:column.blocks){
+//					for(Net net:block.nets){
+//						columnNets.add(net);
+//					}
+//					for(Crit crit:block.crits){
+//						columnCrits.add(crit);
+//					}
+//				}
+//				for(Net net:columnNets){
+//					net.initializeConnectionCost();
+//				}
+//				for(Crit crit:columnCrits){
+//					crit.initializeTimingCost();
+//				}
+//
+//				double cost = 0.0;
+//				for(Net net:columnNets){
+//					cost += net.connectionCost();
+//				}
+//				for(Crit crit:columnCrits){
+//					cost += crit.timingCost();
+//				}
+//				System.out.printf(this.blockType + " column" +  + column.coordinate + " => Num sites: " + column.sites.length + " => Num blocks: " + column.blocks.size());
+//				System.out.printf(" ->columncost " + String.format("%.2f", cost));
 			
 //				System.out.printf(this.blockType + "" + column.index + " ->numSites " + column.sites.length + " ->numBlocks " + column.blocks.size());
 				this.hardblockAnneal.doAnneal(column, quality);
+				System.out.println(this.blockType + "" + column.index  + " Num blocks -> " + column.blocks.size());
 //				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE);//TODO
 				
 				
@@ -304,37 +305,37 @@ public class HardblockConnectionLegalizer{
 
 		//Finish
 		this.updateLegal(legalizeBlocks);
-		for(Column c : columns){
-			if(c.usedPos() > 0){
-				Set<Net> columnNets = new HashSet<>();
-				Set<Crit> columnCrits = new HashSet<>();
-				for(Block block:c.blocks){
-					for(Net net:block.nets){
-						columnNets.add(net);
-					}
-					for(Crit crit:block.crits){
-						columnCrits.add(crit);
-					}
-				}
-				
-				for(Net net:columnNets){
-					net.initializeConnectionCost();
-				}
-				for(Crit crit:columnCrits){
-					crit.initializeTimingCost();
-				}
-
-				double cost = 0.0;
-				for(Net net:columnNets){
-					cost += net.connectionCost();
-				}
-				for(Crit crit:columnCrits){
-					cost += crit.timingCost();
-				}
-				System.out.printf(this.blockType + " column" +  + c.index + " => Num sites: " + c.sites.length + " => Num blocks: " + c.blocks.size());
-				System.out.println(" ->finalcost " + String.format("%.2f", cost));
-			}
-		}
+//		for(Column c : columns){
+//			if(c.usedPos() > 0){
+//				Set<Net> columnNets = new HashSet<>();
+//				Set<Crit> columnCrits = new HashSet<>();
+//				for(Block block:c.blocks){
+//					for(Net net:block.nets){
+//						columnNets.add(net);
+//					}
+//					for(Crit crit:block.crits){
+//						columnCrits.add(crit);
+//					}
+//				}
+//				
+//				for(Net net:columnNets){
+//					net.initializeConnectionCost();
+//				}
+//				for(Crit crit:columnCrits){
+//					crit.initializeTimingCost();
+//				}
+//
+//				double cost = 0.0;
+//				for(Net net:columnNets){
+//					cost += net.connectionCost();
+//				}
+//				for(Crit crit:columnCrits){
+//					cost += crit.timingCost();
+//				}
+//				System.out.printf(this.blockType + " column" +  + c.index + " => Num sites: " + c.sites.length + " => Num blocks: " + c.blocks.size());
+//				System.out.println(" ->finalcost " + String.format("%.2f", cost));
+//			}
+//		}
 		this.cleanData();
 		
 		this.timingTree.time("Legalize " + blockType + " hardblock");
@@ -391,7 +392,7 @@ public class HardblockConnectionLegalizer{
 		this.timingTree.time("Find best site for all IO blocks based on minimal displacement cost");
 
 		//Anneal the IOs to find a good placement
-		System.out.printf(this.blockType + "->numBlocks"+ legalizeBlocks.length);
+//		System.out.printf(this.blockType + "->numBlocks"+ legalizeBlocks.length);
 		this.hardblockAnneal.doAnneal(legalizeBlocks, legalizeSites, quality);
 		
 		this.updateLegal(legalizeBlocks);
