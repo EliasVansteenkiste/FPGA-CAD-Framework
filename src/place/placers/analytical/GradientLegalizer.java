@@ -184,7 +184,8 @@ class GradientLegalizer extends Legalizer {
     		
     		this.initializeMassMap();
     	}
-    	this.moveBlocks();
+    	//this.moveBlocks();
+    	this.moveBlocks(200);
     	if(doVisual) this.addVisual("final");
     }
     public void spreadClusters(int numIterations){
@@ -224,6 +225,10 @@ class GradientLegalizer extends Legalizer {
         	}
     	}
 	}
+    public void moveBlocks(int numIterations){
+    	this.initializeMassMap();
+    	this.applyPushingBlockForces(numIterations);
+    }
     public void moveBlocks(){
     	this.initializeMassMap();
     	
@@ -238,9 +243,7 @@ class GradientLegalizer extends Legalizer {
     }
     private boolean finalIteration(double overlap){
     	this.overlapHistory.add(overlap);
-    	if(this.overlapHistory.size() > 50){
-    		return true;
-    	}else if(overlap < this.requiredOverlap){
+    	if(overlap < this.requiredOverlap){
     		this.logger.println("Stop condition is the required overlap");
     		return true;
     	}else if(this.overlapHistory.size() > 10){
