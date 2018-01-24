@@ -114,12 +114,6 @@ public class HardblockSwarm {
 		System.out.println(blockType + "" + column.index + " numNets -> " + this.columnNets.size() + " numCrits -> " + this.columnCrits.size() + " numBlocks -> " + this.numBlocks);
 		this.numParticles = numParticles;
 		
-		for(int i = 0; i < this.numParticles; i++){
-			Particle particle = new Particle(i, this.numSites);
-			particle.setPCrits(this.columnCrits);
-			particle.setPCrits(this.columnCrits);
-		}
-		
 		this.gBestIndexList = new int[this.numSites];
 		
 //		System.out.printf(this.blockType + " column" +  + column.coordinate + " => Num sites: " + this.numSites + " => Num blocks: " + this.numBlocks);
@@ -202,7 +196,7 @@ public class HardblockSwarm {
 		}
 	}
 	private void setBlockLegal(){
-//		System.out.println(" psogBest -> " + String.format("%.2f",  this.gBest));
+		System.out.println(" psogBest -> " + String.format("%.2f",  this.gBest));
 		if(!this.printout){
 			System.out.println("legalized blocks' order");
 			for(int m = 0; m < this.numSites; m++){
@@ -243,7 +237,11 @@ public class HardblockSwarm {
 		this.swarm.clear();
 		
 //		Particle baseLineParticle = new Particle(0, this.numSites);
-//		baseLineParticle.pBest = this.getCost();
+//		baseLineParticle.setPNets(this.columnNets);
+//		baseLineParticle.setPCrits(this.columnCrits);
+//		baseLineParticle.pCost = baseLineParticle.getCost();
+//		baseLineParticle.pBest = baseLineParticle.pCost;
+//		System.out.println(baseLineParticle.pCost);
 //		this.swarm.add(baseLineParticle);
 //		int j = 0;
 //		for(Site site : this.sites){
@@ -273,7 +271,7 @@ public class HardblockSwarm {
 				}
 				site.setBlock(block);
 //				block.setLegal(site.column, site.row);
-				block.setLegalXY(site.column, site.row);//(((((no mistake here)))))
+				block.setLegalXY(site.column, site.row);
 				
 			}
 			this.timingTree.time("randomly assign blocks");
@@ -576,6 +574,8 @@ public class HardblockSwarm {
 			this.numSites = numSites;
 			
 			this.velocity = new ArrayList<Swap>();
+			this.pCrits = new HashSet<>();
+			this.pNets = new HashSet<>();
 			this.blockIndexList = new int[numSites];
 			this.pCost = 0.0;
 			this.pBest = 0.0;
@@ -592,10 +592,12 @@ public class HardblockSwarm {
 //			System.out.println(this.velocity.size());
 		}
 		private void setPNets(Set<Net> columnNets){
-			this.pNets = new HashSet<Net>(columnNets);
+			this.pNets.clear();
+			this.pNets.addAll(columnNets);
 		}
 		private void setPCrits(Set<Crit> columnCrits){
-			this.pCrits = new HashSet<Crit>(columnCrits);
+			this.pCrits.clear();
+			this.pCrits.addAll(columnCrits);
 		}
 		private double getCost(){
 			double cost = 0.0;

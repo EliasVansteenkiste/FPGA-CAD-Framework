@@ -276,7 +276,6 @@ public class HardblockSwarmLegalizer{
 //						columnCrits.add(crit);
 //					}
 //				}
-//
 //				double cost = 0.0; 
 //				for(Net net:columnNets){
 //					cost += net.connectionCost();
@@ -291,9 +290,10 @@ public class HardblockSwarmLegalizer{
 ////						System.out.println(0);
 ////				}
 //				System.out.printf(this.blockType + " column" +  + column.coordinate + " => Num sites: " + column.sites.length + " => Num blocks: " + column.blocks.size());
-//				System.out.printf(" ->initialcost " + String.format("%.2f", cost));
+//				System.out.println(" ->initialcost " + String.format("%.2f", cost));
 				 
 				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE);
+//				this.hardblockAnneal.doAnneal(column, quality);
 			}	
 		}
 		this.timingTree.time("Anneal columns");
@@ -302,6 +302,7 @@ public class HardblockSwarmLegalizer{
 		this.updateLegal(legalizeBlocks);
 		
 		//TODO test////////////////////////////////////////////////////////////////////
+//		//the cost here cannot represent the final global best column cost after pso(other columns also changed)	
 //		for(Column c : columns){
 //			if(c.usedPos() > 0){
 //				Set<Net> columnNets = new HashSet<>();
@@ -527,7 +528,7 @@ public class HardblockSwarmLegalizer{
 		//for pso initialization
 		void setLegalXY(int x, int y){
 			int oldY = this.legalY;
-			if(this.legalY != y){
+			if(oldY != y){
 				this.legalY = y;
 				for(Net net:this.nets) net.updateVertical(oldY, this.legalY);
 				for(Crit crit:this.crits) crit.updateVertical();
@@ -544,28 +545,22 @@ public class HardblockSwarmLegalizer{
 		}
 		//save []data for nets and crits after one particle has been initialized
 		void saveData(int i){
-			this.legalXs[i] = this.legalX;
-			this.legalYs[i] = this.legalY;
+			this.saveLegalXY(i);
 			for(Net net:this.nets){
-				net.minXs[i] = net.minX;
-				net.maxXs[i] = net.maxX;
-				net.minYs[i] = net.minY;
-				net.maxYs[i] = net.maxY;
-				net.verticalSaved[i] = false;
+				net.saveData(i);
 			}
 			for(Crit crit:this.crits){
-				crit.minXs[i] = crit.minX;
-				crit.maxXs[i] = crit.maxX;
-				crit.minYs[i] = crit.minY;
-				crit.maxYs[i] = crit.maxY;
-				crit.verticalSaved[i] = false;
+				crit.saveData(i);
 			}
+		}
+		void saveLegalXY(int i){
+			this.legalXs[i] = this.legalX;
+			this.legalYs[i] = this.legalY;
 		}
 		void saveStates(int i){
 			if(!this.verticalSaved[i]){
 				this.oldLegalXs[i] = this.legalXs[i];
 				this.oldLegalYs[i] = this.legalYs[i];
-				this.verticalSaved[i] = true;
 			}
 		}
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -913,6 +908,18 @@ public class HardblockSwarmLegalizer{
             }
         }
 		//TODO for PSO net.minXs[] minYs[] maxXs[] maxYs[]///////////////////////////////////////////////////
+		void saveData(int i){
+			this.saveMinMax(i);
+			for(Block block:this.blocks){
+				block.saveLegalXY(i);
+			}
+		}
+		void saveMinMax(int i){
+			this.minXs[i] = this.minX;
+			this.maxXs[i] = this.maxX;
+			this.minYs[i] = this.minY;
+			this.maxYs[i] = this.maxY;
+		}
 		void updateVertical(int oldY, int newY){
 //			int oldMinY = this.minY;
 //			int oldMaxY = this.maxY;
@@ -957,16 +964,18 @@ public class HardblockSwarmLegalizer{
 			}
         }
 		void updateMinYs(int i, int oldY, int newY){
-			if(newY <= this.minYs[i]){
+			int tmp = this.minYs[i];
+			if(newY <= tmp){
             	this.minYs[i] = newY;
-			}else if(oldY == this.minYs[i]){
+			}else if(oldY == tmp){
 				this.minYs[i] = this.getMinYs(i);
             }
 		}
 		void updateMaxYs(int i, int oldY, int newY){
-			if(newY >= this.maxYs[i]){
+			int tmp = this.maxYs[i];
+			if(newY >= tmp){
             	this.maxYs[i] = newY;
-            }else if(oldY == this.maxYs[i]){
+            }else if(oldY == tmp){
             	this.maxYs[i] = this.getMaxYs(i);
             }
 		}
@@ -1190,6 +1199,17 @@ public class HardblockSwarmLegalizer{
 		}
 		
 		///////////////////////////TODO ////for pso///////////////////////////////////////////
+		void saveData(int i){
+			this.saveMinMax(i);
+			this.sourceBlock.saveLegalXY(i);
+			this.sinkBlock.saveLegalXY(i);
+		}
+		void saveMinMax(int i){
+			this.minXs[i] = this.minX;
+			this.maxXs[i] = this.maxX;
+			this.minYs[i] = this.minY;
+			this.maxYs[i] = this.maxY;
+		}
 		void updateVertical(){
 //			this.saveState();
 			
