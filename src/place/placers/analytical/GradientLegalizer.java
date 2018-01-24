@@ -3,6 +3,7 @@ package place.placers.analytical;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +21,8 @@ import place.visual.PlacementVisualizer;
 class GradientLegalizer extends Legalizer {
 	private List<Block> blocks;
 	private List<Cluster> clusters;
-	private List<Column> columns;
-	private boolean firstIteration;
+	private Map<Integer, Column> columns;
+	private boolean isFirstIteration;
 
     private int legalColumns, illegalColumns;
     private final double scalingFactor;
@@ -30,6 +31,9 @@ class GradientLegalizer extends Legalizer {
     
     private double requiredOverlap;
     private List<Double> overlapHistory;
+    
+    private Column bestColumn;
+    private double bestCost;
     
     private static final boolean doVisual = false;
 
@@ -64,7 +68,7 @@ class GradientLegalizer extends Legalizer {
 
     	this.massMap = new MassMap(this.legalColumns, this.height);
     	
-    	this.firstIteration = true;
+    	this.isFirstIteration = true;
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
@@ -79,10 +83,10 @@ class GradientLegalizer extends Legalizer {
     		this.legalizeBlocks();
     		this.updateLegal();
     	}else{
-    		if(this.firstIteration){
+    		if(this.isFirstIteration){
         		this.makeBlocks(blocksStart, blocksEnd, this.legalColumns, this.height);
         		this.initializeClusters();
-        		this.firstIteration = false;
+        		this.isFirstIteration = false;
     		}
     		this.initializeBlocks(stepSize, speedAveraging);
             this.doSpreading();
@@ -145,10 +149,10 @@ class GradientLegalizer extends Legalizer {
     	Collections.sort(this.blocks, Comparators.VERTICAL);
     }
     public void initializeColumns(){
-        this.columns = new ArrayList<>();
+        this.columns = new HashMap<>();
         for(int columnIndex:this.circuit.getColumnsPerBlockType(BlockType.getBlockTypes(BlockCategory.CLB).get(0))){
         	Column column = new Column(columnIndex, this.height);
-        	this.columns.add(column);
+        	this.columns.put(columnIndex, column);
         }
     }
     public void initializeMassMap(){
@@ -424,7 +428,11 @@ class GradientLegalizer extends Legalizer {
     	double cost(int legalX, int legalY){
     		double horizontalDistance = this.horizontal.coordinate - legalX;
     		double verticalDistance = this.vertical.coordinate - legalY;
-    		return Math.sqrt((horizontalDistance * horizontalDistance) + (verticalDistance * verticalDistance));
+    		return (horizontalDistance * horizontalDistance) + (verticalDistance * verticalDistance);
+    	}
+    	double horizontalCost(int legalX){
+    		double horizontalDistance = this.horizontal.coordinate - legalX;
+    		return (horizontalDistance * horizontalDistance);
     	}
     }
     class Dimension {
@@ -591,31 +599,28 @@ class GradientLegalizer extends Legalizer {
         }
     }
     
+    
     private void legalizeBlocks(){
     	for(Block block:this.blocks){
-    		Column bestColumn = null;
-    		double bestCost = Double.MAX_VALUE;
-
-    		for(Column column:this.columns){
-    			if(Math.abs(column.index - block.horizontal.coordinate) < 15){
-	    			if(column.usedSize + block.height <= column.height){
-	        			double cost = column.tryBlock(block);
-	        			
-	        			if(cost < bestCost){
-	        				bestColumn = column;
-	        				bestCost = cost;
-	        			}
-	    			}
-    			}
+    		this.bestColumn = null;
+    		this.bestCost = Double.MAX_VALUE;
+    		
+    		int index = (int) Math.round(block.horizontal.coordinate);
+    		
+    		this.tryColumn(index, block);
+    		for(int moveIndex = 1; moveIndex <= this.width; moveIndex++){
+    			this.tryColumn(index - moveIndex, block);
+    			this.tryColumn(index + moveIndex, block);
     		}
-    		bestColumn.addBlock(block);
+    		
+    		this.bestColumn.addBlock(block);
     	}
     	
     	//Update block coordinates
     	for(Block block:this.blocks){
     		block.processed = false;
     	}
-    	for(Column column:this.columns){
+    	for(Column column:this.columns.values()){
     		for(Site site:column.sites){
     			if(site.hasBlock()){
     				Block block = site.block;
@@ -627,6 +632,22 @@ class GradientLegalizer extends Legalizer {
     			}
     		}
     	}
+    }
+    private void tryColumn(int columnIndex, Block block){
+    	if(this.columns.containsKey(columnIndex)){
+			double naiveCost = block.horizontalCost(columnIndex);
+			if(naiveCost < this.bestCost){
+				Column column = this.columns.get(columnIndex);
+				if(column.usedSize + block.height <= column.height){
+					double cost = column.tryBlock(block);
+					
+					if(cost < this.bestCost){
+						this.bestColumn = column;
+						this.bestCost = cost;
+					}
+				}
+			}	
+		}
     }
     
     private class Column{
