@@ -20,6 +20,7 @@ import place.visual.PlacementVisualizer;
 
 class GradientLegalizer extends Legalizer {
 	private List<Block> blocks;
+	private int[] blockCost;
 	private List<Cluster> clusters;
 	private Map<Integer, Column> columns;
 	private boolean isFirstIteration;
@@ -69,6 +70,16 @@ class GradientLegalizer extends Legalizer {
     	this.massMap = new MassMap(this.legalColumns, this.height);
     	
     	this.isFirstIteration = true;
+    	
+    	this.blockCost = new int[this.linearX.length];
+    	for(int i = 0; i < this.blockCost.length; i++){
+    		this.blockCost[i] = 0;
+    	}
+    	for(Net net:nets){
+    		for(NetBlock block:net.blocks){
+    			this.blockCost[block.blockIndex]++;
+    		}
+    	}
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
@@ -102,8 +113,9 @@ class GradientLegalizer extends Legalizer {
     		float offset = (1 - blockHeight) / 2f;
     		
     		int leafNode = this.leafNode[b];
+    		int blockCost = this.blockCost[b];
 
-    		this.blocks.add(new Block(b, offset, blockHeight, leafNode, gridWidth, gridHeight));
+    		this.blocks.add(new Block(b, offset, blockHeight, leafNode, gridWidth, gridHeight, blockCost));
     	}
     }
     private void initializeBlocks(double stepSize, double speedAveraging){
@@ -359,6 +371,7 @@ class GradientLegalizer extends Legalizer {
     	final int height;
     	
     	final int leafNode;
+    	final int blockCost;
     	
     	int ceilx, ceily;
 
@@ -367,7 +380,7 @@ class GradientLegalizer extends Legalizer {
     	
     	boolean processed;
 
-    	public Block(int index, float offset, int height, int leafNode, int gridWidth, int gridHeight){
+    	public Block(int index, float offset, int height, int leafNode, int gridWidth, int gridHeight, int blockCost){
     		this.index = index;
 
     		this.offset = offset;
@@ -377,6 +390,7 @@ class GradientLegalizer extends Legalizer {
     		this.vertical = new Dimension(gridHeight - this.height + 1);
     		
     		this.leafNode = leafNode;
+    		this.blockCost = blockCost;
     	}
     	void initialize(double horizontalCoordinate, double verticalCoordinate, double stepSize, double speedAveraging){
     		this.horizontal.initialize(horizontalCoordinate, stepSize, speedAveraging);
@@ -428,11 +442,11 @@ class GradientLegalizer extends Legalizer {
     	double cost(int legalX, int legalY){
     		double horizontalDistance = this.horizontal.coordinate - legalX;
     		double verticalDistance = this.vertical.coordinate - legalY;
-    		return (horizontalDistance * horizontalDistance) + (verticalDistance * verticalDistance);
+    		return this.blockCost * ((horizontalDistance * horizontalDistance) + (verticalDistance * verticalDistance));
     	}
     	double horizontalCost(int legalX){
     		double horizontalDistance = this.horizontal.coordinate - legalX;
-    		return (horizontalDistance * horizontalDistance);
+    		return this.blockCost * (horizontalDistance * horizontalDistance);
     	}
     }
     class Dimension {
