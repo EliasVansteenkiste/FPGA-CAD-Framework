@@ -11,6 +11,7 @@ class LinearSolverGradient {
     LinearSolverGradient(
             double[] coordinatesX,
             double[] coordinatesY,
+            int[] leafNode,
             int[] netBlockIndexes,
             float[] netBlockOffsets,
             double maxConnectionLength,
@@ -25,8 +26,8 @@ class LinearSolverGradient {
         this.netBlockIndexes = netBlockIndexes;
         this.netBlockOffsets = netBlockOffsets;
 
-        this.solverX = new DimensionSolverGradient(coordinatesX, maxConnectionLength, fixed, beta1, beta2, eps);
-        this.solverY = new DimensionSolverGradient(coordinatesY, maxConnectionLength, fixed, beta1, beta2, eps);
+        this.solverX = new DimensionSolverGradient(coordinatesX, leafNode, maxConnectionLength, fixed, beta1, beta2, eps);
+        this.solverY = new DimensionSolverGradient(coordinatesY, leafNode, maxConnectionLength, fixed, beta1, beta2, eps);
     }
 
     public void initializeIteration(double pseudoWeight, double learningRate) {

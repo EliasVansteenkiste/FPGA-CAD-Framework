@@ -283,6 +283,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.solver = new LinearSolverGradient(
                 this.coordinatesX,
                 this.coordinatesY,
+                this.leafNode,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
                 this.maxConnectionLength,
