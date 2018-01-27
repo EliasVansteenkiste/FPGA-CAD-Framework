@@ -417,6 +417,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         	this.logger.raise(error);
         }
         this.stopTimer(T_UPDATE_CIRCUIT);
+        
+        this.logger.println(this.circuit.getTimingGraph().criticalPathToString());
     }
     private void addLinearPlacement(int iteration){
         this.visualizer.addPlacement(
