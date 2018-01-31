@@ -566,6 +566,11 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         public int hashCode() {
             return 31 * this.blockIndex + (int) (2 * this.offset);
         }
+        
+        public int getBlockTypeHash(){
+        	System.out.println(this.blockType.getName());
+        	return this.blockType.getName().hashCode();
+        }
     }
 
     class TimingNetBlock {

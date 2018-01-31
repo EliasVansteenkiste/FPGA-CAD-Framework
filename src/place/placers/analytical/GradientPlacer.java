@@ -37,7 +37,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_OUTER_EFFORT_LEVEL = "outer effort level",
         
         O_INNER_EFFORT_LEVEL_START = "inner effort level start",
-        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop";
+        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop",
+    
+    	O_LEAF_NODE_WEIGHT = "leaf node weight";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -110,6 +112,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_INNER_EFFORT_LEVEL_STOP,
                 "number of gradient steps to take in each outer iteration at the end",
                 new Integer(50));
+        
+        options.add(
+                O_LEAF_NODE_WEIGHT,
+                "multiplier to reduce weigth between connections in a leaf node (packing cluster)",
+                new Double(0.7));
     }
 
     protected double anchorWeight;
@@ -140,10 +147,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private int[] netEnds;
     private int[] netBlockIndexes;
     private float[] netBlockOffsets;
+    
+    private double leafNodeWeight;
 
     protected boolean[] fixed;
     private double[] coordinatesX;
     private double[] coordinatesY;
+    
+    private int[] blockTypeNumbers;
 
     public GradientPlacer(
             Circuit circuit,
@@ -173,6 +184,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
+        
+        this.leafNodeWeight = this.options.getDouble(O_LEAF_NODE_WEIGHT);
 
         if(this.circuit.dense()) {
         	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
@@ -190,6 +203,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     public void initializeData() {
         super.initializeData();
 
+        this.blockTypeNumbers = new int[this.legalX.length];
+        for(NetBlock block:this.netBlocks.values()){
+        	this.blockTypeNumbers[block.blockIndex] = block.getBlockTypeHash();
+        }
+        
         this.startTimer(T_INITIALIZE_DATA);
         
         if(this.circuit.ratioUsedCLB() > 0.8){
@@ -284,6 +302,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.coordinatesX,
                 this.coordinatesY,
                 this.leafNode,
+                this.leafNodeWeight,
+                this.blockTypeNumbers,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
                 this.maxConnectionLength,

@@ -390,7 +390,8 @@ class GradientLegalizer extends Legalizer {
     		this.vertical = new Dimension(gridHeight - this.height + 1);
     		
     		this.leafNode = leafNode;
-    		this.blockCost = blockCost;
+    		//this.blockCost = blockCost;
+    		this.blockCost = 1;
     	}
     	void initialize(double horizontalCoordinate, double verticalCoordinate, double stepSize, double speedAveraging){
     		this.horizontal.initialize(horizontalCoordinate, stepSize, speedAveraging);
