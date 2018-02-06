@@ -37,9 +37,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_OUTER_EFFORT_LEVEL = "outer effort level",
         
         O_INNER_EFFORT_LEVEL_START = "inner effort level start",
-        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop",
-    
-    	O_LEAF_NODE_WEIGHT = "leaf node weight";
+        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -48,17 +46,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_ANCHOR_WEIGHT_EXPONENT,
                 "anchor weight exponent",
                 new Double(2));
-
         options.add(
                 O_ANCHOR_WEIGHT_STOP,
                 "anchor weight at which the placement is finished (max: 1)",
-                new Double(0.8));
+                new Double(0.85));
 
         options.add(
                 O_LEARNING_RATE_START,
                 "ratio of distance to optimal position that is moved",
                 new Double(1));
-
         options.add(
                 O_LEARNING_RATE_STOP,
                 "ratio of distance to optimal position that is moved",
@@ -68,7 +64,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_STEP_SIZE_START,
                 "initial step size in gradient cluster legalizer",
                 new Double(0.4));
-        
         options.add(
                 O_STEP_SIZE_STOP,
                 "final step size in gradient cluster legalizer",
@@ -78,7 +73,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
                 "maximum connection length in sparse placement is ratio of circuit width",
                 new Double(0.25));
-
         options.add(
                 O_MAX_CONN_LENGTH_DENSE,
                 "maximum connection length in dense placement",
@@ -88,12 +82,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_BETA1,
                 "adam gradient descent beta1 parameter",
                 new Double(0.9));
-
         options.add(
                 O_BETA2,
                 "adam gradient descent beta2 parameter",
                 new Double(0.999));
-
         options.add(
                 O_EPS,
                 "adam gradient descent eps parameter",
@@ -102,8 +94,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL,
                 "number of solve-legalize iterations",
-                new Integer(20));
-
+                new Integer(30));
         options.add(
                 O_INNER_EFFORT_LEVEL_START,
                 "number of gradient steps to take in each outer iteration in the beginning",
@@ -112,11 +103,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_INNER_EFFORT_LEVEL_STOP,
                 "number of gradient steps to take in each outer iteration at the end",
                 new Integer(50));
-        
-        options.add(
-                O_LEAF_NODE_WEIGHT,
-                "multiplier to reduce weigth between connections in a leaf node (packing cluster)",
-                new Double(0.7));
     }
 
     protected double anchorWeight;
@@ -147,14 +133,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private int[] netEnds;
     private int[] netBlockIndexes;
     private float[] netBlockOffsets;
-    
-    private double leafNodeWeight;
 
     protected boolean[] fixed;
     private double[] coordinatesX;
     private double[] coordinatesY;
-    
-    private int[] blockTypeNumbers;
 
     public GradientPlacer(
             Circuit circuit,
@@ -184,8 +166,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
-        
-        this.leafNodeWeight = this.options.getDouble(O_LEAF_NODE_WEIGHT);
 
         if(this.circuit.dense()) {
         	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
@@ -202,11 +182,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     @Override
     public void initializeData() {
         super.initializeData();
-
-        this.blockTypeNumbers = new int[this.legalX.length];
-        for(NetBlock block:this.netBlocks.values()){
-        	this.blockTypeNumbers[block.blockIndex] = block.getBlockTypeHash();
-        }
         
         this.startTimer(T_INITIALIZE_DATA);
         
@@ -301,9 +276,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.solver = new LinearSolverGradient(
                 this.coordinatesX,
                 this.coordinatesY,
-                this.leafNode,
-                this.leafNodeWeight,
-                this.blockTypeNumbers,
                 this.netBlockIndexes,
                 this.netBlockOffsets,
                 this.maxConnectionLength,

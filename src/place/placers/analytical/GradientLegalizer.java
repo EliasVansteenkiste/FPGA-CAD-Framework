@@ -20,7 +20,6 @@ import place.visual.PlacementVisualizer;
 
 class GradientLegalizer extends Legalizer {
 	private List<Block> blocks;
-	private int[] blockCost;
 	private List<Cluster> clusters;
 	private Map<Integer, Column> columns;
 	private boolean isFirstIteration;
@@ -30,13 +29,8 @@ class GradientLegalizer extends Legalizer {
     
     private final MassMap massMap;
     
-    private double requiredOverlap;
-    private List<Double> overlapHistory;
-    
     private Column bestColumn;
     private double bestCost;
-    
-    private static final boolean doVisual = false;
 
     GradientLegalizer(
             Circuit circuit,
@@ -70,16 +64,6 @@ class GradientLegalizer extends Legalizer {
     	this.massMap = new MassMap(this.legalColumns, this.height);
     	
     	this.isFirstIteration = true;
-    	
-    	this.blockCost = new int[this.linearX.length];
-    	for(int i = 0; i < this.blockCost.length; i++){
-    		this.blockCost[i] = 0;
-    	}
-    	for(Net net:nets){
-    		for(NetBlock block:net.blocks){
-    			this.blockCost[block.blockIndex]++;
-    		}
-    	}
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
@@ -113,9 +97,8 @@ class GradientLegalizer extends Legalizer {
     		float offset = (1 - blockHeight) / 2f;
     		
     		int leafNode = this.leafNode[b];
-    		int blockCost = this.blockCost[b];
 
-    		this.blocks.add(new Block(b, offset, blockHeight, leafNode, gridWidth, gridHeight, blockCost));
+    		this.blocks.add(new Block(b, offset, blockHeight, leafNode, gridWidth, gridHeight));
     	}
     }
     private void initializeBlocks(double stepSize, double speedAveraging){
@@ -184,25 +167,12 @@ class GradientLegalizer extends Legalizer {
 
     //Spreading
     private void doSpreading(){
-    	this.overlapHistory = new ArrayList<>();
-    	this.requiredOverlap = this.blocks.size() * 0.01;
-    	
-    	int iteration = 0;
     	this.initializeMassMap();
     	while(this.massMap.overlap() / this.blocks.size() > 0.33){
     		this.spreadClusters(25);
-    		if(doVisual) this.addVisual(iteration);
-    		
     		this.moveClusters(25);
-    		if(doVisual) this.addVisual(iteration);
-    		
-    		iteration++;
-    		
-    		this.initializeMassMap();
     	}
-    	//this.moveBlocks();
     	this.moveBlocks(200);
-    	if(doVisual) this.addVisual("final");
     }
     public void spreadClusters(int numIterations){
 		for(Cluster cluster:this.clusters){
@@ -214,9 +184,8 @@ class GradientLegalizer extends Legalizer {
     	}
     }
     public void moveClusters(int numIterations){
+    	this.initializeMassMap();
     	for(int i = 0 ; i < numIterations; i++){
-        	this.initializeMassMap();
-        	
         	for(Cluster cluster:this.clusters){
         		cluster.horizontalForce = 0.0;
         		cluster.verticalForce = 0.0;
@@ -224,13 +193,13 @@ class GradientLegalizer extends Legalizer {
         		for(Block block:cluster.blocks){
         			block.setForce(this.massMap);
         			
-        			cluster.horizontalForce += block.horizontal.force;
-        			cluster.verticalForce += block.vertical.force;
+        			cluster.horizontalForce += block.horizontal.getForce();
+        			cluster.verticalForce += block.vertical.getForce();
         		}
         		
         		for(Block block:cluster.blocks){
-        			block.horizontal.force = cluster.horizontalForce;
-        			block.vertical.force = cluster.verticalForce;
+        			block.horizontal.setForce(cluster.horizontalForce);
+        			block.vertical.setForce(cluster.verticalForce);
         		}
         		
         		for(Block block:cluster.blocks){
@@ -245,50 +214,11 @@ class GradientLegalizer extends Legalizer {
     	this.initializeMassMap();
     	this.applyPushingBlockForces(numIterations);
     }
-    public void moveBlocks(){
-    	this.initializeMassMap();
-    	
-    	int counter = 0;
-    	
-    	while(!this.finalIteration(this.massMap.overlap())){
-    		this.applyPushingBlockForces(10);
-    		counter += 10;
-    	}
-    	
-    	this.logger.println("The gradient legalizer required " + counter + " iterations to legalize the blocks");
-    }
-    private boolean finalIteration(double overlap){
-    	this.overlapHistory.add(overlap);
-    	if(overlap < this.requiredOverlap){
-    		this.logger.println("Stop condition is the required overlap");
-    		return true;
-    	}else if(this.overlapHistory.size() > 10){
-    		double max = this.overlapHistory.get(this.overlapHistory.size() - 1);
-    		double min = this.overlapHistory.get(this.overlapHistory.size() - 1);
-
-    		for(int i = 0; i < 10; i++){
-    			double value = this.overlapHistory.get(this.overlapHistory.size() - 1 - i);
-    			if(value > max){
-    				max = value;
-    			}
-    			if(value < min){
-    				min = value;
-    			}
-    		}
-    		
-    		double ratio = max / min;
-    		if(ratio < 1.1){
-    			this.logger.println("Stop condition is the rico");
-    			return true;
-    		}
-    	}
-    	return false;
-	}
     
     private void applyPushingBlockForces(int numIterations){
     	for(int i = 0; i < numIterations; i++){
-        	for(Block block: this.blocks){
-        		this.massMap.setForce(block);
+    		for(Block block: this.blocks){
+        		block.setForce(this.massMap);
         		this.massMap.remove(block);
         		block.doForce();
         		this.massMap.add(block);
@@ -302,25 +232,6 @@ class GradientLegalizer extends Legalizer {
     		block.doForce();
     		this.massMap.add(block);
     	}
-    }
-    
-    //Visual
-    private void addVisual(String name){
-    	double[] coorX = new double[this.linearX.length];
-		double[] coorY = new double[this.linearY.length];
-		
-		for(int i = 0; i < this.linearX.length; i++){
-			coorX[i] = -1;
-			coorY[i] = -1;
-		}
-		for(Block block:this.blocks){
-			coorX[block.index] = block.horizontal.coordinate;
-			coorY[block.index] = block.vertical.coordinate;
-		}
-		this.addVisual(name, coorX, coorY);
-    }
-    private void addVisual(int i){
-    	this.addVisual("" + i);
     }
     
     //Finalize
@@ -354,7 +265,7 @@ class GradientLegalizer extends Legalizer {
     	}
     	
     	void addBlock(Block block){
-    		if(this.blocks.contains(block)){//TODO REMOVE THIS DEBUG LINE
+    		if(this.blocks.contains(block)){
     			System.out.println("Duplicate block in cluster!");
     		}else{
     			this.blocks.add(block);
@@ -371,7 +282,6 @@ class GradientLegalizer extends Legalizer {
     	final int height;
     	
     	final int leafNode;
-    	final int blockCost;
     	
     	int ceilx, ceily;
 
@@ -380,7 +290,7 @@ class GradientLegalizer extends Legalizer {
     	
     	boolean processed;
 
-    	public Block(int index, float offset, int height, int leafNode, int gridWidth, int gridHeight, int blockCost){
+    	public Block(int index, float offset, int height, int leafNode, int gridWidth, int gridHeight){
     		this.index = index;
 
     		this.offset = offset;
@@ -390,8 +300,6 @@ class GradientLegalizer extends Legalizer {
     		this.vertical = new Dimension(gridHeight - this.height + 1);
     		
     		this.leafNode = leafNode;
-    		//this.blockCost = blockCost;
-    		this.blockCost = 1;
     	}
     	void initialize(double horizontalCoordinate, double verticalCoordinate, double stepSize, double speedAveraging){
     		this.horizontal.initialize(horizontalCoordinate, stepSize, speedAveraging);
@@ -426,8 +334,8 @@ class GradientLegalizer extends Legalizer {
         	this.vertical.solve();
         }
     	void update(){
-        	this.ceilx = (int)Math.ceil(2 * this.horizontal.coordinate);
-        	this.ceily = (int)Math.ceil(2 * this.vertical.coordinate);
+        	this.ceilx = (int) Math.ceil(2.0 * this.horizontal.coordinate);
+        	this.ceily = (int) Math.ceil(2.0 * this.vertical.coordinate);
         	
     		double xLeft = (0.5 * this.ceilx) - this.horizontal.coordinate;
     		double xRight = 0.5 - xLeft;
@@ -441,13 +349,13 @@ class GradientLegalizer extends Legalizer {
     		this.area_ne = xRight * yRight;
     	}
     	double cost(int legalX, int legalY){
-    		double horizontalDistance = this.horizontal.coordinate - legalX;
-    		double verticalDistance = this.vertical.coordinate - legalY;
-    		return this.blockCost * ((horizontalDistance * horizontalDistance) + (verticalDistance * verticalDistance));
+    		double horizontalDistance = Math.abs(this.horizontal.coordinate - legalX);
+    		double verticalDistance = Math.abs(this.vertical.coordinate - legalY);
+    		return horizontalDistance + verticalDistance;
     	}
     	double horizontalCost(int legalX){
-    		double horizontalDistance = this.horizontal.coordinate - legalX;
-    		return this.blockCost * (horizontalDistance * horizontalDistance);
+    		double horizontalDistance = Math.abs(this.horizontal.coordinate - legalX);
+    		return horizontalDistance;
     	}
     }
     class Dimension {
@@ -471,6 +379,9 @@ class GradientLegalizer extends Legalizer {
     	}
     	void setForce(double force){
     		this.force = force;
+    	}
+    	double getForce(){
+    		return this.force;
     	}
     	void solve(){
     		if(this.force != 0.0){
@@ -597,17 +508,17 @@ class GradientLegalizer extends Legalizer {
     		int y = block.ceily;
 
         	for(int h = 0; h < block.height; h++){
-            	this.massMap[x - 1][y - 1] -= block.area_sw;
-            	this.massMap[x][y - 1] -= block.area_se + block.area_sw;
-            	this.massMap[x + 1][y - 1] -= block.area_se;
+        		this.massMap[x - 1][y - 1] -= block.area_sw;
+        		this.massMap[x][y - 1] -= block.area_se + block.area_sw;
+        		this.massMap[x + 1][y - 1] -= block.area_se;
 
-            	this.massMap[x - 1][y] -= block.area_sw + block.area_nw;
-            	this.massMap[x][y] -= 0.25;
-            	this.massMap[x + 1][y] -= block.area_se + block.area_ne;
+        		this.massMap[x - 1][y] -= block.area_sw + block.area_nw;
+        		this.massMap[x][y] -= 0.25;
+        		this.massMap[x + 1][y] -= block.area_se + block.area_ne;
 
-            	this.massMap[x - 1][y + 1] -= block.area_nw;
-            	this.massMap[x][y + 1] -= block.area_nw + block.area_ne;
-            	this.massMap[x + 1][y + 1] -= block.area_ne;
+        		this.massMap[x - 1][y + 1] -= block.area_nw;
+        		this.massMap[x][y + 1] -= block.area_nw + block.area_ne;
+        		this.massMap[x + 1][y + 1] -= block.area_ne;
 
             	y += 2;
         	}
