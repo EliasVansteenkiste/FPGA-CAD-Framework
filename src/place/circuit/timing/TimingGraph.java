@@ -541,6 +541,7 @@ public class TimingGraph {
 					System.out.println("\tsinkNode: " + sinkNode.toString());
 					System.out.println("\tsourceNode1: " + sourceNode.toString());
 					System.out.println("\tsourceNode2: " + edge.getSource().toString());
+					System.out.println();
 				}
 			}
 		}
