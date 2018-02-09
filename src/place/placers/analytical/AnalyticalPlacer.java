@@ -277,7 +277,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
     
     @Override
-    protected void calculateCost(){
+    protected void calculateCost(int iteration){
     	this.startTimer(T_UPDATE_CIRCUIT);
     	
     	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);

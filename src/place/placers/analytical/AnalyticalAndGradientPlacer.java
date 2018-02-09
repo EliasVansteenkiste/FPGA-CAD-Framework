@@ -110,7 +110,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract void solveLegal(boolean isLastIteration);
     protected abstract void solveLinear(BlockType category, int iteration);
     protected abstract void solveLegal(BlockType category, boolean isLastIteration);
-    protected abstract void calculateCost();
+    protected abstract void calculateCost(int iteration);
     protected abstract boolean stopCondition(int iteration);
     protected abstract int numIterations();
     protected abstract void printLegalizationRuntime();
@@ -379,7 +379,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             	this.solveLegal(isLastIteration);
             }
 
-            this.calculateCost();
+            this.calculateCost(iteration);
 
             this.addLinearPlacement(iteration);
             this.addLegalPlacement(iteration);

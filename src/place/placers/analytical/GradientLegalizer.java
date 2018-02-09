@@ -106,6 +106,9 @@ class GradientLegalizer extends Legalizer {
 			double y = this.linearY[block.index];
 
     		if(this.isLastIteration){
+    			x = this.legalX[block.index];
+    			y = this.legalY[block.index];
+    			
     			y = y + Math.ceil(block.offset);
     		}else{
     			x = x * this.scalingFactor;
@@ -166,13 +169,17 @@ class GradientLegalizer extends Legalizer {
 
     //Spreading
     private void doSpreading(){
-    	this.initializeMassMap();
     	
-    	while(this.massMap.overlap() / this.blocks.size() > 0.25){
-    		this.spreadClusters(10);
-    		this.moveClusters(25);
+    	int clusterSpreading = 15;
+    	int clusterMoving = 20;
+    	
+    	this.initializeMassMap();
+    	while(this.massMap.overlap() / this.blocks.size() > 0.2){
+    		
+    		this.spreadClusters(clusterSpreading);
+    		
+    		this.moveClusters(clusterMoving);
     	}
-
     	this.moveBlocks(250);
     }
     public void spreadClusters(int numIterations){
@@ -340,7 +347,7 @@ class GradientLegalizer extends Legalizer {
     	}
         void doForce(){
         	this.solve();
-    		this.update();
+        	this.update();
         }
         void trim(){
     		this.horizontal.trim();
@@ -376,12 +383,11 @@ class GradientLegalizer extends Legalizer {
     	}
     }
     class Dimension {
-    	double coordinate;
-    	double force;
-    	double speed;
-    	double stepSize;
+    	private double coordinate;
+    	private double force;
+    	private double stepSize;
     	
-    	final int size;
+    	private final int size;
 
     	Dimension(int size){
     		this.size = size;
@@ -389,7 +395,6 @@ class GradientLegalizer extends Legalizer {
     	void initialize(double coordinate, double stepSize){
     		this.coordinate = coordinate;
     		this.force = 0.0;
-    		this.speed = 0.0;
     		
     		this.stepSize = stepSize;
     	}

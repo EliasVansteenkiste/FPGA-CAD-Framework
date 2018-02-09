@@ -63,7 +63,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_STEP_SIZE_START,
                 "initial step size in gradient cluster legalizer",
-                new Double(0.3));
+                new Double(0.2));
         options.add(
                 O_STEP_SIZE_STOP,
                 "final step size in gradient cluster legalizer",
@@ -203,7 +203,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                     this.logger);
             this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
         }else{
-            double widthFactor = Math.pow((1.0 * this.circuit.getWidth()) / 100.0, 1.4);
+            double widthFactor = Math.pow((1.0 * this.circuit.getWidth()) / 100.0, 1.3);
             this.logger.println("------------------");
             this.logger.println("Circuit width: " + this.circuit.getWidth());
             this.logger.println("Width factor: " + String.format("%.2f", widthFactor));
@@ -225,7 +225,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                     this.netBlocks,
                     this.logger);
             this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
-            this.legalizer.addSetting("step_size", widthFactor * this.stepSizeStart, this.stepSizeStop);
+            this.legalizer.addSetting("step_size", widthFactor * this.stepSizeStart,  widthFactor * this.stepSizeStop);
         }
 
         // Juggling with objects is too slow (I profiled this,
@@ -412,7 +412,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void calculateCost(){
+    protected void calculateCost(int iteration){
     	this.startTimer(T_UPDATE_CIRCUIT);
 
     	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
@@ -425,7 +425,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		this.currentCost *= this.timingCost;
     	}
     	
+    	double costMultiplier = 1 + 0.2 / (1 + Math.exp(0.2 * iteration));
+    	
     	if(this.currentCost < this.bestCost){
+    		this.currentCost *= costMultiplier;
     		this.bestCost = this.currentCost;
     		for(int i = 0; i < this.linearX.length; i++){
     			this.bestLinearX[i] = this.linearX[i];

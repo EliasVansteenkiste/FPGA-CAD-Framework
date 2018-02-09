@@ -508,6 +508,7 @@ public class TimingGraph {
     		}
     	}
     	
+    	System.out.println();
     	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
     	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %-9s %-8s\n", delay, "x", "y", "Tarr (ns)", "LeafNode");
     	result += String.format("%-" + maxLen + "s..%-3s.%-3s..%-9s.%-8s\n","","","","","").replace(" ", "-").replace(".", " ");
@@ -538,10 +539,10 @@ public class TimingGraph {
 				}else{
 					sourceNode = edge.getSource();
 					System.out.println("Warning: more than one source node on the critical path");
-					System.out.println("\tsinkNode: " + sinkNode.toString());
-					System.out.println("\tsourceNode1: " + sourceNode.toString());
-					System.out.println("\tsourceNode2: " + edge.getSource().toString());
-					System.out.println();
+					//System.out.println("\tsinkNode: " + sinkNode.toString());
+					//System.out.println("\tsourceNode1: " + sourceNode.toString());
+					//System.out.println("\tsourceNode2: " + edge.getSource().toString());
+					//System.out.println();
 				}
 			}
 		}
