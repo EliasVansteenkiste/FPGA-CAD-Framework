@@ -68,11 +68,10 @@ class GradientLegalizer extends Legalizer {
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
     	double stepSize = this.getSettingValue("step_size");
-    	double speedAveraging = this.getSettingValue("speed_averaging");
 
     	if(this.isLastIteration){
     		this.makeBlocks(blocksStart, blocksEnd, this.width, this.height);
-    		this.initializeBlocks(stepSize, speedAveraging);
+    		this.initializeBlocks(stepSize);
     		this.sortBlocks();
     		this.initializeColumns();
     		this.legalizeBlocks();
@@ -83,7 +82,7 @@ class GradientLegalizer extends Legalizer {
         		this.initializeClusters();
         		this.isFirstIteration = false;
     		}
-    		this.initializeBlocks(stepSize, speedAveraging);
+    		this.initializeBlocks(stepSize);
             this.doSpreading();
             this.updateLegal();
     	}
@@ -101,7 +100,7 @@ class GradientLegalizer extends Legalizer {
     		this.blocks.add(new Block(b, offset, blockHeight, leafNode, gridWidth, gridHeight));
     	}
     }
-    private void initializeBlocks(double stepSize, double speedAveraging){
+    private void initializeBlocks(double stepSize){
 		for(Block block:this.blocks){
 			double x = this.linearX[block.index];
 			double y = this.linearY[block.index];
@@ -113,7 +112,7 @@ class GradientLegalizer extends Legalizer {
     			y = y + block.offset;
     		}
     		
-    		block.initialize(x, y, stepSize, speedAveraging);
+    		block.initialize(x, y, stepSize);
     	}
     }
     private void initializeClusters(){
@@ -168,11 +167,13 @@ class GradientLegalizer extends Legalizer {
     //Spreading
     private void doSpreading(){
     	this.initializeMassMap();
-    	while(this.massMap.overlap() / this.blocks.size() > 0.33){
-    		this.spreadClusters(25);
+    	
+    	while(this.massMap.overlap() / this.blocks.size() > 0.25){
+    		this.spreadClusters(10);
     		this.moveClusters(25);
     	}
-    	this.moveBlocks(200);
+
+    	this.moveBlocks(250);
     }
     public void spreadClusters(int numIterations){
 		for(Cluster cluster:this.clusters){
@@ -191,25 +192,41 @@ class GradientLegalizer extends Legalizer {
         		cluster.verticalForce = 0.0;
         		
         		for(Block block:cluster.blocks){
+        			this.massMap.remove(block);
+        		}
+        		
+        		for(Block block:cluster.blocks){
         			block.setForce(this.massMap);
         			
         			cluster.horizontalForce += block.horizontal.getForce();
         			cluster.verticalForce += block.vertical.getForce();
         		}
-        		
+
+        		cluster.horizontalForce = this.scaleForce(cluster.horizontalForce);
+        		cluster.verticalForce = this.scaleForce(cluster.verticalForce);
+
         		for(Block block:cluster.blocks){
         			block.horizontal.setForce(cluster.horizontalForce);
         			block.vertical.setForce(cluster.verticalForce);
         		}
         		
         		for(Block block:cluster.blocks){
-        			this.massMap.remove(block);
         			block.doForce();
+        		}
+        		
+        		for(Block block:cluster.blocks){
         			this.massMap.add(block);
         		}
         	}
     	}
 	}
+    private double scaleForce(double input){
+    	if(input < 0.0){
+    		return -Math.pow(-input, 0.75);
+    	}else{
+    		return Math.pow(input, 0.75);
+    	}
+    }
     public void moveBlocks(int numIterations){
     	this.initializeMassMap();
     	this.applyPushingBlockForces(numIterations);
@@ -218,8 +235,8 @@ class GradientLegalizer extends Legalizer {
     private void applyPushingBlockForces(int numIterations){
     	for(int i = 0; i < numIterations; i++){
     		for(Block block: this.blocks){
+    			this.massMap.remove(block);
         		block.setForce(this.massMap);
-        		this.massMap.remove(block);
         		block.doForce();
         		this.massMap.add(block);
         	}
@@ -227,8 +244,8 @@ class GradientLegalizer extends Legalizer {
     }
     private void applyPushingBlockForces(Cluster cluster){
     	for(Block block: cluster.blocks){
-    		block.setForce(this.massMap);
     		this.massMap.remove(block);
+    		block.setForce(this.massMap);
     		block.doForce();
     		this.massMap.add(block);
     	}
@@ -301,9 +318,9 @@ class GradientLegalizer extends Legalizer {
     		
     		this.leafNode = leafNode;
     	}
-    	void initialize(double horizontalCoordinate, double verticalCoordinate, double stepSize, double speedAveraging){
-    		this.horizontal.initialize(horizontalCoordinate, stepSize, speedAveraging);
-    		this.vertical.initialize(verticalCoordinate, stepSize, speedAveraging);
+    	void initialize(double horizontalCoordinate, double verticalCoordinate, double stepSize){
+    		this.horizontal.initialize(horizontalCoordinate, stepSize);
+    		this.vertical.initialize(verticalCoordinate, stepSize);
     		
     		this.area_ne = 0.0;
     		this.area_nw = 0.0;
@@ -362,20 +379,19 @@ class GradientLegalizer extends Legalizer {
     	double coordinate;
     	double force;
     	double speed;
-    	double stepSize, speedAveraging;
+    	double stepSize;
     	
     	final int size;
 
     	Dimension(int size){
     		this.size = size;
     	}
-    	void initialize(double coordinate, double stepSize, double speedAveraging){
+    	void initialize(double coordinate, double stepSize){
     		this.coordinate = coordinate;
     		this.force = 0.0;
     		this.speed = 0.0;
     		
     		this.stepSize = stepSize;
-    		this.speedAveraging = speedAveraging;
     	}
     	void setForce(double force){
     		this.force = force;
@@ -385,10 +401,7 @@ class GradientLegalizer extends Legalizer {
     	}
     	void solve(){
     		if(this.force != 0.0){
-    			double newSpeed = this.stepSize * this.force;
-            	this.speed = this.speedAveraging * this.speed + (1 - this.speedAveraging) * newSpeed;
-            	this.coordinate += this.speed;
-            	
+            	this.coordinate += this.stepSize * this.force;
             	this.trim();
     		}
     	}
@@ -442,13 +455,11 @@ class GradientLegalizer extends Legalizer {
         public void setForce(Block block){
     		this.setPushingForce(block);
 
-    		double mass = block.force_sw + block.force_nw + block.force_se + block.force_ne;
-
-        	double horizontalForce = (block.force_sw + block.force_nw - block.force_se - block.force_ne) / mass;
-        	double verticalForce = (block.force_sw - block.force_nw + block.force_se - block.force_ne) / mass;
-        	
-        	block.horizontal.setForce(horizontalForce);
-        	block.vertical.setForce(verticalForce);
+            double horizontalForce = block.force_sw + block.force_nw - block.force_se - block.force_ne;
+            double verticalForce = block.force_sw - block.force_nw + block.force_se - block.force_ne;
+            	
+            block.horizontal.setForce(horizontalForce);
+            block.vertical.setForce(verticalForce);
         }
         private void setPushingForce(Block block){
         	int x = block.ceilx;

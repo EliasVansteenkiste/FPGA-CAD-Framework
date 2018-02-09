@@ -63,11 +63,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_STEP_SIZE_START,
                 "initial step size in gradient cluster legalizer",
-                new Double(0.4));
+                new Double(0.3));
         options.add(
                 O_STEP_SIZE_STOP,
                 "final step size in gradient cluster legalizer",
-                new Double(0.075));
+                new Double(0.05));
         
         options.add(
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
@@ -203,7 +203,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                     this.logger);
             this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
         }else{
-            double widthFactor = Math.pow((1.0 * this.circuit.getWidth()) / 100.0, 1.2);
+            double widthFactor = Math.pow((1.0 * this.circuit.getWidth()) / 100.0, 1.4);
             this.logger.println("------------------");
             this.logger.println("Circuit width: " + this.circuit.getWidth());
             this.logger.println("Width factor: " + String.format("%.2f", widthFactor));
@@ -225,8 +225,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                     this.netBlocks,
                     this.logger);
             this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
-            this.legalizer.addSetting("step_size", widthFactor * this.stepSizeStart, widthFactor * this.stepSizeStop);
-            this.legalizer.addSetting("speed_averaging", 0.2, 0.2);
+            this.legalizer.addSetting("step_size", widthFactor * this.stepSizeStart, this.stepSizeStop);
         }
 
         // Juggling with objects is too slow (I profiled this,
