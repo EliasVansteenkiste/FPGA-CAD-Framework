@@ -1,5 +1,8 @@
 package place.placers.analytical;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -16,21 +19,27 @@ import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+import place.util.Timer;
 import place.visual.PlacementVisualizer;
 
 class GradientLegalizer extends Legalizer {
 	private List<Block> blocks;
 	private List<Cluster> clusters;
 	private Map<Integer, Column> columns;
-	private boolean isFirstIteration;
 
-    private int legalColumns, illegalColumns;
+    private int numLegalColumns, numIllegalColumns;
     private final double scalingFactor;
     
     private final MassMap massMap;
-    
+
     private Column bestColumn;
     private double bestCost;
+    
+    private int iterationCounter;
+    
+    private final double[] visualX;
+    private final double[] visualY;
+    private final static boolean doVisual = false;
 
     GradientLegalizer(
             Circuit circuit,
@@ -50,42 +59,70 @@ class GradientLegalizer extends Legalizer {
 
     	super(circuit, blockTypes, blockTypeIndexStarts, numIterations, linearX, linearY, legalX, legalY, heights, leafNode, nets, visualizer, netBlocks, logger);
     	
-    	this.legalColumns = 0;
-    	this.illegalColumns = 0;
+    	this.numLegalColumns = 0;
+    	this.numIllegalColumns = 0;
     	for(BlockType blockType:this.circuit.getBlockTypes()){
     		if(blockType.getCategory().equals(BlockCategory.CLB)){
-    			this.legalColumns += this.circuit.getColumnsPerBlockType(blockType).size();
+    			this.numLegalColumns += this.circuit.getColumnsPerBlockType(blockType).size();
     		}else if(blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-    			this.illegalColumns += this.circuit.getColumnsPerBlockType(blockType).size();
+    			this.numIllegalColumns += this.circuit.getColumnsPerBlockType(blockType).size();
     		}
     	}
-    	this.scalingFactor = (double)this.legalColumns / (this.legalColumns + this.illegalColumns);
+    	this.scalingFactor = ((double)this.numLegalColumns) / ((double)(this.numLegalColumns + this.numIllegalColumns));
 
-    	this.massMap = new MassMap(this.legalColumns, this.height);
+    	this.massMap = new MassMap(this.numLegalColumns, this.height);
     	
-    	this.isFirstIteration = true;
+    	this.iterationCounter = 0;
+    	
+    	//Visualization of legalization progress
+    	this.visualX = new double[this.linearX.length];
+    	this.visualY = new double[this.linearX.length];
+    	for(int i = 0; i < this.linearX.length; i++){
+    		this.visualX[i] = -2;
+    		this.visualY[i] = 0;
+    	}
+    }
+    private void addVisual(String name, List<Block> blocks){
+    	if(doVisual){
+        	for(int i = 0; i < this.linearX.length; i++){
+        		this.visualX[i] = -2;
+        		this.visualY[i] = 0;
+        	}
+        	for(Block block:blocks){
+        		this.visualX[block.index] = block.horizontal.coordinate;
+        		this.visualY[block.index] = block.vertical.coordinate;
+        	}
+        	this.addVisual(name, this.visualX, this.visualY);
+    	}
     }
 
     protected void legalizeBlockType(int blocksStart, int blocksEnd) {
     	double stepSize = this.getSettingValue("step_size");
-
+    	
     	if(this.isLastIteration){
+    		Timer t = new Timer();
+    		t.start();
+    		
     		this.makeBlocks(blocksStart, blocksEnd, this.width, this.height);
     		this.initializeBlocks(stepSize);
     		this.sortBlocks();
     		this.initializeColumns();
     		this.legalizeBlocks();
     		this.updateLegal();
+    		
+    		t.stop();
+    		this.logger.println("\nDetailed legalization took " + String.format("%.2f s", t.getTime()));
     	}else{
-    		if(this.isFirstIteration){
-        		this.makeBlocks(blocksStart, blocksEnd, this.legalColumns, this.height);
+    		if(this.iterationCounter == 0){
+        		this.makeBlocks(blocksStart, blocksEnd, this.numLegalColumns, this.height);
         		this.initializeClusters();
-        		this.isFirstIteration = false;
     		}
     		this.initializeBlocks(stepSize);
             this.doSpreading();
             this.updateLegal();
     	}
+    	
+    	this.iterationCounter++;
     }
 
     //Initialization
@@ -94,21 +131,24 @@ class GradientLegalizer extends Legalizer {
     	for(int b = blocksStart; b < blocksEnd; b++){
     		int blockHeight = this.heights[b];
     		float offset = (1 - blockHeight) / 2f;
-    		
     		int leafNode = this.leafNode[b];
-
     		this.blocks.add(new Block(b, offset, blockHeight, leafNode, gridWidth, gridHeight));
     	}
     }
     private void initializeBlocks(double stepSize){
-		for(Block block:this.blocks){
-			double x = this.linearX[block.index];
-			double y = this.linearY[block.index];
+		double x,y;
+    	for(Block block:this.blocks){
+    		
+			if(this.isLastIteration){
+				double interpolation = this.getSettingValue("interpolation");
+				x = (1.0 - interpolation) * this.legalX[block.index] + interpolation * this.linearX[block.index];
+				y = (1.0 - interpolation) * this.legalY[block.index] + interpolation * this.linearY[block.index];
+			}else{
+				x = this.linearX[block.index];
+				y = this.linearY[block.index];
+			}
 
     		if(this.isLastIteration){
-    			x = this.legalX[block.index];
-    			y = this.legalY[block.index];
-    			
     			y = y + Math.ceil(block.offset);
     		}else{
     			x = x * this.scalingFactor;
@@ -147,40 +187,49 @@ class GradientLegalizer extends Legalizer {
     }
     public void initializeColumns(){
         this.columns = new HashMap<>();
-        for(int columnIndex:this.circuit.getColumnsPerBlockType(BlockType.getBlockTypes(BlockCategory.CLB).get(0))){
+        for(int columnIndex : this.circuit.getColumnsPerBlockType(BlockType.getBlockTypes(BlockCategory.CLB).get(0))){
         	Column column = new Column(columnIndex, this.height);
         	this.columns.put(columnIndex, column);
         }
     }
+    
     public void initializeMassMap(){
-    	this.massMap.reset();
-
-    	for(Block block:this.blocks){
-    		this.massMap.add(block);
-    	}
+    	this.initializeMassMap(this.blocks);
     }
     public void initializeMassMap(Cluster cluster){
+    	this.initializeMassMap(cluster.blocks);
+    }
+    private void initializeMassMap(List<Block> addedBlocks){
     	this.massMap.reset();
 
-    	for(Block block:cluster.blocks){
+    	for(Block block:addedBlocks){
     		this.massMap.add(block);
     	}
     }
-
+    
     //Spreading
     private void doSpreading(){
-    	
-    	int clusterSpreading = 15;
-    	int clusterMoving = 20;
-    	
     	this.initializeMassMap();
+    	
+    	this.massMap.printToFile("before", this.iterationCounter);
+    	this.addVisual("Before spreading", this.blocks);
+    	
+    	double clusterScaling = this.getSettingValue("cluster_scaling");
+    	int blockSpreadingIterations = this.getIntSettingValue("block_spreading");
+    	
     	while(this.massMap.overlap() / this.blocks.size() > 0.2){
+    		this.spreadClusters(15);
+    		this.addVisual("Spread clusters", this.blocks);
     		
-    		this.spreadClusters(clusterSpreading);
-    		
-    		this.moveClusters(clusterMoving);
+    		this.moveClusters(20, clusterScaling);
+    		this.addVisual("Move clusters", this.blocks);
     	}
-    	this.moveBlocks(250);
+    	
+    	this.addVisual("Before independent block spreading", blocks);
+    	this.moveBlocks(blockSpreadingIterations);
+    	this.addVisual("After independent block spreading", blocks);
+
+    	this.massMap.printToFile("after", this.iterationCounter);
     }
     public void spreadClusters(int numIterations){
 		for(Cluster cluster:this.clusters){
@@ -191,7 +240,7 @@ class GradientLegalizer extends Legalizer {
     		}
     	}
     }
-    public void moveClusters(int numIterations){
+    public void moveClusters(int numIterations, double scaleFactor){
     	this.initializeMassMap();
     	for(int i = 0 ; i < numIterations; i++){
         	for(Cluster cluster:this.clusters){
@@ -209,8 +258,8 @@ class GradientLegalizer extends Legalizer {
         			cluster.verticalForce += block.vertical.getForce();
         		}
 
-        		cluster.horizontalForce = this.scaleForce(cluster.horizontalForce);
-        		cluster.verticalForce = this.scaleForce(cluster.verticalForce);
+        		cluster.horizontalForce = this.scaleForce(cluster.horizontalForce, scaleFactor);
+        		cluster.verticalForce = this.scaleForce(cluster.verticalForce, scaleFactor);
 
         		for(Block block:cluster.blocks){
         			block.horizontal.setForce(cluster.horizontalForce);
@@ -227,11 +276,11 @@ class GradientLegalizer extends Legalizer {
         	}
     	}
 	}
-    private double scaleForce(double input){
+    private double scaleForce(double input, double scaleFactor){
     	if(input < 0.0){
-    		return -Math.pow(-input, 0.75);
+    		return -Math.pow(-input, scaleFactor);
     	}else{
-    		return Math.pow(input, 0.75);
+    		return Math.pow(input, scaleFactor);
     	}
     }
     public void moveBlocks(int numIterations){
@@ -361,14 +410,14 @@ class GradientLegalizer extends Legalizer {
         	this.ceilx = (int) Math.ceil(2.0 * this.horizontal.coordinate);
         	this.ceily = (int) Math.ceil(2.0 * this.vertical.coordinate);
         	
-    		double xLeft = (0.5 * this.ceilx) - this.horizontal.coordinate;
+    		double xLeft  = (0.5 * this.ceilx) - this.horizontal.coordinate;
     		double xRight = 0.5 - xLeft;
 
-    		double yLeft = (0.5 * this.ceily) - this.vertical.coordinate;
+    		double yLeft  = (0.5 * this.ceily) - this.vertical.coordinate;
     		double yRight = 0.5 - yLeft;
 
-    		this.area_sw = xLeft * yLeft;
-    		this.area_nw = xLeft * yRight;
+    		this.area_sw = xLeft  * yLeft;
+    		this.area_nw = xLeft  * yRight;
     		this.area_se = xRight * yLeft;
     		this.area_ne = xRight * yRight;
     	}
@@ -446,6 +495,41 @@ class GradientLegalizer extends Legalizer {
         	}
         	return overlap;
         }
+        public void printToFile(String name, int iteration){
+        	if(doVisual){
+        		if(iteration == 1){
+            		System.out.println("Print massmap to file: /Users/drvercru/Desktop/massmap/" + name + ".txt");
+                	try{
+                    	File file = new File("/Users/drvercru/Documents/Doctoraat/Papers/FPL2018/figures/massmap/" + name + ".txt");
+                        FileWriter fw = new FileWriter(file.getAbsoluteFile());
+                        BufferedWriter bw = new BufferedWriter(fw);
+                        
+                        int hor = this.massMap.length;
+                        int ver = this.massMap[0].length;
+                        
+                        bw.write("Dimensions: " + hor + " x " + ver + "\n\n");
+                        
+                        // Write in file
+                        for(int i = 0; i < hor; i++){
+                        	for(int j = 0; j < ver; j++){
+                        		if(j == (ver - 1)){
+                        			bw.write(String.format("%.2f", this.massMap[i][j]));
+                        		}else{
+                        			bw.write(String.format("%.2f;", this.massMap[i][j]));
+                        		}
+                        		
+                        	}
+                        	bw.write("\n");
+                        }
+                        
+                        // Close connection
+                        bw.close();
+                    }catch(Exception e){
+                    	System.out.println(e);
+                	}
+            	}
+    		}
+		}
         public double usedRegion(){
         	double usedRegion = 0.0;
         	for(int i = 0; i < this.gridWidth; i++){

@@ -146,11 +146,26 @@ abstract class Legalizer {
     }
 
     //Legalizer settings
+    void addSetting(String parameter, double doubleValue){
+    	this.legalizerSettings.put(parameter, new LegalizerSetting(doubleValue));
+    }
+    void addSetting(String parameter, int intValue){
+    	this.legalizerSettings.put(parameter, new LegalizerSetting(intValue));
+    }
     void addSetting(String parameter, double initialValue, double finalValue){
     	this.legalizerSettings.put(parameter, new LegalizerSetting(initialValue, finalValue, this.numIterations));
     }
     double getSettingValue(String parameter){
     	return this.legalizerSettings.get(parameter).getValue();
+    }
+    int getIntSettingValue(String parameter){
+    	LegalizerSetting ls =  this.legalizerSettings.get(parameter);
+    	if(ls.isInt()){
+    		return (int)ls.getValue();
+    	}else{
+    		this.logger.raise("The parameter " + parameter + " has no int value");
+    		return -1;
+    	}
     }
     void multiplySettings(){
     	for(LegalizerSetting setting:this.legalizerSettings.values()){
@@ -161,6 +176,8 @@ abstract class Legalizer {
     	return this.legalizerSettings.keySet();
     }
 
+    
+    
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
     void updateCriticalConnections(List<CritConn> criticalConnections){

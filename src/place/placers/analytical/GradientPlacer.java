@@ -23,9 +23,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         O_LEARNING_RATE_START = "learning rate start",
         O_LEARNING_RATE_STOP = "learning rate stop",
-        
-        O_STEP_SIZE_START = "step size start",
-        O_STEP_SIZE_STOP = "step size stop",
 
         O_MAX_CONN_LENGTH_RATIO_SPARSE = "max conn length ratio sparse",
         O_MAX_CONN_LENGTH_DENSE = "max conn length dense",
@@ -37,7 +34,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_OUTER_EFFORT_LEVEL = "outer effort level",
         
         O_INNER_EFFORT_LEVEL_START = "inner effort level start",
-        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop";
+        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop",
+        
+        /////////////////////////
+        // Parameters to sweep //
+        /////////////////////////
+        O_INTERPOLATION_FACTOR = "interpolation",
+        O_CLUSTER_SCALING_FACTOR = "cluster scaling factor",
+        O_SPREAD_BLOCK_ITERATIONS = "spread block iterations",
+        		
+        O_STEP_SIZE_START = "step size start",
+        O_STEP_SIZE_STOP = "step size stop";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -61,15 +68,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Double(0.2));
         
         options.add(
-                O_STEP_SIZE_START,
-                "initial step size in gradient cluster legalizer",
-                new Double(0.2));
-        options.add(
-                O_STEP_SIZE_STOP,
-                "final step size in gradient cluster legalizer",
-                new Double(0.05));
-        
-        options.add(
                 O_MAX_CONN_LENGTH_RATIO_SPARSE,
                 "maximum connection length in sparse placement is ratio of circuit width",
                 new Double(0.25));
@@ -90,7 +88,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_EPS,
                 "adam gradient descent eps parameter",
                 new Double(10e-10));
-
+        
         options.add(
                 O_OUTER_EFFORT_LEVEL,
                 "number of solve-legalize iterations",
@@ -103,12 +101,32 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_INNER_EFFORT_LEVEL_STOP,
                 "number of gradient steps to take in each outer iteration at the end",
                 new Integer(50));
+        
+        //Parameters to sweep
+        options.add(
+                O_INTERPOLATION_FACTOR,
+                "the interpolation between linear and legal solution as starting point for detailed legalization",
+                new Double(0.5));
+        options.add(
+                O_CLUSTER_SCALING_FACTOR,
+                "the force of the inter-cluster spreading is scaled to avoid large forces",
+                new Double(0.75));
+        options.add(
+        		O_SPREAD_BLOCK_ITERATIONS,
+                "the number of independent block spreading iterations",
+                new Integer(250));
+        options.add(
+                O_STEP_SIZE_START,
+                "initial step size in gradient cluster legalizer",
+                new Double(0.2));
+        options.add(
+                O_STEP_SIZE_STOP,
+                "final step size in gradient cluster legalizer",
+                new Double(0.05));
     }
 
     protected double anchorWeight;
     protected final double anchorWeightStop, anchorWeightExponent;
-
-    private final double stepSizeStart, stepSizeStop;
     
     private final double maxConnectionLength;
     protected double learningRate, learningRateMultiplier;
@@ -154,9 +172,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	this.effortLevelStart = this.options.getInteger(O_INNER_EFFORT_LEVEL_START);
     	this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP);
     	this.effortLevel = this.effortLevelStart;
-    	
-    	this.stepSizeStart =  this.options.getDouble(O_STEP_SIZE_START);
-    	this.stepSizeStop =  this.options.getDouble(O_STEP_SIZE_STOP);
     	
     	this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL) + 1;
 
@@ -224,8 +239,23 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                     this.nets,
                     this.netBlocks,
                     this.logger);
-            this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
-            this.legalizer.addSetting("step_size", widthFactor * this.stepSizeStart,  widthFactor * this.stepSizeStop);
+            this.legalizer.addSetting(
+            		"anneal_quality", 
+            		0.1,
+            		0.001);
+            this.legalizer.addSetting(
+            		"step_size", 
+            		widthFactor * this.options.getDouble(O_STEP_SIZE_START),  
+            		widthFactor * this.options.getDouble(O_STEP_SIZE_STOP));
+            this.legalizer.addSetting(
+            		"interpolation", 
+            		this.options.getDouble(O_INTERPOLATION_FACTOR));
+            this.legalizer.addSetting(
+            		"cluster_scaling",
+            		this.options.getDouble(O_CLUSTER_SCALING_FACTOR));
+            this.legalizer.addSetting(
+            		"block_spreading",
+            		this.options.getInteger(O_SPREAD_BLOCK_ITERATIONS));
         }
 
         // Juggling with objects is too slow (I profiled this,
