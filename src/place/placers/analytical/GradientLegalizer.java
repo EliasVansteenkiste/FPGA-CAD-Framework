@@ -218,6 +218,8 @@ class GradientLegalizer extends Legalizer {
     	int blockSpreadingIterations = this.getIntSettingValue("block_spreading");
     	
     	while(this.massMap.overlap() / this.blocks.size() > 0.2){
+    		this.massMap.reset();
+    		
     		this.spreadClusters(15);
     		this.addVisual("Spread clusters", this.blocks);
     		
@@ -232,16 +234,32 @@ class GradientLegalizer extends Legalizer {
     	this.massMap.printToFile("after", this.iterationCounter);
     }
     public void spreadClusters(int numIterations){
-		for(Cluster cluster:this.clusters){
-    		this.initializeMassMap(cluster);
+    	//The mass map is empty before cluster spreading
+    	for(Cluster cluster:this.clusters){
+    		
+    		//Add the blocks to the mass map
+    		for(Block block:cluster.blocks){
+    			this.massMap.add(block);
+    		}
     		
     		for(int i = 0; i < numIterations; i++){
     			this.applyPushingBlockForces(cluster);
     		}
+    		
+    		//Remove the blocks from the mass map
+    		for(Block block:cluster.blocks){
+    			this.massMap.remove(block);
+    		}
     	}
     }
     public void moveClusters(int numIterations, double scaleFactor){
-    	this.initializeMassMap();
+    	//The mass map is empty before cluster moving
+    	
+    	//Add the blocks to the mass map
+    	for(Block block:this.blocks){
+    		this.massMap.add(block);
+    	}
+    	
     	for(int i = 0 ; i < numIterations; i++){
         	for(Cluster cluster:this.clusters){
         		cluster.horizontalForce = 0.0;
@@ -275,6 +293,9 @@ class GradientLegalizer extends Legalizer {
         		}
         	}
     	}
+    	
+    	//The blocks are not removed after cluster moving, the mass
+    	//map of all blocks is required to calculate the overlap
 	}
     private double scaleForce(double input, double scaleFactor){
     	if(input < 0.0){
@@ -284,7 +305,7 @@ class GradientLegalizer extends Legalizer {
     	}
     }
     public void moveBlocks(int numIterations){
-    	this.initializeMassMap();
+    	//this.initializeMassMap();
     	this.applyPushingBlockForces(numIterations);
     }
     
