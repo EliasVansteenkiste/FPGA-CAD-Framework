@@ -40,6 +40,12 @@ class GradientLegalizer extends Legalizer {
     private final double[] visualX;
     private final double[] visualY;
     private final static boolean doVisual = false;
+    
+	private Timer clusterSpreading = new Timer();
+	private Timer clusterMoving = new Timer();
+	private Timer blockSpreading = new Timer();
+	private Timer hierarchicalSpreading = new Timer();
+	private Timer spreading = new Timer();
 
     GradientLegalizer(
             Circuit circuit,
@@ -111,7 +117,18 @@ class GradientLegalizer extends Legalizer {
     		this.updateLegal();
     		
     		t.stop();
-    		this.logger.println("\nDetailed legalization took " + String.format("%.2f s", t.getTime()));
+    		
+    		this.logger.println("\n");
+    		this.logger.println("-----------------------------------");
+        	this.logger.println("| Spreading              | " + String.format("%.2f s", this.spreading.getTime()) + " |");
+        	this.logger.println("| Hierarchical spreading | " + String.format("%.2f s", this.hierarchicalSpreading.getTime()) + " |");
+        	this.logger.println("| Cluster spreading      | " + String.format("%.2f s", this.clusterSpreading.getTime()) + " |");
+        	this.logger.println("| Cluster moving         | " + String.format("%.2f s", this.clusterMoving.getTime()) + " |");
+        	this.logger.println("| Block spreading        | " + String.format("%.2f s", this.blockSpreading.getTime()) + " |");
+        	this.logger.println("-----------------------------------");
+    		this.logger.println("| Detailed legalization  | " + String.format("%.2f s", t.getTime()) + " |");
+    		this.logger.println("-----------------------------------");
+    		this.logger.println("\n");
     	}else{
     		if(this.iterationCounter == 0){
         		this.makeBlocks(blocksStart, blocksEnd, this.numLegalColumns, this.height);
@@ -209,6 +226,10 @@ class GradientLegalizer extends Legalizer {
     
     //Spreading
     private void doSpreading(){
+    	this.spreading.start();
+    	
+    	int clusterIteration = 0;
+		
     	this.initializeMassMap();
     	
     	this.massMap.printToFile("before", this.iterationCounter);
@@ -217,21 +238,35 @@ class GradientLegalizer extends Legalizer {
     	double clusterScaling = this.getSettingValue("cluster_scaling");
     	int blockSpreadingIterations = this.getIntSettingValue("block_spreading");
     	
-    	while(this.massMap.overlap() / this.blocks.size() > 0.2){
+    	this.hierarchicalSpreading.start();
+    	while(this.massMap.overlap() / this.blocks.size() > 0.2 && clusterIteration < 20){
     		this.massMap.reset();
     		
+    		this.clusterSpreading.start();
     		this.spreadClusters(15);
     		this.addVisual("Spread clusters", this.blocks);
+    		this.clusterSpreading.stop();
     		
+    		this.clusterMoving.start();
     		this.moveClusters(20, clusterScaling);
     		this.addVisual("Move clusters", this.blocks);
+    		this.clusterMoving.stop();
+    		
+    		clusterIteration++;
     	}
+    	this.hierarchicalSpreading.stop();
     	
+    	this.logger.println("Hierarchical iterations: " + clusterIteration);
+    	
+    	this.blockSpreading.start();
     	this.addVisual("Before independent block spreading", blocks);
     	this.moveBlocks(blockSpreadingIterations);
     	this.addVisual("After independent block spreading", blocks);
-
+    	this.blockSpreading.stop();
+    	
     	this.massMap.printToFile("after", this.iterationCounter);
+    	
+    	this.spreading.stop();
     }
     public void spreadClusters(int numIterations){
     	//The mass map is empty before cluster spreading

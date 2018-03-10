@@ -199,64 +199,46 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         super.initializeData();
         
         this.startTimer(T_INITIALIZE_DATA);
+
+        double widthFactor = Math.pow((1.0 * this.circuit.getWidth()) / 100.0, 1.3);
+        this.logger.println("------------------");
+        this.logger.println("Circuit width: " + this.circuit.getWidth());
+        this.logger.println("Width factor: " + String.format("%.2f", widthFactor));
+        this.logger.println("------------------\n");
         
-        if(this.circuit.ratioUsedCLB() > 0.8){
-        	this.legalizer = new HeapLegalizer(
-                    this.circuit,
-                    this.blockTypes,
-                    this.blockTypeIndexStarts,
-                    this.numIterations,
-                    this.linearX,
-                    this.linearY,
-                    this.legalX,
-                    this.legalY,
-                    this.heights,
-                    this.leafNode,
-                    this.visualizer,
-                    this.nets,
-                    this.netBlocks,
-                    this.logger);
-            this.legalizer.addSetting("anneal_quality", 0.1,  0.001);
-        }else{
-            double widthFactor = Math.pow((1.0 * this.circuit.getWidth()) / 100.0, 1.3);
-            this.logger.println("------------------");
-            this.logger.println("Circuit width: " + this.circuit.getWidth());
-            this.logger.println("Width factor: " + String.format("%.2f", widthFactor));
-            this.logger.println("------------------\n");
-            
-            this.legalizer = new GradientLegalizer(
-                    this.circuit,
-                    this.blockTypes,
-                    this.blockTypeIndexStarts,
-                    this.numIterations,
-                    this.linearX,
-                    this.linearY,
-                    this.legalX,
-                    this.legalY,
-                    this.heights,
-                    this.leafNode,
-                    this.visualizer,
-                    this.nets,
-                    this.netBlocks,
-                    this.logger);
-            this.legalizer.addSetting(
-            		"anneal_quality", 
-            		0.1,
-            		0.001);
-            this.legalizer.addSetting(
-            		"step_size", 
-            		widthFactor * this.options.getDouble(O_STEP_SIZE_START),  
-            		widthFactor * this.options.getDouble(O_STEP_SIZE_STOP));
-            this.legalizer.addSetting(
-            		"interpolation", 
-            		this.options.getDouble(O_INTERPOLATION_FACTOR));
-            this.legalizer.addSetting(
-            		"cluster_scaling",
-            		this.options.getDouble(O_CLUSTER_SCALING_FACTOR));
-            this.legalizer.addSetting(
-            		"block_spreading",
-            		this.options.getInteger(O_SPREAD_BLOCK_ITERATIONS));
-        }
+        this.legalizer = new GradientLegalizer(
+                this.circuit,
+                this.blockTypes,
+                this.blockTypeIndexStarts,
+                this.numIterations,
+                this.linearX,
+                this.linearY,
+                this.legalX,
+                this.legalY,
+                this.heights,
+                this.leafNode,
+                this.visualizer,
+                this.nets,
+                this.netBlocks,
+                this.logger);
+        this.legalizer.addSetting(
+        		"anneal_quality", 
+        		0.1,
+        		0.001);
+        this.legalizer.addSetting(
+        		"step_size", 
+        		widthFactor * this.options.getDouble(O_STEP_SIZE_START),  
+        		widthFactor * this.options.getDouble(O_STEP_SIZE_STOP));
+        this.legalizer.addSetting(
+        		"interpolation", 
+        		this.options.getDouble(O_INTERPOLATION_FACTOR));
+        this.legalizer.addSetting(
+        		"cluster_scaling",
+        		this.options.getDouble(O_CLUSTER_SCALING_FACTOR));
+        this.legalizer.addSetting(
+        		"block_spreading",
+        		this.options.getInteger(O_SPREAD_BLOCK_ITERATIONS));
+
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
