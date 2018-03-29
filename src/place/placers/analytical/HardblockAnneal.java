@@ -6,13 +6,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-//import place.placers.analytical.HardblockConnectionLegalizer.Block;
-//import place.placers.analytical.HardblockConnectionLegalizer.Column;
-//import place.placers.analytical.HardblockConnectionLegalizer.Crit;
-//import place.placers.analytical.HardblockConnectionLegalizer.Net;
-//import place.placers.analytical.HardblockConnectionLegalizer.Site;
-
-///////////////////////TODO for PSO/////////////////////////////////
 import place.placers.analytical.HardblockSwarmLegalizer.Block;
 import place.placers.analytical.HardblockSwarmLegalizer.Column;
 import place.placers.analytical.HardblockSwarmLegalizer.Crit;
@@ -36,7 +29,6 @@ public class HardblockAnneal {
 	private List<Double> costHistory;
 	
 	private final Random random;
-//	private int counter;
 	
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
@@ -125,8 +117,12 @@ public class HardblockAnneal {
 		if(this.minimumCost < this.cost){
 			for(Block block:this.blocks){
 				block.setOptimalSite();
+//				System.out.println(block.index + " -> " + block.optimalSite.column + "\t" + block.optimalSite.row);
 			}
 		}
+//		for(Block block:this.blocks){
+//			System.out.println(block.index + " -> " + block.site.column + "\t" + block.site.row);
+//		}
 ////		TODO print cost for each column
 //		for(Net net:nets){
 //			net.initializeConnectionCost();
@@ -184,11 +180,11 @@ public class HardblockAnneal {
     }
     private void updateTemperature(double alpha) {
         if (alpha > 0.96) {
-        	 this.temperature *= 0.5;
+        	this.temperature *= 0.5;
         } else if (alpha > 0.8) {
-        	 this.temperature *= 0.9;
+        	this.temperature *= 0.9;
         } else if (alpha > 0.15){
-        	 this.temperature *= 0.95;
+        	this.temperature *= 0.95;
         } else {
         	this.temperature *= 0.8;
         }
@@ -200,7 +196,6 @@ public class HardblockAnneal {
 		double quadSumDeltaCost = 0;
 		
         for(int i = 0; i < moves; i++){
-//			this.counter++;
         	Swap swap = this.getSwap();
     		swap.deltaCost();
 			

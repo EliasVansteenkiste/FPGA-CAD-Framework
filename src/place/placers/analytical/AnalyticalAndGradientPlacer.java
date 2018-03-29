@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -47,6 +48,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     private boolean[] hasNets;
     protected int numNets, numRealNets, numRealConn;
     protected List<Net> nets;
+    protected int indexOfNets;
     protected List<TimingNet> timingNets;
 
     private boolean[] solveSeparate;
@@ -104,7 +106,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         for(Macro macro : this.circuit.getMacros()) {
             numBlocks -= macro.getNumBlocks() - 1;
         }
-
         // Make a list of all block types, with IO blocks first
         this.blockTypes = new ArrayList<>();
 
@@ -168,10 +169,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     macroBlocks.add(block);
                 }
             }
-
             this.blockTypeIndexStarts.add(blockCounter);
         }
-
+        
         for(GlobalBlock block : macroBlocks) {
             GlobalBlock macroSource = block.getMacro().getBlock(0);
             int sourceIndex = this.netBlocks.get(macroSource).blockIndex;
@@ -192,7 +192,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         // a net (duplicates are allowed) and the corresponding timing edge
         this.nets = new ArrayList<Net>();
         this.timingNets = new ArrayList<TimingNet>();
-
+        this.indexOfNets = 0;
 
         /* For each global output pin, build the net that has that pin as
          * its source. We build the following data structures:
@@ -207,31 +207,40 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
          */
 
         // Loop through all leaf blocks
+        
         for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
             NetBlock sourceBlock = this.netBlocks.get(sourceGlobalBlock);
 
             for(TimingNode timingNode : sourceGlobalBlock.getTimingNodes()) {
                 if(timingNode.getPosition() != Position.LEAF) {
                     this.addNet(sourceBlock, timingNode);
-                }
-            }
+                }    
+            }     
         }
 
         this.numRealNets = this.nets.size();
-
+        System.out.println(this.indexOfNets + " " + this.numRealNets);
         this.numRealConn = 0;
         for(Net net:this.nets){
         	this.numRealConn += net.blocks.length - 1;
         }
-
+        int cal = indexOfNets;
         for(NetBlock block : this.netBlocks.values()) {
             if(!this.hasNets[block.blockIndex]) {
                 this.addDummyNet(block);
+                block.setHasNet(true);
             }
         }
+        System.out.println(indexOfNets -  cal + " DummyNet added");//TODO COUNT THE NUM OF DUMMYNET
+//        for (Map.Entry<GlobalBlock, NetBlock> entry : this.netBlocks.entrySet()) {
+//            GlobalBlock key = entry.getKey();
+//            NetBlock value = entry.getValue();
+//            System.out.println(key.getIndex() + " " + value.getBlockIndex());
+//        }
 
         this.numNets = this.nets.size();
-
+        
+//        System.out.println(this.numNets + " " + this.numRealNets + " " + this.numRealConn);
 
         //Separate solving
         int numIterations = this.numIterations();
@@ -258,7 +267,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
         System.out.println("Solve separate: " + recalculationsString + "\n");
-
+        
         this.stopTimer(T_INITIALIZE_DATA);
     }
 
@@ -267,8 +276,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         // placer. If they are not added, diagonal elements
         // exist in the matrix that are equal to 0, which
         // makes the matrix unsolvable.
-        Net net = new Net(sourceBlock);
+        Net net = new Net(indexOfNets, sourceBlock);
         this.nets.add(net);
+        this.indexOfNets++;
     }
 
     private void addNet(NetBlock sourceBlock, TimingNode sourceNode) {
@@ -294,7 +304,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             return;
         }
 
-        Net net = new Net(timingNet);
+        Net net = new Net(this.indexOfNets, timingNet);
 
 
         //TODO HOW CAN I MAKE THE COSTCALCULATOR ACCURATE
@@ -308,9 +318,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         int numUniqueBlocks = net.blocks.length;
         if(numUniqueBlocks > 1 && numUniqueBlocks < this.circuit.getGlobalBlocks().size() / 2) {
             this.nets.add(net);
-
+            this.indexOfNets++;
             for(NetBlock block : net.blocks) {
                 this.hasNets[block.blockIndex] = true;
+                block.setHasNet(true);
             }
 
             // We only need the complete list of blocks and their
@@ -548,13 +559,14 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     public class NetBlock {
         final int blockIndex;
         final float offset;
+        boolean hasNet;
 
         final BlockType blockType;
 
         NetBlock(int blockIndex, float offset, BlockType blockType) {
             this.blockIndex = blockIndex;
             this.offset = offset;
-
+           
             this.blockType = blockType;
         }
 
@@ -567,6 +579,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
         public float getOffset() {
             return this.offset;
+        }
+        void setHasNet(boolean hasNet){
+        	this.hasNet = hasNet;
         }
 
         @Override
@@ -619,15 +634,18 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     class Net {
         final NetBlock[] blocks;
+        final int netIndex;
 
-        Net(NetBlock block) {
-            this.blocks = new NetBlock[2];
+        Net(int index, NetBlock block) {
+            this.netIndex = index;
+        	this.blocks = new NetBlock[2];
             this.blocks[0] = block;
             this.blocks[1] = block;
         }
 
-        Net(TimingNet timingNet) {
-            Set<NetBlock> netBlocks = new HashSet<>();
+        Net(int index, TimingNet timingNet) {
+            this.netIndex = index;
+        	Set<NetBlock> netBlocks = new HashSet<>();
             netBlocks.add(timingNet.source);
             for(TimingNetBlock timingNetBlock : timingNet.sinks) {
                 netBlocks.add(new NetBlock(timingNetBlock));

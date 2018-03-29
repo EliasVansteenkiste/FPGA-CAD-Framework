@@ -17,6 +17,7 @@ class CostCalculatorWLD extends CostCalculator {
     @Override
     protected double calculate(boolean tmp) {
         double cost = 0.0;
+//        System.out.println(this.nets.size());
 
         for(Net net : this.nets) {
             int numNetBlocks = net.blocks.length;
