@@ -319,30 +319,16 @@ public class HardblockSwarm {
 	private void initialization(){
 		this.swarm.clear();
 		
-		Particle baseLineParticle = new Particle(0, this.numSites);
-		baseLineParticle.setPNets(this.columnNets);
-		baseLineParticle.setPCrits(this.columnCrits);
-		baseLineParticle.pCost = baseLineParticle.getCost();
-		baseLineParticle.pBest = baseLineParticle.pCost;
-		
-		if(!this.printout) System.out.print("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
-		int j = 0;
-		for(Site site : this.sites){
-			if(site.hasBlock()){
-				baseLineParticle.blockIndexList[j] = site.block.index;
-				site.block.setLegalXY(site.column, site.row);
-			}else baseLineParticle.blockIndexList[j] = -1;
-			j++;
-		}
-
-		this.swarm.add(baseLineParticle);
-		
+		this.addBaseLineParticle();
 		
 		
 		if(this.numParticles >= this.numSites){
-			initialParticleBasedOnCritis(1, this.numSites);
+			this.initialParticlesBasedOnCritis(1, this.numSites);
+			this.initializeParticlesRandomly(this.numSites, this.numParticles);
+//			System.out.println("swarmSize: " + this.swarm.size() + " this.numSites:" + this.numSites);
 		}else{
-			initialParticleBasedOnCritis(1, this.numParticles);
+			this.initialParticlesBasedOnCritis(1, this.numParticles);
+//			System.out.println("swarmSize: " + this.swarm.size() + " this.numSites:" + this.numSites);
 		}
 			
 
@@ -352,83 +338,11 @@ public class HardblockSwarm {
 	private void initializeSwarm(){
 		this.swarm.clear();
 		
-		Particle baseLineParticle = new Particle(0, this.numSites);
-		baseLineParticle.setPNets(this.columnNets);
-		baseLineParticle.setPCrits(this.columnCrits);
-		baseLineParticle.pCost = baseLineParticle.getCost();
-//		baseLineParticle.pCost = this.getCostBasedOnBlock();
-		baseLineParticle.pBest = baseLineParticle.pCost;
-		if(!this.printout) System.out.print("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
-		int j = 0;
-		for(Site site : this.sites){
-			if(site.hasBlock()){
-				baseLineParticle.blockIndexList[j] = site.block.index;
-				site.block.setLegalXY(site.column, site.row);
-			}else baseLineParticle.blockIndexList[j] = -1;
-			j++;
-		}
-		this.swarm.add(baseLineParticle);
+		this.addBaseLineParticle();
 		
-		if(!this.printout) System.out.println(baseLineParticle.pCost);
-		if(!this.printout){
-			System.out.println("particle 0");
-			for(int a = 0; a < this.numSites; a++){
-				System.out.println("\t" + a + "\t" + baseLineParticle.blockIndexList[a]);
-			}
-
-		}		
-		for(int i = 1; i < this.numParticles; i++){		
-			this.timingTree.start("randomly assign blocks");
-			this.randomlyPlaceBlocks();
-			this.timingTree.time("randomly assign blocks");
-			
-//			for(Block block:this.blocks){
-//				block.duplicateData(i);
-//			}
-
-//			///////////////////////////////////TODO check if blocks are randomly placed onto locations/////////////////////////
-			if(!this.printout){
-				System.out.println("Particle: " + i);
-				for(int k = 0; k < this.numSites; k++){
-					if(this.sites[k].hasBlock()){
-						System.out.println("\t" + k + "\t" + this.sites[k].block.index);
-					}else System.out.println("\t" + k + "\t" + -1);
-				}
-			}			
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			
-			int velLength = this.rand.nextInt(this.velMaxSize);
-			List<Swap> vel = new ArrayList<Swap>();
-			for(int m = 1; m < velLength; m++){
-				Swap v = new Swap();
-//				v.setFromIndex(this.rand.nextInt(this.numSites));
-//				v.setToIndex(this.rand.nextInt(this.numSites));
-				v.setFromIndex(0);
-				v.setToIndex(0);
-				vel.add(v);	
-			}
-			
-			Particle particle = new Particle(i, this.numSites);
-			particle.setVelocity(vel);
-			for(int m = 0; m < this.numSites; m++){
-				if(this.sites[m].hasBlock()) particle.blockIndexList[m] = this.sites[m].block.index;
-				else particle.blockIndexList[m] = -1;
-			}
-			particle.setPNets(this.columnNets);
-			particle.setPCrits(this.columnCrits);
-			double tmpCost = particle.getCost();
-//			particle.pCost = this.getCostBasedOnBlock();
-			particle.pCost = tmpCost;
-			//initial pbest info
-			particle.pBest = particle.pCost;
-//			System.arraycopy(particle.blockIndexList, 0, particle.pBestIndexList, 0, this.numSites);//initial pbest location
-//			double test = this.getCost();// TEST if p.getCost() works 
-//			System.out.println(String.format("%.2f", tmpCost));// + " " + String.format("%.2f", test));
-			
-			this.swarm.add(particle);
-		}
+		this.initializeParticlesRandomly(1, this.numParticles);
 	}
-	private void initialParticleBasedOnCritis(int startPIndex, int endPIndex){
+	private void initialParticlesBasedOnCritis(int startPIndex, int endPIndex){
 		List<Block> sortedBlocks = new ArrayList<>();
 		Collections.addAll(sortedBlocks, this.blocks);
 		for(Block block:this.blocks){
@@ -477,6 +391,85 @@ public class HardblockSwarm {
 //			}
 //			System.out.println(particle.pCost);
 		}
+	}
+	
+	private void initializeParticlesRandomly(int startPIndex, int endPIndex){
+		for(int i = startPIndex; i < endPIndex; i++){		
+			this.timingTree.start("randomly assign blocks");
+			this.randomlyPlaceBlocks();
+			this.timingTree.time("randomly assign blocks");
+			
+//			///////////////////////////////////TODO check if blocks are randomly placed onto locations/////////////////////////
+			if(!this.printout){
+				System.out.println("Particle: " + i);
+				for(int k = 0; k < this.numSites; k++){
+					if(this.sites[k].hasBlock()){
+						System.out.println("\t" + k + "\t" + this.sites[k].block.index);
+					}else System.out.println("\t" + k + "\t" + -1);
+				}
+			}			
+			///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			
+			int velLength = this.rand.nextInt(this.velMaxSize);
+			List<Swap> vel = new ArrayList<Swap>();
+			for(int m = 1; m < velLength; m++){
+				Swap v = new Swap();
+//				v.setFromIndex(this.rand.nextInt(this.numSites));
+//				v.setToIndex(this.rand.nextInt(this.numSites));
+				v.setFromIndex(0);
+				v.setToIndex(0);
+				vel.add(v);	
+			}
+			
+			Particle particle = new Particle(i, this.numSites);
+			particle.setVelocity(vel);
+			for(int m = 0; m < this.numSites; m++){
+				if(this.sites[m].hasBlock()) particle.blockIndexList[m] = this.sites[m].block.index;
+				else particle.blockIndexList[m] = -1;
+			}
+			particle.setPNets(this.columnNets);
+			particle.setPCrits(this.columnCrits);
+			double tmpCost = particle.getCost();
+//			particle.pCost = this.getCostBasedOnBlock();
+			particle.pCost = tmpCost;
+			//initial pbest info
+			particle.pBest = particle.pCost;
+//			System.arraycopy(particle.blockIndexList, 0, particle.pBestIndexList, 0, this.numSites);//initial pbest location
+//			double test = this.getCost();// TEST if p.getCost() works 
+//			System.out.println(String.format("%.2f", tmpCost));// + " " + String.format("%.2f", test));
+			
+			this.swarm.add(particle);
+		}
+	}
+	
+	private void addBaseLineParticle(){
+		Particle baseLineParticle = new Particle(0, this.numSites);
+		
+		int j = 0;
+		for(Site site : this.sites){
+			if(site.hasBlock()){
+				baseLineParticle.blockIndexList[j] = site.block.index;
+				site.block.setLegalXY(site.column, site.row);
+			}else baseLineParticle.blockIndexList[j] = -1;
+			j++;
+		}
+		
+		baseLineParticle.setPNets(this.columnNets);
+		baseLineParticle.setPCrits(this.columnCrits);
+		baseLineParticle.pCost = baseLineParticle.getCost();
+		baseLineParticle.pBest = baseLineParticle.pCost;
+		
+		this.swarm.add(baseLineParticle);
+		
+		if(!this.printout) System.out.print("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
+		
+		if(!this.printout) System.out.println(baseLineParticle.pCost);
+		if(!this.printout){
+			System.out.println("particle 0");
+			for(int a = 0; a < this.numSites; a++){
+				System.out.println("\t" + a + "\t" + baseLineParticle.blockIndexList[a]);
+			}
+		}	
 	}
 	
 	private double getCostBasedOnBlock(){
@@ -920,8 +913,5 @@ public class HardblockSwarm {
 			this.toIndex = toIndex;
 		}			
 	}
-	class vitualCLB{
-		Block block;
-	}
-	
+
 }
