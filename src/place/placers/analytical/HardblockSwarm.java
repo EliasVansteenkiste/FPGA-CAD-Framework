@@ -4,6 +4,7 @@ import java.util.Random;
 import java.util.Set;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -208,8 +209,8 @@ public class HardblockSwarm {
 	********************************/
 	private void doPSO(){
 		this.timingTree.start("Initialize the swarm");
-		this.initializeSwarm();
-//		this.initialization();
+//		this.initializeSwarm();
+		this.initialization();
 		this.timingTree.time("Initialize the swarm");
 		
 		this.timingTree.start("get gBest");
@@ -314,23 +315,37 @@ public class HardblockSwarm {
 		}
 		return pos;
 	}
-	//Initialization based on blocks' importance
+	//Initialization based on blocks' importance TODO
 	private void initialization(){
 		this.swarm.clear();
-		List<Block> sortedBlocks = new ArrayList<>();
-		Collections.addAll(sortedBlocks, this.blocks);
-		for(Block block:this.blocks){
-			block.updateCriticalityBasedonMap();
+		
+		Particle baseLineParticle = new Particle(0, this.numSites);
+		baseLineParticle.setPNets(this.columnNets);
+		baseLineParticle.setPCrits(this.columnCrits);
+		baseLineParticle.pCost = baseLineParticle.getCost();
+		baseLineParticle.pBest = baseLineParticle.pCost;
+		
+		if(!this.printout) System.out.print("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
+		int j = 0;
+		for(Site site : this.sites){
+			if(site.hasBlock()){
+				baseLineParticle.blockIndexList[j] = site.block.index;
+				site.block.setLegalXY(site.column, site.row);
+			}else baseLineParticle.blockIndexList[j] = -1;
+			j++;
 		}
-		Collections.sort(sortedBlocks, new Comparator<Block>(){
-			public int compare(Block b1, Block b2){
-				return b1.compareTo(b2);
-			}
-		});
-		for(Block b:sortedBlocks){
-			System.out.println(b.index + " -> " + b.criticality);
+
+		this.swarm.add(baseLineParticle);
+		
+		
+		
+		if(this.numParticles >= this.numSites){
+			initialParticleBasedOnCritis(1, this.numSites);
+		}else{
+			initialParticleBasedOnCritis(1, this.numParticles);
 		}
-		System.out.println();
+			
+
 	}
 	
 	//initialize swarm
@@ -413,6 +428,57 @@ public class HardblockSwarm {
 			this.swarm.add(particle);
 		}
 	}
+	private void initialParticleBasedOnCritis(int startPIndex, int endPIndex){
+		List<Block> sortedBlocks = new ArrayList<>();
+		Collections.addAll(sortedBlocks, this.blocks);
+		for(Block block:this.blocks){
+			block.updateCriticalityBasedonMap();
+		}
+		Collections.sort(sortedBlocks, new Comparator<Block>(){
+			public int compare(Block b1, Block b2){
+				return b1.compareTo(b2);
+			}
+		});
+		
+		int[] blockIndexBasedOnCriti = new int[this.numSites];//this.numSites >= this.numBlocks
+		Arrays.fill(blockIndexBasedOnCriti, -1);
+		int arrayIndex = 0;
+		for(Block b:sortedBlocks){
+//			System.out.println(b.index + " -> " + b.criticality);
+			blockIndexBasedOnCriti[arrayIndex] = b.index;
+			arrayIndex++;
+		}
+		
+		for(int pIndex = startPIndex; pIndex < endPIndex; pIndex++){
+			Particle particle = new Particle(pIndex, this.numSites);
+			int settledLength = this.numSites - pIndex;
+//			System.out.println(pIndex + " " + this.numSites + " " + settledLength);
+			System.arraycopy(blockIndexBasedOnCriti, 0, particle.blockIndexList, pIndex, settledLength);
+			int unsettledLast = this.numSites - 1;
+			for(int leftOverIndex = 0; leftOverIndex < pIndex; leftOverIndex++){
+				particle.blockIndexList[pIndex - 1 - leftOverIndex] = blockIndexBasedOnCriti[unsettledLast];
+				unsettledLast--;
+			}
+			for(Block block : this.blocks){
+				int siteIndex = this.getSiteIndex(particle.blockIndexList, block.index);
+				block.setLegalXY(this.legalcordinateX, siteIndex * this.blockHeight +1);
+			}
+			particle.setPNets(this.columnNets);
+			particle.setPCrits(this.columnCrits);
+			double tmpCost = particle.getCost();
+			particle.pCost = tmpCost;
+			particle.pBest = particle.pCost;
+
+			this.swarm.add(particle);
+			
+//			System.out.println("for particle " + pIndex);
+//			for(int i = 0; i < this.numSites; i++){
+//				System.out.println(particle.blockIndexList[i] + " " + particle.pBestIndexList[i]);
+//			}
+//			System.out.println(particle.pCost);
+		}
+	}
+	
 	private double getCostBasedOnBlock(){
 		double cost = 0.0;
 		double conn = 0.0;
@@ -588,24 +654,28 @@ public class HardblockSwarm {
 		
 		int[] tmpLoc = new int[this.numSites];
 		System.arraycopy(particleLoc, 0, tmpLoc, 0, this.numSites);
-		
-		for(int m = 0; m < bestLoc.length; m++){
-			int value = bestLoc[m];
-			if(value != -1){
-				for(int n = 0; n < tmpLoc.length; n++){
-					if(value == tmpLoc[n]){
-						if(m != n){
-							Swap swap = new Swap(0, 0);
-							swap.setFromIndex(m);
-							swap.setToIndex(n);
-							this.doOneSwap(tmpLoc, m , n);
-							this.swaps.add(swap);
-							break;
-						}						
+//		for(int i = 0; i < this.numSites; i++){
+//			System.out.println(tmpLoc[i]+ " "+ particleLoc[i] + " " + bestLoc[i]);
+//		}
+		if(!Arrays.equals(bestLoc, tmpLoc)){
+			for(int m = 0; m < bestLoc.length; m++){
+				int value = bestLoc[m];
+				if(value != -1){
+					for(int n = 0; n < tmpLoc.length; n++){
+						if(value == tmpLoc[n]){
+							if(m != n){
+								Swap swap = new Swap(0, 0);
+								swap.setFromIndex(m);
+								swap.setToIndex(n);
+								this.doOneSwap(tmpLoc, m , n);	
+								this.swaps.add(swap);
+								break;
+							}						
+						}
 					}
-				}
-			}		
-		}
+				}		
+			}
+		}//else System.out.println("same");
 //		return swaps;	
 	}
 	private void getSwapsStartRandomly(int startIndex, int[] bestLoc, int[] partucleLoc){

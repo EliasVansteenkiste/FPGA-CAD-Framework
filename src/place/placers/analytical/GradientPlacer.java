@@ -6,6 +6,8 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
+import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
@@ -188,7 +190,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int i = 0; i < this.numRealNets; i++) {
             netBlockSize += this.nets.get(i).blocks.length;
         }
-
+        
 
         this.allTrue = new boolean[this.numRealNets];
         Arrays.fill(this.allTrue, true);
@@ -208,6 +210,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         this.netEnds = new int[this.numRealNets];
         this.netBlockIndexes = new int[netBlockSize];
+        
         this.netBlockOffsets = new float[netBlockSize];
 
         int netBlockCounter = 0;
@@ -296,10 +299,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 				this.coordinatesY[i] = this.linearY[i];
 			}
 		}
+//		for(Net net:this.nets){
+//        	for(NetBlock block:net.blocks){
+//        		int blockIndex = block.getBlockIndex(); 
+//            	block.initializeLinear(this.linearX[blockIndex], this.linearY[blockIndex]);
+//            	block.initialLegal(this.legalizer.getLegalX(blockIndex), this.legalizer.getLegalY(blockIndex));
+//        	}
+//		}
 
         for(int i = 0; i < this.effortLevel; i++) {
             this.solveLinearIteration(processNets);
-
+            //TODO to visualize the gradient descent step
             //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), -1);
         }
         
@@ -309,11 +319,19 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 				this.linearY[i] = this.coordinatesY[i];
 			}
 		}
+		
+//		for(Net net:this.nets){
+//    		for(NetBlock block:net.blocks){
+//    			int blockIndex = block.getBlockIndex(); 
+//        		if(!this.fixed[blockIndex])block.initializeLinear(this.coordinatesX[blockIndex], this.coordinatesY[blockIndex]);
+//    		}
+//		}
+		
     }
 
     /*
      * Build and solve the linear system ==> recalculates linearX and linearY
-     * If it is the first time we solve the linear system ==> don't take pseudonets into account
+     * If it is the first time we solve the linear system ==> don't take pseudo connections into account
      */
     protected void solveLinearIteration(boolean[] processNets) {
         this.startTimer(T_BUILD_LINEAR);
@@ -323,7 +341,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         // Process nets
         this.processNets(processNets);
-
+//        this.processNetsNew(processNets, this.fixed);
+        
+//        for(Net net:this.nets){
+//    		for(NetBlock block:net.blocks){
+//    			if(!block.isInitialized) System.out.println(block.getBlockIndex() + " not initialized");
+//    		}
+//    	}
+//        
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
             // this.legalX and this.legalY store the solution with the lowest cost
@@ -340,18 +365,30 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     }
 
     protected void processNets(boolean[] processNet) {
-        int numNets = this.netEnds.length;
+        int numNets = this.netEnds.length;//this.netEnds = new int[this.numRealNets];
 
         int netStart, netEnd = 0;
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             netStart = netEnd;
             netEnd = this.netEnds[netIndex];
-
+//            System.out.println(netIndex);
         	if(processNet[netIndex]){
                 this.solver.processNet(netStart, netEnd);
         	}
+//        	System.out.println();
         }
     }
+    ////////////////////////////new change//////////////////////////////////////////////
+    protected void processNetsNew(boolean[] processNet, boolean[] fixed) {	
+        for(int netIndex = 0; netIndex < this.numRealNets; netIndex++) {
+//            System.out.println(netIndex);
+        	if(processNet[netIndex]){
+                this.solver.processNetNew(this.nets.get(netIndex), this.fixed);
+        	}
+//        	System.out.println();
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     protected void solveLegal() {

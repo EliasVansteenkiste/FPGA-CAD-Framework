@@ -15,15 +15,17 @@ import place.circuit.timing.TimingNode.Position;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.placers.Placer;
+import place.placers.analytical.HardblockSwarmLegalizer.Block;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -50,6 +52,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected List<Net> nets;
     protected int indexOfNets;
     protected List<TimingNet> timingNets;
+    
+    protected List<NetBlock> movableBlocks = new ArrayList<>();
 
     private boolean[] solveSeparate;
 
@@ -99,13 +103,15 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
         // Count the number of blocks
         // A macro counts as 1 block
-        int numBlocks = 0;
+        int numBlocks = 0;//3421 for neuron
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
             numBlocks += this.circuit.getBlocks(blockType).size();
         }
+//        System.out.println("this.circuit blocks: " + numBlocks);//3524 for neuron
         for(Macro macro : this.circuit.getMacros()) {
             numBlocks -= macro.getNumBlocks() - 1;
         }
+//        System.out.println("this.circuit blocks with macro merged: "+ numBlocks);//3421 for neuron
         // Make a list of all block types, with IO blocks first
         this.blockTypes = new ArrayList<>();
 
@@ -134,8 +140,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.blockTypeIndexStarts = new ArrayList<>();
         this.blockTypeIndexStarts.add(0);
         List<GlobalBlock> macroBlocks = new ArrayList<>();
-
-
+        
         int blockCounter = 0;
         for(BlockType blockType : this.circuit.getGlobalBlockTypes()) {
             for(AbstractBlock abstractBlock : this.circuit.getBlocks(blockType)) {
@@ -158,9 +163,13 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     this.legalX[blockCounter] = column;
                     this.legalY[blockCounter] = row + (int) Math.floor(-offset);
                     this.heights[blockCounter] = height;
-
-                    this.netBlocks.put(block, new NetBlock(blockCounter, offset, blockType));
-
+                    
+                    NetBlock nBlock = new NetBlock(blockCounter, offset, blockType);
+//                    nBlock.initializeLinearLegal(this.linearX[blockCounter], this.linearY[blockCounter], this.legalX[blockCounter], this.legalY[blockCounter]);//
+//                    this.movableBlocks.add(nBlock);
+                    this.netBlocks.put(block, nBlock);
+                    
+                    
                     blockCounter++;
 
                 // The position of other blocks will be calculated
@@ -171,7 +180,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
             this.blockTypeIndexStarts.add(blockCounter);
         }
-        
+//        System.out.println(blockCounter);//3421 for neuron
         for(GlobalBlock block : macroBlocks) {
             GlobalBlock macroSource = block.getMacro().getBlock(0);
             int sourceIndex = this.netBlocks.get(macroSource).blockIndex;
@@ -183,8 +192,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
 
         this.numIOBlocks = this.blockTypeIndexStarts.get(1);
-
-
+//        Sythis.netBlocks.put(bstem.out.println(blockCounter);//3524 for neuron
+        
+        
 
         // Add all nets
         // A net is simply a list of unique block indexes
@@ -193,6 +203,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         this.nets = new ArrayList<Net>();
         this.timingNets = new ArrayList<TimingNet>();
         this.indexOfNets = 0;
+        
 
         /* For each global output pin, build the net that has that pin as
          * its source. We build the following data structures:
@@ -207,8 +218,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
          */
 
         // Loop through all leaf blocks
-        
+//        System.out.println("this cicuit global blocks: " + this.circuit.getGlobalBlocks().size());
         for(GlobalBlock sourceGlobalBlock : this.circuit.getGlobalBlocks()) {
+//        	System.out.println("SB: " + sourceGlobalBlock.getIndex());
             NetBlock sourceBlock = this.netBlocks.get(sourceGlobalBlock);
 
             for(TimingNode timingNode : sourceGlobalBlock.getTimingNodes()) {
@@ -216,29 +228,56 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                     this.addNet(sourceBlock, timingNode);
                 }    
             }     
-        }
-
+        }       
         this.numRealNets = this.nets.size();
-        System.out.println(this.indexOfNets + " " + this.numRealNets);
+//        System.out.println("this.numRealNets: " + this.numRealNets);//TODO
         this.numRealConn = 0;
         for(Net net:this.nets){
         	this.numRealConn += net.blocks.length - 1;
         }
-        int cal = indexOfNets;
+
         for(NetBlock block : this.netBlocks.values()) {
             if(!this.hasNets[block.blockIndex]) {
                 this.addDummyNet(block);
                 block.setHasNet(true);
             }
         }
-        System.out.println(indexOfNets -  cal + " DummyNet added");//TODO COUNT THE NUM OF DUMMYNET
-//        for (Map.Entry<GlobalBlock, NetBlock> entry : this.netBlocks.entrySet()) {
-//            GlobalBlock key = entry.getKey();
-//            NetBlock value = entry.getValue();
-//            System.out.println(key.getIndex() + " " + value.getBlockIndex());
+        ///////////////////////////////////////TODO TO MERGE NETS/////////////////////////////////////
+//        for(Net net:this.nets){
+//        	for(NetBlock block:net.blocks){
+//        		int blockIndex = block.getBlockIndex(); 
+//            	block.initializeLinearLegal(this.linearX[blockIndex], this.linearY[blockIndex], this.legalX[blockIndex], this.legalY[blockIndex]);
+//        		if(!this.movableBlocks.contains(block)){
+//        			block.addBlockNet(net);
+//        			this.movableBlocks.add(block);
+//        		}else{
+//        			this.movableBlocks.get(this.movableBlocks.indexOf(block)).addBlockNet(net);
+//        		}
+//        	}
+//        }
+////        System.out.println(this.movableBlocks.size());//including macros(not count as one)
+//        Collections.sort(this.movableBlocks, new Comparator<NetBlock>(){
+//			public int compare(NetBlock b1, NetBlock b2){
+//				return b1.compareTo(b2);
+//			}
+//		});
+        
+//        for(NetBlock block:this.movableBlocks){
+//        	int blockIndex = block.getBlockIndex(); 
+//        	block.initializeLinearLegal(this.linearX[blockIndex], this.linearY[blockIndex], this.legalX[blockIndex], this.legalY[blockIndex]);
 //        }
 
-        this.numNets = this.nets.size();
+//        for(NetBlock block:this.movableBlocks){
+//        	System.out.println(block.blockIndex + " " + block.blockType);
+//        	for(Net net:block.blockNets){
+//        		System.out.print("\t" + net.netIndex);
+//        	}
+//        	System.out.println();
+//   						
+//        }
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+        
+//        this.numNets = this.nets.size();//this.numNets = this.numRealNets + num of dummy nets
         
 //        System.out.println(this.numNets + " " + this.numRealNets + " " + this.numRealConn);
 
@@ -318,10 +357,16 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         int numUniqueBlocks = net.blocks.length;
         if(numUniqueBlocks > 1 && numUniqueBlocks < this.circuit.getGlobalBlocks().size() / 2) {
             this.nets.add(net);
-            this.indexOfNets++;
+//            System.out.print("for net " + net.netIndex + ": " + "SB-> " + timingNet.source.getBlockIndex() + "; ");
+//            for(NetBlock b:net.blocks){
+//            	System.out.print(b.getBlockIndex() + " ");
+//            }
+//            System.out.println();
+           
             for(NetBlock block : net.blocks) {
                 this.hasNets[block.blockIndex] = true;
                 block.setHasNet(true);
+                
             }
 
             // We only need the complete list of blocks and their
@@ -329,6 +374,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             if(this.isTimingDriven()) {
                 this.timingNets.add(timingNet);
             }
+            this.indexOfNets++;
         }
     }
 
@@ -559,24 +605,54 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     public class NetBlock {
         final int blockIndex;
         final float offset;
+        
         boolean hasNet;
+        final List<Net> blockNets;//added 0402
+        double linearX, linearY;
+        int legalX, legalY;
 
         final BlockType blockType;
 
         NetBlock(int blockIndex, float offset, BlockType blockType) {
             this.blockIndex = blockIndex;
             this.offset = offset;
+            
+            blockNets = new ArrayList<>();
            
             this.blockType = blockType;
         }
 
         NetBlock(TimingNetBlock timingNetBlock) {
             this(timingNetBlock.blockIndex, timingNetBlock.offset, timingNetBlock.blockType);
+//            System.out.println("timing net block new created: " + timingNetBlock.blockIndex);
         }
-
+        ///////////////////////////////////////////////////////////
+        void addBlockNet(Net net){
+        	if(!this.blockNets.contains(net)){
+        		this.blockNets.add(net);
+        	}
+        }
+        void initializeLinear(double doubleX, double doubleY){
+        	this.linearX = doubleX;
+        	this.linearY = doubleY;
+        }
+        void initialLegal(int x, int y){
+        	this.legalX = x;
+        	this.legalY = y;
+        }
         public int getBlockIndex() {
             return this.blockIndex;
         }
+        public int compareTo(NetBlock compare) {
+			
+			double compareIndex = compare.getBlockIndex(); 
+			
+			//descending order
+//			return (int) (compareIndex - this.blockIndex);
+			return (int) (this.blockIndex - compareIndex);
+			
+		}
+        ///////////////////////////////////////////////////////////
         public float getOffset() {
             return this.offset;
         }
@@ -648,9 +724,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         	Set<NetBlock> netBlocks = new HashSet<>();
             netBlocks.add(timingNet.source);
             for(TimingNetBlock timingNetBlock : timingNet.sinks) {
-                netBlocks.add(new NetBlock(timingNetBlock));
+                netBlocks.add(new NetBlock(timingNetBlock));    
             }
-
             this.blocks = new NetBlock[netBlocks.size()];
             netBlocks.toArray(this.blocks);
         }
