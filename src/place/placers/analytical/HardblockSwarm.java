@@ -254,13 +254,10 @@ public class HardblockSwarm {
 				for(Block block : this.blocks){
 					int siteIndex = this.getSiteIndex(p.blockIndexList, block.index);
 					block.setLegalXY(this.legalcordinateX, siteIndex * this.blockHeight +1);
-//					block.setLegalXYs(p.pIndex, this.legalcordinateX, siteIndex * this.blockHeight +1);//deal with legalXs, minXs, minYs
 				}
 		
 				//update pBest
 				p.pCost = p.getCost();//TODO
-//				p.pCost = this.getCostBasedOnBlock();
-//				p.pCost = p.getCost(p.pIndex);//calculation based on int[] minXs maxXs minYs maxYs
 				if(p.pCost < p.pBest){
 					p.pBest = p.pCost;
 					System.arraycopy(p.blockIndexList, 0, p.pBestIndexList, 0, this.numSites);
@@ -345,14 +342,16 @@ public class HardblockSwarm {
 	private void initialParticlesBasedOnCritis(int startPIndex, int endPIndex){
 		List<Block> sortedBlocks = new ArrayList<>();
 		Collections.addAll(sortedBlocks, this.blocks);
-		for(Block block:this.blocks){
-			block.updateCriticalityBasedonMap();
-		}
-		Collections.sort(sortedBlocks, new Comparator<Block>(){
-			public int compare(Block b1, Block b2){
-				return b1.compareTo(b2);
+		if(this.numBlocks > 1){
+			for(Block block:this.blocks){
+				block.updateCriticalityBasedonMap();
 			}
-		});
+			Collections.sort(sortedBlocks, new Comparator<Block>(){
+				public int compare(Block b1, Block b2){
+					return b1.compareTo(b2);
+				}
+			});
+		}
 		
 		int[] blockIndexBasedOnCriti = new int[this.numSites];//this.numSites >= this.numBlocks
 		Arrays.fill(blockIndexBasedOnCriti, -1);
@@ -583,9 +582,6 @@ public class HardblockSwarm {
 		}
 
 		this.newVel.clear();
-//		if(weightedVel != null) newVel.addAll(weightedVel);
-//		if(cognitiveVel != null) newVel.addAll(cognitiveVel);
-//		if(socialVel != null) newVel.addAll(socialVel);
 		
 		int length0 = 0;
 		int length1 = 0;
@@ -647,9 +643,7 @@ public class HardblockSwarm {
 		
 		int[] tmpLoc = new int[this.numSites];
 		System.arraycopy(particleLoc, 0, tmpLoc, 0, this.numSites);
-//		for(int i = 0; i < this.numSites; i++){
-//			System.out.println(tmpLoc[i]+ " "+ particleLoc[i] + " " + bestLoc[i]);
-//		}
+		
 		if(!Arrays.equals(bestLoc, tmpLoc)){
 			for(int m = 0; m < bestLoc.length; m++){
 				int value = bestLoc[m];
@@ -668,8 +662,7 @@ public class HardblockSwarm {
 					}
 				}		
 			}
-		}//else System.out.println("same");
-//		return swaps;	
+		}	
 	}
 	private void getSwapsStartRandomly(int startIndex, int[] bestLoc, int[] partucleLoc){
 		this.swaps.clear();
@@ -741,8 +734,7 @@ public class HardblockSwarm {
 		int fromY = this.blockHeight * from + 1;
 		int toY = this.blockHeight * to + 1;		
 		if(blockIndex1 != -1){		
-			block1 = this.getBlock(blockIndex1);//TODO GET ACCESS TO THE RIGHT BLOCK
-//			block1.tryLegal(this.legalcordinateX, toY);//TODO check if this swap has an influence on its nets and crits, not by trying but real swap
+			block1 = this.getBlock(blockIndex1);// GET ACCESS TO THE RIGHT BLOCK
 			block1.updateVerticals(pIndex, toY);
 		}
 		if(blockIndex2 != -1){

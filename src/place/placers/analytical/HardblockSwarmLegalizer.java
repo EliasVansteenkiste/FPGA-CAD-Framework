@@ -452,7 +452,7 @@ public class HardblockSwarmLegalizer{
     /////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////// BLOCK ////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////
-	class Block{
+	class Block {
 		final int index;
 		final float offset;
 
@@ -513,7 +513,8 @@ public class HardblockSwarmLegalizer{
 			double compareCrit = compare.getCriticality(); 
 			
 			//descending order
-			return (int) (compareCrit - this.criticality);
+			return (int)(compareCrit - this.getCriticality());
+//			return Double.compare(compareCrit, this.getCriticality());
 			
 		}
 		void getMergedNetsMap(){
