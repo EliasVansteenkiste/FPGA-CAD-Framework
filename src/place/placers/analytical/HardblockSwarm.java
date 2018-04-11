@@ -27,7 +27,6 @@ public class HardblockSwarm {
 	private int numBlocks;
 //	private BlockType blockType;
 	private int blockHeight;
-	private int legalcordinateX;
 	
 	private Set<Net> columnNets;
 	private Set<Crit> columnCrits;
@@ -72,9 +71,7 @@ public class HardblockSwarm {
 	}
 	////////////////////////////////////TO TEST RANDOMLY PLACEMENT FOR EACH COLUMN/////////////
 	public void doRandomly(Column column, BlockType blockType){
-		this.blockHeight = blockType.getHeight();
-		this.legalcordinateX = column.coordinate;
-		
+		this.blockHeight = blockType.getHeight();	
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.numBlocks = blocks.length;
 		this.numSites = column.sites.length;
@@ -84,10 +81,21 @@ public class HardblockSwarm {
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////
 	
+	//legalize io block
+	public void doPSO(Block[] ioBlocks, Site[] ioSites, BlockType blockType, int numParticles){
+		this.blockHeight = blockType.getHeight();
+		this.blocks = ioBlocks;
+		this.sites = ioSites;
+		
+		this.numParticles = numParticles;
+		
+		this.doPSO();
+		this.setBlockLegal();
+	}
+	
 	//legalize hard block
 	public void doPSO(Column column, BlockType blockType, int numParticles){
-		this.blockHeight = blockType.getHeight();
-		this.legalcordinateX = column.coordinate;
+		this.blockHeight = blockType.getHeight();	
 		
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		
@@ -97,16 +105,9 @@ public class HardblockSwarm {
 				System.out.print(block.index + " ");
 			}
 			System.out.println();
-		}
+		}	
 		
-		this.numBlocks = blocks.length;
-		this.numSites = column.sites.length;
-		
-		this.velMaxSize = (int)Math.round(38.94 + 0.026 * this.numBlocks);
-		
-		
-		this.sites = new Site[this.numSites];
-		System.arraycopy(column.sites, 0, this.sites, 0, this.numSites);
+		this.sites = column.sites;
 		
 		if(!this.printout){
 			System.out.println(" ->initial");
@@ -116,88 +117,8 @@ public class HardblockSwarm {
 				}else System.out.println("\t" + k + "\t" + -1);
 			}
 		}
-//		System.out.println(blockType + "" + column.index + " -> " + this.numBlocks);
-		
-		this.columnNets.clear();
-		this.columnCrits.clear();
-
-		
-//		for(Block block:this.blocks){
-//			for(Net net:block.nets){
-//				this.columnNets.add(net);
-//			}
-//			for(Crit crit:block.crits){
-//				this.columnCrits.add(crit);
-//			}
-//		}
-		for(Block block:this.blocks){
-			for(Net net:block.mergedNetsMap.keySet()){
-				net.setTotalNum(block.mergedNetsMap.get(net));
-				this.columnNets.add(net);
-			}
-			for(Crit crit:block.crits){
-				this.columnCrits.add(crit);
-			}
-		}
-//		for(Block block:this.blocks){
-//			block.getAttachedBlocksMap();
-//		}
-
-//		int size = 0;
-//		for(Block block:this.blocks){
-//			for(Net n:block.mergedNetsMap.keySet()){
-//				size += block.mergedNetsMap.get(n);
-//			}
-//		}
-//		for(Net n:this.columnNets){
-//			size += n.totalNum;
-//		}
-//		System.out.println(size);
-
-		//////TO TEST THE MERGING OF NETS FOR EACH BLOCK///////////////////////////////////////////////
-//		for(Block block:this.blocks){
-//			System.out.println("for block " + block.index + " with " + block.nets.size() + " nets");
-//			for(Net net:block.nets){
-//				List<Integer> netBlockIndex = new ArrayList<>();
-//				for(Block b:net.blocks){
-//					netBlockIndex.add(b.index);
-//				}
-//			System.out.println(net.index + " -> " + netBlockIndex);
-//			}
-//		}
-//		for(Block block:this.blocks){
-//			System.out.println("for " + block.index + " with " + block.mergedNetsMap.size());
-//			block.getAttachedBlocksMap();
-//			for(Block tmp:block.attachedBlocksMap.keySet()){
-//				System.out.println(tmp.index + " -> " + block.attachedBlocksMap.get(tmp));
-//			}
-//			for(Net net:block.mergedNetsMap.keySet()){
-//				List<Integer> blockIndexList = new ArrayList<>();
-//				List<Integer> yIndexList = new ArrayList<>();
-//				for(Block b:net.blocks){
-//					blockIndexList.add(b.index);
-//					yIndexList.add(b.legalY);
-//				}
-//				System.out.println(net.index + " -> " + net.totalNum + " -> " + blockIndexList + " -> " + yIndexList);
-//			}
-//			System.out.println();
-//		}
-//		System.out.println("break");
-		
-//		int sum = 0;
-//		for(Net net:this.columnNets){
-//			sum += net.totalNum;
-//		}
-//		DecimalFormat df = new DecimalFormat("0.00");
-//		String reduction = df.format((float)(sum - this.columnNets.size())/sum);
-//
-//		System.out.println(sum + "\t" + "->" + "\t" + this.columnNets.size() + "\t" + reduction);
-		////// END TO TEST THE MERGING OF NETS FOR EACH BLOCK///////////////////////////////////////////////
-		
-//		System.out.println(blockType + "" + column.index + " numNets -> " + this.columnNets.size() + " numCrits -> " + this.columnCrits.size() + " numBlocks -> " + this.numBlocks);
+	
 		this.numParticles = numParticles;
-		
-		this.gBestIndexList = new int[this.numSites];
 		
 		this.doPSO();
 		this.setBlockLegal();
@@ -208,9 +129,29 @@ public class HardblockSwarm {
 	* particle swarm optimization
 	********************************/
 	private void doPSO(){
+		
+		this.numBlocks = this.blocks.length;
+		this.numSites = this.sites.length;
+		
+		this.velMaxSize = (int)Math.round(38.94 + 0.026 * this.numBlocks);//(int)Math.round(28.376 + 0.026 * this.numBlocks);// (int) Math.round(Math.pow(this.numBlocks, 10/9));//(int)Math.round(38.94 + 0.026 * this.numBlocks)
+		this.gBestIndexList = new int[this.numSites];
+		
+		this.columnNets.clear();
+		this.columnCrits.clear();
+
+		for(Block block:this.blocks){
+			for(Net net:block.mergedNetsMap.keySet()){
+				net.setTotalNum(block.mergedNetsMap.get(net));
+				this.columnNets.add(net);
+			}
+			for(Crit crit:block.crits){
+				this.columnCrits.add(crit);
+			}
+		}
+//		System.out.println(this.columnNets.size());
 		this.timingTree.start("Initialize the swarm");
-//		this.initializeSwarm();
-		this.initialization();
+		this.initializeSwarm();
+//		this.initialization();
 		this.timingTree.time("Initialize the swarm");
 		
 		this.timingTree.start("get gBest");
@@ -233,35 +174,48 @@ public class HardblockSwarm {
 			for(Particle p : this.swarm){							
 				//update velocity
 				if(!this.printout)
-					System.out.println("for particle " + p.pIndex);
+					System.out.println("\tfor particle " + p.pIndex);
 				
 				if(!this.printout) System.out.println("w-> " + w + " r1-> " + r1 + " r2-> " + r2);
 				this.updateVelocity(p.getVelocity(), w, r1*this.rand.nextDouble(), r2*this.rand.nextDouble(), p.blockIndexList, p.pBestIndexList, this.gBestIndexList);
 				
 				p.setVelocity(this.newVel);
-				
+				if(!this.printout){
+					for(Swap swap:this.newVel){
+						System.out.println("\t\t" + swap.getFromIndex() + "\t" + swap.getToIndex());
+					}
+				}
 				//update blockIndex list
-				this.updateLocations(p.pIndex, p.blockIndexList, this.newVel);	
-//				double sumDelta = this.updateLocations(p.pIndex, p.blockIndexList, this.newVel);
-//				System.out.println(sumDelta);
+				int[] oldIndexList = new int[this.numSites];
+				System.arraycopy(p.blockIndexList, 0, oldIndexList, 0, this.numSites);
+				
+				this.updateLocations(p.blockIndexList, this.newVel);
+				
+				boolean particleChanged = !Arrays.equals(p.blockIndexList, oldIndexList);
+//				if(particleChanged) System.out.println("changed");
+
 				if(!this.printout){
 					for(int a = 0; a < this.numSites; a++){
 						System.out .println(a + " " + p.blockIndexList[a]);
 					}
 				}
 				
-				//set blocks's tmpLegal by connecting each site with each block in the order from indexList
-				for(Block block : this.blocks){
-					int siteIndex = this.getSiteIndex(p.blockIndexList, block.index);
-					block.setLegalXY(this.legalcordinateX, siteIndex * this.blockHeight +1);
+				if(particleChanged){
+					//set blocks's tmpLegal by connecting each site with each block in the order from indexList
+					for(Block block : this.blocks){
+						Site site = this.getSite(p.blockIndexList, block.index);
+						block.setLegalXY(site.column, site.row);
+					}
+			
+					//update pBest
+					p.pCost = p.getCost();//TODO
+//					p.pCost = this.getTotalCost();
+					if(p.pCost < p.pBest){
+						p.pBest = p.pCost;
+						System.arraycopy(p.blockIndexList, 0, p.pBestIndexList, 0, this.numSites);
+					}
 				}
-		
-				//update pBest
-				p.pCost = p.getCost();//TODO
-				if(p.pCost < p.pBest){
-					p.pBest = p.pCost;
-					System.arraycopy(p.blockIndexList, 0, p.pBestIndexList, 0, this.numSites);
-				}
+				
 				//////////////////to check the updated order of blocks//////////////////////////////////////////////////////
 				if(!this.printout){
 //					System.out.println("paticle " + p.pIndex + " updated");
@@ -287,19 +241,19 @@ public class HardblockSwarm {
 		}
 //		System.out.println("/////////set legal/////////");
 		for(Block block : this.blocks){
-			int siteIndex = this.getSiteIndex(this.gBestIndexList, block.index);
-			block.setSite(this.sites[siteIndex]);
-			this.sites[siteIndex].setBlock(block);
-			block.setLegalXY(this.legalcordinateX, siteIndex * this.blockHeight +1);
+			Site site = this.getSite(this.gBestIndexList, block.index);
+			block.setSite(site);
+			site.setBlock(block);
+			block.setLegalXY(site.column, site.row);
 //			System.out.println(block.index + "\t" + siteIndex + "\t"+ block.legalX + "\t" + block.legalY);
 		}
 	}
-	private int getSiteIndex(int[] list, int value){
+	private Site getSite(int[] list, int value){
 		int position = 0;
 		for(int pos = 0; pos < list.length; pos++){
 			if(list[pos] == value) position = pos;
 		}
-		return position;
+		return this.sites[position];
 	}
 	private int getMinPbestIndex(){
 		int pos = 0;
@@ -373,8 +327,8 @@ public class HardblockSwarm {
 				unsettledLast--;
 			}
 			for(Block block : this.blocks){
-				int siteIndex = this.getSiteIndex(particle.blockIndexList, block.index);
-				block.setLegalXY(this.legalcordinateX, siteIndex * this.blockHeight +1);
+				Site site = this.getSite(particle.blockIndexList, block.index);
+				block.setLegalXY(site.column, site.row);
 			}
 			particle.setPNets(this.columnNets);
 			particle.setPCrits(this.columnCrits);
@@ -427,10 +381,9 @@ public class HardblockSwarm {
 				else particle.blockIndexList[m] = -1;
 			}
 			particle.setPNets(this.columnNets);
-			particle.setPCrits(this.columnCrits);
-			double tmpCost = particle.getCost();
-//			particle.pCost = this.getCostBasedOnBlock();
-			particle.pCost = tmpCost;
+			particle.setPCrits(this.columnCrits);			
+			particle.pCost = particle.getCost();
+//			particle.pCost = this.getTotalCost();
 			//initial pbest info
 			particle.pBest = particle.pCost;
 //			System.arraycopy(particle.blockIndexList, 0, particle.pBestIndexList, 0, this.numSites);//initial pbest location
@@ -456,6 +409,7 @@ public class HardblockSwarm {
 		baseLineParticle.setPNets(this.columnNets);
 		baseLineParticle.setPCrits(this.columnCrits);
 		baseLineParticle.pCost = baseLineParticle.getCost();
+//		baseLineParticle.pCost = this.getTotalCost();
 		baseLineParticle.pBest = baseLineParticle.pCost;
 		
 		this.swarm.add(baseLineParticle);
@@ -469,6 +423,21 @@ public class HardblockSwarm {
 				System.out.println("\t" + a + "\t" + baseLineParticle.blockIndexList[a]);
 			}
 		}	
+	}
+	
+	private double getTotalCost(){
+		double cost = 0.0;
+		double timing = 0.0;
+		double conn = 0.0;
+		
+		for(Net net:this.columnNets){
+			conn += net.connectionCost()*net.getTotalNum();
+		}
+		for(Crit crit:this.columnCrits){
+			timing += crit.timingCost();
+		}
+		cost = timing + conn;
+		return cost;
 	}
 	
 	private double getCostBasedOnBlock(){
@@ -489,7 +458,7 @@ public class HardblockSwarm {
 	private void randomlyPlaceBlocks(){
 		for(Site site : this.sites){
 			site.removeBlock();
-		}	
+		}
 		for(Block block : this.blocks){
 			Site site = this.sites[this.rand.nextInt(this.numSites)];
 			while(site.hasBlock()){
@@ -497,7 +466,6 @@ public class HardblockSwarm {
 			}
 			site.setBlock(block);
 //			block.setSite(site);// FOR doRandomly()////////////
-//			block.setLegal(site.column, site.row);
 			block.setLegalXY(site.column, site.row);	
 		}
 	}
@@ -713,13 +681,13 @@ public class HardblockSwarm {
 		return block;
 	}
 	//do swaps to update particle's location: X + Velocity 
-	private double updateLocations(int pIndex, int[] locations , List<Swap> vel){
+	private double updateLocations(int[] locations , List<Swap> vel){
 		double sumDeltaCost = 0;
 		if(vel != null && !vel.isEmpty()){	
 			for(int velIndex = 0; velIndex < vel.size(); velIndex++){
 				int from = vel.get(velIndex).getFromIndex();
 				int to = vel.get(velIndex).getToIndex();
-				this.doOneSwap(locations, from, to);//only update blockIndexList for a particle
+				if(from != to) this.doOneSwap(locations, from, to);//only update blockIndexList for a particle
 //				sumDeltaCost += deltaCost(pIndex, locations, from, to);
 			}
 		}
@@ -764,7 +732,7 @@ public class HardblockSwarm {
 		int tmp;
 		int indexFrom = indexList[from];
 		int indexTo = indexList[to];
-		if(from != to && indexFrom != indexTo){
+		if(indexFrom != indexTo){
 			tmp = indexFrom;
 			indexList[from] = indexTo;
 			indexList[to] = tmp;
@@ -773,43 +741,43 @@ public class HardblockSwarm {
 	}
 	//Velocity multiplied by a constant
 	private List<Swap> multipliedByC(List<Swap> vel, double c){
-		List<Swap> newVel = new ArrayList<Swap>();
+		List<Swap> weightedVel = new ArrayList<Swap>();
 		int newSize = (int)Math.floor(vel.size() * c);
 		if(!this.printout) System.out.println(vel.size() + " " + c + " " + newSize);
 		if(vel.size() != 0){
 			if(c == 0){
-				newVel = null;
+				weightedVel = null;
 			}
 			if(c == 1){
 				for(int newVelIndex = 0; newVelIndex < newSize; newVelIndex++){
-					newVel.add(vel.get(newVelIndex));
+					weightedVel.add(vel.get(newVelIndex));
 				}
 			}
 			if(c < 1){	
 				for(int newVelIndex = 0; newVelIndex < newSize; newVelIndex++){
-					newVel.add(vel.get(newVelIndex));
+					weightedVel.add(vel.get(newVelIndex));
 				}
 			}else if(c > 1){
 				int nLoop = (int)Math.floor(newSize / vel.size());
 				for(int n = 0; n < nLoop; n++){
 					for(int newVelIndex = 0; newVelIndex < vel.size(); newVelIndex++){
-						newVel.add(vel.get(newVelIndex));
+						weightedVel.add(vel.get(newVelIndex));
 					}
 				}
 				int leftLength = newSize - nLoop * vel.size();
 				for(int newVelIndex = 0; newVelIndex < leftLength; newVelIndex++){
-					newVel.add(vel.get(newVelIndex));
+					weightedVel.add(vel.get(newVelIndex));
 				}
 			}
 		}
-		return newVel;
+		return weightedVel;
 	}
 	
 	private class Particle{
 		private final int pIndex;
 		private final int numSites;
 		
-//		private HashSet<Net> pNets;
+//		private Set<Net> pNets1;
 		private List<Crit> pCrits;
 		private List<Net> pNets;
 //		private HashSet<Crit> pCrits;
@@ -839,26 +807,23 @@ public class HardblockSwarm {
 			this.velocity = new ArrayList<Swap>(vel);
 		}
 		private void setPNets(Set<Net> columnNets){
-			this.pNets = new ArrayList<>(columnNets);
+			this.pNets = new ArrayList<Net>(columnNets);
+
+//			this.pNets = new HashSet<Net>(columnNets);
+			
 		}
 		private void setPCrits(Set<Crit> columnCrits){
-			this.pCrits = new ArrayList<>(columnCrits);
+			this.pCrits = new ArrayList<Crit>(columnCrits);
 		}
 		private double getCost(){
 			double cost = 0.0;
 			double timing = 0.0;
 			double conn = 0.0;
 
-			if(this.pNets != null){
-				for(Net net:this.pNets)	conn += net.connectionCost()*net.getTotalNum();;
-			}
-			int numCrits = this.pCrits.size();
-			if(this.pCrits != null && numCrits != 0){
-				for(Crit crit:this.pCrits) timing += crit.timingCost();
-			}
+			for(Net net:this.pNets) conn += net.connectionCost()*net.getTotalNum();
+			for(Crit crit:this.pCrits) timing += crit.timingCost();
 			cost = timing + conn;
 			
-//			System.out.println(String.format("%.2f", timing) + "\t" + String.format("%.2f", conn));
 			return cost;
 		}
 		

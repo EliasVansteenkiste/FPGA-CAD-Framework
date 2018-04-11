@@ -141,24 +141,9 @@ public class HardblockSwarmLegalizer{
 		
 		//merge Nets with same blocks
 		timingTree.start("merge Nets with same blocks");
-//		System.out.println(this.blocks.length);
-//		DecimalFormat df = new DecimalFormat("0.00");
-//		String reduction = df.format((float)(sum - this.columnNets.size())/sum);
-//
-//		System.out.println(sum + "\t" + "->" + "\t" + this.columnNets.size() + "\t" + reduction);
-//		String[] reduction = new String[this.blocks.length];
-//		System.out.println("total Nets to be processed in legalization: " + this.allNets.length);
 		for(Block block:this.blocks){			
 			block.getMergedNetsMap();//80ms
-//			String reduction = df.format((float)(block.nets.size() - block.mergedNetsMap.size())/block.nets.size());
-//			double reduction = (block.nets.size() - block.mergedNetsMap.size())*1.0/block.nets.size();
-//			System.out.println(reduction);
 		}
-//		Set<Net> netIndex = new HashSet<>();
-//		for(Block b:this.blocks){
-//			netIndex.addAll(b.mergedNetsMap.keySet());
-//		}
-//		System.out.println("merged nets to be processed in legalization: " + netIndex.size());
 		timingTree.time("merge Nets with same blocks");
 
 		this.timingTree.time("Initialize Hardblock Connection Legalizer Data");
@@ -405,6 +390,8 @@ public class HardblockSwarmLegalizer{
 
 		//Anneal the IOs to find a good placement
 		this.hardblockAnneal.doAnneal(legalizeBlocks, legalizeSites, quality);
+		
+//		this.hardblockSwarm.doPSO(legalizeBlocks, legalizeSites, blockType, SWARM_SIZE);
 		
 		this.updateLegal(legalizeBlocks);
 		this.cleanData();
