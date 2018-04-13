@@ -177,6 +177,7 @@ public class HardblockSwarm {
 					System.out.println("\tfor particle " + p.pIndex);
 				
 				if(!this.printout) System.out.println("w-> " + w + " r1-> " + r1 + " r2-> " + r2);
+							
 				this.updateVelocity(p.getVelocity(), w, r1*this.rand.nextDouble(), r2*this.rand.nextDouble(), p.blockIndexList, p.pBestIndexList, this.gBestIndexList);
 				
 				p.setVelocity(this.newVel);
@@ -379,6 +380,8 @@ public class HardblockSwarm {
 			for(int m = 0; m < this.numSites; m++){
 				if(this.sites[m].hasBlock()) particle.blockIndexList[m] = this.sites[m].block.index;
 				else particle.blockIndexList[m] = -1;
+				
+				particle.pBestIndexList[m] = particle.blockIndexList[m];
 			}
 			particle.setPNets(this.columnNets);
 			particle.setPCrits(this.columnCrits);			
@@ -403,6 +406,7 @@ public class HardblockSwarm {
 				baseLineParticle.blockIndexList[j] = site.block.index;
 				site.block.setLegalXY(site.column, site.row);
 			}else baseLineParticle.blockIndexList[j] = -1;
+			baseLineParticle.pBestIndexList[j] = baseLineParticle.blockIndexList[j];
 			j++;
 		}
 		
@@ -414,7 +418,7 @@ public class HardblockSwarm {
 		
 		this.swarm.add(baseLineParticle);
 		
-		if(!this.printout) System.out.print("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
+		if(!this.printout) System.out.println("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
 		
 		if(!this.printout) System.out.println(baseLineParticle.pCost);
 		if(!this.printout){
@@ -559,47 +563,47 @@ public class HardblockSwarm {
 		if(socialVel != null) length2 = socialVel.size();
 		
 		if(length0 + length1 + length2 < this.velMaxSize){
-			if(weightedVel != null) newVel.addAll(weightedVel);
-			if(cognitiveVel != null) newVel.addAll(cognitiveVel);
-			if(socialVel != null) newVel.addAll(socialVel);
+			if(weightedVel != null) this.newVel.addAll(weightedVel);
+			if(cognitiveVel != null) this.newVel.addAll(cognitiveVel);
+			if(socialVel != null) this.newVel.addAll(socialVel);
 		}else{
 			int length0Max = (int)Math.round(w / (w + r1 + r2)*this.velMaxSize);
 			int length1Max = (int)Math.round(r1 / (w+ r1 + r2) * this.velMaxSize);
 			int length2Max = this.velMaxSize - length1Max - length0Max;
 			if(weightedVel != null && length0Max != 0){
 				if(weightedVel.size() <= length0Max){
-					newVel.addAll(weightedVel);
+					this.newVel.addAll(weightedVel);
 				}else{
 					for(int l = 0; l < length0Max; l++){
-						newVel.add(weightedVel.get(l));
+						this.newVel.add(weightedVel.get(l));
 					}
 				}
 			}
 			if(cognitiveVel != null && length1Max != 0){
 				if(cognitiveVel.size() <= length1Max){
-					newVel.addAll(cognitiveVel);
+					this.newVel.addAll(cognitiveVel);
 				}else{
 					for(int l = 0; l < length1Max; l++){
-						newVel.add(cognitiveVel.get(l));
+						this.newVel.add(cognitiveVel.get(l));
 					}
 				}
 			}
 			if(socialVel != null && length2Max != 0){
 				if(socialVel.size() <= length2Max){
-					newVel.addAll(socialVel);
+					this.newVel.addAll(socialVel);
 				}else{
 					for(int l = 0; l < length2Max; l++){
-						newVel.add(socialVel.get(l));
+						this.newVel.add(socialVel.get(l));
 					}
 				}
 			}
 		}
 		
-		if(newVel != null){
+		if(this.newVel != null){
 			if(!this.printout){
 			System.out.println("newVel\tfrom\tto");
-			for(int p = 0; p < newVel.size(); p++){
-				System.out.println("\t" + p + "\t" + newVel.get(p).fromIndex + "\t" + newVel.get(p).toIndex);
+			for(int p = 0; p < this.newVel.size(); p++){
+				System.out.println("\t" + p + "\t" + this.newVel.get(p).fromIndex + "\t" + this.newVel.get(p).toIndex);
 			}
 		}
 		}

@@ -531,7 +531,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 Site site = (Site) this.circuit.getSite(column, row, true);
                 block.setSite(site);
             }else{
-                IOSite site = (IOSite) this.circuit.getSite(column, row, true);
+            	IOSite site = (IOSite) this.circuit.getSite(column, row, true);
                 block.setSite(site);
             }
         }

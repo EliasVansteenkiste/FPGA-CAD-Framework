@@ -601,8 +601,9 @@ public class HardblockSwarmLegalizer{
 		
 		////////////////////////////SETLEGAL(only y) FOR PSO////////////////////////////////////////////////
 		//for pso initialization
-		void setLegalXY(int x, int y){
+		void setLegalXY(int x, int y){	
 			this.updateVertical(y);
+			this.updateHorizontal(x);
 		}
 		//for main pso process to deal with blocks' legalXs and legalYs, crits's and nets' minXs, minYs
 		void setLegalXYs(int i, int newx, int newy){
@@ -613,9 +614,17 @@ public class HardblockSwarmLegalizer{
 			int oldY = this.legalY;
 			if(this.legalY != newy){
 				this.legalY = newy;
-//				for(Net net:this.nets) net.updateVertical(oldY, this.legalY);
-				for(Net net:this.mergedNetsMap.keySet()) net.updateVertical(oldY, newy);
+				for(Net net:this.nets) net.updateVertical(oldY, this.legalY);
+//				for(Net net:this.mergedNetsMap.keySet()) net.updateVertical(oldY, newy);
 				for(Crit crit:this.crits) crit.updateVertical();
+			}
+		}
+		void updateHorizontal(int newx){
+			int oldX = this.legalX;
+			if(this.legalX != newx){
+				this.legalX = newx;
+				for(Net net:this.nets) net.updateHorizontal(oldX, newx);
+				for(Crit crit:this.crits) crit.updateHorizontal();
 			}
 		}
 		void updateVerticals(int i, int newy){
@@ -1042,7 +1051,27 @@ public class HardblockSwarmLegalizer{
 				this.updateMinY(oldY, newY);
 				this.updateMaxY(oldY, newY);
 			}
-        }	
+        }
+		void updateHorizontal(int oldX, int newX){
+			if(this.size == 1){
+				this.minX = this.blocks[0].legalX;
+				this.maxX = this.blocks[0].legalX;
+			}else if(this.size == 2){
+				int l1 = this.blocks[0].legalX;
+				int l2 = this.blocks[1].legalX;
+
+				if(l1 < l2){
+					this.minX = l1;
+					this.maxX = l2;
+				}else{
+					this.maxX = l1;
+					this.minX = l2;
+				}
+			}else{
+				this.updateMinX(oldX, newX);
+				this.updateMaxX(oldX, newX);
+			}
+        }
 		void updateVerticals(int i, int oldY, int newY){
 //			this.saveStates(i);
 			if(this.size == 1){
@@ -1329,6 +1358,15 @@ public class HardblockSwarmLegalizer{
 			this.maxXs[i] = this.maxX;
 			this.minYs[i] = this.minY;
 			this.maxYs[i] = this.maxY;
+		}
+		void updateHorizontal(){
+			if(this.sourceBlock.legalX < this.sinkBlock.legalX){
+				this.minX = this.sourceBlock.legalX;
+				this.maxX = this.sinkBlock.legalX;
+			}else{
+				this.minX = this.sinkBlock.legalX;
+				this.maxX = this.sourceBlock.legalX;
+			}
 		}
 		void updateVertical(){
 //			this.saveState();
