@@ -323,7 +323,7 @@ public class HardblockSwarmLegalizer{
 //					else System.out.println(-1);
 //				}
 				
-				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE);
+				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality);
 //				this.hardblockSwarm.doRandomly(column, this.blockType);
 //				this.hardblockAnneal.doAnneal(column, quality);//TODO 
 			}	
