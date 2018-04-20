@@ -256,7 +256,9 @@ class GradientLegalizer extends Legalizer {
     	}
     	this.hierarchicalSpreading.stop();
     	
-    	this.logger.println("Hierarchical iterations: " + clusterIteration);
+    	if(clusterIteration >= 20){
+    		this.logger.raise(clusterIteration + " hierachical cluster iterations required");
+    	}
     	
     	this.blockSpreading.start();
     	this.addVisual("Before independent block spreading", blocks);
