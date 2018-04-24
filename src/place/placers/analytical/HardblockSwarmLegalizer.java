@@ -458,7 +458,6 @@ public class HardblockSwarmLegalizer{
 		
 		//////////////////////
 		final Map<Net, Integer> mergedNetsMap;
-		final Map<Block, Double> attachedBlocksMap;
 		//////////////////////
 
 		double criticality;
@@ -478,7 +477,6 @@ public class HardblockSwarmLegalizer{
 			this.crits = new ArrayList<Crit>();
 			
 			this.mergedNetsMap = new HashMap<>();
-			this.attachedBlocksMap = new HashMap<>();
 
 			this.site = null;
 			this.column = null;
@@ -503,10 +501,7 @@ public class HardblockSwarmLegalizer{
 			return Double.compare(compareCrit, this.getCriticality());
 			
 		}
-		void getMergedNetsMap(){
-//			boolean flag = false;//
-//			if(this.index == 3223) flag = true;//
-			
+		void getMergedNetsMap(){		
 			if(this.nets.size() > 0){
 				Net flagNet = this.nets.get(0);
 				List<Integer> flagNetBlockIndexs = new ArrayList<>();
@@ -516,8 +511,6 @@ public class HardblockSwarmLegalizer{
 				}
 				this.mergedNetsMap.put(flagNet, 0);
 				
-//				if(flag) System.out.println("new flag added " + flagNet.index);//
-				
 				for(Net net:this.nets){
 					List<Integer> comingNetBlockIndexs = new ArrayList<>();
 					for(Block b:net.blocks){
@@ -525,31 +518,14 @@ public class HardblockSwarmLegalizer{
 					}
 					if(comingNetBlockIndexs.equals(flagNetBlockIndexs)){
 						this.mergedNetsMap.put(flagNet, this.mergedNetsMap.get(flagNet)+1);
-
-//						if(flag) System.out.println(net.index + " same with " + flagNet.index + " " + this.mergedNetsMap.get(flagNet));//
 					}else{
 						flagNet = net;
 						flagNetBlockIndexs.clear();
 						for(Block b:flagNet.blocks){
 							flagNetBlockIndexs.add(b.index);
 						}
-						this.mergedNetsMap.put(flagNet, 1);
-						
-//						if(flag) System.out.println("new flag added " + net.index);//			
+						this.mergedNetsMap.put(flagNet, 1);			
 					}	
-				}
-			}
-		}
-		void getAttachedBlocksMap(){
-			if(this.mergedNetsMap.size() > 0){
-				for(Net net:this.mergedNetsMap.keySet()){
-					double totalNetWeight = this.mergedNetsMap.get(net)*net.weight;
-					for(Block block:net.blocks){
-						if(block.index != this.index){
-							if(!this.attachedBlocksMap.containsKey(block)) this.attachedBlocksMap.put(block, totalNetWeight);
-							else this.attachedBlocksMap.put(block, this.attachedBlocksMap.get(block)+totalNetWeight);
-						}
-					}
 				}
 			}
 		}
@@ -567,7 +543,6 @@ public class HardblockSwarmLegalizer{
 			}
 			for(Crit crit:this.crits){
 				this.criticality += crit.weight;
-//				System.out.println("Crit: " + crit.weight);
 			}
 		}
 		void updateCriticalityBasedonMap(){
@@ -629,13 +604,19 @@ public class HardblockSwarmLegalizer{
 		}
 		void updateVerticals(int i, int newy){
 			int old = this.legalYs[i];
-//			this.saveStates(i);
 			if(this.legalYs[i] != newy){
 				this.legalYs[i] = newy;
 				for(Net net:this.nets) net.updateVerticals(i, old, this.legalYs[i]);
 				for(Crit crit:this.crits) crit.updateVertical(i);
 			}
-//			this.pushThrough(i);
+		}
+		void updateHorizontals(int i, int newx){
+			int oldX = this.legalXs[i];
+			if(this.legalXs[i] != newx){
+				this.legalXs[i] = newx;
+				for(Net net:this.nets) net.updateHorizontals(i, oldX, newx);
+				for(Crit crit:this.crits) crit.updateHorizontals(i);
+			}
 		}
 		//save []data for nets and crits after one particle has been initialized
 		void duplicateData(int i){
@@ -1072,6 +1053,26 @@ public class HardblockSwarmLegalizer{
 				this.updateMaxX(oldX, newX);
 			}
         }
+		void updateHorizontals(int i, int oldX, int newX){
+//			this.saveStates(i);
+			if(this.size == 1){
+				this.minXs[i] = this.blocks[0].legalXs[i];
+				this.maxXs[i] = this.blocks[0].legalXs[i];
+			}else if(this.size == 2){
+				int x1 = this.blocks[0].legalXs[i];
+				int x2 = this.blocks[1].legalXs[i];
+				if(x1 < x2){
+					this.minXs[i] = x1;
+					this.maxXs[i] = x2;
+				}else{
+					this.minXs[i] = x2;
+					this.maxXs[i] = x1;
+				}
+			}else{
+				this.updateMinYs(i, oldX, newX);
+				this.updateMaxYs(i, oldX, newX);
+			}
+        }
 		void updateVerticals(int i, int oldY, int newY){
 //			this.saveStates(i);
 			if(this.size == 1){
@@ -1388,6 +1389,25 @@ public class HardblockSwarmLegalizer{
 //			}
         }
 		
+		void updateHorizontals(int i){
+//			this.saveStates(i);
+			
+			if(this.sourceBlock.legalXs[i] < this.sinkBlock.legalXs[i]){
+				this.minXs[i] = this.sourceBlock.legalXs[i];
+				this.maxXs[i] = this.sinkBlock.legalXs[i];
+			}else{
+				this.minXs[i] = this.sinkBlock.legalXs[i];
+				this.maxXs[i] = this.sourceBlock.legalXs[i];
+			}
+
+//			if(this.minYs[i] != this.oldMinYs[i] || this.maxYs[i] != this.oldMaxYs[i]){
+//				this.verticalChange = true;
+//				this.verticalDeltaCostIncluded = false;
+//			}else{
+//				this.verticalChange = false;
+//				this.verticalDeltaCostIncluded = true;
+//			}
+        }
 		void updateVertical(int i){
 //			this.saveStates(i);
 			

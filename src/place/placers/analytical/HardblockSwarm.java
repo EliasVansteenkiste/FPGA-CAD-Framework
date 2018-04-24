@@ -30,12 +30,12 @@ public class HardblockSwarm {
 	
 	private Set<Net> columnNets;
 	private Set<Crit> columnCrits;
-	private Map<Integer, Double> netCosts;
+	
 	private double quality;
 	
 	//PSO
 	private int numParticles;
-	private static final int MAX_ITERATION = 1000;
+	private static final int MAX_ITERATION = 500;
 	private static final int CONTROLLER = (int) (MAX_ITERATION * 0.5);
 
 	private static final double COGNITIVE_L = 0.01;
@@ -62,6 +62,9 @@ public class HardblockSwarm {
 	
 	private List<Swap> swaps;
 	private List<Swap> newVel;
+	private Map<Integer, Double> netCosts;
+	private Set<Integer> affectedBllockIndex;
+	private Set<Block> affectedBllocks;
 	
 	private final TimingTree timingTree;
 	
@@ -76,6 +79,9 @@ public class HardblockSwarm {
 		this.swarm = new ArrayList<Particle>();
 		this.swaps = new ArrayList<Swap>();
 		this.newVel = new ArrayList<Swap>();
+		
+		this.affectedBllockIndex = new HashSet<>();
+		this.affectedBllocks = new HashSet<>();
 	}
 	////////////////////////////////////TO TEST RANDOMLY PLACEMENT FOR EACH COLUMN/////////////
 	public void doRandomly(Column column, BlockType blockType){
@@ -130,11 +136,11 @@ public class HardblockSwarm {
 		}
 	
 		this.numParticles = numParticles;
-		if(this.printout) System.out.println("[" + blockType + "" + column.index + ": " + column.blocks.size() + ", " + column.sites.length + "]");
+		if(!this.printout) System.out.println("[" + blockType + "" + column.index + ": " + column.blocks.size() + ", " + column.sites.length + "]");
 		this.doPSO();
 		this.setBlockLegal();
 		
-		if(this.printout){
+		if(!this.printout){
 			for(int i = 0; i < this.gBestCostHistory.size(); i++){
 				System.out.println(i + " " + String.format("%.2f", this.gBestCostHistory.get(i)));
 			}
@@ -174,9 +180,8 @@ public class HardblockSwarm {
 		this.gBestCostHistory = new ArrayList<>();
 		this.gBestHistoryIndex = 0;
 		
-		this.timingTree.start("get gBest");
 		this.getGlobalBest();
-		this.timingTree.time("get gBest");
+		
 		if(!this.printout){
 			System.out.println("gBest\t"+ String.format("%.2f", this.gBest));
 			System.out.println("////////////////////////Initialization finished!////////////////////////");
@@ -188,13 +193,13 @@ public class HardblockSwarm {
 		double w;//weight decrease linearly
 		double r1, r2;
 		
-//		for(int iteration = 0;iteration < MAX_ITERATION; iteration++){
-		while(!finalIteration){
-			if(!this.printout) System.out.println("\tPSO iteration: "+ iteration);//TODO remove
+		for(int iteration = 0;iteration < MAX_ITERATION; iteration++){
+//		while(!finalIteration){
+			if(!this.printout) System.out.println("\tPSO iteration: "+ iteration);
 			
-			w = 0.72;//W_UPPERBOUND - (((double) iteration) / MAX_ITERATION) * (W_UPPERBOUND - W_LOWERBOUND);
-			r1 = COGNITIVE_L + (((double) iteration) / MAX_ITERATION) * (COGNITIVE_H - COGNITIVE_L); 
-			r2 = 1.49;//SOCIAL_H - (((double) iteration) / MAX_ITERATION) * (SOCIAL_H - SOCIAL_L);
+			w = W_UPPERBOUND - (((double) iteration) / MAX_ITERATION) * (W_UPPERBOUND - W_LOWERBOUND);
+			r1 = COGNITIVE_H - (((double) iteration) / MAX_ITERATION) * (COGNITIVE_H - COGNITIVE_L); 
+			r2 = SOCIAL_L + (((double) iteration) / MAX_ITERATION) * (SOCIAL_H - SOCIAL_L);
 			for(Particle p : this.swarm){							
 				//update velocity
 				if(!this.printout)
@@ -226,15 +231,46 @@ public class HardblockSwarm {
 				}
 				
 				if(particleChanged){
+					//TODO GET AFFECTED BLOCKS
+//					this.affectedBllockIndex.clear();
+//					this.affectedBllocks.clear();
+//					for(Swap s:this.newVel){
+//						if(s.fromIndex != -1) this.affectedBllockIndex.add(oldIndexList[s.fromIndex]);
+//						if(s.toIndex != -1) this.affectedBllockIndex.add(oldIndexList[s.toIndex]);
+//					}
+//					for(int id:this.affectedBllockIndex){
+//						if(id != -1) this.affectedBllocks.add(this.getBlock(id));
+//					}
+//					if(this.printout){
+//						for(int a = 0; a < this.numSites; a++){
+//							System.out .println(a + "\t" + oldIndexList[a]);
+//						}
+//						for(Swap swap:this.newVel){
+//							System.out.println(swap.getFromIndex() + "\t" + swap.getToIndex());
+//						}
+//						for(Integer id:this.affectedBllockIndex){
+//							System.out.println(id);
+//						}
+//						for(Block block:this.affectedBllocks){
+//							System.out.println("getted " + block.index);
+//						}
+//					}
+					
 					//set blocks's tmpLegal by connecting each site with each block in the order from indexList
-					for(Block block : this.blocks){
+//					for(Block block : this.blocks){
+//						Site site = this.getSite(p.blockIndexList, block.index);
+//						block.setLegalXY(site.column, site.row);
+//					}
+					for(Block block:this.blocks){
 						Site site = this.getSite(p.blockIndexList, block.index);
-						block.setLegalXY(site.column, site.row);
+//						block.setLegalXY(site.column, site.row);
+//						block.duplicateData(p.pIndex);
+						block.updateVerticals(p.pIndex, site.row);
 					}
-			
+					
 					//update pBest
-					p.pCost = p.getCost();//TODO
-//					p.pCost = this.getTotalCost();
+					p.pCost = p.getCost(p.pIndex);//TODO
+//					p.pCost = p.getCost();
 					if(p.pCost < p.pBest){
 						p.pBest = p.pCost;
 						System.arraycopy(p.blockIndexList, 0, p.pBestIndexList, 0, this.numSites);
@@ -252,8 +288,8 @@ public class HardblockSwarm {
 				}
 			}
 			this.getGlobalBest();
-			this.iteration++;
-			finalIteration = this.finalIteration(this.gBest);
+//			this.iteration++;
+//			finalIteration = this.finalIteration(this.gBest);
 //			if(iteration > CONTROLLER){			
 //				if(Double.compare(this.gBestCostList.get(iteration), this.gBestCostList.get(iteration - 49)) == 0)
 //					return;
@@ -354,9 +390,9 @@ public class HardblockSwarm {
 	private void initializeSwarm(){
 		this.swarm.clear();
 		
-//		this.addBaseLineParticle();
+		this.addBaseLineParticle();
 		
-		this.initializeParticlesRandomly(0, this.numParticles);
+		this.initializeParticlesRandomly(1, this.numParticles);
 	}
 	private void initialParticlesBasedOnCritis(int startPIndex, int endPIndex){
 		List<Block> sortedBlocks = new ArrayList<>();
@@ -403,11 +439,6 @@ public class HardblockSwarm {
 
 			this.swarm.add(particle);
 			
-//			System.out.println("for particle " + pIndex);
-//			for(int i = 0; i < this.numSites; i++){
-//				System.out.println(particle.blockIndexList[i] + " " + particle.pBestIndexList[i]);
-//			}
-//			System.out.println(particle.pCost);
 		}
 	}
 	
@@ -417,7 +448,10 @@ public class HardblockSwarm {
 			this.randomlyPlaceBlocks();
 			this.timingTree.time("randomly assign blocks");
 			
-//			///////////////////////////////////TODO check if blocks are randomly placed onto locations/////////////////////////
+			this.timingTree.start("duplicating data");
+			this.duplicateData(i);
+			this.timingTree.time("duplicating data");
+//			/////////////////////////////////// check if blocks are randomly placed onto locations/////////////////////////
 			if(!this.printout){
 				System.out.println("Particle: " + i);
 				for(int k = 0; k < this.numSites; k++){
@@ -449,15 +483,16 @@ public class HardblockSwarm {
 			}
 			particle.setPNets(this.columnNets);
 			particle.setPCrits(this.columnCrits);			
-			particle.pCost = particle.getCost();
-//			particle.pCost = this.getTotalCost();
+//			particle.pCost = particle.getCost();
+			
+			particle.pCost = particle.getCost(i);
 			//initial pbest info
 			particle.pBest = particle.pCost;
 //			System.arraycopy(particle.blockIndexList, 0, particle.pBestIndexList, 0, this.numSites);//initial pbest location
 //			double test = this.getCost();// TEST if p.getCost() works 
 //			System.out.println(String.format("%.2f", tmpCost));// + " " + String.format("%.2f", test));
 			
-			this.swarm.add(particle);
+			this.swarm.add(particle);	
 		}
 	}
 	
@@ -468,16 +503,18 @@ public class HardblockSwarm {
 		for(Site site : this.sites){
 			if(site.hasBlock()){
 				baseLineParticle.blockIndexList[j] = site.block.index;
-				site.block.setLegalXY(site.column, site.row);
+//				site.block.setLegalXY(site.column, site.row);
 			}else baseLineParticle.blockIndexList[j] = -1;
 			baseLineParticle.pBestIndexList[j] = baseLineParticle.blockIndexList[j];
 			j++;
 		}
 		
+		this.duplicateData(0);
+		
 		baseLineParticle.setPNets(this.columnNets);
 		baseLineParticle.setPCrits(this.columnCrits);
-		baseLineParticle.pCost = baseLineParticle.getCost();
-//		baseLineParticle.pCost = this.getTotalCost();
+//		baseLineParticle.pCost = baseLineParticle.getCost();
+		baseLineParticle.pCost = baseLineParticle.getCost(0);
 		baseLineParticle.pBest = baseLineParticle.pCost;
 		
 		this.swarm.add(baseLineParticle);
@@ -492,7 +529,11 @@ public class HardblockSwarm {
 			}
 		}	
 	}
-	
+	private void duplicateData(int i){
+		for(Block b:this.blocks){
+			b.duplicateData(i);
+		}
+	}
 	private double getTotalCost(){
 		double cost = 0.0;
 		double timing = 0.0;
@@ -508,21 +549,6 @@ public class HardblockSwarm {
 		return cost;
 	}
 	
-	private double getCostBasedOnBlock(){
-		double cost = 0.0;
-		double conn = 0.0;
-		double timing = 0.0;
-		
-		for(Block block:this.blocks){
-			for(Block attachedBlock:block.attachedBlocksMap.keySet()){
-				double deltaY = Math.abs(block.legalY - attachedBlock.legalY);
-				conn += deltaY*block.attachedBlocksMap.get(attachedBlock);
-			}
-		}
-		for(Crit crit:this.columnCrits) timing += crit.timingCost();
-		cost = conn + timing;
-		return cost;
-	}
 	private void randomlyPlaceBlocks(){
 		for(Site site : this.sites){
 			site.removeBlock();
@@ -902,19 +928,17 @@ public class HardblockSwarm {
 			double cost = 0.0;
 			double timing = 0.0;
 			double conn = 0.0;
-			if(this.pNets != null){
-				for(Net net:this.pNets) conn += net.connectionCost(i);
-			}
-			int numCrits = this.pCrits.size();
-			if(this.pCrits != null && numCrits != 0){
-				for(Crit crit:this.pCrits) timing += crit.timingCost(i);
-			}
+			for(Net net:this.pNets) conn += net.connectionCost(i)*net.getTotalNum();
+			for(Crit crit:this.pCrits) timing += crit.timingCost(i);
 			cost = timing + conn;
-//			double product = timing * conn;//TEST 
-//			if(numCrits != 0) System.out.println(String.format("%.2f", timing) + "\t" + String.format("%.2f", conn) + "\t" + String.format("%.2f", cost)+ "\t" + String.format("%.2f", product));
-			
+			cost = timing + conn;		
 			return cost;
 		}
+//		@Override
+//		public void run() {
+//			// TODO Auto-generated method stub
+//			
+//		}
 	}
 
 	class Swap{
