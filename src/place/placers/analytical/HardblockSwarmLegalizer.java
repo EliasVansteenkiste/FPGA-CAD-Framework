@@ -582,6 +582,7 @@ public class HardblockSwarmLegalizer{
 		}
 		//for main pso process to deal with blocks' legalXs and legalYs, crits's and nets' minXs, minYs
 		void setLegalXYs(int i, int newx, int newy){
+			this.updateHorizontals(i, newx);
 			this.updateVerticals(i, newy);
 		}
 		//same function as tryLeagal
@@ -1069,8 +1070,8 @@ public class HardblockSwarmLegalizer{
 					this.maxXs[i] = x1;
 				}
 			}else{
-				this.updateMinYs(i, oldX, newX);
-				this.updateMaxYs(i, oldX, newX);
+				this.updateMinXs(i, oldX, newX);
+				this.updateMaxXs(i, oldX, newX);
 			}
         }
 		void updateVerticals(int i, int oldY, int newY){
@@ -1123,6 +1124,40 @@ public class HardblockSwarmLegalizer{
 	        for(Block block:this.blocks){
 	            if(block.legalYs[i] > max) {
 	                max = block.legalYs[i];
+	            }
+	        }
+	        return max;
+		}
+		void updateMinXs(int i, int oldX, int newX){
+			int tmp = this.minXs[i];
+			if(newX <= tmp){
+            	this.minXs[i] = newX;
+			}else if(oldX == tmp){
+				this.minXs[i] = this.getMinXs(i);
+            }
+		}
+		void updateMaxXs(int i, int oldX, int newX){
+			int tmp = this.maxXs[i];
+			if(newX >= tmp){
+            	this.maxXs[i] = newX;
+            }else if(oldX == tmp){
+            	this.maxXs[i] = this.getMaxXs(i);
+            }
+		}
+		private int getMinXs(int i){
+	        int min = this.blocks[0].legalXs[i];
+	        for(Block block:this.blocks){
+	            if(block.legalXs[i] < min){
+	                min = block.legalXs[i];
+	            }
+	        }
+	        return min;
+		}
+		private int getMaxXs(int i){
+	        int max = this.blocks[0].legalXs[i];
+	        for(Block block:this.blocks){
+	            if(block.legalXs[i] > max) {
+	                max = block.legalXs[i];
 	            }
 	        }
 	        return max;
