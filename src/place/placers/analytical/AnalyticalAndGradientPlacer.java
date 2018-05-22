@@ -418,7 +418,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
         this.stopTimer(T_UPDATE_CIRCUIT);
         
-        this.logger.println(this.circuit.getTimingGraph().criticalPathToString());
+        //Print Critical Path Delay
+        //this.logger.println(this.circuit.getTimingGraph().criticalPathToString());
     }
     private void addLinearPlacement(int iteration){
         this.visualizer.addPlacement(

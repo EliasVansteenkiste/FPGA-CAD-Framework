@@ -41,6 +41,7 @@ class GradientLegalizer extends Legalizer {
     private final double[] visualY;
     private final static boolean doVisual = false;
     
+    //Timing functionality
 	private Timer clusterSpreading = new Timer();
 	private Timer clusterMoving = new Timer();
 	private Timer blockSpreading = new Timer();
