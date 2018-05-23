@@ -524,8 +524,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         }
     }
 
-
-
     public class NetBlock {
         final int blockIndex;
         final float offset;
@@ -537,10 +535,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this.offset = offset;
 
             this.blockType = blockType;
-        }
-
-        NetBlock(TimingNetBlock timingNetBlock) {
-            this(timingNetBlock.blockIndex, timingNetBlock.offset, timingNetBlock.blockType);
         }
 
         public int getBlockIndex() {
@@ -570,27 +564,19 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     }
 
     class TimingNetBlock {
+        final NetBlock netblock;
         final int blockIndex;
-        final float offset;
         final TimingEdge timingEdge;
-
-        final BlockType blockType;
 
         double criticality, criticalityLearningRate;
 
-        TimingNetBlock(int blockIndex, float offset, TimingEdge timingEdge, double criticalityLearningRate, BlockType blockType) {
-            this.blockIndex = blockIndex;
-            this.offset = offset;
+        TimingNetBlock(NetBlock block, TimingEdge timingEdge, double criticalityLearningRate) {
+        	this.netblock = block;
+        	this.blockIndex = block.blockIndex;
             this.timingEdge = timingEdge;
 
             this.criticality = 0.0;
             this.criticalityLearningRate = criticalityLearningRate;
-
-            this.blockType = blockType;
-        }
-
-        TimingNetBlock(NetBlock block, TimingEdge timingEdge, double criticalityLearningRate) {
-            this(block.blockIndex, block.offset, timingEdge, criticalityLearningRate, block.blockType);
         }
 
         void updateCriticality(){
@@ -611,7 +597,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             Set<NetBlock> netBlocks = new HashSet<>();
             netBlocks.add(timingNet.source);
             for(TimingNetBlock timingNetBlock : timingNet.sinks) {
-                netBlocks.add(new NetBlock(timingNetBlock));
+                netBlocks.add(timingNetBlock.netblock);
             }
 
             this.blocks = new NetBlock[netBlocks.size()];
