@@ -141,9 +141,9 @@ public class GradientPlacerTD extends GradientPlacer {
     }
 
     @Override
-    protected void processNets(boolean[] processNets) {
+    protected void processNets(NetArray nets) {
         // Process all nets wirelength driven
-        super.processNets(processNets);
+        super.processNets(nets);
 
         // Process the most critical source-sink connections
         for(CritConn critConn:this.criticalConnections) {

@@ -1,18 +1,16 @@
 package place.placers.analytical;
 
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
+
 class LinearSolverGradient {
 
     private double[] coordinatesX, coordinatesY;
-    private int[] netBlockIndexes;
-    private float[] netBlockOffsets;
 
     private DimensionSolverGradient solverX, solverY;
 
     LinearSolverGradient(
             double[] coordinatesX,
             double[] coordinatesY,
-            int[] netBlockIndexes,
-            float[] netBlockOffsets,
             double maxConnectionLength,
             boolean[] fixed,
             double beta1,
@@ -21,9 +19,6 @@ class LinearSolverGradient {
 
         this.coordinatesX = coordinatesX;
         this.coordinatesY = coordinatesY;
-
-        this.netBlockIndexes = netBlockIndexes;
-        this.netBlockOffsets = netBlockOffsets;
 
         this.solverX = new DimensionSolverGradient(coordinatesX, maxConnectionLength, fixed, beta1, beta2, eps);
         this.solverY = new DimensionSolverGradient(coordinatesY, maxConnectionLength, fixed, beta1, beta2, eps);
@@ -40,44 +35,44 @@ class LinearSolverGradient {
         this.solverY.setLegal(legalY);
     }
 
-    void processNet(int netStart, int netEnd) {
-        int numNetBlocks = netEnd - netStart;
-        double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
-
-        // Nets with 2 blocks are common and can be processed very quick
-        if(numNetBlocks == 2) {
-            int blockIndex1 = this.netBlockIndexes[netStart],
-                blockIndex2 = this.netBlockIndexes[netStart + 1];
-
-            double coordinate1, coordinate2;
-            
-            coordinate1 = this.coordinatesY[blockIndex1] + this.netBlockOffsets[netStart];
-            coordinate2 = this.coordinatesY[blockIndex2] + this.netBlockOffsets[netStart + 1];
-            this.solverY.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight, false);
-
-            coordinate1 = this.coordinatesX[blockIndex1];
-            coordinate2 = this.coordinatesX[blockIndex2];
-            this.solverX.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, weight, false);
-
-            return;
+    void processNet(Net net) {
+        if(net.numBlocks == 2) {
+            this.processSmallNet(net);
+        } else {
+        	this.processBigNet(net);
         }
+    }
+    private void processSmallNet(Net net) {
+    	// Nets with 2 blocks are common and can be processed very quick
+    	int blockIndex0 = net.index0;
+    	int blockIndex1 = net.index1;
 
+    	double coordinate1, coordinate2;
+            
+    	coordinate1 = this.coordinatesY[blockIndex0] + net.offset0;
+    	coordinate2 = this.coordinatesY[blockIndex1] + net.offset1;
+    	this.solverY.processConnection(blockIndex0, blockIndex1, coordinate2 - coordinate1, net.weight, false);
 
-        // For bigger nets, we have to find the min and max block
-        int minXIndex = this.netBlockIndexes[netStart],
-            maxXIndex = this.netBlockIndexes[netStart],
-            minYIndex = this.netBlockIndexes[netStart],
-            maxYIndex = this.netBlockIndexes[netStart];
+    	coordinate1 = this.coordinatesX[blockIndex0];
+    	coordinate2 = this.coordinatesX[blockIndex1];
+    	this.solverX.processConnection(blockIndex0, blockIndex1, coordinate2 - coordinate1, net.weight, false);
+    }
+    private void processBigNet(Net net) {
+    	// For bigger nets, we have to find the min and max block
+        int minXIndex = net.netBlockIndexes[0];
+        int maxXIndex = net.netBlockIndexes[0];
+        int minYIndex = net.netBlockIndexes[0];
+        int maxYIndex = net.netBlockIndexes[0];
 
-        double minX = this.coordinatesX[minXIndex],
-               maxX = this.coordinatesX[maxXIndex],
-               minY = this.coordinatesY[minYIndex] + this.netBlockOffsets[netStart],
-               maxY = this.coordinatesY[maxYIndex] + this.netBlockOffsets[netStart];
+        double minX = this.coordinatesX[minXIndex];
+        double maxX = this.coordinatesX[maxXIndex];
+        double minY = this.coordinatesY[minYIndex] + net.netBlockOffsets[0];
+        double maxY = this.coordinatesY[maxYIndex] + net.netBlockOffsets[0];
 
-        for(int i = netStart + 1; i < netEnd; i++) {
-            int blockIndex = this.netBlockIndexes[i];
-            double x = this.coordinatesX[blockIndex],
-                   y = this.coordinatesY[blockIndex] + this.netBlockOffsets[i];
+        for(int i = 0; i < net.numBlocks; i++) {
+            int blockIndex = net.netBlockIndexes[i];
+            double x = this.coordinatesX[blockIndex];
+            double y = this.coordinatesY[blockIndex] + net.netBlockOffsets[i];
 
             if(x < minX) {
                 minX = x;
@@ -97,8 +92,8 @@ class LinearSolverGradient {
         }
 
         // Add connections between the min and max block
-        this.solverX.processConnection(minXIndex, maxXIndex, maxX - minX, weight, false);
-        this.solverY.processConnection(minYIndex, maxYIndex, maxY - minY, weight, false);
+        this.solverX.processConnection(minXIndex, maxXIndex, maxX - minX, net.weight, false);
+        this.solverY.processConnection(minYIndex, maxYIndex, maxY - minY, net.weight, false);
     }
 
     void processConnection(int blockIndex1, int blockIndex2, float offset, float weight, boolean critical) {

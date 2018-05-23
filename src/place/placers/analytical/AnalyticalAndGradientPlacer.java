@@ -586,11 +586,43 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
     class Net {
         final NetBlock[] blocks;
+        final int numBlocks;
+        
+        final int index0, index1;
+        final float offset0, offset1;
+        
+        final int[] netBlockIndexes;
+        final float[] netBlockOffsets;
+        
+        final double weight;
+        
+        final BlockType[] blockTypes;
 
         Net(NetBlock block) {
             this.blocks = new NetBlock[2];
             this.blocks[0] = block;
             this.blocks[1] = block;
+            this.numBlocks = this.blocks.length;
+            
+            this.netBlockIndexes = new int[this.numBlocks];
+            this.netBlockOffsets = new float[this.numBlocks];
+            for(int i = 0; i < this.numBlocks; i++){
+            	this.netBlockIndexes[i] = this.blocks[i].blockIndex;
+            	this.netBlockOffsets[i] = this.blocks[i].offset;
+            }
+            
+            //Net with 2 blocks
+            this.index0 = block.blockIndex;
+            this.index1 = block.blockIndex;
+            
+            this.offset0 = block.offset;
+            this.offset1 = block.offset;
+            
+            this.weight = AnalyticalAndGradientPlacer.getWeight(this.numBlocks);
+            
+            //Find all unique block types in the net
+            this.blockTypes = new BlockType[1];
+            this.blockTypes[0] = block.blockType;
         }
 
         Net(TimingNet timingNet) {
@@ -602,6 +634,44 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
 
             this.blocks = new NetBlock[netBlocks.size()];
             netBlocks.toArray(this.blocks);
+            
+            this.numBlocks = this.blocks.length;
+            
+            this.netBlockIndexes = new int[this.numBlocks];
+            this.netBlockOffsets = new float[this.numBlocks];
+            for(int i = 0; i < this.numBlocks; i++){
+            	this.netBlockIndexes[i] = this.blocks[i].blockIndex;
+            	this.netBlockOffsets[i] = this.blocks[i].offset;
+            }
+            
+            if(this.numBlocks == 2){
+                //Net with 2 blocks
+                this.index0 = this.blocks[0].blockIndex;
+                this.index1 = this.blocks[1].blockIndex;
+                
+                this.offset0 = this.blocks[0].offset;
+                this.offset1 = this.blocks[1].offset;
+            }else{
+                this.index0 = -1;
+                this.index1 = -1;
+                
+                this.offset0 = -1;
+                this.offset1 = -1;
+            }
+            
+            this.weight = AnalyticalAndGradientPlacer.getWeight(this.numBlocks);
+            
+            //Find all unique block types in the net
+            Set<BlockType> tempBlockTypes = new HashSet<>();
+            for(NetBlock block:this.blocks){
+            	tempBlockTypes.add(block.blockType);
+            }
+            this.blockTypes = new BlockType[tempBlockTypes.size()];
+            int counter = 0;
+            for(BlockType blockType:tempBlockTypes){
+            	this.blockTypes[counter] = blockType;
+            	counter++;
+            }
         }
     }
 
