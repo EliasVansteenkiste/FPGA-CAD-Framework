@@ -6,7 +6,6 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
-import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
@@ -144,7 +143,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private CostCalculator costCalculator;
 
     protected Legalizer legalizer;
-    protected LinearSolverGradient solver;
+    
+    private final int numNetWorkers;
+    private NetWorker[] netWorkers;
+    protected SolverGradient solver;
 
     private NetMap netMap;
     protected boolean[] fixed;
@@ -171,11 +173,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL) + 1;
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
-        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - 1.0));
+        this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 
+        								1.0 / (this.numIterations - 1.0));
 
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
+        
+        this.numNetWorkers = 20;
 
         if(this.circuit.dense()) {
         	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
@@ -252,11 +257,113 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 	        		"block_spreading",
 	        		this.options.getInteger(O_SPREAD_BLOCK_ITERATIONS));
         }
+        
+        this.fixed = new boolean[this.linearX.length];
+    	this.coordinatesX = new double[this.linearX.length];
+    	this.coordinatesY = new double[this.linearY.length];
+    	
+        this.makeNetMap();
+        this.makeNetWorkers();
+        
+        //TODO DEBUG
+        System.out.println("The system has " + this.netMap.getNets().length + " nets" + " => num real nets " + this.numRealNets);
+        for(BlockType type:this.circuit.getGlobalBlockTypes()){
+        	System.out.println("\t" + type + " has " + this.netMap.getNets(type).length + " nets");
+        }
+    	 
+    	this.solver = new SolverGradient(
+    							this.netWorkers,
+    							this.coordinatesX,
+    							this.coordinatesY,
+    							this.fixed,
+    							this.beta1,
+    							this.beta2,
+    							this.eps);
 
-        //Initialize the netmap
+
+        this.costCalculator = new CostCalculatorWLD(this.nets);
+
+        this.stopTimer(T_INITIALIZE_DATA);
+    }
+    
+    class NetMap {
+    	private NetArray netArray;
+    	private Map<BlockType, NetArray> netArrayPerBlocktype;
+    	
+    	public NetMap(List<BlockType> blockTypes) {
+    		this.netArray = new NetArray();
+    		this.netArrayPerBlocktype = new HashMap<>();
+    		for(BlockType blockType: blockTypes) {
+    			this.netArrayPerBlocktype.put(blockType, new NetArray());
+    		}
+    	}
+    	
+    	public void finish() {
+    		this.netArray.finish();
+    		for(NetArray netArray:this.netArrayPerBlocktype.values()){
+    			netArray.finish();
+    		}
+    	}
+    	
+    	public void addNet(Net net) {
+    		this.netArray.add(net);
+    	}
+    	public void addNet(BlockType blockType, Net net) {
+    		this.netArrayPerBlocktype.get(blockType).add(net);
+    	}
+    	
+    	public NetArray getNetArray(){
+    		return this.netArray;
+    	}
+    	public NetArray getNetArray(BlockType blockType){
+    		return this.netArrayPerBlocktype.get(blockType);
+    	}
+    	
+    	public Net[] getNets() {
+    		return this.netArray.getAll();
+    	}
+    	public Net[] getNets(BlockType blockType) {
+    		return this.netArrayPerBlocktype.get(blockType).getAll();
+    	}
+    }
+    class NetArray {
+    	private Net[] values;
+    	private List<Net> temp;
+    	
+    	private int counter;
+    	
+    	public NetArray() {
+    		this.temp = new ArrayList<>();
+    	}
+    	
+    	public void finish() {
+            this.values = new Net[this.temp.size()];
+            this.temp.toArray(this.values);
+            this.temp.clear();
+            this.temp = null;
+    	}
+    	
+    	public void add(Net net) {
+    		this.temp.add(net);
+    	}
+    	public Net[] getAll() {
+    		return this.values;
+    	}
+    	
+    	public void initializeStream() {
+    		this.counter = 0;
+    	}
+    	public Net getNext() {
+    		return this.values[this.counter++];
+    	}
+    	public boolean hasNext() {
+    		return this.counter < this.values.length;
+    	}
+    }
+    
+    private void makeNetMap() {
         this.netMap = new NetMap(this.circuit.getGlobalBlockTypes());
 
-        //Generate the nets
         for(int netCounter = 0; netCounter < this.numRealNets; netCounter++) {
         	Net net = this.nets.get(netCounter);
             
@@ -265,27 +372,20 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         		this.netMap.addNet(blockType, net);
         	}
         }
-        this.netMap.finish();
         
-        this.fixed = new boolean[this.linearX.length];
-
-    	this.coordinatesX = new double[this.linearX.length];
-    	this.coordinatesY = new double[this.linearY.length];
-
-        this.solver = new LinearSolverGradient(
-                this.coordinatesX,
-                this.coordinatesY,
-                this.maxConnectionLength,
-                this.fixed,
-                this.beta1, 
-                this.beta2, 
-                this.eps);
-
-        this.costCalculator = new CostCalculatorWLD(this.nets);
-
-        this.stopTimer(T_INITIALIZE_DATA);
+        this.netMap.finish();
     }
-
+    private void makeNetWorkers() {
+    	this.netWorkers = new NetWorker[this.numNetWorkers];
+    	for(int i = 0; i < this.numNetWorkers; i++){
+            this.netWorkers[i] = new NetWorker(
+            		"Networker_" + i,
+                    this.coordinatesX,
+                    this.coordinatesY,
+                    this.maxConnectionLength);
+    	}
+    }
+    
     @Override
     protected void solveLinear(int iteration) {
     	Arrays.fill(this.fixed, false);
@@ -293,7 +393,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 			this.fixBlockType(blockType);
 		}
 
-		this.doSolveLinear(this.netMap.getNets());
+		this.doSolveLinear(this.netMap.getNetArray());
     }
 
     @Override
@@ -314,7 +414,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
 
-		this.doSolveLinear(this.netMap.getNets(solveType));
+		this.doSolveLinear(this.netMap.getNetArray(solveType));
     }
 
     private void fixBlockType(BlockType fixBlockType){
@@ -326,6 +426,20 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	}
     }
     private void doSolveLinear(NetArray nets){
+    	this.setCoordinates();
+		this.initializeNetWorkers(nets);
+        for(int i = 0; i < this.effortLevel; i++) {
+            this.solveLinearIteration();
+        }
+        this.updateCoordinates();
+        
+        int c = 0;
+        for(NetWorker n : this.netWorkers){
+        	c += n.netCounter + n.critCounter;
+        }
+        System.out.println(c);
+    }
+    private void setCoordinates() {
 		for(int i = 0; i < this.linearX.length; i++){
 			if(this.fixed[i]){
 				this.coordinatesX[i] = this.legalX[i];
@@ -335,17 +449,42 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 				this.coordinatesY[i] = this.linearY[i];
 			}
 		}
-        
-        for(int i = 0; i < this.effortLevel; i++) {
-            this.solveLinearIteration(nets);
-
-            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), -1);
-        }
-        
-		for(int i = 0; i < this.linearX.length; i++){
+    }
+    private void updateCoordinates() {
+		for(int i = 0; i < this.linearX.length; i++) {
 			if(!this.fixed[i]){
 				this.linearX[i] = this.coordinatesX[i];
 				this.linearY[i] = this.coordinatesY[i];
+			}
+		}
+    }
+    private void initializeNetWorkers(NetArray nets) {
+		for(NetWorker netWorker:this.netWorkers){
+			netWorker.reset();
+		}
+		
+    	this.netWorkers[0].setCriticalConnections(this.criticalConnections);
+		
+		if(this.numNetWorkers == 1){
+			this.netWorkers[0].setNets(nets.getAll());
+		}else if(this.numNetWorkers == 2){
+			this.netWorkers[1].setNets(nets.getAll());
+		}else{
+			int totalFanout = 0;
+			for(Net net:nets.getAll()) totalFanout += net.numBlocks;
+			int fanoutPerThread = (int) Math.ceil((double)totalFanout / (this.numNetWorkers - 1));
+			
+			nets.initializeStream();
+			for(int i = 1; i < this.numNetWorkers; i++){
+				NetWorker netWorker = this.netWorkers[i];
+				List<Net> workerNets = new ArrayList<>();
+				int threadFanout = 0;
+				while(threadFanout < fanoutPerThread && nets.hasNext()){
+					Net net = nets.getNext();
+					threadFanout += net.numBlocks;
+					workerNets.add(net);
+				}
+				netWorker.setNets(workerNets);
 			}
 		}
     }
@@ -354,15 +493,27 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
      * Build and solve the linear system ==> recalculates linearX and linearY
      * If it is the first time we solve the linear system ==> don't take pseudonets into account
      */
-    protected void solveLinearIteration(NetArray nets) {
+    protected void solveLinearIteration() {
         this.startTimer(T_BUILD_LINEAR);
 
-        // Set value of alpha and reset the solver
-        this.solver.initializeIteration(this.anchorWeight, this.learningRate);
-
-        // Process nets
-        this.processNets(nets);
-
+        for(NetWorker netWorker:this.netWorkers){
+        	netWorker.resume();
+        	//synchronized(netWorker){
+        	//	netWorker.notify();
+        	//}
+        }
+        
+        //Wait on all threads to finish
+        boolean running = true;
+        while(running){
+        	running = false;
+        	for(NetWorker n:this.netWorkers){
+        		if(!n.isFinished()){
+        			running = true;
+        		}
+        	}
+        }
+        
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
             // this.legalX and this.legalY store the solution with the lowest cost
@@ -374,14 +525,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         // Solve and save result
         this.startTimer(T_SOLVE_LINEAR);
-        this.solver.solve();
+        this.solver.solve(this.anchorWeight, this.learningRate);
         this.stopTimer(T_SOLVE_LINEAR);
-    }
-
-    protected void processNets(NetArray nets) {
-    	for(Net net: nets.getNets()) {
-    		this.solver.processNet(net);
-    	}
     }
 
     @Override
@@ -508,65 +653,3 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	this.legalizer.printLegalizationRuntime();
     }
 }
-//##############################
-//New Classes for MultiThreading
-//##############################
-class NetMap {
-	private NetArray nets;
-	private Map<BlockType, NetArray> netsPerBlocktype;
-	
-	public NetMap(List<BlockType> blockTypes) {
-		this.nets = new NetArray();
-		this.netsPerBlocktype = new HashMap<>();
-		for(BlockType blockType: blockTypes) {
-			this.netsPerBlocktype.put(blockType, new NetArray());
-		}
-	}
-	
-	public void finish() {
-		this.nets.finish();
-		for(NetArray nets:this.netsPerBlocktype.values()){
-			nets.finish();
-		}
-	}
-	
-	public void addNet(Net net) {
-		this.nets.addNet(net);
-	}
-	public void addNet(BlockType blockType, Net net) {
-		this.netsPerBlocktype.get(blockType).addNet(net);
-	}
-	
-	public NetArray getNets(){
-		return this.nets;
-	}
-	public NetArray getNets(BlockType blockType){
-		return this.netsPerBlocktype.get(blockType);
-	}
-}
-class NetArray {
-	private Net[] nets;
-	private List<Net> tempNets;
-	
-	public NetArray() {
-		this.tempNets = new ArrayList<>();
-	}
-	
-	public void finish() {
-        this.nets = new Net[this.tempNets.size()];
-        this.tempNets.toArray(this.nets);
-        this.tempNets.clear();
-        this.tempNets = null;
-	}
-	
-	public void addNet(Net net) {
-		this.tempNets.add(net);
-	}
-	public Net[] getNets() {
-		return this.nets;
-	}
-}
-//##############################
-//New Classes for MultiThreading
-//##############################
-

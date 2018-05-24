@@ -3,120 +3,91 @@ package place.placers.analytical;
 import java.util.Arrays;
 
 class DimensionSolverGradient {
-
+	private final DimensionForceGradient[] blockForces;
+	
     private final double[] coordinates;
-
-    private final double[] directions, totalPositiveNetSize, totalNegativeNetSize;
-    private final double[] numPositiveNets, numNegativeNets;
-    private final double halfMaxConnectionLength;
-
-    private double stepSize;
-
+    private final int numBlocks;
+    
     private final double[] speeds;
     private final double[] momentum;
+    
+    private double pseudoWeight, stepSize;
+    
     private final double beta1;
     private final double beta2;
     private final double eps;
-
-    private double pseudoWeight = 0;
+    
     private boolean legalIsSet = false;
     private double[] legalCoordinates;
     
     private final boolean[] fixed;
 
-    DimensionSolverGradient(double[] coordinates, double maxConnectionLength, boolean[] fixed, double beta1, double beta2, double eps) {
-        this.coordinates = coordinates;
-        this.halfMaxConnectionLength = maxConnectionLength / 2;
+    DimensionSolverGradient(DimensionForceGradient[] blockForces, double[] coordinates, boolean[] fixed, double beta1, double beta2, double eps) {
+        this.blockForces = blockForces;
+        
+    	this.coordinates = coordinates;
+        this.numBlocks = coordinates.length;
 
-        int numBlocks = coordinates.length;
-
-        this.speeds = new double[numBlocks];
-        this.momentum = new double[numBlocks];
+        this.speeds = new double[this.numBlocks];
+        this.momentum = new double[this.numBlocks];
+        
+        Arrays.fill(this.speeds, 0.0);
+        Arrays.fill(this.momentum, 0.0);
 
         this.beta1 = beta1;
         this.beta2 = beta2;
         this.eps = eps;
 
-        this.directions = new double[numBlocks];
-        this.numPositiveNets = new double[numBlocks];
-        this.numNegativeNets = new double[numBlocks];
-        this.totalPositiveNetSize = new double[numBlocks];
-        this.totalNegativeNetSize = new double[numBlocks];
-
         this.fixed = fixed;
-    }
-
-    void initializeIteration(double pseudoWeight, double learningRate) {
-        this.pseudoWeight = pseudoWeight;
-        this.stepSize = learningRate;
-
-        Arrays.fill(this.directions, 0.0);
-
-        Arrays.fill(this.numPositiveNets, 0);
-        Arrays.fill(this.numNegativeNets, 0);
-
-        Arrays.fill(this.totalPositiveNetSize, 0.0);
-        Arrays.fill(this.totalNegativeNetSize, 0.0);
     }
 
     void setLegal(double[] legal) {
         this.legalCoordinates = legal;
         this.legalIsSet = true;
     }
+    void solve(double pseudoWeight, double stepSize) {
+    	this.pseudoWeight = pseudoWeight;
+    	this.stepSize = stepSize;
 
-
-    void processConnection(int firstIndex, int secondIndex, double coorDifference, double weight, boolean critical) {
-    	if(coorDifference > 0.0){
-    		this.addConnection(firstIndex, secondIndex, coorDifference, weight, critical);
-    	}else if(coorDifference < 0.0){
-    		this.addConnection(secondIndex, firstIndex, -coorDifference, weight, critical);
-    	}
-    }
-    private void addConnection(int minIndex, int maxIndex, double coorDifference, double weight, boolean critical) {
-    	double netSize;
-    	if(critical){
-            netSize = 2 * (5 * this.halfMaxConnectionLength) * coorDifference / ((5 * this.halfMaxConnectionLength) + coorDifference);
-    	}else{
-            netSize = 2 * this.halfMaxConnectionLength * coorDifference / (this.halfMaxConnectionLength + coorDifference);
-    	}
-
-        this.totalPositiveNetSize[minIndex] += weight * netSize;
-        this.numPositiveNets[minIndex] += weight;
-        this.directions[minIndex] += weight;
-
-        this.totalNegativeNetSize[maxIndex] += weight * netSize;
-        this.numNegativeNets[maxIndex] += weight;
-        this.directions[maxIndex] -= weight;
-    }
-
-    void solve() {
-        int numBlocks = this.coordinates.length;
-
-        for(int i = 0; i < numBlocks; i++) {
+        for(int i = 0; i < this.numBlocks; i++) {
         	if(!this.fixed[i]){
         		this.doSolve(i);
         	}
         }
     }
     void doSolve(int i){
-    	double direction = this.directions[i];
-    	double currentCoordinate = this.coordinates[i];
+    	double direction = 0.0;
+    	for(DimensionForceGradient dimensionForce:this.blockForces) {
+    		direction += dimensionForce.getDirection(i);
+    	}
 
     	double gradient;
     	if(direction > 0) {
-    		gradient = this.totalPositiveNetSize[i] / this.numPositiveNets[i];
+    		double totalPositiveNetSize = 0.0;
+    		double numPositiveNets = 0.0;
+    		for(DimensionForceGradient dimensionForce:this.blockForces) {
+    			totalPositiveNetSize += dimensionForce.getTotalPositiveNetSize(i);
+    			numPositiveNets += dimensionForce.getNumPositiveNets(i);
+    		}
+    		gradient = totalPositiveNetSize / numPositiveNets;
     	} else if(direction < 0) {
-    		gradient = - this.totalNegativeNetSize[i] / this.numNegativeNets[i];
+    		double totalNegativeNetSize = 0.0;
+    		double numNegativeNets = 0.0;
+    		for(DimensionForceGradient dimensionForce:this.blockForces) {
+    			totalNegativeNetSize += dimensionForce.getTotalNegativeNetSize(i);
+    			numNegativeNets += dimensionForce.getNumNegativeNets(i);
+    		}
+    		gradient = - totalNegativeNetSize / numNegativeNets;
     	} else {
     		return;
     	}
 
     	if(this.legalIsSet){
-        	gradient = (1 - this.pseudoWeight) * gradient + this.pseudoWeight * (this.legalCoordinates[i] - currentCoordinate);
+        	gradient = (1.0 - this.pseudoWeight) * gradient + this.pseudoWeight * (this.legalCoordinates[i] - this.coordinates[i]);
         }
 
-        this.momentum[i] = this.beta1 * this.momentum[i] + (1 - this.beta1) * gradient;
-        this.speeds[i] = this.beta2 * this.speeds[i] + (1 - this.beta2) * gradient * gradient;
+        this.momentum[i] = this.beta1 * this.momentum[i] + (1.0 - this.beta1) * gradient;
+        this.speeds[i] = this.beta2 * this.speeds[i] + (1.0 - this.beta2) * gradient * gradient;
 
         this.coordinates[i] += this.stepSize * this.momentum[i] / (Math.sqrt(this.speeds[i]) + this.eps);
     }

@@ -141,17 +141,6 @@ public class GradientPlacerTD extends GradientPlacer {
     }
 
     @Override
-    protected void processNets(NetArray nets) {
-        // Process all nets wirelength driven
-        super.processNets(nets);
-
-        // Process the most critical source-sink connections
-        for(CritConn critConn:this.criticalConnections) {
-        	this.solver.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.sinkOffset - critConn.sourceOffset, critConn.weight, true);
-        }
-    }
-
-    @Override
     protected void calculateTimingCost() {
         this.timingCost = this.criticalityCalculator.calculate(this.legalX, this.legalY);
     }
