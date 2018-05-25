@@ -8,16 +8,18 @@ import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 class NetWorker implements Runnable{
 	private final String name;
 	private Thread thread;
-	private volatile boolean finished;
 	
     private final double[] coordinatesX, coordinatesY;
     private final DimensionForceGradient horizontalForce, verticalForce;
     
     private Net[] nets;
     private CritConn[] crits;
+
+    private volatile boolean running = true;
+    private volatile boolean paused = false;
+    private final Object pauseLock = new Object();
     
-    public int netCounter;
-    public int critCounter;
+    public long totalWorkTime;
     
     NetWorker(
     		String name,
@@ -33,12 +35,9 @@ class NetWorker implements Runnable{
         this.horizontalForce = new DimensionForceGradient(this.coordinatesX.length, maxConnectionLength);
         this.verticalForce = new DimensionForceGradient(this.coordinatesY.length, maxConnectionLength);
         
+        this.totalWorkTime = 0;
+        
         this.start();
-        
-        this.finished = true;
-        
-        this.netCounter = 0;
-        this.critCounter = 0;
     }
     
     public void reset() {
@@ -52,54 +51,89 @@ class NetWorker implements Runnable{
     		this.thread.start();
     	}
     }
-    synchronized void resume() {
-    	this.finished = false;
-    	notify();
-    }
-    public boolean isFinished() {
-    	return this.finished;
-    }
     
-    public synchronized void setNets(List<Net> tempNets){
+    public void setNets(List<Net> tempNets){
         this.nets = new Net[tempNets.size()];
         tempNets.toArray(this.nets);
     }
-    public synchronized void setNets(Net[] tempNets){
+    public void setNets(Net[] tempNets){
         this.nets = tempNets;
     }
-    public synchronized void setCriticalConnections(List<CritConn> tempCritConn) {
+    public void setCriticalConnections(List<CritConn> tempCritConn) {
         this.crits = new CritConn[tempCritConn.size()];
         tempCritConn.toArray(this.crits);
     }
 
 	@Override
 	public void run() {
-		try {
-			while(true){
-				this.initializeIteration();
-		    	
-				if(this.nets != null) {
-		        	for(Net net: this.nets) {
-		        		this.processNet(net);
-		        		this.netCounter++;
-		        	}
-		    	}
-		    	if(this.crits != null) {
-		        	for(CritConn critConn:this.crits) {
-		            	this.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.sinkOffset - critConn.sourceOffset, critConn.weight, true);
-		            	this.critCounter++;
-		            }
-		    	}
-		    	
-		    	this.finished = true;
-		    	
-		    	synchronized(this){
-		    		wait();
-		    	}
-			}
-		} catch (InterruptedException e) {
-			System.out.println("Thread interrupted");
-		}
+        while (running){
+            synchronized (pauseLock) {
+                if (!running) { // may have changed while waiting to
+                                // synchronize on pauseLock
+                    break;
+                }
+                if (paused) {
+                    try {
+                        pauseLock.wait(); // will cause this Thread to block until 
+                                          // another thread calls pauseLock.notifyAll()
+                                          // Note that calling wait() will 
+                                          // relinquish the synchronized lock that this 
+                                          // thread holds on pauseLock so another thread
+                                          // can acquire the lock to call notifyAll()
+                                          // (link with explanation below this code)
+                    } catch (InterruptedException ex) {
+                        break;
+                    }
+                    if (!running) { // running might have changed since we paused
+                        break;
+                    }
+                }
+            }
+            this.doWork();
+        }
+	}
+    public void stop() {
+        running = false;
+        // you might also want to interrupt() the Thread that is 
+        // running this Runnable, too, or perhaps call:
+        resume();
+        // to unblock
+    }
+
+    public void pause() {
+        // you may want to throw an IllegalStateException if !running
+        paused = true;
+    }
+    public boolean paused() {
+    	return this.paused;
+    }
+
+    public void resume() {
+        synchronized (pauseLock) {
+            paused = false;
+            pauseLock.notifyAll(); // Unblocks thread
+        }
+    }
+    
+	private void doWork() {
+		long start = System.nanoTime();
+		this.initializeIteration();
+    	
+		if(this.nets != null) {
+        	for(Net net: this.nets) {
+        		this.processNet(net);
+        	}
+    	}
+    	if(this.crits != null) {
+        	for(CritConn critConn:this.crits) {
+            	this.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.sinkOffset - critConn.sourceOffset, critConn.weight, true);
+            }
+    	}
+    	
+    	long stop = System.nanoTime();
+    	this.totalWorkTime += stop - start;
+    	
+    	this.pause();
 	}
 	
     private void initializeIteration() {

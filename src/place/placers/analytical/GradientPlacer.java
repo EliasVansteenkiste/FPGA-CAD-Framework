@@ -152,6 +152,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected boolean[] fixed;
     private double[] coordinatesX;
     private double[] coordinatesY;
+    
+    private long startThreads, finishThreads;
 
     public GradientPlacer(
             Circuit circuit,
@@ -433,11 +435,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
         this.updateCoordinates();
         
-        int c = 0;
+        long max = 0;
+        System.out.printf("Start Threads  %.2f s\nFinish Threads %.2f s\n", this.startThreads*Math.pow(10, -9), this.finishThreads*Math.pow(10, -9));
         for(NetWorker n : this.netWorkers){
-        	c += n.netCounter + n.critCounter;
+        	System.out.printf("\tTotal worktime of %s is equal to %.2f s\n", n.getName(), n.totalWorkTime*Math.pow(10, -9));
+        	if(max < n.totalWorkTime){
+        		max = n.totalWorkTime;
+        	}
         }
-        System.out.println(c);
+        System.out.printf("\tMax total worktime is equal to %.2f s\n\n", max*Math.pow(10, -9));
+        System.out.printf("\n");
+        
     }
     private void setCoordinates() {
 		for(int i = 0; i < this.linearX.length; i++){
@@ -496,23 +504,26 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected void solveLinearIteration() {
         this.startTimer(T_BUILD_LINEAR);
 
+        long start = System.nanoTime();
         for(NetWorker netWorker:this.netWorkers){
         	netWorker.resume();
-        	//synchronized(netWorker){
-        	//	netWorker.notify();
-        	//}
         }
+        long end = System.nanoTime();
+        this.startThreads += end - start;
         
         //Wait on all threads to finish
+        start = System.nanoTime();
         boolean running = true;
         while(running){
         	running = false;
         	for(NetWorker n:this.netWorkers){
-        		if(!n.isFinished()){
+        		if(!n.paused()){
         			running = true;
         		}
         	}
         }
+        end = System.nanoTime();
+        this.finishThreads += end - start;
         
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
