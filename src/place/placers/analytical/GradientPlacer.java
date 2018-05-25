@@ -145,7 +145,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected Legalizer legalizer;
     
     private final int numNetWorkers;
-    private NetWorker[] netWorkers;
+    private WorkerThread[] netWorkers;
     protected SolverGradient solver;
 
     private NetMap netMap;
@@ -378,9 +378,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.netMap.finish();
     }
     private void makeNetWorkers() {
-    	this.netWorkers = new NetWorker[this.numNetWorkers];
+    	this.netWorkers = new WorkerThread[this.numNetWorkers];
     	for(int i = 0; i < this.numNetWorkers; i++){
-            this.netWorkers[i] = new NetWorker(
+            this.netWorkers[i] = new WorkerThread(
             		"Networker_" + i,
                     this.coordinatesX,
                     this.coordinatesY,
@@ -437,7 +437,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         
         long max = 0;
         System.out.printf("Start Threads  %.2f s\nFinish Threads %.2f s\n", this.startThreads*Math.pow(10, -9), this.finishThreads*Math.pow(10, -9));
-        for(NetWorker n : this.netWorkers){
+        for(WorkerThread n : this.netWorkers){
         	System.out.printf("\tTotal worktime of %s is equal to %.2f s\n", n.getName(), n.totalWorkTime*Math.pow(10, -9));
         	if(max < n.totalWorkTime){
         		max = n.totalWorkTime;
@@ -467,7 +467,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 		}
     }
     private void initializeNetWorkers(NetArray nets) {
-		for(NetWorker netWorker:this.netWorkers){
+		for(WorkerThread netWorker:this.netWorkers){
 			netWorker.reset();
 		}
 		
@@ -484,7 +484,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 			
 			nets.initializeStream();
 			for(int i = 1; i < this.numNetWorkers; i++){
-				NetWorker netWorker = this.netWorkers[i];
+				WorkerThread netWorker = this.netWorkers[i];
 				List<Net> workerNets = new ArrayList<>();
 				int threadFanout = 0;
 				while(threadFanout < fanoutPerThread && nets.hasNext()){
@@ -505,7 +505,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_BUILD_LINEAR);
 
         long start = System.nanoTime();
-        for(NetWorker netWorker:this.netWorkers){
+        for(WorkerThread netWorker:this.netWorkers){
         	netWorker.resume();
         }
         long end = System.nanoTime();
@@ -516,7 +516,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         boolean running = true;
         while(running){
         	running = false;
-        	for(NetWorker n:this.netWorkers){
+        	for(WorkerThread n:this.netWorkers){
         		if(!n.paused()){
         			running = true;
         		}

@@ -5,7 +5,7 @@ import java.util.List;
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 
-class NetWorker implements Runnable{
+class WorkerThread implements Runnable{
 	private final String name;
 	private Thread thread;
 	
@@ -21,7 +21,7 @@ class NetWorker implements Runnable{
     
     public long totalWorkTime;
     
-    NetWorker(
+    WorkerThread(
     		String name,
             double[] coordinatesX,
             double[] coordinatesY,

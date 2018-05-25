@@ -6,7 +6,7 @@ class SolverGradient {
     private DimensionSolverGradient horizontalSolver, verticalSolver;
 
     SolverGradient(
-    		NetWorker[] netWorkers,
+    		WorkerThread[] netWorkers,
             double[] coordinatesX,
             double[] coordinatesY,
             boolean[] fixed,
