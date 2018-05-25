@@ -3,39 +3,49 @@ package place.placers.analytical;
 import java.util.List;
 
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
-import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
 
 class WorkerThread implements Runnable{
 	private final String name;
 	private Thread thread;
 	
     private final double[] coordinatesX, coordinatesY;
+    
+    private int[] netStarts;
+    private int[] netEnds;
+    private int[] netBlockIndexes;
+    private float[] netBlockOffsets;
+    
     private final DimensionForceGradient horizontalForce, verticalForce;
     
-    private Net[] nets;
+    private int[] nets;
     private CritConn[] crits;
 
     private volatile boolean running = true;
     private volatile boolean paused = false;
     private final Object pauseLock = new Object();
     
-    public long totalWorkTime;
-    
     WorkerThread(
     		String name,
             double[] coordinatesX,
             double[] coordinatesY,
+            int[] netStarts,
+            int[] netEnds,
+            int[] netBlockIndexes,
+            float[] netBlockOffsets,
             double maxConnectionLength) {
 
     	this.name = name;
     	
         this.coordinatesX = coordinatesX;
         this.coordinatesY = coordinatesY;
+        
+        this.netStarts = netStarts;
+        this.netEnds = netEnds;
+        this.netBlockIndexes = netBlockIndexes;
+        this.netBlockOffsets = netBlockOffsets;
 
         this.horizontalForce = new DimensionForceGradient(this.coordinatesX.length, maxConnectionLength);
         this.verticalForce = new DimensionForceGradient(this.coordinatesY.length, maxConnectionLength);
-        
-        this.totalWorkTime = 0;
         
         this.start();
     }
@@ -52,12 +62,11 @@ class WorkerThread implements Runnable{
     	}
     }
     
-    public void setNets(List<Net> tempNets){
-        this.nets = new Net[tempNets.size()];
-        tempNets.toArray(this.nets);
-    }
-    public void setNets(Net[] tempNets){
-        this.nets = tempNets;
+    public void setNets(List<Integer> tempNets){
+        this.nets = new int[tempNets.size()];
+        for(int i = 0; i < tempNets.size(); i++){
+        	this.nets[i] = tempNets.get(i);
+        }
     }
     public void setCriticalConnections(List<CritConn> tempCritConn) {
         this.crits = new CritConn[tempCritConn.size()];
@@ -116,12 +125,11 @@ class WorkerThread implements Runnable{
     }
     
 	private void doWork() {
-		long start = System.nanoTime();
 		this.initializeIteration();
     	
 		if(this.nets != null) {
-        	for(Net net: this.nets) {
-        		this.processNet(net);
+        	for(int net: this.nets) {
+        		this.processNet(this.netStarts[net], this.netEnds[net]);
         	}
     	}
     	if(this.crits != null) {
@@ -129,9 +137,6 @@ class WorkerThread implements Runnable{
             	this.processConnection(critConn.sourceIndex, critConn.sinkIndex, critConn.sinkOffset - critConn.sourceOffset, critConn.weight, true);
             }
     	}
-    	
-    	long stop = System.nanoTime();
-    	this.totalWorkTime += stop - start;
     	
     	this.pause();
 	}
@@ -141,44 +146,48 @@ class WorkerThread implements Runnable{
         this.verticalForce.initializeIteration();
     }
 
-    private void processNet(Net net) {
-        if(net.numBlocks == 2) {
-            this.processSmallNet(net);
+    private void processNet(int netStart, int netEnd) {
+    	int numBlocks = netEnd - netStart;
+        if(numBlocks == 2) {
+            this.processSmallNet(netStart, netEnd);
         } else {
-        	this.processBigNet(net);
+        	this.processBigNet(netStart, netEnd);
         }
     }
-    private void processSmallNet(Net net) {
-    	// Nets with 2 blocks are common and can be processed very quick
-    	int blockIndex0 = net.index0;
-    	int blockIndex1 = net.index1;
+    private void processSmallNet(int netStart, int netEnd) {
+    	int blockIndex1 = this.netBlockIndexes[netStart];
+    	int blockIndex2 = this.netBlockIndexes[netStart + 1];
 
     	double coordinate1, coordinate2;
             
-    	coordinate1 = this.coordinatesY[blockIndex0] + net.offset0;
-    	coordinate2 = this.coordinatesY[blockIndex1] + net.offset1;
-    	this.verticalForce.processConnection(blockIndex0, blockIndex1, coordinate2 - coordinate1, net.weight, false);
+    	coordinate1 = this.coordinatesY[blockIndex1] + this.netBlockOffsets[netStart];
+    	coordinate2 = this.coordinatesY[blockIndex2] + this.netBlockOffsets[netStart + 1];
+    	this.verticalForce.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, 1, false);
 
-    	coordinate1 = this.coordinatesX[blockIndex0];
-    	coordinate2 = this.coordinatesX[blockIndex1];
-    	this.horizontalForce.processConnection(blockIndex0, blockIndex1, coordinate2 - coordinate1, net.weight, false);
+    	coordinate1 = this.coordinatesX[blockIndex1];
+    	coordinate2 = this.coordinatesX[blockIndex2];
+    	this.horizontalForce.processConnection(blockIndex1, blockIndex2, coordinate2 - coordinate1, 1, false);
     }
-    private void processBigNet(Net net) {
-    	// For bigger nets, we have to find the min and max block
-        int minXIndex = net.netBlockIndexes[0];
-        int maxXIndex = net.netBlockIndexes[0];
-        int minYIndex = net.netBlockIndexes[0];
-        int maxYIndex = net.netBlockIndexes[0];
+    private void processBigNet(int netStart, int netEnd) {
+        // For bigger nets, we have to find the min and max block
+        
+    	int numNetBlocks = netEnd - netStart;
+        double weight = AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
+        
+    	int minXIndex = this.netBlockIndexes[netStart],
+            maxXIndex = this.netBlockIndexes[netStart],
+            minYIndex = this.netBlockIndexes[netStart],
+            maxYIndex = this.netBlockIndexes[netStart];
 
-        double minX = this.coordinatesX[minXIndex];
-        double maxX = this.coordinatesX[maxXIndex];
-        double minY = this.coordinatesY[minYIndex] + net.netBlockOffsets[0];
-        double maxY = this.coordinatesY[maxYIndex] + net.netBlockOffsets[0];
+        double minX = this.coordinatesX[minXIndex],
+               maxX = this.coordinatesX[maxXIndex],
+               minY = this.coordinatesY[minYIndex] + this.netBlockOffsets[netStart],
+               maxY = this.coordinatesY[maxYIndex] + this.netBlockOffsets[netStart];
 
-        for(int i = 0; i < net.numBlocks; i++) {
-            int blockIndex = net.netBlockIndexes[i];
-            double x = this.coordinatesX[blockIndex];
-            double y = this.coordinatesY[blockIndex] + net.netBlockOffsets[i];
+        for(int i = netStart + 1; i < netEnd; i++) {
+            int blockIndex = this.netBlockIndexes[i];
+            double x = this.coordinatesX[blockIndex],
+                   y = this.coordinatesY[blockIndex] + this.netBlockOffsets[i];
 
             if(x < minX) {
                 minX = x;
@@ -198,8 +207,8 @@ class WorkerThread implements Runnable{
         }
 
         // Add connections between the min and max block
-        this.horizontalForce.processConnection(minXIndex, maxXIndex, maxX - minX, net.weight, false);
-        this.verticalForce.processConnection(minYIndex, maxYIndex, maxY - minY, net.weight, false);
+        this.horizontalForce.processConnection(minXIndex, maxXIndex, maxX - minX, weight, false);
+        this.verticalForce.processConnection(minYIndex, maxYIndex, maxY - minY, weight, false);
     }
 
     void processConnection(int blockIndex1, int blockIndex2, float offset, float weight, boolean critical) {

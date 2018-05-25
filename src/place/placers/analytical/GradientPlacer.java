@@ -148,12 +148,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private WorkerThread[] netWorkers;
     protected SolverGradient solver;
 
-    private NetMap netMap;
+    //private NetMap netMap;
     protected boolean[] fixed;
     private double[] coordinatesX;
     private double[] coordinatesY;
     
-    private long startThreads, finishThreads;
+    private Map<BlockType, boolean[]> netMap;
+    private boolean[] allTrue;
+    private int[] netStarts;
+    private int[] netEnds;
+    private int[] netBlockIndexes;
+    private float[] netBlockOffsets;
 
     public GradientPlacer(
             Circuit circuit,
@@ -182,7 +187,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
         
-        this.numNetWorkers = 20;
+        this.numNetWorkers = 1;
 
         if(this.circuit.dense()) {
         	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
@@ -264,15 +269,47 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     	this.coordinatesX = new double[this.linearX.length];
     	this.coordinatesY = new double[this.linearY.length];
     	
-        this.makeNetMap();
-        this.makeNetWorkers();
-        
-        //TODO DEBUG
-        System.out.println("The system has " + this.netMap.getNets().length + " nets" + " => num real nets " + this.numRealNets);
-        for(BlockType type:this.circuit.getGlobalBlockTypes()){
-        	System.out.println("\t" + type + " has " + this.netMap.getNets(type).length + " nets");
+        // Juggling with objects is too slow (I profiled this,
+        // the speedup is around 40%)
+        // Build some arrays of primitive types
+        int netBlockSize = 0;
+        for(int i = 0; i < this.numRealNets; i++) {
+            netBlockSize += this.nets.get(i).blocks.length;
         }
-    	 
+
+        this.allTrue = new boolean[this.numRealNets];
+        Arrays.fill(this.allTrue, true);
+        this.netMap = new HashMap<>();
+        for(BlockType blockType:this.blockTypes){
+        	this.netMap.put(blockType, new boolean[this.numRealNets]);
+        	Arrays.fill(this.netMap.get(blockType), false);
+        }
+
+        this.netStarts = new int[this.numRealNets];
+        this.netEnds = new int[this.numRealNets];
+        this.netBlockIndexes = new int[netBlockSize];
+        this.netBlockOffsets = new float[netBlockSize];
+
+        int netBlockCounter = 0;
+        for(int netCounter = 0; netCounter < this.numRealNets; netCounter++) {
+        	this.netStarts[netCounter] = netBlockCounter;
+
+        	Net net = this.nets.get(netCounter);
+
+            for(NetBlock block : net.blocks) {
+                this.netBlockIndexes[netBlockCounter] = block.blockIndex;
+                this.netBlockOffsets[netBlockCounter] = block.offset;
+
+                netBlockCounter++;
+
+                this.netMap.get(block.blockType)[netCounter] = true;
+            }
+
+            this.netEnds[netCounter] = netBlockCounter;
+        }
+
+        this.makeNetWorkers();
+
     	this.solver = new SolverGradient(
     							this.netWorkers,
     							this.coordinatesX,
@@ -288,95 +325,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_INITIALIZE_DATA);
     }
     
-    class NetMap {
-    	private NetArray netArray;
-    	private Map<BlockType, NetArray> netArrayPerBlocktype;
-    	
-    	public NetMap(List<BlockType> blockTypes) {
-    		this.netArray = new NetArray();
-    		this.netArrayPerBlocktype = new HashMap<>();
-    		for(BlockType blockType: blockTypes) {
-    			this.netArrayPerBlocktype.put(blockType, new NetArray());
-    		}
-    	}
-    	
-    	public void finish() {
-    		this.netArray.finish();
-    		for(NetArray netArray:this.netArrayPerBlocktype.values()){
-    			netArray.finish();
-    		}
-    	}
-    	
-    	public void addNet(Net net) {
-    		this.netArray.add(net);
-    	}
-    	public void addNet(BlockType blockType, Net net) {
-    		this.netArrayPerBlocktype.get(blockType).add(net);
-    	}
-    	
-    	public NetArray getNetArray(){
-    		return this.netArray;
-    	}
-    	public NetArray getNetArray(BlockType blockType){
-    		return this.netArrayPerBlocktype.get(blockType);
-    	}
-    	
-    	public Net[] getNets() {
-    		return this.netArray.getAll();
-    	}
-    	public Net[] getNets(BlockType blockType) {
-    		return this.netArrayPerBlocktype.get(blockType).getAll();
-    	}
-    }
-    class NetArray {
-    	private Net[] values;
-    	private List<Net> temp;
-    	
-    	private int counter;
-    	
-    	public NetArray() {
-    		this.temp = new ArrayList<>();
-    	}
-    	
-    	public void finish() {
-            this.values = new Net[this.temp.size()];
-            this.temp.toArray(this.values);
-            this.temp.clear();
-            this.temp = null;
-    	}
-    	
-    	public void add(Net net) {
-    		this.temp.add(net);
-    	}
-    	public Net[] getAll() {
-    		return this.values;
-    	}
-    	
-    	public void initializeStream() {
-    		this.counter = 0;
-    	}
-    	public Net getNext() {
-    		return this.values[this.counter++];
-    	}
-    	public boolean hasNext() {
-    		return this.counter < this.values.length;
-    	}
-    }
-    
-    private void makeNetMap() {
-        this.netMap = new NetMap(this.circuit.getGlobalBlockTypes());
-
-        for(int netCounter = 0; netCounter < this.numRealNets; netCounter++) {
-        	Net net = this.nets.get(netCounter);
-            
-        	this.netMap.addNet(net);
-        	for(BlockType blockType:net.blockTypes){
-        		this.netMap.addNet(blockType, net);
-        	}
-        }
-        
-        this.netMap.finish();
-    }
     private void makeNetWorkers() {
     	this.netWorkers = new WorkerThread[this.numNetWorkers];
     	for(int i = 0; i < this.numNetWorkers; i++){
@@ -384,6 +332,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
             		"Networker_" + i,
                     this.coordinatesX,
                     this.coordinatesY,
+                    this.netStarts,
+                    this.netEnds,
+                    this.netBlockIndexes,
+                    this.netBlockOffsets,
                     this.maxConnectionLength);
     	}
     }
@@ -395,7 +347,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 			this.fixBlockType(blockType);
 		}
 
-		this.doSolveLinear(this.netMap.getNetArray());
+		this.doSolveLinear(this.allTrue);
     }
 
     @Override
@@ -416,7 +368,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
 
-		this.doSolveLinear(this.netMap.getNetArray(solveType));
+		this.doSolveLinear(this.netMap.get(solveType));
     }
 
     private void fixBlockType(BlockType fixBlockType){
@@ -427,25 +379,15 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     		}
     	}
     }
-    private void doSolveLinear(NetArray nets){
+    private void doSolveLinear(boolean[] processNets){
     	this.setCoordinates();
-		this.initializeNetWorkers(nets);
+		
+    	this.initializeNetWorkers(processNets);
+    	
         for(int i = 0; i < this.effortLevel; i++) {
             this.solveLinearIteration();
         }
         this.updateCoordinates();
-        
-        long max = 0;
-        System.out.printf("Start Threads  %.2f s\nFinish Threads %.2f s\n", this.startThreads*Math.pow(10, -9), this.finishThreads*Math.pow(10, -9));
-        for(WorkerThread n : this.netWorkers){
-        	System.out.printf("\tTotal worktime of %s is equal to %.2f s\n", n.getName(), n.totalWorkTime*Math.pow(10, -9));
-        	if(max < n.totalWorkTime){
-        		max = n.totalWorkTime;
-        	}
-        }
-        System.out.printf("\tMax total worktime is equal to %.2f s\n\n", max*Math.pow(10, -9));
-        System.out.printf("\n");
-        
     }
     private void setCoordinates() {
 		for(int i = 0; i < this.linearX.length; i++){
@@ -466,32 +408,44 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 			}
 		}
     }
-    private void initializeNetWorkers(NetArray nets) {
+    private void initializeNetWorkers(boolean[] processNets) {
 		for(WorkerThread netWorker:this.netWorkers){
 			netWorker.reset();
 		}
 		
     	this.netWorkers[0].setCriticalConnections(this.criticalConnections);
-		
+    	
 		if(this.numNetWorkers == 1){
-			this.netWorkers[0].setNets(nets.getAll());
-		}else if(this.numNetWorkers == 2){
-			this.netWorkers[1].setNets(nets.getAll());
+			List<Integer> workerNets = new ArrayList<>();
+			for(int netIndex = 0; netIndex < processNets.length; netIndex++) {
+	    		if(processNets[netIndex]) {
+	    			workerNets.add(netIndex);
+	    		}
+			}
+		        
+			this.netWorkers[0].setNets(workerNets);
 		}else{
 			int totalFanout = 0;
-			for(Net net:nets.getAll()) totalFanout += net.numBlocks;
+			for(int netIndex = 0; netIndex < processNets.length; netIndex++) {
+	    		if(processNets[netIndex]) {
+	    			totalFanout += this.netEnds[netIndex] - this.netStarts[netIndex];
+	    		}
+			}
 			int fanoutPerThread = (int) Math.ceil((double)totalFanout / (this.numNetWorkers - 1));
 			
-			nets.initializeStream();
+			int netIndex = 0;
 			for(int i = 1; i < this.numNetWorkers; i++){
 				WorkerThread netWorker = this.netWorkers[i];
-				List<Net> workerNets = new ArrayList<>();
+				
+				List<Integer> workerNets = new ArrayList<>();
+				
 				int threadFanout = 0;
-				while(threadFanout < fanoutPerThread && nets.hasNext()){
-					Net net = nets.getNext();
-					threadFanout += net.numBlocks;
-					workerNets.add(net);
+				while(threadFanout < fanoutPerThread && netIndex < processNets.length){
+					threadFanout += this.netEnds[netIndex] - this.netStarts[netIndex];
+					workerNets.add(netIndex);
+					netIndex++;
 				}
+		        
 				netWorker.setNets(workerNets);
 			}
 		}
@@ -504,15 +458,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected void solveLinearIteration() {
         this.startTimer(T_BUILD_LINEAR);
 
-        long start = System.nanoTime();
         for(WorkerThread netWorker:this.netWorkers){
         	netWorker.resume();
         }
-        long end = System.nanoTime();
-        this.startThreads += end - start;
         
         //Wait on all threads to finish
-        start = System.nanoTime();
         boolean running = true;
         while(running){
         	running = false;
@@ -522,8 +472,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         		}
         	}
         }
-        end = System.nanoTime();
-        this.finishThreads += end - start;
         
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
