@@ -2,6 +2,7 @@ package place.circuit.timing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import place.circuit.architecture.DelayTables;
 import place.circuit.block.GlobalBlock;
@@ -18,12 +19,13 @@ public class TimingNode {
 
     private Position position;
 
-    private final ArrayList<TimingEdge> sourceEdges = new ArrayList<>();
-    private final ArrayList<TimingEdge> sinkEdges = new ArrayList<>();
+    private TimingEdge[] sourceEdges;
+    private TimingEdge[] sinkEdges;
+    private List<TimingEdge> tempSourceEdges = new ArrayList<>();
+    private  List<TimingEdge> tempSinkEdges = new ArrayList<>();
     private int numSources = 0, numSinks = 0;
 
-    private double arrivalTime, requiredTime;
-    private boolean hasArrivalTime, hasRequiredTime;
+    private volatile double arrivalTime, requiredTime;
 
     //Tarjan's strongly connected components algorithm
     private int index;
@@ -40,9 +42,16 @@ public class TimingNode {
         this.position = position;
     }
 
-    void compact() {
-    	this.sourceEdges.trimToSize();
-        this.sinkEdges.trimToSize();
+    void finish() {
+        this.sourceEdges = new TimingEdge[tempSourceEdges.size()];
+        this.tempSourceEdges.toArray(this.sourceEdges);
+        this.tempSourceEdges.clear();
+        this.tempSourceEdges = null;
+        
+        this.sinkEdges = new TimingEdge[tempSinkEdges.size()];
+        this.tempSinkEdges.toArray(this.sinkEdges);
+        this.tempSinkEdges.clear();
+        this.tempSinkEdges = null;
     }
 
     public LeafBlock getBlock() {
@@ -59,13 +68,13 @@ public class TimingNode {
     }
 
     private void addSource(TimingNode source, TimingEdge edge) {
-        this.sourceEdges.add(edge);
+        this.tempSourceEdges.add(edge);
         this.numSources++;
     }
     TimingEdge addSink(TimingNode sink, double delay, DelayTables delayTables) {
         TimingEdge edge = new TimingEdge(delay, this, sink, delayTables);
 
-        this.sinkEdges.add(edge);
+        this.tempSinkEdges.add(edge);
         this.numSinks++;
 
         sink.addSource(this, edge);
@@ -74,100 +83,94 @@ public class TimingNode {
     }
 
     void removeSource(TimingEdge source){
-    	if(this.sourceEdges.contains(source)){
-    		this.sourceEdges.remove(source);
+    	if(this.tempSourceEdges.contains(source)){
+    		this.tempSourceEdges.remove(source);
     		this.numSources--;
     	}else{
     		System.out.println("This node does not contain source edge");
     	}
     }
     void removeSink(TimingEdge sink){
-    	if(this.sinkEdges.contains(sink)){
-    		this.sinkEdges.remove(sink);
+    	if(this.tempSinkEdges.contains(sink)){
+    		this.tempSinkEdges.remove(sink);
     		this.numSinks--;
     	}else{
     		System.out.println("This sink does not contain sink edge");
     	}
     }
 
-    public List<TimingEdge> getSources() {
-        return this.sourceEdges;
-    }
-    public List<TimingEdge> getSinks() {
-        return this.sinkEdges;
-    }
 
-    public int getNumSources() {
-        return this.numSources;
+    public TimingEdge[] getSinks() {
+        return this.sinkEdges;
     }
     public int getNumSinks() {
         return this.numSinks;
     }
-
-    public TimingEdge getSourceEdge(int sourceIndex) {
-        return this.sourceEdges.get(sourceIndex);
-    }
     public TimingEdge getSinkEdge(int sinkIndex) {
-        return this.sinkEdges.get(sinkIndex);
+        return this.sinkEdges[sinkIndex];
     }
 
+    
     //Arrival time
-    void resetArrivalTime() {
-        this.hasArrivalTime = false;
-    }
-    void setArrivalTime(double arrivalTime) {
+    public void setArrivalTime(double arrivalTime) {
     	this.arrivalTime = arrivalTime;
-    	this.hasArrivalTime = true;
     }
-    boolean hasArrivalTime() {
-    	return this.hasArrivalTime;
-    }
-    double getArrivalTime() {
+    public double getArrivalTime() {
     	return this.arrivalTime;
     }
-	double recursiveArrivalTime() {
-		if(this.hasArrivalTime()) {
-			return this.getArrivalTime();
+    
+	public void recursiveArrivalTimeTraversal(List<TimingNode> traversal, Set<TimingNode> visitedNodes) {
+		if(this.position.equals(Position.ROOT)){
+			return;
+		}else if(visitedNodes.contains(this)){
+			return;
 		} else {
-			double maxArrivalTime = 0.0;
 			for(TimingEdge edge:this.sourceEdges) {
-				double localArrivalTime = edge.getSource().recursiveArrivalTime() + edge.getTotalDelay();
-				if(localArrivalTime > maxArrivalTime) {
-					maxArrivalTime = localArrivalTime;
-				}
+				edge.getSource().recursiveArrivalTimeTraversal(traversal, visitedNodes);
 			}
-			this.setArrivalTime(maxArrivalTime);
-			return this.getArrivalTime();
+			traversal.add(this);
+			visitedNodes.add(this);
 		}		
+	}
+	public void calculateArrivalTime() {
+		double maxArrivalTime = 0.0;
+		for(TimingEdge edge:this.sourceEdges) {
+			double localArrivalTime = edge.getSource().arrivalTime + edge.getTotalDelay();
+			if(localArrivalTime > maxArrivalTime) {
+				maxArrivalTime = localArrivalTime;
+			}
+		}
+		this.arrivalTime = maxArrivalTime;	
 	}
 
 	//Required time
-    void resetRequiredTime() {
-    	this.hasRequiredTime = false;
-    }
-    void setRequiredTime(double requiredTime) {
+    public void setRequiredTime(double requiredTime) {
     	this.requiredTime = requiredTime;
-    	this.hasRequiredTime = true;
     }
-    boolean hasRequiredTime() {
-    	return this.hasRequiredTime;
-    }
-    double getRequiredTime() {
+    public double getRequiredTime() {
     	return this.requiredTime;
     }
-    double recursiveRequiredTime() {
-    	if(this.hasRequiredTime()) {
-    		return this.getRequiredTime();
-    	}else {
-			double minRequiredTime = 0.0;
-			for(TimingEdge edge:this.sinkEdges) {
-				double localRequiredTime = edge.getSink().recursiveRequiredTime() - edge.getTotalDelay();
-				if(localRequiredTime < minRequiredTime) {
-					minRequiredTime = localRequiredTime;
-				}
+    public void calculateRequiredTime() {
+		double minRequiredTime = 0.0;
+		for(TimingEdge edge:this.sinkEdges) {
+			double localRequiredTime = edge.getSink().requiredTime - edge.getTotalDelay();
+			if(localRequiredTime < minRequiredTime) {
+				minRequiredTime = localRequiredTime;
 			}
-			this.setRequiredTime(minRequiredTime);
-			return this.getRequiredTime();
+		}
+		this.requiredTime = minRequiredTime;
+    }
+    void recursiveRequiredTimeTraversal(List<TimingNode> traversal, Set<TimingNode> visitedNodes) {
+    	if(this.position.equals(Position.LEAF)){
+			return;
+		}else if(visitedNodes.contains(this)){
+			return;
+    	}else {
+			for(TimingEdge edge:this.sinkEdges) {
+				edge.getSink().recursiveRequiredTimeTraversal(traversal, visitedNodes);
+			}
+			traversal.add(this);
+			visitedNodes.add(this);
     	}
     }
 
@@ -219,14 +222,14 @@ public class TimingNode {
     	double cost = 0;
 
     	for(int sinkIndex = 0; sinkIndex < this.numSinks; sinkIndex++) {
-    		TimingEdge edge = this.sinkEdges.get(sinkIndex);
+    		TimingEdge edge = this.sinkEdges[sinkIndex];
     		TimingNode sink = edge.getSink();
 
     		cost += this.calculateDeltaCost(sink, edge);
     	}
 
     	for(int sourceIndex = 0; sourceIndex < this.numSources; sourceIndex++) {
-    		TimingEdge edge = this.sourceEdges.get(sourceIndex);
+    		TimingEdge edge = this.sourceEdges[sourceIndex];
     		TimingNode source = edge.getSource();
 
     		if(source.globalBlock != otherBlock) {

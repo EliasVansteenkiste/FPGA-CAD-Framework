@@ -235,6 +235,13 @@ public class Main {
             }
         }
         
+        //Kill all the threads //TODO
+        this.circuit.getTimingGraph().killCriticalityWorkers();
+        
+        
+        
+        
+        
         boolean printBlockDistance = false;
         if(printBlockDistance){
         	this.printBlockDistance();
@@ -243,6 +250,7 @@ public class Main {
         this.stopAndPrintTimer(totalString);
 
         this.printGCStats();
+        
 
         this.visualizer.createAndDrawGUI();
     }

@@ -4,8 +4,8 @@ import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.DelayTables;
 
 public class TimingEdge {
-	private double fixedDelay, wireDelay;
-	private double slack, criticality;
+	private volatile double fixedDelay, wireDelay;
+	private volatile double slack, criticality;
 	
     private final DelayTables delayTables;
 	private final TimingNode source, sink;

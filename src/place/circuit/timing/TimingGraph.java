@@ -2,8 +2,10 @@ package place.circuit.timing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import place.circuit.Circuit;
@@ -39,7 +41,14 @@ public class TimingGraph {
     private List<TimingNode> affectedNodes = new ArrayList<>();
 
     private List<TimingEdge> timingEdges  = new ArrayList<>();
+    
+    private final int numCriticalityWorkers;
+    private List<CriticalityWorker> criticalityWorkers;
+    
     private List<List<TimingEdge>> timingNets = new ArrayList<>();
+    
+    private TimingNode[] arrivalTimeTraversal;
+    private TimingNode[] requiredTimeTraversal;
 
     private double globalMaxDelay;
 
@@ -60,6 +69,8 @@ public class TimingGraph {
         this.numClockDomains = 1;
 
         this.setCriticalityExponent(1);
+        
+        this.numCriticalityWorkers = 10;
     }
 
     /******************************************
@@ -73,6 +84,9 @@ public class TimingGraph {
         this.setRootAndLeafNodes();
         
         this.cutCombLoop();
+        
+        this.makeTraversals();
+        this.makeWorkerThreads();
     }
 
     private void buildGraph() {
@@ -148,7 +162,7 @@ public class TimingGraph {
         }
         
         for(TimingNode node : this.timingNodes) {
-            node.compact();
+            node.finish();
         }
     }
 
@@ -413,6 +427,54 @@ public class TimingGraph {
     		return null;
     	}
     }
+    
+    
+    /**************
+     * TRAVERSALS *
+     **************/
+    private void makeTraversals() {
+    	List<TimingNode> temp = new ArrayList<>();
+    	Set<TimingNode> visitedNodes = new HashSet<>();
+    	
+    	temp.clear();
+    	visitedNodes.clear();
+        for(TimingNode leafNode: this.leafNodes){
+        	leafNode.recursiveArrivalTimeTraversal(temp, visitedNodes);
+        }
+        this.arrivalTimeTraversal = new TimingNode[temp.size()];
+        temp.toArray(this.arrivalTimeTraversal);
+        
+        temp.clear();
+        visitedNodes.clear();
+        for(TimingNode rootNode: this.rootNodes){
+        	rootNode.recursiveRequiredTimeTraversal(temp, visitedNodes);
+        }
+        this.requiredTimeTraversal = new TimingNode[temp.size()];
+        temp.toArray(this.requiredTimeTraversal);
+    }
+    private void makeWorkerThreads() {
+    	 List<List<TimingEdge>> work = new ArrayList<>();
+    	 for(int i = 0; i < this.numCriticalityWorkers; i++){
+    		 List<TimingEdge> temp = new ArrayList<>();
+    		 work.add(temp);
+    	 }
+    	 int c = 0;
+         for(TimingEdge edge:this.timingEdges){
+        	 work.get(c).add(edge);
+        	 c++;
+        	 if(c == this.numCriticalityWorkers) c = 0;
+         }
+         this.criticalityWorkers = new ArrayList<>();
+         for(int i = 0; i < this.numCriticalityWorkers; i++){
+        	 CriticalityWorker criticalityWorker = new CriticalityWorker(this.criticalityLookupTable, work.get(i));
+        	 this.criticalityWorkers.add(criticalityWorker);
+         }
+    }
+    public void killCriticalityWorkers(){
+    	for(CriticalityWorker criticalityWorker:this.criticalityWorkers){
+    		criticalityWorker.stop();
+    	}
+    }
 
     /****************************************************************
      * These functions calculate the criticality of all connections *
@@ -444,44 +506,30 @@ public class TimingGraph {
     }
 
     private void calculateArrivalTimesAndCriticalities(boolean calculateCriticalities) {
-    	//INITIALISATION
-        for(TimingNode node : this.timingNodes) {
-            node.resetArrivalTime();
-            node.resetRequiredTime();
+    	if(calculateCriticalities == false){
+    		System.err.println("Unexpected behavior!");
+    	}
+
+        ArrivalTimeWorker aw = new ArrivalTimeWorker(this.rootNodes, this.leafNodes, this.arrivalTimeTraversal);
+        RequiredTimeWorker rw = new RequiredTimeWorker(this.leafNodes, this.requiredTimeTraversal);
+        
+        while(aw.isRunning){} //WAIT
+        while(rw.isRunning){} //WAIT
+        
+        this.globalMaxDelay = aw.getMaxDelay();
+
+        for(CriticalityWorker c : this.criticalityWorkers) {
+        	c.setDelay(this.globalMaxDelay);
+        	c.resume();
         }
-        this.globalMaxDelay = 0;
-
-    	//ARRIVAL TIME
-        for(TimingNode rootNode: this.rootNodes){
-        	rootNode.setArrivalTime(0.0);
-        }
-        for(TimingNode leafNode: this.leafNodes){
-        	leafNode.recursiveArrivalTime();
-        	if(leafNode.getArrivalTime() > this.globalMaxDelay){
-        		this.globalMaxDelay = leafNode.getArrivalTime();
-        	}
-        }
-
-        if(calculateCriticalities) {
-        	//REQUIRED TIME
-        	for(TimingNode leafNode: this.leafNodes) {
-        		leafNode.setRequiredTime(0.0);
-        	}
-            for(TimingNode rootNode: this.rootNodes) {
-            	rootNode.recursiveRequiredTime();
-            }
-
-            for(TimingEdge edge:this.timingEdges){
-            	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
-            	edge.setSlack(slack);
-
-                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
-                int i = Math.min(19, (int) val);
-                double linearInterpolation = val - i;
-
-                edge.setCriticality(
-                        (1 - linearInterpolation) * this.criticalityLookupTable[i]
-                        + linearInterpolation * this.criticalityLookupTable[i+1]);
+        
+        boolean running = true;
+        while(running){
+        	running = false;
+            for(CriticalityWorker c : this.criticalityWorkers) {
+            	if(!c.paused()){
+            		running = true;
+            	}
             }
         }
     }
@@ -492,74 +540,6 @@ public class TimingGraph {
     	}
     }
     
-    public String criticalPathToString() {
-    	List<TimingNode> criticalPath = new ArrayList<>();
-		TimingNode node = this.getEndNodeOfCriticalPath();
-		criticalPath.add(node);
-		while(!node.getSources().isEmpty()){
-    		node = this.getSourceNodeOnCriticalPath(node);
-    		criticalPath.add(node);
-    	}
-    	
-    	int maxLen = 25;
-    	for(TimingNode criticalNode:criticalPath){
-    		if(criticalNode.toString().length() > maxLen){
-    			maxLen = criticalNode.toString().length();
-    		}
-    	}
-    	
-    	System.out.println();
-    	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
-    	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %-9s %-8s\n", delay, "x", "y", "Tarr (ns)", "LeafNode");
-    	result += String.format("%-" + maxLen + "s..%-3s.%-3s..%-9s.%-8s\n","","","","","").replace(" ", "-").replace(".", " ");
-    	for(TimingNode criticalNode:criticalPath){
-    		result += this.printNode(criticalNode, maxLen);
-    	}
-    	return result;
-    }
-    private TimingNode getEndNodeOfCriticalPath(){
-    	TimingNode endNode = null;
-    	for(TimingNode leafNode: this.leafNodes){
-    		if(compareDouble(leafNode.getArrivalTime(), this.globalMaxDelay)){
-    			if(endNode == null){
-    				endNode = leafNode;
-    			}else{
-    				System.out.println("Warning: more than one end node has an arrival time equal to the critical path delay");
-    			}
-    		}
-    	}
-    	return endNode;
-    }
-    private TimingNode getSourceNodeOnCriticalPath(TimingNode sinkNode){
-    	TimingNode sourceNode = null;
-		for(TimingEdge edge: sinkNode.getSources()){
-			if(this.compareDouble(edge.getSource().getArrivalTime(), sinkNode.getArrivalTime() - edge.getTotalDelay())){
-				if(sourceNode == null){
-					sourceNode = edge.getSource();
-				}else{
-					sourceNode = edge.getSource();
-					System.out.println("Warning: more than one source node on the critical path");
-					//System.out.println("\tsinkNode: " + sinkNode.toString());
-					//System.out.println("\tsourceNode1: " + sourceNode.toString());
-					//System.out.println("\tsourceNode2: " + edge.getSource().toString());
-					//System.out.println();
-				}
-			}
-		}
-		return sourceNode;
-    }
-    private String printNode(TimingNode node, int maxLen){
-    	String nodeInfo = node.toString();
-    	int x = node.getGlobalBlock().getColumn();
-    	int y = node.getGlobalBlock().getRow();
-    	double delay = node.getArrivalTime() * Math.pow(10, 9);
-    	int leafNode = node.getGlobalBlock().getLeafNode().getIndex();
-    	
-    	return String.format("%-" + maxLen + "s  %-3d %-3d  %-9s %-8d\n", nodeInfo, x, y, String.format("%.3f", delay), leafNode);
-    }
-    private boolean compareDouble(double var1, double var2){
-    	return Math.abs(var1 - var2) < Math.pow(10, -12);
-    }
     /*************************************************
      * Functions that facilitate simulated annealing *
      *************************************************/

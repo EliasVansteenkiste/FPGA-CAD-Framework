@@ -20,9 +20,9 @@ class NetAndCritWorker implements Runnable{
     private int[] nets;
     private CritConn[] crits;
 
-    private volatile boolean running = true;
-    private volatile boolean paused = false;
-    private final Object pauseLock = new Object();
+    private volatile boolean running;
+    private volatile boolean paused;
+    private final Object pauseLock;
     
     NetAndCritWorker(
     		String name,
@@ -46,6 +46,10 @@ class NetAndCritWorker implements Runnable{
 
         this.horizontalForce = new DimensionForceGradient(this.coordinatesX.length, maxConnectionLength);
         this.verticalForce = new DimensionForceGradient(this.coordinatesY.length, maxConnectionLength);
+        
+        this.running = true;
+        this.paused = true;
+        this.pauseLock = new Object();
         
         this.start();
     }
@@ -111,7 +115,7 @@ class NetAndCritWorker implements Runnable{
 
     public void pause() {
         // you may want to throw an IllegalStateException if !running
-        paused = true;
+        this.paused = true;
     }
     public boolean paused() {
     	return this.paused;
@@ -119,8 +123,8 @@ class NetAndCritWorker implements Runnable{
 
     public void resume() {
         synchronized (pauseLock) {
-            paused = false;
-            pauseLock.notifyAll(); // Unblocks thread
+            this.paused = false;
+            this.pauseLock.notifyAll(); // Unblocks thread
         }
     }
     
