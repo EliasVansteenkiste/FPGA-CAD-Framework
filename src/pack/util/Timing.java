@@ -1,11 +1,19 @@
 package pack.util;
 
 public class Timing {
+	private String name;
 	private long startTime;
 	private long endTime;
 	private long totalTime;
 	
 	public Timing(){
+		this.name = null;
+		this.startTime = 0;
+		this.endTime = 0;
+		this.totalTime = 0;
+	}
+	public Timing(String name){
+		this.name = name;
 		this.startTime = 0;
 		this.endTime = 0;
 		this.totalTime = 0;
@@ -24,24 +32,27 @@ public class Timing {
 		return Util.round(1.0*(System.nanoTime()-startTime)*Math.pow(10, -9),3);
 	}
 	public String toString(){
+		String prefix = "";
+		if(this.name != null) prefix += this.name + " took ";
+		
 		double time = this.totalTime * Math.pow(10, -9);
 		if(time > 100){
-			return String.format("%.0f s", time);
+			return prefix + String.format("%.0f s", time);
 		}else if(time > 10){
-			return String.format("%.1f s", time);
+			return prefix + String.format("%.1f s", time);
 		}else if(time > 1){
-			return String.format("%.2f s", time);
+			return prefix + String.format("%.2f s", time);
 		}
 
 		time *= 1000;//ms
 
 		if(time > 1){
-			return String.format("%.0f ms", time);
+			return prefix + String.format("%.0f ms", time);
 		}
     	
 		time *= 1000;//ns
 
-		return String.format("%.0f ns", time);
+		return prefix + String.format("%.0f ns", time);
 	}
 	public double time(){
 		return Util.round(1.0*this.totalTime*Math.pow(10, -9),3);
