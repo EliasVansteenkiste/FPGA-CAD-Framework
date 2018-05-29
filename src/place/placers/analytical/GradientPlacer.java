@@ -145,15 +145,16 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected Legalizer legalizer;
     
     private final int numNetWorkers;
-    private WorkerThread[] netWorkers;
+    private NetAndCritWorker[] netWorkers;
     protected SolverGradient solver;
 
     //private NetMap netMap;
     protected boolean[] fixed;
-    private double[] coordinatesX;
-    private double[] coordinatesY;
+    private volatile double[] coordinatesX;
+    private volatile double[] coordinatesY;
     
     private Map<BlockType, boolean[]> netMap;
+    private Map<BlockType, Boolean> doBlockType;
     private boolean[] allTrue;
     private int[] netStarts;
     private int[] netEnds;
@@ -187,7 +188,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
         
-        this.numNetWorkers = 1;
+        this.numNetWorkers = 10;
 
         if(this.circuit.dense()) {
         	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
@@ -307,6 +308,16 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
             this.netEnds[netCounter] = netBlockCounter;
         }
+        
+        this.doBlockType = new HashMap<>();
+        for(BlockType blockType:this.netMap.keySet()){
+        	this.doBlockType.put(blockType, Boolean.FALSE);
+        	for(boolean b:this.netMap.get(blockType)){
+        		if(b == true){
+        			this.doBlockType.put(blockType, Boolean.TRUE);
+        		}
+        	}
+        }
 
         this.makeNetWorkers();
 
@@ -325,10 +336,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.stopTimer(T_INITIALIZE_DATA);
     }
     
+    @Override
+    protected void killThreads() {
+    	for(NetAndCritWorker netWorker:this.netWorkers) {
+    		netWorker.stop();
+    	}
+    }
+    
     private void makeNetWorkers() {
-    	this.netWorkers = new WorkerThread[this.numNetWorkers];
+    	this.netWorkers = new NetAndCritWorker[this.numNetWorkers];
     	for(int i = 0; i < this.numNetWorkers; i++){
-            this.netWorkers[i] = new WorkerThread(
+            this.netWorkers[i] = new NetAndCritWorker(
             		"Networker_" + i,
                     this.coordinatesX,
                     this.coordinatesY,
@@ -352,23 +370,25 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     @Override
     protected void solveLinear(BlockType solveType, int iteration) {
-    	Arrays.fill(this.fixed, false);
-		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
-			this.fixBlockType(blockType);
-		}
-
-    	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
-    		if(!blockType.equals(solveType)){
+    	if(this.doBlockType.get(solveType)){
+        	Arrays.fill(this.fixed, false);
+    		for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
     			this.fixBlockType(blockType);
     		}
-    	}
-    	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
-    		if(!blockType.equals(solveType)){
-    			this.fixBlockType(blockType);
-    		}
-    	}
 
-		this.doSolveLinear(this.netMap.get(solveType));
+        	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.CLB)){
+        		if(!blockType.equals(solveType)){
+        			this.fixBlockType(blockType);
+        		}
+        	}
+        	for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
+        		if(!blockType.equals(solveType)){
+        			this.fixBlockType(blockType);
+        		}
+        	}
+
+    		this.doSolveLinear(this.netMap.get(solveType));
+    	}
     }
 
     private void fixBlockType(BlockType fixBlockType){
@@ -409,7 +429,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 		}
     }
     private void initializeNetWorkers(boolean[] processNets) {
-		for(WorkerThread netWorker:this.netWorkers){
+		for(NetAndCritWorker netWorker:this.netWorkers){
 			netWorker.reset();
 		}
 		
@@ -434,18 +454,17 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 			int fanoutPerThread = (int) Math.ceil((double)totalFanout / (this.numNetWorkers - 1));
 			
 			int netIndex = 0;
-			for(int i = 1; i < this.numNetWorkers; i++){
-				WorkerThread netWorker = this.netWorkers[i];
-				
+			for(NetAndCritWorker netWorker : this.netWorkers){
 				List<Integer> workerNets = new ArrayList<>();
 				
 				int threadFanout = 0;
 				while(threadFanout < fanoutPerThread && netIndex < processNets.length){
-					threadFanout += this.netEnds[netIndex] - this.netStarts[netIndex];
-					workerNets.add(netIndex);
+					if(processNets[netIndex]) {
+						threadFanout += this.netEnds[netIndex] - this.netStarts[netIndex];
+						workerNets.add(netIndex);
+					}
 					netIndex++;
 				}
-		        
 				netWorker.setNets(workerNets);
 			}
 		}
@@ -458,20 +477,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected void solveLinearIteration() {
         this.startTimer(T_BUILD_LINEAR);
 
-        for(WorkerThread netWorker:this.netWorkers){
-        	netWorker.resume();
-        }
-        
-        //Wait on all threads to finish
-        boolean running = true;
-        while(running){
-        	running = false;
-        	for(WorkerThread n:this.netWorkers){
-        		if(!n.paused()){
-        			running = true;
-        		}
-        	}
-        }
+        this.startNetWorkers();
+        this.waitOnNetWorkers();
         
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
@@ -486,6 +493,23 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.startTimer(T_SOLVE_LINEAR);
         this.solver.solve(this.anchorWeight, this.learningRate);
         this.stopTimer(T_SOLVE_LINEAR);
+    }
+    private void startNetWorkers() {
+        for(NetAndCritWorker netWorker:this.netWorkers){
+        	netWorker.resume();
+        }
+    }
+    private void waitOnNetWorkers() {
+        //Wait on all threads to finish
+        boolean running = true;
+        while(running){
+        	running = false;
+        	for(NetAndCritWorker n:this.netWorkers){
+        		if(!n.paused()){
+        			running = true;
+        		}
+        	}
+        }
     }
 
     @Override

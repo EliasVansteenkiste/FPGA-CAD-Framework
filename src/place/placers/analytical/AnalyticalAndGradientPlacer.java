@@ -114,6 +114,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     protected abstract boolean stopCondition(int iteration);
     protected abstract int numIterations();
     protected abstract void printLegalizationRuntime();
+    
+    protected abstract void killThreads();
 
     protected abstract void printStatistics(int iteration, double time);
 
@@ -393,6 +395,8 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             
             iteration++;
         }
+        
+        this.killThreads();
         
         //////////// Final legalization of the LABs ////////////
 		for(int i = 0; i < this.linearX.length; i++){

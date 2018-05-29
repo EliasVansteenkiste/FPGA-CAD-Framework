@@ -4,18 +4,18 @@ import java.util.List;
 
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 
-class WorkerThread implements Runnable{
+class NetAndCritWorker implements Runnable{
 	private final String name;
 	private Thread thread;
 	
-    private final double[] coordinatesX, coordinatesY;
+    private volatile double[] coordinatesX, coordinatesY;
     
     private int[] netStarts;
     private int[] netEnds;
     private int[] netBlockIndexes;
     private float[] netBlockOffsets;
     
-    private final DimensionForceGradient horizontalForce, verticalForce;
+    private volatile DimensionForceGradient horizontalForce, verticalForce;
     
     private int[] nets;
     private CritConn[] crits;
@@ -24,7 +24,7 @@ class WorkerThread implements Runnable{
     private volatile boolean paused = false;
     private final Object pauseLock = new Object();
     
-    WorkerThread(
+    NetAndCritWorker(
     		String name,
             double[] coordinatesX,
             double[] coordinatesY,
