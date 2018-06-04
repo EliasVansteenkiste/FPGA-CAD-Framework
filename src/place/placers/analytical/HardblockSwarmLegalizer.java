@@ -449,8 +449,8 @@ public class HardblockSwarmLegalizer{
 		boolean alreadySaved;
 		
 		// FOR PSO
-		int[] legalXs, legalYs;
-		int[] oldLegalXs, oldLegalYs;
+		volatile int[] legalXs, legalYs;
+		volatile int[] oldLegalXs, oldLegalYs;
 //		boolean[] verticalSaved;
 
 		final List<Net> nets;
@@ -611,7 +611,7 @@ public class HardblockSwarmLegalizer{
 				for(Crit crit:this.crits) crit.updateVertical(i);
 			}
 		}
-		void updateHorizontals(int i, int newx){
+		void updateHorizontals(int i, int newx){//TODO synchronized??
 			int oldX = this.legalXs[i];
 			if(this.legalXs[i] != newx){
 				this.legalXs[i] = newx;
