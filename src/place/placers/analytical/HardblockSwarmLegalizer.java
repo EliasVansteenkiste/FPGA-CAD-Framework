@@ -1,5 +1,6 @@
 package place.placers.analytical;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -7,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import place.circuit.architecture.BlockType;
@@ -286,46 +288,17 @@ public class HardblockSwarmLegalizer{
 //		}
 //		System.out.println();
 		for(Column column:columns){
-			column.legalize();
+			column.legalize();//TODO WHY IS THIS BETTER + ANALYZE
+//			column.random();
 		}
 		this.timingTree.time("Legalize columns");
 
 		//4 Column pso
 		this.timingTree.start("Anneal columns");
 		for(Column column:columns){
-			if(column.usedPos() > 0){
-//				Set<Net> columnNets = new HashSet<>();
-//				Set<Crit> columnCrits = new HashSet<>();
-//				for(Block block:column.blocks){
-//					for(Net net:block.nets){
-//						columnNets.add(net);
-//					}
-//					for(Crit crit:block.crits){
-//						columnCrits.add(crit);
-//					}
-//				}
-//				double cost = 0.0; 
-//				for(Net net:columnNets){
-//					net.initializeConnectionCost();;
-//				}
-//				for(Crit crit:columnCrits){
-//					crit.initializeTimingCost();;
-//				}
-//				for(Net net:columnNets){
-//					cost += net.connectionCost();
-//				}
-//				for(Crit crit:columnCrits){
-//					cost += crit.timingCost();
-//				}
-//				System.out.println(" ->initialcost " + String.format("%.2f", cost));
-//				for(Site site:column.sites){
-//					if(site.hasBlock()) System.out.println(site.block.index);
-//					else System.out.println(-1);
-//				}
-				
+			if(column.usedPos() > 0){			
 				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality);
-//				this.hardblockSwarm.doRandomly(column, this.blockType);
-//				this.hardblockAnneal.doAnneal(column, quality);//TODO 
+//				this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO 
 			}	
 		}
 		this.timingTree.time("Anneal columns");
@@ -1597,6 +1570,23 @@ public class HardblockSwarmLegalizer{
 			}
 			return bestSite;
 		}
+		void random(){
+			Random rand = new Random(100);
+			for(Block block:this.blocks){
+				Site randomSite = this.getRandomFreeSite(rand);
+				block.setSite(randomSite);
+				randomSite.setBlock(block);
+				block.setLegalY(randomSite.row);
+			}
+		}
+		Site getRandomFreeSite(Random random){
+			Site site = this.sites[random.nextInt(this.sites.length)];
+			while(site.hasBlock()) {
+				site = this.sites[random.nextInt(this.sites.length)];
+			}
+			return site;
+		}
+		
 		public int compareTo(Column compare) {
 			
 			double compareCrit = compare.getCriticality(); 

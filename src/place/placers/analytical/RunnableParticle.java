@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Callable;
 
 import place.placers.analytical.HardblockSwarmLegalizer.Block;
 import place.placers.analytical.HardblockSwarmLegalizer.Crit;
@@ -81,6 +81,7 @@ public class RunnableParticle implements Runnable{
 	public void newThreadStart(){
 		if(this.thread == null){
 			this.thread = new Thread(this, Integer.toString(this.pIndex));
+			this.pause();
 			this.thread.start();
 		}
 	}
@@ -97,22 +98,24 @@ public class RunnableParticle implements Runnable{
 	}
 	@Override
 	public void run(){
-//		String threadName = Thread.currentThread().getName();
-//	    System.out.println("pthread " + threadName);
-//		this.doWork();
-		
 		while(this.running){
 			synchronized(this.pauseLock){
-				if(!this.running){
+				if(!this.running){// may have changed while running to synchronize on pauseLock
 					break;
 				}
 				if(this.paused){
 					try{
-						this.pauseLock.wait();
+						this.pauseLock.wait();// will cause this Thread to block until 
+                        						// another thread calls pauseLock.notifyAll()
+                        						// Note that calling wait() will 
+												// relinquish the synchronized lock that this 
+                        						// thread holds on pauseLock so another thread
+												// can acquire the lock to call notifyAll()
+                        						// (link with explanation below this code)
 					}catch(InterruptedException ex){
 						break;
 					}
-					if(!this.running){
+					if(!this.running){// running might have changed since we paused
 						break;
 					}
 				}
@@ -120,7 +123,7 @@ public class RunnableParticle implements Runnable{
 			this.doWork();
 		}
 	}
-
+	
 	void doWork(){
 		//update velocity
 		this.updateVelocity(this.inertiaWeight, this.congnitiveRate, this.socialRate, this.gBestBlockIdList);

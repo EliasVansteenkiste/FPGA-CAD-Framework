@@ -6,11 +6,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import place.circuit.architecture.BlockCategory;
+import place.circuit.architecture.BlockType;
 import place.placers.analytical.HardblockSwarmLegalizer.Block;
 import place.placers.analytical.HardblockSwarmLegalizer.Column;
 import place.placers.analytical.HardblockSwarmLegalizer.Crit;
 import place.placers.analytical.HardblockSwarmLegalizer.Net;
 import place.placers.analytical.HardblockSwarmLegalizer.Site;
+import place.util.TimingTree;
 
 public class HardblockAnneal {
 	private Block[] blocks;
@@ -29,18 +32,22 @@ public class HardblockAnneal {
 	private List<Double> costHistory;
 	
 	private final Random random;
-	
+	private final TimingTree timingTree;
+	private BlockType type;
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
+		this.timingTree = new TimingTree(false);
 	}
-	public void doAnneal(Column column, double quality){
+	public void doAnneal(Column column, BlockType blockType, double quality){
+		this.timingTree.start("annealing column");
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.sites = column.sites;
 
 		this.quality = quality;
 		this.effortLevel = 1.0;
-
+		this.type = blockType;
 		this.doAnneal();
+		this.timingTree.time("annealing column");
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites, double quality){
 		this.blocks = annealBlocks;
@@ -120,6 +127,7 @@ public class HardblockAnneal {
 //				System.out.println(block.index + " -> " + block.optimalSite.column + "\t" + block.optimalSite.row);
 			}
 		}
+//		System.out.println(this.iteration);
 //		for(Block block:this.blocks){
 //			System.out.println(block.index + " -> " + block.site.column + "\t" + block.site.row);
 //		}
@@ -162,7 +170,7 @@ public class HardblockAnneal {
 			}
 			
 			double ratio = max / min;
-
+//			System.out.println(ratio);
 			if(ratio < 1 + this.quality){
 				return true;
 			}else{
