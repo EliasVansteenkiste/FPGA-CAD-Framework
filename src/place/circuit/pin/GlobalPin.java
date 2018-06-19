@@ -4,9 +4,17 @@ import place.circuit.architecture.PortType;
 import place.circuit.block.GlobalBlock;
 
 public class GlobalPin extends AbstractPin {
+	private String netName;
 
     public GlobalPin(GlobalBlock owner, PortType portType, int index) {
         super(owner, portType, index);
+    }
+    
+    public void setNetName(String netName){
+    	this.netName = netName;
+    }
+    public String getNetName(){
+    	return this.netName;
     }
 
     @Override
