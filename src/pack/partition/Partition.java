@@ -35,6 +35,8 @@ public class Partition{
 	private int metisIt;
 	private CutEdges cutEdges;
 	
+	private final boolean connectionBased;
+	
 	private static final boolean debug = false;
 	
 	private int numberOfCutEdges = 0;
@@ -50,7 +52,13 @@ public class Partition{
 
 		//Stop criterium
 		this.maxNetlistSize = this.simulation.getIntValue("max_pack_size");
-		Output.println("\t\tMaximum netlist size: " + Util.parseDigit(this.maxNetlistSize));
+		this.connectionBased = simulation.getBooleanValue("connection_based_partitioning_limit");
+		if(this.connectionBased) {
+			this.maxNetlistSize *= 3;
+			Output.println("\t\tMaximum connection cost: " + Util.parseDigit(this.maxNetlistSize) + " (connection based partitioning limit)");
+		} else {
+			Output.println("\t\tMaximum netlist size: " + Util.parseDigit(this.maxNetlistSize));
+		}
 		Output.newLine();
 		
 		Output.println("\t\tTiming edge weight update: " + this.simulation.getBooleanValue("timing_edge_weight_update"));
@@ -252,9 +260,18 @@ public class Partition{
 		}
 	}
 	public void processChildNetlist(Netlist child){
-		if(child.atom_count() > this.maxNetlistSize){
-			this.stack.pushNetlist(child);
+		if(this.connectionBased) {
+			//Based on the number of connections
+			if(child.connection_cost() > this.maxNetlistSize){
+				this.stack.pushNetlist(child);
+			}
+		} else {
+			//Based on the number of atoms
+			if(child.atom_count() > this.maxNetlistSize){
+				this.stack.pushNetlist(child);
+			}
 		}
+
 		this.timeSteps.add(Timing.currentTime(this.startTime) + "\t" + this.threadPool.usedThreads());
 		this.startHMetis();
 	}

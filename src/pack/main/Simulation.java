@@ -27,6 +27,8 @@ public class Simulation{
 		this.addOption(new Option("max_pack_size","the maxmimum number of blocks in the independent subcircuits for seed based packing", 2500));
 		this.addOption(new Option("max_fanout","the maximum fanout of the added nets during partitioning", 100));
 		
+		this.addOption(new Option("connection_based_partitioning_limit", "the partitioning stops when a subcircuit has reached a certain connection cost", false));
+		
 		this.addOption(new Option("num_threads","the number of available threads", 5));
 		
 		this.addOption(new Option("min_crit","minimum criticality of the critical connections", 0.7));
