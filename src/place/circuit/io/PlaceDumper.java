@@ -98,7 +98,7 @@ public class PlaceDumper {
         
 
         //Information of the blocks
-        writer = new PrintWriter(new BufferedWriter(new FileWriter(this.netPath.replace(".net", ".post_place.blocks"))));
+        writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile.toString().replace(".place", ".post_place.blocks"))));
         for(GlobalBlock block:this.circuit.getGlobalBlocks()){
             String name = block.getName();
             String type = block.getType().toString().split("<")[0];
@@ -112,7 +112,7 @@ public class PlaceDumper {
         
         //Information of the nets
         this.checkNetNames();
-        writer = new PrintWriter(new BufferedWriter(new FileWriter(this.netPath.replace(".net", ".liquid.post_place.nets"))));
+        writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile.toString().replace(".place", ".post_place.nets"))));
     	for(GlobalBlock sourceBlock:this.circuit.getGlobalBlocks()){
     		for(AbstractPin abstractSourcePin:sourceBlock.getOutputPins()){
     			GlobalPin sourcePin = (GlobalPin) abstractSourcePin;
