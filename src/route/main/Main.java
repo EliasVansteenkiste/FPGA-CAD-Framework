@@ -165,7 +165,8 @@ public class Main {
     	for(Connection connection : this.circuit.getConnections()) {
     		LeafNode ln = connection.leafNode;
 			if(!clusterConnections.containsKey(ln)) {
-				clusterConnections.put(ln, new HashSet<>());
+				Set<Connection> temp = new HashSet<>();
+				clusterConnections.put(ln, temp);
 			}
 			clusterConnections.get(ln).add(connection);
      	}
