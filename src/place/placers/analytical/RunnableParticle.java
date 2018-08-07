@@ -12,7 +12,7 @@ import place.placers.analytical.HardblockSwarmLegalizer.Crit;
 import place.placers.analytical.HardblockSwarmLegalizer.Net;
 import place.placers.analytical.HardblockSwarmLegalizer.Site;
 
-public class RunnableParticle implements Runnable{
+public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 	final int pIndex;
 	private final int numSites;
 	private int velMaxSize;
@@ -78,15 +78,17 @@ public class RunnableParticle implements Runnable{
 		this.affectedNets = new HashSet<>();
 		this.affectedCrits = new HashSet<>();
 	}
-	public void newThreadStart(){
-		if(this.thread == null){
-			this.thread = new Thread(this, Integer.toString(this.pIndex));
-			this.pause();
-			this.thread.start();
-		}
-	}
 	void setVelocity(List<Swap> vel){
 		this.velocity = new ArrayList<Swap>(vel);
+	}
+	void abandonOldVelocity(){
+		this.velocity.clear();
+	}
+	void addPermutationSwap(Swap s){
+		this.velocity.add(s);
+	}
+	List<Swap> getVelopcity(){
+		return this.velocity;
 	}
 	void setPNets(Set<Net> columnNets){
 		this.pNets = new ArrayList<Net>(columnNets);
@@ -96,7 +98,6 @@ public class RunnableParticle implements Runnable{
 	void setPCrits(Set<Crit> columnCrits){
 		this.pCrits = new ArrayList<Crit>(columnCrits);
 	}
-	@Override
 	public void run(){
 		while(this.running){
 			synchronized(this.pauseLock){
@@ -123,6 +124,11 @@ public class RunnableParticle implements Runnable{
 			this.doWork();
 		}
 	}
+	@Override
+	public CostAndIndexList call() throws Exception {
+		this.doWork();	
+		return new CostAndIndexList(this.pCost, this.pIndex, this.blockIndexList);
+	}
 	
 	void doWork(){
 		//update velocity
@@ -134,7 +140,7 @@ public class RunnableParticle implements Runnable{
 		if(this.changed){				
 			this.updateBlocksInfo();					
 			//update pBest
-			this.pCost = this.getCost(this.pIndex);//TODO
+			this.pCost = this.getCost();//TODO
 					
 			if(this.pCost < this.pBest){					
 				this.pBest = this.pCost;						
@@ -165,20 +171,20 @@ public class RunnableParticle implements Runnable{
             pauseLock.notifyAll(); // Unblocks thread
         }
     }
-	void setParameters(double w, double r1, double r2, int[] gBest){
+	void setParameters(double w, double c1, double c2, int[] gBest){
 		this.inertiaWeight = w;
-		this.congnitiveRate = r1;
-		this.socialRate = r2;
+		this.congnitiveRate = c1;
+		this.socialRate = c2;
 		System.arraycopy(gBest, 0, this.gBestBlockIdList, 0, gBest.length);//gBest length = this.numSites
 	}
-	void updateVelocity(double w, double r1, double r2, int[] gBestLocation){		
+	void updateVelocity(double w, double c1, double c2, int[] gBestLocation){		
 		List<Swap> weightedVel = this.multipliedByC(this.velocity, w);			
 		
 		this.getSwapSequence(this.pBestIndexList);				
-		List<Swap> cognitiveVel = this.multipliedByC(this.swaps, r1);
+		List<Swap> cognitiveVel = this.multipliedByC(this.swaps, c1);
 		
 		this.getSwapSequence(gBestLocation);
-		List<Swap> socialVel = this.multipliedByC(this.swaps, r2);// * Math.random());
+		List<Swap> socialVel = this.multipliedByC(this.swaps, c2);// * Math.random());
 		
 		this.newVel.clear();
 		
@@ -194,8 +200,8 @@ public class RunnableParticle implements Runnable{
 			if(cognitiveVel != null) this.newVel.addAll(cognitiveVel);
 			if(socialVel != null) this.newVel.addAll(socialVel);
 		}else{
-			int length0Max = (int)Math.round(w / (w + r1 + r2)*this.velMaxSize);
-			int length1Max = (int)Math.round(r1 / (w+ r1 + r2) * this.velMaxSize);
+			int length0Max = (int)Math.round(w / (w + c1 + c2)*this.velMaxSize);
+			int length1Max = (int)Math.round(c1 / (w+ c1 + c2) * this.velMaxSize);
 			int length2Max = this.velMaxSize - length1Max - length0Max;
 			if(weightedVel != null && length0Max != 0){
 				if(weightedVel.size() <= length0Max){
@@ -228,73 +234,66 @@ public class RunnableParticle implements Runnable{
 		this.setVelocity(this.newVel);
 	}
 	//Velocity multiplied by a constant
-		private List<Swap> multipliedByC(List<Swap> vel, double c){
-			List<Swap> weightedVel = new ArrayList<Swap>();
-			int newSize = (int)Math.floor(vel.size() * c);
-			if(vel.size() != 0){
-				if(c == 0){
-					weightedVel = null;
+	private List<Swap> multipliedByC(List<Swap> vel, double c){
+		List<Swap> weightedVel = new ArrayList<>();
+		int newSize = (int)Math.floor(vel.size() * c);
+		if(vel.size() != 0){
+			if(c == 0){
+				weightedVel = null;
+			}
+			if(c == 1){
+				weightedVel.addAll(vel);
+			}
+			if(c < 1){	
+				for(int newVelIndex = 0; newVelIndex < newSize; newVelIndex++){
+					weightedVel.add(vel.get(newVelIndex));
 				}
-				if(c == 1){
-					for(int newVelIndex = 0; newVelIndex < newSize; newVelIndex++){
-						weightedVel.add(vel.get(newVelIndex));
-					}
+			}else if(c > 1){
+				int nLoop = (int)Math.floor(newSize / vel.size());
+				for(int n = 0; n < nLoop; n++){
+					weightedVel.addAll(vel);
 				}
-				if(c < 1){	
-					for(int newVelIndex = 0; newVelIndex < newSize; newVelIndex++){
-						weightedVel.add(vel.get(newVelIndex));
-					}
-				}else if(c > 1){
-					int nLoop = (int)Math.floor(newSize / vel.size());
-					for(int n = 0; n < nLoop; n++){
-						for(int newVelIndex = 0; newVelIndex < vel.size(); newVelIndex++){
-							weightedVel.add(vel.get(newVelIndex));
-						}
-					}
-					int leftLength = newSize - nLoop * vel.size();
-					for(int newVelIndex = 0; newVelIndex < leftLength; newVelIndex++){
-						weightedVel.add(vel.get(newVelIndex));
-					}
+				int leftLength = newSize - nLoop * vel.size();
+				for(int newVelIndex = 0; newVelIndex < leftLength; newVelIndex++){
+					weightedVel.add(vel.get(newVelIndex));
 				}
 			}
-			return weightedVel;
 		}
-		//pBest(gBest) - X 
-		private void getSwapSequence(int[] bestLoc){	
-			this.swaps.clear();
-			
-			int[] tmpLoc = new int[this.numSites];
-			System.arraycopy(this.blockIndexList, 0, tmpLoc, 0, this.numSites);
-			
-			if(!Arrays.equals(bestLoc, tmpLoc)){
-				for(int m = 0; m < bestLoc.length; m++){
-					int value = bestLoc[m];
-					if(value != -1){
-						for(int n = 0; n < tmpLoc.length; n++){
-							if(value == tmpLoc[n]){
-								if(m != n){
-									Swap swap = new Swap(0, 0);
-									swap.setFromIndex(m);
-									swap.setToIndex(n);
-									doOneSwap(tmpLoc, m , n);	
-									this.swaps.add(swap);
-									break;
-								}						
-							}
+		return weightedVel;
+	}
+	//pBest(gBest) - X 
+	private void getSwapSequence(int[] targetLoc){	
+		this.swaps.clear();
+		int size = targetLoc.length;
+		int[] tmpLoc = new int[size];
+		System.arraycopy(this.blockIndexList, 0, tmpLoc, 0, size);
+		
+		if(!Arrays.equals(targetLoc, tmpLoc)){
+			for(int m = 0; m < size; m++){
+				int value = targetLoc[m];
+				if(value != -1){
+					for(int n = 0; n < size; n++){
+						if(value == tmpLoc[n]){
+							if(m != n){
+								this.swaps.add(new Swap(m, n));
+								doOneSwap(tmpLoc, m , n);	
+								break;
+							}						
 						}
-					}		
-				}
-			}	
-		}
+					}
+				}		
+			}
+		}	
+	}
 	//do swaps to update particle's location: X + Velocity 
 	void updateLocations(){
 		System.arraycopy(this.blockIndexList, 0, this.oldBlockIndexList, 0, this.numSites);
 		int swapsSize = 0;
-		if(this.newVel != null) swapsSize = this.newVel.size();
+		if(this.velocity != null) swapsSize = this.velocity.size();
 		if(swapsSize > 0){	
 			for(int velIndex = 0; velIndex < swapsSize; velIndex++){
-				int from = this.newVel.get(velIndex).getFromIndex();
-				int to = this.newVel.get(velIndex).getToIndex();
+				int from = this.velocity.get(velIndex).getFromIndex();
+				int to = this.velocity.get(velIndex).getToIndex();
 				if(from != to) doOneSwap(this.blockIndexList, from, to);//only update blockIndexList for a particle
 			}
 		}
@@ -316,7 +315,8 @@ public class RunnableParticle implements Runnable{
 	void updateBlocksInfo(){
 		for(Block block:blocks){		
 			Site site = getSite(this.blockIndexList, block.index);
-			block.setLegalXYs(this.pIndex, site.column, site.row);
+//			block.setLegalXYs(this.pIndex, site.column, site.row);
+			block.setLegalXY(site.column, site.row);
 		}
 	}
 	private Site getSite(int[] list, int value){
@@ -326,7 +326,7 @@ public class RunnableParticle implements Runnable{
 		}
 		return this.sites[position];
 	}
-	@SuppressWarnings("unused")
+	
 	double getCost(){
 		double cost = 0.0;
 		double timing = 0.0;

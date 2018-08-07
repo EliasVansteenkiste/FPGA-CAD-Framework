@@ -3,6 +3,7 @@ package place.placers.analytical;
 import java.util.Random;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class HardblockAnneal {
 		this.timingTree = new TimingTree(false);
 	}
 	public void doAnneal(Column column, BlockType blockType, double quality){
-		this.timingTree.start("annealing column");
+		this.timingTree.start("simulated annealing took ");
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.sites = column.sites;
 
@@ -47,7 +48,7 @@ public class HardblockAnneal {
 		this.effortLevel = 1.0;
 		this.type = blockType;
 		this.doAnneal();
-		this.timingTree.time("annealing column");
+		this.timingTree.time("simulated annealing took ");
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites, double quality){
 		this.blocks = annealBlocks;
@@ -83,7 +84,20 @@ public class HardblockAnneal {
 			this.cost += crit.timingCost();
 		}
 		this.minimumCost = this.cost;
-
+		
+		//0726 yun
+//		double initial = this.minimumCost;
+//		int[] li= new int[this.sites.length];
+//		int liid = 0;
+//		for(Site s: this.sites){
+//			if(s.hasBlock()) li[liid] = s.getBlock().index;
+//			else li[liid] = -1;
+//			liid++;
+//		}
+//		System.out.println("initial: " + this.cost);
+////		System.out.println(Arrays.toString(li));
+		//************
+		
 		this.temperature = this.calculateInitialTemperature();
 		this.movesPerTemperature = (int)Math.round(this.effortLevel * Math.pow(this.numBlocks, 4/3));
 
@@ -118,36 +132,14 @@ public class HardblockAnneal {
 					block.saveOptimalSite();
 				}
 			}
-			finalIteration = this.finalIteration(this.cost);
+			finalIteration = this.finalIteration(this.cost);		
 		}
-
+		
 		if(this.minimumCost < this.cost){
 			for(Block block:this.blocks){
 				block.setOptimalSite();
-//				System.out.println(block.index + " -> " + block.optimalSite.column + "\t" + block.optimalSite.row);
 			}
 		}
-//		System.out.println(this.iteration);
-//		for(Block block:this.blocks){
-//			System.out.println(block.index + " -> " + block.site.column + "\t" + block.site.row);
-//		}
-////		TODO print cost for each column
-//		for(Net net:nets){
-//			net.initializeConnectionCost();
-//		}
-//		for(Crit crit:crits){
-//			crit.initializeTimingCost();
-//		}
-//		
-//		double sacost = 0.0;
-//		for(Net net:nets){
-//			sacost += net.connectionCost();
-//		}
-//		for(Crit crit:crits){
-//			sacost += crit.timingCost();
-//		}
-//		System.out.println(" ->SAminCost "+ String.format("%.2f",  sacost));
-//		if(printStatistics) System.out.println();
 	}
 	private boolean finalIteration(double cost){
 		this.costHistory.add(this.cost);
@@ -170,7 +162,7 @@ public class HardblockAnneal {
 			}
 			
 			double ratio = max / min;
-//			System.out.println(ratio);
+//			System.out.println("\tinterval ratio: " + ratio);
 			if(ratio < 1 + this.quality){
 				return true;
 			}else{

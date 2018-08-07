@@ -26,6 +26,10 @@ abstract class Legalizer {
     protected int[] heights;
 
     private double quality, qualityMultiplier;
+    
+    private double psoQuality;
+    private double c1, c2;
+    private int minimumIter, interval;
 
     // Properties of the blockType that is currently being legalized
     protected BlockType blockType;
@@ -91,7 +95,6 @@ abstract class Legalizer {
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
         
-//        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
         this.hardblockLegalizer = new HardblockSwarmLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets);
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
@@ -137,7 +140,23 @@ abstract class Legalizer {
     double getQuality(){
     	return this.quality;
     }
+    void setpsoQuality(double fixedQuality){
+    	this.psoQuality = fixedQuality;
+    }
+    void setPSOFixedLearningRate(double cognitiveRate, double socialRate){
+    	this.c1 = cognitiveRate;
+    	this.c2 = socialRate;  	
+    }
+    void setPSOVaringLearningRate(double start, double stop){
+    	this.c1 = start;
+    	this.c2 = stop;  	
+    }
 
+    void setPSOstopParameter(int minimumIter, int interval){
+    	this.minimumIter = minimumIter;
+    	this.interval = interval;
+    }
+    
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
 
     void updateCriticalConnections(List<CritConn> criticalConnections){
@@ -172,7 +191,10 @@ abstract class Legalizer {
             	this.legalizeBlockType(blocksStart, blocksEnd);//CLBs are still legalized by HeAP
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
 //        		this.legalizeBlockType(blocksStart, blocksEnd);//TODO change to HeAP legalizer
-        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.quality);
+        		//hard block quality for pso
+        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.psoQuality, this.c1, this.c2, this.minimumIter, this.interval);
+        		//hard block quality for sa
+//        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.quality, this.c1, this.c2, this.minimumIter, this.interval);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType, this.quality);
         		for(int b = blocksStart; b < blocksEnd; b++){

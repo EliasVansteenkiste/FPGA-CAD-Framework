@@ -32,6 +32,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_BETA1 = "beta1",
         O_BETA2 = "beta2",
         O_EPS = "eps",
+        
+    	O_PSO_COGNITIVE_LEARNING_RATE = "c1",
+    	O_PSO_SOCIAL_LEARNING_RATE = "c2",
+    	O_PSO_MINIMUM_ITERATION = "minimumIter",
+    	O_PSO_INTERVAL = "interval",
+    	O_PSO_QUALITY = "psoQuality",
 
         O_OUTER_EFFORT_LEVEL = "outer effort level",
         O_INNER_EFFORT_LEVEL = "inner effort level";
@@ -83,6 +89,32 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_EPS,
                 "adam gradient descent eps parameter",
                 new Double(10e-10));
+        
+        options.add(
+        		O_PSO_COGNITIVE_LEARNING_RATE,
+                "pso cognitive learning rate",
+                new Double(2.05));
+        
+        options.add(
+        		O_PSO_SOCIAL_LEARNING_RATE,
+                "pso social learning rate",
+                new Double(1.4));
+        
+        options.add(
+        		O_PSO_MINIMUM_ITERATION,
+                "pso minimum interation",
+                new Integer(75));
+        
+        options.add(
+        		O_PSO_INTERVAL,
+                "pso interval",
+                new Integer(30));
+        
+        options.add(
+        		O_PSO_QUALITY,
+        		"pso quality",
+        		new Double(1.0005)
+        		);
 
         options.add(
                 O_OUTER_EFFORT_LEVEL,
@@ -101,6 +133,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private final double maxConnectionLength;
     protected double learningRate, learningRateMultiplier;
     private final double beta1, beta2, eps;
+    private final double c1, c2;
+    private final int minimumIter, interval;
+    private final double psoQuality;
 
     private double latestCost, minCost;
 
@@ -147,6 +182,13 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta1 = this.options.getDouble(O_BETA1);
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
+        
+        this.c1 = this.options.getDouble(O_PSO_COGNITIVE_LEARNING_RATE);
+        this.c2 = this.options.getDouble(O_PSO_SOCIAL_LEARNING_RATE);
+        this.psoQuality = this.options.getDouble(O_PSO_QUALITY);
+        
+        this.minimumIter = this.options.getInteger(O_PSO_MINIMUM_ITERATION);
+        this.interval = this.options.getInteger(O_PSO_INTERVAL);
 
         this.latestCost = Double.MAX_VALUE;
         this.minCost = Double.MAX_VALUE;
@@ -182,6 +224,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.nets,
                 this.netBlocks);
         this.legalizer.setQuality(0.1,  0.9);
+        this.legalizer.setpsoQuality(this.psoQuality);
+//        this.legalizer.setPSOFixedLearningRate(2.05, 2.05);
+        this.legalizer.setPSOVaringLearningRate(this.c1, this.c2);
+        this.legalizer.setPSOstopParameter(this.minimumIter, this.interval);
 
         // Juggling with objects is too slow (I profiled this,
         // the speedup is around 40%)
@@ -310,7 +356,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int i = 0; i < this.effortLevel; i++) {
             this.solveLinearIteration(processNets);
             //TODO to visualize the gradient descent step
-            //this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), -1);
+            this.visualizer.addPlacement(String.format("gradient descent step %d", i), this.netBlocks, this.solver.getCoordinatesX(), this.solver.getCoordinatesY(), -1);
         }
         
 		for(int i = 0; i < this.legalX.length; i++){

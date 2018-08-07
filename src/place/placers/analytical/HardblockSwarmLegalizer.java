@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import jdk.nashorn.internal.ir.Block;
 import place.circuit.architecture.BlockType;
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
@@ -219,7 +220,7 @@ public class HardblockSwarmLegalizer{
 	}
 	
 	//Legalize hard block
-	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality){
+	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, double c2, int minimumIter, int interval){
 		this.timingTree.start("Legalize " + blockType + " hardblock");
 		
 		this.blockType = blockType;
@@ -267,7 +268,7 @@ public class HardblockSwarmLegalizer{
 
 		//3 Column legalize
 		
-		this.timingTree.start("Legalize columns");
+//		this.timingTree.start("Legalize columns");
 //		List<Column> sortedColumns = new ArrayList<>();
 //		Collections.addAll(sortedColumns, columns);
 //		for(Block block:legalizeBlocks){
@@ -289,16 +290,59 @@ public class HardblockSwarmLegalizer{
 //		System.out.println();
 		for(Column column:columns){
 			column.legalize();//TODO WHY IS THIS BETTER + ANALYZE
+			//when do column.random, *******particles cannot jump out of a locally optimal region (only exploration and then convergence)*****
 //			column.random();
 		}
-		this.timingTree.time("Legalize columns");
+//		this.timingTree.time("Legalize columns");
 
 		//4 Column pso
 		this.timingTree.start("Anneal columns");
 		for(Column column:columns){
-			if(column.usedPos() > 0){			
-				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality);
-//				this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO 
+			if(column.usedPos() > 0){
+
+				//before merging nets
+//				Set<Net> nets = new HashSet<>();
+//				Set<Crit> crits = new HashSet<>();
+//				for(Block b:column.blocks){
+//					for(Net n:b.nets) nets.add(n);
+//					for(Crit c:b.crits) crits.add(c);
+//				}
+//				
+				//all nets info
+//				for(Net n:nets){
+//					List<Integer> indexs = new ArrayList<>();
+//					for(Block b:n.blocks) indexs.add(b.index);
+//					System.out.println(indexs);
+//					indexs.clear();
+//				}
+				
+//				double cost = 0;
+//				for(Net n:nets) cost += n.connectionCost();
+//				for(Crit c:crits) cost += c.timingCost();
+//				System.out.println("reference cost: " + cost);
+				
+				
+				//after merging nets
+//				Set<Net> nets1 = new HashSet<>();
+//				Set<Crit> crits1 = new HashSet<>();
+//				for(Block b:column.blocks){
+//					for(Net n:b.mergedNetsMap.keySet()) nets1.add(n);
+//					for(Crit c:b.crits) crits1.add(c);
+//				}
+//				for(Net n:nets1){
+//					List<Integer> indexs = new ArrayList<>();
+//					for(Block b:n.blocks) indexs.add(b.index);
+////					System.out.println(n.index + " -> " + n.totalNum + " -> " + indexs);
+//					System.out.println(indexs);
+//					indexs.clear();
+//				}
+//				double cost1 = 0;
+//				
+//				for(Net n:nets1) cost1 += n.connectionCost()*n.totalNum;
+//				for(Crit c:crits1) cost1 += c.timingCost();
+//				System.out.println("cost:" + cost1);
+				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, minimumIter, interval);
+//				this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO legalizeHardblock() qulity
 			}	
 		}
 		this.timingTree.time("Anneal columns");
@@ -476,30 +520,60 @@ public class HardblockSwarmLegalizer{
 		}
 		void getMergedNetsMap(){		
 			if(this.nets.size() > 0){
-				Net flagNet = this.nets.get(0);
-				List<Integer> flagNetBlockIndexs = new ArrayList<>();
-				
-				for(Block b:flagNet.blocks){
-					flagNetBlockIndexs.add(b.index);
-				}
-				this.mergedNetsMap.put(flagNet, 0);
-				
+			
+				Map<List<Integer>, Integer> uniqueBlockIdsMap = new HashMap<>(); 
+					
 				for(Net net:this.nets){
-					List<Integer> comingNetBlockIndexs = new ArrayList<>();
-					for(Block b:net.blocks){
-						comingNetBlockIndexs.add(b.index);
+					List<Integer> blockIds = new ArrayList<>();
+					for(Block c:net.blocks){
+						blockIds.add(c.index);
 					}
-					if(comingNetBlockIndexs.equals(flagNetBlockIndexs)){
-						this.mergedNetsMap.put(flagNet, this.mergedNetsMap.get(flagNet)+1);
+					if(uniqueBlockIdsMap.containsKey(blockIds)){
+						uniqueBlockIdsMap.put(blockIds, uniqueBlockIdsMap.get(blockIds) + 1);				
 					}else{
-						flagNet = net;
-						flagNetBlockIndexs.clear();
-						for(Block b:flagNet.blocks){
-							flagNetBlockIndexs.add(b.index);
-						}
-						this.mergedNetsMap.put(flagNet, 1);			
+						uniqueBlockIdsMap.put(blockIds, 1);
+						this.mergedNetsMap.put(net, 0);
 					}	
 				}
+				for(Net net:this.mergedNetsMap.keySet()){
+					List<Integer> blockIds = new ArrayList<>();
+					for(Block c:net.blocks){
+						blockIds.add(c.index);
+					}
+					net.setTotalNum(uniqueBlockIdsMap.get(blockIds));
+					this.mergedNetsMap.replace(net, uniqueBlockIdsMap.get(blockIds));
+				}
+//				for(List<Integer> a:uniqueBlockIdsMap.keySet()){
+//					System.out.println(a + " -> " + uniqueBlockIdsMap.get(a));
+//				}
+				
+				
+//				Net flagNet = this.nets.get(0);
+//				List<Integer> flagNetBlockIndexs = new ArrayList<>();
+//				
+//				for(Block b:flagNet.blocks){
+//					flagNetBlockIndexs.add(b.index);
+//				}
+//				this.mergedNetsMap.put(flagNet, 0);
+//				
+//				for(Net net:this.nets){
+//					List<Integer> comingNetBlockIndexs = new ArrayList<>();
+//					for(Block b:net.blocks){
+//						comingNetBlockIndexs.add(b.index);
+//					}
+//					if(comingNetBlockIndexs.equals(flagNetBlockIndexs)){
+//						this.mergedNetsMap.put(flagNet, this.mergedNetsMap.get(flagNet)+1);
+//					}else{
+//						flagNet = net;
+//						flagNetBlockIndexs.clear();
+//						for(Block b:flagNet.blocks){
+//							flagNetBlockIndexs.add(b.index);
+//						}
+//						this.mergedNetsMap.put(flagNet, 1);			
+//					}	
+//				}
+				
+				
 			}
 		}
 		void addCrit(Crit crit){
@@ -925,22 +999,22 @@ public class HardblockSwarmLegalizer{
             }
 		}
 		int getMinX(){
-	        int minX = this.blocks[0].legalX;
+	        int minXtmp = this.blocks[0].legalX;
 	        for(Block block:this.blocks){
-	            if(block.legalX < minX) {
-	                minX = block.legalX;
+	            if(block.legalX < minXtmp) {
+	                minXtmp = block.legalX;
 	            }
 	        }
-	        return minX;
+	        return minXtmp;
 		}
 		int getMaxX(){
-	        int maxX = this.blocks[0].legalX;
+	        int maxXtmp = this.blocks[0].legalX;
 	        for(Block block:this.blocks){
-	            if(block.legalX > maxX) {
-	                maxX = block.legalX;
+	            if(block.legalX > maxXtmp) {
+	                maxXtmp = block.legalX;
 	            }
 	        }
-	        return maxX;
+	        return maxXtmp;
 		}
 
 		// Vertical
@@ -1182,22 +1256,22 @@ public class HardblockSwarmLegalizer{
             }
 		}
 		private int getMinY(){
-	        int minY = this.blocks[0].legalY;
+	        int minYtmp = this.blocks[0].legalY;
 	        for(Block block:this.blocks){
-	            if(block.legalY < minY) {
-	                minY = block.legalY;
+	            if(block.legalY < minYtmp) {
+	                minYtmp = block.legalY;
 	            }
 	        }
-	        return minY;
+	        return minYtmp;
 		}
 		private int getMaxY(){
-	        int maxY = this.blocks[0].legalY;
+	        int maxYtmp = this.blocks[0].legalY;
 	        for(Block block:this.blocks){
-	            if(block.legalY > maxY) {
-	                maxY = block.legalY;
+	            if(block.legalY > maxYtmp) {
+	                maxYtmp = block.legalY;
 	            }
 	        }
-	        return maxY;
+	        return maxYtmp;
 		}
 		
 	    @Override
@@ -1571,7 +1645,7 @@ public class HardblockSwarmLegalizer{
 			return bestSite;
 		}
 		void random(){
-			Random rand = new Random(100);
+			Random rand = new Random(50);
 			for(Block block:this.blocks){
 				Site randomSite = this.getRandomFreeSite(rand);
 				block.setSite(randomSite);
