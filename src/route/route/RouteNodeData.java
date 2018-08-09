@@ -4,12 +4,13 @@ import route.circuit.pin.Pin;
 import route.util.CountingSet;
 
 public class RouteNodeData {
+	//Global infomation
 	public double pres_cost;
 	public double acc_cost;
 	private double partial_path_cost;
 	private double lower_bound_total_path_cost;
 	public int occupation;
-
+	
 	private CountingSet<Pin> sourcesSet;
 	
     public RouteNodeData() {

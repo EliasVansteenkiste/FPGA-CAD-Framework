@@ -438,7 +438,7 @@ public class ResourceGraph {
 		for(RouteNode routeNode : this.routeNodes) {
 			if(routeNode.isWire()) {
 				if(routeNode.used()) {
-					totalWireLength += routeNode.wireLength() * routeNode.routeNodeData.occupation;
+					totalWireLength += routeNode.wireLength() * routeNode.occupation;
 				}
 			}
 		}

@@ -39,10 +39,10 @@ public class QueueElement implements Comparable<QueueElement> {
 	}
 
 	double getPartialPathCost() {
-		return node.routeNodeData.getPartialPathCost();
+		return node.multithreadedRouteNodeData.getPartialPathCost();
 	}
 	
 	double getLowerBoundTotalPathCost() {
-		return node.routeNodeData.getLowerBoundTotalPathCost();
+		return node.multithreadedRouteNodeData.getLowerBoundTotalPathCost();
 	}
 }

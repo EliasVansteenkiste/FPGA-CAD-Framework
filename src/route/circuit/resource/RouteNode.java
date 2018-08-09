@@ -1,6 +1,8 @@
 package route.circuit.resource;
 
+import route.circuit.pin.Pin;
 import route.route.RouteNodeData;
+import route.util.CountingSet;
 
 public abstract class RouteNode implements Comparable<RouteNode> {
 	public final int index;//Unique index number
@@ -16,10 +18,13 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public RouteNode[] children;
 	public short[] switchType;
 
-	public final RouteNodeData routeNodeData;
-	//public final RouteNodeData[] multithreadingRouteNodeData;
+	public CountingSet<Pin> sourcesSet;
+	public int occupation;
 	
-	public boolean target;
+	//Route Node data for each leaf node
+	public RouteNodeData[] routeNodeData;
+	
+	public boolean[] target;
 	
 	public RouteNode(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, RouteNodeType t, double baseCost) {
 		this.index = index;
@@ -36,20 +41,41 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.baseCost = this.calculateBaseCost();
 		//this.baseCost = baseCost;
 		
+		this.sourcesSet = null;
+		this.occupation = 0;
+		
 		this.children = null;
 		this.switchType = null;
-		
-		this.routeNodeData = new RouteNodeData();
-		//this.multithreadingRouteNodeData = null;
-		
-		this.target = false;
 	}
 	
-	public void resetDataInNode() {
-		this.target = false;
+	public void addSource(Pin source) {
+		if(this.sourcesSet == null) {
+			this.sourcesSet = new CountingSet<Pin>();
+		}
+		this.sourcesSet.add(source);
+		
+		for(RouteNodeData data: routeNodeData) {
+			data.addSource(source);
+		}
+		
+		this.occupation = this.sourcesSet.uniqueSize();
 	}
-	public void reset() {
-		this.routeNodeData.reset();
+	
+	public void setNumParallelThreads(int numParallelThreads) {
+		this.routeNodeData = new RouteNodeData[numParallelThreads];
+		this.target = new boolean[numParallelThreads];
+		
+		for(int i = 0; i < numParallelThreads; i++) {
+			this.routeNodeData[i] = new RouteNodeData();//TODO Not all leaf nodes will use this RouteNodeData
+			this.target[i] = false;
+		}
+	}
+	
+	public void resetDataInNode(int thread) {
+		this.target[thread] = false;
+	}
+	public void reset(int thread) {
+		this.routeNodeData[thread].reset();
 	}
 
 	private double calculateBaseCost() {
@@ -137,7 +163,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		s.append(", ");
 		s.append(String.format("capacity = %2d", this.capacity));
 		s.append(", ");
-		s.append(String.format("occupation = %2d ", this.routeNodeData.occupation));
+		s.append(String.format("occupation = %2d ", this.occupation));
 		s.append(", ");
 		s.append(String.format("type = %s", this.type));
 		
@@ -145,17 +171,20 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	}
 	
 	public boolean overUsed() {
-		return this.capacity < this.routeNodeData.occupation;
+		return this.capacity < this.occupation;
 	}
-	//public boolean overUsed(int clusterIndex) {
-	//	return this.capacity < this.multithreadingRouteNodeData[clusterIndex].occupation;
-	//}
+	public boolean overUsed(int thread) {
+		return this.capacity < this.routeNodeData[thread].occupation;
+	}
 	public boolean used() {
-		return this.routeNodeData.occupation > 0;
+		return this.occupation > 0;
+	}
+	public boolean used(int thread) {
+		return this.routeNodeData[thread].occupation > 0;
 	}
 	
-	public void updatePresentCongestionPenalty(double pres_fac) {
-		RouteNodeData data = this.routeNodeData;
+	public void updatePresentCongestionPenalty(double pres_fac, int thread) {
+		RouteNodeData data = this.routeNodeData[thread];
 		
 		int occ = data.numUniqueSources();
 		int cap = this.capacity;
@@ -168,18 +197,4 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		
 		data.occupation = occ;
 	}
-//	public void updatePresentCongestionPenalty(double pres_fac, int clusterIndex) {
-//		RouteNodeData data = this.multithreadingRouteNodeData[clusterIndex];
-//		
-//		int occ = data.numUniqueSources();
-//		int cap = this.capacity;
-//		
-//		if (occ < cap) {
-//			data.pres_cost = 1.0;
-//		} else {
-//			data.pres_cost = 1.0 + (occ + 1 - cap) * pres_fac;
-//		}
-//		
-//		data.occupation = occ;
-//	}
 }

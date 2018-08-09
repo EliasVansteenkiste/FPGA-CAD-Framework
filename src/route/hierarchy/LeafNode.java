@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import route.circuit.resource.RouteNode;
 import route.circuit.resource.Sink;
 import route.circuit.resource.Source;
 import route.route.Connection;
@@ -16,7 +15,7 @@ public class LeafNode extends HierarchyNode{
 
 	private final boolean floating;
 	
-	public Set<Connection> connections;
+	private Set<Connection> connections;
 	
 	private short x_min;
 	private short x_max;
@@ -34,6 +33,7 @@ public class LeafNode extends HierarchyNode{
 		if(this.identifier.equals("floating")) this.floating = true;
 		else this.floating = false;
 	}
+	
 	public void initializeConnections(Set<Connection> connections, short boundingBoxRange) {
 		this.connections = connections;
 		this.boundingBoxRange = boundingBoxRange;
@@ -88,6 +88,12 @@ public class LeafNode extends HierarchyNode{
 		
 		this.x_max = x_max_temp;
 		this.y_max = y_max_temp;
+	}
+	public Set<Connection> getConnections() {
+		return this.connections;
+	}
+	public int numConnections() {
+		return this.connections.size();
 	}
 //	public boolean isInBoundingBoxLimit(RouteNode node) {
 //		if(
