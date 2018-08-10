@@ -54,8 +54,10 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		}
 		this.sourcesSet.add(source);
 		
-		for(RouteNodeData data: routeNodeData) {
-			data.addSource(source);
+		for(RouteNodeData data: this.routeNodeData) {
+			if(data != null) {
+				data.addSource(source);
+			}
 		}
 		
 		this.occupation = this.sourcesSet.uniqueSize();
@@ -64,20 +66,18 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public void setNumParallelThreads(int numParallelThreads) {
 		this.routeNodeData = new RouteNodeData[numParallelThreads];
 		this.target = new boolean[numParallelThreads];
-		
-		for(int i = 0; i < numParallelThreads; i++) {
-			this.routeNodeData[i] = new RouteNodeData();//TODO Not all leaf nodes will use this RouteNodeData
-			this.target[i] = false;
-		}
+	}
+	public void resetRouteNodeData(int threadNum) {
+		this.routeNodeData[threadNum] = null;
 	}
 	
-	public void resetDataInNode(int thread) {
-		this.target[thread] = false;
+	public RouteNodeData getRouteNodeData(int thread) {
+		if(this.routeNodeData[thread] == null) {
+			this.routeNodeData[thread] = new RouteNodeData(this.occupation, this.sourcesSet);
+		}
+		return this.routeNodeData[thread];
 	}
-	public void reset(int thread) {
-		this.routeNodeData[thread].reset();
-	}
-
+	
 	private double calculateBaseCost() {
 		switch (this.type) {
 			case SOURCE:
@@ -174,27 +174,12 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		return this.capacity < this.occupation;
 	}
 	public boolean overUsed(int thread) {
-		return this.capacity < this.routeNodeData[thread].occupation;
+		return this.capacity < this.getRouteNodeData(thread).occupation;
 	}
 	public boolean used() {
 		return this.occupation > 0;
 	}
 	public boolean used(int thread) {
-		return this.routeNodeData[thread].occupation > 0;
-	}
-	
-	public void updatePresentCongestionPenalty(double pres_fac, int thread) {
-		RouteNodeData data = this.routeNodeData[thread];
-		
-		int occ = data.numUniqueSources();
-		int cap = this.capacity;
-		
-		if (occ < cap) {
-			data.pres_cost = 1.0;
-		} else {
-			data.pres_cost = 1.0 + (occ + 1 - cap) * pres_fac;
-		}
-		
-		data.occupation = occ;
+		return this.getRouteNodeData(thread).occupation > 0;
 	}
 }

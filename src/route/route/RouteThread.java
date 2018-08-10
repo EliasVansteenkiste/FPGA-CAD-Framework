@@ -17,7 +17,7 @@ import route.hierarchy.LeafNode;
 public class RouteThread implements Runnable{
 	private Thread t;
 	private String threadName;
-	private final int threadNum;
+	public final int threadNum;
 	
 	private volatile boolean running;
 	private volatile boolean paused;
@@ -27,7 +27,7 @@ public class RouteThread implements Runnable{
 	private final ResourceGraph rrg;
 	private final LeafNode leafNode;
 	
-	private final Set<Connection> connections;
+	public final Set<Connection> connections;
 	private final int nrOfTrials;
 	private final boolean onlyCongested;
 	
@@ -57,13 +57,13 @@ public class RouteThread implements Runnable{
 		this.nodesTouched = new ArrayList<RouteNodeData>();
 		this.queue = new PriorityQueue<QueueElement>();
 	}
-	RouteThread(LeafNode leafNode, int nrOfTrials, boolean onlyCongested, Circuit circuit, ResourceGraph rrg) {
+	RouteThread(int threadNum, LeafNode leafNode, int nrOfTrials, boolean onlyCongested, Circuit circuit, ResourceGraph rrg) {
 		this.circuit = circuit;
 		this.rrg = rrg;
 		this.leafNode = leafNode;
 
 		this.threadName = "LeafNode" + leafNode.getIndex();
-		this.threadNum = leafNode.getIndex();
+		this.threadNum = threadNum;
 		System.out.println("Creating " +  this.threadName);
 		
 		this.connections = leafNode.getConnections();
@@ -181,14 +181,14 @@ public class RouteThread implements Runnable{
     	System.out.printf("%9s  %9s  %17s\n", "Iteration", "Time (ms)", "Overused RR Nodes");
     	System.out.printf("---------  ---------  -----------------\n");
     	
-    	while (itry <= nrOfTrials) {
+    	while (itry <= this.nrOfTrials) {
     		long iterationStart = System.nanoTime();
     		
     		for(Connection con : sortedMapOfConnections.keySet()){
-    			if((itry == 1 && !onlyCongested) || con.congested()) {
+    			if((itry == 1 && !this.onlyCongested) || con.congested(this.threadNum)) {
     				this.ripup(con);
     				this.route(con);
-    				this.add(con);			
+    				this.add(con);
     			}
     		}
     		
@@ -211,8 +211,10 @@ public class RouteThread implements Runnable{
     		System.out.printf("%9d  %9d  %8d   %5.2f%%\n", itry, rt, overused.size(), overUsePercentage);
     		
     		//Check if the routing is realizable, if realizable return, the routing succeeded 
-    		if (routingIsFeasible(this.connections)){
+    		if (routingIsFeasible(this.connections, this.threadNum)){
     			this.circuit.setConRouted(true);
+    			
+    			//TODO Update the RRG of all other leaf nodes so that the route nodes are fixed for this leaf node
     			
     			long end = System.nanoTime();
     			int timeMilliSeconds = (int)Math.round((end-start) * Math.pow(10, -6));
@@ -230,7 +232,7 @@ public class RouteThread implements Runnable{
     		itry++;
     	}
 
-    	if (itry == nrOfTrials + 1) {
+    	if (itry == this.nrOfTrials + 1) {
     		System.out.println("Routing failled after "+itry+" trials!");
     		
     		int maxNameLength = 0;
@@ -260,9 +262,9 @@ public class RouteThread implements Runnable{
     	return timeMilliSeconds;
     }
     
-    private boolean routingIsFeasible(Set<Connection> connections) {
+    private boolean routingIsFeasible(Set<Connection> connections, int thread) {
     	for (Connection con : connections) {
-    		if(con.congested()) {
+    		if(con.congested(thread)) {
     			return false;
     		}
     	}
@@ -273,16 +275,14 @@ public class RouteThread implements Runnable{
     
 	private void ripup(Connection con) {
 		for (RouteNode node : con.routeNodes) {
-			RouteNodeData data = node.routeNodeData[this.threadNum];
+			RouteNodeData data = node.getRouteNodeData(this.threadNum);
 		
 			data.removeSource(con.source);
 		
 			// Calculation of present congestion penalty
-			node.updatePresentCongestionPenalty(this.pres_fac, this.threadNum);
+			data.updatePresentCongestionPenalty(this.pres_fac, node.capacity);
 		}
 	}
-	
-	
 	
 	private boolean route(Connection con) {
 		//System.out.println("Route connection");
@@ -320,17 +320,17 @@ public class RouteThread implements Runnable{
 	
 	private void add(Connection con) {
 		for (RouteNode node : con.routeNodes) {
-			RouteNodeData data = node.routeNodeData[this.threadNum];
+			RouteNodeData data = node.getRouteNodeData(this.threadNum);
 			
 			data.addSource(con.source);
 
 			// Calculation of present congestion penalty
-			node.updatePresentCongestionPenalty(this.pres_fac, this.threadNum);
+			data.updatePresentCongestionPenalty(this.pres_fac, node.capacity);
 		}
 	}
 	
 	private double getRouteNodeCost(RouteNode node, Connection con) {
-		RouteNodeData data = node.routeNodeData[this.threadNum];
+		RouteNodeData data = node.getRouteNodeData(this.threadNum);
 		
 		int usageSource = 1 + data.countSourceUses(con.source);
 		boolean containsSource = usageSource != 1;
@@ -361,7 +361,7 @@ public class RouteThread implements Runnable{
 		if(this.alpha == 0) return partial_path_cost;
 		
 		RouteNode target = con.sinkRouteNode;
-		RouteNodeData data = node.routeNodeData[this.threadNum];
+		RouteNodeData data = node.getRouteNodeData(this.threadNum);
 		
 		int usage = 1 + data.countSourceUses(con.source);
 		
@@ -375,11 +375,11 @@ public class RouteThread implements Runnable{
 	}
     
 	private void addNodeToQueue(RouteNode node, QueueElement prev, double new_partial_path_cost, double new_lower_bound_total_path_cost) {
-		RouteNodeData nodeData = node.routeNodeData[this.threadNum];
+		RouteNodeData nodeData = node.getRouteNodeData(this.threadNum);
 		if(!nodeData.pathCostsSet()) this.nodesTouched.add(nodeData);
 		nodeData.updatePartialPathCost(new_partial_path_cost);
 		if (nodeData.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) {	//queue is sorted by lower bound total cost
-			this.queue.add(new QueueElement(node, prev));
+			this.queue.add(new QueueElement(node, nodeData, prev));
 		}
 	}
 	
@@ -392,7 +392,8 @@ public class RouteThread implements Runnable{
 		RouteNode node = qe.node;
 		for (RouteNode child : node.children) {			
 			if(con.isInBoundingBoxLimit(child)) {
-				double childCost = node.routeNodeData[this.threadNum].getPartialPathCost() + getRouteNodeCost(child, con);
+				
+				double childCost = node.getRouteNodeData(this.threadNum).getPartialPathCost() + getRouteNodeCost(child, con);
 				double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
 				this.addNodeToQueue(child, qe, childCost, childCostEstimate);
 			}
@@ -417,7 +418,7 @@ public class RouteThread implements Runnable{
 	
 	private void updateCost(double pres_fac, double acc_fac){
 		for (RouteNode node : this.rrg.getRouteNodes()) {
-			RouteNodeData data = node.routeNodeData[this.threadNum];
+			RouteNodeData data = node.getRouteNodeData(this.threadNum);
 			int occ = data.occupation;
 			int cap = node.capacity;
 

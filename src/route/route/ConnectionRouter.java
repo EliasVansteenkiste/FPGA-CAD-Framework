@@ -1,11 +1,12 @@
 package route.route;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import route.circuit.Circuit;
 import route.circuit.resource.ResourceGraph;
@@ -24,8 +25,14 @@ public class ConnectionRouter {
 		this.rrg = rrg;
 		this.circuit = circuit;
 		
+		this.numThreads = 1;
 		this.threadPool = new LinkedList<RouteThread>();
-		this.numThreads = 8;
+		
+		System.out.print("Set num parallel threads");
+		for(RouteNode node: this.rrg.getRouteNodes()) {
+			node.setNumParallelThreads(this.numThreads);
+		}
+		System.out.println(" => finished");
 	}
     
     public int route(HierarchyNode rootNode) {
@@ -38,7 +45,8 @@ public class ConnectionRouter {
 		if(parallelRouting) {
 			Map<LeafNode, Integer> runtimeMap = new HashMap<>();
 			
-			Set<LeafNode> leafNodes = new HashSet<>();
+			//Make a sorted list of leaf nodes //TODO Sort criterium?
+			List<LeafNode> leafNodes = new ArrayList<>();
 			List<HierarchyNode> work = new LinkedList<>();
 			work.add(rootNode);
 			while(!work.isEmpty()) {
@@ -51,59 +59,90 @@ public class ConnectionRouter {
 					}
 				}
 			}
+			Collections.sort(leafNodes, new Comparator<LeafNode>() {
+			     @Override
+			     public int compare(LeafNode l1, LeafNode l2) {
+			         return Integer.compare(l1.getIndex(), l2.getIndex());
+			     }
+			 });
 			
-			System.out.print("Set num parallel threads");
-			for(RouteNode node: this.rrg.getRouteNodes()) {
-				node.setNumParallelThreads(this.numThreads);
+			
+			int leafNodeNumber = 0;
+			int threadNumber = 0;
+			
+			while(leafNodeNumber < leafNodes.size()) {//TODO THIS IS NOT CORRECT
+				while(this.threadPool.size() < this.numThreads) {
+					LeafNode leafNode = leafNodes.get(leafNodeNumber);
+					leafNodeNumber++;
+					
+					System.out.println("Leaf node " + (leafNode.getIndex()) + " of " + leafNodes.size() + " Num connections: " + leafNode.numConnections() + " Cost: " + leafNode.cost());
+					
+					RouteThread routeThread = new RouteThread(threadNumber, leafNode, 10, false, this.circuit, this.rrg);
+					routeThread.start();
+					this.threadPool.add(routeThread);
+					
+					leafNodeNumber++;
+					threadNumber++;
+				}
+				
+				//Finish Threads
+				while(!this.threadPool.isEmpty()) {
+					for(int i = 0; i < this.threadPool.size(); i++) {
+						RouteThread routeThread = this.threadPool.get(i);
+						
+						if(!routeThread.isRunning()) {
+							this.threadPool.remove(routeThread);
+							
+							i = this.threadPool.size() + 1;
+							
+							//int timeMilliseconds = routeThread.getTimeMilliSeconds();
+							//if(timeMilliseconds > maxTimeMilliseconds) {
+							//	maxTimeMilliseconds = timeMilliseconds;
+							//}
+							//
+							//runtimeMap.put(routeThread.getLeafNode(), timeMilliseconds);
+							
+							//TODO clean up the data
+							for(Connection con : routeThread.connections) {
+								for(RouteNode node : con.routeNodes) {
+									node.resetRouteNodeData(routeThread.threadNum);
+								}
+							}
+							
+							//TODO Update all the route nodes on the path
+							for(Connection con : routeThread.connections) {
+								for(RouteNode node : con.routeNodes) {
+									node.addSource(con.source);
+								}
+							}
+						}
+					}
+				}
+				
+				threadNumber = 0;
 			}
-			System.out.println(" => finished");
 			
+
+			//System.out.println("Longest cluster took " + maxTimeMilliseconds + "ms");
+			System.out.println();
 			
-//			//Start Theads
-//			for(LeafNode leafNode : leafNodes) {
-//				
-//				System.out.println("Leaf node " + (leafNode.getIndex()) + " (" + leafNode.numConnections() + ") of " + leafNodes.size() + " Cost: " + leafNode.cost());
-//				
-//				RouteThread routeThread = new RouteThread(leafNode, 10, false, this.circuit, this.rrg);
-//				routeThread.start();
-//				this.threadPool.add(routeThread);
-//			}
-//			
-//			//Finish Threads
-//			int maxTimeMilliseconds = 0;
-//			for(RouteThread routeThread : this.threadPool) {
-//				if(!routeThread.isRunning()) {
-//					this.threadPool.remove(routeThread);
-//					
-//					//int timeMilliseconds = routeThread.getTimeMilliSeconds();
-//					//if(timeMilliseconds > maxTimeMilliseconds) {
-//					//	maxTimeMilliseconds = timeMilliseconds;
-//					//}
-//					//
-//					//runtimeMap.put(routeThread.getLeafNode(), timeMilliseconds);
-//				}
-//			}
-//
-//			System.out.println("Longest cluster took " + maxTimeMilliseconds + "ms");
-//			System.out.println();
-//			
-//			System.out.println("Route remaining congested connections");
-//			
-//			RouteThread routeThread = new RouteThread("remainingCongestion", this.circuit.getConnections(), 100, false, this.circuit, this.rrg);
-//			routeThread.start();
-//			while(routeThread.isRunning()) {/*WAIT*/}
-//			
-//			System.out.println();
-//			
-//			boolean printRuntimeMap = true;
-//			if(printRuntimeMap) {
-//				System.out.println("RuntimeMap:");
-//				System.out.println("Connections\tCost\tRuntime[ms]");
-//				for(LeafNode leafNode : runtimeMap.keySet()) {
-//					System.out.println(leafNode.numConnections() + "\t" + leafNode.cost() + "\t" + runtimeMap.get(leafNode));
-//				}
-//				System.out.println();
-//			}
+			System.out.println("Route remaining congested connections");
+			
+			RouteThread routeThread = new RouteThread("remainingCongestion", this.circuit.getConnections(), 100, false, this.circuit, this.rrg);
+			routeThread.start();
+			while(routeThread.isRunning()) {/*WAIT*/}
+			
+			System.out.println();
+			
+			boolean printRuntimeMap = true;
+			if(printRuntimeMap) {
+				System.out.println("RuntimeMap:");
+				System.out.println("Connections\tCost\tRuntime[ms]");
+				for(LeafNode leafNode : runtimeMap.keySet()) {
+					System.out.println(leafNode.numConnections() + "\t" + leafNode.cost() + "\t" + runtimeMap.get(leafNode));
+				}
+				System.out.println();
+			}
 		} else {
 			RouteThread routeThread = new RouteThread("Route All", this.circuit.getConnections(), 100, false, this.circuit, this.rrg);
 			routeThread.start();

@@ -154,4 +154,12 @@ public class Connection implements Comparable<Connection>  {
 		}
 		return false;
 	}
+	public boolean congested(int thread) {
+		for(RouteNode rn : this.routeNodes){
+			if(rn.overUsed(thread)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

@@ -4,10 +4,12 @@ import route.circuit.resource.RouteNode;
 
 public class QueueElement implements Comparable<QueueElement> {
 	public final RouteNode node;
+	public final RouteNodeData data;
 	public final QueueElement prev;
 
-	public QueueElement(RouteNode node, QueueElement qe) {
+	public QueueElement(RouteNode node, RouteNodeData data, QueueElement qe) {
 		this.node = node;
+		this.data = data;
 		this.prev = qe;
 	}
 
@@ -39,10 +41,10 @@ public class QueueElement implements Comparable<QueueElement> {
 	}
 
 	double getPartialPathCost() {
-		return node.multithreadedRouteNodeData.getPartialPathCost();
+		return data.getPartialPathCost();
 	}
 	
 	double getLowerBoundTotalPathCost() {
-		return node.multithreadedRouteNodeData.getLowerBoundTotalPathCost();
+		return data.getLowerBoundTotalPathCost();
 	}
 }

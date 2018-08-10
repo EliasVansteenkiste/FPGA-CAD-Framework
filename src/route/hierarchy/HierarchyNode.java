@@ -28,7 +28,7 @@ public class HierarchyNode {
 
 	public void getConnections(Set<Connection> connections) {
 		if(this.isLeafNode()) {
-			connections.addAll(((LeafNode) this).connections);
+			connections.addAll(((LeafNode) this).getConnections());
 		}
 		for(HierarchyNode child : this.children) {
 			child.getConnections(connections);

@@ -13,23 +13,14 @@ public class RouteNodeData {
 	
 	private CountingSet<Pin> sourcesSet;
 	
-    public RouteNodeData() {
+    public RouteNodeData(int occupation, CountingSet sourcesSet) {
     	this.pres_cost = 1;
     	this.acc_cost = 1;
-    	this.occupation = 0;
+    	this.occupation = occupation;
     	this.resetPathCosts();
 
-		this.sourcesSet = null;
+		this.sourcesSet = new CountingSet<Pin>();//TODO COPY THE SOURCES
 	}
-    
-    public void reset() {
-    	this.pres_cost = 1;
-    	//this.acc_cost = 1;
-    	this.resetPathCosts();
-    	
-    	//this.occupation = 0;
-    	//this.sourcesSet = null;
-    }
     
 	public void resetPathCosts() {
 		this.partial_path_cost = Double.MAX_VALUE;
@@ -62,7 +53,7 @@ public class RouteNodeData {
 		return this.partial_path_cost;
 	}
 
-	public void addSource(Pin source) {
+	public synchronized void addSource(Pin source) {//TODO Is synchronized required?
 		if(this.sourcesSet == null) {
 			this.sourcesSet = new CountingSet<Pin>();
 		}
@@ -88,5 +79,17 @@ public class RouteNodeData {
 			return 0;
 		}
 		return this.sourcesSet.count(source);
+	}
+	
+	public void updatePresentCongestionPenalty(double pres_fac, int cap) {
+		int occ = this.numUniqueSources();
+		
+		if (occ < cap) {
+			this.pres_cost = 1.0;
+		} else {
+			this.pres_cost = 1.0 + (occ + 1 - cap) * pres_fac;
+		}
+		
+		this.occupation = occ;
 	}
 }
