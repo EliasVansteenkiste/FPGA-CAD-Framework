@@ -103,12 +103,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
         		O_PSO_MINIMUM_ITERATION,
                 "pso minimum interation",
-                new Integer(75));
+                new Integer(30));
         
         options.add(
         		O_PSO_INTERVAL,
                 "pso interval",
-                new Integer(30));
+                new Integer(20));
         
         options.add(
         		O_PSO_QUALITY,

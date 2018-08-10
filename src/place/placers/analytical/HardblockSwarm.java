@@ -54,7 +54,7 @@ public class HardblockSwarm {
 	private List<RunnableParticle> swarm;
 	
 //	private int iteration;
-	private int globalBestIndex;
+//	private int globalBestIndex;
 	private volatile double gBest;
 	private List<Double> gBestList;
 	private volatile int[] gBestBlockIdList;
@@ -106,10 +106,7 @@ public class HardblockSwarm {
 		if(!this.printout) System.out.println("[" + blockType + "" + column.index + ": " + column.blocks.size() + ", " + column.sites.length + "]");	
 		
 		this.doPSO();
-//		System.out.println("!!!!!!!!!!!!!!!!!!!!!column" +blockType + column.index + "done!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-//		System.out.println(this.gBest);
-//		for(int index = 0; index < this.gBestBlockIdList.length; index++)
-//			System.out.println(this.gBestBlockIdList[index]);
+
 		this.setBlockLegal(this.gBestBlockIdList);
 		
 //		this.timingTree.time("pso column");
@@ -176,10 +173,10 @@ public class HardblockSwarm {
 		int iteration = 0;
 //		this.numGBestRepeat = 0;
 		
-		this.timingTree.start("pso processing");
+//		this.timingTree.start("pso processing");
 		while(!finish) {
 //		for(int iteration = 0;iteration < MAX_ITERATION; iteration++){
-			if(!this.printout) System.out.println("\tPSO iteration: "+ iteration);
+//			if(!this.printout) System.out.println("\tPSO iteration: "+ iteration);
 			
 			w = W_H - (((double) iteration) / MAX_ITERATION) * (W_H - W_L);//w1
 			learningRate = this.c1 - (((double) iteration) / MAX_ITERATION)*(this.c1 - this.c2);
@@ -190,44 +187,7 @@ public class HardblockSwarm {
 //			c11 = COGNITIVE_H - (((double) iteration) / MAX_ITERATION) * (COGNITIVE_H - COGNITIVE_L); 
 //			c22 = SOCIAL_L + (((double) iteration) / MAX_ITERATION) * (SOCIAL_H - SOCIAL_L);
 			
-			//*********************************threads using ExecutorService********************************
-//			for(RunnableParticle p:this.swarm){
-//				p.setParameters(w, c1*this.rand.nextDouble(), c2*this.rand.nextDouble(), this.gBestBlockIdList);		
-//			}
-//			try {
-//				resultFutures = threadPool.invokeAll(this.swarm);
-//			} catch (InterruptedException e) {
-//				// Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//			for(Future<CostAndIndexList> f:resultFutures){
-//				try {
-//					CostAndIndexList result = f.get();
-//					if(result.cost < this.gBest){
-//						this.gBest = result.cost;
-//						System.arraycopy(result.list, 0, this.gBestBlockIdList, 0, this.numSites);
-////						System.out.println(result.index);
-//					}
-////					System.out.println(result.index + "\t" + result.cost);
-//				} catch (InterruptedException | ExecutionException e) {
-//					// Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//			this.gBestList.add(this.gBest);
-//			System.out.println("breakpoint here");
-			//*********************************end threads using ExecutorService****************************
-			
-			//for threads***********************************************************************************
-//			for(RunnableParticle p:this.swarm){
-//				this.askBest(p);
-//				p.setParameters(w, c1*this.rand.nextDouble(), c2*this.rand.nextDouble(), this.gBestBlockIdList);
-//				p.resume();
-//			}
-//			this.gBestList.add(this.gBest);
-//			if(printInfo)System.out.printf("%.0f\n", this.gBest);				
-			//for threads**********************************************************************************
-			
+
 			
 			//for single thread*******************************************************************************
 			for(RunnableParticle p : this.swarm){
@@ -264,9 +224,9 @@ public class HardblockSwarm {
 				////////////////////////////////////////////////////
 				
 				//update velocity
-				double newc1 = this.c1;
-				double newc2 = this.c2;
-				double alpha;
+//				double newc1 = this.c1;
+//				double newc2 = this.c2;
+//				double alpha;
 //				if(p.pCost != this.gBest){
 //					alpha = (p.pBest - this.gBest)/(p.pCost - this.gBest);
 ////					if(p.pIndex == 0)System.out.println(alpha);
@@ -357,7 +317,7 @@ public class HardblockSwarm {
 		
 //		this.stopThreads();
 //		threadPool.shutdown();
-		this.timingTree.time("pso processing");
+//		this.timingTree.time("pso processing");
 	}
 	private Swap permutator(){//TODO try this
 		
@@ -434,7 +394,7 @@ public class HardblockSwarm {
 			if(p.pCost < this.gBest){
 //				System.out.println(p.pIndex);
 //				numGBestRepeat  = 0;
-				this.globalBestIndex = p.pIndex;
+//				this.globalBestIndex = p.pIndex;
 				this.gBest = p.pCost;
 				System.arraycopy(p.blockIndexList, 0, this.gBestBlockIdList, 0, this.numSites);
 			}	
@@ -474,16 +434,16 @@ public class HardblockSwarm {
 		
 		this.swarm.add(baseLineParticle);
 		
-		if(!this.printout) System.out.println("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
-		
-		if(!this.printout) System.out.println(baseLineParticle.pCost);
-		
-		if(!this.printout){
-			System.out.println("particle 0");
-			for(int a = 0; a < this.numSites; a++){
-				System.out.println("\t" + a + "\t" + baseLineParticle.blockIndexList[a]);
-			}
-		}	
+//		if(!this.printout) System.out.println("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
+//		
+//		if(!this.printout) System.out.println(baseLineParticle.pCost);
+//		
+//		if(!this.printout){
+//			System.out.println("particle 0");
+//			for(int a = 0; a < this.numSites; a++){
+//				System.out.println("\t" + a + "\t" + baseLineParticle.blockIndexList[a]);
+//			}
+//		}	
 	}
 	private void duplicateData(int i){
 		for(Block b:this.blocks){
