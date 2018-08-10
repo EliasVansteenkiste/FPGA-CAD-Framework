@@ -4,7 +4,6 @@ import route.circuit.pin.Pin;
 import route.util.CountingSet;
 
 public class RouteNodeData {
-	//Global infomation
 	public double pres_cost;
 	public double acc_cost;
 	private double partial_path_cost;
@@ -13,13 +12,23 @@ public class RouteNodeData {
 	
 	private CountingSet<Pin> sourcesSet;
 	
-    public RouteNodeData(int occupation, CountingSet sourcesSet) {
+    public RouteNodeData(int occupation, CountingSet<Pin> alreadyUsed) {
     	this.pres_cost = 1;
     	this.acc_cost = 1;
     	this.occupation = occupation;
     	this.resetPathCosts();
 
-		this.sourcesSet = new CountingSet<Pin>();//TODO COPY THE SOURCES
+		this.sourcesSet = null;
+		
+		if(alreadyUsed != null) {
+			this.sourcesSet = new CountingSet<Pin>();
+			for(Object o:alreadyUsed.getSources()) {
+				Pin pin = (Pin)o;
+				for(int i = 0; i < alreadyUsed.count(pin); i++) {
+					this.sourcesSet.add(pin);
+				}
+			}
+		}
 	}
     
 	public void resetPathCosts() {
@@ -58,6 +67,16 @@ public class RouteNodeData {
 			this.sourcesSet = new CountingSet<Pin>();
 		}
 		this.sourcesSet.add(source);
+		
+		this.occupation = this.numUniqueSources();
+	}
+	public void removeSource(Pin source) {
+		this.sourcesSet.remove(source);
+		if(this.sourcesSet.isEmpty()) {
+			this.sourcesSet = null;
+		}
+		
+		this.occupation = this.numUniqueSources();
 	}
 	
 	public int numUniqueSources() {
@@ -67,12 +86,6 @@ public class RouteNodeData {
 		return this.sourcesSet.uniqueSize();
 	}
 	
-	public void removeSource(Pin source) {
-		this.sourcesSet.remove(source);
-		if(this.sourcesSet.isEmpty()) {
-			this.sourcesSet = null;
-		}
-	}
 
 	public int countSourceUses(Pin source) {
 		if(this.sourcesSet == null) {
@@ -82,14 +95,10 @@ public class RouteNodeData {
 	}
 	
 	public void updatePresentCongestionPenalty(double pres_fac, int cap) {
-		int occ = this.numUniqueSources();
-		
-		if (occ < cap) {
+		if (this.occupation < cap) {
 			this.pres_cost = 1.0;
 		} else {
-			this.pres_cost = 1.0 + (occ + 1 - cap) * pres_fac;
+			this.pres_cost = 1.0 + (this.occupation + 1 - cap) * pres_fac;
 		}
-		
-		this.occupation = occ;
 	}
 }

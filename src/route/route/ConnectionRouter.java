@@ -73,7 +73,6 @@ public class ConnectionRouter {
 			while(leafNodeNumber < leafNodes.size()) {//TODO THIS IS NOT CORRECT
 				while(this.threadPool.size() < this.numThreads) {
 					LeafNode leafNode = leafNodes.get(leafNodeNumber);
-					leafNodeNumber++;
 					
 					System.out.println("Leaf node " + (leafNode.getIndex()) + " of " + leafNodes.size() + " Num connections: " + leafNode.numConnections() + " Cost: " + leafNode.cost());
 					
@@ -128,7 +127,7 @@ public class ConnectionRouter {
 			
 			System.out.println("Route remaining congested connections");
 			
-			RouteThread routeThread = new RouteThread("remainingCongestion", this.circuit.getConnections(), 100, false, this.circuit, this.rrg);
+			RouteThread routeThread = new RouteThread("remainingCongestion", this.circuit.getConnections(), 100, true, this.circuit, this.rrg);
 			routeThread.start();
 			while(routeThread.isRunning()) {/*WAIT*/}
 			

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MultiSet that counts how many of each object are present. Implemented using a
@@ -121,5 +122,9 @@ public class CountingSet<N> implements Collection<N> {
 
 	public int uniqueSize() {
 		return this.map.size();
+	}
+	
+	public Set<N> getSources() {
+		return this.map.keySet();
 	}
 }
