@@ -71,7 +71,7 @@ public class ConnectionRouter {
 			int threadNumber = 0;
 			
 			while(leafNodeNumber < leafNodes.size()) {//TODO THIS IS NOT CORRECT
-				while(this.threadPool.size() < this.numThreads) {
+				while(this.threadPool.size() < this.numThreads  && leafNodeNumber < leafNodes.size()) {
 					LeafNode leafNode = leafNodes.get(leafNodeNumber);
 					
 					System.out.println("Leaf node " + (leafNode.getIndex()) + " of " + leafNodes.size() + " Num connections: " + leafNode.numConnections() + " Cost: " + leafNode.cost());
