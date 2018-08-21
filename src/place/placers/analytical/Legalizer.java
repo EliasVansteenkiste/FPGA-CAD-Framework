@@ -27,7 +27,9 @@ abstract class Legalizer {
 
     private double quality, qualityMultiplier;
     
-    private double psoQuality;
+    private double chooseQuality;
+    private boolean usePSO;
+    private double psoQuality, psoQualityMultiplier;
     private double c1, c2;
     private int minimumIter, interval;
 
@@ -140,6 +142,9 @@ abstract class Legalizer {
     double getQuality(){
     	return this.quality;
     }
+    void setChoice(boolean usePSO){
+    	this.usePSO = usePSO;
+    }
     void setpsoQuality(double fixedQuality){
     	this.psoQuality = fixedQuality;
     }
@@ -151,7 +156,15 @@ abstract class Legalizer {
     	this.c1 = start;
     	this.c2 = stop;  	
     }
-
+    
+    void setPSOVaryingQuality(double initialPSOquality, double psoQualityMultiplier){
+    	this.psoQuality = initialPSOquality;
+    	this.psoQualityMultiplier = psoQualityMultiplier;
+    }
+    void increasePSOQuality(){
+    	this.psoQuality *= this.psoQualityMultiplier;
+    	System.out.println(this.psoQuality);
+    }
     void setPSOstopParameter(int minimumIter, int interval){
     	this.minimumIter = minimumIter;
     	this.interval = interval;
@@ -192,9 +205,14 @@ abstract class Legalizer {
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
 //        		this.legalizeBlockType(blocksStart, blocksEnd);//TODO change to HeAP legalizer
         		//hard block quality for pso
-        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.psoQuality, this.c1, this.c2, this.minimumIter, this.interval);
-        		//hard block quality for sa
-//        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.quality, this.c1, this.c2, this.minimumIter, this.interval);
+        		if(this.usePSO){
+        			this.chooseQuality = this.psoQuality;
+        			
+        		}else{
+        			this.chooseQuality = this.quality;
+        		}
+        		
+        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.chooseQuality, this.c1, this.c2, this.minimumIter, this.interval, this.usePSO);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType, this.quality);
         		for(int b = blocksStart; b < blocksEnd; b++){

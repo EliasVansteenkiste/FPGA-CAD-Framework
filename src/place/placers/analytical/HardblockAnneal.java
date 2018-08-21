@@ -35,6 +35,10 @@ public class HardblockAnneal {
 	private final Random random;
 	private final TimingTree timingTree;
 	private BlockType type;
+	
+	private boolean printout = false;
+	List<Double> annealCosts;//yun
+	
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
 		this.timingTree = new TimingTree(false);
@@ -47,7 +51,14 @@ public class HardblockAnneal {
 		this.quality = quality;
 		this.effortLevel = 1.0;
 		this.type = blockType;
+		
+		if(this.printout) System.out.println(this.type + "" + column.index + ": [" + this.numBlocks + " / " + this.numSites + "]");
+//		this.annealCosts = new ArrayList<>();
+		
 		this.doAnneal();
+		
+		if(this.printout) System.out.println(this.annealCosts);
+		
 		this.timingTree.time("simulated annealing took ");
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites, double quality){
@@ -85,7 +96,7 @@ public class HardblockAnneal {
 		}
 		this.minimumCost = this.cost;
 		
-		//0726 yun
+		//TODO yun
 //		double initial = this.minimumCost;
 //		int[] li= new int[this.sites.length];
 //		int liid = 0;
@@ -94,7 +105,9 @@ public class HardblockAnneal {
 //			else li[liid] = -1;
 //			liid++;
 //		}
-//		System.out.println("initial: " + this.cost);
+
+//		this.annealCosts.add(this.cost);//yun
+
 ////		System.out.println(Arrays.toString(li));
 		//************
 		
@@ -162,7 +175,7 @@ public class HardblockAnneal {
 			}
 			
 			double ratio = max / min;
-//			System.out.println("\tinterval ratio: " + ratio);
+
 			if(ratio < 1 + this.quality){
 				return true;
 			}else{
@@ -195,6 +208,8 @@ public class HardblockAnneal {
 		double sumDeltaCost = 0;
 		double quadSumDeltaCost = 0;
 		
+		
+		
         for(int i = 0; i < moves; i++){
         	Swap swap = this.getSwap();
     		swap.deltaCost();
@@ -204,6 +219,9 @@ public class HardblockAnneal {
 					numSwaps++;
 					swap.pushTrough();
 					this.cost += swap.deltaCost;
+					
+//					this.annealCosts.add(this.cost);//yun
+					
 				}else{
 					swap.revert();
 				}

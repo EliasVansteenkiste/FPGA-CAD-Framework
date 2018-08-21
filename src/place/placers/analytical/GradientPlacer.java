@@ -33,6 +33,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_BETA2 = "beta2",
         O_EPS = "eps",
         
+        O_USE_PSO = "usePSO",
     	O_PSO_COGNITIVE_LEARNING_RATE = "c1",
     	O_PSO_SOCIAL_LEARNING_RATE = "c2",
     	O_PSO_MINIMUM_ITERATION = "minimumIter",
@@ -91,6 +92,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Double(10e-10));
         
         options.add(
+        		O_USE_PSO,
+                "switch between SA and PSO",
+                new Boolean(true));
+        
+        options.add(
         		O_PSO_COGNITIVE_LEARNING_RATE,
                 "pso cognitive learning rate",
                 new Double(2.05));
@@ -133,6 +139,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private final double maxConnectionLength;
     protected double learningRate, learningRateMultiplier;
     private final double beta1, beta2, eps;
+    private final boolean usePSO;
     private final double c1, c2;
     private final int minimumIter, interval;
     private final double psoQuality;
@@ -183,6 +190,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
         
+        this.usePSO = this.options.getBoolean(O_USE_PSO);
         this.c1 = this.options.getDouble(O_PSO_COGNITIVE_LEARNING_RATE);
         this.c2 = this.options.getDouble(O_PSO_SOCIAL_LEARNING_RATE);
         this.psoQuality = this.options.getDouble(O_PSO_QUALITY);
@@ -224,6 +232,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.nets,
                 this.netBlocks);
         this.legalizer.setQuality(0.1,  0.9);
+        this.legalizer.setChoice(this.usePSO);
         this.legalizer.setpsoQuality(this.psoQuality);
 //        this.legalizer.setPSOFixedLearningRate(2.05, 2.05);
         this.legalizer.setPSOVaringLearningRate(this.c1, this.c2);

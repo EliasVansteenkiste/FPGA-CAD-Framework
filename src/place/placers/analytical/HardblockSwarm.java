@@ -120,7 +120,7 @@ public class HardblockSwarm {
  		this.numBlocks = this.blocks.length;
 		this.numSites = this.sites.length;
 		
-		this.velMaxSize = (int)Math.round(38.94 + 0.026 * this.numBlocks);//this.numSites; this.numBlocks// 
+		this.velMaxSize = (int)Math.round(38.94 + 0.026 * this.numBlocks);//this.numSites; this.numBlocks// (int)Math.round(20*Math.pow(this.numBlocks, 4/3));//
 		this.gBestBlockIdList = new int[this.numSites];
 		
 		this.columnNets.clear();
@@ -184,8 +184,8 @@ public class HardblockSwarm {
 //			w=(W_H - W_L)*(iteration/MAX_ITERATION)*(iteration/MAX_ITERATION) + (W_L - W_H)*(2*iteration/MAX_ITERATION) + W_H;//w2
 //			w = Math.pow(W_L*(W_H/W_L), 1/(1+10*iteration/MAX_ITERATION));//w3
 					
-//			c11 = COGNITIVE_H - (((double) iteration) / MAX_ITERATION) * (COGNITIVE_H - COGNITIVE_L); 
-//			c22 = SOCIAL_L + (((double) iteration) / MAX_ITERATION) * (SOCIAL_H - SOCIAL_L);
+//			c11 = 2.05 - (((double) iteration) / MAX_ITERATION) * (2.05-0.05); 
+//			c22 = 0.05 + (((double) iteration) / MAX_ITERATION) * (2.05 - 0.05);
 			
 
 			
@@ -200,12 +200,12 @@ public class HardblockSwarm {
 //					numGBestRepeat++;
 ////					System.out.println("same as previous" + numGBestRepeat);
 //				}
-//				if(p.pIndex == 0){
-//					System.out.println("Iteration " + iteration + ": ");
-//					System.out.println("\tp\t" + p.pCost + "\t" + Arrays.toString(p.blockIndexList) );
-//					System.out.println("\tgb\t" + this.gBest + "\t" + Arrays.toString(this.gBestBlockIdList));
-//					System.out.println("\tpb\t" + p.pBest +  "\t" + Arrays.toString(p.pBestIndexList));
-//				}
+				if(p.pIndex == 0){
+					System.out.println("Iteration " + iteration + ": ");
+					System.out.println("\tp\t" + p.pCost + "\t" + Arrays.toString(p.blockIndexList) );
+					System.out.println("\tgb\t" + this.gBest + "\t" + Arrays.toString(this.gBestBlockIdList));
+					System.out.println("\tpb\t" + p.pBest +  "\t" + Arrays.toString(p.pBestIndexList));
+				}
 				
 				
 				/////////////////////////get data for drawing swarm
@@ -235,15 +235,15 @@ public class HardblockSwarm {
 //				}
 //				p.updateVelocity(w, newc1*this.rand.nextDouble(), newc2*this.rand.nextDouble(), this.gBestBlockIdList);
 				
+//				p.updateVelocity(w, c11, c22, this.gBestBlockIdList);
 				p.updateVelocity(w, learningRate*this.rand.nextDouble(), learningRate*this.rand.nextDouble(), this.gBestBlockIdList);
 				
-				
 //				p.updateVelocity(w, learningRate, learningRate, this.gBestBlockIdList);
-//				if(p.pIndex == 0){
-//					for(Swap s:p.getVelopcity()){
-//						System.out.println("\t" + s.fromIndex + "\t"+ s.toIndex);
-//					}
-//				}
+				if(p.pIndex == 0){
+					for(Swap s:p.getVelopcity()){
+						System.out.println("\t" + s.fromIndex + "\t"+ s.toIndex);
+					}
+				}
 				//update blockIndex list		
 				p.updateLocations();					
 				if(p.changed){				
@@ -255,11 +255,7 @@ public class HardblockSwarm {
 						p.pBest = p.pCost;						
 						System.arraycopy(p.blockIndexList, 0, p.pBestIndexList, 0, this.numSites);									
 					}
-//					if(p.pCost < this.gBest){
-//						this.gBest = p.pCost;
-////						this.gBestList.add(this.gBest);
-//						System.arraycopy(p.blockIndexList, 0, this.gBestBlockIdList, 0, this.numSites);
-//					}
+
 				}			
 			}
 			
@@ -295,7 +291,7 @@ public class HardblockSwarm {
 //				System.out.println(this.quality);
 				if(ratio < this.quality) {//TODO
 					finish = true;
-				}else if(iteration == MAX_ITERATION){//doesn't matter MAX or MAX/2
+				}else if(iteration == MAX_ITERATION){
 					finish = true;
 				}
 			}else{
@@ -307,15 +303,7 @@ public class HardblockSwarm {
 //		System.out.println("pBestcostLists = " + pBestcosts);
 //		System.out.println();
 		
-		//TODO DRIES
-//		double finalGbest = this.gBest;
-//		if(printInfo) {
-//			System.out.println();System.out.println();System.out.println();
-//			System.out.printf("improvement: %.1f\n", (100 * ((originalGbest/finalGbest) - 1)));
-//		}
-		//TODO DRIES
-		
-//		this.stopThreads();
+
 //		threadPool.shutdown();
 //		this.timingTree.time("pso processing");
 	}

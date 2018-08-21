@@ -1,8 +1,9 @@
 package place.placers.analytical;
 
-import java.io.File;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,7 +12,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import jdk.nashorn.internal.ir.Block;
+
 import place.circuit.architecture.BlockType;
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
@@ -33,7 +34,7 @@ public class HardblockSwarmLegalizer{
 
     private final HardblockColumnSwap columnSwap;
     private final HardblockAnneal hardblockAnneal;
-    private final HardblockSwarm hardblockSwarm;
+    private final HardblockSwarmOptimization hardblockSwarm;
     
     private final Map<BlockType, Block[]> blocksPerBlocktype;
     private final Map<BlockType, Net[]> netsPerBlocktype;
@@ -41,7 +42,6 @@ public class HardblockSwarmLegalizer{
     private final int gridWidth, gridHeigth;
     
     private final TimingTree timingTree;
-
 
 	HardblockSwarmLegalizer(
 			double[] linearX,
@@ -54,7 +54,6 @@ public class HardblockSwarmLegalizer{
 			List<AnalyticalAndGradientPlacer.Net> placerNets){
 
 		this.timingTree = new TimingTree(false);
-
 		this.timingTree.start("Initialize Hardblock Connection Legalizer Data");
 
 		this.linearX = linearX;
@@ -158,7 +157,7 @@ public class HardblockSwarmLegalizer{
 
 		this.columnSwap = new HardblockColumnSwap();
 		this.hardblockAnneal = new HardblockAnneal(100);
-		this.hardblockSwarm = new HardblockSwarm(100);
+		this.hardblockSwarm = new HardblockSwarmOptimization(100);
 	}
 
 	//ADD BLOCK TYPE
@@ -220,7 +219,7 @@ public class HardblockSwarmLegalizer{
 	}
 	
 	//Legalize hard block
-	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, double c2, int minimumIter, int interval){
+	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, double c2, int minimumIter, int interval, boolean usePSO){
 		this.timingTree.start("Legalize " + blockType + " hardblock");
 		
 		this.blockType = blockType;
@@ -268,32 +267,12 @@ public class HardblockSwarmLegalizer{
 
 		//3 Column legalize
 		
-//		this.timingTree.start("Legalize columns");
-//		List<Column> sortedColumns = new ArrayList<>();
-//		Collections.addAll(sortedColumns, columns);
-//		for(Block block:legalizeBlocks){
-//			block.updateCriticality();
-//		}
-//		for(Column column:columns){
-//			double totalCrit = 0.0;
-//			for(Block block:column.blocks) totalCrit += block.criticality;
-//			column.setCriticality(totalCrit);
-//		}
-//		Collections.sort(sortedColumns, new Comparator<Column>(){
-//			public int compare(Column c1, Column c2){
-//				return c1.compareTo(c2);
-//			}
-//		});
-//		for(Column c:sortedColumns){
-//			System.out.print(c.index + " ");
-//		}
-//		System.out.println();
+		
 		for(Column column:columns){
 			column.legalize();//TODO WHY IS THIS BETTER + ANALYZE
 			//when do column.random, *******particles cannot jump out of a locally optimal region (only exploration and then convergence)*****
 //			column.random();
 		}
-//		this.timingTree.time("Legalize columns");
 
 		//4 Column pso
 		this.timingTree.start("Anneal columns");
@@ -341,8 +320,12 @@ public class HardblockSwarmLegalizer{
 //				for(Net n:nets1) cost1 += n.connectionCost()*n.totalNum;
 //				for(Crit c:crits1) cost1 += c.timingCost();
 //				System.out.println("cost:" + cost1);
-				this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, minimumIter, interval);
-//				this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO legalizeHardblock() qulity
+				
+				if(usePSO){
+					this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, minimumIter, interval);
+				}else{
+					this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO legalizeHardblock() qulity
+				}
 			}	
 		}
 		this.timingTree.time("Anneal columns");
@@ -543,37 +526,6 @@ public class HardblockSwarmLegalizer{
 					net.setTotalNum(uniqueBlockIdsMap.get(blockIds));
 					this.mergedNetsMap.replace(net, uniqueBlockIdsMap.get(blockIds));
 				}
-//				for(List<Integer> a:uniqueBlockIdsMap.keySet()){
-//					System.out.println(a + " -> " + uniqueBlockIdsMap.get(a));
-//				}
-				
-				
-//				Net flagNet = this.nets.get(0);
-//				List<Integer> flagNetBlockIndexs = new ArrayList<>();
-//				
-//				for(Block b:flagNet.blocks){
-//					flagNetBlockIndexs.add(b.index);
-//				}
-//				this.mergedNetsMap.put(flagNet, 0);
-//				
-//				for(Net net:this.nets){
-//					List<Integer> comingNetBlockIndexs = new ArrayList<>();
-//					for(Block b:net.blocks){
-//						comingNetBlockIndexs.add(b.index);
-//					}
-//					if(comingNetBlockIndexs.equals(flagNetBlockIndexs)){
-//						this.mergedNetsMap.put(flagNet, this.mergedNetsMap.get(flagNet)+1);
-//					}else{
-//						flagNet = net;
-//						flagNetBlockIndexs.clear();
-//						for(Block b:flagNet.blocks){
-//							flagNetBlockIndexs.add(b.index);
-//						}
-//						this.mergedNetsMap.put(flagNet, 1);			
-//					}	
-//				}
-				
-				
 			}
 		}
 		void addCrit(Crit crit){
@@ -625,7 +577,7 @@ public class HardblockSwarmLegalizer{
 		//for pso initialization
 		void setLegalXY(int x, int y){	
 			this.updateVertical(y);
-			this.updateHorizontal(x);
+//			this.updateHorizontal(x);
 		}
 		//for main pso process to deal with blocks' legalXs and legalYs, crits's and nets' minXs, minYs
 		void setLegalXYs(int i, int newx, int newy){
@@ -637,7 +589,7 @@ public class HardblockSwarmLegalizer{
 			int oldY = this.legalY;
 			if(this.legalY != newy){
 				this.legalY = newy;
-				for(Net net:this.nets) net.updateVertical(oldY, this.legalY);
+				for(Net net:this.mergedNetsMap.keySet()) net.updateVertical(oldY, this.legalY);
 //				for(Net net:this.mergedNetsMap.keySet()) net.updateVertical(oldY, newy);
 				for(Crit crit:this.crits) crit.updateVertical();
 			}
@@ -811,8 +763,7 @@ public class HardblockSwarmLegalizer{
 	        return this.block;
 	    }
 	    public void removeBlock(){
-	    	this.block = null
-	    			;
+	    	this.block = null;
 	    }
 	}
     /////////////////////////////////////////////////////////////////////////////////

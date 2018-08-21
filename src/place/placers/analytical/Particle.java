@@ -2,17 +2,15 @@ package place.placers.analytical;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import place.placers.analytical.HardblockSwarmLegalizer.Block;
 import place.placers.analytical.HardblockSwarmLegalizer.Crit;
 import place.placers.analytical.HardblockSwarmLegalizer.Net;
 import place.placers.analytical.HardblockSwarmLegalizer.Site;
 
-public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
+public class Particle{
 	final int pIndex;
 	private final int numSites;
 	private int velMaxSize;
@@ -21,16 +19,9 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 	private Site[] sites;
 	private List<Crit> pCrits;
 	private List<Net> pNets;
-//	private Set<Net> pNets;
 	
 	private List<Swap> swaps;
 	private List<Swap> newVel;
-	
-	private Set<Integer> affectedBlockIndex;
-	private Set<Block> affectedBlocks;
-	private Set<Net> affectedNets;
-	private Set<Crit> affectedCrits;
-	
 	
 	int[] blockIndexList;
 	private int[] oldBlockIndexList;
@@ -43,13 +34,9 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 	double inertiaWeight, congnitiveRate, socialRate; 
 	int[] gBestBlockIdList;
 	
-	private Thread thread;//TODO
+	private boolean printout = false;
 
-	private volatile boolean running;
-	private volatile boolean paused;
-	private final Object pauseLock = new Object();
-	
-	RunnableParticle(int index, Block[] blocks, Site[] sites, int velMaxSize){
+	Particle(int index, Block[] blocks, Site[] sites, int velMaxSize){
 		this.pIndex = index;
 		
 		this.blocks = blocks;
@@ -69,14 +56,6 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 		this.swaps = new ArrayList<Swap>();
 		this.newVel = new ArrayList<Swap>();
 		
-//		this.doneSignal = doneSignal;
-		this.running = true;
-		this.paused = false;
-		
-		this.affectedBlockIndex = new HashSet<>();
-		this.affectedBlocks = new HashSet<>();
-		this.affectedNets = new HashSet<>();
-		this.affectedCrits = new HashSet<>();
 	}
 	void setVelocity(List<Swap> vel){
 		this.velocity = new ArrayList<Swap>(vel);
@@ -97,80 +76,41 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 	}
 	void setPCrits(Set<Crit> columnCrits){
 		this.pCrits = new ArrayList<Crit>(columnCrits);
-	}
-	public void run(){
-		while(this.running){
-			synchronized(this.pauseLock){
-				if(!this.running){// may have changed while running to synchronize on pauseLock
-					break;
-				}
-				if(this.paused){
-					try{
-						this.pauseLock.wait();// will cause this Thread to block until 
-                        						// another thread calls pauseLock.notifyAll()
-                        						// Note that calling wait() will 
-												// relinquish the synchronized lock that this 
-                        						// thread holds on pauseLock so another thread
-												// can acquire the lock to call notifyAll()
-                        						// (link with explanation below this code)
-					}catch(InterruptedException ex){
-						break;
-					}
-					if(!this.running){// running might have changed since we paused
-						break;
-					}
-				}
-			}
-			this.doWork();
-		}
-	}
-	@Override
-	public CostAndIndexList call() throws Exception {
-		this.doWork();	
-		return new CostAndIndexList(this.pCost, this.pIndex, this.blockIndexList);
-	}
-	
+	}	
 	void doWork(){
 		//update velocity
 		this.updateVelocity(this.inertiaWeight, this.congnitiveRate, this.socialRate, this.gBestBlockIdList);
 				
 		//update blockIndex list		
 		this.updateLocations();	
-				
-		if(this.changed){				
-			this.updateBlocksInfo();					
-			//update pBest
-			this.pCost = this.getCost();//TODO
+		if(this.printout){
+			if(this.pIndex == 0){
+				System.out.println(this.inertiaWeight+ " " + this.congnitiveRate + " " + this.socialRate);
+				System.out.println("swaps: ");
+				for(Swap s:this.getVelopcity()){
+					System.out.println("\t" + s.fromIndex + "\t"+ s.toIndex);
 					
+				}
+				System.out.println();
+			}
+		}		
+		if(this.changed){				
+			
+			this.updateBlocksInfo();					
+//			//update pBest
+			this.pCost = this.getCost();//TODO
+//			this.pCost += this.swapsCost(this.blockIndexList);
+//			for(Block b:this.blocks){
+//				b.saveOptimalSite();
+//			}
 			if(this.pCost < this.pBest){					
 				this.pBest = this.pCost;						
 				System.arraycopy(this.blockIndexList, 0, this.pBestIndexList, 0, this.numSites);									
 			}
 		}
-//		System.out.println("RP_" + Integer.toString(pIndex) + "finished");
-		this.pause();//particle's work finished
+		
 	}
-	public void stop() {
-        running = false;
-        // you might also want to interrupt() the Thread that is 
-        // running this Runnable, too, or perhaps call:
-        resume();
-        // to unblock
-    }
-
-    public void pause() {
-        // you may want to throw an IllegalStateException if !running
-        paused = true;
-    }
-    public boolean paused(){
-    	return this.paused;
-    }
-    public void resume() {
-        synchronized (pauseLock) {
-            paused = false;
-            pauseLock.notifyAll(); // Unblocks thread
-        }
-    }
+	
 	void setParameters(double w, double c1, double c2, int[] gBest){
 		this.inertiaWeight = w;
 		this.congnitiveRate = c1;
@@ -268,7 +208,7 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 		int[] tmpLoc = new int[size];
 		System.arraycopy(this.blockIndexList, 0, tmpLoc, 0, size);
 		
-		if(!Arrays.equals(targetLoc, tmpLoc)){
+		while(!Arrays.equals(targetLoc, tmpLoc)){
 			for(int m = 0; m < size; m++){
 				int value = targetLoc[m];
 				if(value != -1){
@@ -276,7 +216,7 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 						if(value == tmpLoc[n]){
 							if(m != n){
 								this.swaps.add(new Swap(m, n));
-								doOneSwap(tmpLoc, m , n);	
+								doIndexSwap(tmpLoc, m , n);	
 								break;
 							}						
 						}
@@ -296,13 +236,43 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 			for(int velIndex = 0; velIndex < swapsSize; velIndex++){
 				int from = this.velocity.get(velIndex).getFromIndex();
 				int to = this.velocity.get(velIndex).getToIndex();
-				if(from != to) doOneSwap(this.blockIndexList, from, to);//only update blockIndexList for a particle
+				if(from != to) doIndexSwap(this.blockIndexList, from, to);//only update blockIndexList for a particle
 			}
 		}
 		if(Arrays.equals(this.oldBlockIndexList, this.blockIndexList)) this.changed = false;
 		else this.changed = true;
 	}
-	public int[] doOneSwap(int[] indexList, int from, int to){	
+	
+	double swapsCost(int[] blockIndexList){
+		double deltaCost = 0;
+		for(Swap s:this.velocity){
+			int from = s.getFromIndex();
+			int to = s.getToIndex();
+			int indexFrom = blockIndexList[from];
+			int indexTo = blockIndexList[to];
+			Block block1= this.getBlock(indexFrom);
+			Block block2 = this.getBlock(indexTo);
+			Site site1 = this.sites[from];
+			Site site2 = this.sites[to];
+			
+			deltaCost += this.deltacost(block1, site1, block2, site2);
+		}
+		return deltaCost;
+	}
+	Block getBlock(int index){
+		Block block = null;
+		if(index == -1){
+			block = null;
+		}
+		else{
+			for(Block b:this.blocks){
+				if(b.index == index) block = b;
+			}
+		}
+		
+		return block;
+	}
+	public int[] doIndexSwap(int[] indexList, int from, int to){	
 		int tmp;
 		int indexFrom = indexList[from];
 		int indexTo = indexList[to];
@@ -313,11 +283,9 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 		}
 		return indexList;
 	}
-//	synchronized void updateBlocksInfo(){
 	void updateBlocksInfo(){
 		for(Block block:blocks){		
 			Site site = getSite(this.blockIndexList, block.index);
-//			block.setLegalXYs(this.pIndex, site.column, site.row);
 			block.setLegalXY(site.column, site.row);
 		}
 	}
@@ -340,64 +308,12 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 		
 		return cost;
 	}
-	double getCost(int i){
-		double cost = 0.0;
-		double timing = 0.0;
-		double conn = 0.0;
-		for(Net net:this.pNets) conn += net.connectionCost(i)*net.getTotalNum();
-		for(Crit crit:this.pCrits) timing += crit.timingCost(i);
-		cost = timing + conn;
-		cost = timing + conn;		
-		return cost;
-	}
-	
-	@SuppressWarnings("unused")
-	private void getParticleAffectedNetsCrits(){		
-		this.affectedBlockIndex.clear();
-		this.affectedBlocks.clear();
-		this.affectedNets.clear();
-		this.affectedCrits.clear();
-		for(Swap s:this.newVel){
-			this.affectedBlockIndex.add(this.blockIndexList[s.fromIndex]);
-			this.affectedBlockIndex.add(this.blockIndexList[s.toIndex]);
-		}
-		for(int id:this.affectedBlockIndex){
-			if(id != -1){
-				Block affectedBlock = getBlock(id);
-				this.affectedBlocks.add(affectedBlock);
-				this.affectedNets.addAll(affectedBlock.mergedNetsMap.keySet());
-				this.affectedCrits.addAll(affectedBlock.crits);
-			}		
-		}
-	}
-	private Block getBlock(int blockId){
-		Block block = null;
-		for(Block b:this.blocks){
-			if(b.index == blockId) block = b;
-		}
-		return block;
-	}
-	
-	@SuppressWarnings("unused")
-	private double getCostofAffectedBlocks(){
-		double oldCostofAffectedBlocks = 0;
-		for(Net net:this.affectedNets){
-			oldCostofAffectedBlocks += net.connectionCost(this.pIndex)*net.totalNum;
-		}
-		for(Crit crit:this.affectedCrits){
-			oldCostofAffectedBlocks += crit.timingCost(this.pIndex);
-		}
-		return oldCostofAffectedBlocks;
-	}
-	
+
 	static class Swap{
 		int fromIndex;
 		int toIndex;
-		public Swap(){
-			super();
-		}
+
 		public Swap(int fromIndex, int toIndex) {
-			super();
 			this.fromIndex = fromIndex;
 			this.toIndex = toIndex;
 		}
@@ -413,5 +329,49 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 		public void setToIndex(int toIndex) {
 			this.toIndex = toIndex;
 		}			
+	}
+	double deltacost(Block block1, Site site1, Block block2, Site site2){
+		double deltaCost = 0;
+		
+		boolean block1Valid = block1 != null;
+		boolean block2Valid = block2 != null;
+		site1.removeBlock();
+		site2.removeBlock();
+		
+		if(block1Valid){
+			block1.setSite(site2);
+			site2.setBlock(block1);
+			block1.tryLegal(site2.column, site2.row);
+		}
+		
+		if(block2Valid){
+			block2.setSite(site1);
+			site1.setBlock(block2);
+			block2.tryLegal(site1.column, site1.row);
+		}
+			
+		if(block1Valid){
+			for(Net net:block1.nets){
+				deltaCost += net.deltaHorizontalConnectionCost();
+				deltaCost += net.deltaVerticalConnectionCost();
+			}
+			for(Crit crit:block1.crits){
+				deltaCost += crit.deltaHorizontalTimingCost();
+				deltaCost += crit.deltaVerticalTimingCost();
+			}
+		}
+		if(block2Valid){
+			for(Net net:block2.nets){
+				deltaCost += net.deltaHorizontalConnectionCost();
+				deltaCost += net.deltaVerticalConnectionCost();
+
+			}
+			for(Crit crit:block2.crits){
+				deltaCost += crit.deltaHorizontalTimingCost();
+				deltaCost += crit.deltaVerticalTimingCost();
+			}
+		}
+		
+		return deltaCost;
 	}
 }
