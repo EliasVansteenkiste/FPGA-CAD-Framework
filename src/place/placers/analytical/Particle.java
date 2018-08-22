@@ -15,7 +15,7 @@ public class Particle{
 	private final int numSites;
 	private int velMaxSize;
 	
-	private Block[] blocks;
+	private Block[] orderedblocks;
 	private Site[] sites;
 	private List<Crit> pCrits;
 	private List<Net> pNets;
@@ -39,7 +39,7 @@ public class Particle{
 	Particle(int index, Block[] blocks, Site[] sites, int velMaxSize){
 		this.pIndex = index;
 		
-		this.blocks = blocks;
+		this.orderedblocks = blocks;
 		this.sites = sites;
 		this.numSites = this.sites.length;
 		this.velMaxSize = velMaxSize;
@@ -71,8 +71,6 @@ public class Particle{
 	}
 	void setPNets(Set<Net> columnNets){
 		this.pNets = new ArrayList<Net>(columnNets);
-//		this.pNets = new HashSet<Net>(columnNets);
-//		if(!this.compareSame()) System.out.println("happens in p" + this.pIndex);//TODO
 	}
 	void setPCrits(Set<Crit> columnCrits){
 		this.pCrits = new ArrayList<Crit>(columnCrits);
@@ -225,7 +223,7 @@ public class Particle{
 			}
 		}
 		
-//		System.out.println(this.swaps.size());
+//		if(this.swaps.size() > this.blocks.length)System.out.println("[" + this.blocks.length + " / " + this.sites.length + "] -> " + this.swaps.size());
 	}
 	//do swaps to update particle's location: X + Velocity 
 	void updateLocations(){
@@ -233,9 +231,9 @@ public class Particle{
 		int swapsSize = 0;
 		if(this.velocity != null) swapsSize = this.velocity.size();
 		if(swapsSize > 0){	
-			for(int velIndex = 0; velIndex < swapsSize; velIndex++){
-				int from = this.velocity.get(velIndex).getFromIndex();
-				int to = this.velocity.get(velIndex).getToIndex();
+			for(Swap s:this.velocity){
+				int from = s.getFromIndex();
+				int to = s.getToIndex();
 				if(from != to) doIndexSwap(this.blockIndexList, from, to);//only update blockIndexList for a particle
 			}
 		}
@@ -265,7 +263,7 @@ public class Particle{
 			block = null;
 		}
 		else{
-			for(Block b:this.blocks){
+			for(Block b:this.orderedblocks){
 				if(b.index == index) block = b;
 			}
 		}
@@ -284,7 +282,7 @@ public class Particle{
 		return indexList;
 	}
 	void updateBlocksInfo(){
-		for(Block block:blocks){		
+		for(Block block:orderedblocks){		
 			Site site = getSite(this.blockIndexList, block.index);
 			block.setLegalXY(site.column, site.row);
 		}
@@ -308,7 +306,16 @@ public class Particle{
 		
 		return cost;
 	}
-
+	double getCost(int i){
+		double cost = 0.0;
+		double timing = 0.0;
+		double conn = 0.0;
+		for(Net net:this.pNets) conn += net.connectionCost(i)*net.getTotalNum();
+		for(Crit crit:this.pCrits) timing += crit.timingCost(i);
+		cost = timing + conn;
+		cost = timing + conn;		
+		return cost;
+	}
 	static class Swap{
 		int fromIndex;
 		int toIndex;
@@ -335,40 +342,40 @@ public class Particle{
 		
 		boolean block1Valid = block1 != null;
 		boolean block2Valid = block2 != null;
-		site1.removeBlock();
-		site2.removeBlock();
+//		site1.removeBlock();
+//		site2.removeBlock();
 		
 		if(block1Valid){
-			block1.setSite(site2);
-			site2.setBlock(block1);
-			block1.tryLegal(site2.column, site2.row);
+//			block1.setSite(site2);
+//			site2.setBlock(block1);
+			block1.updateVerticals(this.pIndex, site2.row);
 		}
 		
 		if(block2Valid){
-			block2.setSite(site1);
-			site1.setBlock(block2);
-			block2.tryLegal(site1.column, site1.row);
+//			block2.setSite(site1);
+//			site1.setBlock(block2);
+			block2.updateVerticals(this.pIndex, site1.row);
 		}
 			
 		if(block1Valid){
 			for(Net net:block1.nets){
-				deltaCost += net.deltaHorizontalConnectionCost();
-				deltaCost += net.deltaVerticalConnectionCost();
+//				deltaCost += net.deltaHorizontalConnectionCost();
+				deltaCost += net.deltaVerticalConnectionCost(this.pIndex);
 			}
 			for(Crit crit:block1.crits){
-				deltaCost += crit.deltaHorizontalTimingCost();
-				deltaCost += crit.deltaVerticalTimingCost();
+//				deltaCost += crit.deltaHorizontalTimingCost();
+				deltaCost += crit.deltaVerticalTimingCost(this.pIndex);
 			}
 		}
 		if(block2Valid){
 			for(Net net:block2.nets){
-				deltaCost += net.deltaHorizontalConnectionCost();
-				deltaCost += net.deltaVerticalConnectionCost();
+//				deltaCost += net.deltaHorizontalConnectionCost();
+				deltaCost += net.deltaVerticalConnectionCost(this.pIndex);
 
 			}
 			for(Crit crit:block2.crits){
-				deltaCost += crit.deltaHorizontalTimingCost();
-				deltaCost += crit.deltaVerticalTimingCost();
+//				deltaCost += crit.deltaHorizontalTimingCost();
+				deltaCost += crit.deltaVerticalTimingCost(this.pIndex);
 			}
 		}
 		

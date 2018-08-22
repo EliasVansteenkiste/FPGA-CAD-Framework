@@ -53,7 +53,7 @@ public class HardblockAnneal {
 		this.type = blockType;
 		
 		if(this.printout) System.out.println(this.type + "" + column.index + ": [" + this.numBlocks + " / " + this.numSites + "]");
-//		this.annealCosts = new ArrayList<>();
+		
 		
 		this.doAnneal();
 		
@@ -105,7 +105,7 @@ public class HardblockAnneal {
 //			else li[liid] = -1;
 //			liid++;
 //		}
-
+//		this.annealCosts = new ArrayList<>();
 //		this.annealCosts.add(this.cost);//yun
 
 ////		System.out.println(Arrays.toString(li));
@@ -137,7 +137,7 @@ public class HardblockAnneal {
 
 			this.updateTemperature(alpha);
 			this.iteration++;
-			
+//			this.annealCosts.add(this.cost);
 			if(this.cost < this.minimumCost){
 				this.minimumCost = this.cost;
 				

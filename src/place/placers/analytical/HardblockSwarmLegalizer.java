@@ -219,7 +219,8 @@ public class HardblockSwarmLegalizer{
 	}
 	
 	//Legalize hard block
-	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, double c2, int minimumIter, int interval, boolean usePSO){
+	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, double c2, 
+			double forPbest, double forGbest, double forall, int minimumIter, int interval, boolean usePSO){
 		this.timingTree.start("Legalize " + blockType + " hardblock");
 		
 		this.blockType = blockType;
@@ -322,7 +323,7 @@ public class HardblockSwarmLegalizer{
 //				System.out.println("cost:" + cost1);
 				
 				if(usePSO){
-					this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, minimumIter, interval);
+					this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, forPbest, forGbest, forall, minimumIter, interval);
 				}else{
 					this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO legalizeHardblock() qulity
 				}
@@ -451,7 +452,7 @@ public class HardblockSwarmLegalizer{
 		// FOR PSO
 		volatile int[] legalXs, legalYs;
 		volatile int[] oldLegalXs, oldLegalYs;
-//		boolean[] verticalSaved;
+		boolean[] verticalSaved;
 
 		final List<Net> nets;
 		final List<Crit> crits;
@@ -485,8 +486,8 @@ public class HardblockSwarmLegalizer{
 			this.legalYs = new int[SWARM_SIZE];
 			this.oldLegalXs = new int[SWARM_SIZE];
 			this.oldLegalYs = new int[SWARM_SIZE];
-//			this.verticalSaved = new boolean[SWARM_SIZE];
-//			Arrays.fill(this.verticalSaved, false);
+			this.verticalSaved = new boolean[SWARM_SIZE];
+			Arrays.fill(this.verticalSaved, false);
 		}
 		void addNet(Net net){
 			if(!this.nets.contains(net)){
@@ -573,7 +574,7 @@ public class HardblockSwarmLegalizer{
 			return cost;
 		}
 		
-		////////////////////////////SETLEGAL(only y) FOR PSO////////////////////////////////////////////////
+		//////////////////////////// FOR PSO////////////////////////////////////////////////
 		//for pso initialization
 		void setLegalXY(int x, int y){	
 			this.updateVertical(y);
@@ -581,7 +582,7 @@ public class HardblockSwarmLegalizer{
 		}
 		//for main pso process to deal with blocks' legalXs and legalYs, crits's and nets' minXs, minYs
 		void setLegalXYs(int i, int newx, int newy){
-			this.updateHorizontals(i, newx);
+//			this.updateHorizontals(i, newx);
 			this.updateVerticals(i, newy);
 		}
 		//same function as tryLeagal
@@ -603,11 +604,12 @@ public class HardblockSwarmLegalizer{
 			}
 		}
 		void updateVerticals(int i, int newy){
-			int old = this.legalYs[i];
+			this.saveStates(i);
+			
 			if(this.legalYs[i] != newy){
 				this.legalYs[i] = newy;
-				for(Net net:this.nets) net.updateVerticals(i, old, this.legalYs[i]);
-				for(Crit crit:this.crits) crit.updateVertical(i);
+				for(Net net:this.mergedNetsMap.keySet()) net.updateVerticals(i, this.oldLegalYs[i], this.legalYs[i]);
+				for(Crit crit:this.crits) crit.updateVerticals(i);
 			}
 		}
 		void updateHorizontals(int i, int newx){//TODO synchronized??
@@ -632,12 +634,12 @@ public class HardblockSwarmLegalizer{
 			this.legalXs[i] = this.legalX;
 			this.legalYs[i] = this.legalY;
 		}
-//		void saveStates(int i){
-//			if(!this.verticalSaved[i]){
-//				this.oldLegalXs[i] = this.legalXs[i];
-//				this.oldLegalYs[i] = this.legalYs[i];
-//			}
-//		}
+		void saveStates(int i){
+			if(!this.verticalSaved[i]){
+				this.oldLegalXs[i] = this.legalXs[i];
+				this.oldLegalYs[i] = this.legalYs[i];
+			}
+		}
 //		void pushThrough(int i){
 //			this.verticalSaved[i] = false;
 //			
@@ -788,7 +790,7 @@ public class HardblockSwarmLegalizer{
 		int[] minYs, maxYs;
 		int[] oldMinXs, oldMaxXs;
 		int[] oldMinYs, oldMaxYs;
-		boolean[] verticalSaved;
+		boolean[] verticalsSaved;
 		
 		int oldMinX, oldMaxX;
 		int oldMinY, oldMaxY;
@@ -819,8 +821,8 @@ public class HardblockSwarmLegalizer{
 			this.oldMaxYs = new int[SWARM_SIZE];
 			this.oldMinXs = new int[SWARM_SIZE];
 			this.oldMaxXs = new int[SWARM_SIZE];
-			this.verticalSaved = new boolean[SWARM_SIZE];
-			Arrays.fill(this.verticalSaved, false);
+			this.verticalsSaved = new boolean[SWARM_SIZE];
+			Arrays.fill(this.verticalsSaved, false);
 		}
 		void setTotalNum(int n){
 			this.totalNum = n;
@@ -1073,7 +1075,7 @@ public class HardblockSwarmLegalizer{
 			}
         }
 		void updateVerticals(int i, int oldY, int newY){
-//			this.saveStates(i);
+			this.saveStates(i);
 			if(this.size == 1){
 				this.minYs[i] = this.blocks[0].legalYs[i];
 				this.maxYs[i] = this.blocks[0].legalYs[i];
@@ -1160,8 +1162,9 @@ public class HardblockSwarmLegalizer{
 	        }
 	        return max;
 		}
+		
 		double connectionCost(int i){
-			return this.horizontalConnectionCost() + this.verticalConnectionCost(i);
+			return this.horizontalConnectionCost(i) + this.verticalConnectionCost(i);
 		}
 		double horizontalConnectionCost(int i){
 			return (this.maxXs[i] - this.minXs[i] + 1) * this.weight;
@@ -1174,17 +1177,17 @@ public class HardblockSwarmLegalizer{
 			return (this.maxYs[i] - this.minYs[i] - this.oldMaxYs[i] + this.oldMinYs[i]) * this.weight;
 		}
 		void saveStates(int i){
-			if(!this.verticalSaved[i]){
+			if(!this.verticalsSaved[i]){
 				this.oldMinXs[i] = this.minXs[i];
 				this.oldMaxXs[i] = this.maxXs[i];
 				this.oldMinYs[i] = this.minYs[i];
 				this.oldMaxYs[i] = this.maxYs[i];
 				
-				this.verticalSaved[i] = true;
+				this.verticalsSaved[i] = true;
 			}
 		}
 		void pushThrough(int i){
-			this.verticalSaved[i] = false;
+			this.verticalsSaved[i] = false;
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		
@@ -1441,7 +1444,7 @@ public class HardblockSwarmLegalizer{
 //				this.verticalDeltaCostIncluded = true;
 //			}
         }
-		void updateVertical(int i){
+		void updateVerticals(int i){
 //			this.saveStates(i);
 			
 			if(this.sourceBlock.legalYs[i] < this.sinkBlock.legalYs[i]){

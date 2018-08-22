@@ -3,7 +3,6 @@ package place.placers.analytical;
 import java.util.Random;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
@@ -39,6 +38,7 @@ public class HardblockSwarmOptimization {
 	private static final double W_L = 0.4;
 	
 	private double c1, c2;
+	private double forPbest, forGbest, forall; 
 	
 	private int velMaxSize;
 	
@@ -81,12 +81,15 @@ public class HardblockSwarmOptimization {
 	}
 	
 	//legalize hard block
-	public void doPSO(Column column, BlockType blockType, int numParticles, double quality, double c1, double c2, int minimumIter, int interval){
+	public void doPSO(Column column, BlockType blockType, int numParticles, double quality, double c1, double c2, double forPbest, double forGbest, double forall, int minimumIter, int interval){
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.quality = quality;
 		
 		this.c1 = c1;
 		this.c2 = c2;
+		this.forPbest = forPbest;
+		this.forGbest = forGbest;
+		this.forall = forall;
 		
 		this.minmumIteration = minimumIter;
 		this.interval = interval;
@@ -175,7 +178,7 @@ public class HardblockSwarmOptimization {
 				
 				
 				/////////////////////////get data for drawing swarm
-//				if(this.printout){
+//				if(!this.printout){
 //					if(iteration == 0){
 //						List<Double> tmppcost = new ArrayList<>();
 //						tmppcost.add(p.pCost);
@@ -199,11 +202,11 @@ public class HardblockSwarmOptimization {
 //				p.setParameters(w, p1, p2, this.gBestBlockIdList);
 				
 				double probility = this.randControl.nextDouble();
-				if(probility > 0.90){
+				if(probility > this.forPbest){
 					p.setParameters(0, p1, 0, this.gBestBlockIdList);
-				}else if(probility > 0.35){
+				}else if(probility > this.forall){
 					p.setParameters(w, p1, p2, this.gBestBlockIdList);
-				}else if(probility > 0.1){
+				}else if(probility > this.forGbest){
 					p.setParameters(0, 0, p2, this.gBestBlockIdList);
 				}else{
 					p.setParameters(w, 0, 0, this.gBestBlockIdList);
@@ -242,7 +245,7 @@ public class HardblockSwarmOptimization {
 			}
 		}
 		
-//		if(this.printout){
+//		if(!this.printout){
 //			System.out.println("gbest = " + gBests);
 //			System.out.println("pcostLists = " + pcosts);
 //			System.out.println("pBestcostLists = " + pBestcosts);
@@ -290,6 +293,7 @@ public class HardblockSwarmOptimization {
 			j++;
 		}
 		
+//		this.duplicateData(0);
 		
 		baseLineParticle.setPNets(this.columnNets);
 		baseLineParticle.setPCrits(this.columnCrits);
@@ -315,6 +319,8 @@ public class HardblockSwarmOptimization {
 				
 			this.randomlyPlaceBlocks();
 			
+//			this.duplicateData(i);
+			
 			int velLength = this.rand.nextInt(this.velMaxSize);
 			List<Swap> vel = new ArrayList<>();
 			for(int m = 1; m < velLength; m++){
@@ -327,8 +333,6 @@ public class HardblockSwarmOptimization {
 			for(int m = 0; m < this.numSites; m++){
 				if(this.sites[m].hasBlock()) particle.blockIndexList[m] = this.sites[m].block.index;
 				else particle.blockIndexList[m] = -1;
-				
-				particle.pBestIndexList[m] = particle.blockIndexList[m];
 			}
 			particle.setPNets(this.columnNets);
 			particle.setPCrits(this.columnCrits);			
@@ -353,13 +357,17 @@ public class HardblockSwarmOptimization {
 			block.setLegalXY(site.column, site.row);
 		}
 	}
-	
 	private void setBlockLegal(int[] blockIndexList){
 		for(Block block : this.blocks){
 			Site site = this.getSite(blockIndexList, block.index);
 			block.setSite(site);
 			site.setBlock(block);
 			block.setLegalXY(site.column, site.row);
+		}
+	}
+	private void duplicateData(int i){
+		for(Block b:this.blocks){
+			b.duplicateData(i);
 		}
 	}
 }

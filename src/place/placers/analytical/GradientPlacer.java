@@ -36,6 +36,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_USE_PSO = "usePSO",
     	O_PSO_COGNITIVE_LEARNING_RATE = "c1",
     	O_PSO_SOCIAL_LEARNING_RATE = "c2",
+    	O_PSO_PROBILITY_INTERVAL_PBEST = "forPbest",
+    	O_PSO_PROBILITY_INTERVAL_GBEST = "forGbest",
+    	O_PSO_PROBILITY_INTERVAL_WPBGB = "forall",
     	O_PSO_MINIMUM_ITERATION = "minimumIter",
     	O_PSO_INTERVAL = "interval",
     	O_PSO_QUALITY = "psoQuality",
@@ -107,9 +110,22 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Double(1.4));
         
         options.add(
+        		O_PSO_PROBILITY_INTERVAL_PBEST,
+                "pso probility interval for pbest",
+                new Double(0.9));
+        options.add(
+        		O_PSO_PROBILITY_INTERVAL_WPBGB,
+                "pso probility interval for all",
+                new Double(0.35));
+        options.add(
+        		O_PSO_PROBILITY_INTERVAL_GBEST,
+                "pso probility interval for gbest",
+                new Double(0.1));
+        
+        options.add(
         		O_PSO_MINIMUM_ITERATION,
                 "pso minimum interation",
-                new Integer(30));
+                new Integer(20));
         
         options.add(
         		O_PSO_INTERVAL,
@@ -141,6 +157,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     private final double beta1, beta2, eps;
     private final boolean usePSO;
     private final double c1, c2;
+    private double forPbest, forGbest, forall;
     private final int minimumIter, interval;
     private final double psoQuality;
 
@@ -193,6 +210,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.usePSO = this.options.getBoolean(O_USE_PSO);
         this.c1 = this.options.getDouble(O_PSO_COGNITIVE_LEARNING_RATE);
         this.c2 = this.options.getDouble(O_PSO_SOCIAL_LEARNING_RATE);
+        this.forPbest = this.options.getDouble(O_PSO_PROBILITY_INTERVAL_PBEST);
+        this.forGbest = this.options.getDouble(O_PSO_PROBILITY_INTERVAL_GBEST);
+        this.forall = this.options.getDouble(O_PSO_PROBILITY_INTERVAL_WPBGB);
+        
         this.psoQuality = this.options.getDouble(O_PSO_QUALITY);
         
         this.minimumIter = this.options.getInteger(O_PSO_MINIMUM_ITERATION);
@@ -236,6 +257,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.legalizer.setpsoQuality(this.psoQuality);
 //        this.legalizer.setPSOFixedLearningRate(2.05, 2.05);
         this.legalizer.setPSOVaringLearningRate(this.c1, this.c2);
+        this.legalizer.setPobilityInterval(forPbest, forGbest, forall);
         this.legalizer.setPSOstopParameter(this.minimumIter, this.interval);
 
         // Juggling with objects is too slow (I profiled this,
