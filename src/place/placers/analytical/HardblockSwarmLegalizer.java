@@ -278,50 +278,7 @@ public class HardblockSwarmLegalizer{
 		//4 Column pso
 		this.timingTree.start("Anneal columns");
 		for(Column column:columns){
-			if(column.usedPos() > 0){
-
-				//before merging nets
-//				Set<Net> nets = new HashSet<>();
-//				Set<Crit> crits = new HashSet<>();
-//				for(Block b:column.blocks){
-//					for(Net n:b.nets) nets.add(n);
-//					for(Crit c:b.crits) crits.add(c);
-//				}
-//				
-				//all nets info
-//				for(Net n:nets){
-//					List<Integer> indexs = new ArrayList<>();
-//					for(Block b:n.blocks) indexs.add(b.index);
-//					System.out.println(indexs);
-//					indexs.clear();
-//				}
-				
-//				double cost = 0;
-//				for(Net n:nets) cost += n.connectionCost();
-//				for(Crit c:crits) cost += c.timingCost();
-//				System.out.println("reference cost: " + cost);
-				
-				
-				//after merging nets
-//				Set<Net> nets1 = new HashSet<>();
-//				Set<Crit> crits1 = new HashSet<>();
-//				for(Block b:column.blocks){
-//					for(Net n:b.mergedNetsMap.keySet()) nets1.add(n);
-//					for(Crit c:b.crits) crits1.add(c);
-//				}
-//				for(Net n:nets1){
-//					List<Integer> indexs = new ArrayList<>();
-//					for(Block b:n.blocks) indexs.add(b.index);
-////					System.out.println(n.index + " -> " + n.totalNum + " -> " + indexs);
-//					System.out.println(indexs);
-//					indexs.clear();
-//				}
-//				double cost1 = 0;
-//				
-//				for(Net n:nets1) cost1 += n.connectionCost()*n.totalNum;
-//				for(Crit c:crits1) cost1 += c.timingCost();
-//				System.out.println("cost:" + cost1);
-				
+			if(column.usedPos() > 0){			
 				if(usePSO){
 					this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, forPbest, forGbest, forall, minimumIter, interval);
 				}else{

@@ -112,20 +112,20 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
         		O_PSO_PROBILITY_INTERVAL_PBEST,
                 "pso probility interval for pbest",
-                new Double(0.9));
+                new Double(0.75));
         options.add(
         		O_PSO_PROBILITY_INTERVAL_WPBGB,
                 "pso probility interval for all",
-                new Double(0.35));
+                new Double(0.5));
         options.add(
         		O_PSO_PROBILITY_INTERVAL_GBEST,
                 "pso probility interval for gbest",
-                new Double(0.1));
+                new Double(0.25));
         
         options.add(
         		O_PSO_MINIMUM_ITERATION,
                 "pso minimum interation",
-                new Integer(20));
+                new Integer(100));
         
         options.add(
         		O_PSO_INTERVAL,

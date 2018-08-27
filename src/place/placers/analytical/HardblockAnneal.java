@@ -37,14 +37,13 @@ public class HardblockAnneal {
 	private BlockType type;
 	
 	private boolean printout = false;
-	List<Double> annealCosts;//yun
+//	List<Double> annealCosts;//yun
 	
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
 		this.timingTree = new TimingTree(false);
 	}
 	public void doAnneal(Column column, BlockType blockType, double quality){
-		this.timingTree.start("simulated annealing took ");
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.sites = column.sites;
 
@@ -52,14 +51,13 @@ public class HardblockAnneal {
 		this.effortLevel = 1.0;
 		this.type = blockType;
 		
-		if(this.printout) System.out.println(this.type + "" + column.index + ": [" + this.numBlocks + " / " + this.numSites + "]");
+//		if(this.printout) System.out.println(this.type + "" + column.index + ": [" + this.numBlocks + " / " + this.numSites + "]");
 		
 		
 		this.doAnneal();
 		
-		if(this.printout) System.out.println(this.annealCosts);
-		
-		this.timingTree.time("simulated annealing took ");
+//		if(this.printout) System.out.println(this.annealCosts);
+
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites, double quality){
 		this.blocks = annealBlocks;
@@ -72,7 +70,6 @@ public class HardblockAnneal {
 	}
 	private void doAnneal(){
 		boolean printStatistics = false;
-//		this.counter = 0;
 		this.numBlocks = this.blocks.length;
 		this.numSites = this.sites.length;
 
@@ -97,19 +94,8 @@ public class HardblockAnneal {
 		this.minimumCost = this.cost;
 		
 		//TODO yun
-//		double initial = this.minimumCost;
-//		int[] li= new int[this.sites.length];
-//		int liid = 0;
-//		for(Site s: this.sites){
-//			if(s.hasBlock()) li[liid] = s.getBlock().index;
-//			else li[liid] = -1;
-//			liid++;
-//		}
 //		this.annealCosts = new ArrayList<>();
 //		this.annealCosts.add(this.cost);//yun
-
-////		System.out.println(Arrays.toString(li));
-		//************
 		
 		this.temperature = this.calculateInitialTemperature();
 		this.movesPerTemperature = (int)Math.round(this.effortLevel * Math.pow(this.numBlocks, 4/3));
@@ -137,7 +123,7 @@ public class HardblockAnneal {
 
 			this.updateTemperature(alpha);
 			this.iteration++;
-//			this.annealCosts.add(this.cost);
+			
 			if(this.cost < this.minimumCost){
 				this.minimumCost = this.cost;
 				
