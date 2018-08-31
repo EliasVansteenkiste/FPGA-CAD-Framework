@@ -77,11 +77,12 @@ public class Particle{
 	}	
 	void doWork(){
 		//update velocity
-		this.updateVelocity(this.inertiaWeight, this.congnitiveRate, this.socialRate, this.gBestBlockIdList);
+//		this.updateVelocity(this.inertiaWeight, this.congnitiveRate, this.socialRate, this.gBestBlockIdList);
+		this.updateVelnew(this.inertiaWeight, this.congnitiveRate, this.socialRate, this.gBestBlockIdList);
 				
 		//update blockIndex list		
 		this.updateLocations();	
-		if(this.printout){
+		/*if(this.printout){
 			if(this.pIndex == 0){
 				System.out.println(this.inertiaWeight+ " " + this.congnitiveRate + " " + this.socialRate);
 				System.out.println("swaps: ");
@@ -91,16 +92,16 @@ public class Particle{
 				}
 				System.out.println();
 			}
-		}		
+		}	*/	
 		if(this.changed){				
 			
 			this.updateBlocksInfo();					
 //			//update pBest
 			this.pCost = this.getCost();//TODO
-//			this.pCost += this.swapsCost(this.blockIndexList);
-//			for(Block b:this.blocks){
-//				b.saveOptimalSite();
-//			}
+			/*this.pCost += this.swapsCost(this.blockIndexList);
+			for(Block b:this.blocks){
+				b.saveOptimalSite();
+			}*/
 			if(this.pCost < this.pBest){					
 				this.pBest = this.pCost;						
 				System.arraycopy(this.blockIndexList, 0, this.pBestIndexList, 0, this.numSites);									
@@ -113,7 +114,28 @@ public class Particle{
 		this.inertiaWeight = w;
 		this.congnitiveRate = c1;
 		this.socialRate = c2;
-		System.arraycopy(gBest, 0, this.gBestBlockIdList, 0, gBest.length);//gBest length = this.numSites
+		System.arraycopy(gBest, 0, this.gBestBlockIdList, 0, gBest.length);
+	}
+	void updateVelnew(double w, double c1, double c2, int[] gBestLocation){
+		List<Swap> swapSequence = new ArrayList<>();
+		if(c1 != 0){
+			this.getSwapSequence(this.pBestIndexList);
+			swapSequence = this.multipliedByC(this.swaps, c1);
+		}else if(c2 != 0){
+			this.getSwapSequence(gBestLocation);
+			swapSequence = this.multipliedByC(this.swaps, c2);
+		}else if(w != 0){
+			swapSequence = this.multipliedByC(this.velocity, w);
+		}
+		this.newVel.clear();
+		if(swapSequence.size() > this.velMaxSize){
+			for(int l = 0; l < this.velMaxSize; l++){
+				this.newVel.add(swapSequence.get(l));
+			}
+		}else if(swapSequence.size() > 0){
+			this.newVel.addAll(swapSequence);
+		}
+		this.setVelocity(this.newVel);
 	}
 	void updateVelocity(double w, double c1, double c2, int[] gBestLocation){		
 		List<Swap> weightedVel = this.multipliedByC(this.velocity, w);			
@@ -122,7 +144,7 @@ public class Particle{
 		List<Swap> cognitiveVel = this.multipliedByC(this.swaps, c1);
 		
 		this.getSwapSequence(gBestLocation);
-		List<Swap> socialVel = this.multipliedByC(this.swaps, c2);// * Math.random());
+		List<Swap> socialVel = this.multipliedByC(this.swaps, c2);
 		
 		this.newVel.clear();
 		

@@ -29,9 +29,9 @@ abstract class Legalizer {
     
     private double chooseQuality;
     private boolean usePSO;
-    private double psoQuality, psoQualityMultiplier;
+    private double psoQuality;
     private double c1, c2;
-    private double forPbest, forGbest, forall;
+    private double forPbest, forGbest;
     private int minimumIter, interval;
 
     // Properties of the blockType that is currently being legalized
@@ -39,8 +39,7 @@ abstract class Legalizer {
     protected BlockCategory blockCategory;
     protected int blockStart, blockRepeat, blockHeight;
     
-    //Hard Block Legalizer TODO switch between two hard block legalizer
-//    private HardblockConnectionLegalizer hardblockLegalizer;
+    //Hard Block Legalizer
     private HardblockSwarmLegalizer hardblockLegalizer;
     
     //Visualizer
@@ -158,22 +157,33 @@ abstract class Legalizer {
     	this.c2 = stop;  	
     }
     
-    void setPSOVaryingQuality(double initialPSOquality, double psoQualityMultiplier){
+   /* void setPSOVaryingQuality(double initialPSOquality, double psoQualityMultiplier){
     	this.psoQuality = initialPSOquality;
     	this.psoQualityMultiplier = psoQualityMultiplier;
     }
     void increasePSOQuality(){
     	this.psoQuality *= this.psoQualityMultiplier;
     	System.out.println(this.psoQuality);
-    }
-    void setPSOstopParameter(int minimumIter, int interval){
-    	this.minimumIter = minimumIter;
+    }*/
+    void setPSOstopParameter(int interval){
+//    	this.minimumIter = minimumIter;//TODO
     	this.interval = interval;
+    	if(this.height < 80){
+    		this.minimumIter = this.interval;
+    	}else if(this.height < 100){
+    		this.minimumIter = (int) Math.round(this.interval *1.06);
+    	}else if(this.height < 130){
+    		this.minimumIter = (int) Math.round(this.interval *1.26);
+    	}else if(this.height < 170){
+    		this.minimumIter = (int) Math.round(this.interval *1.73);
+    	}else{
+    		this.minimumIter = (int) Math.round(this.interval *1.86);
+    	}
+    	
     }
-    void setPobilityInterval(double forPbest, double forGbest, double forall){
+    void setPobilityInterval(double forPbest, double forGbest){
     	this.forPbest = forPbest;
     	this.forGbest = forGbest;
-    	this.forall = forall;
     }
     
     protected abstract void legalizeBlockType(int blocksStart, int blocksEnd);
@@ -219,7 +229,7 @@ abstract class Legalizer {
         		}
         		
         		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.chooseQuality, this.c1, this.c2, 
-        				this.forPbest, this.forGbest, this.forall, this.minimumIter, this.interval, this.usePSO);
+        				this.forPbest, this.forGbest, this.minimumIter, this.interval, this.usePSO);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType, this.quality);
         		for(int b = blocksStart; b < blocksEnd; b++){

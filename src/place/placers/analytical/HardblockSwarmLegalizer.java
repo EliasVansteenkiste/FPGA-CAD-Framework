@@ -220,7 +220,7 @@ public class HardblockSwarmLegalizer{
 	
 	//Legalize hard block
 	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, double c2, 
-			double forPbest, double forGbest, double forall, int minimumIter, int interval, boolean usePSO){
+			double forPbest, double forGbest, int minimumIter, int interval, boolean usePSO){
 		this.timingTree.start("Legalize " + blockType + " hardblock");
 		
 		this.blockType = blockType;
@@ -280,7 +280,7 @@ public class HardblockSwarmLegalizer{
 		for(Column column:columns){
 			if(column.usedPos() > 0){			
 				if(usePSO){
-					this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, forPbest, forGbest, forall, minimumIter, interval);
+					this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, c2, forPbest, forGbest, minimumIter, interval);
 				}else{
 					this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO legalizeHardblock() qulity
 				}
