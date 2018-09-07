@@ -26,8 +26,6 @@ public class ConnectionRouter {
 	private final PriorityQueue<QueueElement> queue;
 	private final Collection<RouteNodeData> nodesTouched;
 	
-	private final int numThreads = 30;
-	
 	public ConnectionRouter(ResourceGraph rrg, Circuit circuit) {
 		this.rrg = rrg;
 		this.circuit = circuit;
@@ -42,7 +40,7 @@ public class ConnectionRouter {
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
 		System.out.println();
 		
-		boolean parallelRouting = true;
+		boolean parallelRouting = false;
 		
 		if(parallelRouting) {
 			Map<LeafNode, Integer> runtimeMap = new HashMap<>();
@@ -128,9 +126,9 @@ public class ConnectionRouter {
 		}
 		/****************************************************/
 		
-        System.out.printf("---------  ---------  -----------------\n");
-        System.out.printf("%9s  %9s  %17s\n", "Iteration", "Time (ms)", "Overused RR Nodes");
-        System.out.printf("---------  ---------  -----------------\n");
+        System.out.printf("---------  ---------  -----------------  -----------\n");
+        System.out.printf("%9s  %9s  %17s  %11s\n", "Iteration", "Time (ms)", "Overused RR Nodes", "Wire-Length");
+        System.out.printf("---------  ---------  -----------------  -----------\n");
         
         while (itry <= nrOfTrials) {
 			long iterationStart = System.nanoTime();
@@ -159,7 +157,7 @@ public class ConnectionRouter {
 
 			double overUsePercentage = 100.0 * (double)overused.size() / numRouteNodes;
 
-			System.out.printf("%9d  %9d  %8d   %5.2f%%\n", itry, rt, overused.size(), overUsePercentage);
+			System.out.printf("%9d  %9d  %8d   %5.2f%%  %11d\n", itry, rt, overused.size(), overUsePercentage, this.rrg.congestedTotalWireLengt());
 			
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (routingIsFeasible(connections)){
@@ -341,7 +339,7 @@ public class ConnectionRouter {
 		
 		double expected_cost = this.alpha * this.rrg.lowerEstimateConnectionCost(node, target) / usage;
 		
-		double bias_cost = node.baseCost 
+		double bias_cost = node.baseCost
 							/ con.net.fanout
 							* (Math.abs((0.5 * (node.xlow + node.xhigh)) - con.net.x_geo) + Math.abs((0.5 * (node.ylow + node.yhigh)) - con.net.y_geo))
 							/ ((double) con.net.hpwl);

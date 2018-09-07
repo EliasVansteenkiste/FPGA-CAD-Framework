@@ -17,7 +17,6 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public short[] switchType;
 
 	public final RouteNodeData routeNodeData;
-	//public final RouteNodeData[] multithreadingRouteNodeData;
 	
 	public boolean target;
 	
@@ -40,8 +39,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.switchType = null;
 		
 		this.routeNodeData = new RouteNodeData();
-		//this.multithreadingRouteNodeData = null;
-		
+
 		this.target = false;
 	}
 	
@@ -147,9 +145,6 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public boolean overUsed() {
 		return this.capacity < this.routeNodeData.occupation;
 	}
-	//public boolean overUsed(int clusterIndex) {
-	//	return this.capacity < this.multithreadingRouteNodeData[clusterIndex].occupation;
-	//}
 	public boolean used() {
 		return this.routeNodeData.occupation > 0;
 	}
@@ -168,18 +163,4 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		
 		data.occupation = occ;
 	}
-//	public void updatePresentCongestionPenalty(double pres_fac, int clusterIndex) {
-//		RouteNodeData data = this.multithreadingRouteNodeData[clusterIndex];
-//		
-//		int occ = data.numUniqueSources();
-//		int cap = this.capacity;
-//		
-//		if (occ < cap) {
-//			data.pres_cost = 1.0;
-//		} else {
-//			data.pres_cost = 1.0 + (occ + 1 - cap) * pres_fac;
-//		}
-//		
-//		data.occupation = occ;
-//	}
 }

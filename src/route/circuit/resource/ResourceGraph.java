@@ -405,8 +405,6 @@ public class ResourceGraph {
 		return horizontalDistance + verticalDistance;
 	}
 	
-
-	
 	@Override
 	public String toString() {
 		String s = new String();
