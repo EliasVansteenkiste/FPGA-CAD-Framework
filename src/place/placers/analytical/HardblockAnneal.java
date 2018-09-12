@@ -37,7 +37,7 @@ public class HardblockAnneal {
 	private BlockType type;
 	
 	private boolean printout = false;
-//	List<Double> annealCosts;//yun
+	List<Double> annealCosts;//yun
 	
 	HardblockAnneal(int seed){
 		this.random = new Random(seed);
@@ -56,7 +56,7 @@ public class HardblockAnneal {
 		
 		this.doAnneal();
 		
-//		if(this.printout) System.out.println(this.annealCosts);
+		if(this.printout) System.out.println(this.annealCosts);
 
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites, double quality){
@@ -94,8 +94,8 @@ public class HardblockAnneal {
 		this.minimumCost = this.cost;
 		
 		//TODO yun
-//		this.annealCosts = new ArrayList<>();
-//		this.annealCosts.add(this.cost);//yun
+		this.annealCosts = new ArrayList<>();
+		this.annealCosts.add(this.cost);//yun
 		
 		this.temperature = this.calculateInitialTemperature();
 		this.movesPerTemperature = (int)Math.round(this.effortLevel * Math.pow(this.numBlocks, 4/3));
@@ -123,6 +123,8 @@ public class HardblockAnneal {
 
 			this.updateTemperature(alpha);
 			this.iteration++;
+			
+			this.annealCosts.add(this.cost);//
 			
 			if(this.cost < this.minimumCost){
 				this.minimumCost = this.cost;

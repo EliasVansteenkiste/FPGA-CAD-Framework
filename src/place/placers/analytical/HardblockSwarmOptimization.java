@@ -30,12 +30,10 @@ public class HardblockSwarmOptimization {
 	
 	//PSO
 	private int numParticles;
-	private static final int MAX_ITERATION = 500;
 	
-	private int minmumIteration;
 	private int interval;
 
-	private double c1, c2;
+	private double c1;
 	private double forPbest, forGbest; 
 	
 	private int velMaxSize;
@@ -46,12 +44,11 @@ public class HardblockSwarmOptimization {
 
 	private volatile double gBest;
 	private int gBestPindex;
-	private List<Double> gBestList;
+	private List<Double> evolFactors;
 	private volatile int[] gBestBlockIdList;
 	double[] allpCosts;
 	double[] distanceForEachP; 
 	
-	private final boolean printout = false;
 
 	HardblockSwarmOptimization(int seed){
 		this.rand = new Random(seed);
@@ -76,27 +73,23 @@ public class HardblockSwarmOptimization {
 	}
 	
 	//legalize hard block
-	public void doPSO(Column column, BlockType blockType, int numParticles, double quality, double c1, double c2, double forPbest, double forGbest, int minimumIter, int interval){
+	public void doPSO(Column column, BlockType blockType, int numParticles, double quality, double c1, double forPbest, double forGbest, int interval){
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.quality = quality;
 		
 		this.numParticles = numParticles;
 		
 		this.c1 = c1;
-		this.c2 = c2;
 		this.forPbest = forPbest;
 		this.forGbest = forGbest;
 		
 		this.allpCosts = new double[this.numParticles];
 		this.distanceForEachP = new double[this.numParticles];
 		
-		this.minmumIteration = minimumIter;
 		this.interval = interval;
 		
 		this.sites = column.sites;
-			
-		if(this.printout) System.out.println("[" + blockType + "" + column.index + ": " + column.blocks.size() + ", " + column.sites.length + "]");	
-				
+		
 		this.doPSO();
 
 		this.setBlockLegal(this.gBestBlockIdList);	
@@ -126,7 +119,7 @@ public class HardblockSwarmOptimization {
 		
 		this.initializeSwarm();
 		
-		this.gBestList = new ArrayList<>();
+		this.evolFactors = new ArrayList<>();
 		
 		
 		this.gBest = Double.MAX_VALUE;
@@ -134,69 +127,29 @@ public class HardblockSwarmOptimization {
 
 		double w;
 		double p1, p2;
-			
-//		List<List<Double>> pcosts = new ArrayList<>();
-//		List<List<Double>> pBestcosts = new ArrayList<>();
-//		List<Double> gBests = new ArrayList<>();
 		
-		double learningRate;
+		double learningRate1, learningRate2;
 		
 		boolean finish = false;
 		int iteration = 0;
 		
 		while(!finish) {
-//		for(int iteration = 0;iteration < MAX_ITERATION; iteration++){
+			
 			for(Particle p: this.swarm){
 				this.allpCosts[p.pIndex] = p.pCost;
 			}
 			double f = this.evolutionaryFactor(this.allpCosts);
 
 			w = 1.0 / (1 + 1.5*Math.exp(-2.6*f));
+			double delta = f-w;
 			
-			if(this.printout) System.out.println(f + "\t" + w + "\t" + this.gBest);
-			learningRate = this.c1 - (((double) iteration) / MAX_ITERATION)*(this.c1 - this.c2);
+			learningRate1 = this.c1 + w*delta;
+			learningRate2 = this.c1 - w*delta;
 			
-			
-//			if(this.printout){
-//				System.out.println("Iteration " + iteration + ": ");
-//			}	
-			
-			//for single thread*******************************************************************************
-			for(Particle p : this.swarm){
-				
-//				if(this.printout){
-//					if(p.pIndex == 0){
-//						
-//						System.out.println("\tp\t" + p.pCost + "\t" + Arrays.toString(p.blockIndexList) );
-//						System.out.println("\tgb\t" + this.gBest + "\t" + Arrays.toString(this.gBestBlockIdList));
-//						System.out.println("\tpb\t" + p.pBest +  "\t" + Arrays.toString(p.pBestIndexList));
-//						System.out.println();
-//					}
-//				}			
-				
-				/////////////////////////get data for drawing swarm
-//				if(!this.printout){
-//					if(iteration == 0){
-//						List<Double> tmppcost = new ArrayList<>();
-//						tmppcost.add(p.pCost);
-//						pcosts.add(p.pIndex, tmppcost);
-//						
-//						List<Double> tmppBestcost = new ArrayList<>();
-//						tmppBestcost.add(p.pBest);
-//						pBestcosts.add(p.pIndex, tmppBestcost);			
-//					}else{
-//						pcosts.get(p.pIndex).add(p.pCost);
-//						pBestcosts.get(p.pIndex).add(p.pBest);
-//					}
-//				}
-				////////////////////////////////////////////////////
-				
-				//update velocity
-				
-				p1 = learningRate*this.rand.nextDouble();
-				p2 = learningRate*this.rand.nextDouble();
-				
-//				p.setParameters(w, p1, p2, this.gBestBlockIdList);
+			for(Particle p : this.swarm){						
+								
+				p1 = learningRate1*this.rand.nextDouble();
+				p2 = learningRate2*this.rand.nextDouble();
 				
 				double probility = this.randControl.nextDouble();
 				if(probility > this.forPbest){
@@ -212,15 +165,15 @@ public class HardblockSwarmOptimization {
 			}
 			
 			this.updateGBestIfNeeded();
-			this.gBestList.add(this.gBest);
+			this.evolFactors.add(f);//TODO stop criterion based on evolutionary factor, adaptive quality controller
 						
 			iteration++;
-			int gbestsize = this.gBestList.size();
-			if(gbestsize > this.minmumIteration){
+			int gbestsize = this.evolFactors.size();
+			if(gbestsize > this.interval){
 				double min = Double.MAX_VALUE;
 				double max = Double.MIN_VALUE;				
 				for(int i = gbestsize - this.interval; i < gbestsize; i++) {
-					double cgb = this.gBestList.get(i);
+					double cgb = this.evolFactors.get(i);
 					if(min > cgb) {
 						min = cgb;
 					}
@@ -228,26 +181,19 @@ public class HardblockSwarmOptimization {
 						max = cgb;
 					}
 				}				
-				double ratio = max / (min);
-//				System.out.println(ratio);
-				if(ratio < this.quality) {//TODO
+				double ratio = max / (min+1);
+
+				if(ratio < this.quality ) {//TODO
 					finish = true;
-				}else if(iteration == MAX_ITERATION){
+				}else if(iteration == 100){
 					finish = true;
 				}
 			}else{
 				finish = false;
 			}
 			
-//			if(zerofnum > 20) finish = true;
 		}
 		
-//		if(!this.printout){
-//			System.out.println("gbest = " + gBests);
-//			System.out.println("pcostLists = " + pcosts);
-//			System.out.println("pBestcostLists = " + pBestcosts);
-//			System.out.println();
-//		}
 	}
 	private double evolutionaryFactor(double[] array){
 		double f = 0;
@@ -264,7 +210,7 @@ public class HardblockSwarmOptimization {
 		double disgBest = this.distanceForEachP[this.gBestPindex];
 		Arrays.sort(this.distanceForEachP);
 		
-		f = (disgBest - this.distanceForEachP[0])/(this.distanceForEachP[this.numParticles - 1] - this.distanceForEachP[0] + 0.0000001);
+		f = (disgBest - this.distanceForEachP[0])/(this.distanceForEachP[this.numParticles - 1] - this.distanceForEachP[0] + 1E-9);
 		
 		return f;
 	}
@@ -288,13 +234,14 @@ public class HardblockSwarmOptimization {
 	}
 	//initialize swarm
 	private void initializeSwarm(){
-		this.swarm = new ArrayList<>();
+		this.swarm = new ArrayList<>(this.numParticles);
 		
 		this.addBaseLineParticle();
 		
 		for(int i = 1; i < this.numParticles; i++){
 			this.swarm.add(this.generateParticleRandomly(i));
 		}
+		
 	}
 	private void addBaseLineParticle(){
 		Particle baseLineParticle = new Particle(0, this.blocks, this.sites, this.velMaxSize);///, latch);
@@ -317,17 +264,7 @@ public class HardblockSwarmOptimization {
 		baseLineParticle.pBest = baseLineParticle.pCost;
 		
 		this.swarm.add(baseLineParticle);
-		
-//		if(!this.printout) System.out.println("BP cost: " + String.format("%.2f",  baseLineParticle.pCost) + " ");
-//		
-//		if(!this.printout) System.out.println(baseLineParticle.pCost);
-//		
-//		if(!this.printout){
-//			System.out.println("particle 0");
-//			for(int a = 0; a < this.numSites; a++){
-//				System.out.println("\t" + a + "\t" + baseLineParticle.blockIndexList[a]);
-//			}
-//		}	
+			
 	}
 
 	private Particle generateParticleRandomly(int i){
@@ -344,7 +281,7 @@ public class HardblockSwarmOptimization {
 			}
 			
 			Particle particle = new Particle(i, this.blocks, this.sites, this.velMaxSize);//, latch);
-			particle.setVelocity(vel);
+//			particle.setVelocity(vel);
 			for(int m = 0; m < this.numSites; m++){
 				if(this.sites[m].hasBlock()) particle.blockIndexList[m] = this.sites[m].block.index;
 				else particle.blockIndexList[m] = -1;

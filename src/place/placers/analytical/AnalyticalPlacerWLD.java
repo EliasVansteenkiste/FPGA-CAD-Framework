@@ -23,6 +23,7 @@ public class AnalyticalPlacerWLD extends AnalyticalPlacer {
     	if(iteration > 0) {
     		this.anchorWeight *= this.anchorWeightMultiplier;
     		this.legalizer.increaseQuality();
+    		this.legalizer.increasePSOQuality();
     	}
     }
 

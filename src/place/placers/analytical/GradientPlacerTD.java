@@ -94,6 +94,8 @@ public class GradientPlacerTD extends GradientPlacer {
             this.anchorWeight = Math.pow((double)iteration / (this.numIterations - 1.0), this.anchorWeightExponent) * this.anchorWeightStop;
             this.learningRate *= this.learningRateMultiplier;
             this.legalizer.increaseQuality();
+            
+            this.legalizer.increasePSOQuality();
         }
     }
 

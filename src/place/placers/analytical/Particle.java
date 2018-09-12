@@ -33,8 +33,6 @@ public class Particle{
 	int[] pBestIndexList;
 	double inertiaWeight, congnitiveRate, socialRate; 
 	int[] gBestBlockIdList;
-	
-	private boolean printout = false;
 
 	Particle(int index, Block[] blocks, Site[] sites, int velMaxSize){
 		this.pIndex = index;
@@ -71,37 +69,24 @@ public class Particle{
 	}
 	void setPNets(Set<Net> columnNets){
 		this.pNets = new ArrayList<Net>(columnNets);
+		
 	}
 	void setPCrits(Set<Crit> columnCrits){
 		this.pCrits = new ArrayList<Crit>(columnCrits);
 	}	
 	void doWork(){
 		//update velocity
-//		this.updateVelocity(this.inertiaWeight, this.congnitiveRate, this.socialRate, this.gBestBlockIdList);
 		this.updateVelnew(this.inertiaWeight, this.congnitiveRate, this.socialRate, this.gBestBlockIdList);
 				
 		//update blockIndex list		
 		this.updateLocations();	
-		/*if(this.printout){
-			if(this.pIndex == 0){
-				System.out.println(this.inertiaWeight+ " " + this.congnitiveRate + " " + this.socialRate);
-				System.out.println("swaps: ");
-				for(Swap s:this.getVelopcity()){
-					System.out.println("\t" + s.fromIndex + "\t"+ s.toIndex);
-					
-				}
-				System.out.println();
-			}
-		}	*/	
+	
 		if(this.changed){				
 			
 			this.updateBlocksInfo();					
 //			//update pBest
 			this.pCost = this.getCost();//TODO
-			/*this.pCost += this.swapsCost(this.blockIndexList);
-			for(Block b:this.blocks){
-				b.saveOptimalSite();
-			}*/
+
 			if(this.pCost < this.pBest){					
 				this.pBest = this.pCost;						
 				System.arraycopy(this.blockIndexList, 0, this.pBestIndexList, 0, this.numSites);									
@@ -128,6 +113,7 @@ public class Particle{
 			swapSequence = this.multipliedByC(this.velocity, w);
 		}
 		this.newVel.clear();
+
 		if(swapSequence.size() > this.velMaxSize){
 			for(int l = 0; l < this.velMaxSize; l++){
 				this.newVel.add(swapSequence.get(l));
@@ -245,7 +231,6 @@ public class Particle{
 			}
 		}
 		
-//		if(this.swaps.size() > this.blocks.length)System.out.println("[" + this.blocks.length + " / " + this.sites.length + "] -> " + this.swaps.size());
 	}
 	//do swaps to update particle's location: X + Velocity 
 	void updateLocations(){
@@ -364,39 +349,29 @@ public class Particle{
 		
 		boolean block1Valid = block1 != null;
 		boolean block2Valid = block2 != null;
-//		site1.removeBlock();
-//		site2.removeBlock();
 		
 		if(block1Valid){
-//			block1.setSite(site2);
-//			site2.setBlock(block1);
 			block1.updateVerticals(this.pIndex, site2.row);
 		}
 		
 		if(block2Valid){
-//			block2.setSite(site1);
-//			site1.setBlock(block2);
 			block2.updateVerticals(this.pIndex, site1.row);
 		}
 			
 		if(block1Valid){
 			for(Net net:block1.nets){
-//				deltaCost += net.deltaHorizontalConnectionCost();
 				deltaCost += net.deltaVerticalConnectionCost(this.pIndex);
 			}
 			for(Crit crit:block1.crits){
-//				deltaCost += crit.deltaHorizontalTimingCost();
 				deltaCost += crit.deltaVerticalTimingCost(this.pIndex);
 			}
 		}
 		if(block2Valid){
 			for(Net net:block2.nets){
-//				deltaCost += net.deltaHorizontalConnectionCost();
 				deltaCost += net.deltaVerticalConnectionCost(this.pIndex);
 
 			}
 			for(Crit crit:block2.crits){
-//				deltaCost += crit.deltaHorizontalTimingCost();
 				deltaCost += crit.deltaVerticalTimingCost(this.pIndex);
 			}
 		}
