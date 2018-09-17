@@ -1,8 +1,10 @@
 package route.hierarchy;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import route.circuit.block.GlobalBlock;
 import route.route.Connection;
@@ -26,14 +28,52 @@ public class HierarchyNode {
 		this.children = new ArrayList<HierarchyNode>();
 	}
 
-	public void getConnections(Set<Connection> connections) {
+	public int numConnections() {
 		if(this.isLeafNode()) {
-			connections.addAll(((LeafNode) this).connections);
-		}
-		for(HierarchyNode child : this.children) {
-			child.getConnections(connections);
+			return ((LeafNode) this).connections.size();
+		} else {
+			int sum = 0;
+			for(HierarchyNode child : this.children) {
+				sum += child.numConnections();
+			}
+			return sum;
 		}
 	}
+	public Collection<Connection> getConnections() {
+		Collection<Connection> connections = new HashSet<>();
+		this.getConnections(connections);
+		return connections;
+	}
+	private void getConnections(Collection<Connection> connections) {
+		if(this.isLeafNode()) {
+			connections.addAll(((LeafNode) this).connections);
+		} else {
+			for(HierarchyNode child : this.children) {
+				child.getConnections(connections);
+			}
+		}
+	}
+	
+	public Collection<LeafNode> getLeafNodes() {
+		Collection<LeafNode> result = new HashSet<>();
+		
+		List<HierarchyNode> work = new LinkedList<>();
+		work.add(this);
+		
+		while(!work.isEmpty()) {
+			HierarchyNode node = work.remove(0);
+			if(node.isLeafNode()) {
+				result.add((LeafNode)node);
+			} else {
+				for(HierarchyNode child : node.getChildren()) {
+					work.add(child);
+				}
+			}
+		}
+		
+		return result;
+	}
+	
 	public void add(GlobalBlock block){
 		this.blocks.add(block);
 	}
