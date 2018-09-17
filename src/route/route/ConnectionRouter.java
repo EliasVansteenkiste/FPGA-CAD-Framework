@@ -15,7 +15,7 @@ import route.circuit.Circuit;
 import route.circuit.resource.ResourceGraph;
 import route.circuit.resource.RouteNode;
 import route.hierarchy.HierarchyNode;
-import route.hierarchy.LeafNode;
+import route.route.RouteCluster;
 
 public class ConnectionRouter {
 	final ResourceGraph rrg;
@@ -26,6 +26,13 @@ public class ConnectionRouter {
 	private final PriorityQueue<QueueElement> queue;
 	private final Collection<RouteNodeData> nodesTouched;
 	
+	private final Collection<RouteCluster> routeClusters;
+	private final Collection<Connection> connections;
+	private final Collection<Connection> localConnections;
+	private final Collection<Connection> globalConnections;
+	
+	public static final boolean debug = true;
+	
 	public ConnectionRouter(ResourceGraph rrg, Circuit circuit) {
 		this.rrg = rrg;
 		this.circuit = circuit;
@@ -33,71 +40,105 @@ public class ConnectionRouter {
 		this.alpha = 1;
 		this.nodesTouched = new ArrayList<RouteNodeData>();
 		this.queue = new PriorityQueue<QueueElement>();
+		
+		this.routeClusters = new ArrayList<>();
+		this.connections = new ArrayList<>();
+		this.localConnections = new ArrayList<>();
+		this.globalConnections = new ArrayList<>();
 	}
     
     public int route(HierarchyNode rootNode) {
+    	System.out.println("---------------------------");
+    	System.out.println("|         HROUTE          |");
+    	System.out.println("---------------------------");
     	System.out.println("Num nets: " + this.circuit.getNets().size());
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
+		System.out.println("---------------------------");
 		System.out.println();
 		
 		boolean parallelRouting = false;
 		
 		if(parallelRouting) {
-			Map<LeafNode, Integer> runtimeMap = new HashMap<>();
+			//All leaf nodes are route nodes, can be limited to the number of threads
+			List<HierarchyNode> routeNodes = new LinkedList<>();
+			routeNodes.addAll(rootNode.getLeafNodes());
+			int maxNumRouteNodes = 16;
 			
-			Set<LeafNode> leafNodes = new HashSet<>();
-			List<HierarchyNode> work = new LinkedList<>();
-			work.add(rootNode);
-			while(!work.isEmpty()) {
-				HierarchyNode node = work.remove(0);
-				if(node.isLeafNode()) {
-					leafNodes.add((LeafNode)node);
-				} else {
-					for(HierarchyNode child : node.getChildren()) {
-						work.add(child);
-					}
-				}
-			}
-			
-			int maxTimeMilliseconds = 0;
-		
-			for(LeafNode leafNode : leafNodes) {
-				System.out.printf("---------------------------------------\n");
-				System.out.println("Leaf node " + (leafNode.getIndex()) + " (" + leafNode.connections.size() + ") of " + leafNodes.size() + " Cost: " + leafNode.cost());
-				int timeMilliseconds = this.doRouting(leafNode.connections, 10, false);
-				System.out.printf("---------------------------------------\n");
-				if(timeMilliseconds > maxTimeMilliseconds) {
-					maxTimeMilliseconds = timeMilliseconds;
-				}
-				System.out.println("RunTime: " + timeMilliseconds + " ms");
-				System.out.printf("---------------------------------------\n\n\n");
+			while(routeNodes.size() > maxNumRouteNodes) {
+				HierarchyNode best = null;
+				int numConnections = Integer.MAX_VALUE;
 				
-				runtimeMap.put(leafNode, timeMilliseconds);
-			}
-	
-			System.out.println("Longest cluster took " + maxTimeMilliseconds + "ms");
-			System.out.println();
-			
-			System.out.println("Route remaining congested connections");
-			this.doRouting(this.circuit.getConnections(), 100, true);
-			System.out.println();
-			
-			boolean printRuntimeMap = true;
-			if(printRuntimeMap) {
-				System.out.println("RuntimeMap:");
-				System.out.println("Connections\tCost\tRuntime[ms]");
-				for(LeafNode leafNode : runtimeMap.keySet()) {
-					System.out.println(leafNode.connections.size() + "\t" + leafNode.cost() + "\t" + runtimeMap.get(leafNode));
+				for(HierarchyNode node:routeNodes) {
+					if(node.getParent().numConnections() < numConnections) {
+						best = node.getParent(); 
+						numConnections = best.numConnections();
+					}
+				}		
+				
+				for(HierarchyNode child : best.getChildren()) {
+					routeNodes.remove(child);
 				}
-				System.out.println();
+				routeNodes.add(best);
 			}
+			
+			for(HierarchyNode routeCluster : routeNodes) {
+				RouteCluster cluster = new RouteCluster(routeCluster);
+				this.routeClusters.add(cluster);
+				
+				this.connections.addAll(cluster.getLocalConnections());
+				this.connections.addAll(cluster.getGlobalConnections());
+				
+				this.localConnections.addAll(cluster.getLocalConnections());
+				this.globalConnections.addAll(cluster.getGlobalConnections());
+			}
+			
+			//Route Global Connections
+			for(RouteCluster cluster: this.routeClusters) {
+				this.rrg.reset();
+				
+				this.doRouting("Route Global Connections", cluster.getGlobalConnections(), 100, true);
+			}
+			
+			//Add all global connections to the rrg and resolve remaining congestion
+			for(Connection conn : this.globalConnections) {
+				this.add(conn);
+			}
+			this.doRouting("Resolve remaining congestion", this.globalConnections, 100, false);
+			
+			//Save the history cost
+			this.rrg.save_acc_cost();
+
+			for(RouteCluster cluster : this.routeClusters) {
+				this.rrg.reset();
+				for(Connection conn : this.globalConnections) {
+					this.add(conn);
+				}
+				
+				String name = "Route cluster " + cluster + " => Conn: " + cluster.getLocalConnections().size() + " Cost: " + cluster.getCost();
+				this.doRouting(name, cluster.getLocalConnections(), 100, true);
+			}
+			
+			this.rrg.reset();
+			for(Connection conn : this.connections) {
+				this.add(conn);
+			}
+			
+			this.doRouting("Route remaining congested connections", this.connections, 100, false);
 		} else {
-			this.doRouting(this.circuit.getConnections(), 100, false);
+			this.doRouting("Route all", this.circuit.getConnections(), 100, true);
 		}
 		
 		return -1;
 	}
-    private int doRouting(Set<Connection> connections, int nrOfTrials, boolean onlyCongested) {
+    private void doRouting(String name, Collection<Connection> connections, int nrOfTrials, boolean routeAll) {
+		System.out.printf("----------------------------------------------------\n");
+		System.out.println(name);
+		int timeMilliseconds = this.doRouting(connections, nrOfTrials, routeAll);
+		System.out.printf("----------------------------------------------------\n");
+		System.out.println("Runtime " + timeMilliseconds + " ms");
+		System.out.printf("----------------------------------------------------\n\n\n");
+    }
+    private int doRouting(Collection<Connection> connections, int nrOfTrials, boolean routeAll) {
     	long start = System.nanoTime();
     	
     	this.nodesTouched.clear();
@@ -117,50 +158,57 @@ public class ConnectionRouter {
 		BBComparator bvc =  new BBComparator(mapOfConnections);
         Map<Connection, Integer> sortedMapOfConnections = new TreeMap<>(bvc);
         sortedMapOfConnections.putAll(mapOfConnections);
-        
-        int numRouteNodes = this.rrg.getRouteNodes().size();
-        
-        /******************* Initialization *****************/
-		for(RouteNode routeNode : this.rrg.getRouteNodes()) {
-			routeNode.reset();
-		}
-		/****************************************************/
 		
+        
         System.out.printf("---------  ---------  -----------------  -----------\n");
         System.out.printf("%9s  %9s  %17s  %11s\n", "Iteration", "Time (ms)", "Overused RR Nodes", "Wire-Length");
         System.out.printf("---------  ---------  -----------------  -----------\n");
         
+        Set<RouteNode> overUsed = new HashSet<>();
+        
         while (itry <= nrOfTrials) {
-			long iterationStart = System.nanoTime();
+        	long iterationStart = System.nanoTime();
         	
+        	//boolean routingIsFeasible = true;
 			for(Connection con : sortedMapOfConnections.keySet()){
-				if((itry == 1 && !onlyCongested) || con.congested()) {
+				if((itry == 1 && routeAll) || con.congested()) {
 					this.ripup(con);
 					this.route(con);
-					this.add(con);			
+					this.add(con);	
+					
+					//routingIsFeasible = false;
 				}
 			}
 			
 			//Runtime
 			long iterationEnd = System.nanoTime();
-			int rt = (int) Math.round((iterationEnd-iterationStart)*Math.pow(10, -6));
+			int rt = (int) Math.round((iterationEnd-iterationStart) * Math.pow(10, -6));
 			
-			//Overuse
-			Set<RouteNode> overused = new HashSet<>();
-			for (Connection conn: connections) {
-				for (RouteNode node: conn.routeNodes) {
-					if (node.overUsed()) {
-						overused.add(node);
+			String numOverUsed = String.format("%8s", "---");
+			String overUsePercentage = String.format("%7s", "---");
+			String wireLength = String.format("%11s", "---");
+			
+			if(debug) {
+				overUsed.clear();
+				for (Connection conn : connections) {
+					for (RouteNode node : conn.routeNodes) {
+						if (node.overUsed()) {
+							overUsed.add(node);
+						}
 					}
 				}
+				int numRouteNodes = this.rrg.getRouteNodes().size();
+				numOverUsed = String.format("%8d", overUsed.size());
+				overUsePercentage = String.format("%5.2f%%", 100.0 * (double)overUsed.size() / numRouteNodes);
+				
+				wireLength = Integer.toString(this.rrg.congestedTotalWireLengt());
 			}
-
-			double overUsePercentage = 100.0 * (double)overused.size() / numRouteNodes;
-
-			System.out.printf("%9d  %9d  %8d   %5.2f%%  %11d\n", itry, rt, overused.size(), overUsePercentage, this.rrg.congestedTotalWireLengt());
+			
+			System.out.printf("%9d  %9d  %s  %s  %s\n", itry, rt, numOverUsed, overUsePercentage, wireLength);
 			
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (routingIsFeasible(connections)){
+			//if (routingIsFeasible){
 				this.circuit.setConRouted(true);
 		        
 				long end = System.nanoTime();
@@ -180,7 +228,7 @@ public class ConnectionRouter {
 		}
         
 		if (itry == nrOfTrials + 1) {
-			System.out.println("Routing failled after "+itry+" trials!");
+			System.out.println("Routing failled after " + itry + " trials!");
 			
 			int maxNameLength = 0;
 			
@@ -213,7 +261,7 @@ public class ConnectionRouter {
 		return timeMilliSeconds;
     }
 
-	private boolean routingIsFeasible(Set<Connection> connections) {
+	private boolean routingIsFeasible(Collection<Connection> connections) {
 		for (Connection con : connections) {
 			if(con.congested()) {
 				return false;
@@ -243,7 +291,6 @@ public class ConnectionRouter {
 		}
 	}
 	private boolean route(Connection con) {
-		//System.out.println("Route connection");
 		// Clear Routing
 		con.resetConnection();
 		
@@ -287,7 +334,7 @@ public class ConnectionRouter {
 
 	private boolean targetReached() {
 		if(this.queue.peek()==null){
-			System.out.println("queue is leeg");			
+			System.out.println("queue is empty");			
 			return false;
 		} else {
 			return queue.peek().node.target;
@@ -305,10 +352,11 @@ public class ConnectionRouter {
 		if (this.queue.isEmpty()) {
 			throw new RuntimeException("Queue is empty: target unreachable?");
 		}
+		
 		QueueElement qe = this.queue.poll();
 		RouteNode node = qe.node;
-		//System.out.println(node.type);
-		for (RouteNode child : node.children) {			
+
+		for (RouteNode child : node.children) {
 			if(con.isInBoundingBoxLimit(child)) {
 				double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
 				double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
@@ -337,12 +385,13 @@ public class ConnectionRouter {
 
 		int usage = 1 + data.countSourceUses(con.source);
 		
-		double expected_cost = this.alpha * this.rrg.lowerEstimateConnectionCost(node, target) / usage;
+		double expected_cost = this.alpha * this.rrg.lowerEstimateConnectionCost(node, target) * 4 / usage;
 		
 		double bias_cost = node.baseCost
-							/ con.net.fanout
+							/ (2 * con.net.fanout)
 							* (Math.abs((0.5 * (node.xlow + node.xhigh)) - con.net.x_geo) + Math.abs((0.5 * (node.ylow + node.yhigh)) - con.net.y_geo))
 							/ ((double) con.net.hpwl);
+		
 		return partial_path_cost + expected_cost + bias_cost;
 	}
 
@@ -374,10 +423,10 @@ public class ConnectionRouter {
 			int cap = node.capacity;
 
 			//Present congestion penalty
-			if (occ >= cap) {
-				data.pres_cost = 1.0 + (occ - cap + 1) * pres_fac;
-			} else {
+			if (occ < cap) {
 				data.pres_cost = 1.0;
+			} else {
+				data.pres_cost = 1.0 + (occ - cap + 1) * pres_fac;
 			}
 			
 			//Historical congestion penalty
