@@ -90,7 +90,8 @@ public class Main {
 		this.processHierarchy();
 		
 		this.sanityCheck();
-			
+
+					
 		long start = System.nanoTime();
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
 		int numIterations = route.route(this.rootNode);
@@ -171,9 +172,10 @@ public class Main {
 			clusterConnections.get(ln).add(connection);
      	}
     	
-    	short boundingBoxRange = 3;
     	for(LeafNode ln : clusterConnections.keySet()) {
-    		ln.initializeConnections(clusterConnections.get(ln), boundingBoxRange);
+    		for(Connection connection : clusterConnections.get(ln)) {
+    			ln.addConnection(connection);
+    		}
     	}
     }
     private void readHierarchyFile() {

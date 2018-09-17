@@ -1,29 +1,18 @@
 package route.hierarchy;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
-import route.circuit.resource.RouteNode;
-import route.circuit.resource.Sink;
-import route.circuit.resource.Source;
 import route.route.Connection;
 
 public class LeafNode extends HierarchyNode{
 	private final int index;
 	private final Color color;
-
+	
+	private final Set<Connection> connections;
+	
 	private final boolean floating;
-	
-	public Set<Connection> connections;
-	
-	private short x_min;
-	private short x_max;
-	private short y_min;
-	private short y_max;
-	
-	private short boundingBoxRange;
 	
 	public LeafNode(int index, String identifier, Color color){
 		super(identifier);
@@ -31,82 +20,23 @@ public class LeafNode extends HierarchyNode{
 		this.index = index;
 		this.color = color;
 		
+		this.connections = new HashSet<>();
+		
 		if(this.identifier.equals("floating")) this.floating = true;
 		else this.floating = false;
 	}
-	public void initializeConnections(Set<Connection> connections, short boundingBoxRange) {
-		this.connections = connections;
-		this.boundingBoxRange = boundingBoxRange;
-		
-		List<Short> xCoordinatesBB = new ArrayList<>();
-		List<Short> yCoordinatesBB = new ArrayList<>();
-		
-		for(Connection connection : this.connections) {
-			Source source = (Source) connection.sourceRouteNode;
-			Sink sink = (Sink) connection.sinkRouteNode;
-			
-			if(!connection.isGlobal) {
-				xCoordinatesBB.add(source.xlow);
-				xCoordinatesBB.add(source.xhigh);
-				
-				xCoordinatesBB.add(sink.xlow);
-				xCoordinatesBB.add(sink.xhigh);
-				
-				yCoordinatesBB.add(source.ylow);
-				yCoordinatesBB.add(source.yhigh);
-				
-				yCoordinatesBB.add(sink.ylow);
-				yCoordinatesBB.add(sink.yhigh);
-			}
-		}
-		
-		short x_min_temp = Short.MAX_VALUE;
-		short y_min_temp = Short.MAX_VALUE;
-		
-		short x_max_temp = Short.MIN_VALUE;
-		short y_max_temp = Short.MIN_VALUE;
-		
-		for(short x : xCoordinatesBB) {
-			if(x < x_min_temp) {
-				x_min_temp = x;
-			}
-			if(x > x_max_temp) {
-				x_max_temp = x;
-			}
-		}
-		for(short y : yCoordinatesBB) {
-			if(y < y_min_temp) {
-				y_min_temp = y;
-			}
-			if(y > y_max_temp) {
-				y_max_temp = y;
-			}
-		}
-		
-		this.x_min = x_min_temp;
-		this.y_min = y_min_temp;
-		
-		this.x_max = x_max_temp;
-		this.y_max = y_max_temp;
+	public void addConnection(Connection connection) {
+		this.connections.add(connection);
 	}
-//	public boolean isInBoundingBoxLimit(RouteNode node) {
-//		if(
-//			node.xlow < (this.x_max + this.boundingBoxRange) 
-//			&& node.xhigh > (this.x_min - this.boundingBoxRange) 
-//			&& node.ylow < (this.y_max + this.boundingBoxRange) 
-//			&& node.yhigh > (this.y_min - this.boundingBoxRange)
-//		) {
-//			return true;
-//		}
-//		
-//		return false;
-//	}
 	
 	public int getIndex(){
 		return this.index;
 	}
 	public Color getColor(){
 		return this.color;
+	}
+	public Set<Connection> getConnections() {
+		return this.connections;
 	}
 	
 	//Distance metric
@@ -152,10 +82,6 @@ public class LeafNode extends HierarchyNode{
 		return floating;
 	}
 	
-	@Override
-	public int hashCode() {
-		return this.index;
-	}
 	public int cost() {
 		int cost = 0;
 		for(Connection con : this.connections) {
@@ -165,7 +91,12 @@ public class LeafNode extends HierarchyNode{
 	}
 	
 	@Override
+	public int hashCode() {
+		return this.index;
+	}
+	
+	@Override
 	public String toString() {
-		return "(" + this.x_min + "," + this.y_min + ") => (" + this.x_max + "," + this.y_max + ")" + " Num connections: " + this.connections.size();
+		return "ID: " + this.index + " Num connections: " + this.connections.size();
 	}
 }
