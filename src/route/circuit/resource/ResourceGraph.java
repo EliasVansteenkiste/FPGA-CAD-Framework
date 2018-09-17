@@ -46,6 +46,17 @@ public class ResourceGraph {
 		}
     }
     
+    public void reset() {
+    	for(RouteNode node : this.routeNodes) {
+    		node.reset();
+    	}
+    }
+    public void save_acc_cost() {
+		for(RouteNode node : this.routeNodes) {
+			node.routeNodeData.save_acc_cost();
+		}
+    }
+    
     public void build(){
         this.createSites();
         
