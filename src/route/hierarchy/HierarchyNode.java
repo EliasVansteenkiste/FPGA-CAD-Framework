@@ -30,7 +30,7 @@ public class HierarchyNode {
 
 	public int numConnections() {
 		if(this.isLeafNode()) {
-			return ((LeafNode) this).getConnections().size();
+			return ((LeafNode) this).connections.size();
 		} else {
 			int sum = 0;
 			for(HierarchyNode child : this.children) {
@@ -46,7 +46,7 @@ public class HierarchyNode {
 	}
 	private void getConnections(Collection<Connection> connections) {
 		if(this.isLeafNode()) {
-			connections.addAll(((LeafNode) this).getConnections());
+			connections.addAll(((LeafNode) this).connections);
 		} else {
 			for(HierarchyNode child : this.children) {
 				child.getConnections(connections);

@@ -10,7 +10,7 @@ public class LeafNode extends HierarchyNode{
 	private final int index;
 	private final Color color;
 	
-	private final Set<Connection> connections;
+	protected final Set<Connection> connections;
 	
 	private final boolean floating;
 	
