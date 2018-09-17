@@ -5,7 +5,10 @@ import route.util.CountingSet;
 
 public class RouteNodeData {
 	public double pres_cost;
+	
 	public double acc_cost;
+	public double saved_acc_cost;
+	
 	private double partial_path_cost;
 	private double lower_bound_total_path_cost;
 	public int occupation;
@@ -15,19 +18,23 @@ public class RouteNodeData {
     public RouteNodeData() {
     	this.pres_cost = 1;
     	this.acc_cost = 1;
+    	this.saved_acc_cost = 1;
     	this.occupation = 0;
     	this.resetPathCosts();
 
 		this.sourcesSet = null;
 	}
     
+    public void save_acc_cost() {
+    	this.saved_acc_cost = this.acc_cost;
+    }
     public void reset() {
     	this.pres_cost = 1;
-    	//this.acc_cost = 1;
+    	this.acc_cost = this.saved_acc_cost;
     	this.resetPathCosts();
     	
-    	//this.occupation = 0;
-    	//this.sourcesSet = null;
+    	this.occupation = 0;
+    	this.sourcesSet = null;
     }
     
 	public void resetPathCosts() {
