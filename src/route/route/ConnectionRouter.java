@@ -37,7 +37,7 @@ public class ConnectionRouter {
 		this.rrg = rrg;
 		this.circuit = circuit;
 		
-		this.alpha = 1;
+		this.alpha = 0.5;
 		this.nodesTouched = new ArrayList<RouteNodeData>();
 		this.queue = new PriorityQueue<QueueElement>();
 		
@@ -125,7 +125,7 @@ public class ConnectionRouter {
 			
 			this.doRouting("Route remaining congested connections", this.connections, 100, false);
 		} else {
-			this.doRouting("Route all", this.circuit.getConnections(), 100, true);
+			this.doRouting("Route all", this.circuit.getConnections(), 200, true);
 		}
 		
 		return -1;
@@ -145,7 +145,7 @@ public class ConnectionRouter {
     	this.queue.clear();
 		
 	    double initial_pres_fac = 0.5;
-		double pres_fac_mult = 2;
+		double pres_fac_mult = 1.3;
 		double acc_fac = 1;
 		this.pres_fac = initial_pres_fac;
 		int itry = 1;
@@ -169,14 +169,11 @@ public class ConnectionRouter {
         while (itry <= nrOfTrials) {
         	long iterationStart = System.nanoTime();
         	
-        	//boolean routingIsFeasible = true;
 			for(Connection con : sortedMapOfConnections.keySet()){
 				if((itry == 1 && routeAll) || con.congested()) {
 					this.ripup(con);
 					this.route(con);
 					this.add(con);	
-					
-					//routingIsFeasible = false;
 				}
 			}
 			
@@ -208,7 +205,6 @@ public class ConnectionRouter {
 			
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (routingIsFeasible(connections)){
-			//if (routingIsFeasible){
 				this.circuit.setConRouted(true);
 		        
 				long end = System.nanoTime();
@@ -385,7 +381,7 @@ public class ConnectionRouter {
 
 		int usage = 1 + data.countSourceUses(con.source);
 		
-		double expected_cost = this.alpha * this.rrg.lowerEstimateConnectionCost(node, target) * 4 / usage;
+		double expected_cost = this.alpha * ((this.rrg.lowerEstimateConnectionCost(node, target) * 4 / usage) + 1);
 		
 		double bias_cost = node.baseCost
 							/ (2 * con.net.fanout)

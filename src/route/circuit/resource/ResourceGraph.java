@@ -409,10 +409,9 @@ public class ResourceGraph {
 	}
 	
 	public double lowerEstimateConnectionCost(RouteNode source, RouteNode target) {
-		int horizontalDistance = Math.max(0, source.xlow - target.xhigh) + Math.max(0, target.xlow - source.xhigh);
-		int verticalDistance = Math.max(0, source.ylow - target.yhigh) + Math.max(0, target.ylow - source.yhigh);
+		int horizontalDistance =  Math.max(0, source.xhigh - target.xlow) + Math.max(0, target.xhigh - source.xlow);
+		int verticalDistance = Math.max(0, source.yhigh - target.ylow) + Math.max(0, target.yhigh - source.ylow);
 		
-		//TODO Titan23 architecture has length 16 and length 4 wires
 		return horizontalDistance + verticalDistance;
 	}
 	

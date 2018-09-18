@@ -33,7 +33,6 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.type = t;
 		this.capacity = (short) capacity;
 		this.baseCost = this.calculateBaseCost();
-		//this.baseCost = baseCost;
 		
 		this.children = null;
 		this.switchType = null;
@@ -54,9 +53,11 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		switch (this.type) {
 			case SOURCE:
 			case OPIN:
+				return 1;
 			case HCHAN:
 			case VCHAN:
-				return 1;
+				//return 1;
+				return this.wireLength();
 			case SINK:
 				return 0;
 			case IPIN:
@@ -89,7 +90,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	}
 	
 	@Override
-	public int compareTo(RouteNode o) {//TODO
+	public int compareTo(RouteNode o) {
 		int r = this.type.compareTo(o.type);
 		if (this == o)
 			return 0;
@@ -158,7 +159,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		if (occ < cap) {
 			data.pres_cost = 1.0;
 		} else {
-			data.pres_cost = 1.0 + (occ + 1 - cap) * pres_fac;
+			data.pres_cost = 1.0 + (occ - cap + 1) * pres_fac;
 		}
 		
 		data.occupation = occ;
