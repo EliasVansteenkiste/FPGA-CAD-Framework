@@ -31,7 +31,7 @@ public class ConnectionRouter {
 	private final Collection<Connection> localConnections;
 	private final Collection<Connection> globalConnections;
 	
-	public static final boolean debug = true;
+	public static final boolean debug = false;
 	
 	public ConnectionRouter(ResourceGraph rrg, Circuit circuit) {
 		this.rrg = rrg;
@@ -62,7 +62,7 @@ public class ConnectionRouter {
 			//All leaf nodes are route nodes, can be limited to the number of threads
 			List<HierarchyNode> routeNodes = new LinkedList<>();
 			routeNodes.addAll(rootNode.getLeafNodes());
-			int maxNumRouteNodes = 16;
+			int maxNumRouteNodes = 32;
 			
 			while(routeNodes.size() > maxNumRouteNodes) {
 				HierarchyNode best = null;
@@ -168,8 +168,8 @@ public class ConnectionRouter {
         
         while (itry <= nrOfTrials) {
         	long iterationStart = System.nanoTime();
-        	
-			for(Connection con : sortedMapOfConnections.keySet()){
+
+        	for(Connection con : sortedMapOfConnections.keySet()){
 				if((itry == 1 && routeAll) || con.congested()) {
 					this.ripup(con);
 					this.route(con);
@@ -196,9 +196,9 @@ public class ConnectionRouter {
 				}
 				int numRouteNodes = this.rrg.getRouteNodes().size();
 				numOverUsed = String.format("%8d", overUsed.size());
-				overUsePercentage = String.format("%5.2f%%", 100.0 * (double)overUsed.size() / numRouteNodes);
+				overUsePercentage = String.format("%6.2f%%", 100.0 * (double)overUsed.size() / numRouteNodes);
 				
-				wireLength = Integer.toString(this.rrg.congestedTotalWireLengt());
+				wireLength = String.format("%11d", this.rrg.congestedTotalWireLengt());
 			}
 			
 			System.out.printf("%9d  %9d  %s  %s  %s\n", itry, rt, numOverUsed, overUsePercentage, wireLength);
