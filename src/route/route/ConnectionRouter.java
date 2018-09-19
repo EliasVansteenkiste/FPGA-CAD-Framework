@@ -14,6 +14,7 @@ import java.util.TreeMap;
 import route.circuit.Circuit;
 import route.circuit.resource.ResourceGraph;
 import route.circuit.resource.RouteNode;
+import route.circuit.resource.RouteNodeType;
 import route.hierarchy.HierarchyNode;
 import route.route.RouteCluster;
 
@@ -353,10 +354,20 @@ public class ConnectionRouter {
 		RouteNode node = qe.node;
 
 		for (RouteNode child : node.children) {
-			if(con.isInBoundingBoxLimit(child)) {
-				double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
-				double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
-				this.addNodeToQueue(child, qe, childCost, childCostEstimate);
+			if(child.type.equals(RouteNodeType.IPIN)) {
+				if(child.children[0].target) {
+					if(con.isInBoundingBoxLimit(child)) {
+						double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
+						double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
+						this.addNodeToQueue(child, qe, childCost, childCostEstimate);
+					}
+				}
+			} else {
+				if(con.isInBoundingBoxLimit(child)) {
+					double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
+					double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
+					this.addNodeToQueue(child, qe, childCost, childCostEstimate);
+				}
 			}
 		}
 	}
@@ -364,7 +375,7 @@ public class ConnectionRouter {
 		RouteNodeData nodeData = node.routeNodeData;
 		if(!nodeData.pathCostsSet()) this.nodesTouched.add(nodeData);
 		nodeData.updatePartialPathCost(new_partial_path_cost);
-		if (nodeData.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) {	//queue is sorted by lower bound total cost
+		if (nodeData.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
 			this.queue.add(new QueueElement(node, prev));
 		}
 	}
