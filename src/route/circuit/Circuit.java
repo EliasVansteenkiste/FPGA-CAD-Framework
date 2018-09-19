@@ -176,7 +176,7 @@ public class Circuit {
      * CONNECTIONS *
      ***************/
     public void loadNetsAndConnections() {
-    	short boundingBoxRange = 3;
+    	short boundingBoxRange = 5;
     	
     	this.cons = new HashSet<>();
     	this.nets = new HashSet<>();
