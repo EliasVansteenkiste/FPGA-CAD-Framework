@@ -91,7 +91,18 @@ public class Circuit {
 					line = line.replace("\t", "");
 					while(line.contains("  ")) line = line.replace("  ", " ");
 					
-					this.globalNets.add(line.split(" ")[3]);
+					String globalNet = line.split(" ")[3];
+					
+					globalNet = globalNet.replace("\\\\", "\\");
+					globalNet = globalNet.replace("\\|", "|");
+					globalNet = globalNet.replace("\\[", "[");
+					globalNet = globalNet.replace("\\]", "]");
+					
+					if(globalNet.charAt(0) == '{' && globalNet.charAt(globalNet.length() - 1) == '}') {
+						globalNet = globalNet.substring(1, globalNet.length() - 1);
+					}
+					
+					this.globalNets.add(globalNet);
 				}
 			}
 			
@@ -176,7 +187,7 @@ public class Circuit {
      * CONNECTIONS *
      ***************/
     public void loadNetsAndConnections() {
-    	short boundingBoxRange = 5;
+    	short boundingBoxRange = 3;
     	
     	this.cons = new HashSet<>();
     	this.nets = new HashSet<>();
