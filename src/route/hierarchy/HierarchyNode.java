@@ -28,7 +28,10 @@ public class HierarchyNode {
 		this.children = new ArrayList<HierarchyNode>();
 	}
 
-	public int numConnections() {
+	public int cost() {
+		return this.numConnections();
+	}
+	private int numConnections() {
 		if(this.isLeafNode()) {
 			return ((LeafNode) this).connections.size();
 		} else {
@@ -38,6 +41,13 @@ public class HierarchyNode {
 			}
 			return sum;
 		}
+	}
+	private int connectionCost() {
+		int cost = 0;
+		for(Connection connection : this.getConnections()) {
+			cost += connection.boundingBox;
+		}
+		return cost;
 	}
 	public Collection<Connection> getConnections() {
 		Collection<Connection> connections = new HashSet<>();

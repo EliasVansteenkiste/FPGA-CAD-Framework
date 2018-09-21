@@ -6,6 +6,7 @@ import java.util.Set;
 import route.circuit.pin.Pin;
 import route.circuit.resource.RouteNode;
 import route.hierarchy.LeafNode;
+import route.hierarchy.HierarchyNode;
 
 public class Connection implements Comparable<Connection>  {
 	public final int id;//Unique ID number
@@ -15,6 +16,7 @@ public class Connection implements Comparable<Connection>  {
 
     public Net net;
     public LeafNode leafNode;
+    public HierarchyNode rootNode;
     public final int boundingBox;
 	
 	public final String netName;
@@ -92,8 +94,11 @@ public class Connection implements Comparable<Connection>  {
 		this.net = net;
 	}
 	public void setLeafNode() {
-		this.leafNode = this.sink.getOwner().getLeafNode();//TODO SINK OR SOURCE?
+		this.leafNode = this.source.getOwner().getLeafNode();//TODO SINK OR SOURCE?
 		this.isGlobal =  (this.source.getOwner().getLeafNode().getIndex() != this.sink.getOwner().getLeafNode().getIndex());
+	}
+	public void setRootNode(HierarchyNode rootNode) {
+		this.rootNode = rootNode;
 	}
 	
 	public boolean hasLeafNode() {
@@ -153,5 +158,15 @@ public class Connection implements Comparable<Connection>  {
 			}
 		}
 		return false;
+	}
+	
+	public int wireLength() {
+		int wireLength = 0;
+		for(RouteNode node : this.routeNodes) {
+			if(node.isWire()) {
+				wireLength += node.wireLength();
+			}
+		}
+		return wireLength;
 	}
 }

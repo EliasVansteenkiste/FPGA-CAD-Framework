@@ -31,8 +31,6 @@ public class QueueElement implements Comparable<QueueElement> {
 	public int compareTo(QueueElement obj) {
 		if (getLowerBoundTotalPathCost() < obj.getLowerBoundTotalPathCost()) {
 			return -1;
-		} else if (getLowerBoundTotalPathCost() == obj.getLowerBoundTotalPathCost()) {
-			return node.compareTo(obj.node);
 		} else {
 			return 1;
 		}

@@ -25,7 +25,7 @@ public class RouteNodeData {
 		this.sourcesSet = null;
 	}
     
-    public void save_acc_cost() {
+    public void update_acc_cost() {
     	this.saved_acc_cost = this.acc_cost;
     }
     public void reset() {

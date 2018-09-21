@@ -51,9 +51,9 @@ public class ResourceGraph {
     		node.reset();
     	}
     }
-    public void save_acc_cost() {
+    public void update_acc_cost() {
 		for(RouteNode node : this.routeNodes) {
-			node.routeNodeData.save_acc_cost();
+			node.routeNodeData.update_acc_cost();
 		}
     }
     
@@ -408,7 +408,7 @@ public class ResourceGraph {
 		}
 	}
 	
-	public double lowerEstimateConnectionCost(RouteNode source, RouteNode target) {
+	public int lowerEstimateConnectionCost(RouteNode source, RouteNode target) {
 		int horizontalDistance =  Math.max(0, source.xhigh - target.xlow) + Math.max(0, target.xhigh - source.xlow);
 		int verticalDistance = Math.max(0, source.yhigh - target.ylow) + Math.max(0, target.yhigh - source.ylow);
 		
