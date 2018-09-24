@@ -35,7 +35,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         
         O_USE_PSO = "usePSO",
     	O_PSO_COGNITIVE_LEARNING_RATE = "c1",
-    	O_PSO_SOCIAL_LEARNING_RATE = "c2",
     	O_PSO_PROBILITY_INTERVAL_PBEST = "forPbest",
     	O_PSO_PROBILITY_INTERVAL_GBEST = "forGbest",
     	
@@ -152,7 +151,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
     private final int interval;
     private final double psoQuality, psoQualityMultiplier;
-
+    private long hbruntime;
+    
     private double latestCost, minCost;
 
     protected final int numIterations, effortLevel;
@@ -470,14 +470,18 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.IO)){
         	this.legalizer.legalize(legalizeType);
         }
-        this.stopTimer(T_LEGALIZE);
+        this.stopTimer(T_LEGALIZE);      
     }
 
     @Override
     protected void solveLegal(BlockType legalizeType) {
         this.startTimer(T_LEGALIZE);
         this.legalizer.legalize(legalizeType);
-        this.stopTimer(T_LEGALIZE);
+        this.stopTimer(T_LEGALIZE);     
+    }
+    
+    long getHBLegalTime(){
+    	return this.hbruntime;
     }
 
     @Override
@@ -507,7 +511,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         titles.add("stepsize");
         titles.add("anchor");
         titles.add("anneal Q");
-        titles.add("max conn length");
+//        titles.add("max conn length");
 
         //Wirelength cost
         titles.add("BB linear");
@@ -520,6 +524,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         titles.add("best");
         titles.add("time (ms)");
+        titles.add("summedUpHB (ms)");
         titles.add("crit conn");
         titles.add("overlap");
     }
@@ -532,11 +537,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         stats.add(String.format("%.3f", this.learningRate));
         stats.add(String.format("%.3f", this.anchorWeight));
         stats.add(String.format("%.5f", this.legalizer.getQuality()));
-        stats.add(String.format("%.1f", this.maxConnectionLength));
+//        stats.add(String.format("%.1f", this.maxConnectionLength));
 
         //Wirelength cost
         stats.add(String.format("%.0f", this.linearCost));
         stats.add(String.format("%.0f", this.legalCost));
+
 
         //Timing cost
         if(this.isTimingDriven()){
@@ -545,6 +551,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         stats.add(this.latestCost == this.minCost ? "yes" : "");
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
+        stats.add("+ " + Long.toString(Math.round(this.legalizer.getHBRuntime())) + " +");
         stats.add(String.format("%d", this.criticalConnections.size()));
         stats.add(String.format("%d", overlap));
 

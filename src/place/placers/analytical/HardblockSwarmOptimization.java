@@ -73,7 +73,9 @@ public class HardblockSwarmOptimization {
 	}
 	
 	//legalize hard block
-	public void doPSO(Column column, BlockType blockType, int numParticles, double quality, double c1, double forPbest, double forGbest, int interval){
+	public long doPSO(Column column, BlockType blockType, int numParticles, double quality, double c1, double forPbest, double forGbest, int interval){
+		long start = System.nanoTime();
+		
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.quality = quality;
 		
@@ -91,8 +93,10 @@ public class HardblockSwarmOptimization {
 		this.sites = column.sites;
 		
 		this.doPSO();
-
+//		System.out.println("\n\n");
 		this.setBlockLegal(this.gBestBlockIdList);	
+		
+		return (System.nanoTime() - start);
 	}
 	
 	/*******************************
@@ -145,7 +149,7 @@ public class HardblockSwarmOptimization {
 			
 			learningRate1 = this.c1 + w*delta;
 			learningRate2 = this.c1 - w*delta;
-			
+
 			for(Particle p : this.swarm){						
 								
 				p1 = learningRate1*this.rand.nextDouble();
@@ -165,7 +169,7 @@ public class HardblockSwarmOptimization {
 			}
 			
 			this.updateGBestIfNeeded();
-			this.evolFactors.add(f);//TODO stop criterion based on evolutionary factor, adaptive quality controller
+			this.evolFactors.add(f);//for stop criterion based on evolutionary factor, adaptive controller
 						
 			iteration++;
 			int gbestsize = this.evolFactors.size();
@@ -183,7 +187,7 @@ public class HardblockSwarmOptimization {
 				}				
 				double ratio = max / (min+1);
 
-				if(ratio < this.quality ) {//TODO
+				if(ratio < this.quality ) {
 					finish = true;
 				}else if(iteration == 100){
 					finish = true;

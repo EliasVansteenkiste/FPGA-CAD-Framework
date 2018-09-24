@@ -66,6 +66,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     protected boolean[] fixed;
     private double[] coordinatesX;
     private double[] coordinatesY;
+    
 
     public AnalyticalPlacer(
     		Circuit circuit, 
@@ -263,7 +264,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.IO)){
         	this.legalizer.legalize(legalizeType);
         }
-        this.stopTimer(T_LEGALIZE);
+        this.stopTimer(T_LEGALIZE);       
     }
 
     @Override

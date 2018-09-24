@@ -45,6 +45,8 @@ abstract class Legalizer {
     //Visualizer
     private final PlacementVisualizer visualizer;
     private final Map<GlobalBlock, NetBlock> netBlocks;
+    
+    private long hbruntime;
 
     Legalizer(
             Circuit circuit,
@@ -167,21 +169,6 @@ abstract class Legalizer {
     }
     void setPSOstopParameter(int interval){
     	this.interval = interval;
-//    	if(this.height < 80){
-//    		this.interval = (int) Math.round(5 + this.height * 0.02);
-//    	}else if(this.height < 100){
-//    		this.interval = (int) Math.round(5 + this.height * 0.035);
-//    	}else if(this.height < 120){
-//    		this.interval = (int) Math.round(10 + this.height * 0.037);
-//    	}else if(this.height < 140){
-//    		this.interval = (int) Math.round(30 + this.height * 0.04);
-//    	}else if(this.height < 160){
-//    		this.interval = (int) Math.round(30 + this.height * 0.042);
-//    	}else if(this.height < 180){
-//    		this.interval = (int) Math.round(35 + this.height * 0.069);
-//    	}else{
-//    		this.interval = (int) Math.round(35 + this.height * 0.079);
-//    	}
     }
     void setPobilityInterval(double forPbest, double forGbest){
     	this.forPbest = forPbest;
@@ -194,12 +181,13 @@ abstract class Legalizer {
     	this.hardblockLegalizer.updateCriticalConnections(criticalConnections);
     }
 
-    void legalize(BlockType legalizeType) {
+    long legalize(BlockType legalizeType) {
         for(int i = 0; i < this.blockTypes.size(); i++) {
         	if(this.blockTypes.get(i).equals(legalizeType)){
         		this.legalizeBlockType(i);
         	}
         }
+        return this.hbruntime;
     }
 
     private void legalizeBlockType(int i){
@@ -208,6 +196,8 @@ abstract class Legalizer {
         int blocksStart = this.blockTypeIndexStarts.get(i);
         int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
 
+//        long runtime = 0;
+        
         if(blocksEnd > blocksStart) {
             this.blockCategory = this.blockType.getCategory();
 
@@ -229,8 +219,7 @@ abstract class Legalizer {
         		}else{
         			this.chooseQuality = this.quality;
         		}
-        		
-        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.chooseQuality, this.c1,  
+        		this.hbruntime += this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.chooseQuality, this.c1,  
         				this.forPbest, this.forGbest, this.interval, this.usePSO);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType, this.quality);
@@ -243,7 +232,9 @@ abstract class Legalizer {
         	}
         }
     }
-
+    double getHBRuntime(){
+    	return this.hbruntime*Math.pow(10,-6);
+    }
     int[] getLegalX() {
         return this.legalX;
     }

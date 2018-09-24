@@ -43,7 +43,9 @@ public class HardblockAnneal {
 		this.random = new Random(seed);
 		this.timingTree = new TimingTree(false);
 	}
-	public void doAnneal(Column column, BlockType blockType, double quality){
+	public long doAnneal(Column column, BlockType blockType, double quality){
+		long start = System.nanoTime();
+		
 		this.blocks = column.blocks.toArray(new Block[column.blocks.size()]);
 		this.sites = column.sites;
 
@@ -57,7 +59,8 @@ public class HardblockAnneal {
 		this.doAnneal();
 		
 		if(this.printout) System.out.println(this.annealCosts);
-
+		
+		return (System.nanoTime() - start);
 	}
 	public void doAnneal(Block[] annealBlocks, Site[] annealSites, double quality){
 		this.blocks = annealBlocks;

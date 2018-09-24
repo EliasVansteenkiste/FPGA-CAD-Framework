@@ -219,8 +219,9 @@ public class HardblockSwarmLegalizer{
 	}
 	
 	//Legalize hard block
-	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, 
+	public long legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality, double c1, 
 			double forPbest, double forGbest, int interval, boolean usePSO){
+		
 		this.timingTree.start("Legalize " + blockType + " hardblock");
 		
 		this.blockType = blockType;
@@ -275,18 +276,17 @@ public class HardblockSwarmLegalizer{
 //			column.random();
 		}
 
-		//4 Column pso
-		this.timingTree.start("Anneal columns");
+		//4 Column pso		
+		long runtime = 0;
 		for(Column column:columns){
 			if(column.usedPos() > 0){			
 				if(usePSO){
-					this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, forPbest, forGbest, interval);
+					runtime += this.hardblockSwarm.doPSO(column, this.blockType, SWARM_SIZE, quality, c1, forPbest, forGbest, interval);
 				}else{
-					this.hardblockAnneal.doAnneal(column, this.blockType, quality);//TODO legalizeHardblock() qulity
+					runtime += this.hardblockAnneal.doAnneal(column, this.blockType, quality);
 				}
 			}	
 		}
-		this.timingTree.time("Anneal columns");
 
 		//Finish
 		this.updateLegal(legalizeBlocks);
@@ -294,6 +294,8 @@ public class HardblockSwarmLegalizer{
 		this.cleanData();
 		
 		this.timingTree.time("Legalize " + blockType + " hardblock");
+		
+		return runtime;
 	}
 	
 	//Legalize IO block
