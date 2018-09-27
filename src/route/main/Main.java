@@ -40,6 +40,9 @@ public class Main {
 	private String circuitName;
 	private File architectureFile, blifFile, netFile, placeFile, hierarchyFile, lookupDumpFile, sdcFile, rrgFile;
 	
+	private boolean parallel_routing;
+	private int num_route_nodes;
+	
 	private boolean useVprTiming;
 	
 	private Circuit circuit;
@@ -63,6 +66,10 @@ public class Main {
 				this.lookupDumpFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("rr_graph_file")) {
 				this.rrgFile = new File(arguments[++i]);
+			} else if(arguments[i].contains("parallel_routing")) {
+				this.parallel_routing = Boolean.parseBoolean(arguments[++i]);
+			} else if(arguments[i].contains("num_route_nodes")) {
+				this.num_route_nodes = Integer.parseInt(arguments[++i]);
 			}
 		}
 		
@@ -94,7 +101,7 @@ public class Main {
 					
 		long start = System.nanoTime();
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
-		int numIterations = route.route(this.rootNode);
+		int numIterations = route.route(this.rootNode, this.parallel_routing, this.num_route_nodes);
 		long end = System.nanoTime();
 		
 		System.out.printf("Routing took %.2fs\n",((end - start) * Math.pow(10, -9)));
