@@ -4,7 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import route.circuit.pin.Pin;
+import route.circuit.resource.Opin;
 import route.circuit.resource.RouteNode;
+import route.circuit.resource.RouteNodeType;
 import route.hierarchy.LeafNode;
 import route.hierarchy.HierarchyNode;
 
@@ -168,5 +170,19 @@ public class Connection implements Comparable<Connection>  {
 			}
 		}
 		return wireLength;
+	}
+	
+	public Opin getOpin() {
+		Opin opin = null;
+		for(RouteNode node : this.routeNodes) {
+			if(node.type.equals(RouteNodeType.OPIN)) {
+				if(opin == null) {
+					opin = (Opin) node;
+				} else {
+					System.out.println("Connection has multiple opins!");
+				}
+			}
+		}
+		return opin;
 	}
 }

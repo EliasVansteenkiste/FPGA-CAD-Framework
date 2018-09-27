@@ -1,11 +1,13 @@
 package route.route;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-
+import route.circuit.resource.Opin;
 import route.circuit.resource.RouteNode;
 import route.circuit.resource.Sink;
 import route.circuit.resource.Source;
@@ -30,6 +32,8 @@ public class Net {
 	public final double y_geo;
 	
 	public final int hpwl;
+	
+	private Opin fixedOpin;
 	
 	public Net(Set<Connection> net, short boundingBoxRange) {
 		this.connections = net;
@@ -138,6 +142,8 @@ public class Net {
 		for(Connection connection : this.connections) {
 			connection.setNet(this);
 		}
+		
+		this.fixedOpin = null;
 	}
 	
 	public boolean isInBoundingBoxLimit(RouteNode node) {
@@ -156,5 +162,57 @@ public class Net {
 			}
 		}
 		return wireLength;
+	}
+	
+	public Set<Connection> getConnections() {
+		return this.connections;
+	}
+	
+	public boolean hasOpin() {
+		return this.fixedOpin != null;
+	}
+	public Opin getOpin() {
+		return this.fixedOpin;
+	}
+	public void setOpin(Opin opin) {
+		this.fixedOpin = opin;
+		this.fixedOpin.use();
+	}
+	
+	public Opin getUniqueOpin() {
+		Opin netOpin = null;
+		for(Connection con : this.connections) {
+			Opin opin = con.getOpin();
+			if(opin != null) {
+				if(netOpin == null) {
+					netOpin = opin;
+				} else if(opin.index != netOpin.index) {
+					return null;
+				}
+			}
+		}
+		return netOpin;
+	}
+	public Opin getMostUsedOpin() {
+		Map<Opin, Integer> opinCount = new HashMap<>();
+		for(Connection con : this.connections) {
+			Opin opin = con.getOpin();
+			if(opin != null) {
+				if(opinCount.get(opin) == null) {
+					opinCount.put(opin, 1);
+				} else {
+					opinCount.put(opin, opinCount.get(opin) + 1);
+				}
+			}
+		}
+		Opin bestOpin = null;
+		int bestCount = 0;
+		for(Opin opin : opinCount.keySet()) {
+			if(opinCount.get(opin) > bestCount) {
+				bestOpin = opin;
+				bestCount = opinCount.get(opin);
+			}
+		}
+		return bestOpin;
 	}
 }
