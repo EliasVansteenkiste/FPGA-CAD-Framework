@@ -2,6 +2,8 @@ package route.route;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -12,6 +14,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import route.circuit.Circuit;
+import route.circuit.resource.Opin;
 import route.circuit.resource.ResourceGraph;
 import route.circuit.resource.RouteNode;
 import route.circuit.resource.RouteNodeType;
@@ -54,7 +57,7 @@ public class ConnectionRouter {
 		this.printRouteInformation = new ArrayList<>();
 	}
     
-    public int route(HierarchyNode rootNode) {
+    public int route(HierarchyNode rootNode, boolean parallel_routing, int num_route_nodes) {
     	System.out.println("---------------------------");
     	System.out.println("|         HROUTE          |");
     	System.out.println("---------------------------");
@@ -63,17 +66,15 @@ public class ConnectionRouter {
 		System.out.println("---------------------------");
 		System.out.println();
 		
-		boolean parallelRouting = false;
 			
-		if(parallelRouting) {
+		if(parallel_routing) {
 			//All leaf nodes are route nodes, can be limited to the number of threads
 			List<HierarchyNode> routeNodes = new LinkedList<>();
 			routeNodes.addAll(rootNode.getLeafNodes());
-			int maxNumRouteNodes = 8;
 			
-			int numIt = 5;
+			int numIt = 10;
 			
-			while(routeNodes.size() > maxNumRouteNodes) {
+			while(routeNodes.size() > num_route_nodes) {
 				HierarchyNode best = null;
 				int cost = Integer.MAX_VALUE;
 				
@@ -101,22 +102,9 @@ public class ConnectionRouter {
 				this.globalConnections.addAll(cluster.getGlobalConnections());
 			}
 			
-//			for(RouteCluster cluster : this.routeClusters) {
-//				this.rrg.reset();
-//				
-//				String name = "Route cluster " + cluster + " => Conn: " + cluster.getGlobalConnections().size() + " Cost: " + cluster.getCost();
-//				this.doRouting(name, cluster.getGlobalConnections(), numIt, true);
-//			}
-//			
-//			this.rrg.reset();
-//			for(Connection conn : this.globalConnections) {
-//				this.add(conn);
-//			}
-			
 			//Route Global Connections
-			this.doRouting("Route Global Connections", this.globalConnections, 100, true);
+			this.doRouting("Route Global Connections", this.globalConnections, 200, true, 0);
 
-			
 			//Save the history cost
 			this.rrg.update_acc_cost();//TODO DO THIS?
 
@@ -127,7 +115,7 @@ public class ConnectionRouter {
 				}
 				
 				String name = "Route cluster " + cluster + " => Conn: " + cluster.getLocalConnections().size() + " Cost: " + cluster.getCost();
-				this.doRouting(name, cluster.getLocalConnections(), numIt, true);
+				this.doRouting(name, cluster.getLocalConnections(), numIt, true, Integer.MAX_VALUE);
 			}
 			
 			this.rrg.reset();
@@ -135,29 +123,49 @@ public class ConnectionRouter {
 				this.add(conn);
 			}
 			
-			this.doRouting("Route remaining congested connections", this.localConnections, 100, false);
+			this.doRouting("Route remaining congested connections", this.localConnections, 200, false, 0);
 			
 			for(String line : this.printRouteInformation) {
 				System.out.println(line);
 			}
 			System.out.println();
 		} else {
-			this.doRouting("Route all", this.circuit.getConnections(), 200, true);
+			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 2);
+		}
+		
+		/***************************
+		 * OPIN tester: test if each
+		 * net uses only one OPIN
+		 ***************************/
+		for(Net net : this.circuit.getNets()) {
+			Set<Opin> opins = new HashSet<>();
+			String name = null;
+			for(Connection con : net.getConnections()) {
+				Opin opin = con.getOpin();
+				if(opin == null) {
+					System.out.println("Connection has no opin!");
+				} else {
+					opins.add(opin);
+				}
+			}
+			if(opins.size() != 1) {
+				System.out.println("Net " + name + " has " + opins.size() + " opins");
+			} 
 		}
 		
 		return -1;
 	}
-    private void doRouting(String name, Collection<Connection> connections, int nrOfTrials, boolean routeAll) {
+    private void doRouting(String name, Collection<Connection> connections, int nrOfTrials, boolean routeAll, int fixOpins) {
 		System.out.printf("----------------------------------------------------\n");
 		System.out.println(name);
-		int timeMilliseconds = this.doRouting(connections, nrOfTrials, routeAll);
+		int timeMilliseconds = this.doRouting(connections, nrOfTrials, routeAll, fixOpins);
 		System.out.printf("----------------------------------------------------\n");
 		System.out.println("Runtime " + timeMilliseconds + " ms");
 		System.out.printf("----------------------------------------------------\n\n\n");
 		
-		this.printRouteInformation.add(String.format("%30s %8d", name, timeMilliseconds));
+		this.printRouteInformation.add(String.format("%s %d", name, timeMilliseconds));
     }
-    private int doRouting(Collection<Connection> connections, int nrOfTrials, boolean routeAll) {
+    private int doRouting(Collection<Connection> connections, int nrOfTrials, boolean routeAll, int fixOpins) {
     	long start = System.nanoTime();
     	
     	this.nodesTouched.clear();
@@ -166,20 +174,39 @@ public class ConnectionRouter {
     	this.queue.clear();
 		
 	    double initial_pres_fac = 0.6;
-		double pres_fac_mult = 2;//1.3
+		double pres_fac_mult = 1.6;//1.3 or 2.0
 		double acc_fac = 1.0;
 		this.pres_fac = initial_pres_fac;
+		
 		int itry = 1;
 		
 		Map<Connection, Integer> mapOfConnections = new HashMap<>();
-		for(Connection con : connections) {
-			mapOfConnections.put(con, con.boundingBox);
+		Map<Connection, Integer> sortedMapOfConnections = null;
+		boolean bbnotfanout = false;//TODO HOW TO SORT THE CONNECTIONS? DO EXPERIMENTS!
+		if(bbnotfanout) {
+			for(Connection con : connections) {
+				mapOfConnections.put(con, con.boundingBox);
+			}
+			BBComparator bvc =  new BBComparator(mapOfConnections);
+			
+			sortedMapOfConnections = new TreeMap<>(bvc);
+	        sortedMapOfConnections.putAll(mapOfConnections);
+		} else {
+			for(Connection con : connections) {
+				mapOfConnections.put(con, con.net.fanout);
+			}
+			FanoutComparator bvc =  new FanoutComparator(mapOfConnections);
+			
+			sortedMapOfConnections = new TreeMap<>(bvc);
+	        sortedMapOfConnections.putAll(mapOfConnections);
 		}
-		
-		BBComparator bvc =  new BBComparator(mapOfConnections);
-        Map<Connection, Integer> sortedMapOfConnections = new TreeMap<>(bvc);
-        sortedMapOfConnections.putAll(mapOfConnections);
-		
+        
+        Set<Net> nets = new HashSet<>();
+        for(Connection con : connections) {
+        	nets.add(con.net);
+        }
+        List<Net> sortedNets = new ArrayList<>(nets);
+        Collections.sort(sortedNets, Comparators.FANOUT);
         
         System.out.printf("---------  ---------  -----------------  -----------\n");
         System.out.printf("%9s  %9s  %17s  %11s\n", "Iteration", "Time (ms)", "Overused RR Nodes", "Wire-Length");
@@ -187,17 +214,57 @@ public class ConnectionRouter {
         
         Set<RouteNode> overUsed = new HashSet<>();
         
+        boolean validRouting = false;
+        
         while (itry <= nrOfTrials) {
+        	validRouting = true;
         	long iterationStart = System.nanoTime();
 
-        	for(Connection con : sortedMapOfConnections.keySet()){
+        	for(Connection con : sortedMapOfConnections.keySet()) {
 				if((itry == 1 && routeAll) || con.congested()) {
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
+					
+					validRouting = false;
+				} else if(con.net.hasOpin()) {
+					if(con.getOpin() != con.net.getOpin()) {
+						this.ripup(con);
+						this.route(con);
+						this.add(con);
+						
+						validRouting = false;
+					}
 				}
 			}
+        	
+        	//Fix opins in order of high fanout nets
+        	if(itry >= fixOpins) {
+            	for(Net net : sortedNets) {
+            		if(!net.hasOpin()) {
+            			Opin opin = net.getUniqueOpin();
+            			if(opin != null) {
+            				if(!opin.overUsed()) {
+            					net.setOpin(opin);
+            				}
+            			}
+            			validRouting = false;
+            		}
+            	}
+            	for(Net net : sortedNets) {
+            		if(!net.hasOpin()) {
+            			Opin opin = net.getMostUsedOpin();
+                		if(!opin.used()) {
+                			net.setOpin(opin);
+                		}
+                		validRouting = false;
+            		}
+            	}
+        	} else if(fixOpins < Integer.MAX_VALUE){
+        		validRouting = false;
+        	}
 
+        	
 			//Runtime
 			long iterationEnd = System.nanoTime();
 			int rt = (int) Math.round((iterationEnd-iterationStart) * Math.pow(10, -6));
@@ -225,7 +292,7 @@ public class ConnectionRouter {
 			System.out.printf("%9d  %9d  %s  %s  %s\n", itry, rt, numOverUsed, overUsePercentage, wireLength);
 			
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
-			if (routingIsFeasible(connections)){
+			if (validRouting){
 				this.circuit.setConRouted(true);
 		        
 				long end = System.nanoTime();
@@ -278,15 +345,6 @@ public class ConnectionRouter {
 		return timeMilliSeconds;
     }
 
-	private boolean routingIsFeasible(Collection<Connection> connections) {
-		for (Connection con : connections) {
-			if(con.congested()) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	private void ripup(Connection con) {
 		for (RouteNode node : con.routeNodes) {
 			RouteNodeData data = node.routeNodeData;
@@ -310,7 +368,7 @@ public class ConnectionRouter {
 	private boolean route(Connection con) {
 		// Clear Routing
 		con.resetConnection();
-		
+
 		// Clear Queue
 		this.queue.clear();
 		
@@ -375,13 +433,23 @@ public class ConnectionRouter {
 		RouteNode node = qe.node;
 
 		for (RouteNode child : node.children) {
-			if(child.type.equals(RouteNodeType.IPIN)) {
-				if(child.children[0].target) {
-					if(con.isInBoundingBoxLimit(child)) {
+			if(child.type.equals(RouteNodeType.OPIN)) {
+				if(con.net.hasOpin()) {
+					if(child.index == con.net.getOpin().index) {
 						double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
 						double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
 						this.addNodeToQueue(child, qe, childCost, childCostEstimate);
 					}
+				} else if(!child.used()) {
+					double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
+					double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
+					this.addNodeToQueue(child, qe, childCost, childCostEstimate);
+				}
+			} else if(child.type.equals(RouteNodeType.IPIN)) {
+				if(child.children[0].target) {
+					double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
+					double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
+					this.addNodeToQueue(child, qe, childCost, childCostEstimate);
 				}
 			} else {
 				if(con.isInBoundingBoxLimit(child)) {
@@ -457,4 +525,13 @@ public class ConnectionRouter {
 			}
 		}
 	}
+	
+	public static class Comparators {
+        public static Comparator<Net> FANOUT = new Comparator<Net>() {
+            @Override
+            public int compare(Net n1, Net n2) {
+                return n2.fanout - n1.fanout;
+            }
+        };
+    }
 }
