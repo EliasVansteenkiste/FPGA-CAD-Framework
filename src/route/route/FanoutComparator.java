@@ -4,20 +4,20 @@ import java.util.Comparator;
 import java.util.Map;
 
 
-public class BBComparator implements Comparator<Connection> {
+public class FanoutComparator implements Comparator<Connection> {
 	Map<Connection, Integer> base;
 	
-	public BBComparator(Map<Connection, Integer> base) {
+	public FanoutComparator(Map<Connection, Integer> base) {
 		this.base = base;
 	}
 	
 	public int compare(Connection a, Connection b) {
-		if(this.base.get(a).intValue() > this.base.get(b).intValue()){
+		if(this.base.get(a).intValue() < this.base.get(b).intValue()){
 			return 1;
 		}else if(this.base.get(a).intValue() == this.base.get(b).intValue()){
-			if(a.net.fanout > b.net.fanout){
+			if(a.boundingBox > b.boundingBox){
 				return 1;
-			}else if(a.net.fanout == b.net.fanout){
+			}else if(a.boundingBox == b.boundingBox){
 				if(a.hashCode() > b.hashCode()){
 					return 1;
 				}else if(a.hashCode() < b.hashCode()){
