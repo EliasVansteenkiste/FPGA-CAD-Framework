@@ -98,7 +98,7 @@ public class HardblockAnneal {
 		
 		//TODO yun
 		this.annealCosts = new ArrayList<>();
-		this.annealCosts.add(this.cost);//yun
+		this.annealCosts.add(this.cost);
 		
 		this.temperature = this.calculateInitialTemperature();
 		this.movesPerTemperature = (int)Math.round(this.effortLevel * Math.pow(this.numBlocks, 4/3));

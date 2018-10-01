@@ -13,7 +13,6 @@ import place.placers.analytical.HardblockSwarmLegalizer.Column;
 import place.placers.analytical.HardblockSwarmLegalizer.Crit;
 import place.placers.analytical.HardblockSwarmLegalizer.Net;
 import place.placers.analytical.HardblockSwarmLegalizer.Site;
-import place.util.TimingTree;
 import place.placers.analytical.Particle;
 import place.placers.analytical.Particle.Swap;
 
@@ -47,8 +46,7 @@ public class HardblockSwarmOptimization {
 	private List<Double> evolFactors;
 	private volatile int[] gBestBlockIdList;
 	double[] allpCosts;
-	double[] distanceForEachP; 
-	
+	double[] distanceForEachP; 	
 
 	HardblockSwarmOptimization(int seed){
 		this.rand = new Random(seed);
@@ -59,7 +57,6 @@ public class HardblockSwarmOptimization {
 		
 	}
 	
-	//legalize io block
 	public void doPSO(Block[] ioBlocks, Site[] ioSites, BlockType blockType, int numParticles, double quality){
 		this.blocks = ioBlocks;
 		this.sites = ioSites;
@@ -93,20 +90,20 @@ public class HardblockSwarmOptimization {
 		this.sites = column.sites;
 		
 		this.doPSO();
-//		System.out.println("\n\n");
+
 		this.setBlockLegal(this.gBestBlockIdList);	
 		
 		return (System.nanoTime() - start);
 	}
 	
 	/*******************************
-	* particle swarm optimization synchronized
+	* particle swarm optimization
 	********************************/
 	private void doPSO(){	
  		this.numBlocks = this.blocks.length;
 		this.numSites = this.sites.length;
 		
-		this.velMaxSize = (int)Math.round(38.94 + 0.026 * this.numBlocks);//this.numSites; // (int)Math.round(20*Math.pow(this.numBlocks, 4/3));//
+		this.velMaxSize = (int)Math.round(38.94 + 0.026 * this.numBlocks);
 		this.gBestBlockIdList = new int[this.numSites];
 		
 		this.columnNets.clear();
@@ -135,10 +132,9 @@ public class HardblockSwarmOptimization {
 		double learningRate1, learningRate2;
 		
 		boolean finish = false;
-		int iteration = 0;
+		int iteration = 0;	
 		
 		while(!finish) {
-			
 			for(Particle p: this.swarm){
 				this.allpCosts[p.pIndex] = p.pCost;
 			}
@@ -149,7 +145,9 @@ public class HardblockSwarmOptimization {
 			
 			learningRate1 = this.c1 + w*delta;
 			learningRate2 = this.c1 - w*delta;
-
+			
+			
+			
 			for(Particle p : this.swarm){						
 								
 				p1 = learningRate1*this.rand.nextDouble();
@@ -169,8 +167,8 @@ public class HardblockSwarmOptimization {
 			}
 			
 			this.updateGBestIfNeeded();
-			this.evolFactors.add(f);//for stop criterion based on evolutionary factor, adaptive controller
-						
+			this.evolFactors.add(f);//for stop criterion based on evolutionary factor, adaptive controller						
+			
 			iteration++;
 			int gbestsize = this.evolFactors.size();
 			if(gbestsize > this.interval){

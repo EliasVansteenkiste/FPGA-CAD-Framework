@@ -267,13 +267,9 @@ public class HardblockSwarmLegalizer{
 		this.columnSwap.doSwap(columns);
 		this.timingTree.time("Column swap");
 
-		//3 Column legalize
-		
-		
+		//3 Column legalize		
 		for(Column column:columns){
-			column.legalize();//TODO WHY IS THIS BETTER + ANALYZE
-			//when do column.random, *******particles cannot jump out of a locally optimal region (only exploration and then convergence)*****
-//			column.random();
+			column.legalize();
 		}
 
 		//4 Column pso		
