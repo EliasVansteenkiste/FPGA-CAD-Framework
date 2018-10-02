@@ -112,7 +112,7 @@ public class ConnectionRouter {
 			
 			System.out.println("\n----------------------------------------------------------");
 			System.out.println("                           PHASE 1");
-			System.out.println("----------------------------------------------------------\n\n");
+			System.out.println("----------------------------------------------------------\n");
 			for(RouteCluster cluster : this.routeClusters) {
 				this.rrg.reset();
 				
@@ -126,7 +126,7 @@ public class ConnectionRouter {
 			
 			System.out.println("\n----------------------------------------------------------");
 			System.out.println("                           PHASE 2");
-			System.out.println("----------------------------------------------------------\n\n");
+			System.out.println("----------------------------------------------------------\n");
 			
 			this.rrg.reset();
 			for(Connection conn : this.connections) {
@@ -265,7 +265,7 @@ public class ConnectionRouter {
 					
 					validRouting = false;
 				} else if(con.net.hasOpin()) {
-					if(con.getOpin() != con.net.getOpin()) {
+					if(con.getOpin().index != con.net.getOpin().index) {
 						this.ripup(con);
 						this.route(con);
 						this.add(con);
