@@ -38,7 +38,7 @@ public class ConnectionRouter {
 	
 	private final List<String> printRouteInformation;
 	
-	public static final boolean debug = true;
+	public static final boolean debug = false;
 	
 	public ConnectionRouter(ResourceGraph rrg, Circuit circuit) {
 		this.rrg = rrg;
@@ -71,7 +71,7 @@ public class ConnectionRouter {
 			List<HierarchyNode> routeNodes = new LinkedList<>();
 			routeNodes.addAll(rootNode.getLeafNodes());
 			
-			int numIt = 10000;
+			int numIt = 1000;
 			
 			while(routeNodes.size() > num_route_nodes) {
 				HierarchyNode best = null;
@@ -100,12 +100,6 @@ public class ConnectionRouter {
 				this.localConnections.addAll(cluster.getLocalConnections());
 				this.globalConnections.addAll(cluster.getGlobalConnections());
 			}
-			
-			//Route Global Connections
-			//this.doRouting("Route Global Connections", this.globalConnections, 200, true, 0);
-
-			//Save the history cost
-			//this.rrg.update_acc_cost();//TODO DO THIS?
 
 			int minimumCost = Integer.MAX_VALUE;
 			int maximumCost = 0;
@@ -116,57 +110,37 @@ public class ConnectionRouter {
 				if(cost > maximumCost) maximumCost = cost;
 			}
 			
-			int numConnections = 0;
+			System.out.println("\n----------------------------------------------------------");
+			System.out.println("                           PHASE 1");
+			System.out.println("----------------------------------------------------------\n\n");
 			for(RouteCluster cluster : this.routeClusters) {
 				this.rrg.reset();
-				//for(Connection conn : this.globalConnections) {
-				//	this.add(conn);
-				//}
-				double maximumAlpha = 0.3;
-				double minimumAlpha = 0.3;
+				
+				double alphaValue = 0.35;
+				double maximumAlpha = alphaValue;
+				double minimumAlpha = alphaValue;
 				double alpha = minimumAlpha + (maximumAlpha - minimumAlpha) / (maximumCost - minimumCost) * (cluster.getCost() - minimumCost);
 				String name = "Route cluster " + cluster + " => Conn: " + cluster.getConnections().size() + " Cost: " + cluster.getCost();
 				this.doRouting(name, cluster.getConnections(), numIt, true, Integer.MAX_VALUE, alpha);
-				
-				numConnections += cluster.getConnections().size();
-			}
-			System.out.println("Num connections " + numConnections);
-			System.out.println(this.connections.size());
-			
-
-			this.rrg.update_acc_cost();//TODO DO THIS?
-			this.rrg.reset();
-			for(Connection conn : this.connections) {
-				System.out.println(conn.routeNodes.size());
-				this.add(conn);
 			}
 			
-			for(RouteCluster cluster : this.routeClusters) {
-				this.rrg.reset();
-				//for(Connection conn : this.globalConnections) {
-				//	this.add(conn);
-				//}
-				double maximumAlpha = 0.3;
-				double minimumAlpha = 0.3;
-				double alpha = minimumAlpha + (maximumAlpha - minimumAlpha) / (maximumCost - minimumCost) * (cluster.getCost() - minimumCost);
-				String name = "Route cluster " + cluster + " => Conn: " + cluster.getConnections().size() + " Cost: " + cluster.getCost();
-				this.doRouting(name, cluster.getConnections(), numIt, false, Integer.MAX_VALUE, alpha);
-			}
-			
+			System.out.println("\n----------------------------------------------------------");
+			System.out.println("                           PHASE 2");
+			System.out.println("----------------------------------------------------------\n\n");
 			
 			this.rrg.reset();
 			for(Connection conn : this.connections) {
 				this.add(conn);
 			}
 			
-			this.doRouting("Route remaining congested connections", this.connections, 200, false, Integer.MAX_VALUE, 0.5);
+			this.doRouting("Route remaining congested connections", this.connections, 200, false, 2, 0.35);
 			
 			for(String line : this.printRouteInformation) {
 				System.out.println(line);
 			}
 			System.out.println();
 		} else {
-			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 2, 0.35);
+			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 5, 0.35);
 		}
 		
 		/***************************
@@ -207,7 +181,6 @@ public class ConnectionRouter {
     	this.alpha = alpha;
     	
     	this.nodesTouched.clear();
-    	//this.nodesTouchedIteration.clear();
     	
     	this.queue.clear();
 		
@@ -283,7 +256,7 @@ public class ConnectionRouter {
         	} else if(fixOpins < Integer.MAX_VALUE){
         		validRouting = false;
         	}
-        	
+        			
         	for(Connection con : sortedMapOfConnections.keySet()) {
 				if((itry == 1 && routeAll) || con.congested()) {
 					this.ripup(con);
@@ -326,7 +299,7 @@ public class ConnectionRouter {
 				wireLength = String.format("%11d", this.rrg.congestedTotalWireLengt());
 			}
 			
-			System.out.printf("%9d   %.2f %9d  %s  %s  %s\n", itry, this.alpha, rt, numOverUsed, overUsePercentage, wireLength);
+			System.out.printf("%9d  %.3f %9d  %s  %s  %s\n", itry, this.alpha, rt, numOverUsed, overUsePercentage, wireLength);
 			
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (validRouting){
