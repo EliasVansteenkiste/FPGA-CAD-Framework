@@ -18,7 +18,7 @@ public class RouteNodeData {
     public RouteNodeData() {
     	this.pres_cost = 1;
     	this.acc_cost = 1;
-    	this.saved_acc_cost = 1;
+    	this.saved_acc_cost = this.acc_cost;
     	this.occupation = 0;
     	this.resetPathCosts();
 

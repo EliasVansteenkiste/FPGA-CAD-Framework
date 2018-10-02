@@ -1,6 +1,7 @@
 package route.route;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import route.hierarchy.HierarchyNode;
@@ -36,11 +37,12 @@ public class RouteCluster {
 			}
 		}
 		
-		int tempCost = 0;
-		for(LeafNode leafNode : this.leafNodes) {
-			tempCost += leafNode.cost();
-		}
-		this.cost = tempCost;
+		this.cost = this.connections.size();
+		//int tempCost = 0;
+		//for(LeafNode leafNode : this.leafNodes) {
+		//	tempCost += leafNode.cost();
+		//}
+		//this.cost = tempCost;
 	}
 	
 	public List<Connection> getLocalConnections() {
@@ -56,5 +58,9 @@ public class RouteCluster {
 	@Override
 	public String toString() {
 		return this.hierarchyNode.getIdentifier();
+	}
+
+	public List<Connection> getConnections() {
+		return this.connections;
 	}
 }

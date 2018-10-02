@@ -30,6 +30,8 @@ public class Connection implements Comparable<Connection>  {
 	
 	public boolean isGlobal;
 	
+	public boolean route;
+	
 	public Connection(int id, Pin source, Pin sink) {
 		this.id = id;
 		
