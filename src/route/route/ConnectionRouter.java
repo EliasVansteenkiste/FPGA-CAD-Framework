@@ -45,8 +45,7 @@ public class ConnectionRouter {
 		this.circuit = circuit;
 
 		this.nodesTouched = new ArrayList<RouteNodeData>();
-		
-		this.queue = new PriorityQueue<QueueElement>();
+		this.queue = new PriorityQueue<>();
 		
 		this.routeClusters = new ArrayList<>();
 		this.connections = new ArrayList<>();
@@ -116,7 +115,7 @@ public class ConnectionRouter {
 			for(RouteCluster cluster : this.routeClusters) {
 				this.rrg.reset();
 				
-				double alphaValue = 0.35;
+				double alphaValue = 1.4;
 				double maximumAlpha = alphaValue;
 				double minimumAlpha = alphaValue;
 				double alpha = minimumAlpha + (maximumAlpha - minimumAlpha) / (maximumCost - minimumCost) * (cluster.getCost() - minimumCost);
@@ -133,14 +132,14 @@ public class ConnectionRouter {
 				this.add(conn);
 			}
 			
-			this.doRouting("Route remaining congested connections", this.connections, 200, false, 2, 0.35);
+			this.doRouting("Route remaining congested connections", this.connections, 200, false, 2, 1.4);
 			
 			for(String line : this.printRouteInformation) {
 				System.out.println(line);
 			}
 			System.out.println();
 		} else {
-			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 5, 0.35);
+			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 4, 1.4);
 		}
 		
 		/***************************
@@ -185,7 +184,7 @@ public class ConnectionRouter {
     	this.queue.clear();
 		
 	    double initial_pres_fac = 0.6;
-		double pres_fac_mult = 1.3;//1.3 or 2.0
+		double pres_fac_mult = 2;//1.3 or 2.0
 		double acc_fac = 1.0;
 		this.pres_fac = initial_pres_fac;
 		
@@ -193,7 +192,7 @@ public class ConnectionRouter {
 		
 		Map<Connection, Integer> mapOfConnections = new HashMap<>();
 		Map<Connection, Integer> sortedMapOfConnections = null;
-		boolean bbnotfanout = false;//TODO HOW TO SORT THE CONNECTIONS? DO EXPERIMENTS!
+		boolean bbnotfanout = false;
 		if(bbnotfanout) {
 			for(Connection con : connections) {
 				mapOfConnections.put(con, con.boundingBox);
@@ -322,32 +321,32 @@ public class ConnectionRouter {
 		}
         
 		if (itry == nrOfTrials + 1) {
-//			System.out.println("Routing failled after " + itry + " trials!");
-//			
-//			int maxNameLength = 0;
-//			
-//			Set<RouteNode> overused = new HashSet<>();
-//			for (Connection conn: connections) {
-//				for (RouteNode node: conn.routeNodes) {
-//					if (node.overUsed()) {
-//						overused.add(node);
-//					}
-//				}
-//			}
-//			for (RouteNode node: overused) {
-//				if (node.overUsed()) {
-//					if(node.toString().length() > maxNameLength) {
-//						maxNameLength = node.toString().length();
-//					}
-//				}
-//			}
-//			
-//			for (RouteNode node: overused) {
-//				if (node.overUsed()) {
-//					System.out.println(node.toString());
-//				}
-//			}
-//			System.out.println();
+			System.out.println("Routing failled after " + itry + " trials!");
+			
+			int maxNameLength = 0;
+			
+			Set<RouteNode> overused = new HashSet<>();
+			for (Connection conn: connections) {
+				for (RouteNode node: conn.routeNodes) {
+					if (node.overUsed()) {
+						overused.add(node);
+					}
+				}
+			}
+			for (RouteNode node: overused) {
+				if (node.overUsed()) {
+					if(node.toString().length() > maxNameLength) {
+						maxNameLength = node.toString().length();
+					}
+				}
+			}
+			
+			for (RouteNode node: overused) {
+				if (node.overUsed()) {
+					System.out.println(node.toString());
+				}
+			}
+			System.out.println();
 		}
 		
 		long end = System.nanoTime();
@@ -473,6 +472,7 @@ public class ConnectionRouter {
 	private void addNodeToQueue(RouteNode node, QueueElement prev, double new_partial_path_cost, double new_lower_bound_total_path_cost) {
 		RouteNodeData nodeData = node.routeNodeData;
 		if(!nodeData.pathCostsSet()) this.nodesTouched.add(nodeData);
+
 		nodeData.updatePartialPathCost(new_partial_path_cost);
 		if (nodeData.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
 			this.queue.add(new QueueElement(node, prev));
@@ -491,9 +491,9 @@ public class ConnectionRouter {
 
 		int usage = 1 + data.countSourceUses(con.source);
 		
-		double expected_cost = this.alpha * ((this.rrg.lowerEstimateConnectionCost(node, target) * 4 / usage) + 1.95);
+		double expected_cost = this.alpha * ((((double)this.rrg.lowerEstimateConnectionCost(node, target)) / usage) + 0.95);
 		
-		double bias_cost = node.baseCost / (2 * con.net.fanout)
+		double bias_cost = node.baseCost / (2.0 * con.net.fanout)
 							* (Math.abs((0.5 * (node.xlow + node.xhigh)) - con.net.x_geo) + Math.abs((0.5 * (node.ylow + node.yhigh)) - con.net.y_geo))
 							/ ((double) con.net.hpwl);
 		
@@ -517,7 +517,7 @@ public class ConnectionRouter {
 			pres_cost = data.pres_cost;
 		}
 		
-		return node.baseCost * data.acc_cost * pres_cost / (1 + data.countSourceUses(con.source));
+		return node.baseCost * data.acc_cost * pres_cost / (1.0 + (10.0 * data.countSourceUses(con.source)));
 	}
 	
 	private void updateCost(double pres_fac, double acc_fac){

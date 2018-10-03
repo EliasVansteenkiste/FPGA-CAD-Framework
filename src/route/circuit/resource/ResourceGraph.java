@@ -408,19 +408,19 @@ public class ResourceGraph {
 		}
 	}
 	
-	public int lowerEstimateConnectionCost(RouteNode source, RouteNode targer) {
+	public int lowerEstimateConnectionCost(RouteNode source, RouteNode target) {
 		int horizontalDistance = 0, verticalDistance = 0;
 		
-		if(source.xhigh < targer.xlow) {
-			horizontalDistance = targer.xlow - source.xhigh;
-		} else if(targer.xhigh < source.xlow) {
-			horizontalDistance = source.xlow - targer.xhigh;
+		if(source.xhigh < target.xlow) {
+			horizontalDistance = target.xlow - source.xhigh;
+		} else if(target.xhigh < source.xlow) {
+			horizontalDistance = source.xlow - target.xhigh;
 		}
 		
-		if(source.yhigh < targer.ylow) {
-			verticalDistance = targer.ylow - source.yhigh;
-		} else if(targer.yhigh < source.ylow) {
-			verticalDistance = source.ylow - targer.yhigh;
+		if(source.yhigh < target.ylow) {
+			verticalDistance = target.ylow - source.yhigh;
+		} else if(target.yhigh < source.ylow) {
+			verticalDistance = source.ylow - target.yhigh;
 		}
 
 		return horizontalDistance + verticalDistance;

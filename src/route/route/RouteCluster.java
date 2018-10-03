@@ -1,7 +1,6 @@
 package route.route;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import route.hierarchy.HierarchyNode;

@@ -52,11 +52,11 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	private double calculateBaseCost() {
 		switch (this.type) {
 			case SOURCE:
-			case OPIN:
 				return 1;
+			case OPIN:
+				return 4;
 			case HCHAN:
 			case VCHAN:
-				//return 1;
 				return this.wireLength();
 			case SINK:
 				return 0;
