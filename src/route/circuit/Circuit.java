@@ -102,6 +102,8 @@ public class Circuit {
 						globalNet = globalNet.substring(1, globalNet.length() - 1);
 					}
 					
+					globalNet = globalNet.trim();
+					
 					this.globalNets.add(globalNet);
 				}
 			}
