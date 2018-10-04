@@ -27,6 +27,7 @@ public class ConnectionRouter {
 	
 	private double pres_fac;
 	private double alpha;
+	
 	private final PriorityQueue<QueueElement> queue;
 	
 	private final Collection<RouteNodeData> nodesTouched;
@@ -45,6 +46,7 @@ public class ConnectionRouter {
 		this.circuit = circuit;
 
 		this.nodesTouched = new ArrayList<RouteNodeData>();
+		
 		this.queue = new PriorityQueue<>();
 		
 		this.routeClusters = new ArrayList<>();
@@ -115,7 +117,7 @@ public class ConnectionRouter {
 			for(RouteCluster cluster : this.routeClusters) {
 				this.rrg.reset();
 				
-				double alphaValue = 1.4;
+				double alphaValue = 1.5;
 				double maximumAlpha = alphaValue;
 				double minimumAlpha = alphaValue;
 				double alpha = minimumAlpha + (maximumAlpha - minimumAlpha) / (maximumCost - minimumCost) * (cluster.getCost() - minimumCost);
@@ -132,14 +134,14 @@ public class ConnectionRouter {
 				this.add(conn);
 			}
 			
-			this.doRouting("Route remaining congested connections", this.connections, 200, false, 2, 1.4);
+			this.doRouting("Route remaining congested connections", this.connections, 200, false, 2, 1.5);
 			
 			for(String line : this.printRouteInformation) {
 				System.out.println(line);
 			}
 			System.out.println();
 		} else {
-			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 4, 1.4);
+			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 4, 1.5);
 		}
 		
 		/***************************
@@ -180,7 +182,6 @@ public class ConnectionRouter {
     	this.alpha = alpha;
     	
     	this.nodesTouched.clear();
-    	
     	this.queue.clear();
 		
 	    double initial_pres_fac = 0.6;
@@ -298,7 +299,6 @@ public class ConnectionRouter {
 				wireLength = String.format("%11d", this.rrg.congestedTotalWireLengt());
 			}
 			
-			System.out.printf("%9d  %.3f %9d  %s  %s  %s\n", itry, this.alpha, rt, numOverUsed, overUsePercentage, wireLength);
 			
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (validRouting){
@@ -307,6 +307,8 @@ public class ConnectionRouter {
 				long end = System.nanoTime();
 				int timeMilliSeconds = (int)Math.round((end-start) * Math.pow(10, -6));
 				return timeMilliSeconds;
+			} else {
+				System.out.printf("%9d  %.3f %9d  %s  %s  %s\n", itry, this.alpha, rt, numOverUsed, overUsePercentage, wireLength);
 			}
 			
 			//Updating the cost factors
