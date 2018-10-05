@@ -91,6 +91,9 @@ public class Circuit {
 					line = line.replace("\t", "");
 					while(line.contains("  ")) line = line.replace("  ", " ");
 					
+					line = line.replace("{ ", "{");
+					line = line.replace(" }", "}");
+					
 					String globalNet = line.split(" ")[3];
 					
 					globalNet = globalNet.replace("\\\\", "\\");
