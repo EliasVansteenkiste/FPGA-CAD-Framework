@@ -164,4 +164,9 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		
 		data.occupation = occ;
 	}
+	
+	@Override
+	public int hashCode() {
+		return this.index;
+	}
 }

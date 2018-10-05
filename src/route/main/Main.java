@@ -97,7 +97,8 @@ public class Main {
 		this.processHierarchy();
 		
 		this.sanityCheck();
-
+		
+		System.gc();
 					
 		long start = System.nanoTime();
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
@@ -107,7 +108,7 @@ public class Main {
 		System.out.printf("Routing took %.2fs\n",((end - start) * Math.pow(10, -9)));
 		
 		System.out.println("Routing succeeded after " + numIterations + " iterations");
-		System.out.println("The total wirelength is equal to " + this.circuit.getResourceGraph().totalWireLengt());
+		System.out.println("The total wirelength is equal to " + this.circuit.getResourceGraph().totalWireLength());
 		System.out.println("The total congested wirelength is equal to " + this.circuit.getResourceGraph().congestedTotalWireLengt());
 		System.out.println("The number of used wire segments is equal to " + this.circuit.getResourceGraph().wireSegmentsUsed());
 		System.out.println("Maximum net length " + this.circuit.maximumNetLength());

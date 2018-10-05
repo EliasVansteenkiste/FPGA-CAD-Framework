@@ -441,7 +441,7 @@ public class ResourceGraph {
 	/********************
 	 * Routing statistics
 	 ********************/
-	public int totalWireLengt() {
+	public int totalWireLength() {
 		int totalWireLength = 0;
 		for(RouteNode routeNode : this.routeNodes) {
 			if(routeNode.isWire()) {
