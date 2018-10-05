@@ -3,10 +3,6 @@ package route.main;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import route.circuit.Circuit;
 import route.circuit.architecture.Architecture;
@@ -23,14 +19,10 @@ import org.xml.sax.SAXException;
 
 import route.circuit.exceptions.PlacementException;
 import route.circuit.io.BlockNotFoundException;
-import route.circuit.io.HierarchyParser;
 import route.circuit.io.IllegalSizeException;
 import route.circuit.io.PlaceParser;
 import route.circuit.pin.AbstractPin;
 import route.circuit.pin.Pin;
-import route.hierarchy.HierarchyNode;
-import route.hierarchy.LeafNode;
-import route.route.Connection;
 import route.route.ConnectionRouter;
 
 public class Main {
@@ -40,13 +32,9 @@ public class Main {
 	private String circuitName;
 	private File architectureFile, blifFile, netFile, placeFile, hierarchyFile, lookupDumpFile, sdcFile, rrgFile;
 	
-	private boolean parallel_routing;
-	private int num_route_nodes;
-	
 	private boolean useVprTiming;
 	
 	private Circuit circuit;
-	private HierarchyNode rootNode;
 
 	public Main(Logger logger, String[] arguments) {
 		for(int i = 0; i < arguments.length; i++) {
@@ -66,10 +54,6 @@ public class Main {
 				this.lookupDumpFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("rr_graph_file")) {
 				this.rrgFile = new File(arguments[++i]);
-			} else if(arguments[i].contains("parallel_routing")) {
-				this.parallel_routing = Boolean.parseBoolean(arguments[++i]);
-			} else if(arguments[i].contains("num_route_nodes")) {
-				this.num_route_nodes = Integer.parseInt(arguments[++i]);
 			}
 		}
 		
@@ -94,7 +78,6 @@ public class Main {
 		this.printNumBlocks();
 		
 		this.readPlaceFile();
-		this.processHierarchy();
 		
 		this.sanityCheck();
 		
@@ -102,7 +85,7 @@ public class Main {
 					
 		long start = System.nanoTime();
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
-		int numIterations = route.route(this.rootNode, this.parallel_routing, this.num_route_nodes);
+		int numIterations = route.route();
 		long end = System.nanoTime();
 		
 		System.out.printf("Routing took %.2fs\n",((end - start) * Math.pow(10, -9)));
@@ -163,42 +146,6 @@ public class Main {
         }
         this.circuit.loadNetsAndConnections();
     }
-    private void processHierarchy() {
-    	this.readHierarchyFile();
-		
-    	for(Connection con : this.circuit.getConnections()) {
-    		con.setLeafNode();
-    	}
-		
-    	Map<LeafNode, Set<Connection>> clusterConnections = new HashMap<>();
-    	for(Connection connection : this.circuit.getConnections()) {
-    		LeafNode ln = connection.leafNode;
-			if(!clusterConnections.containsKey(ln)) {
-				Set<Connection> temp = new HashSet<>();
-				clusterConnections.put(ln, temp);
-			}
-			clusterConnections.get(ln).add(connection);
-     	}
-    	
-    	for(LeafNode ln : clusterConnections.keySet()) {
-    		for(Connection connection : clusterConnections.get(ln)) {
-    			ln.addConnection(connection);
-    		}
-    	}
-    }
-    private void readHierarchyFile() {
-        if(this.hierarchyFile != null){
-        	HierarchyParser hierarchyParser = new HierarchyParser(this.circuit, this.hierarchyFile);
-        	try {
-        		this.rootNode = hierarchyParser.parse();
-        	} catch(IOException error) {
-                 this.logger.raise("Something went wrong while parsing the hierarchy file", error);
-			}
-        } else {
-        	this.logger.raise("No valid hierarchy file");
-        }
-    }
-
 	
     private void checkFileExistence(String prefix, File file) {
         if(file == null) {

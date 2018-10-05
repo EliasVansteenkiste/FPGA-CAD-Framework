@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -18,8 +17,6 @@ import route.circuit.resource.Opin;
 import route.circuit.resource.ResourceGraph;
 import route.circuit.resource.RouteNode;
 import route.circuit.resource.RouteNodeType;
-import route.hierarchy.HierarchyNode;
-import route.route.RouteCluster;
 
 public class ConnectionRouter {
 	final ResourceGraph rrg;
@@ -31,11 +28,6 @@ public class ConnectionRouter {
 	private final PriorityQueue<QueueElement> queue;
 	
 	private final Collection<RouteNodeData> nodesTouched;
-	
-	private final Collection<RouteCluster> routeClusters;
-	private final Collection<Connection> connections;
-	private final Collection<Connection> localConnections;
-	private final Collection<Connection> globalConnections;
 	
 	private final List<String> printRouteInformation;
 	
@@ -49,15 +41,10 @@ public class ConnectionRouter {
 		
 		this.queue = new PriorityQueue<>();
 		
-		this.routeClusters = new ArrayList<>();
-		this.connections = new ArrayList<>();
-		this.localConnections = new ArrayList<>();
-		this.globalConnections = new ArrayList<>();
-		
 		this.printRouteInformation = new ArrayList<>();
 	}
     
-    public int route(HierarchyNode rootNode, boolean parallel_routing, int num_route_nodes) {
+    public int route() {
     	System.out.println("---------------------------");
     	System.out.println("|         HROUTE          |");
     	System.out.println("---------------------------");
@@ -65,84 +52,9 @@ public class ConnectionRouter {
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
 		System.out.println("---------------------------");
 		System.out.println();
+	
+		this.doRouting("Route all", this.circuit.getConnections(), 100, true, 4, 1.5);
 		
-			
-		if(parallel_routing) {
-			//All leaf nodes are route nodes, can be limited to the number of threads
-			List<HierarchyNode> routeNodes = new LinkedList<>();
-			routeNodes.addAll(rootNode.getLeafNodes());
-			
-			int numIt = 1000;
-			
-			while(routeNodes.size() > num_route_nodes) {
-				HierarchyNode best = null;
-				int cost = Integer.MAX_VALUE;
-				
-				for(HierarchyNode node:routeNodes) {
-					if(node.getParent().cost() < cost) {
-						best = node.getParent(); 
-						cost = best.cost();
-					}
-				}		
-				
-				for(HierarchyNode child : best.getChildren()) {
-					routeNodes.remove(child);
-				}
-				routeNodes.add(best);
-			}
-			
-			for(HierarchyNode routeCluster : routeNodes) {
-				RouteCluster cluster = new RouteCluster(routeCluster);
-				this.routeClusters.add(cluster);
-				
-				this.connections.addAll(cluster.getLocalConnections());
-				this.connections.addAll(cluster.getGlobalConnections());
-				
-				this.localConnections.addAll(cluster.getLocalConnections());
-				this.globalConnections.addAll(cluster.getGlobalConnections());
-			}
-
-			int minimumCost = Integer.MAX_VALUE;
-			int maximumCost = 0;
-			for(RouteCluster cluster : this.routeClusters) {
-				int cost = cluster.getCost();
-				
-				if(cost < minimumCost) minimumCost = cost;
-				if(cost > maximumCost) maximumCost = cost;
-			}
-			
-			System.out.println("\n----------------------------------------------------------");
-			System.out.println("                           PHASE 1");
-			System.out.println("----------------------------------------------------------\n");
-			for(RouteCluster cluster : this.routeClusters) {
-				this.rrg.reset();
-				
-				double alphaValue = 1.5;
-				double maximumAlpha = alphaValue;
-				double minimumAlpha = alphaValue;
-				double alpha = minimumAlpha + (maximumAlpha - minimumAlpha) / (maximumCost - minimumCost) * (cluster.getCost() - minimumCost);
-				String name = "Route cluster " + cluster + " => Conn: " + cluster.getConnections().size() + " Cost: " + cluster.getCost();
-				this.doRouting(name, cluster.getConnections(), numIt, true, Integer.MAX_VALUE, alpha);
-			}
-			
-			System.out.println("\n----------------------------------------------------------");
-			System.out.println("                           PHASE 2");
-			System.out.println("----------------------------------------------------------\n");
-			
-			this.rrg.reset();
-			for(Connection conn : this.connections) {
-				this.add(conn);
-			}
-			
-			this.doRouting("Route remaining congested connections", this.connections, 200, false, 2, 1.5);
-			
-			for(String line : this.printRouteInformation) {
-				System.out.println(line);
-			}
-			System.out.println();
-		} else {
-			this.doRouting("Route all", this.circuit.getConnections(), 100, true, 4, 1.5);
-		}
 		
 		/***************************
 		 * OPIN tester: test if each

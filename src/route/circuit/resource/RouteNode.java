@@ -45,9 +45,6 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public void resetDataInNode() {
 		this.target = false;
 	}
-	public void reset() {
-		this.routeNodeData.reset();
-	}
 
 	private double calculateBaseCost() {
 		switch (this.type) {

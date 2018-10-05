@@ -549,9 +549,8 @@ public class TimingGraph {
     	int x = node.getGlobalBlock().getColumn();
     	int y = node.getGlobalBlock().getRow();
     	double delay = node.getArrivalTime() * Math.pow(10, 9);
-    	int leafNode = node.getGlobalBlock().getLeafNode().getIndex();
     	
-    	return String.format("%-" + maxLen + "s  %-3d %-3d  %-9s %-8d\n", nodeInfo, x, y, String.format("%.3f", delay), leafNode);
+    	return String.format("%-" + maxLen + "s  %-3d %-3d  %-9s\n", nodeInfo, x, y, String.format("%.3f", delay));
     }
     private boolean compareDouble(double var1, double var2){
     	return Math.abs(var1 - var2) < Math.pow(10, -12);

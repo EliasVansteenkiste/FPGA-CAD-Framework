@@ -9,30 +9,14 @@ import route.circuit.exceptions.PlacedBlockException;
 import route.circuit.pin.Pin;
 import route.circuit.resource.Instance;
 import route.circuit.timing.TimingNode;
-import route.hierarchy.LeafNode;
 
 public class GlobalBlock extends AbstractBlock {
 
     private Instance siteInstance;
     private ArrayList<TimingNode> timingNodes = new ArrayList<TimingNode>();
 
-    private LeafNode leafNode;
-
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
-
-        this.leafNode = null;
-    }
-
-    //Leaf node
-    public void setLeafNode(LeafNode hierarchyNode){
-    	this.leafNode = hierarchyNode;
-    }
-    public LeafNode getLeafNode(){
-    	return this.leafNode;
-    }
-    public boolean hasLeafNode(){
-    	return !(this.leafNode == null);
     }
 
     @Override

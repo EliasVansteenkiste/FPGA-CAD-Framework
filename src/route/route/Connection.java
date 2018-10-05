@@ -7,8 +7,6 @@ import route.circuit.pin.Pin;
 import route.circuit.resource.Opin;
 import route.circuit.resource.RouteNode;
 import route.circuit.resource.RouteNodeType;
-import route.hierarchy.LeafNode;
-import route.hierarchy.HierarchyNode;
 
 public class Connection implements Comparable<Connection>  {
 	public final int id;//Unique ID number
@@ -17,8 +15,6 @@ public class Connection implements Comparable<Connection>  {
 	public final Pin sink;
 
     public Net net;
-    public LeafNode leafNode;
-    public HierarchyNode rootNode;
     public final int boundingBox;
 	
 	public final String netName;
@@ -66,7 +62,6 @@ public class Connection implements Comparable<Connection>  {
 		this.netName = this.source.getNetName();
 		
 		this.net = null;
-		this.leafNode = null;
 	}
 	private int calculateBoundingBox() {
 		int min_x, max_x, min_y, max_y;
@@ -97,17 +92,7 @@ public class Connection implements Comparable<Connection>  {
 	public void setNet(Net net) {
 		this.net = net;
 	}
-	public void setLeafNode() {
-		this.leafNode = this.source.getOwner().getLeafNode();//TODO SINK OR SOURCE?
-		this.isGlobal =  (this.source.getOwner().getLeafNode().getIndex() != this.sink.getOwner().getLeafNode().getIndex());
-	}
-	public void setRootNode(HierarchyNode rootNode) {
-		this.rootNode = rootNode;
-	}
-	
-	public boolean hasLeafNode() {
-		return this.leafNode != null;
-	}
+
 	public boolean isGlobal() {
 		return this.isGlobal;
 	}
