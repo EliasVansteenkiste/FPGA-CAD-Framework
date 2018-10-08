@@ -1,7 +1,7 @@
 package route.route;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import route.circuit.pin.Pin;
 import route.circuit.resource.Opin;
@@ -22,7 +22,7 @@ public class Connection implements Comparable<Connection>  {
 	public final RouteNode sourceRouteNode;
 	public final RouteNode sinkRouteNode;
 	
-	public final Set<RouteNode> routeNodes;
+	public final List<RouteNode> routeNodes;
 	
 	public boolean isGlobal;
 	
@@ -56,7 +56,7 @@ public class Connection implements Comparable<Connection>  {
 		this.boundingBox = this.calculateBoundingBox();
 		
 		//Route nodes
-		this.routeNodes = new HashSet<RouteNode>();
+		this.routeNodes = new ArrayList<>();
 		
 		//Net name
 		this.netName = this.source.getNetName();
@@ -107,7 +107,7 @@ public class Connection implements Comparable<Connection>  {
 	public void resetConnection() {
 		this.routeNodes.clear();
 	}
-
+	
 	@Override
 	public String toString() {
 		return this.id + "_" + this.netName;
