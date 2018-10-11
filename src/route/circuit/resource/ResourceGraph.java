@@ -163,6 +163,8 @@ public class ResourceGraph {
 		System.out.println("Process RRG");
 		BufferedReader reader = new BufferedReader(new FileReader(rrgFile));
 		
+		List<SwitchType> switchTypes = new ArrayList<>();
+		
 		String line;
 		String[] words;
 		RouteNode routeNode = null;
@@ -186,9 +188,14 @@ public class ResourceGraph {
                 }else if(line.contains("EDGES => Node")) {
                 	//System.out.println("Edges mode");
                 	lineType = 2;
-                }else if(line.contains("RR Switch types")) {
-                	//System.out.println("Switch type mode");
+                }else if(line.contains("Info about switches")) {
                 	lineType = 3;
+                }else if(line.contains("RR Switch types")) {
+                	lineType = 4;
+                	
+                	//for(SwitchType switchType : switchTypes) {
+                	//	System.out.println(switchType);
+                	//}
             	}else if(lineType == 1) {
             		words = line.split(";");
             		
@@ -319,19 +326,21 @@ public class ResourceGraph {
             		parent.setChildren(children);
             		
             	}else if(lineType == 3) {
+            		switchTypes.add(new SwitchType(line));
+            	}else if(lineType == 4) {
             		words = line.split(";");
             		
             		RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
             		int numChildren = parent.numChildren();
             		
-            		short[] switchType = new short[numChildren];
+            		SwitchType[] switches = new SwitchType[numChildren];
             		int indexCounter = 0;
             		for(int childIndex = 1; childIndex < words.length; childIndex++) {
-            			switchType[indexCounter] = Short.parseShort(words[childIndex]);
+            			switches[indexCounter] = switchTypes.get(Integer.parseInt(words[childIndex]));
             			indexCounter++;
             		}
             		
-            		parent.setSwitchType(switchType);
+            		parent.setSwitchType(switches);
             	}
         	}
         }

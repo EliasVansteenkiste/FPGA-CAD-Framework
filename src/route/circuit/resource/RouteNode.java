@@ -14,7 +14,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public final double baseCost;
 	
 	public RouteNode[] children;
-	public short[] switchType;
+	public SwitchType[] switches;
 
 	public final RouteNodeData routeNodeData;
 	
@@ -35,7 +35,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.baseCost = this.calculateBaseCost();
 		
 		this.children = null;
-		this.switchType = null;
+		this.switches = null;
 		
 		this.routeNodeData = new RouteNodeData();
 
@@ -71,8 +71,8 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		return this.children.length;
 	}
 	
-	public void setSwitchType(short[] switchType) {
-		this.switchType = switchType;
+	public void setSwitchType(SwitchType[] switches) {
+		this.switches = switches;
 	}
 
 	public boolean isWire() {
