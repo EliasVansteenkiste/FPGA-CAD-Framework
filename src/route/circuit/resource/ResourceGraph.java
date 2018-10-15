@@ -160,7 +160,10 @@ public class ResourceGraph {
      * DUMPED BY VPR      *
      **********************/
 	private void generateRRG(File rrgFile) throws IOException {
-		System.out.println("Process RRG");
+		System.out.println("---------------");
+		System.out.println("| Process RRG |");
+		System.out.println("---------------");
+		System.out.println();
 		BufferedReader reader = new BufferedReader(new FileReader(rrgFile));
 		
 		List<SwitchType> switchTypes = new ArrayList<>();
@@ -344,7 +347,10 @@ public class ResourceGraph {
             	}
         	}
         }
-
+        System.out.println("Switch Types:");
+        for(SwitchType switchType : switchTypes) System.out.println("  " + switchType);
+        System.out.println();
+        
         reader.close();
 	}
 	private void assignNamesToSourceAndSink() {
