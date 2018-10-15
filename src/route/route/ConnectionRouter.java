@@ -302,21 +302,21 @@ public class ConnectionRouter {
 		// Add source to queue
 		RouteNode source = con.sourceRouteNode;
 		double source_cost = getRouteNodeCost(source, con);
-		addNodeToQueue(source, null, source_cost, getLowerBoundTotalPathCost(source, con, source_cost));
+		this.addNodeToQueue(source, null, source_cost, getLowerBoundTotalPathCost(source, con, source_cost));
 		
 		// Start Dijkstra / directed search
 		while (!targetReached()) {//TODO CHECK
-			expandFirstNode(con);
+			this.expandFirstNode(con);
 		}
 		
 		// Reset target flag sink
 		sink.target = false;
 		
 		// Save routing in connection class
-		saveRouting(con);
+		this.saveRouting(con);
 		
 		// Reset path cost from Dijkstra Algorithm
-		resetPathCost();
+		this.resetPathCost();
 
 		return true;
 	}
@@ -356,32 +356,29 @@ public class ConnectionRouter {
 		RouteNode node = qe.node;
 
 		for (RouteNode child : node.children) {
-			if(child.type.equals(RouteNodeType.OPIN)) {
+			if(child.type.equals(RouteNodeType.OPIN)) { //OPIN
 				if(con.net.hasOpin()) {
 					if(child.index == con.net.getOpin().index) {
-						double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
-						double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
-						this.addNodeToQueue(child, qe, childCost, childCostEstimate);
+						this.addNodeToQueue(node, child, qe, con);
 					}
 				} else if(!child.used()) {
-					double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
-					double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
-					this.addNodeToQueue(child, qe, childCost, childCostEstimate);
+					this.addNodeToQueue(node, child, qe, con);
 				}
-			} else if(child.type.equals(RouteNodeType.IPIN)) {
+			} else if(child.type.equals(RouteNodeType.IPIN)) { //IPIN
 				if(child.children[0].target) {
-					double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
-					double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
-					this.addNodeToQueue(child, qe, childCost, childCostEstimate);
+					this.addNodeToQueue(node, child, qe, con);
 				}
-			} else {
-				if(con.isInBoundingBoxLimit(child)) {
-					double childCost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
-					double childCostEstimate = getLowerBoundTotalPathCost(child, con, childCost);
-					this.addNodeToQueue(child, qe, childCost, childCostEstimate);
-				}
+			} else if(con.isInBoundingBoxLimit(child)) { //ELSE
+				this.addNodeToQueue(node, child, qe, con);
 			}
 		}
+	}
+	
+	private void addNodeToQueue(RouteNode node, RouteNode child, QueueElement prev, Connection con) {
+		double new_partial_path_cost = node.routeNodeData.getPartialPathCost() + getRouteNodeCost(child, con);
+		double new_lower_bound_total_path_cost = getLowerBoundTotalPathCost(child, con, new_partial_path_cost);
+		
+		this.addNodeToQueue(child, prev, new_partial_path_cost, new_lower_bound_total_path_cost);
 	}
 	private void addNodeToQueue(RouteNode node, QueueElement prev, double new_partial_path_cost, double new_lower_bound_total_path_cost) {
 		RouteNodeData nodeData = node.routeNodeData;
