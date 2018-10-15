@@ -11,7 +11,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	
 	public final RouteNodeType type;
 	public final short capacity;
-	public final double baseCost;
+	public final float baseCost;
 	
 	public RouteNode[] children;
 	public SwitchType[] switches;
@@ -41,12 +41,8 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 
 		this.target = false;
 	}
-	
-	public void resetDataInNode() {
-		this.target = false;
-	}
 
-	private double calculateBaseCost() {
+	private float calculateBaseCost() {
 		switch (this.type) {
 			case SOURCE:
 				return 1;
@@ -58,7 +54,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 			case SINK:
 				return 0;
 			case IPIN:
-				return 0.95;
+				return 0.95f;
 			default:
 				throw new RuntimeException();
 		}
@@ -147,16 +143,16 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		return this.routeNodeData.occupation > 0;
 	}
 	
-	public void updatePresentCongestionPenalty(double pres_fac) {
+	public void updatePresentCongestionPenalty(float pres_fac) {
 		RouteNodeData data = this.routeNodeData;
 		
 		int occ = data.numUniqueSources();
 		int cap = this.capacity;
 		
 		if (occ < cap) {
-			data.pres_cost = 1.0;
+			data.pres_cost = 1;
 		} else {
-			data.pres_cost = 1.0 + (occ - cap + 1) * pres_fac;
+			data.pres_cost = 1 + (occ - cap + 1) * pres_fac;
 		}
 		
 		data.occupation = occ;
