@@ -3,8 +3,8 @@ package route.circuit.resource;
 public class Source extends RouteNode {
 	private String name;
 	
-	public Source(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, double baseCost) {
-		super(index, xlow, xhigh, ylow, yhigh, n, capacity, RouteNodeType.SOURCE, baseCost);
+	public Source(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, IndexedData indexedData) {
+		super(index, xlow, xhigh, ylow, yhigh, n, capacity, RouteNodeType.SOURCE, 0, 0, indexedData);
 		
 		this.name = null;
 	}

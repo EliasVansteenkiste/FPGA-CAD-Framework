@@ -1,7 +1,6 @@
 package route.circuit.resource;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,7 +49,7 @@ public class ResourceGraph {
         this.createSites();
         
 		try {
-			this.generateRRG(this.architecture.getRRGFile());
+			this.generateRRG(this.architecture.getRRGFile().getAbsolutePath());
 		} catch (IOException e) {
 			System.err.println("Problem in generating RRG: " + e.getMessage());
 			e.printStackTrace();
@@ -152,206 +151,251 @@ public class ResourceGraph {
     public List<Site> getSites(){
     	return this.sites;
     }
-	
     
-    /**********************
-     * GENERATE THE RRG   *
-     * READ FROM RRG FILE *
-     * DUMPED BY VPR      *
-     **********************/
-	private void generateRRG(File rrgFile) throws IOException {
+    /******************************
+     * GENERATE THE RRG READ FROM * 
+     * RRG FILE DUMPED BY VPR     *
+     ******************************/
+    
+	private void generateRRG(String rrgFileName) throws IOException {
 		System.out.println("---------------");
 		System.out.println("| Process RRG |");
 		System.out.println("---------------");
 		System.out.println();
-		BufferedReader reader = new BufferedReader(new FileReader(rrgFile));
 		
-		List<SwitchType> switchTypes = new ArrayList<>();
+		BufferedReader reader = null;
+		String line = null;
+		String[] words = null;
 		
-		String line;
-		String[] words;
-		RouteNode routeNode = null;
-	
-		int lineType = -1;
+		/*****************************
+		 *        Indexed Data       *
+		 *****************************/
 		
-		String currentPort = null;
-		int portIndex = -1;
+		List<IndexedData> indexedDataList = new ArrayList<>();
+		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_indexed_data")));
 		
-        while ((line = reader.readLine()) != null) {
-            //Clean up line
-        	line = line.trim();
-        	
-        	if(line.length() > 0){
-                //Process line
-                if(line.contains("Node;Type;Name")){
-                	//System.out.println("Node mode");
-                	//System.out.printf("%8s   %6s   %12s   %5s   %5s   %5s   %5s   %6s   %3s   %4s   %6s   %10s\n", "Node", "Type", "Name", "xlow", "xhigh", "ylow", "yhigh", "PtcNum", "Cap", "Cost", "R", "C");
-                	//System.out.printf("%8s   %6s   %12s   %5s   %5s   %5s   %5s   %6s   %3s   %4s   %6s   %10s\n", "--------", "------", "------------", "-----", "-----", "-----", "-----", "------", "---", "----", "------", "----------");
-                	lineType = 1;
-                }else if(line.contains("EDGES => Node")) {
-                	//System.out.println("Edges mode");
-                	lineType = 2;
-                }else if(line.contains("Info about switches")) {
-                	lineType = 3;
-                }else if(line.contains("RR Switch types")) {
-                	lineType = 4;
-                	
-                	//for(SwitchType switchType : switchTypes) {
-                	//	System.out.println(switchType);
-                	//}
-            	}else if(lineType == 1) {
-            		words = line.split(";");
-            		
-            		int index = Integer.parseInt(words[0]);
-            		String type = words[1];
-            		String name = words[2];
-            		int xlow = Integer.parseInt(words[3]);
-            		int xhigh = Integer.parseInt(words[4]);
-            		int ylow = Integer.parseInt(words[5]);
-            		int yhigh = Integer.parseInt(words[6]);
-            		int n = Integer.parseInt(words[7]);
-            		
-            		if(n == 0){//New global block, reset data
-            			currentPort = null;
-            			portIndex = -1;
-            		}
-            		
-            		int cap = Integer.parseInt(words[8]);
-            		double r = Double.parseDouble(words[9]);
-            		double c = Double.parseDouble(words[10]);
-            		int cost = Integer.parseInt(words[11]);
-            		
-            		switch (type) {
-            			case "SOURCE":
-            				//System.out.printf("%8d   %6s   %12s   %5d   %5d   %5d   %5d   %6d   %3d   %4d   %4.2f   %2.4e\n", index, type, name, xlow, xhigh, ylow, yhigh, n, cap, cost, r, c);
-            				
-            				//Assertions
-            				assert name.equals("-");
-            				assert r == 0.0;
-            				assert c == 0.0;
-            				
-            				routeNode = new Source(index, xlow, xhigh, ylow, yhigh, n, cap, cost);
-            				
-            				break;
-            			case "SINK":
-            				//System.out.printf("%8d   %6s   %12s   %5d   %5d   %5d   %5d   %6d   %3d   %4d   %4.2f   %2.4e\n", index, type, name, xlow, xhigh, ylow, yhigh, n, cap, cost, r, c);
-            				
-            				//Assertions
-            				assert name.equals("-");
-            				assert r == 0.0;
-            				assert c == 0.0;
-            				
-            				routeNode = new Sink(index, xlow, xhigh, ylow, yhigh, n, cap, cost);
-            				
-            				break;
-            			case "IPIN":
-            				//System.out.printf("%8d   %6s   %12s   %5d   %5d   %5d   %5d   %6d   %3d   %4d   %4.2f   %2.4e\n", index, type, name, xlow, xhigh, ylow, yhigh, n, cap, cost, r, c);
-
-            				//Assertions
-            				assert cap == 1;
-            				assert r == 0.0;
-            				assert c == 0.0;
-            				
-            				if(currentPort == null){
-            					currentPort = name;
-            					portIndex = 0;
-            				}else if(!currentPort.equals(name)){
-            					currentPort = name;
-            					portIndex = 0;
-            				}
-            				routeNode = new Ipin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, cost);
-            				
-            				portIndex += 1;
-            				
-            				break;
-            			case "OPIN":
-            				//System.out.printf("%8d   %6s   %12s   %5d   %5d   %5d   %5d   %6d   %3d   %4d   %4.2f   %2.4e\n", index, type, name, xlow, xhigh, ylow, yhigh, n, cap, cost, r, c);
-            				
-            				//Assertions
-            				assert cap == 1;
-            				assert r == 0.0;
-            				assert c == 0.0;
-            				
-            				if(currentPort == null){
-            					currentPort = name;
-            					portIndex = 0;
-            				}else if(!currentPort.equals(name)){
-            					currentPort = name;
-            					portIndex = 0;
-            				}
-            				
-            				routeNode = new Opin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, cost);
-            				
-            				portIndex += 1;
-            				
-            				break;
-            			case "CHANX":
-            				//System.out.printf("%8d   %6s   %12s   %5d   %5d   %5d   %5d   %6d   %3d   %4d   %4.2f   %2.4e\n", index, type, name, xlow, xhigh, ylow, yhigh, n, cap, cost, r, c);
-            				
-            				//Assertions
-            				assert name.equals("-");
-            				assert cap == 1;
-            				
-            				routeNode = new HChan(index, xlow, xhigh, ylow, yhigh, n, r, c, cost);
-            				
-            				break;
-            			case "CHANY":
-            				//System.out.printf("%8d   %6s   %12s   %5d   %5d   %5d   %5d   %6d   %3d   %4d   %4.2f   %2.4e\n", index, type, name, xlow, xhigh, ylow, yhigh, n, cap, cost, r, c);
-            				
-            				//Assertions
-            				assert name.equals("-");
-            				assert cap == 1;
-            				
-            				routeNode = new VChan(index, xlow, xhigh, ylow, yhigh, n, r, c, cost);
-            				
-            				break;
-            			default:
-            				System.out.println("Unknown type: " + type);
-            				break;
-            		}
-            		this.addRouteNode(routeNode);
-            		
-            	}else if(lineType == 2) {
-            		words = line.split(";");
-            		
-            		RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
-            		
-            		int numChildren = Integer.parseInt(words[1]);
-            		RouteNode[] children = new RouteNode[numChildren];
-            		
-            		int childCounter = 0;
-            		for(int childIndex = 2; childIndex < words.length; childIndex++) {
-            			RouteNode child = this.routeNodes.get(Integer.parseInt(words[childIndex]));
-            			children[childCounter] = child;
-            			childCounter++;
-            		}
-            		
-            		parent.setChildren(children);
-            		
-            	}else if(lineType == 3) {
-            		switchTypes.add(new SwitchType(line));
-            	}else if(lineType == 4) {
-            		words = line.split(";");
-            		
-            		RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
-            		int numChildren = parent.numChildren();
-            		
-            		SwitchType[] switches = new SwitchType[numChildren];
-            		int indexCounter = 0;
-            		for(int childIndex = 1; childIndex < words.length; childIndex++) {
-            			switches[indexCounter] = switchTypes.get(Integer.parseInt(words[childIndex]));
-            			indexCounter++;
-            		}
-            		
-            		parent.setSwitchType(switches);
-            	}
+		while ((line = reader.readLine()) != null) {
+			
+			line = line.trim();
+			if (line.length() > 0) {
+				
+				indexedDataList.add(new IndexedData(line));
+			}
+		}
+        reader.close();
+        
+        for (IndexedData data : indexedDataList) {
+        	if (data.orthoCostIndex != -1) {
+        		data.ortho_data = indexedDataList.get(data.orthoCostIndex);
         	}
         }
-        System.out.println("Switch Types:");
-        for(SwitchType switchType : switchTypes) System.out.println("  " + switchType);
-        System.out.println();
         
+        //for(IndexedData data : indexedDataList) {
+        //	System.out.println(data);
+        //}
+        
+		/*****************************
+		 *        Switch Types       *
+		 *****************************/
+		
+		List<SwitchType> switchTypesList = new ArrayList<>();
+		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_switch_types")));
+		
+		while ((line = reader.readLine()) != null) {
+			
+			line = line.trim();
+			if (line.length() > 0) {
+				
+				switchTypesList.add(new SwitchType(line));
+			}
+		}
+		
         reader.close();
+        
+		//for(SwitchType type : switchTypesList) {
+		//	System.out.println(type);
+		//}
+		
+		/*****************************
+		 *        Route Nodes        *
+		 *****************************/
+		
+		RouteNode routeNode = null;
+		String currentPort = null;
+		int portIndex = -1;
+		IndexedData data = null;
+		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_nodes")));
+		
+		while ((line = reader.readLine()) != null) {
+        	
+			line = line.trim();
+			if(line.length() > 0){
+        		
+        		words = line.split(";");
+        		
+        		int index = Integer.parseInt(words[0]);
+        		String type = words[1];
+        		String name = words[2];
+        		int xlow = Integer.parseInt(words[3]);
+        		int xhigh = Integer.parseInt(words[4]);
+        		int ylow = Integer.parseInt(words[5]);
+        		int yhigh = Integer.parseInt(words[6]);
+        		int n = Integer.parseInt(words[7]);
+        		
+        		if(n == 0){//New global block, reset data
+        			currentPort = null;
+        			portIndex = -1;
+        		}
+        		
+        		int cap = Integer.parseInt(words[8]);
+        		float r = Float.parseFloat(words[9]);
+        		float c = Float.parseFloat(words[10]);
+        		
+        		int cost_index = Integer.parseInt(words[11]);
+        		data = indexedDataList.get(cost_index);
+        		
+        		switch (type) {
+        			case "SOURCE":        				
+        				//Assertions
+        				assert name.equals("-");
+        				assert r == 0;
+        				assert c == 0;
+        				
+        				routeNode = new Source(index, xlow, xhigh, ylow, yhigh, n, cap, data);
+        				
+        				break;
+        			case "SINK":        				
+        				//Assertions
+        				assert name.equals("-");
+        				assert r == 0;
+        				assert c == 0;
+        				
+        				routeNode = new Sink(index, xlow, xhigh, ylow, yhigh, n, cap, data);
+        				
+        				break;
+        			case "IPIN":
+        				//Assertions
+        				assert cap == 1;
+        				assert r == 0;
+        				assert c == 0;
+        				
+        				if(currentPort == null){
+        					currentPort = name;
+        					portIndex = 0;
+        				}else if(!currentPort.equals(name)){
+        					currentPort = name;
+        					portIndex = 0;
+        				}
+        				
+        				routeNode = new Ipin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, data);
+        				
+        				portIndex += 1;
+        				
+        				break;
+        			case "OPIN":        				
+        				//Assertions
+        				assert cap == 1;
+        				assert r == 0;
+        				assert c == 0;
+        				
+        				if(currentPort == null){
+        					currentPort = name;
+        					portIndex = 0;
+        				}else if(!currentPort.equals(name)){
+        					currentPort = name;
+        					portIndex = 0;
+        				}
+        				
+        				routeNode = new Opin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, data);
+        				
+        				portIndex += 1;
+        				
+        				break;
+        			case "CHANX":        				
+        				//Assertions
+        				assert name.equals("-");
+        				assert cap == 1;
+        				
+        				routeNode = new HChan(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
+        				
+        				break;
+        			case "CHANY":        				
+        				//Assertions
+        				assert name.equals("-");
+        				assert cap == 1;
+        				
+        				routeNode = new VChan(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
+        				
+        				break;
+        			default:
+        				System.out.println("Unknown type: " + type);
+        				break;
+        		}
+        		this.addRouteNode(routeNode);
+        	}
+		}
+		
+		reader.close();
+		
+		/*****************************
+		 *         Children          *
+		 *****************************/
+		
+		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_children")));
+		
+		while ((line = reader.readLine()) != null) {
+			
+			line = line.trim();
+        	if(line.length() > 0){
+        		
+        		words = line.split(";");
+        		
+        		RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
+        		
+        		int numChildren = Integer.parseInt(words[1]);
+        		RouteNode[] children = new RouteNode[numChildren];
+        		
+        		int childCounter = 0;
+        		for(int childIndex = 2; childIndex < words.length; childIndex++) {
+        			RouteNode child = this.routeNodes.get(Integer.parseInt(words[childIndex]));
+        			children[childCounter] = child;
+        			childCounter++;
+        		}
+        		
+        		parent.setChildren(children);
+        	}
+		}
+		
+		reader.close();
+		
+		/*****************************
+		 *         Switches          *
+		 *****************************/
+		
+		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_switches")));
+		
+		while ((line = reader.readLine()) != null) {
+		
+			line = line.trim();
+			if(line.length() > 0){
+				
+				words = line.split(";");
+				
+				RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
+				int numChildren = parent.numChildren();
+				
+				SwitchType[] switches = new SwitchType[numChildren];
+				int indexCounter = 0;
+				for(int childIndex = 1; childIndex < words.length; childIndex++) {
+					switches[indexCounter] = switchTypesList.get(Integer.parseInt(words[childIndex]));
+					indexCounter++;
+				}
+				
+				parent.setSwitchType(switches);
+			}
+		}
+		
+		reader.close();
 	}
 	private void assignNamesToSourceAndSink() {
 		boolean printInfo = false;//TODO REMOVE

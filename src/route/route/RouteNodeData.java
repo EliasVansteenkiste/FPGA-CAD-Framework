@@ -11,7 +11,6 @@ public class RouteNodeData {
 	public float partial_path_cost;
 	public float lower_bound_total_path_cost;
 	
-	//public double r_upstream;
 	public RouteNode prev;
 	
 	public int occupation;
@@ -33,7 +32,6 @@ public class RouteNodeData {
 		this.partial_path_cost = Float.MAX_VALUE;
 		this.lower_bound_total_path_cost = Float.MAX_VALUE;
 		
-		//this.r_upstream = 0;
 		this.prev = null;
 	}
 	

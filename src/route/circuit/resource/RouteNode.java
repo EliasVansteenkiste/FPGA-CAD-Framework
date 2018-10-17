@@ -9,6 +9,9 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public final short ylow, yhigh;
 	public final short n;
 	
+	public final float r;
+	public final float c;
+	
 	public final RouteNodeType type;
 	public final short capacity;
 	public final float baseCost;
@@ -17,10 +20,11 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public SwitchType[] switches;
 
 	public final RouteNodeData routeNodeData;
+	public final IndexedData indexedData;
 	
 	public boolean target;
 	
-	public RouteNode(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, RouteNodeType t, double baseCost) {
+	public RouteNode(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, RouteNodeType t, float r, float c, IndexedData indexedData) {
 		this.index = index;
 		
 		this.xlow = (short) xlow;
@@ -34,9 +38,13 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.capacity = (short) capacity;
 		this.baseCost = this.calculateBaseCost();
 		
-		this.children = null;
-		this.switches = null;
+		this.r = r;
+		this.c = c;
 		
+		this.children = new RouteNode[0];
+		this.switches = new SwitchType[0];
+		
+		this.indexedData = indexedData;
 		this.routeNodeData = new RouteNodeData();
 
 		this.target = false;

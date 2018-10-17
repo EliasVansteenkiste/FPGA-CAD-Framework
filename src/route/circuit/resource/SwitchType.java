@@ -3,24 +3,30 @@ package route.circuit.resource;
 public class SwitchType {
 	public final int index;
 	public final boolean buffered;
-	public final double r;
-	public final double cin;
-	public final double cout;
-	public final double tdel;
-	public final double mux_trans_size;
-	public final double buf_size;
+	
+	public final float r;
+	public final float cin;
+	public final float cout;
+	public final float tdel;
+	
+	public final float mux_trans_size;
+	public final float buf_size;
 	
 	public SwitchType(String line) {
+		while(line.contains("  ")) line = line.replace("  ", " ");
+		
 		String[] words = line.split(" ");
 		
 		this.index = Integer.parseInt(words[1]);
 		this.buffered = Boolean.parseBoolean(words[3]);
-		this.r = Double.parseDouble(words[5]);
-		this.cin = Double.parseDouble(words[7]);
-		this.cout = Double.parseDouble(words[9]);
-		this.tdel = Double.parseDouble(words[11]);
-		this.mux_trans_size = Double.parseDouble(words[13]);
-		this.buf_size = Double.parseDouble(words[15]);
+		
+		this.r = Float.parseFloat(words[5]);
+		this.cin = Float.parseFloat(words[7]);
+		this.cout = Float.parseFloat(words[9]);
+		
+		this.tdel = Float.parseFloat(words[11]);
+		this.mux_trans_size = Float.parseFloat(words[13]);
+		this.buf_size = Float.parseFloat(words[15]);
 	}
 	
 	@Override

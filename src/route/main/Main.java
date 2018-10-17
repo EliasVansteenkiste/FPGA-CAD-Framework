@@ -70,7 +70,6 @@ public class Main {
 		this.checkFileExistence("Place file", this.placeFile);
 		this.checkFileExistence("Hierarchy file", this.hierarchyFile);
 		this.checkFileExistence("SDC file", this.sdcFile);
-		this.checkFileExistence("RRG file", this.rrgFile);
 	
 		this.loadCircuit();
 		this.detaildGlobalBlockInformation();

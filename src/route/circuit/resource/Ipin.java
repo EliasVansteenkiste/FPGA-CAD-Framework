@@ -4,8 +4,8 @@ public class Ipin extends RouteNode {
 	private final String portName;
 	private final int portIndex;
 	
-	public Ipin(int index, int xlow, int xhigh, int ylow, int yhigh, int n, String portName, int portIndex, double baseCost) {
-		super(index, xlow, xhigh, ylow, yhigh, n, 1, RouteNodeType.IPIN, baseCost);
+	public Ipin(int index, int xlow, int xhigh, int ylow, int yhigh, int n, String portName, int portIndex, IndexedData indexedData) {
+		super(index, xlow, xhigh, ylow, yhigh, n, 1, RouteNodeType.IPIN, 0, 0, indexedData);
 		this.portName = portName;
 		this.portIndex = portIndex;
 	}
