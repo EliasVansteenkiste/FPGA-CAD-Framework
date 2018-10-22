@@ -365,9 +365,6 @@ public class Circuit {
     public void recalculateTimingGraph() {
         this.timingGraph.calculateCriticalities(true);
     }
-    public double calculateTimingCost() {
-        return this.timingGraph.calculateTotalCost();
-    }
     public double getMaxDelay() {
         return this.timingGraph.getMaxDelay();
     }
