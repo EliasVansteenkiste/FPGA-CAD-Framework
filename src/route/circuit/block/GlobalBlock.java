@@ -6,7 +6,7 @@ import java.util.List;
 import route.circuit.architecture.BlockType;
 import route.circuit.architecture.PortType;
 import route.circuit.exceptions.PlacedBlockException;
-import route.circuit.pin.Pin;
+import route.circuit.pin.GlobalPin;
 import route.circuit.resource.Instance;
 import route.circuit.timing.TimingNode;
 
@@ -39,11 +39,11 @@ public class GlobalBlock extends AbstractBlock {
     public boolean hasCarry() {
         return this.blockType.getCarryFromPort() != null;
     }
-    public Pin getCarryIn() {
-        return (Pin) this.getPin(this.blockType.getCarryToPort(), 0);
+    public GlobalPin getCarryIn() {
+        return (GlobalPin) this.getPin(this.blockType.getCarryToPort(), 0);
     }
-    public Pin getCarryOut() {
-        return (Pin) this.getPin(this.blockType.getCarryFromPort(), 0);
+    public GlobalPin getCarryOut() {
+        return (GlobalPin) this.getPin(this.blockType.getCarryFromPort(), 0);
     }
 
     public void setSiteInstance(Instance siteInstance) throws PlacedBlockException {
@@ -69,7 +69,7 @@ public class GlobalBlock extends AbstractBlock {
     }
 
     @Override
-    protected Pin createPin(PortType portType, int index) {
-        return new Pin(this, portType, index);
+    protected GlobalPin createPin(PortType portType, int index) {
+        return new GlobalPin(this, portType, index);
     }
 }

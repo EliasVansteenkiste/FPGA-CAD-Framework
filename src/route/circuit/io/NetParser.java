@@ -21,7 +21,7 @@ import route.circuit.block.GlobalBlock;
 import route.circuit.block.LeafBlock;
 import route.circuit.block.LocalBlock;
 import route.circuit.pin.AbstractPin;
-import route.circuit.pin.Pin;
+import route.circuit.pin.GlobalPin;
 
 public class NetParser {
 
@@ -435,10 +435,10 @@ public class NetParser {
 
             globalSourcePin.addSink(sinkPin);
             
-            Pin netSource = (Pin) globalSourcePin;
+            GlobalPin netSource = (GlobalPin) globalSourcePin;
             netSource.setNetName(net);
             
-            Pin netSink = (Pin) sinkPin;
+            GlobalPin netSink = (GlobalPin) sinkPin;
             netSink.setNetName(net);
             
             sinkPin.setSource(globalSourcePin);

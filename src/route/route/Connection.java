@@ -3,16 +3,21 @@ package route.route;
 import java.util.ArrayList;
 import java.util.List;
 
-import route.circuit.pin.Pin;
+import route.circuit.pin.GlobalPin;
 import route.circuit.resource.Opin;
 import route.circuit.resource.RouteNode;
 import route.circuit.resource.RouteNodeType;
 
+
 public class Connection implements Comparable<Connection>  {
 	public final int id;//Unique ID number
     
-	public final Pin source;
-	public final Pin sink;
+	public final GlobalPin source;
+	public final GlobalPin sink;
+	
+	//TODO Get timing nodes of connection
+	//public TimingNode sourceTimingNode;
+	//public TimingNode sinkTimingNode;
 
     public Net net;
     public final int boundingBox;
@@ -28,7 +33,7 @@ public class Connection implements Comparable<Connection>  {
 	
 	public boolean route;
 	
-	public Connection(int id, Pin source, Pin sink) {
+	public Connection(int id, GlobalPin source, GlobalPin sink) {
 		this.id = id;
 		
 		this.source = source;

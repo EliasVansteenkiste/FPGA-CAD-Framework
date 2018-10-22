@@ -1,6 +1,6 @@
 package route.route;
 
-import route.circuit.pin.Pin;
+import route.circuit.pin.GlobalPin;
 import route.circuit.resource.RouteNode;
 import route.util.CountingSet;
 
@@ -15,7 +15,7 @@ public class RouteNodeData {
 	
 	public int occupation;
 	
-	private CountingSet<Pin> sourcesSet;
+	private CountingSet<GlobalPin> sourcesSet;
 	
     public RouteNodeData() {
     	this.pres_cost = 1;
@@ -62,9 +62,9 @@ public class RouteNodeData {
 		return this.partial_path_cost;
 	}
 
-	public void addSource(Pin source) {
+	public void addSource(GlobalPin source) {
 		if(this.sourcesSet == null) {
-			this.sourcesSet = new CountingSet<Pin>();
+			this.sourcesSet = new CountingSet<GlobalPin>();
 		}
 		this.sourcesSet.add(source);
 	}
@@ -76,14 +76,14 @@ public class RouteNodeData {
 		return this.sourcesSet.uniqueSize();
 	}
 	
-	public void removeSource(Pin source) {
+	public void removeSource(GlobalPin source) {
 		this.sourcesSet.remove(source);
 		if(this.sourcesSet.isEmpty()) {
 			this.sourcesSet = null;
 		}
 	}
 
-	public int countSourceUses(Pin source) {
+	public int countSourceUses(GlobalPin source) {
 		if(this.sourcesSet == null) {
 			return 0;
 		}

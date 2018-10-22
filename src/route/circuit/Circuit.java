@@ -20,7 +20,7 @@ import route.circuit.architecture.BlockType;
 import route.circuit.block.AbstractBlock;
 import route.circuit.block.GlobalBlock;
 import route.circuit.pin.AbstractPin;
-import route.circuit.pin.Pin;
+import route.circuit.pin.GlobalPin;
 import route.circuit.resource.ResourceGraph;
 import route.circuit.timing.TimingGraph;
 import route.route.Connection;
@@ -200,7 +200,7 @@ public class Circuit {
         int id = 0;
     	for(GlobalBlock globalBlock : this.getGlobalBlocks()) {
         	for(AbstractPin abstractSourcePin : globalBlock.getOutputPins()) {
-        		Pin sourcePin = (Pin) abstractSourcePin;
+        		GlobalPin sourcePin = (GlobalPin) abstractSourcePin;
         		
         		if(sourcePin.getNumSinks() > 0) {
         			String netName = sourcePin.getNetName();
@@ -209,7 +209,7 @@ public class Circuit {
     	        		Set<Connection> net = new HashSet<>();
     	        		
     	        		for(AbstractPin abstractSinkPin : sourcePin.getSinks()) {
-    	        			Pin sinkPin = (Pin) abstractSinkPin;
+    	        			GlobalPin sinkPin = (GlobalPin) abstractSinkPin;
     	        			
     	        			Connection c = new Connection(id, sourcePin, sinkPin);
     	        			this.cons.add(c);
@@ -401,7 +401,7 @@ public class Circuit {
     }
 
     public void recalculateTimingGraph() {
-        this.timingGraph.calculateCriticalities(true);
+        this.timingGraph.calculateCriticalities();
     }
     public double calculateTimingCost() {
         return this.timingGraph.calculateTotalCost();
