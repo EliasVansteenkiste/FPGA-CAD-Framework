@@ -2,7 +2,6 @@ package place.circuit.pin;
 
 import place.circuit.architecture.PortType;
 import place.circuit.block.LeafBlock;
-import place.circuit.timing.TimingNode;
 
 public class LeafPin extends LocalPin {
 
