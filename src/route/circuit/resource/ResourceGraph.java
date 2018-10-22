@@ -186,7 +186,7 @@ public class ResourceGraph {
         
         for (IndexedData data : indexedDataList) {
         	if (data.orthoCostIndex != -1) {
-        		data.ortho_data = indexedDataList.get(data.orthoCostIndex);
+        		data.setOrthoData(indexedDataList.get(data.orthoCostIndex));
         	}
         }
         
@@ -316,7 +316,7 @@ public class ResourceGraph {
         				assert name.equals("-");
         				assert cap == 1;
         				
-        				routeNode = new HChan(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
+        				routeNode = new Chanx(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
         				
         				break;
         			case "CHANY":        				
@@ -324,7 +324,7 @@ public class ResourceGraph {
         				assert name.equals("-");
         				assert cap == 1;
         				
-        				routeNode = new VChan(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
+        				routeNode = new Chany(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
         				
         				break;
         			default:
@@ -456,22 +456,91 @@ public class ResourceGraph {
 		}
 	}
 	
-	public int lowerEstimateConnectionCost(RouteNode source, RouteNode target) {
-		int horizontalDistance = 0, verticalDistance = 0;
-		
-		if(source.xhigh < target.xlow) {
-			horizontalDistance = target.xlow - source.xhigh;
-		} else if(target.xhigh < source.xlow) {
-			horizontalDistance = source.xlow - target.xhigh;
-		}
-		
-		if(source.yhigh < target.ylow) {
-			verticalDistance = target.ylow - source.yhigh;
-		} else if(target.yhigh < source.ylow) {
-			verticalDistance = source.ylow - target.yhigh;
-		}
+	public int[] get_expected_segs_to_target(RouteNode node, RouteNode target) {
 
-		return horizontalDistance + verticalDistance;
+		/* Returns the number of segments the same type as inode that will be needed *
+		 * to reach target_node (not including inode) in each direction (the same    *
+		 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
+
+		short ylow, yhigh, xlow, xhigh;
+		int num_segs_same_dir, num_segs_ortho_dir;
+		
+		int no_need_to_pass_by_clb;
+		float inv_length, ortho_inv_length;
+		
+		short target_x = target.xlow;
+		short target_y = target.ylow;
+		
+		IndexedData indexedData = node.indexedData;
+		IndexedData orthoIndexedData = indexedData.getOrthoData();
+		
+		inv_length = indexedData.inv_length;
+		ortho_inv_length = orthoIndexedData.inv_length;
+		
+		RouteNodeType type = node.type;
+		
+		if (type == RouteNodeType.CHANX) {
+			ylow = node.ylow;
+			xhigh = node.xhigh;
+			xlow = node.xlow;
+
+			/* Count vertical (orthogonal to inode) segs first. */
+
+			if (ylow > target_y) { /* Coming from a row above target? */
+				num_segs_ortho_dir = (int)(Math.ceil((ylow - target_y + 1.) * ortho_inv_length));
+				no_need_to_pass_by_clb = 1;
+			} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
+				num_segs_ortho_dir= (int)(Math.ceil((target_y - ylow) * ortho_inv_length));
+				no_need_to_pass_by_clb = 1;
+			} else { /* In a row that passes by target CLB */
+				num_segs_ortho_dir = 0;
+				no_need_to_pass_by_clb = 0;
+			}
+
+			/* Now count horizontal (same dir. as inode) segs. */
+
+			if (xlow > target_x + no_need_to_pass_by_clb) {
+				num_segs_same_dir = (int)(Math.ceil((xlow - no_need_to_pass_by_clb - target_x) * inv_length));
+			} else if (xhigh < target_x - no_need_to_pass_by_clb) {
+				num_segs_same_dir = (int)(Math.ceil((target_x - no_need_to_pass_by_clb - xhigh) * inv_length));
+			} else {
+				num_segs_same_dir = 0;
+			}
+			
+			int[] result = {num_segs_same_dir, num_segs_ortho_dir};
+			return result;
+		}
+		else { /* inode is a CHANY */
+			ylow = node.ylow;
+			yhigh = node.yhigh;
+			xlow = node.xlow;
+
+			/* Count horizontal (orthogonal to inode) segs first. */
+
+			if (xlow > target_x) { /* Coming from a column right of target? */
+				num_segs_ortho_dir = (int)(Math.ceil((xlow - target_x + 1.) * ortho_inv_length));
+				no_need_to_pass_by_clb = 1;
+			} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
+				num_segs_ortho_dir = (int)(Math.ceil((target_x - xlow) * ortho_inv_length));
+				no_need_to_pass_by_clb = 1;
+			} else { /* In a column that passes by target CLB */
+				num_segs_ortho_dir = 0;
+				no_need_to_pass_by_clb = 0;
+			}
+
+			/* Now count vertical (same dir. as inode) segs. */
+
+			if (ylow > target_y + no_need_to_pass_by_clb) {
+				num_segs_same_dir = (int)(Math.ceil((ylow - no_need_to_pass_by_clb - target_y) * inv_length));
+			} else if (yhigh < target_y - no_need_to_pass_by_clb) {
+				num_segs_same_dir = (int)(Math.ceil((target_y - no_need_to_pass_by_clb - yhigh) * inv_length));
+			} else {
+				num_segs_same_dir = 0;
+			}
+			
+			int[] result = {num_segs_same_dir, num_segs_ortho_dir};
+			return result;
+		}
 	}
 	
 	@Override
