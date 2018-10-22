@@ -14,13 +14,12 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	
 	public final RouteNodeType type;
 	public final short capacity;
-	public final float baseCost;
 	
 	public RouteNode[] children;
 	public SwitchType[] switches;
 
-	public final RouteNodeData routeNodeData;
 	public final IndexedData indexedData;
+	public final RouteNodeData routeNodeData;
 	
 	public boolean target;
 	
@@ -32,40 +31,21 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.ylow = (short) ylow;
 		this.yhigh = (short) yhigh;
 		
+		this.indexedData = indexedData;
+		this.routeNodeData = new RouteNodeData();
+		
 		this.n = (short) n;
 		
 		this.type = t;
 		this.capacity = (short) capacity;
-		this.baseCost = this.calculateBaseCost();
 		
 		this.r = r;
 		this.c = c;
 		
-		this.children = new RouteNode[0];
+		this.children = new RouteNode[0];//TODO ADD FANOUT TO ROUTE NODE FILE
 		this.switches = new SwitchType[0];
-		
-		this.indexedData = indexedData;
-		this.routeNodeData = new RouteNodeData();
 
 		this.target = false;
-	}
-
-	private float calculateBaseCost() {
-		switch (this.type) {
-			case SOURCE:
-				return 1;
-			case OPIN:
-				return 4;
-			case HCHAN:
-			case VCHAN:
-				return this.wireLength();
-			case SINK:
-				return 0;
-			case IPIN:
-				return 0.95f;
-			default:
-				throw new RuntimeException();
-		}
 	}
 	
 	public void setChildren(RouteNode[] children) {
@@ -80,7 +60,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	}
 
 	public boolean isWire() {
-		return this.type == RouteNodeType.HCHAN || this.type == RouteNodeType.VCHAN;
+		return this.type == RouteNodeType.CHANX || this.type == RouteNodeType.CHANY;
 	}
 	public int wireLength() {
 		int length = this.xhigh - this.xlow + this.yhigh - this.ylow + 1;
@@ -133,7 +113,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		s.append(String.format("%-11s", coordinate));
 		s.append(String.format("ptc_num = %3d", this.n));
 		s.append(", ");
-		s.append(String.format("basecost = %3.1f", this.baseCost));
+		s.append(String.format("basecost = %3.1f", this.indexedData.base_cost));
 		s.append(", ");
 		s.append(String.format("capacity = %2d", this.capacity));
 		s.append(", ");
