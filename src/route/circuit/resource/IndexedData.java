@@ -2,7 +2,7 @@ package route.circuit.resource;
 
 public class IndexedData {
 	public final int index;
-	public final float base_cost;
+	public final float base_cost;//TODO BaseCost (Based on length of wire?)
 	public final int length;
 	public final float inv_length;
 	
@@ -11,7 +11,7 @@ public class IndexedData {
 	public final float c_load;
 	
 	public final int orthoCostIndex;
-	public IndexedData ortho_data;
+	private IndexedData ortho_data;
 	
 	public IndexedData(String line) {
 		while(line.contains("  ")) line = line.replace("  ", " ");
@@ -30,6 +30,13 @@ public class IndexedData {
 		
 		this.orthoCostIndex = Integer.parseInt(words[3]);
 		this.ortho_data = null;
+	}
+	
+	public void setOrthoData(IndexedData orthoData) {
+		this.ortho_data = orthoData;
+	}
+	public IndexedData getOrthoData() {
+		return this.ortho_data;
 	}
 	
 	@Override
