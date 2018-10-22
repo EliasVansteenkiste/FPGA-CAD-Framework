@@ -460,10 +460,10 @@ public class Main {
 
         // Calculate timing cost
         this.circuit.recalculateTimingGraph();
-        double totalTimingCost = this.circuit.calculateTimingCost();
+        //double totalTimingCost = this.circuit.calculateTimingCost();
         double maxDelay = this.circuit.getMaxDelay();
 
-        this.logger.printf(format, "timing cost", totalTimingCost, "");
+        //this.logger.printf(format, "timing cost", totalTimingCost, "");
         this.logger.printf(format, "max delay", maxDelay, " ns");
 
         this.logger.println();
