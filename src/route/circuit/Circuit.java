@@ -1,7 +1,6 @@
 package route.circuit;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,7 +33,7 @@ public class Circuit {
     private TimingGraph timingGraph;
     private ResourceGraph resourceGraph;
 
-    private Set<String> globalNets;
+    private Set<String> globalNetNames;
     private Map<BlockType, List<AbstractBlock>> blocks;
     
 	private Set<Connection> cons;
@@ -61,6 +60,8 @@ public class Circuit {
     public void initializeData() {
         this.loadBlocks();
 
+        this.initializeGlobalNets();
+        
         this.timingGraph.build();
         this.resourceGraph.build();
 
@@ -69,14 +70,13 @@ public class Circuit {
                 block.compact();
             }
         }
-        
-        this.initializeGlobalNets();
     }
     
     private void initializeGlobalNets() {
-    	this.globalNets = new HashSet<>();
-    	this.globalNets.add("vcc");
-    	this.globalNets.add("gnd");
+    	this.globalNetNames = new HashSet<>();
+    	
+    	this.globalNetNames.add("vcc");
+    	this.globalNetNames.add("gnd");
     	
     	BufferedReader br = null;
     	try {
@@ -107,14 +107,11 @@ public class Circuit {
 					
 					globalNet = globalNet.trim();
 					
-					this.globalNets.add(globalNet);
+					this.globalNetNames.add(globalNet);
 				}
 			}
 			
 			br.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -205,7 +202,7 @@ public class Circuit {
         		if(sourcePin.getNumSinks() > 0) {
         			String netName = sourcePin.getNetName();
             		
-        			if(!this.globalNets.contains(netName)) {
+        			if(!this.globalNetNames.contains(netName)) {
     	        		Set<Connection> net = new HashSet<>();
     	        		
     	        		for(AbstractPin abstractSinkPin : sourcePin.getSinks()) {
