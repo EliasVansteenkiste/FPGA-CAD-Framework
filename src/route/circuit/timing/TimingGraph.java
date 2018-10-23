@@ -10,7 +10,6 @@ import route.util.Pair;
 import route.circuit.Circuit;
 import route.circuit.architecture.BlockCategory;
 import route.circuit.architecture.BlockType;
-import route.circuit.architecture.DelayTables;
 import route.circuit.architecture.PortType;
 import route.circuit.block.AbstractBlock;
 import route.circuit.block.GlobalBlock;
@@ -25,7 +24,6 @@ public class TimingGraph {
     private static String VIRTUAL_IO_CLOCK = "virtual-io-clock";
 
     private Circuit circuit;
-    private DelayTables delayTables;
 
     // A map of clock domains, along with their unique id
     private Map<String, Integer> clockNamesToDomains = new HashMap<>();
@@ -47,7 +45,6 @@ public class TimingGraph {
 
     public TimingGraph(Circuit circuit) {
         this.circuit = circuit;
-        this.delayTables = this.circuit.getArchitecture().getDelayTables();
 
         // Create the virtual io clock domain
         this.virtualIoClockDomain = 0;
@@ -324,7 +321,7 @@ public class TimingGraph {
                 // If pathSinkNode is null, this sinkPin doesn't have any sinks
                 // so isn't used in the timing graph
                 if(pathSinkNode != null) {
-                    TimingEdge edge = pathSourceNode.addSink(pathSinkNode, delay, this.delayTables);
+                    TimingEdge edge = pathSourceNode.addSink(pathSinkNode, delay);
                     this.timingEdges.add(edge);
 
                     GlobalBlock pathSinkBlock = pathSinkNode.getGlobalBlock();
@@ -517,20 +514,8 @@ public class TimingGraph {
     public double getMaxDelay() {
         return this.globalMaxDelay * 1e9;
     }
-    public double calculateMaxDelay(boolean calculateWireDelays) {
-        if(calculateWireDelays) {
-            this.calculateWireDelays();
-        }
 
-        this.calculateArrivalTimesAndCriticalities();
-        return this.globalMaxDelay;
-    }
-    public void calculateCriticalities() {
-    	this.calculateWireDelays();
-        this.calculateArrivalTimesAndCriticalities();
-    }
-
-    private void calculateArrivalTimesAndCriticalities() {
+    public void calculateArrivalTimesAndCriticalities() {
     	
     	//INITIALIZATION
         for(TimingNode node : this.timingNodes) {
@@ -567,12 +552,6 @@ public class TimingGraph {
         	
         	edge.setCriticality(criticality);
         }
-    }
-
-    public void calculateWireDelays() {
-    	for(TimingEdge edge:this.timingEdges){
-    		edge.setWireDelay(edge.calculateWireDelay());
-    	}
     }
     
     public String criticalPathToString() {

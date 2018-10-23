@@ -1,44 +1,31 @@
 package route.circuit.timing;
 
-import route.circuit.architecture.BlockCategory;
-import route.circuit.architecture.DelayTables;
-
 public class TimingEdge {
 	private double fixedDelay, wireDelay;
 	private double slack, criticality;
 	
-    private final DelayTables delayTables;
 	private final TimingNode source, sink;
 
-	private double stagedWireDelay;
-
-    TimingEdge(double fixedDelay, TimingNode source, TimingNode sink, DelayTables delayTables){
+    TimingEdge(double fixedDelay, TimingNode source, TimingNode sink){
         this.fixedDelay = fixedDelay;
+        this.wireDelay = 0;
         
         this.source = source;
         this.sink = sink;
-        
-        this.delayTables = delayTables;
     }
 
     public double getFixedDelay(){
         return this.fixedDelay;
     }
-    void setFixedDelay(double fixedDelay){
+    public void setFixedDelay(double fixedDelay){
         this.fixedDelay = fixedDelay;
     }
 
-    public double calculateWireDelay(){
-        int deltaX = Math.abs(this.source.getGlobalBlock().getColumn() - this.sink.getGlobalBlock().getColumn());
-        int deltaY = Math.abs(this.source.getGlobalBlock().getRow() - this.sink.getGlobalBlock().getRow());
-
-        BlockCategory fromCategory = this.source.getGlobalBlock().getCategory();
-        BlockCategory toCategory = this.sink.getGlobalBlock().getCategory();
-
-        return this.delayTables.getDelay(fromCategory, toCategory, deltaX, deltaY);
-    }
     public void setWireDelay(double wireDelay){
         this.wireDelay = wireDelay;
+    }
+    public double getWireDelay() {
+    	return this.wireDelay;
     }
 
     public double getTotalDelay(){
@@ -73,26 +60,6 @@ public class TimingEdge {
     public TimingNode getSink(){
     	return this.sink;
     }
-
-
-    /*************************************************
-     * Functions that facilitate simulated annealing *
-     *************************************************/
-    void setStagedWireDelay(double stagedWireDelay){
-    	this.stagedWireDelay = stagedWireDelay;
-    }
-    void resetStagedDelay(){
-    	this.stagedWireDelay = 0.0;
-    }
-    
-    void pushThrough(){
-    	this.wireDelay = this.stagedWireDelay;
-    }
-    
-    double getDeltaCost(){
-    	return this.criticality * (this.stagedWireDelay - this.wireDelay);
-    }
-
 
     @Override
     public String toString() {

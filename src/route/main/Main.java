@@ -30,9 +30,7 @@ public class Main {
 	private Logger logger;
 	
 	private String circuitName;
-	private File architectureFile, blifFile, netFile, placeFile, hierarchyFile, lookupDumpFile, sdcFile, rrgFile;
-	
-	private boolean useVprTiming;
+	private File architectureFile, blifFile, netFile, placeFile, hierarchyFile, sdcFile, rrgFile;
 	
 	private Circuit circuit;
 
@@ -50,16 +48,12 @@ public class Main {
 				this.placeFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("hierarchy_file")) {
 				this.hierarchyFile = new File(arguments[++i]);
-			} else if(arguments[i].contains("lookup_dump_file")) {
-				this.lookupDumpFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("rr_graph_file")) {
 				this.rrgFile = new File(arguments[++i]);
 			}
 		}
 		
 		this.logger = logger;
-		
-		this.useVprTiming = true;
 		
 		this.circuitName = this.blifFile.getName().replaceFirst("(.+)\\.blif", "$1");
 		this.logger.println("Circuit : " + this.circuitName);
@@ -110,17 +104,7 @@ public class Main {
     		this.logger.raise("Failed to parse architecture file or delay tables", error);
     	}
 
-    	if(this.useVprTiming) {
-    		try {
-    			if(this.lookupDumpFile == null) {
-    				this.logger.raise("Failed to find lookupDumpFile");
-    			} else {
-    				architecture.getVprTiming(this.lookupDumpFile);
-    			}
-    		} catch(IOException | InvalidFileFormatException error) {
-    			this.logger.raise("Failed to get vpr delays", error);
-    		}
-    	}
+
 
     	// Parse net file
     	try {

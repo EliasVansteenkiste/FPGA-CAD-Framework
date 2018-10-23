@@ -60,8 +60,6 @@ public class Architecture implements Serializable {
     private transient List<Triple<PortType, PortType, Double>> delays = new ArrayList<>();
     private transient Map<String, Integer> directs = new HashMap<>();//Direct interconnect between logic blocks
     
-    private DelayTables delayTables;
-    
     private int ioCapacity;
     
     public Architecture(
@@ -107,12 +105,6 @@ public class Architecture implements Serializable {
 
         // All delays have been cached in this.delays, process them now
         this.processDelays();
-
-        // Set all delays to 0
-        // This is only useful while debugging,
-        // because the call to vpr takes a really
-        // long time for large circuits
-        this.delayTables = new DelayTables();
     }
 
 
@@ -907,26 +899,9 @@ public class Architecture implements Serializable {
         while ((reader.readLine()) != null) {}
         process.waitFor();
 
-
-        // Build delay tables
-        String lookupDumpPath = "lookup_dump.echo";
-        File lookupDumpFile = new File(lookupDumpPath);
-        this.buildDelayTables(lookupDumpFile);
-
         // Clean up
         this.deleteFile("vpr_tmp.place");
         this.deleteFile("vpr_stdout.log");
-        this.deleteFile(lookupDumpPath);
-    }
-
-    public void getVprTiming(File lookupDumpFile) throws IOException, InvalidFileFormatException {
-        this.buildDelayTables(lookupDumpFile);
-    }
-
-    private void buildDelayTables(File lookupDumpFile) throws IOException, InvalidFileFormatException {
-        // Parse the delay tables
-        this.delayTables = new DelayTables(lookupDumpFile);
-        this.delayTables.parse();
     }
 
     private void deleteFile(String path) throws IOException {
@@ -947,12 +922,6 @@ public class Architecture implements Serializable {
     public int getHeight() {
         return this.height;
     }
-
-    public DelayTables getDelayTables() {
-        return this.delayTables;
-    }
-
-
 
     public int getIoCapacity() {
         return this.ioCapacity;

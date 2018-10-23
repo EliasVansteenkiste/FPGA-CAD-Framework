@@ -113,7 +113,6 @@ public class Circuit {
 			
 			br.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
@@ -398,7 +397,7 @@ public class Circuit {
     }
 
     public void recalculateTimingGraph() {
-        this.timingGraph.calculateCriticalities();
+        this.timingGraph.calculateArrivalTimesAndCriticalities();
     }
     public double calculateTimingCost() {
         return this.timingGraph.calculateTotalCost();
