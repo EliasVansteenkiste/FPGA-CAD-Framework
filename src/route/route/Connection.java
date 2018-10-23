@@ -7,6 +7,7 @@ import route.circuit.pin.GlobalPin;
 import route.circuit.resource.Opin;
 import route.circuit.resource.RouteNode;
 import route.circuit.resource.RouteNodeType;
+import route.circuit.timing.TimingNode;
 
 
 public class Connection implements Comparable<Connection>  {
@@ -16,8 +17,8 @@ public class Connection implements Comparable<Connection>  {
 	public final GlobalPin sink;
 	
 	//TODO Get timing nodes of connection
-	//public TimingNode sourceTimingNode;
-	//public TimingNode sinkTimingNode;
+	public TimingNode sourceTimingNode;
+	public TimingNode sinkTimingNode;
 
     public Net net;
     public final int boundingBox;
@@ -29,17 +30,11 @@ public class Connection implements Comparable<Connection>  {
 	
 	public final List<RouteNode> routeNodes;
 	
-	public boolean isGlobal;
-	
-	public boolean route;
-	
 	public Connection(int id, GlobalPin source, GlobalPin sink) {
 		this.id = id;
-		
-		this.source = source;
-		this.sink = sink;
 
-		//Source Route Node
+		//Source
+		this.source = source;
 		String sourceName = null;
 		if(this.source.getPortType().isEquivalent()) {
 			sourceName = this.source.getPortName();
@@ -47,8 +42,11 @@ public class Connection implements Comparable<Connection>  {
 			sourceName = this.source.getPortName() + "[" + this.source.getIndex() + "]";
 		}
 		this.sourceRouteNode = this.source.getOwner().getSiteInstance().getSource(sourceName);
+		if(!source.hasTimingNode()) System.err.println(source + " => " + sink + " | Source " + source + " has no timing node");
+		this.sourceTimingNode = this.source.getTimingNode();
 		
-		//Sink route Node
+		//Sink
+		this.sink = sink;
 		String sinkName = null;
 		if(this.sink.getPortType().isEquivalent()) {
 			sinkName = this.sink.getPortName();
@@ -56,6 +54,8 @@ public class Connection implements Comparable<Connection>  {
 			sinkName = this.sink.getPortName() + "[" + this.sink.getIndex() + "]";
 		}
 		this.sinkRouteNode = this.sink.getOwner().getSiteInstance().getSink(sinkName);
+		if(!sink.hasTimingNode()) System.out.println(source + " => " + sink + " | Sink " + sink + " has no timing node");
+		this.sinkTimingNode = this.sink.getTimingNode();
 		
 		//Bounding box
 		this.boundingBox = this.calculateBoundingBox();
@@ -96,10 +96,6 @@ public class Connection implements Comparable<Connection>  {
 	
 	public void setNet(Net net) {
 		this.net = net;
-	}
-
-	public boolean isGlobal() {
-		return this.isGlobal;
 	}
 
 	public boolean isInBoundingBoxLimit(RouteNode node) {
