@@ -161,7 +161,6 @@ public class ResourceGraph {
 		System.out.println("---------------");
 		System.out.println("| Process RRG |");
 		System.out.println("---------------");
-		System.out.println();
 		
 		BufferedReader reader = null;
 		String line = null;
@@ -172,7 +171,9 @@ public class ResourceGraph {
 		 *****************************/
 		
 		List<IndexedData> indexedDataList = new ArrayList<>();
+		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_indexed_data")));
+		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_indexed_data"));
 		
 		while ((line = reader.readLine()) != null) {
 			
@@ -199,7 +200,9 @@ public class ResourceGraph {
 		 *****************************/
 		
 		List<SwitchType> switchTypesList = new ArrayList<>();
+		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_switch_types")));
+		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_switch_types"));
 		
 		while ((line = reader.readLine()) != null) {
 			
@@ -224,7 +227,9 @@ public class ResourceGraph {
 		String currentPort = null;
 		int portIndex = -1;
 		IndexedData data = null;
+		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_nodes")));
+		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_nodes"));
 		
 		while ((line = reader.readLine()) != null) {
         	
@@ -342,6 +347,7 @@ public class ResourceGraph {
 		 *****************************/
 		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_children")));
+		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_children"));
 		
 		while ((line = reader.readLine()) != null) {
 			
@@ -373,6 +379,7 @@ public class ResourceGraph {
 		 *****************************/
 		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_switches")));
+		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_switches"));
 		
 		while ((line = reader.readLine()) != null) {
 		
@@ -396,25 +403,18 @@ public class ResourceGraph {
 		}
 		
 		reader.close();
+		
+		System.out.println();
 	}
 	private void assignNamesToSourceAndSink() {
-		boolean printInfo = false;//TODO REMOVE
 		for(RouteNode routeNode:this.routeNodeMap.get(RouteNodeType.SOURCE)){
 			Source source = (Source) routeNode;
 			source.setName();
-			
-			if(printInfo) System.out.println(source.getName());
 		}
 		
 		for(RouteNode routeNode:this.routeNodeMap.get(RouteNodeType.IPIN)){
 			Ipin ipin = (Ipin) routeNode;
 			ipin.setSinkName();
-		}
-		if(printInfo) {
-			for(RouteNode routeNode:this.routeNodeMap.get(RouteNodeType.SINK)){
-				Sink sink = (Sink) routeNode;
-				System.out.println(sink.getName());
-			}
 		}
 	}
     private void connectSourceAndSinkToSite() {
