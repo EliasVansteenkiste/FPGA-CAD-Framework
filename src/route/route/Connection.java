@@ -7,6 +7,7 @@ import route.circuit.pin.GlobalPin;
 import route.circuit.resource.Opin;
 import route.circuit.resource.RouteNode;
 import route.circuit.resource.RouteNodeType;
+import route.circuit.timing.TimingEdge;
 import route.circuit.timing.TimingNode;
 
 
@@ -18,6 +19,7 @@ public class Connection implements Comparable<Connection>  {
 	
 	public TimingNode sourceTimingNode;
 	public TimingNode sinkTimingNode;
+	public TimingEdge timingEdge;
 
     public Net net;
     public final int boundingBox;
@@ -55,6 +57,15 @@ public class Connection implements Comparable<Connection>  {
 		this.sinkRouteNode = this.sink.getOwner().getSiteInstance().getSink(sinkName);
 		if(!sink.hasTimingNode()) System.out.println(source + " => " + sink + " | Sink " + sink + " has no timing node");
 		this.sinkTimingNode = this.sink.getTimingNode();
+		
+		//Timing edge of the connection
+		if(this.sinkTimingNode.getSources().size() != 1) {
+			System.err.println("The connection should have only one edge => " + this.sinkTimingNode.getSources().size());
+		}
+		if(this.sourceTimingNode != this.sinkTimingNode.getSourceEdge(0).getSource()) {
+			System.err.println("The source and sink are not connection by the same edge");
+		}
+		this.timingEdge = this.sinkTimingNode.getSourceEdge(0);
 		
 		//Bounding box
 		this.boundingBox = this.calculateBoundingBox();
