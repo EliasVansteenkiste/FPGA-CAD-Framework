@@ -5,18 +5,17 @@ import java.util.List;
 
 import route.circuit.architecture.DelayTables;
 import route.circuit.block.GlobalBlock;
-import route.circuit.block.LeafBlock;
-import route.circuit.pin.LeafPin;
+import route.circuit.pin.AbstractPin;
 
 public class TimingNode {
 
-    public enum Position {ROOT, INTERMEDIATE, LEAF};
+    public enum Position {ROOT, INTERMEDIATE, LEAF, C_SOURCE, C_SINK};
 
-    private LeafBlock block;
-    private GlobalBlock globalBlock;
-    private LeafPin pin;
+    private final GlobalBlock globalBlock;
+    private final AbstractPin pin;
+    private final int clockDomain;
 
-    private Position position;
+    private final Position position;
 
     private final ArrayList<TimingEdge> sourceEdges = new ArrayList<>();
     private final ArrayList<TimingEdge> sinkEdges = new ArrayList<>();
@@ -30,14 +29,15 @@ public class TimingNode {
     private int lowLink;
     private boolean onStack;
 
-    TimingNode(LeafBlock block, LeafPin pin, Position position, int clockDomain) {
-        this.block = block;
+    TimingNode(GlobalBlock globalBlock, AbstractPin pin, Position position, int clockDomain) {
         this.pin = pin;
 
-        this.globalBlock = block.getGlobalParent();
+        this.globalBlock = globalBlock;
         this.globalBlock.addTimingNode(this);
 
         this.position = position;
+        
+        this.clockDomain = clockDomain;
     }
 
     void compact() {
@@ -45,17 +45,18 @@ public class TimingNode {
         this.sinkEdges.trimToSize();
     }
 
-    public LeafBlock getBlock() {
-        return this.block;
-    }
     public GlobalBlock getGlobalBlock() {
         return this.globalBlock;
     }
-    public LeafPin getPin() {
+    public AbstractPin getPin() {
         return this.pin;
     }
     public Position getPosition() {
         return this.position;
+    }
+    
+    public int getClockDomain() {
+    	return this.clockDomain;
     }
 
     private void addSource(TimingNode source, TimingEdge edge) {
