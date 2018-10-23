@@ -16,6 +16,7 @@ import route.circuit.block.AbstractBlock;
 import route.circuit.block.GlobalBlock;
 import route.circuit.block.LeafBlock;
 import route.circuit.pin.AbstractPin;
+import route.circuit.pin.GlobalPin;
 import route.circuit.pin.LeafPin;
 import route.circuit.timing.TimingNode.Position;
 
@@ -38,8 +39,6 @@ public class TimingGraph {
     private List<List<TimingEdge>> timingNets = new ArrayList<>();
 
     private double globalMaxDelay;
-
-    private double[] criticalityLookupTable = new double[21];
     
     //Tarjan's strongly connected components algorithm
     private int index;
@@ -53,9 +52,6 @@ public class TimingGraph {
         // Create the virtual io clock domain
         this.virtualIoClockDomain = 0;
         this.clockNamesToDomains.put(VIRTUAL_IO_CLOCK, this.virtualIoClockDomain);
-        this.numClockDomains = 1;
-
-        this.setCriticalityExponent(1);
     }
 
     /******************************************
@@ -69,6 +65,14 @@ public class TimingGraph {
         this.setRootAndLeafNodes();
         
         this.cutCombLoop();
+        
+        System.out.println("Timing Graph:");
+        
+        System.out.println("   Num timing nodes " + this.timingNodes.size());
+        System.out.println("      Root " + this.rootNodes.size());
+        System.out.println("      Leaf " + this.leafNodes.size());
+        System.out.println("   Num timing edges " + this.timingEdges.size());
+        System.out.println();
     }
 
     private void buildGraph() {
@@ -104,7 +108,7 @@ public class TimingGraph {
                     for(AbstractPin abstractPin : block.getInputPins()) {
                         if(abstractPin.getSource() != null) {
                             LeafPin inputPin = (LeafPin) abstractPin;
-                            TimingNode node = new TimingNode(block, inputPin, Position.LEAF, clockDomain);
+                            TimingNode node = new TimingNode(block.getGlobalParent(), inputPin, Position.LEAF, clockDomain);
                             inputPin.setTimingNode(node);
 
                             clockDelays.add(0.0);
@@ -119,22 +123,64 @@ public class TimingGraph {
                 for(AbstractPin abstractPin : block.getOutputPins()) {
                     LeafPin outputPin = (LeafPin) abstractPin;
                     
-                    if(outputPin.getNumSinks() > 0){
-                        TimingNode node = new TimingNode(block, outputPin, position, clockDomain);
-                        outputPin.setTimingNode(node);
+                    if(outputPin.getNumSinks() > 0 && !this.isSourceOfClockNet(outputPin)) {
+                    	
+                    	TimingNode node = new TimingNode(block.getGlobalParent(), outputPin, position, clockDomain);
+                    	outputPin.setTimingNode(node);
 
-                        this.timingNodes.add(node);
+                    	this.timingNodes.add(node);
 
-                        if(position == Position.ROOT) {
-                            clockDelays.add(clockDelay + outputPin.getPortType().getSetupTime());
-                        } else {
-                            clockDelays.add(0.0);
-                        }
+                    	if(position == Position.ROOT) {
+                    		clockDelays.add(clockDelay + outputPin.getPortType().getSetupTime());
+                    	} else {
+                    		clockDelays.add(0.0);
+                    	}
                     }
                 }
             }
         }
-
+        
+        //Add timing nodes for the connections
+        for(GlobalBlock globalBlock : this.circuit.getGlobalBlocks()) {
+        	for(AbstractPin abstractPin : globalBlock.getOutputPins()) {
+        		GlobalPin outputPin = (GlobalPin) abstractPin;
+        		
+        		AbstractPin current = outputPin;
+        		while(current.getSource() != null) {
+        			current = current.getSource();
+        		}
+        		
+        		AbstractPin pathSource = current;
+        		if(pathSource.hasTimingNode()) {
+        			if(outputPin.getNumSinks() > 0) {
+            			TimingNode node = new TimingNode(globalBlock, outputPin, Position.C_SOURCE, -1);
+            			outputPin.setTimingNode(node);
+            			
+            			this.timingNodes.add(node);  
+            			
+            			clockDelays.add(0.0);
+            		}
+        		}
+        	}
+        }
+        for(GlobalBlock globalBlock : this.circuit.getGlobalBlocks()) {
+        	for(AbstractPin abstractPin : globalBlock.getInputPins()) {
+        		GlobalPin inputPin = (GlobalPin) abstractPin;
+        		
+        		if(inputPin.getSource() != null) {
+        			if(inputPin.getSource().hasTimingNode()) {
+            			TimingNode node = new TimingNode(globalBlock, inputPin, Position.C_SINK, -1);
+            			inputPin.setTimingNode(node);
+            			
+            			this.timingNodes.add(node);  
+            			
+            			clockDelays.add(0.0);
+            		}
+        		}
+        	}
+        }
+        
+        //Connect the timing nodes
         int numNodes = this.timingNodes.size();
         for(int i = 0; i < numNodes; i++) {
             TimingNode node = this.timingNodes.get(i);
@@ -143,11 +189,65 @@ public class TimingGraph {
             }
         }
         
+        /******************************************
+         *     Test functions to check if all     * 
+         *     timing nodes are connected         *
+         ******************************************/
+        for(TimingNode node : this.timingNodes) {
+        	if(node.getPosition().equals(Position.ROOT) || node.getPosition().equals(Position.INTERMEDIATE)) {
+        		if(node.getNumSinks() == 0) {
+        			System.out.println(node + " " + node.getPosition() + " has no sinks");
+        		}
+        	}
+        }
+        for(TimingNode node : this.timingNodes) {
+        	if(node.getPosition().equals(Position.INTERMEDIATE) || node.getPosition().equals(Position.LEAF)) {
+        		if(node.getNumSources() == 0) {
+        			System.out.println(node + " " + node.getPosition() + " has no sources");
+        		}
+        	}
+        }
+        for(TimingNode node : this.timingNodes) {
+        	if(node.getPosition().equals(Position.C_SOURCE)) {
+        		for(AbstractPin abstractPin : node.getPin().getSinks()) {
+        			if(!abstractPin.hasTimingNode()) {
+        				System.out.println(node.getPin() + " => " + abstractPin);
+        			}
+        		}
+        	}
+        }
+        for(TimingNode node : this.timingNodes) {
+        	if(node.getPosition().equals(Position.C_SINK)) {
+        		if(!node.getPin().getSource().hasTimingNode()) {
+        			System.out.println(node.getPin().getSource() + " => " + node.getPin());
+        		}
+        	}
+        }
+        /*******************************************/
+        
         for(TimingNode node : this.timingNodes) {
             node.compact();
         }
     }
 
+    private boolean isSourceOfClockNet(AbstractPin sourcePin) {
+    	Stack<AbstractPin> work = new Stack<>();
+    	work.add(sourcePin);
+    	
+    	while(!work.isEmpty()) {
+    		AbstractPin current = work.pop();
+    		if(current.getNumSinks() > 0) {
+    			for(AbstractPin sink : current.getSinks()) {
+    				work.add(sink);
+    			}
+    		} else {
+    			if(!current.isClock()) return false;
+    		}
+    	}
+    	
+    	return true;
+    }
+    
     private boolean isConstantGenerator(LeafBlock block) {
         for(AbstractPin inputPin : block.getInputPins()) {
             if(inputPin.getSource() != null) {
@@ -202,7 +302,7 @@ public class TimingGraph {
     private void traverseFromSource(TimingNode pathSourceNode, double clockDelay) {
 
         GlobalBlock pathSourceBlock = pathSourceNode.getGlobalBlock();
-        LeafPin pathSourcePin = pathSourceNode.getPin();
+        AbstractPin pathSourcePin = pathSourceNode.getPin();
 
         Map<GlobalBlock, List<TimingEdge>> sourceTimingNets = new HashMap<>();
 
@@ -217,9 +317,9 @@ public class TimingGraph {
             AbstractBlock sourceBlock = sourcePin.getOwner();
             PortType sourcePortType = sourcePin.getPortType();
 
-            if(this.isEndpin(sourceBlock, sourcePin, pathSourcePin)) {
+            if((sourcePin.hasTimingNode() && sourcePin != pathSourcePin) || this.isEndpin(sourceBlock, sourcePin, pathSourcePin)) {
                 delay += sourcePortType.getSetupTime();
-                TimingNode pathSinkNode = ((LeafPin) sourcePin).getTimingNode();
+                TimingNode pathSinkNode = sourcePin.getTimingNode();
 
                 // If pathSinkNode is null, this sinkPin doesn't have any sinks
                 // so isn't used in the timing graph
@@ -414,12 +514,6 @@ public class TimingGraph {
      * These functions calculate the criticality of all connections *
      ****************************************************************/
 
-    public void setCriticalityExponent(double criticalityExponent) {
-        for(int i = 0; i <= 20; i++) {
-            this.criticalityLookupTable[i] = Math.pow(i * 0.05, criticalityExponent);
-        }
-    }
-
     public double getMaxDelay() {
         return this.globalMaxDelay * 1e9;
     }
@@ -428,19 +522,17 @@ public class TimingGraph {
             this.calculateWireDelays();
         }
 
-        this.calculateArrivalTimesAndCriticalities(false);
+        this.calculateArrivalTimesAndCriticalities();
         return this.globalMaxDelay;
     }
-    public void calculateCriticalities(boolean calculateWireDelays) {
-        if(calculateWireDelays) {
-            this.calculateWireDelays();
-        }
-
-        this.calculateArrivalTimesAndCriticalities(true);
+    public void calculateCriticalities() {
+    	this.calculateWireDelays();
+        this.calculateArrivalTimesAndCriticalities();
     }
 
-    private void calculateArrivalTimesAndCriticalities(boolean calculateCriticalities) {
-    	//INITIALISATION
+    private void calculateArrivalTimesAndCriticalities() {
+    	
+    	//INITIALIZATION
         for(TimingNode node : this.timingNodes) {
             node.resetArrivalTime();
             node.resetRequiredTime();
@@ -458,27 +550,22 @@ public class TimingGraph {
         	}
         }
 
-        if(calculateCriticalities) {
-        	//REQUIRED TIME
-        	for(TimingNode leafNode: this.leafNodes) {
-        		leafNode.setRequiredTime(0.0);
-        	}
-            for(TimingNode rootNode: this.rootNodes) {
-            	rootNode.recursiveRequiredTime();
-            }
-
-            for(TimingEdge edge:this.timingEdges){
-            	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
-            	edge.setSlack(slack);
-
-                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
-                int i = Math.min(19, (int) val);
-                double linearInterpolation = val - i;
-
-                edge.setCriticality(
-                        (1 - linearInterpolation) * this.criticalityLookupTable[i]
-                        + linearInterpolation * this.criticalityLookupTable[i+1]);
-            }
+    	//REQUIRED TIME
+    	for(TimingNode leafNode: this.leafNodes) {
+    		leafNode.setRequiredTime(0.0);
+    	}
+        for(TimingNode rootNode: this.rootNodes) {
+        	rootNode.recursiveRequiredTime();
+        }
+        
+        //EDGE CRITICALITY
+        for(TimingEdge edge:this.timingEdges){
+        	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
+        	edge.setSlack(slack);
+        	
+        	double criticality = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
+        	
+        	edge.setCriticality(criticality);
         }
     }
 
@@ -535,10 +622,6 @@ public class TimingGraph {
 				}else{
 					sourceNode = edge.getSource();
 					System.out.println("Warning: more than one source node on the critical path");
-					//System.out.println("\tsinkNode: " + sinkNode.toString());
-					//System.out.println("\tsourceNode1: " + sourceNode.toString());
-					//System.out.println("\tsourceNode2: " + edge.getSource().toString());
-					//System.out.println();
 				}
 			}
 		}
