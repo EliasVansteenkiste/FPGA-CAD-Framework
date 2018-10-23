@@ -81,20 +81,6 @@ public class Main {
 		this.sanityCheck();
 		
 		System.gc();
-		
-		/*****************************************************
-		 *                Timing Graph Tester                *
-		 *****************************************************/
-		System.out.println("Calculate Timing Graph");
-		long timingStart = System.nanoTime();
-		this.circuit.recalculateTimingGraph();
-		long timingEnd = System.nanoTime();
-		int timeMilliSeconds = (int)Math.round((timingEnd - timingStart) * Math.pow(10, -6));
-		System.out.println("  Timing graph took " + timeMilliSeconds + " ms\n");
-		
-		System.out.printf("  Total Timing Cost: %e \n", this.circuit.calculateTimingCost());
-		System.out.printf("  Max delay: %.2e \n\n", this.circuit.getMaxDelay());
-		/*****************************************************/
 
 		long start = System.nanoTime();
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
