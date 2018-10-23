@@ -16,7 +16,6 @@ public class Connection implements Comparable<Connection>  {
 	public final GlobalPin source;
 	public final GlobalPin sink;
 	
-	//TODO Get timing nodes of connection
 	public TimingNode sourceTimingNode;
 	public TimingNode sinkTimingNode;
 
@@ -148,16 +147,6 @@ public class Connection implements Comparable<Connection>  {
 			}
 		}
 		return false;
-	}
-	
-	public int wireLength() {
-		int wireLength = 0;
-		for(RouteNode node : this.routeNodes) {
-			if(node.isWire()) {
-				wireLength += node.wireLength();
-			}
-		}
-		return wireLength;
 	}
 	
 	public Opin getOpin() {
