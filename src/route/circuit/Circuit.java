@@ -36,8 +36,8 @@ public class Circuit {
     private Set<String> globalNetNames;
     private Map<BlockType, List<AbstractBlock>> blocks;
     
-	private Set<Connection> cons;
-	private Set<Net> nets;
+	private List<Connection> connections;
+	private List<Net> nets;
 	private boolean conRouted;
 
     private List<BlockType> globalBlockTypes;
@@ -62,14 +62,21 @@ public class Circuit {
 
         this.initializeGlobalNets();
         
-        this.timingGraph.build();
-        this.resourceGraph.build();
+        this.initializeResourceGraph();
+        this.initializeTimingGraph();
 
         for(List<AbstractBlock> blocksOfType : this.blocks.values()) {
             for(AbstractBlock block : blocksOfType) {
                 block.compact();
             }
         }
+    }
+    
+    public void initializeTimingGraph() {
+    	this.timingGraph.build();
+    }
+    public void initializeResourceGraph() {
+    	this.resourceGraph.build();
     }
     
     private void initializeGlobalNets() {
@@ -190,8 +197,8 @@ public class Circuit {
     public void loadNetsAndConnections() {
     	short boundingBoxRange = 3;
     	
-    	this.cons = new HashSet<>();
-    	this.nets = new HashSet<>();
+    	this.connections = new ArrayList<>();
+    	this.nets = new ArrayList<>();
         
         int id = 0;
     	for(GlobalBlock globalBlock : this.getGlobalBlocks()) {
@@ -208,7 +215,7 @@ public class Circuit {
     	        			GlobalPin sinkPin = (GlobalPin) abstractSinkPin;
     	        			
     	        			Connection c = new Connection(id, sourcePin, sinkPin);
-    	        			this.cons.add(c);
+    	        			this.connections.add(c);
     	        			net.add(c);
     	        			
     	        			id++;
@@ -397,7 +404,7 @@ public class Circuit {
     }
 
     public void recalculateTimingGraph() {
-        this.timingGraph.calculateArrivalTimesAndCriticalities();
+        this.timingGraph.calculateArrivalAndRequiredTimes();
     }
     public double calculateTimingCost() {
         return this.timingGraph.calculateTotalCost();
@@ -503,10 +510,10 @@ public class Circuit {
     	return this.conRouted;
     }
     
-    public Set<Connection> getConnections() {
-    	return this.cons;
+    public List<Connection> getConnections() {
+    	return this.connections;
     }
-    public Set<Net> getNets() {
+    public List<Net> getNets() {
     	return this.nets;
     }
  
