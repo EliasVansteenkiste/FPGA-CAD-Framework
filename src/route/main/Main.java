@@ -30,7 +30,7 @@ public class Main {
 	private Logger logger;
 	
 	private String circuitName;
-	private File architectureFile, blifFile, netFile, placeFile, hierarchyFile, sdcFile, rrgFile;
+	private File architectureFile, blifFile, netFile, placeFile, lookupDumpFile, sdcFile, rrgFile;
 	
 	private Circuit circuit;
 
@@ -46,8 +46,8 @@ public class Main {
 				this.netFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("place_file")) {
 				this.placeFile = new File(arguments[++i]);
-			} else if(arguments[i].contains("hierarchy_file")) {
-				this.hierarchyFile = new File(arguments[++i]);
+			} else if(arguments[i].contains("lookup_dump_file")) {
+ 				this.lookupDumpFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("rr_graph_file")) {
 				this.rrgFile = new File(arguments[++i]);
 			}
@@ -62,32 +62,40 @@ public class Main {
 		this.checkFileExistence("Blif file", this.blifFile);
 		this.checkFileExistence("Net file", this.netFile);
 		this.checkFileExistence("Place file", this.placeFile);
-		this.checkFileExistence("Hierarchy file", this.hierarchyFile);
+		this.checkFileExistence("Lookup dump file", this.lookupDumpFile);
 		this.checkFileExistence("SDC file", this.sdcFile);
-	
-		this.loadCircuit();
-		this.detaildGlobalBlockInformation();
 		
-		this.printNumBlocks();
+		this.loadCircuit();
 		
 		this.readPlaceFile();
+		
+		this.circuit.getTimingGraph().initializeTiming();
 		
 		this.sanityCheck();
 		
 		System.gc();
-
+		
 		long start = System.nanoTime();
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
 		int numIterations = route.route();
 		long end = System.nanoTime();
 		
-		System.out.printf("Routing took %.2fs\n",((end - start) * Math.pow(10, -9)));
+		System.out.printf("Routing took %.2fs\n", ((end - start) * Math.pow(10, -9)));
 		
 		System.out.println("Routing succeeded after " + numIterations + " iterations");
 		System.out.println("The total wirelength is equal to " + this.circuit.getResourceGraph().totalWireLength());
 		System.out.println("The total congested wirelength is equal to " + this.circuit.getResourceGraph().congestedTotalWireLengt());
 		System.out.println("The number of used wire segments is equal to " + this.circuit.getResourceGraph().wireSegmentsUsed());
 		System.out.println("Maximum net length " + this.circuit.maximumNetLength());
+		System.out.println();
+		
+		this.circuit.getTimingGraph().calculateActualWireDelay();
+		this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
+		this.circuit.getTimingGraph().calculateEdgeCriticality();
+		
+		System.out.printf("Max delay %.3f\n", this.circuit.getMaxDelay());
+		System.out.printf("Timing cost %.3e\n", this.circuit.calculateTimingCost());
+		System.out.println();
 	}
     private void loadCircuit() {
     	//Process the architecture file
@@ -100,11 +108,10 @@ public class Main {
     			this.rrgFile);
     	try {
     		architecture.parse();
+    		architecture.getVprTiming(this.lookupDumpFile);
     	} catch(IOException | InvalidFileFormatException | InterruptedException | ParserConfigurationException | SAXException error) {
     		this.logger.raise("Failed to parse architecture file or delay tables", error);
     	}
-
-
 
     	// Parse net file
     	try {
@@ -114,6 +121,9 @@ public class Main {
     	} catch(IOException error) {
     		this.logger.raise("Failed to read net file", error);
     	}
+    	
+    	this.detaildGlobalBlockInformation();
+    	this.printNumBlocks();
     }
     private void readPlaceFile() {
         // Read the place file

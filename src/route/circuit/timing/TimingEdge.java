@@ -1,17 +1,23 @@
 package route.circuit.timing;
 
+import route.circuit.architecture.BlockCategory;
+import route.circuit.architecture.DelayTables;
+
 public class TimingEdge {
 	private double fixedDelay, wireDelay;
 	private double slack, criticality;
 	
+	private final DelayTables delayTables;
 	private final TimingNode source, sink;
 
-    TimingEdge(double fixedDelay, TimingNode source, TimingNode sink){
+    TimingEdge(double fixedDelay, TimingNode source, TimingNode sink, DelayTables delayTables){
         this.fixedDelay = fixedDelay;
         this.wireDelay = 0;
         
         this.source = source;
         this.sink = sink;
+        
+        this.delayTables = delayTables;
     }
 
     public double getFixedDelay(){
@@ -21,6 +27,15 @@ public class TimingEdge {
         this.fixedDelay = fixedDelay;
     }
 
+    public void calculatePlacementEstimatedWireDelay(){
+        int deltaX = Math.abs(this.source.getGlobalBlock().getColumn() - this.sink.getGlobalBlock().getColumn());
+        int deltaY = Math.abs(this.source.getGlobalBlock().getRow() - this.sink.getGlobalBlock().getRow());
+
+        BlockCategory fromCategory = this.source.getGlobalBlock().getCategory();
+        BlockCategory toCategory = this.sink.getGlobalBlock().getCategory();
+
+        this.wireDelay = this.delayTables.getDelay(fromCategory, toCategory, deltaX, deltaY);
+    }
     public void setWireDelay(double wireDelay){
         this.wireDelay = wireDelay;
     }
@@ -59,6 +74,11 @@ public class TimingEdge {
     }
     public TimingNode getSink(){
     	return this.sink;
+    }
+    
+    public void calculateCriticality(double globalMaxDelay, double maxCriticality) {
+    	this.slack = this.sink.getRequiredTime() - this.source.getArrivalTime() - this.getTotalDelay();
+    	this.criticality = (1 - (globalMaxDelay + this.slack) / globalMaxDelay) * maxCriticality;
     }
 
     @Override

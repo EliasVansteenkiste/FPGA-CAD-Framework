@@ -3,6 +3,7 @@ package route.circuit.timing;
 import java.util.ArrayList;
 import java.util.List;
 
+import route.circuit.architecture.DelayTables;
 import route.circuit.block.GlobalBlock;
 import route.circuit.pin.AbstractPin;
 
@@ -62,8 +63,8 @@ public class TimingNode {
         this.sourceEdges.add(edge);
         this.numSources++;
     }
-    TimingEdge addSink(TimingNode sink, double delay) {
-        TimingEdge edge = new TimingEdge(delay, this, sink);
+    TimingEdge addSink(TimingNode sink, double delay, DelayTables delayTables) {
+        TimingEdge edge = new TimingEdge(delay, this, sink, delayTables);
 
         this.sinkEdges.add(edge);
         this.numSinks++;

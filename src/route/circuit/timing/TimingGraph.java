@@ -17,7 +17,9 @@ import route.circuit.block.LeafBlock;
 import route.circuit.pin.AbstractPin;
 import route.circuit.pin.GlobalPin;
 import route.circuit.pin.LeafPin;
+import route.circuit.resource.RouteNode;
 import route.circuit.timing.TimingNode.Position;
+import route.route.Connection;
 
 public class TimingGraph {
 
@@ -69,6 +71,17 @@ public class TimingGraph {
         System.out.println("      Root " + this.rootNodes.size());
         System.out.println("      Leaf " + this.leafNodes.size());
         System.out.println("   Num timing edges " + this.timingEdges.size());
+        System.out.println();
+    }
+    
+    public void initializeTiming() {
+    	this.calculatePlacementEstimatedWireDelay();
+    	this.calculateArrivalAndRequiredTimes();
+    	this.calculateEdgeCriticality();
+    	
+    	System.out.println("Timing information (based on placement estimated wire delay)");
+        System.out.printf("   Max delay: %.3f\n", this.getMaxDelay());
+        System.out.printf("   Timing cost: %.3e\n", this.calculateTotalCost());
         System.out.println();
     }
 
@@ -321,7 +334,7 @@ public class TimingGraph {
                 // If pathSinkNode is null, this sinkPin doesn't have any sinks
                 // so isn't used in the timing graph
                 if(pathSinkNode != null) {
-                    TimingEdge edge = pathSourceNode.addSink(pathSinkNode, delay);
+                    TimingEdge edge = pathSourceNode.addSink(pathSinkNode, delay, this.circuit.getArchitecture().getDelayTables());
                     this.timingEdges.add(edge);
 
                     GlobalBlock pathSinkBlock = pathSinkNode.getGlobalBlock();
@@ -510,21 +523,34 @@ public class TimingGraph {
     /****************************************************************
      * These functions calculate the criticality of all connections *
      ****************************************************************/
-
     public double getMaxDelay() {
         return this.globalMaxDelay * 1e9;
     }
 
-    public void calculateArrivalTimesAndCriticalities() {
-    	
-    	//INITIALIZATION
+    public void calculatePlacementEstimatedWireDelay() {
+    	for(TimingEdge edge : this.timingEdges) {
+    		edge.calculatePlacementEstimatedWireDelay();
+    	}
+    }
+    public void calculateActualWireDelay() {
+    	//Set wire delay of the connections
+    	for(Connection connection : this.circuit.getConnections()) {
+    		double wireDelay = 0.0;
+    		for(RouteNode routeNode : connection.routeNodes) {
+    			wireDelay += routeNode.getDelay();
+    		}
+    		connection.timingEdge.setWireDelay(wireDelay);
+    	}
+    }
+    public void calculateArrivalAndRequiredTimes() {
+    	//Initialization
         for(TimingNode node : this.timingNodes) {
             node.resetArrivalTime();
             node.resetRequiredTime();
         }
         this.globalMaxDelay = 0;
 
-    	//ARRIVAL TIME
+    	//Arrival time
         for(TimingNode rootNode: this.rootNodes){
         	rootNode.setArrivalTime(0.0);
         }
@@ -535,22 +561,22 @@ public class TimingGraph {
         	}
         }
 
-    	//REQUIRED TIME
+    	//Required time
     	for(TimingNode leafNode: this.leafNodes) {
     		leafNode.setRequiredTime(0.0);
     	}
         for(TimingNode rootNode: this.rootNodes) {
         	rootNode.recursiveRequiredTime();
         }
-        
-        //EDGE CRITICALITY
-        for(TimingEdge edge:this.timingEdges){
-        	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
-        	edge.setSlack(slack);
-        	
-        	double criticality = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
-        	
-        	edge.setCriticality(criticality);
+    }
+    public void calculateEdgeCriticality() {
+    	for(TimingEdge edge : this.timingEdges) {
+    		edge.calculateCriticality(this.globalMaxDelay, 1);
+    	}
+    }
+    public void calculateConnectionCriticality(double maxCriticality) {
+        for(Connection connection : this.circuit.getConnections()) {
+        	connection.timingEdge.calculateCriticality(this.globalMaxDelay, maxCriticality);
         }
     }
     
