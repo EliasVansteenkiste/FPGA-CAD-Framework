@@ -119,6 +119,10 @@ public class Connection implements Comparable<Connection>  {
 		this.routeNodes.clear();
 	}
 	
+	public float getCriticality() {
+		return (float) this.timingEdge.getCriticality();
+	}
+	
 	@Override
 	public String toString() {
 		return this.id + "_" + this.netName;
