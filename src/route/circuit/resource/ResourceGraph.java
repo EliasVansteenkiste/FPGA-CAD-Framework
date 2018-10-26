@@ -25,7 +25,15 @@ public class ResourceGraph {
 	private final Site[][] siteArray;
 	
 	private final List<RouteNode> routeNodes;
+	private List<IndexedData> indexedDataList;
+	private List<RouteSwitch> switchTypesList;
+	
 	private final Map<RouteNodeType, List<RouteNode>> routeNodeMap;
+	
+	private static int SOURCE_COST_INDEX = 0;
+	private static int SINK_COST_INDEX = 1;
+	private static int OPIN_COST_INDEX = 2;
+	private static int IPIN_COST_INDEX = 3;
 	
     public ResourceGraph(Circuit circuit) {
     	this.circuit = circuit;
@@ -58,11 +66,33 @@ public class ResourceGraph {
 		this.assignNamesToSourceAndSink();
 		this.connectSourceAndSinkToSite();
 		
+		for(RouteNode node : this.routeNodes) {
+			for(int i = 0; i < node.numChildren; i++) {
+				RouteNode child = node.children[i];
+				RouteSwitch routeSwitch = node.switches[i];
+				
+				child.setDrivingRouteSwitch(routeSwitch);
+			}
+		}
+		
 		//this.analyzeSites();
 		//this.analyzeRRG();
 		//this.testRRG();
 		
 		//this.printRoutingGraph();
+    }
+    
+    public IndexedData get_ipin_indexed_data() {
+    	return this.indexedDataList.get(IPIN_COST_INDEX);
+    }
+    public IndexedData get_opin_indexed_data() {
+    	return this.indexedDataList.get(OPIN_COST_INDEX);
+    }
+    public IndexedData get_source_indexed_data() {
+    	return this.indexedDataList.get(SOURCE_COST_INDEX);
+    }
+    public IndexedData get_sink_indexed_data() {
+    	return this.indexedDataList.get(SINK_COST_INDEX);
     }
     
     private void createSites() {
@@ -170,7 +200,7 @@ public class ResourceGraph {
 		 *        Indexed Data       *
 		 *****************************/
 		
-		List<IndexedData> indexedDataList = new ArrayList<>();
+		this.indexedDataList = new ArrayList<>();
 		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_indexed_data")));
 		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_indexed_data"));
@@ -180,14 +210,14 @@ public class ResourceGraph {
 			line = line.trim();
 			if (line.length() > 0) {
 				
-				indexedDataList.add(new IndexedData(line));
+				this.indexedDataList.add(new IndexedData(line));
 			}
 		}
         reader.close();
         
-        for (IndexedData data : indexedDataList) {
+        for (IndexedData data : this.indexedDataList) {
         	if (data.orthoCostIndex != -1) {
-        		data.setOrthoData(indexedDataList.get(data.orthoCostIndex));
+        		data.setOrthoData(this.indexedDataList.get(data.orthoCostIndex));
         	}
         }
         
@@ -199,7 +229,7 @@ public class ResourceGraph {
 		 *        Switch Types       *
 		 *****************************/
 		
-		List<SwitchType> switchTypesList = new ArrayList<>();
+		this.switchTypesList = new ArrayList<>();
 		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_switch_types")));
 		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_switch_types"));
@@ -209,7 +239,7 @@ public class ResourceGraph {
 			line = line.trim();
 			if (line.length() > 0) {
 				
-				switchTypesList.add(new SwitchType(line));
+				this.switchTypesList.add(new RouteSwitch(line));
 			}
 		}
 		
@@ -257,7 +287,9 @@ public class ResourceGraph {
         		float c = Float.parseFloat(words[10]);
         		
         		int cost_index = Integer.parseInt(words[11]);
-        		data = indexedDataList.get(cost_index);
+        		data = this.indexedDataList.get(cost_index);
+        		
+        		int numChildren = Integer.parseInt(words[12]);
         		
         		switch (type) {
         			case "SOURCE":        				
@@ -266,7 +298,7 @@ public class ResourceGraph {
         				assert r == 0;
         				assert c == 0;
         				
-        				routeNode = new Source(index, xlow, xhigh, ylow, yhigh, n, cap, data);
+        				routeNode = new Source(index, xlow, xhigh, ylow, yhigh, n, cap, data, numChildren);
         				
         				break;
         			case "SINK":        				
@@ -275,7 +307,7 @@ public class ResourceGraph {
         				assert r == 0;
         				assert c == 0;
         				
-        				routeNode = new Sink(index, xlow, xhigh, ylow, yhigh, n, cap, data);
+        				routeNode = new Sink(index, xlow, xhigh, ylow, yhigh, n, cap, data, numChildren);
         				
         				break;
         			case "IPIN":
@@ -292,7 +324,7 @@ public class ResourceGraph {
         					portIndex = 0;
         				}
         				
-        				routeNode = new Ipin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, data);
+        				routeNode = new Ipin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, data, numChildren);
         				
         				portIndex += 1;
         				
@@ -311,7 +343,7 @@ public class ResourceGraph {
         					portIndex = 0;
         				}
         				
-        				routeNode = new Opin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, data);
+        				routeNode = new Opin(index, xlow, xhigh, ylow, yhigh, n, name, portIndex, data, numChildren);
         				
         				portIndex += 1;
         				
@@ -321,7 +353,7 @@ public class ResourceGraph {
         				assert name.equals("-");
         				assert cap == 1;
         				
-        				routeNode = new Chanx(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
+        				routeNode = new Chanx(index, xlow, xhigh, ylow, yhigh, n, r, c, data, numChildren);
         				
         				break;
         			case "CHANY":        				
@@ -329,7 +361,7 @@ public class ResourceGraph {
         				assert name.equals("-");
         				assert cap == 1;
         				
-        				routeNode = new Chany(index, xlow, xhigh, ylow, yhigh, n, r, c, data);
+        				routeNode = new Chany(index, xlow, xhigh, ylow, yhigh, n, r, c, data, numChildren);
         				
         				break;
         			default:
@@ -359,16 +391,13 @@ public class ResourceGraph {
         		RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
         		
         		int numChildren = Integer.parseInt(words[1]);
-        		RouteNode[] children = new RouteNode[numChildren];
         		
-        		int childCounter = 0;
-        		for(int childIndex = 2; childIndex < words.length; childIndex++) {
-        			RouteNode child = this.routeNodes.get(Integer.parseInt(words[childIndex]));
-        			children[childCounter] = child;
-        			childCounter++;
+        		if(numChildren != parent.numChildren) System.out.println("Problem in resource graph for num children");//TODO remove checker
+        		
+        		for(int index = 0; index < numChildren; index++) {
+        			RouteNode child = this.routeNodes.get(Integer.parseInt(words[index+2]));
+        			parent.setChild(index, child);
         		}
-        		
-        		parent.setChildren(children);
         	}
 		}
 		
@@ -389,16 +418,12 @@ public class ResourceGraph {
 				words = line.split(";");
 				
 				RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
-				int numChildren = parent.numChildren();
+				int numChildren = parent.numChildren;
 				
-				SwitchType[] switches = new SwitchType[numChildren];
-				int indexCounter = 0;
-				for(int childIndex = 1; childIndex < words.length; childIndex++) {
-					switches[indexCounter] = switchTypesList.get(Integer.parseInt(words[childIndex]));
-					indexCounter++;
+				for(int index = 0; index < numChildren; index++) {
+					RouteSwitch routeSwitch = this.switchTypesList.get(Integer.parseInt(words[index+1]));
+					parent.setSwitchType(index, routeSwitch);
 				}
-				
-				parent.setSwitchType(switches);
 			}
 		}
 		
@@ -619,7 +644,7 @@ public class ResourceGraph {
 		routeNodeMap = new HashMap<>();
 		int unconnectedRouteNodes = 0;
 		for(RouteNode routeNode:this.routeNodes) {
-			if(routeNode.numChildren() == 0){
+			if(routeNode.numChildren == 0){
 				if(!routeNodeMap.containsKey(routeNode.type)) routeNodeMap.put(routeNode.type, 0);
 				routeNodeMap.put(routeNode.type, routeNodeMap.get(routeNode.type) + 1);
 				unconnectedRouteNodes++;

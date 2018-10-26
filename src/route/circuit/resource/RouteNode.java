@@ -9,21 +9,27 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public final short ylow, yhigh;
 	public final short n;
 	
+	public float delay;
 	public final float r;
 	public final float c;
+	
+	public final float base_cost;
 	
 	public final RouteNodeType type;
 	public final short capacity;
 	
-	public RouteNode[] children;
-	public SwitchType[] switches;
+	public final int numChildren;
+	public final RouteNode[] children;
+	public final RouteSwitch[] switches;
+	
+	public RouteSwitch drivingRouteSwitch;
 
 	public final IndexedData indexedData;
 	public final RouteNodeData routeNodeData;
 	
 	public boolean target;
 	
-	public RouteNode(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, RouteNodeType t, float r, float c, IndexedData indexedData) {
+	public RouteNode(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, RouteNodeType t, float r, float c, IndexedData indexedData, int numChildren) {
 		this.index = index;
 		
 		this.xlow = (short) xlow;
@@ -42,21 +48,31 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.r = r;
 		this.c = c;
 		
-		this.children = new RouteNode[0];//TODO ADD FANOUT TO ROUTE NODE FILE
-		this.switches = new SwitchType[0];
+		this.base_cost = this.indexedData.base_cost;
+		
+		this.numChildren = numChildren;
+		this.children = new RouteNode[this.numChildren];
+		this.switches = new RouteSwitch[this.numChildren];
 
 		this.target = false;
+		
+		this.drivingRouteSwitch = null;
 	}
 	
-	public void setChildren(RouteNode[] children) {
-		this.children = children;
+	public void setChild(int index, RouteNode child) {
+		this.children[index] = child;
 	}
-	public int numChildren() {
-		return this.children.length;
+	public void setSwitchType(int index, RouteSwitch routeSwitch) {
+		this.switches[index] = routeSwitch;
 	}
 	
-	public void setSwitchType(SwitchType[] switches) {
-		this.switches = switches;
+	public void setDrivingRouteSwitch(RouteSwitch drs) {
+		this.drivingRouteSwitch = drs;
+		if(!(this.type.equals(RouteNodeType.SOURCE) || this.type.equals(RouteNodeType.SINK))) {
+			this.delay =  this.c * (this.drivingRouteSwitch.r + 0.5f * this.r) + this.drivingRouteSwitch.tdel;
+		} else {
+			this.delay = 0;
+		}
 	}
 
 	public boolean isWire() {
@@ -129,6 +145,10 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	}
 	public boolean used() {
 		return this.routeNodeData.occupation > 0;
+	}
+	
+	public float getDelay() {
+		return this.delay;
 	}
 	
 	public void updatePresentCongestionPenalty(float pres_fac) {
