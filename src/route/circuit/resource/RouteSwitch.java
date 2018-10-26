@@ -1,6 +1,6 @@
 package route.circuit.resource;
 
-public class SwitchType {
+public class RouteSwitch {
 	public final int index;
 	public final boolean buffered;
 	
@@ -12,7 +12,7 @@ public class SwitchType {
 	public final float mux_trans_size;
 	public final float buf_size;
 	
-	public SwitchType(String line) {
+	public RouteSwitch(String line) {
 		while(line.contains("  ")) line = line.replace("  ", " ");
 		
 		String[] words = line.split(" ");
@@ -27,6 +27,10 @@ public class SwitchType {
 		this.tdel = Float.parseFloat(words[11]);
 		this.mux_trans_size = Float.parseFloat(words[13]);
 		this.buf_size = Float.parseFloat(words[15]);
+	}
+	
+	public double getDelay() {
+		return this.tdel;
 	}
 	
 	@Override
