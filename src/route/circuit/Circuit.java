@@ -209,7 +209,7 @@ public class Circuit {
         			String netName = sourcePin.getNetName();
             		
         			if(!this.globalNetNames.contains(netName)) {
-    	        		Set<Connection> net = new HashSet<>();
+    	        		List<Connection> net = new ArrayList<>();
     	        		
     	        		for(AbstractPin abstractSinkPin : sourcePin.getSinks()) {
     	        			GlobalPin sinkPin = (GlobalPin) abstractSinkPin;

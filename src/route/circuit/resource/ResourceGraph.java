@@ -66,17 +66,6 @@ public class ResourceGraph {
 		this.assignNamesToSourceAndSink();
 		this.connectSourceAndSinkToSite();
 		
-		for(RouteNode node : this.routeNodes) {
-			for(int i = 0; i < node.numChildren; i++) {
-				RouteNode child = node.children[i];
-				RouteSwitch routeSwitch = node.switches[i];
-				
-				child.setDrivingRouteSwitch(routeSwitch);
-			}
-		}
-		
-		//this.analyzeSites();
-		//this.analyzeRRG();
 		//this.testRRG();
 		
 		//this.printRoutingGraph();
@@ -429,6 +418,19 @@ public class ResourceGraph {
 		
 		reader.close();
 		
+		for(RouteNode node : this.routeNodes) {
+			for(int i = 0; i < node.numChildren; i++) {
+				RouteNode child = node.children[i];
+				RouteSwitch routeSwitch = node.switches[i];
+				
+				child.setDrivingRouteSwitch(routeSwitch);
+			}
+		}
+		for(RouteNode node : this.routeNodeMap.get(RouteNodeType.SOURCE)) {
+			Source source = (Source) node;
+			source.setDrivingRouteSwitch(null);//TODO Driving route switch of source?
+		}
+		
 		System.out.println();
 	}
 	private void assignNamesToSourceAndSink() {
@@ -482,11 +484,11 @@ public class ResourceGraph {
 	}
 	
 	public int[] get_expected_segs_to_target(RouteNode node, RouteNode target) {
-
 		/* Returns the number of segments the same type as inode that will be needed *
 		 * to reach target_node (not including inode) in each direction (the same    *
 		 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
-
+		RouteNodeType type = node.type;
+		
 		short ylow, yhigh, xlow, xhigh;
 		int num_segs_same_dir, num_segs_ortho_dir;
 		
@@ -501,8 +503,6 @@ public class ResourceGraph {
 		
 		inv_length = indexedData.inv_length;
 		ortho_inv_length = orthoIndexedData.inv_length;
-		
-		RouteNodeType type = node.type;
 		
 		if (type == RouteNodeType.CHANX) {
 			ylow = node.ylow;
@@ -534,8 +534,7 @@ public class ResourceGraph {
 			
 			int[] result = {num_segs_same_dir, num_segs_ortho_dir};
 			return result;
-		}
-		else { /* inode is a CHANY */
+		} else { /* inode is a CHANY */
 			ylow = node.ylow;
 			yhigh = node.yhigh;
 			xlow = node.xlow;
@@ -565,6 +564,80 @@ public class ResourceGraph {
 			
 			int[] result = {num_segs_same_dir, num_segs_ortho_dir};
 			return result;
+		}
+	}
+	public int get_expected_distance_to_target(RouteNode node, RouteNode target) {
+		/* Returns the number of segments the same type as inode that will be needed *
+		 * to reach target_node (not including inode) in each direction (the same    *
+		 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
+		RouteNodeType type = node.type;
+		
+		short ylow, yhigh, xlow, xhigh;
+		int distance_same_dir, distance_ortho_dir;
+		
+		int no_need_to_pass_by_clb;
+		
+		short target_x = target.xlow;
+		short target_y = target.ylow;
+		
+		if (type == RouteNodeType.CHANX) {
+			ylow = node.ylow;
+			xhigh = node.xhigh;
+			xlow = node.xlow;
+
+			/* Count vertical (orthogonal to inode) segs first. */
+
+			if (ylow > target_y) { /* Coming from a row above target? */
+				distance_ortho_dir = ylow - target_y + 1;
+				no_need_to_pass_by_clb = 1;
+			} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
+				distance_ortho_dir= target_y - ylow;
+				no_need_to_pass_by_clb = 1;
+			} else { /* In a row that passes by target CLB */
+				distance_ortho_dir = 0;
+				no_need_to_pass_by_clb = 0;
+			}
+
+			/* Now count horizontal (same dir. as inode) segs. */
+
+			if (xlow > target_x + no_need_to_pass_by_clb) {
+				distance_same_dir = xlow - no_need_to_pass_by_clb - target_x;
+			} else if (xhigh < target_x - no_need_to_pass_by_clb) {
+				distance_same_dir = target_x - no_need_to_pass_by_clb - xhigh;
+			} else {
+				distance_same_dir = 0;
+			}
+			
+			return distance_same_dir + distance_ortho_dir;
+		} else { /* inode is a CHANY */
+			ylow = node.ylow;
+			yhigh = node.yhigh;
+			xlow = node.xlow;
+
+			/* Count horizontal (orthogonal to inode) segs first. */
+
+			if (xlow > target_x) { /* Coming from a column right of target? */
+				distance_ortho_dir = xlow - target_x + 1;
+				no_need_to_pass_by_clb = 1;
+			} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
+				distance_ortho_dir = target_x - xlow;
+				no_need_to_pass_by_clb = 1;
+			} else { /* In a column that passes by target CLB */
+				distance_ortho_dir = 0;
+				no_need_to_pass_by_clb = 0;
+			}
+
+			/* Now count vertical (same dir. as inode) segs. */
+
+			if (ylow > target_y + no_need_to_pass_by_clb) {
+				distance_same_dir = ylow - no_need_to_pass_by_clb - target_y;
+			} else if (yhigh < target_y - no_need_to_pass_by_clb) {
+				distance_same_dir = target_y - no_need_to_pass_by_clb - yhigh;
+			} else {
+				distance_same_dir = 0;
+			}
+			
+			return distance_same_dir + distance_ortho_dir;
 		}
 	}
 	
@@ -616,58 +689,10 @@ public class ResourceGraph {
 		}
 		return wireSegmentsUsed;
 	}
-	
-	/**********************
-	 * TEST FUNCTIONALITY *
-	 **********************/
 	public void sanityCheck() {
 		for(Site site:this.getSites()) {
 			site.sanityCheck();
 		}
-	}
-	public void analyzeRRG() {
-		System.out.println("######### RRG #########");
-		Map<RouteNodeType, Integer> routeNodeMap = new HashMap<>();
-		int numRouteNodes = 0;
-		for(RouteNode routeNode:this.routeNodes) {
-			if(!routeNodeMap.containsKey(routeNode.type)) routeNodeMap.put(routeNode.type, 0);
-			routeNodeMap.put(routeNode.type, routeNodeMap.get(routeNode.type) + 1);
-			numRouteNodes++;
-		}
-		System.out.println("The RRG has " + numRouteNodes + " route nodes");
-		for(RouteNodeType type:routeNodeMap.keySet()){
-			System.out.println("\t" + type + ": " + routeNodeMap.get(type));
-		}
-		System.out.println();
-		
-		//Unconnected route nodes
-		routeNodeMap = new HashMap<>();
-		int unconnectedRouteNodes = 0;
-		for(RouteNode routeNode:this.routeNodes) {
-			if(routeNode.numChildren == 0){
-				if(!routeNodeMap.containsKey(routeNode.type)) routeNodeMap.put(routeNode.type, 0);
-				routeNodeMap.put(routeNode.type, routeNodeMap.get(routeNode.type) + 1);
-				unconnectedRouteNodes++;
-			}
-		}
-		System.out.println("The RRG has " + unconnectedRouteNodes + " route nodes without children");
-		for(RouteNodeType type:routeNodeMap.keySet()){
-			System.out.println("\t" + type + ": " + routeNodeMap.get(type));
-		}
-		System.out.println();
-		
-		System.out.println("#######################");
-		System.out.println();
-	}
-	public void testRRG() {
-		System.out.println("Test RRG");
-		for(int i = 0; i < this.routeNodes.size(); i++){
-			RouteNode routeNode = this.routeNodes.get(i);
-			if(routeNode.index != i){
-				System.err.println("Problem with index of route node\n\tActual index: " + routeNode.index + "\n\tExpected index: " + i);
-			}
-		}
-		System.out.println("No problems found");
 	}
 	public void printRoutingGraph() {
 		for(RouteNode node : this.getRouteNodes()) {

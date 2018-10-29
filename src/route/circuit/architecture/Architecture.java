@@ -108,7 +108,11 @@ public class Architecture implements Serializable {
         // All delays have been cached in this.delays, process them now
         this.processDelays();
 
-        this.delayTables = null;
+        // Set all delays to 0
+        // This is only useful while debugging,
+        // because the call to vpr takes a really
+        // long time for large circuits
+        this.delayTables = new DelayTables();
     }
 
 

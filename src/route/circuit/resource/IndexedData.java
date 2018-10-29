@@ -2,7 +2,7 @@ package route.circuit.resource;
 
 public class IndexedData {
 	public final int index;
-	public final float base_cost;//TODO BaseCost (Based on length of wire?)
+	public final float base_cost;
 	public final int length;
 	public final float inv_length;
 	

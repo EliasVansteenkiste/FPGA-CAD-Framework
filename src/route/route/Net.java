@@ -14,28 +14,23 @@ import route.circuit.resource.Source;
 import route.route.Connection;
 
 public class Net {
-	private final Set<Connection> connections;
+	private final List<Connection> connections;
 	public final int fanout;
 	
-	private final short x_min;
-	private final short x_max;
-	private final short y_min;
-	private final short y_max;
-	
 	private final short boundingBoxRange;
-	private final short x_min_b;
-	private final short x_max_b;
-	private final short y_min_b;
-	private final short y_max_b;
+	public final short x_min_b;
+	public final short x_max_b;
+	public final short y_min_b;
+	public final short y_max_b;
 	
-	public final double x_geo;
-	public final double y_geo;
+	public final float x_geo;
+	public final float y_geo;
 	
 	public final int hpwl;
 	
 	private Opin fixedOpin;
 	
-	public Net(Set<Connection> net, short boundingBoxRange) {
+	public Net(List<Connection> net, short boundingBoxRange) {
 		this.connections = net;
 		this.fanout = net.size();
 		
@@ -44,8 +39,8 @@ public class Net {
 		List<Short> xCoordinatesBB = new ArrayList<>();
 		List<Short> yCoordinatesBB = new ArrayList<>();
 		
-		double xGeomeanSum = 0.0;
-		double yGeomeanSum = 0.0;
+		float xGeomeanSum = 0;
+		float yGeomeanSum = 0;
 		
 		//Source pin of net
 		Source source = null;
@@ -58,7 +53,7 @@ public class Net {
 		}
 		
 		if(source.xlow != source.xhigh) {
-			xGeomeanSum += Math.round(0.5 * (source.xlow + source.xhigh));
+			xGeomeanSum += source.centerx;
 			
 			xCoordinatesBB.add(source.xlow);
 			xCoordinatesBB.add(source.xhigh);
@@ -67,7 +62,7 @@ public class Net {
 			xCoordinatesBB.add(source.xlow);
 		}
 		if(source.ylow != source.yhigh) {
-			yGeomeanSum += Math.round(0.5 * (source.ylow + source.yhigh));
+			yGeomeanSum += source.centery;
 			
 			yCoordinatesBB.add(source.ylow);
 			yCoordinatesBB.add(source.yhigh);
@@ -81,7 +76,7 @@ public class Net {
 			Sink sink = (Sink) connection.sinkRouteNode;
 			
 			if(sink.xlow != sink.xhigh) {
-				xGeomeanSum += Math.round(0.5 * (sink.xlow + sink.xhigh));
+				xGeomeanSum += sink.centerx;
 				
 				xCoordinatesBB.add(sink.xlow);
 				xCoordinatesBB.add(sink.xhigh);
@@ -90,7 +85,7 @@ public class Net {
 				xCoordinatesBB.add(sink.xlow);
 			}
 			if(sink.ylow != sink.yhigh) {
-				yGeomeanSum += Math.round(0.5 * (sink.ylow + sink.yhigh));
+				yGeomeanSum += sink.centery;
 				
 				yCoordinatesBB.add(sink.ylow);
 				yCoordinatesBB.add(sink.yhigh);
@@ -100,44 +95,39 @@ public class Net {
 			}
 		}
 		
-		short x_min_temp = Short.MAX_VALUE;
-		short y_min_temp = Short.MAX_VALUE;
+		short x_min = Short.MAX_VALUE;
+		short y_min = Short.MAX_VALUE;
 		
-		short x_max_temp = Short.MIN_VALUE;
-		short y_max_temp = Short.MIN_VALUE;
+		short x_max = Short.MIN_VALUE;
+		short y_max = Short.MIN_VALUE;
 		
 		for(short x : xCoordinatesBB) {
-			if(x < x_min_temp) {
-				x_min_temp = x;
+			if(x < x_min) {
+				x_min = x;
 			}
-			if(x > x_max_temp) {
-				x_max_temp = x;
+			if(x > x_max) {
+				x_max = x;
 			}
 		}
 		for(short y : yCoordinatesBB) {
-			if(y < y_min_temp) {
-				y_min_temp = y;
+			if(y < y_min) {
+				y_min = y;
 			}
-			if(y > y_max_temp) {
-				y_max_temp = y;
+			if(y > y_max) {
+				y_max = y;
 			}
 		}
 		
-		this.x_min = x_min_temp;
-		this.y_min = y_min_temp;
 		
-		this.x_max = x_max_temp;
-		this.y_max = y_max_temp;
+		this.hpwl = (x_max - x_min + 1) + (y_max - y_min + 1);
 		
-		this.hpwl = (this.x_max - this.x_min + 1) + (this.y_max - this.y_min + 1);
+		this.x_geo = xGeomeanSum / (1 + this.fanout);
+		this.y_geo = yGeomeanSum / (1 + this.fanout);
 		
-		this.x_geo = xGeomeanSum / (1.0 + this.fanout);
-		this.y_geo = yGeomeanSum / (1.0 + this.fanout);
-		
-		this.x_max_b = (short) (this.x_max + this.boundingBoxRange);
-		this.x_min_b = (short) (this.x_min - this.boundingBoxRange);
-		this.y_max_b = (short) (this.y_max + this.boundingBoxRange);
-		this.y_min_b = (short) (this.y_min - this.boundingBoxRange);
+		this.x_max_b = (short) (x_max + this.boundingBoxRange);
+		this.x_min_b = (short) (x_min - this.boundingBoxRange);
+		this.y_max_b = (short) (y_max + this.boundingBoxRange);
+		this.y_min_b = (short) (y_min - this.boundingBoxRange);
 		
 		for(Connection connection : this.connections) {
 			connection.setNet(this);
@@ -147,7 +137,7 @@ public class Net {
 	}
 	
 	public boolean isInBoundingBoxLimit(RouteNode node) {
-		return node.xlow < this.x_max_b && node.xhigh > this.x_min_b && node.ylow < this.y_max_b && node.yhigh > this.y_min_b;
+		return  node.xlow < this.x_max_b && node.xhigh > this.x_min_b && node.ylow < this.y_max_b && node.yhigh > this.y_min_b;
 	}
 	
 	public int wireLength() {
@@ -164,7 +154,7 @@ public class Net {
 		return wireLength;
 	}
 	
-	public Set<Connection> getConnections() {
+	public List<Connection> getConnections() {
 		return this.connections;
 	}
 	

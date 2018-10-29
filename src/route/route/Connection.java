@@ -6,7 +6,6 @@ import java.util.List;
 import route.circuit.pin.GlobalPin;
 import route.circuit.resource.Opin;
 import route.circuit.resource.RouteNode;
-import route.circuit.resource.RouteNodeType;
 import route.circuit.timing.TimingEdge;
 import route.circuit.timing.TimingNode;
 
@@ -109,7 +108,7 @@ public class Connection implements Comparable<Connection>  {
 	}
 
 	public boolean isInBoundingBoxLimit(RouteNode node) {
-		return this.net.isInBoundingBoxLimit(node);
+		return node.xlow < this.net.x_max_b && node.xhigh > this.net.x_min_b && node.ylow < this.net.y_max_b && node.yhigh > this.net.y_min_b;
 	}
 	
 	public void addRouteNode(RouteNode routeNode) {
@@ -165,16 +164,10 @@ public class Connection implements Comparable<Connection>  {
 	}
 	
 	public Opin getOpin() {
-		Opin opin = null;
-		for(RouteNode node : this.routeNodes) {
-			if(node.type.equals(RouteNodeType.OPIN)) {
-				if(opin == null) {
-					opin = (Opin) node;
-				} else {
-					System.out.println("Connection has multiple opins!");
-				}
-			}
+		if(this.routeNodes.isEmpty()) {
+			return null;
+		} else {
+			return (Opin) this.routeNodes.get(this.routeNodes.size() - 2);
 		}
-		return opin;
 	}
 }
