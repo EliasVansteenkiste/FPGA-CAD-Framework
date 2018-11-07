@@ -194,7 +194,8 @@ public class TimingGraph {
         int numNodes = this.timingNodes.size();
         for(int i = 0; i < numNodes; i++) {
             TimingNode node = this.timingNodes.get(i);
-            if(node.getPosition() != Position.LEAF && !this.clockNamesToDomains.containsKey(node.getPin().getOwner().getName())) {
+            
+            if(node.getPosition() != Position.LEAF && !this.isSourceOfClockNet(node)) {
                 this.traverseFromSource(node, clockDelays.get(i));
             }
         }
@@ -239,7 +240,10 @@ public class TimingGraph {
             node.compact();
         }
     }
-
+    
+    private boolean isSourceOfClockNet(TimingNode node) {
+    	return this.isSourceOfClockNet(node.getPin());
+    }
     private boolean isSourceOfClockNet(AbstractPin sourcePin) {
     	Stack<AbstractPin> work = new Stack<>();
     	work.add(sourcePin);
@@ -254,7 +258,7 @@ public class TimingGraph {
     			if(!current.isClock()) return false;
     		}
     	}
-    	
+    	//System.out.println("Source of clock net " + sourcePin);
     	return true;
     }
     
@@ -571,12 +575,12 @@ public class TimingGraph {
     }
     public void calculateEdgeCriticality() {
     	for(TimingEdge edge : this.timingEdges) {
-    		edge.calculateCriticality(this.globalMaxDelay, 1);
+    		edge.calculateCriticality(this.globalMaxDelay, 1, 1);
     	}
     }
-    public void calculateConnectionCriticality(double maxCriticality) {
+    public void calculateConnectionCriticality(double maxCriticality, double criticalityExponent) {
         for(Connection connection : this.circuit.getConnections()) {
-        	connection.timingEdge.calculateCriticality(this.globalMaxDelay, maxCriticality);
+        	connection.timingEdge.calculateCriticality(this.globalMaxDelay, maxCriticality, criticalityExponent);
         }
     }
     
