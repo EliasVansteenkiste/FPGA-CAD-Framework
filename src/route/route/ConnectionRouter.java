@@ -27,15 +27,19 @@ public class ConnectionRouter {
 	
 	private final List<String> printRouteInformation;
 	
-	private final static float BASE_COST_PER_DISTANCE = 3.34756e-11f;
-	private final static float IPIN_BASE_COST = 3.18018e-11f;
+	private final float BASE_COST_PER_DISTANCE;
+	private final float IPIN_BASE_COST;
 	private static final float MAX_CRITICALITY = 0.99f;
+	private static final float CRITICALITY_EXPONENT = 5;
 	
 	private float averageDelay;
 	
+	private int itry;
+	private boolean td;
+	
 	public static final boolean DEBUG = true;
 	
-	public ConnectionRouter(ResourceGraph rrg, Circuit circuit) {
+	public ConnectionRouter(ResourceGraph rrg, Circuit circuit, boolean td) {
 		this.rrg = rrg;
 		this.circuit = circuit;
 
@@ -55,7 +59,18 @@ public class ConnectionRouter {
 		}
 		this.averageDelay /= divide;
 		
-		System.out.println(averageDelay);
+		float baseCostPerDistance = -1;
+		for (int i = 4; i < 8; i++) {
+			if (baseCostPerDistance == -1) {
+				baseCostPerDistance = this.rrg.getIndexedDataList().get(i).getBaseCost();
+			} else if (baseCostPerDistance != this.rrg.getIndexedDataList().get(i).getBaseCost()) {
+				System.err.println("Problem with base cost: \n   BaseCostPerDistance" + baseCostPerDistance + "\n   i => " + this.rrg.getIndexedDataList().get(i).getBaseCost());
+			}
+		}
+		BASE_COST_PER_DISTANCE = baseCostPerDistance; 
+		IPIN_BASE_COST = this.rrg.get_ipin_indexed_data().getBaseCost();
+		
+		this.td = td;
 	}
     
     public int route() {
@@ -67,7 +82,7 @@ public class ConnectionRouter {
 		System.out.println("---------------------------");
 		System.out.println();
 	
-		this.doRouting("Route all", 100, true, 4, 1.5f);
+		this.doRouting("Route all", 100, 4, 1.5f);
 		
 		/***************************
 		 * OPIN tester: test if each
@@ -91,17 +106,17 @@ public class ConnectionRouter {
 		
 		return -1;
 	}
-    private void doRouting(String name, int nrOfTrials, boolean routeAll, int fixOpins, float alpha) {
-		System.out.printf("----------------------------------------------------------\n");
+    private void doRouting(String name, int nrOfTrials, int fixOpins, float alpha) {
+		System.out.printf("----------------------------------------------------------------------\n");
 		System.out.println(name);
-		int timeMilliseconds = this.doRouting(nrOfTrials, routeAll, fixOpins, alpha);
-		System.out.printf("----------------------------------------------------------\n");
+		int timeMilliseconds = this.doRouting(nrOfTrials, fixOpins, alpha);
+		System.out.printf("----------------------------------------------------------------------\n");
 		System.out.println("Runtime " + timeMilliseconds + " ms");
-		System.out.printf("----------------------------------------------------------\n\n\n");
+		System.out.printf("----------------------------------------------------------------------\n\n\n");
 		
 		this.printRouteInformation.add(String.format("%s %d", name, timeMilliseconds));
     }
-    private int doRouting(int nrOfTrials, boolean routeAll, int fixOpins, float alpha) {
+    private int doRouting(int nrOfTrials, int fixOpins, float alpha) {
     	long start = System.nanoTime();
     	
     	this.alpha = alpha;
@@ -117,76 +132,76 @@ public class ConnectionRouter {
 		List<Connection> sortedListOfConnections = new ArrayList<>();
 		sortedListOfConnections.addAll(this.circuit.getConnections());
 
-		int itry = 1;
+		this.itry = 1;
 		boolean bbnotfanout = false;
 		if(bbnotfanout) {
 			Collections.sort(sortedListOfConnections, Comparators.BBComparator);
 		} else {
 			Collections.sort(sortedListOfConnections, Comparators.FanoutComparator);
 		}
-        
+		
         List<Net> sortedListOfNets = new ArrayList<>();
         sortedListOfNets.addAll(this.circuit.getNets());
         Collections.sort(sortedListOfNets, Comparators.FANOUT);
         
-        //Placement estimated timing
-        this.circuit.getTimingGraph().calculatePlacementEstimatedWireDelay();
-        this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
-        this.circuit.getTimingGraph().calculateConnectionCriticality(0);//MAX_CRITICALITY);
+		this.circuit.getTimingGraph().calculatePlacementEstimatedWireDelay();
+		this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
+		this.circuit.getTimingGraph().calculateConnectionCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
         
-        System.out.printf("---------  -----  ---------  -----------------  -----------\n");
-        System.out.printf("%9s  %5s  %9s  %17s  %11s\n", "Iteration", "Alpha", "Time (ms)", "Overused RR Nodes", "Wire-Length");
-        System.out.printf("---------  -----  ---------  -----------------  -----------\n");
+        System.out.printf("---------  -----  ---------  -----------------  -----------  ---------\n");
+        System.out.printf("%9s  %5s  %9s  %17s  %11s  %9s\n", "Iteration", "Alpha", "Time (ms)", "Overused RR Nodes", "Wire-Length", "Max Delay");
+        System.out.printf("---------  -----  ---------  -----------------  -----------  ---------\n");
         
         Set<RouteNode> overUsed = new HashSet<>();
         
         boolean validRouting = false;
         
-        while (itry <= nrOfTrials) {
+        while (this.itry <= nrOfTrials) {
+        	
         	validRouting = true;
         	long iterationStart = System.nanoTime();
 
         	//Fix opins in order of high fanout nets
-        	if(itry >= fixOpins) {
-            	for(Net net : sortedListOfNets) {
-            		if(!net.hasOpin()) {
-            			Opin opin = net.getUniqueOpin();
-            			if(opin != null) {
-            				if(!opin.overUsed()) {
-            					net.setOpin(opin);
-            				}
-            			}
-            			validRouting = false;
-            		}
-            	}
+        	if(this.itry >= fixOpins) {
             	for(Net net : sortedListOfNets) {
             		if(!net.hasOpin()) {
             			Opin opin = net.getMostUsedOpin();
                 		if(!opin.used()) {
                 			net.setOpin(opin);
+                			for(Connection con : net.getConnections()) {
+                				if(con.getOpin().index != con.net.getOpin().index) {
+            						this.ripup(con);
+            						this.route(con);
+            						this.add(con);
+            					}
+                			}
                 		}
                 		validRouting = false;
             		}
             	}
-        	} else if(fixOpins < Integer.MAX_VALUE){
+        	} else if(this.itry < fixOpins){
         		validRouting = false;
         	}
         			
         	for(Connection con : sortedListOfConnections) {
-				if((itry == 1 && routeAll) || con.congested()) {
+				if (this.itry == 1) {
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
 					
 					validRouting = false;
-				} else if(con.net.hasOpin()) {
-					if(con.getOpin().index != con.net.getOpin().index) {
-						this.ripup(con);
-						this.route(con);
-						this.add(con);
-						
-						validRouting = false;
-					}
+
+				} else if(con.congested()) {
+					this.ripup(con);
+					this.route(con);
+					this.add(con);
+					
+					validRouting = false;
+					
+				} else if (con.getCriticality() > 0.95) {
+					this.ripup(con);
+					this.route(con);
+					this.add(con);
 				}
 			}
         	
@@ -197,6 +212,7 @@ public class ConnectionRouter {
 			String numOverUsed = String.format("%8s", "---");
 			String overUsePercentage = String.format("%7s", "---");
 			String wireLength = String.format("%11s", "---");
+			String maxDelay = String.format("%11s", "---");
 			
 			if(DEBUG) {
 				overUsed.clear();
@@ -212,6 +228,10 @@ public class ConnectionRouter {
 				overUsePercentage = String.format("%6.2f%%", 100.0 * (float)overUsed.size() / numRouteNodes);
 				
 				wireLength = String.format("%11d", this.rrg.congestedTotalWireLengt());
+				
+				this.circuit.getTimingGraph().calculateActualWireDelay();
+				this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
+				maxDelay = String.format("%5.3f", this.circuit.getTimingGraph().getMaxDelay());
 			}
 			
 			
@@ -223,11 +243,11 @@ public class ConnectionRouter {
 				int timeMilliSeconds = (int)Math.round((end-start) * Math.pow(10, -6));
 				return timeMilliSeconds;
 			} else {
-				System.out.printf("%9d  %.3f %9d  %s  %s  %s\n", itry, this.alpha, rt, numOverUsed, overUsePercentage, wireLength);
+				System.out.printf("%9d  %.3f  %9d  %s  %s  %s  %s\n", this.itry, this.alpha, rt, numOverUsed, overUsePercentage, wireLength, maxDelay);
 			}
 			
 			//Updating the cost factors
-			if (itry == 1) {
+			if (this.itry == 1) {
 				this.pres_fac = initial_pres_fac;
 			} else {
 				this.pres_fac *= pres_fac_mult;
@@ -235,15 +255,17 @@ public class ConnectionRouter {
 			this.updateCost(this.pres_fac, acc_fac);
 			
 			//Update timing and criticality
-			this.circuit.getTimingGraph().calculateActualWireDelay();
-			this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
-			this.circuit.getTimingGraph().calculateConnectionCriticality(MAX_CRITICALITY);            
+			if(this.td) {
+				this.circuit.getTimingGraph().calculateActualWireDelay();
+				this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
+				this.circuit.getTimingGraph().calculateConnectionCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
+			}
 			
-			itry++;
+			this.itry++;
 		}
         
-		if (itry == nrOfTrials + 1) {
-			System.out.println("Routing failled after " + itry + " trials!");
+		if (this.itry == nrOfTrials + 1) {
+			System.out.println("Routing failled after " + this.itry + " trials!");
 			
 			int maxNameLength = 0;
 			
@@ -391,7 +413,7 @@ public class ConnectionRouter {
 		RouteNodeData data = child.routeNodeData;
 		int countSourceUses = data.countSourceUses(con.source);
 		
-		float new_partial_path_cost =  node.routeNodeData.getPartialPathCost() + (1 - con.getCriticality()) * this.getRouteNodeCost(child, con, countSourceUses) + con.getCriticality() * child.getDelay();
+		float new_partial_path_cost = node.routeNodeData.getPartialPathCost() + (1 - con.getCriticality()) * this.getRouteNodeCost(child, con, countSourceUses) + con.getCriticality() * child.getDelay();
 		float new_lower_bound_total_path_cost = getLowerBoundTotalPathCost(child, con, new_partial_path_cost, countSourceUses);
 		
 		this.addNodeToQueue(child, node, new_partial_path_cost, new_lower_bound_total_path_cost);
@@ -419,8 +441,9 @@ public class ConnectionRouter {
 			int distance =  this.rrg.get_expected_distance_to_target(node, target);
 			float expected_wire_cost = distance * BASE_COST_PER_DISTANCE / (1 + countSourceUses) + IPIN_BASE_COST;
 			float expected_timing_cost = distance * this.averageDelay;
+			
+			return partial_path_cost + this.alpha * (1 - con.getCriticality()) * expected_wire_cost + 0.75f * con.getCriticality() * expected_timing_cost;
 
-			return partial_path_cost + this.alpha * ((1 - con.getCriticality()) * expected_wire_cost + con.getCriticality() * expected_timing_cost);
 		} else {
 			return partial_path_cost;
 		}
