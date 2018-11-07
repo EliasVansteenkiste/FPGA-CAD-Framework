@@ -1,8 +1,9 @@
 package route.circuit.resource;
 
 public class IndexedData {
-	public final int index;
-	public final float base_cost;
+	private final int index;
+	private final float base_cost;
+	
 	public final int length;
 	public final float inv_length;
 	
@@ -37,6 +38,10 @@ public class IndexedData {
 	}
 	public IndexedData getOrthoData() {
 		return this.ortho_data;
+	}
+	
+	public float getBaseCost() {
+		return this.base_cost;
 	}
 	
 	@Override

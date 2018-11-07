@@ -83,6 +83,9 @@ public class ResourceGraph {
     public IndexedData get_sink_indexed_data() {
     	return this.indexedDataList.get(SINK_COST_INDEX);
     }
+    public List<IndexedData> getIndexedDataList() {
+    	return this.indexedDataList;
+    }
     
     private void createSites() {
         BlockType ioType = BlockType.getBlockTypes(BlockCategory.IO).get(0);

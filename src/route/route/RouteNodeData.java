@@ -11,7 +11,6 @@ public class RouteNodeData {
 	public float partial_path_cost;
 	public float lower_bound_total_path_cost;
 	
-	//public double r_upstream;
 	public RouteNode prev;
 	
 	public int occupation;

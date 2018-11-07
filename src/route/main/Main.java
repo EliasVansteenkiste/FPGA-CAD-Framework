@@ -32,9 +32,14 @@ public class Main {
 	private String circuitName;
 	private File architectureFile, blifFile, netFile, placeFile, lookupDumpFile, sdcFile, rrgFile;
 	
+	private boolean td;
+	
 	private Circuit circuit;
 
 	public Main(Logger logger, String[] arguments) {
+		
+		this.td = false;
+		
 		for(int i = 0; i < arguments.length; i++) {
 			if(arguments[i].contains("architecture_file")) {
 				this.architectureFile = new File(arguments[++i]);
@@ -50,6 +55,8 @@ public class Main {
  				this.lookupDumpFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("rr_graph_file")) {
 				this.rrgFile = new File(arguments[++i]);
+			} else if(arguments[i].contains("td_hroute")) {
+				this.td = true;
 			}
 		}
 		
@@ -76,7 +83,7 @@ public class Main {
 		System.gc();
 		
 		long start = System.nanoTime();
-		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
+		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
 		int numIterations = route.route();
 		long end = System.nanoTime();
 		

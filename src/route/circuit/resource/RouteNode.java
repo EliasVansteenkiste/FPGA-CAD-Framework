@@ -53,7 +53,13 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.delay = -1;
 		this.drivingRouteSwitch = null;
 		
-		this.base_cost = this.indexedData.base_cost;
+		if(this.type == RouteNodeType.CHANX || this.type == RouteNodeType.CHANY) {
+			this.base_cost = this.indexedData.getBaseCost() * this.wireLength();
+		} else if(this.type == RouteNodeType.OPIN) {
+			this.base_cost = this.indexedData.getBaseCost() * 4;
+		} else {
+			this.base_cost = this.indexedData.getBaseCost();
+		}
 		
 		this.numChildren = numChildren;
 		this.children = new RouteNode[this.numChildren];
@@ -123,7 +129,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		s.append(String.format("%-11s", coordinate));
 		s.append(String.format("ptc_num = %3d", this.n));
 		s.append(", ");
-		s.append(String.format("basecost = %3.1f", this.indexedData.base_cost));
+		s.append(String.format("basecost = %3.1f", this.base_cost));
 		s.append(", ");
 		s.append(String.format("capacity = %2d", this.capacity));
 		s.append(", ");
@@ -165,7 +171,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		if(this.type == RouteNodeType.SOURCE || this.type == RouteNodeType.SINK) {
 			this.delay = 0;
 		} else {
-			this.delay =  this.c * (this.drivingRouteSwitch.r + 0.5f * this.r) + this.drivingRouteSwitch.tdel;
+			this.delay = this.c * (this.drivingRouteSwitch.r + 0.5f * this.r) + this.drivingRouteSwitch.tdel;
 		}
 	}
 	
