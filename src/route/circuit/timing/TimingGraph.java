@@ -607,6 +607,18 @@ public class TimingGraph {
     	for(TimingNode criticalNode:criticalPath){
     		result += this.printNode(criticalNode, maxLen);
     	}
+    	
+    	double netDelay = 0.0;
+    	int numNets = 0;
+    	for(TimingNode sinkNode : criticalPath) {
+    		if(sinkNode.getPosition() == Position.C_SINK) {
+    			netDelay += sinkNode.getArrivalTime() - sinkNode.getSources().get(0).getSource().getArrivalTime();
+    			numNets++;
+    		}
+    	}
+    	
+    	result += "\nNum Nets  " +numNets + "\n";
+    	result += "Net Delay " + String.format("%.2e", netDelay) + "\n";
     	return result;
     }
     private TimingNode getEndNodeOfCriticalPath(){
