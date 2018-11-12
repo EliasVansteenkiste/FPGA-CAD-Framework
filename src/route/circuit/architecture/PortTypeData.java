@@ -25,7 +25,6 @@ public class PortTypeData implements Serializable {
         PortTypeData.instance = instance;
     }
 
-
     // These lists contain one element for each port type
     private List<String> portNames = new ArrayList<>();
     private List<Integer> blockTypeIndexes = new ArrayList<>();
@@ -35,6 +34,7 @@ public class PortTypeData implements Serializable {
     private List<Boolean> portEquivalence = new ArrayList<>();
 
     private Map<Long, Double> delays = new HashMap<>();
+    private Map<Long, DelayMap> delayMaps = new HashMap<>();
 
     // These lists contain one element for each block type
     private List<Map<String, Integer>> ports = new ArrayList<>();
@@ -45,7 +45,7 @@ public class PortTypeData implements Serializable {
     private List<Integer> carryFromPorts = new ArrayList<>();
     private List<Integer> carryToPorts = new ArrayList<>();
     private List<Integer> carryOffsetsY = new ArrayList<>();
-
+    
     private int numPortTypes;
 
     private PortTypeData() {
@@ -90,6 +90,10 @@ public class PortTypeData implements Serializable {
         this.carryToPorts.add(null);
         this.carryOffsetsY.add(null);
     }
+    
+    void postProcess() {
+    	this.numPortTypes = this.portTypes.size();
+    }
 
     private int addPorts(int blockTypeIndex, Map<String, Pair<Integer, Boolean>> ports, int numPins) {
 
@@ -131,14 +135,6 @@ public class PortTypeData implements Serializable {
         this.carryToPorts.set(fromBlockTypeIndex, toPortTypeIndex);
         this.carryOffsetsY.set(fromBlockTypeIndex, carryOffsetY);
     }
-
-
-
-    void postProcess() {
-        this.numPortTypes = this.portTypes.size();
-    }
-
-
 
     int getTypeIndex(int blockTypeIndex, String portName) {
         return this.ports.get(blockTypeIndex).get(portName);
@@ -200,33 +196,64 @@ public class PortTypeData implements Serializable {
         return this.carryOffsetsY.get(blockTypeIndex);
     }
 
-
-
     void setSetupTime(int portTypeIndex, double delay) {
-        // This method can be used both to set the setup time ("T_setup" in architecture files)
-        // and clock to port time ("T_clock_to_Q")
-        // Which of the two it is, depends on whether the port is an input or output
-
-        this.setDelay(portTypeIndex, portTypeIndex, delay);
+    	// This method can be used both to set the setup time ("T_setup" in architecture files)
+    	// and clock to port time ("T_clock_to_Q")
+    	// Which of the two it is, depends on whether the port is an input or output
+    	
+    	long delayId = this.delayId(portTypeIndex, portTypeIndex);
+    	this.setDelay(delayId, delay);
     }
     double getSetupTime(int portTypeIndex) {
-        return this.getDelay(portTypeIndex, portTypeIndex);
+    	long delayId = this.delayId(portTypeIndex, portTypeIndex);
+    	return this.getDelay(delayId);
     }
-
-    void setDelay(int sourcePortTypeIndex, int sinkPortTypeIndex, double delay) {
-        this.delays.put(this.delayId(sourcePortTypeIndex, sinkPortTypeIndex), delay);
+    
+    /**************
+     *  Set Delay *
+     **************/
+    public void setDelay(DelayElement d) {
+    	long delayId = this.delayId(d.sourcePortTypeIndex, d.sinkPortTypeIndex);
+    	if(d.sourceBlockIndex == -1 && d.sourcePortIndex == -1 && d.sinkBlockIndex == -1 && d.sinkPortIndex == -1) {
+    		this.setDelay(delayId, d.delay);
+    	} else {
+    		DelayMap delayMap = this.delayMaps.get(delayId);
+    		if(delayMap == null) {
+    			delayMap = new DelayMap();
+    			this.delayMaps.put(delayId, delayMap);
+    		}
+    		delayMap.add(d);
+    	}
     }
-    public double getDelay(int sourcePortTypeIndex, int sinkPortTypeIndex) {
-        Double delay = this.delays.get(this.delayId(sourcePortTypeIndex, sinkPortTypeIndex));
+    private void setDelay(long delayId, double delay) {
+    	this.delays.put(delayId, delay);
+    }
+    
+    /**************
+     *  Get Delay * 
+     **************/
+    public Double getDelay(int sourceBlockIndex, int sourcePortTypeIndex, int sourcePortIndex, int sinkBlockIndex, int sinkPortTypeIndex, int sinkPortIndex) {
+    	long delayId = this.delayId(sourcePortTypeIndex, sinkPortTypeIndex);
+    	
+    	Double delay = null;
+    	DelayMap delayMap = this.delayMaps.get(delayId);
+    	
+    	if(delayMap != null) delay = delayMap.get(sourceBlockIndex, sourcePortIndex, sinkBlockIndex, sinkPortIndex);
+    	
+    	return delay == null ? this.getDelay(delayId) : delay;
+    }
+    
+    private double getDelay(long delayId) {
+        Double delay = this.delays.get(delayId);
         return delay == null ? 0 : delay;
     }
 
     private long delayId(int sourcePortTypeIndex, int sinkPortTypeIndex) {
-        return this.numPortTypes * sourcePortTypeIndex + sinkPortTypeIndex;
+    	return this.numPortTypes * sourcePortTypeIndex + sinkPortTypeIndex;
     }
 
-
-
+    
+    
     String getName(int portTypeIndex) {
         return this.portNames.get(portTypeIndex);
     }

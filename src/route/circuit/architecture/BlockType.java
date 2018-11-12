@@ -83,6 +83,10 @@ public class BlockType implements Serializable, Comparable<BlockType> {
         return BlockTypeData.getInstance().isLeaf(this.typeIndex);
     }
 
+    public int num_pb() {
+    	return BlockTypeData.getInstance().getNumPb(this.typeIndex);
+    }
+    
     public int getHeight() {
         return BlockTypeData.getInstance().getHeight(this.typeIndex);
     }

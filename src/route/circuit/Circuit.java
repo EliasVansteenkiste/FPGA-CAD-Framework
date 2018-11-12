@@ -123,6 +123,9 @@ public class Circuit {
 			e.printStackTrace();
 		}
     }
+    public Set<String> getGlobalNetNames() {
+    	return this.globalNetNames;
+    }
     
     public String stats(){
     	String s = new String();

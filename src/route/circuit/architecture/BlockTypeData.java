@@ -33,6 +33,7 @@ class BlockTypeData implements Serializable {
     private List<List<BlockType>> blockTypesPerCategory = new ArrayList<>();
     private List<BlockType> blockTypesWithModes = new ArrayList<>();
 
+    private List<Integer> num_pb = new ArrayList<>();
     private List<Integer> heights = new ArrayList<>();
     private List<Integer> columnStarts = new ArrayList<>();
     private List<Integer> columnRepeats = new ArrayList<>();
@@ -67,6 +68,7 @@ class BlockTypeData implements Serializable {
             BlockType parentBlockType,
             String typeName,
             BlockCategory category,
+            int num_pb,
             int height,
             int start,
             int repeat,
@@ -97,6 +99,8 @@ class BlockTypeData implements Serializable {
         this.categories.add(category);
         this.blockTypesPerCategory.get(category.ordinal()).add(newBlockType);
 
+        this.num_pb.add(num_pb);
+        
         this.heights.add(height);
         this.columnStarts.add(start);
         this.columnRepeats.add(repeat);
@@ -234,6 +238,9 @@ class BlockTypeData implements Serializable {
 
     int getHeight(int typeIndex) {
         return this.heights.get(typeIndex);
+    }
+    int getNumPb(int typeIndex) {
+    	return this.num_pb.get(typeIndex);
     }
     int getStart(int typeIndex) {
         return this.columnStarts.get(typeIndex);

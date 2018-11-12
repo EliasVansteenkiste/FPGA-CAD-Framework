@@ -7,7 +7,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import route.util.Pair;
-import route.util.Triple;
 import route.circuit.exceptions.InvalidFileFormatException;
 
 import java.io.BufferedReader;
@@ -57,7 +56,9 @@ public class Architecture implements Serializable {
     
     private transient Map<String, Boolean> modelIsClocked = new HashMap<>();
     private transient List<Pair<PortType, Double>> setupTimes = new ArrayList<>();
-    private transient List<Triple<PortType, PortType, Double>> delays = new ArrayList<>();
+    
+    private transient List<DelayElement> delayElements = new ArrayList<>();
+    
     private transient Map<String, Integer> directs = new HashMap<>();//Direct interconnect between logic blocks
     
     private DelayTables delayTables;
@@ -205,6 +206,11 @@ public class Architecture implements Serializable {
 
     private BlockType processBlockElement(BlockType parentBlockType, Element blockElement) {
         String blockName = blockElement.getAttribute("name");
+        int num_pb = -1;
+        
+        if(blockElement.getAttribute("num_pb").length() > 0) {
+        	num_pb = Integer.parseInt(blockElement.getAttribute("num_pb"));
+        }
 
         boolean isGlobal = this.isGlobal(blockElement);
         boolean isLeaf = this.isLeaf(blockElement);
@@ -294,6 +300,7 @@ public class Architecture implements Serializable {
                 parentBlockType,
                 blockName,
                 blockCategory,
+                num_pb,
                 height,
                 start,
                 repeat,
@@ -635,6 +642,7 @@ public class Architecture implements Serializable {
                 parentBlockType,
                 lutName,
                 BlockCategory.LEAF,
+                1,
                 -1,
                 -1,
                 -1,
@@ -662,7 +670,7 @@ public class Architecture implements Serializable {
         int index = delays[0].length() > 0 ? 0 : 1;
         double delay = Double.parseDouble(delays[index]);
 
-        this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+        this.delayElements.add(new DelayElement(-1, sourcePortType, -1 , -1, sinkPortType, -1, delay));
 
         return lutBlockType;
     }
@@ -695,6 +703,7 @@ public class Architecture implements Serializable {
                 parentBlockType,
                 memorySliceName,
                 BlockCategory.LEAF,
+                1,
                 -1,
                 -1,
                 -1,
@@ -722,7 +731,8 @@ public class Architecture implements Serializable {
             PortType sinkPortType = new PortType(memoryBlockType, sourcePortName);
 
             double delay = Double.parseDouble(setupElement.getAttribute("value"));
-            this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+            
+            this.delayElements.add(new DelayElement(-1, sourcePortType, -1 , -1, sinkPortType, -1, delay));
         }
 
         // Process clock to port times
@@ -732,11 +742,11 @@ public class Architecture implements Serializable {
             String sinkPortName = clockToPortElement.getAttribute("port").split("\\.")[1];
             PortType sourcePortType = new PortType(memoryBlockType, sinkPortName);
             PortType sinkPortType = new PortType(parentBlockType, sinkPortName);
-
+            
             double delay = Double.parseDouble(clockToPortElement.getAttribute("max"));
-            this.delays.add(new Triple<PortType, PortType, Double>(sourcePortType, sinkPortType, delay));
+            
+            this.delayElements.add(new DelayElement(-1, sourcePortType, -1 , -1, sinkPortType, -1, delay));
         }
-
 
         return memoryBlockType;
     }
@@ -809,29 +819,106 @@ public class Architecture implements Serializable {
     }
 
     private void cacheDelay(List<BlockType> blockTypes, String sourcePort, String sinkPort, double delay) {
-
-        String[] ports = {sourcePort, sinkPort};
-        List<PortType> portTypes = new ArrayList<PortType>(2);
-
-        for(String port : ports) {
-            String[] portParts = port.split("\\.");
-            String blockName = portParts[0].split("\\[")[0];
-            String portName = portParts[1].split("\\[")[0];
-
-            BlockType portBlockType = null;
-            for(BlockType blockType : blockTypes) {
-                if(blockName.equals(blockType.getName())) {
-                    portBlockType = blockType;
+    	//SOURCE PORT
+    	List<Integer> sourceBlockIndexes = new ArrayList<>();
+    	List<Integer> sourcePortIndexes = new ArrayList<>();
+    	
+    	BlockType sourcePortBlockType = this.getPortBlockType(sourcePort, blockTypes);
+    	PortType sourcePortType = getPortType(sourcePort, sourcePortBlockType);
+    	this.processPort(sourcePort, sourceBlockIndexes, sourcePortIndexes, sourcePortType, sourcePortBlockType);
+        
+    	//SINK PORT
+        List<Integer> sinkBlockIndexes = new ArrayList<>();
+        List<Integer> sinkPortIndexes = new ArrayList<>();
+        
+    	BlockType sinkPortBlockType = this.getPortBlockType(sinkPort, blockTypes);
+    	PortType sinkPortType = getPortType(sinkPort, sinkPortBlockType);
+    	this.processPort(sinkPort, sinkBlockIndexes, sinkPortIndexes, sinkPortType, sinkPortBlockType);
+        
+        for(int sourceBlockIndex : sourceBlockIndexes) {
+            for(int sinkBlockIndex : sinkBlockIndexes) {
+                for(int sourcePortIndex : sourcePortIndexes) {
+                    for(int sinkPortIndex : sinkPortIndexes) {
+                        this.delayElements.add(new DelayElement(sourceBlockIndex, sourcePortType, sourcePortIndex, sinkBlockIndex, sinkPortType, sinkPortIndex, delay));
+                    }
                 }
             }
-
-            portTypes.add(new PortType(portBlockType, portName));
         }
-
-        this.delays.add(new Triple<PortType, PortType, Double>(portTypes.get(0), portTypes.get(1), delay));
     }
-
-
+    private BlockType getPortBlockType(String port, List<BlockType> blockTypes) {
+    	String[] portParts = port.split("\\.");
+        String blockName = portParts[0].split("\\[")[0];
+        
+        for(BlockType blockType : blockTypes) {
+            if(blockName.equals(blockType.getName())) {
+                return blockType;
+            }
+        }
+        return null;
+    }
+    private PortType getPortType(String port, BlockType portBlockType) {
+    	String[] portParts = port.split("\\.");
+    	String portName = portParts[1].split("\\[")[0];
+    	
+    	return new PortType(portBlockType, portName);
+    }
+    private void processPort(String port, List<Integer> blockIndexes, List<Integer> portIndexes, PortType portType, BlockType blockType) {
+        String[] portParts = port.split("\\.");
+        
+        //Block
+        String blockName = portParts[0];
+        if (blockName.contains("[") || blockName.contains("]")) {
+        	String blockNumbers = blockName.split("\\[")[1].split("\\]")[0];
+        	
+        	if(blockNumbers.contains(":")) {
+        		int end = Integer.parseInt(blockNumbers.split(":")[0]);
+        		int start = Integer.parseInt(blockNumbers.split(":")[1]);
+           		
+        		if(start > end) {
+        			int temp = end;
+        			end = start;
+        			start = temp;
+        		}
+           		
+           		if( (end - start + 1) != blockType.num_pb()) {
+            		for(int p = start; p <= end; p++) {
+            			blockIndexes.add(p);
+            		}
+           		}
+        	} else {
+        		blockIndexes.add(Integer.parseInt(blockNumbers));
+        	}
+        }
+        blockIndexes.add(-1);
+        
+        //Port
+        String portName = portParts[1];
+        if (portName.contains("[") || portName.contains("]")) {
+        	String portNumbers = portName.split("\\[")[1].split("\\]")[0];
+        	
+        	if(portNumbers.contains(":")) {
+        		int end = Integer.parseInt(portNumbers.split(":")[0]);
+        		int start = Integer.parseInt(portNumbers.split(":")[1]);
+        		
+        		if(start > end) {
+        			int temp = end;
+        			end = start;
+        			start = temp;
+        		}
+        		
+        		if( (end - start + 1) != portType.numPins()) {
+            		for(int p = start; p <= end; p++) {
+            			portIndexes.add(p);
+            		}
+           		}
+        	} else {
+        		portIndexes.add(Integer.parseInt(portNumbers));
+        	}	
+        }
+        portIndexes.add(-1);
+        
+    }
+    
     private void processDelays() {
         for(Pair<PortType, Double> setupTimeEntry : this.setupTimes) {
             PortType portType = setupTimeEntry.getFirst();
@@ -840,15 +927,11 @@ public class Architecture implements Serializable {
             portType.setSetupTime(delay);
         }
 
-        for(Triple<PortType, PortType, Double> delayEntry : this.delays) {
-            PortType sourcePortType = delayEntry.getFirst();
-            PortType sinkPortType = delayEntry.getSecond();
-            double delay = delayEntry.getThird();
-
-            sourcePortType.setDelay(sinkPortType, delay);
+        for(DelayElement delayElement : this.delayElements) {
+            PortType sourcePortType = delayElement.sourcePortType;
+            sourcePortType.setDelay(delayElement);
         }
     }
-
 
 
     private Element getFirstChild(Element blockElement, String tagName) {
