@@ -15,7 +15,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public final float c;
 	public RouteSwitch drivingRouteSwitch;
 	
-	public final float base_cost;
+	public float base_cost;
 	
 	public final RouteNodeType type;
 	public final short capacity;
@@ -68,6 +68,9 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.target = false;
 	}
 	
+	public void updateBaseCost(float averageDelay) {
+		this.base_cost = averageDelay * this.wireLength();
+	}
 	public void setChild(int index, RouteNode child) {
 		this.children[index] = child;
 	}
