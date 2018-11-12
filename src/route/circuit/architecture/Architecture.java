@@ -884,12 +884,15 @@ public class Architecture implements Serializable {
             		for(int p = start; p <= end; p++) {
             			blockIndexes.add(p);
             		}
-           		}
+           		} else {
+                	blockIndexes.add(-1);
+                }
         	} else {
         		blockIndexes.add(Integer.parseInt(blockNumbers));
         	}
+        } else {
+        	blockIndexes.add(-1);
         }
-        blockIndexes.add(-1);
         
         //Port
         String portName = portParts[1];
@@ -910,13 +913,15 @@ public class Architecture implements Serializable {
             		for(int p = start; p <= end; p++) {
             			portIndexes.add(p);
             		}
+           		} else {
+           			portIndexes.add(-1);
            		}
         	} else {
         		portIndexes.add(Integer.parseInt(portNumbers));
         	}	
+        } else {
+   			portIndexes.add(-1);
         }
-        portIndexes.add(-1);
-        
     }
     
     private void processDelays() {
