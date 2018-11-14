@@ -24,7 +24,7 @@ public class ConnectionRouter {
 	private float rerouteCriticality = 0.85f; //TODO SWEEP
 	private float alphaTD = 0.75f; //TODO SWEEP
 	
-	private final PriorityQueue<RouteNode> queue;
+	private final PriorityQueue<QueueElement> queue;
 	
 	private final Collection<RouteNodeData> nodesTouched;
 	
@@ -85,7 +85,7 @@ public class ConnectionRouter {
     	System.out.println("Num nets: " + this.circuit.getNets().size());
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
 	
-		this.doRuntimeRouting(100, 4, 1.5f);
+		int timeMilliseconds = this.doRuntimeRouting(100, 4, 1.5f);
 		
 		System.out.println(this.circuit.getTimingGraph().criticalPathToString());
 		
@@ -109,14 +109,15 @@ public class ConnectionRouter {
 			} 
 		}
 		
-		return -1;
+		return timeMilliseconds;
 	}
-    private void doRuntimeRouting(int nrOfTrials, int fixOpins, float alpha) {
+    private int doRuntimeRouting(int nrOfTrials, int fixOpins, float alpha) {
     	System.out.printf("----------------------------------------------------------------------\n");
     	int timeMilliseconds = this.doRouting(nrOfTrials, fixOpins, alpha);
     	System.out.printf("----------------------------------------------------------------------\n");
     	System.out.println("Runtime " + timeMilliseconds + " ms");
     	System.out.printf("----------------------------------------------------------------------\n\n");
+    	return timeMilliseconds;
     }
     private int doRouting(int nrOfTrials, int fixOpins, float alpha) {
     	long start = System.nanoTime();
@@ -382,7 +383,7 @@ public class ConnectionRouter {
 	}
 
 	private boolean targetReached() {
-		RouteNode queueHead = this.queue.peek();
+		RouteNode queueHead = this.queue.peek().node;
 		if(queueHead == null){
 			System.out.println("queue is empty");			
 			return false;
@@ -404,7 +405,7 @@ public class ConnectionRouter {
 			throw new RuntimeException("Queue is empty: target unreachable?");
 		}
 
-		RouteNode node = this.queue.poll();
+		RouteNode node = this.queue.poll().node;
 		
 		for (RouteNode child : node.children) {
 			
@@ -465,23 +466,17 @@ public class ConnectionRouter {
 			new_lower_bound_total_path_cost = new_partial_path_cost;
 		}
 		
-		// Add node to queue
-		if(!data.pathCostsSet()) this.nodesTouched.add(data);
-
-		data.updatePartialPathCost(new_partial_path_cost);
-		if (data.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
-			data.prev = node;
-			this.queue.add(child);
-		}
+		this.addNodeToQueue(child, node, new_partial_path_cost, new_lower_bound_total_path_cost);
 	}
 	private void addNodeToQueue(RouteNode node, RouteNode prev, float new_partial_path_cost, float new_lower_bound_total_path_cost) {
-		RouteNodeData nodeData = node.routeNodeData;
-		if(!nodeData.pathCostsSet()) this.nodesTouched.add(nodeData);
-
-		nodeData.updatePartialPathCost(new_partial_path_cost);
-		if (nodeData.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
+		RouteNodeData data = node.routeNodeData;
+		
+		if(!data.pathCostsSet()) this.nodesTouched.add(data);
+		
+		data.updatePartialPathCost(new_partial_path_cost);
+		if (data.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
 			node.routeNodeData.prev = prev;
-			this.queue.add(node);
+			this.queue.add(new QueueElement(node, new_lower_bound_total_path_cost));
 		}
 	}
 

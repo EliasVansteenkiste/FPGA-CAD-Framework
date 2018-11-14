@@ -82,14 +82,11 @@ public class Main {
 		
 		System.gc();
 		
-		long start = System.nanoTime();
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
-		int numIterations = route.route();
-		long end = System.nanoTime();
+		int timeMilliseconds = route.route();
 		
-		System.out.printf("Routing took %.2fs\n", ((end - start) * Math.pow(10, -9)));
+		System.out.printf("Routing took %.2fs\n", (timeMilliseconds * Math.pow(10, -3)));
 		
-		System.out.println("Routing succeeded after " + numIterations + " iterations");
 		System.out.println("The total wirelength is equal to " + this.circuit.getResourceGraph().totalWireLength());
 		System.out.println("The total congested wirelength is equal to " + this.circuit.getResourceGraph().congestedTotalWireLengt());
 		System.out.println("The number of used wire segments is equal to " + this.circuit.getResourceGraph().wireSegmentsUsed());
