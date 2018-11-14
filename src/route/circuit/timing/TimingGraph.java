@@ -585,6 +585,7 @@ public class TimingGraph {
     public void calculateConnectionCriticality(double maxCriticality, double criticalityExponent) {
         for(Connection connection : this.circuit.getConnections()) {
         	connection.timingEdge.calculateCriticality(this.globalMaxDelay, maxCriticality, criticalityExponent);
+        	connection.setCriticality((float) connection.timingEdge.getCriticality());
         }
     }
     

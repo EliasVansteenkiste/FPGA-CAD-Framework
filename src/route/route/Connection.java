@@ -16,9 +16,10 @@ public class Connection implements Comparable<Connection>  {
 	public final GlobalPin source;
 	public final GlobalPin sink;
 	
-	public TimingNode sourceTimingNode;
-	public TimingNode sinkTimingNode;
-	public TimingEdge timingEdge;
+	public final TimingNode sourceTimingNode;
+	public final TimingNode sinkTimingNode;
+	public final TimingEdge timingEdge;
+	private float criticality;
 
     public Net net;
     public final int boundingBox;
@@ -118,8 +119,11 @@ public class Connection implements Comparable<Connection>  {
 		this.routeNodes.clear();
 	}
 	
+	public void setCriticality(float criticality) {
+		this.criticality = criticality;
+	}
 	public float getCriticality() {
-		return (float) this.timingEdge.getCriticality();
+		return this.criticality;
 	}
 	
 	@Override

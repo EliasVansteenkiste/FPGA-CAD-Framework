@@ -5,6 +5,8 @@ import route.circuit.resource.RouteNode;
 import route.util.CountingSet;
 
 public class RouteNodeData {
+	public final int index;
+	
 	public float pres_cost;
 	public float acc_cost;
 	
@@ -17,7 +19,8 @@ public class RouteNodeData {
 	
 	private CountingSet<GlobalPin> sourcesSet;
 	
-    public RouteNodeData() {
+    public RouteNodeData(int index) {
+    	this.index = index;
     	this.pres_cost = 1;
     	this.acc_cost = 1;
     	this.occupation = 0;
@@ -88,5 +91,10 @@ public class RouteNodeData {
 			return 0;
 		}
 		return this.sourcesSet.count(source);
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.index;
 	}
 }

@@ -374,7 +374,7 @@ public class ConnectionRouter {
 
 		
 	private void saveRouting(Connection con) {
-		RouteNode rn = this.queue.peek();
+		RouteNode rn = con.sinkRouteNode;
 		while (rn != null) {
 			con.addRouteNode(rn);
 			rn = rn.routeNodeData.prev;
@@ -382,11 +382,12 @@ public class ConnectionRouter {
 	}
 
 	private boolean targetReached() {
-		if(this.queue.peek()==null){
+		RouteNode queueHead = this.queue.peek();
+		if(queueHead == null){
 			System.out.println("queue is empty");			
 			return false;
 		} else {
-			return queue.peek().target;
+			return queueHead.target;
 		}
 	}
 	
@@ -406,26 +407,32 @@ public class ConnectionRouter {
 		RouteNode node = this.queue.poll();
 		
 		for (RouteNode child : node.children) {
-			RouteNodeType childType = child.type;
+			
+			//CHANX OR CHANY
+			if (child.isWire) {
+				if (con.isInBoundingBoxLimit(child)) {
+					this.addNodeToQueue(node, child, con);
+				}
 			
 			//OPIN
-			if(childType == RouteNodeType.OPIN) {
+			} else if (child.type == RouteNodeType.OPIN) {
+			//if (child.type == RouteNodeType.OPIN) {
 				if(con.net.hasOpin()) {
-					if(child.index == con.net.getOpin().index) {
+					if (child.index == con.net.getOpin().index) {
 						this.addNodeToQueue(node, child, con);
 					}
-				} else if(!child.used()) {
+				} else if (!child.used()) {
 					this.addNodeToQueue(node, child, con);
 				}
 			
 			//IPIN
-			} else if(childType ==  RouteNodeType.IPIN) {
+			} else if (child.type ==  RouteNodeType.IPIN) {
 				if(child.children[0].target) {
 					this.addNodeToQueue(node, child, con);
 				}
 				
-			//CHANX OR CHANY
-			} else if(con.isInBoundingBoxLimit(child)) {
+			//SINK
+			} else if (child.type == RouteNodeType.SINK) {
 				this.addNodeToQueue(node, child, con);
 			}
 		}
@@ -435,10 +442,37 @@ public class ConnectionRouter {
 		RouteNodeData data = child.routeNodeData;
 		int countSourceUses = data.countSourceUses(con.source);
 		
-		float new_partial_path_cost = node.routeNodeData.getPartialPathCost() + (1 - con.getCriticality()) * this.getRouteNodeCost(child, con, countSourceUses) + con.getCriticality() * child.getDelay();
-		float new_lower_bound_total_path_cost = getLowerBoundTotalPathCost(child, con, new_partial_path_cost, countSourceUses);
+		float partial_path_cost = node.routeNodeData.getPartialPathCost();
 		
-		this.addNodeToQueue(child, node, new_partial_path_cost, new_lower_bound_total_path_cost);
+		// PARTIAL PATH COST
+		float new_partial_path_cost = partial_path_cost + (1 - con.getCriticality()) * this.getRouteNodeCost(child, con, countSourceUses) + con.getCriticality() * child.getDelay();
+		
+		// LOWER BOUND TOTAL PATH COST
+		// This is just an estimate and not an absolute lower bound.
+		// The routing algorithm is therefore not A* and optimal.
+		// It's directed search and heuristic.
+		float new_lower_bound_total_path_cost;
+		if(child.isWire) {
+			//Expected remaining cost
+			RouteNode target = con.sinkRouteNode;
+			float distance_cost =  this.rrg.get_expected_distance_to_target(child, target) * BASE_COST_PER_DISTANCE;
+			float expected_wire_cost = distance_cost / (1 + countSourceUses) + IPIN_BASE_COST;
+			float expected_timing_cost = distance_cost;
+			
+			new_lower_bound_total_path_cost = new_partial_path_cost + this.alphaWLD * (1 - con.getCriticality()) * expected_wire_cost + this.alphaTD * con.getCriticality() * expected_timing_cost;
+
+		} else {
+			new_lower_bound_total_path_cost = new_partial_path_cost;
+		}
+		
+		// Add node to queue
+		if(!data.pathCostsSet()) this.nodesTouched.add(data);
+
+		data.updatePartialPathCost(new_partial_path_cost);
+		if (data.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
+			data.prev = node;
+			this.queue.add(child);
+		}
 	}
 	private void addNodeToQueue(RouteNode node, RouteNode prev, float new_partial_path_cost, float new_lower_bound_total_path_cost) {
 		RouteNodeData nodeData = node.routeNodeData;
@@ -448,26 +482,6 @@ public class ConnectionRouter {
 		if (nodeData.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
 			node.routeNodeData.prev = prev;
 			this.queue.add(node);
-		}
-	}
-
-	/**
-	 * This is just an estimate and not an absolute lower bound.
-	 * The routing algorithm is therefore not A* and optimal.
-	 * It's directed search and heuristic.
-	 */
-	private float getLowerBoundTotalPathCost(RouteNode node, Connection con, float partial_path_cost, int countSourceUses) {
-		if(node.type == RouteNodeType.CHANX || node.type == RouteNodeType.CHANY) {
-			//Expected remaining cost
-			RouteNode target = con.sinkRouteNode;
-			int distance =  this.rrg.get_expected_distance_to_target(node, target);
-			float expected_wire_cost = distance * BASE_COST_PER_DISTANCE / (1 + countSourceUses) + IPIN_BASE_COST;
-			float expected_timing_cost = distance * this.averageDelay;
-			
-			return partial_path_cost + this.alphaWLD * (1 - con.getCriticality()) * expected_wire_cost + this.alphaTD * con.getCriticality() * expected_timing_cost;
-
-		} else {
-			return partial_path_cost;
 		}
 	}
 
@@ -489,10 +503,12 @@ public class ConnectionRouter {
 		}
 		
 		//Bias cost
+		final float beta = 0.5f; //TODO SWEEP
 		Net net = con.net;
-		float bias_cost = node.base_cost / (2 * net.fanout) * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
+		float bias_cost = beta * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
 		
-		return node.base_cost * data.acc_cost * pres_cost / (1 + (10 * countSourceUses)) + bias_cost;
+		final int usage_multiplier = 10; //TODO SWEEP
+		return node.base_cost * data.acc_cost * pres_cost / (1 + (usage_multiplier * countSourceUses)) + bias_cost;
 	}
 	
 	private void updateCost(float pres_fac, float acc_fac){

@@ -662,7 +662,7 @@ public class ResourceGraph {
 	public int totalWireLength() {
 		int totalWireLength = 0;
 		for(RouteNode routeNode : this.routeNodes) {
-			if(routeNode.isWire()) {
+			if(routeNode.isWire) {
 				if(routeNode.used()) {
 					totalWireLength += routeNode.wireLength();
 				}
@@ -673,7 +673,7 @@ public class ResourceGraph {
 	public int congestedTotalWireLengt() {
 		int totalWireLength = 0;
 		for(RouteNode routeNode : this.routeNodes) {
-			if(routeNode.isWire()) {
+			if(routeNode.isWire) {
 				if(routeNode.used()) {
 					totalWireLength += routeNode.wireLength() * routeNode.routeNodeData.occupation;
 				}
@@ -684,7 +684,7 @@ public class ResourceGraph {
 	public int wireSegmentsUsed() {
 		int wireSegmentsUsed = 0;
 		for(RouteNode routeNode : this.routeNodes) {
-			if(routeNode.isWire()) {
+			if(routeNode.isWire) {
 				if(routeNode.used()) {
 					wireSegmentsUsed++;
 				}

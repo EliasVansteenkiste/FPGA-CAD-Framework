@@ -147,7 +147,7 @@ public class Net {
 			routeNodes.addAll(connection.routeNodes);
 		}
 		for(RouteNode routeNode : routeNodes) {
-			if(routeNode.isWire()) {
+			if(routeNode.isWire) {
 				wireLength += routeNode.wireLength();
 			}
 		}

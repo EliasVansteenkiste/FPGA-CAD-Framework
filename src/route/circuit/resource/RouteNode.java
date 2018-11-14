@@ -18,6 +18,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public float base_cost;
 	
 	public final RouteNodeType type;
+	public final boolean isWire;
 	public final short capacity;
 	
 	public final int numChildren;
@@ -41,11 +42,16 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.centery = 0.5f * (this.ylow + this.yhigh);
 		
 		this.indexedData = indexedData;
-		this.routeNodeData = new RouteNodeData();
+		this.routeNodeData = new RouteNodeData(this.index);
 		
 		this.n = (short) n;
 		
 		this.type = t;
+		if(this.type == RouteNodeType.CHANX || this.type == RouteNodeType.CHANY) {
+			this.isWire = true;
+		} else {
+			this.isWire = false;
+		}
 		this.capacity = (short) capacity;
 		
 		this.r = r;
@@ -77,10 +83,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public void setSwitchType(int index, RouteSwitch routeSwitch) {
 		this.switches[index] = routeSwitch;
 	}
-
-	public boolean isWire() {
-		return this.type == RouteNodeType.CHANX || this.type == RouteNodeType.CHANY;
-	}
+	
 	public int wireLength() {
 		int length = this.xhigh - this.xlow + this.yhigh - this.ylow + 1;
 		
