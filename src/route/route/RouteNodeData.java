@@ -12,6 +12,7 @@ public class RouteNodeData {
 	
 	public float partial_path_cost;
 	public float lower_bound_total_path_cost;
+	public boolean touched;
 	
 	public RouteNode prev;
 	
@@ -24,22 +25,11 @@ public class RouteNodeData {
     	this.pres_cost = 1;
     	this.acc_cost = 1;
     	this.occupation = 0;
-    	this.resetPathCosts();
+    	this.touched = false;
 
 		this.sourcesSet = null;
 		
 		this.prev = null;
-	}
-    
-	public void resetPathCosts() {
-		this.partial_path_cost = Float.MAX_VALUE;
-		this.lower_bound_total_path_cost = Float.MAX_VALUE;
-		
-		this.prev = null;
-	}
-	
-	public boolean pathCostsSet() {
-		return partial_path_cost != Float.MAX_VALUE || this.lower_bound_total_path_cost != Float.MAX_VALUE;
 	}
 
 	public boolean updateLowerBoundTotalPathCost(float new_lower_bound_total_path_cost) {
@@ -55,6 +45,14 @@ public class RouteNodeData {
 			return true;
 		}
 		return false;
+	}
+	
+	public void setLowerBoundTotalPathCost(float new_lower_bound_total_path_cost) {
+		this.lower_bound_total_path_cost = new_lower_bound_total_path_cost;
+		this.touched = true;
+	}
+	public void setPartialPathCost(float new_partial_path_cost) {
+		this.partial_path_cost = new_partial_path_cost;
 	}
 	
 	

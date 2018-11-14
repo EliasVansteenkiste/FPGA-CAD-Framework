@@ -394,7 +394,7 @@ public class ConnectionRouter {
 	
 	private void resetPathCost() {
 		for (RouteNodeData node : this.nodesTouched) {
-			node.resetPathCosts();
+			node.touched = false;
 		}
 		this.nodesTouched.clear();
 	}
@@ -471,11 +471,16 @@ public class ConnectionRouter {
 	private void addNodeToQueue(RouteNode node, RouteNode prev, float new_partial_path_cost, float new_lower_bound_total_path_cost) {
 		RouteNodeData data = node.routeNodeData;
 		
-		if(!data.pathCostsSet()) this.nodesTouched.add(data);
-		
-		data.updatePartialPathCost(new_partial_path_cost);
-		if (data.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
-			node.routeNodeData.prev = prev;
+		if(!data.touched) {
+			this.nodesTouched.add(data);
+			data.setLowerBoundTotalPathCost(new_lower_bound_total_path_cost);
+			data.setPartialPathCost(new_partial_path_cost);
+			data.prev = prev;
+			this.queue.add(new QueueElement(node, new_lower_bound_total_path_cost));
+			
+		} else if (data.updateLowerBoundTotalPathCost(new_lower_bound_total_path_cost)) { //queue is sorted by lower bound total cost
+			data.setPartialPathCost(new_partial_path_cost);
+			data.prev = prev;
 			this.queue.add(new QueueElement(node, new_lower_bound_total_path_cost));
 		}
 	}
