@@ -21,8 +21,9 @@ public class ConnectionRouter {
 	private float pres_fac;
 	private float alphaWLD;
 	
-	private float rerouteCriticality = 0.85f; //TODO SWEEP
-	private float alphaTD = 0.75f; //TODO SWEEP
+	private float REROUTE_CRITICALTY = 0.85f; //TODO SWEEP
+	private int MAX_PERCENTAGE_CRITICAL_CONNECTIONS = 3;
+	private float alphaTD = 0.75f;
 	
 	private final PriorityQueue<QueueElement> queue;
 	
@@ -32,8 +33,6 @@ public class ConnectionRouter {
 	private final float IPIN_BASE_COST;
 	private static final float MAX_CRITICALITY = 0.99f;
 	private static final float CRITICALITY_EXPONENT = 7;//TODO SWEEP
-	
-	private float averageDelay;
 	
 	private int itry;
 	private boolean td;
@@ -48,29 +47,21 @@ public class ConnectionRouter {
 		
 		this.queue = new PriorityQueue<>(Comparators.PRIORITY_COMPARATOR);
 		
-		this.averageDelay = 0;
-		float divide = 0;
+		double averageDelay = 0;
+		int divide = 0;
 		for(RouteNode node : this.rrg.getRouteNodes()) {
-			if(node.type == RouteNodeType.CHANX || node.type == RouteNodeType.CHANY) {
-				this.averageDelay += node.indexedData.t_linear;
-				divide += 1.0 / node.indexedData.inv_length;
+			if(node.isWire) {
+				averageDelay += node.indexedData.t_linear;
+				divide += node.indexedData.length;
 			}
 		}
-		this.averageDelay /= divide;
-		
-		float baseCostPerDistance = -1;
-		for (int i = 4; i < 8; i++) {
-			if (baseCostPerDistance == -1) {
-				baseCostPerDistance = this.rrg.getIndexedDataList().get(i).getBaseCost();
-			} else if (baseCostPerDistance != this.rrg.getIndexedDataList().get(i).getBaseCost()) {
-				System.err.println("Problem with base cost: \n   BaseCostPerDistance" + baseCostPerDistance + "\n   i => " + this.rrg.getIndexedDataList().get(i).getBaseCost());
-			}
-		}
-		BASE_COST_PER_DISTANCE = this.averageDelay; //TODO baseCostPerDistance; //TODO this.averageDelay;
+		averageDelay /= divide;
+
+		BASE_COST_PER_DISTANCE = (float) averageDelay;
 		IPIN_BASE_COST = this.rrg.get_ipin_indexed_data().getBaseCost();
 		
 		for(RouteNode node : this.rrg.getRouteNodes()) {
-			if(node.type == RouteNodeType.CHANX || node.type == RouteNodeType.CHANY) { //TODO ENKEL CHANX EN CHANY?
+			if(node.isWire) {
 				node.updateBaseCost(BASE_COST_PER_DISTANCE);
 			}
 		}
@@ -154,12 +145,12 @@ public class ConnectionRouter {
 		System.out.printf("%-22s | %s\n", "Timing Driven", this.td);
 		System.out.printf("%-22s | %.1f\n", "Criticality Exponent", CRITICALITY_EXPONENT);
 		System.out.printf("%-22s | %.2f\n", "Max Criticality", MAX_CRITICALITY);
-		System.out.printf("%-22s | %.3e\n", "Average Delay", this.averageDelay);
 		System.out.printf("%-22s | %.3e\n", "Base cost per distance", BASE_COST_PER_DISTANCE);
 		System.out.printf("%-22s | %.3e\n", "IPIN Base cost", IPIN_BASE_COST);
 		System.out.printf("%-22s | %.2f\n", "WLD Alpha", this.alphaWLD);
 		System.out.printf("%-22s | %.2f\n", "TD Alpha", this.alphaTD);
-		System.out.printf("%-22s | %.2f\n", "Reroute Criticality", this.rerouteCriticality);
+		System.out.printf("%-22s | %.2f\n", "Reroute Criticality", REROUTE_CRITICALTY);
+		System.out.printf("%-22s | %d\n", "Max per crit con", MAX_PERCENTAGE_CRITICAL_CONNECTIONS);
 		
         System.out.printf("----------------------------------------------------------------------\n");
         System.out.printf("%9s  %5s  %9s  %17s  %11s  %9s\n", "Iteration", "Alpha", "Time (ms)", "Overused RR Nodes", "Wire-Length", "Max Delay");
@@ -195,7 +186,11 @@ public class ConnectionRouter {
         	} else if(this.itry < fixOpins){
         		validRouting = false;
         	}
-        			
+        	
+        	this.setRerouteCriticality(sortedListOfConnections);
+
+        	
+        	//Route Connections
         	for(Connection con : sortedListOfConnections) {
 				if (this.itry == 1) {
 					this.ripup(con);
@@ -211,7 +206,7 @@ public class ConnectionRouter {
 					
 					validRouting = false;
 					
-				} else if (con.getCriticality() > this.rerouteCriticality) {
+				} else if (con.getCriticality() > REROUTE_CRITICALTY) {
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
@@ -321,6 +316,28 @@ public class ConnectionRouter {
 		return timeMilliSeconds;
     }
 
+    private void setRerouteCriticality(List<Connection> connections) {
+    	//Limit number of critical connections
+    	REROUTE_CRITICALTY = 0.85f;
+    	int numberOfCriticalConnections = 0;
+    	int maxNumberOfCriticalConnections = (int) (this.circuit.getConnections().size() * 0.01 * MAX_PERCENTAGE_CRITICAL_CONNECTIONS);
+    	for(Connection con : connections) {
+    		if(con.getCriticality() > REROUTE_CRITICALTY) {
+    			numberOfCriticalConnections++;
+    		}
+    	}
+    	
+    	while(numberOfCriticalConnections > maxNumberOfCriticalConnections) {
+    		REROUTE_CRITICALTY *= 1.01;
+    		System.out.println("Increase rerouteCriticality to " + REROUTE_CRITICALTY + " Number of critical connections " + numberOfCriticalConnections);
+    		numberOfCriticalConnections = 0;
+    		for(Connection con : connections) {
+        		if(con.getCriticality() > REROUTE_CRITICALTY) {
+        			numberOfCriticalConnections++;
+        		}
+        	}
+    	}
+    }
 	private void ripup(Connection con) {
 		for (RouteNode node : con.routeNodes) {
 			RouteNodeData data = node.routeNodeData;
@@ -417,7 +434,6 @@ public class ConnectionRouter {
 			
 			//OPIN
 			} else if (child.type == RouteNodeType.OPIN) {
-			//if (child.type == RouteNodeType.OPIN) {
 				if(con.net.hasOpin()) {
 					if (child.index == con.net.getOpin().index) {
 						this.addNodeToQueue(node, child, con);

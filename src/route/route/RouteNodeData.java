@@ -39,13 +39,6 @@ public class RouteNodeData {
 		}
 		return false;
 	}
-	public boolean updatePartialPathCost(float new_partial_path_cost) {
-		if (new_partial_path_cost < this.partial_path_cost) {
-			this.partial_path_cost = new_partial_path_cost;
-			return true;
-		}
-		return false;
-	}
 	
 	public void setLowerBoundTotalPathCost(float new_lower_bound_total_path_cost) {
 		this.lower_bound_total_path_cost = new_lower_bound_total_path_cost;
@@ -54,7 +47,6 @@ public class RouteNodeData {
 	public void setPartialPathCost(float new_partial_path_cost) {
 		this.partial_path_cost = new_partial_path_cost;
 	}
-	
 	
 	public float getLowerBoundTotalPathCost() {
 		return this.lower_bound_total_path_cost;
