@@ -519,10 +519,13 @@ public class ConnectionRouter {
 		}
 		
 		//Bias cost
-		final float beta = 0.5f; //TODO SWEEP
-		Net net = con.net;
-		float bias_cost = beta * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
-		
+		float bias_cost = 0;
+		if(node.isWire) {
+			final float beta = 0.5f; //TODO SWEEP
+			Net net = con.net;
+			bias_cost = beta * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
+		}
+
 		final int usage_multiplier = 10; //TODO SWEEP
 		return node.base_cost * data.acc_cost * pres_cost / (1 + (usage_multiplier * countSourceUses)) + bias_cost;
 	}
