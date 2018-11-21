@@ -340,16 +340,16 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 		
 		return cost;
 	}
-	double getCost(int i){
-		double cost = 0.0;
-		double timing = 0.0;
-		double conn = 0.0;
-		for(Net net:this.pNets) conn += net.connectionCost(i)*net.getTotalNum();
-		for(Crit crit:this.pCrits) timing += crit.timingCost(i);
-		cost = timing + conn;
-		cost = timing + conn;		
-		return cost;
-	}
+//	double getCost(int i){
+//		double cost = 0.0;
+//		double timing = 0.0;
+//		double conn = 0.0;
+//		for(Net net:this.pNets) conn += net.connectionCost(i)*net.getTotalNum();
+//		for(Crit crit:this.pCrits) timing += crit.timingCost(i);
+//		cost = timing + conn;
+//		cost = timing + conn;		
+//		return cost;
+//	}
 	
 	@SuppressWarnings("unused")
 	private void getParticleAffectedNetsCrits(){		
@@ -376,18 +376,6 @@ public class RunnableParticle implements Callable<CostAndIndexList>{//Runnable{
 			if(b.index == blockId) block = b;
 		}
 		return block;
-	}
-	
-	@SuppressWarnings("unused")
-	private double getCostofAffectedBlocks(){
-		double oldCostofAffectedBlocks = 0;
-		for(Net net:this.affectedNets){
-			oldCostofAffectedBlocks += net.connectionCost(this.pIndex)*net.totalNum;
-		}
-		for(Crit crit:this.affectedCrits){
-			oldCostofAffectedBlocks += crit.timingCost(this.pIndex);
-		}
-		return oldCostofAffectedBlocks;
 	}
 	
 	static class Swap{

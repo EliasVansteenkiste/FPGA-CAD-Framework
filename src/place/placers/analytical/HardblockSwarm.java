@@ -502,7 +502,7 @@ public class HardblockSwarm {
 			particle.setPNets(this.columnNets);
 			particle.setPCrits(this.columnCrits);			
 			
-			particle.pCost = particle.getCost(i);
+			particle.pCost = particle.getCost();
 			//initial pbest info
 			particle.pBest = particle.pCost;
 			System.arraycopy(particle.blockIndexList, 0, particle.pBestIndexList, 0, this.numSites);//initial pbest location		

@@ -705,13 +705,6 @@ public class HardblockSwarmLegalizer{
 		int minX, maxX;
 		int minY, maxY;
 		
-		// for PSO
-		int[] minXs, maxXs;
-		int[] minYs, maxYs;
-		int[] oldMinXs, oldMaxXs;
-		int[] oldMinYs, oldMaxYs;
-		boolean[] verticalsSaved;
-		
 		int oldMinX, oldMaxX;
 		int oldMinY, oldMaxY;
 		boolean alreadySaved;
@@ -733,16 +726,6 @@ public class HardblockSwarmLegalizer{
 
 			this.size = 0;
 			
-			this.minXs = new int[SWARM_SIZE];
-			this.maxXs = new int[SWARM_SIZE];
-			this.minYs = new int[SWARM_SIZE];
-			this.maxYs = new int[SWARM_SIZE];
-			this.oldMinYs = new int[SWARM_SIZE];
-			this.oldMaxYs = new int[SWARM_SIZE];
-			this.oldMinXs = new int[SWARM_SIZE];
-			this.oldMaxXs = new int[SWARM_SIZE];
-			this.verticalsSaved = new boolean[SWARM_SIZE];
-			Arrays.fill(this.verticalsSaved, false);
 		}
 		void setTotalNum(int n){
 			this.totalNum = n;
@@ -962,33 +945,6 @@ public class HardblockSwarmLegalizer{
 				this.updateMaxX(oldX, newX);
 			}
         }
-	
-		double connectionCost(int i){
-			return this.horizontalConnectionCost(i) + this.verticalConnectionCost(i);
-		}
-		double horizontalConnectionCost(int i){
-			return (this.maxXs[i] - this.minXs[i] + 1) * this.weight;
-		}
-		double verticalConnectionCost(int i){
-			return (this.maxYs[i] - this.minYs[i] + 1) * this.weight;
-		}
-		double deltaVerticalConnectionCost(int i){
-//			this.verticalDeltaCostIncluded = true;
-			return (this.maxYs[i] - this.minYs[i] - this.oldMaxYs[i] + this.oldMinYs[i]) * this.weight;
-		}
-		void saveStates(int i){
-			if(!this.verticalsSaved[i]){
-				this.oldMinXs[i] = this.minXs[i];
-				this.oldMaxXs[i] = this.maxXs[i];
-				this.oldMinYs[i] = this.minYs[i];
-				this.oldMaxYs[i] = this.maxYs[i];
-				
-				this.verticalsSaved[i] = true;
-			}
-		}
-		void pushThrough(int i){
-			this.verticalsSaved[i] = false;
-		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		double deltaVerticalConnectionCost(){
@@ -1046,14 +1002,6 @@ public class HardblockSwarmLegalizer{
 		int minX, maxX;
 		int minY, maxY;
 		
-		// for PSO//////////////////////////
-		int[] minXs, maxXs;
-		int[] minYs, maxYs;
-		int[] oldMinXs, oldMaxXs;
-		int[] oldMinYs, oldMaxYs;
-		boolean[] verticalSaved;
-		////////////////////////////////////////
-		
 		int oldMinX, oldMaxX;
 		int oldMinY, oldMaxY;
 		boolean alreadySaved;
@@ -1072,16 +1020,6 @@ public class HardblockSwarmLegalizer{
 			
 			this.index = index;
 			
-			this.minXs = new int[SWARM_SIZE];
-			this.maxXs = new int[SWARM_SIZE];
-			this.minYs = new int[SWARM_SIZE];
-			this.maxYs = new int[SWARM_SIZE];
-			this.oldMinYs = new int[SWARM_SIZE];
-			this.oldMaxYs = new int[SWARM_SIZE];
-			this.oldMinXs = new int[SWARM_SIZE];
-			this.oldMaxXs = new int[SWARM_SIZE];
-			this.verticalSaved = new boolean[SWARM_SIZE];
-			Arrays.fill(this.verticalSaved, false);
 		}
 
 		
@@ -1179,7 +1117,6 @@ public class HardblockSwarmLegalizer{
 			}
 		}
 		void updateVertical(){
-//			this.saveState();
 			
 			if(this.sourceBlock.legalY < this.sinkBlock.legalY){
 				this.minY = this.sourceBlock.legalY;
@@ -1189,42 +1126,8 @@ public class HardblockSwarmLegalizer{
 				this.maxY = this.sourceBlock.legalY;
 			}
 
-//			if(this.minY != this.oldMinY || this.maxY != this.oldMaxY){
-//				this.verticalChange = true;
-//				this.verticalDeltaCostIncluded = false;
-//			}else{
-//				this.verticalChange = false;
-//				this.verticalDeltaCostIncluded = true;
-//			}
-        }
-		
+        }	
 	
-		double timingCost(int i){
-			return this.horizontalTimingCost() + this.verticalTimingCost(i);
-		}
-		double horizontalTimingCost(int i){
-			return (this.maxXs[i] - this.minXs[i]) * this.weight;
-		}
-		double verticalTimingCost(int i){
-			return (this.maxYs[i] - this.minYs[i]) * this.weight;
-		}
-		double deltaVerticalTimingCost(int i){
-//			this.verticalDeltaCostIncluded = true;
-			return (this.maxYs[i] - this.minYs[i] - this.oldMaxYs[i] + this.oldMinYs[i]) * this.weight;
-		}
-		void saveStates(int i){
-			if(!this.verticalSaved[i]){
-				this.oldMinXs[i] = this.minXs[i];
-				this.oldMaxXs[i] = this.maxXs[i];
-				this.oldMinYs[i] = this.minYs[i];
-				this.oldMaxYs[i] = this.maxYs[i];
-
-				this.verticalSaved[i] = true;
-			}
-		}
-		void pushThrough(int i){
-			this.verticalSaved[i] = false;
-		}
 		////////////////////////////////////////////////////////////////////////////////////
 
 		void tryVerticalTimingCost(){

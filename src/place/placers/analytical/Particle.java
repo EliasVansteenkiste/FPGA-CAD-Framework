@@ -298,16 +298,7 @@ public class Particle{
 		
 		return cost;
 	}
-	double getCost(int i){
-		double cost = 0.0;
-		double timing = 0.0;
-		double conn = 0.0;
-		for(Net net:this.pNets) conn += net.connectionCost(i)*net.getTotalNum();
-		for(Crit crit:this.pCrits) timing += crit.timingCost(i);
-		cost = timing + conn;
-		cost = timing + conn;		
-		return cost;
-	}
+	
 	static class Swap{
 		int fromIndex;
 		int toIndex;
