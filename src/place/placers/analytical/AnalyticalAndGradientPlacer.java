@@ -279,7 +279,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         
 //        this.numNets = this.nets.size();//this.numNets = this.numRealNets + num of dummy nets
         
-//        System.out.println(this.numNets + " " + this.numRealNets + " " + this.numRealConn);
+        System.out.println(this.nets.size() + " " + this.numRealNets + " " + this.numRealConn);
 
         //Separate solving
         int numIterations = this.numIterations();

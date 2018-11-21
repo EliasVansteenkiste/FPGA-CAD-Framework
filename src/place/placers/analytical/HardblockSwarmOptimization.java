@@ -319,9 +319,4 @@ public class HardblockSwarmOptimization {
 			block.setLegalXY(site.column, site.row);
 		}
 	}
-	private void duplicateData(int i){
-		for(Block b:this.blocks){
-			b.duplicateData(i);
-		}
-	}
 }

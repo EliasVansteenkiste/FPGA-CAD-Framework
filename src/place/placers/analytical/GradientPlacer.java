@@ -6,8 +6,6 @@ import place.circuit.architecture.BlockType;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 import place.interfaces.Options;
-import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
-import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.visual.PlacementVisualizer;
 
 import java.util.ArrayList;
@@ -34,6 +32,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_EPS = "eps",
         
         O_USE_PSO = "usePSO",
+        O_SWARM_SIZE = "numParticles",
     	O_PSO_COGNITIVE_LEARNING_RATE = "c1",
     	O_PSO_PROBILITY_INTERVAL_PBEST = "forPbest",
     	O_PSO_PROBILITY_INTERVAL_GBEST = "forGbest",
@@ -97,6 +96,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         		O_USE_PSO,
                 "switch between SA and PSO",
                 new Boolean(true));
+        options.add(
+        		O_SWARM_SIZE,
+                "number of particles",
+                new Integer(20));
         
         options.add(
         		O_PSO_COGNITIVE_LEARNING_RATE,
@@ -146,6 +149,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
     protected double learningRate, learningRateMultiplier;
     private final double beta1, beta2, eps;
     private final boolean usePSO;
+    private final int numParticle;
     private final double c1;
     private double forPbest, forGbest;
 
@@ -200,6 +204,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.eps = this.options.getDouble(O_EPS);
         
         this.usePSO = this.options.getBoolean(O_USE_PSO);
+        this.numParticle = this.options.getInteger(O_SWARM_SIZE);
         this.c1 = this.options.getDouble(O_PSO_COGNITIVE_LEARNING_RATE);
         
         this.forPbest = this.options.getDouble(O_PSO_PROBILITY_INTERVAL_PBEST);
@@ -245,6 +250,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.netBlocks);
         this.legalizer.setQuality(0.1,  0.9);
         this.legalizer.setChoice(this.usePSO);
+        this.legalizer.setSwarmSize(this.numParticle);
         this.legalizer.setPSOVaryingQuality(this.psoQuality, this.psoQualityMultiplier);
 //        this.legalizer.setPSOFixedLearningRate(2.05, 2.05);
         this.legalizer.setPSOVaringLearningRate(this.c1);
@@ -367,13 +373,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 				this.coordinatesY[i] = this.linearY[i];
 			}
 		}
-//		for(Net net:this.nets){
-//        	for(NetBlock block:net.blocks){
-//        		int blockIndex = block.getBlockIndex(); 
-//            	block.initializeLinear(this.linearX[blockIndex], this.linearY[blockIndex]);
-//            	block.initialLegal(this.legalizer.getLegalX(blockIndex), this.legalizer.getLegalY(blockIndex));
-//        	}
-//		}
+
 
         for(int i = 0; i < this.effortLevel; i++) {
             this.solveLinearIteration(processNets);
@@ -387,13 +387,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 				this.linearY[i] = this.coordinatesY[i];
 			}
 		}
-		
-//		for(Net net:this.nets){
-//    		for(NetBlock block:net.blocks){
-//    			int blockIndex = block.getBlockIndex(); 
-//        		if(!this.fixed[blockIndex])block.initializeLinear(this.coordinatesX[blockIndex], this.coordinatesY[blockIndex]);
-//    		}
-//		}
 		
     }
 
@@ -409,14 +402,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
 
         // Process nets
         this.processNets(processNets);
-//        this.processNetsNew(processNets, this.fixed);
-        
-//        for(Net net:this.nets){
-//    		for(NetBlock block:net.blocks){
-//    			if(!block.isInitialized) System.out.println(block.getBlockIndex() + " not initialized");
-//    		}
-//    	}
-//        
+
         // Add pseudo connections
         if(this.anchorWeight != 0.0) {
             // this.legalX and this.legalY store the solution with the lowest cost
@@ -439,24 +425,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         for(int netIndex = 0; netIndex < numNets; netIndex++) {
             netStart = netEnd;
             netEnd = this.netEnds[netIndex];
-//            System.out.println(netIndex);
-        	if(processNet[netIndex]){
+
+            if(processNet[netIndex]){
                 this.solver.processNet(netStart, netEnd);
         	}
-//        	System.out.println();
         }
     }
-    ////////////////////////////new change//////////////////////////////////////////////
-    protected void processNetsNew(boolean[] processNet, boolean[] fixed) {	
-        for(int netIndex = 0; netIndex < this.numRealNets; netIndex++) {
-//            System.out.println(netIndex);
-        	if(processNet[netIndex]){
-                this.solver.processNetNew(this.nets.get(netIndex), this.fixed);
-        	}
-//        	System.out.println();
-        }
-    }
-    ////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     protected void solveLegal() {

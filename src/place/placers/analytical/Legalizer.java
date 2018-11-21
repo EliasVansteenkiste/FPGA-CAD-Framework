@@ -29,6 +29,7 @@ abstract class Legalizer {
     
     private double chooseQuality;
     private boolean usePSO;
+    private int numParticles;
     private double psoQuality, psoQualityMultiplier;
     private double c1;
     private double forPbest, forGbest;
@@ -150,6 +151,9 @@ abstract class Legalizer {
     void setChoice(boolean usePSO){
     	this.usePSO = usePSO;
     }
+    void setSwarmSize(int n){
+    	this.numParticles = n;
+    }
     void setpsoQuality(double fixedQuality){
     	this.psoQuality = fixedQuality;
     }
@@ -195,8 +199,6 @@ abstract class Legalizer {
     	
         int blocksStart = this.blockTypeIndexStarts.get(i);
         int blocksEnd = this.blockTypeIndexStarts.get(i + 1);
-
-//        long runtime = 0;
         
         if(blocksEnd > blocksStart) {
             this.blockCategory = this.blockType.getCategory();
@@ -220,7 +222,7 @@ abstract class Legalizer {
         			this.chooseQuality = this.quality;
         		}
         		this.hbruntime += this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.chooseQuality, this.c1,  
-        				this.forPbest, this.forGbest, this.interval, this.usePSO);
+        				this.forPbest, this.forGbest, this.interval, this.usePSO, this.numParticles);
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType, this.quality);
         		for(int b = blocksStart; b < blocksEnd; b++){

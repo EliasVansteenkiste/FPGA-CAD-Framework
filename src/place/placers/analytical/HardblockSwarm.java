@@ -433,11 +433,7 @@ public class HardblockSwarm {
 //			}
 //		}	
 	}
-	private void duplicateData(int i){
-		for(Block b:this.blocks){
-			b.duplicateData(i);
-		}
-	}
+	
 	private RunnableParticle generateParticleRandomly(int i){
 				
 			this.randomlyPlaceBlocks();
@@ -488,7 +484,7 @@ public class HardblockSwarm {
 			int[] shuffledBlockIndexList = this.shuffleArray(this.swarm.get(0).blockIndexList);
 			this.setBlockLegal(shuffledBlockIndexList);
 			this.timingTree.start("duplicating data");
-			this.duplicateData(i);
+			
 			this.timingTree.time("duplicating data");
 			
 			int velLength = this.rand.nextInt(this.velMaxSize);

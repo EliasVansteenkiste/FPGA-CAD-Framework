@@ -248,22 +248,7 @@ public class Particle{
 		else this.changed = true;
 	}
 	
-	double swapsCost(int[] blockIndexList){
-		double deltaCost = 0;
-		for(Swap s:this.velocity){
-			int from = s.getFromIndex();
-			int to = s.getToIndex();
-			int indexFrom = blockIndexList[from];
-			int indexTo = blockIndexList[to];
-			Block block1= this.getBlock(indexFrom);
-			Block block2 = this.getBlock(indexTo);
-			Site site1 = this.sites[from];
-			Site site2 = this.sites[to];
-			
-			deltaCost += this.deltacost(block1, site1, block2, site2);
-		}
-		return deltaCost;
-	}
+	
 	Block getBlock(int index){
 		Block block = null;
 		if(index == -1){
@@ -344,38 +329,5 @@ public class Particle{
 			this.toIndex = toIndex;
 		}			
 	}
-	double deltacost(Block block1, Site site1, Block block2, Site site2){
-		double deltaCost = 0;
-		
-		boolean block1Valid = block1 != null;
-		boolean block2Valid = block2 != null;
-		
-		if(block1Valid){
-			block1.updateVerticals(this.pIndex, site2.row);
-		}
-		
-		if(block2Valid){
-			block2.updateVerticals(this.pIndex, site1.row);
-		}
-			
-		if(block1Valid){
-			for(Net net:block1.nets){
-				deltaCost += net.deltaVerticalConnectionCost(this.pIndex);
-			}
-			for(Crit crit:block1.crits){
-				deltaCost += crit.deltaVerticalTimingCost(this.pIndex);
-			}
-		}
-		if(block2Valid){
-			for(Net net:block2.nets){
-				deltaCost += net.deltaVerticalConnectionCost(this.pIndex);
-
-			}
-			for(Crit crit:block2.crits){
-				deltaCost += crit.deltaVerticalTimingCost(this.pIndex);
-			}
-		}
-		
-		return deltaCost;
-	}
+	
 }
