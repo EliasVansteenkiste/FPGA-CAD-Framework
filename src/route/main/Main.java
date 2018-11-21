@@ -32,7 +32,7 @@ public class Main {
 	private String circuitName;
 	private File architectureFile, blifFile, netFile, placeFile, lookupDumpFile, sdcFile, rrgFile;
 	
-	private int criticality_exponent;
+	private float alphaTD;
 	
 	private boolean td;
 	
@@ -57,12 +57,12 @@ public class Main {
  				this.lookupDumpFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("rr_graph_file")) {
 				this.rrgFile = new File(arguments[++i]);
-				
+
 			} else if(arguments[i].contains("td_hroute")) {
 				this.td = true;
 				
-			} else if(arguments[i].contains("criticality_exponent")) {
-				this.criticality_exponent = Integer.parseInt(arguments[++i]);
+			} else if(arguments[i].contains("alphaTD")) {
+				this.alphaTD = Float.parseFloat(arguments[++i]);
 			}
 		}
 		
@@ -89,7 +89,7 @@ public class Main {
 		System.gc();
 		
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
-		int timeMilliseconds = route.route(this.criticality_exponent);
+		int timeMilliseconds = route.route(this.alphaTD);
 		
 		System.out.printf("Routing took %.2fs\n", (timeMilliseconds * Math.pow(10, -3)));
 		

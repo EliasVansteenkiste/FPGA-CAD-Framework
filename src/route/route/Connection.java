@@ -122,6 +122,7 @@ public class Connection implements Comparable<Connection>  {
 	public void setCriticality(float criticality) {
 		this.criticality = criticality;
 	}
+	
 	public float getCriticality() {
 		return this.criticality;
 	}

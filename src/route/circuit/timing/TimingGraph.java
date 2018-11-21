@@ -63,8 +63,6 @@ public class TimingGraph {
         
         this.setRootAndLeafNodes();
         
-        this.cutCombLoop();
-        
         /******************************************
          *     Test functions to check if all     * 
          *     timing nodes are connected         *
@@ -101,6 +99,7 @@ public class TimingGraph {
         }
         /*******************************************/
         
+        this.cutCombLoop();
         
         System.out.println("Timing Graph:");
         
@@ -512,7 +511,7 @@ public class TimingGraph {
     	}
 
     	TimingEdge cutLoop(){
-    		TimingNode v = this.elements.get(this.elements.size()-1);
+    		TimingNode v = this.elements.get(0);
 
     		for(TimingEdge e:v.getSinks()){
     			TimingNode w = e.getSink();

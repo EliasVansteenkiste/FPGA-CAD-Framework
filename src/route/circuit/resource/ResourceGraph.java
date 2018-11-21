@@ -369,7 +369,6 @@ public class ResourceGraph {
 		/*****************************
 		 *         Children          *
 		 *****************************/
-		
 		reader = new BufferedReader(new FileReader(rrgFileName.replace("rr_graph", "rr_children")));
 		System.out.println("   Read " + rrgFileName.split("/")[rrgFileName.split("/").length - 1].replace("rr_graph", "rr_children"));
 		
