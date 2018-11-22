@@ -175,15 +175,9 @@ public class ConnectionRouter {
             	for(Net net : sortedListOfNets) {
             		if(!net.hasOpin()) {
             			Opin opin = net.getMostUsedOpin();
-                		if(!opin.used()) {
+                		if(!opin.isOpin) {
                 			net.setOpin(opin);
-                			for(Connection con : net.getConnections()) {
-                				if(con.getOpin().index != con.net.getOpin().index) {
-            						this.ripup(con);
-            						this.route(con);
-            						this.add(con);
-            					}
-                			}
+                			opin.isOpin = true;
                 		}
                 		validRouting = false;
             		}
@@ -210,6 +204,11 @@ public class ConnectionRouter {
 					this.add(con);
 					
 					validRouting = false;
+				
+				}else if(con.net.hasOpin() && con.getOpin().index != con.net.getOpin().index) {
+					this.ripup(con);
+					this.route(con);
+					this.add(con);
 					
 				} else if (con.getCriticality() > REROUTE_CRITICALTY) {
 					this.ripup(con);
@@ -441,7 +440,7 @@ public class ConnectionRouter {
 					if (child.index == con.net.getOpin().index) {
 						this.addNodeToQueue(node, child, con);
 					}
-				} else if (!child.used()) {
+				} else if (!child.isOpin) {
 					this.addNodeToQueue(node, child, con);
 				}
 			

@@ -17,6 +17,8 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	
 	public float base_cost;
 	
+	public boolean isOpin;
+	
 	public final RouteNodeType type;
 	public final boolean isWire;
 	public final short capacity;
@@ -32,6 +34,8 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	
 	public RouteNode(int index, int xlow, int xhigh, int ylow, int yhigh, int n, int capacity, RouteNodeType t, float r, float c, IndexedData indexedData, int numChildren) {
 		this.index = index;
+		
+		this.isOpin = false;
 		
 		this.xlow = (short) xlow;
 		this.xhigh = (short) xhigh;

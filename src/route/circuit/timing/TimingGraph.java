@@ -511,7 +511,7 @@ public class TimingGraph {
     	}
 
     	TimingEdge cutLoop(){
-    		TimingNode v = this.elements.get(0);
+    		TimingNode v = this.elements.get(this.elements.size()-1);
 
     		for(TimingEdge e:v.getSinks()){
     			TimingNode w = e.getSink();
