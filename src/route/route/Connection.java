@@ -19,7 +19,9 @@ public class Connection implements Comparable<Connection>  {
 	public final TimingNode sourceTimingNode;
 	public final TimingNode sinkTimingNode;
 	public final TimingEdge timingEdge;
+	
 	private float criticality;
+	public boolean isCritical;
 
     public Net net;
     public final int boundingBox;
@@ -77,6 +79,9 @@ public class Connection implements Comparable<Connection>  {
 		this.netName = this.source.getNetName();
 		
 		this.net = null;
+		
+		this.criticality = 0;
+		this.isCritical = false;
 	}
 	private int calculateBoundingBox() {
 		int min_x, max_x, min_y, max_y;
@@ -121,6 +126,10 @@ public class Connection implements Comparable<Connection>  {
 	
 	public void setCriticality(float criticality) {
 		this.criticality = criticality;
+	}
+	public void setCriticalityThreshold(float criticalityThreshold) {
+		this.isCritical = this.criticality > criticalityThreshold;
+		if(!this.isCritical) this.criticality = 0;
 	}
 	
 	public float getCriticality() {
