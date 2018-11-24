@@ -65,6 +65,8 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		
 		if(this.isWire) {
 			this.base_cost = this.indexedData.getBaseCost() * this.wireLength();
+		} else if(this.type == RouteNodeType.OPIN) {
+			this.base_cost = this.indexedData.getBaseCost() * 4;
 		} else {
 			this.base_cost = this.indexedData.getBaseCost();
 		}
@@ -79,6 +81,8 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public void updateBaseCost(float baseCostPerDistance) {
 		if(this.isWire) {
 			this.base_cost = baseCostPerDistance * this.wireLength();
+		} else if(this.type == RouteNodeType.OPIN) {
+			this.base_cost = baseCostPerDistance * 4;
 		} else if(this.type == RouteNodeType.IPIN) {
 			this.base_cost = baseCostPerDistance * 0.95f;
 		} else {
