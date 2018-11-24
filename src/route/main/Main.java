@@ -99,9 +99,9 @@ public class Main {
 		System.out.println("Maximum net length " + this.circuit.maximumNetLength());
 		System.out.println();
 		
+		//TODO
 		this.circuit.getTimingGraph().calculateActualWireDelay();
-		this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
-		this.circuit.getTimingGraph().calculateEdgeCriticality();
+		this.circuit.getTimingGraph().calculateConnectionCriticalities(1,1);
 		
 		System.out.printf("Max delay %.3f\n", this.circuit.getMaxDelay());
 		System.out.printf("Timing cost %.3e\n", this.circuit.calculateTimingCost());

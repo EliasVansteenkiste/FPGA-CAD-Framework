@@ -84,7 +84,8 @@ public class ConnectionRouter {
 	
 		int timeMilliseconds = this.doRuntimeRouting(100, 4, 1.5f);
 		
-		System.out.println(this.circuit.getTimingGraph().criticalPathToString());
+		//TODO
+		//System.out.println(this.circuit.getTimingGraph().criticalPathToString());
 		
 		/***************************
 		 * OPIN tester: test if each
@@ -134,9 +135,9 @@ public class ConnectionRouter {
 
 		int intOldDelay = 0, intMaxDelay = 0;
 		
+		//TODO
 		this.circuit.getTimingGraph().calculatePlacementEstimatedWireDelay();
-		this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
-		this.circuit.getTimingGraph().calculateConnectionCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
+		this.circuit.getTimingGraph().calculateConnectionCriticalities(MAX_CRITICALITY, CRITICALITY_EXPONENT);
 		
 		this.setRerouteCriticality(sortedListOfConnections);
 		
@@ -173,6 +174,7 @@ public class ConnectionRouter {
         	
         	//Route Connections
         	for(Connection con : sortedListOfConnections) {
+        		
 				if (this.itry == 1) {
 					this.ripup(con);
 					this.route(con);
@@ -208,9 +210,10 @@ public class ConnectionRouter {
 			if(this.td) {
 				intOldDelay = (int) Math.round(100 * this.circuit.getTimingGraph().getMaxDelay());
 				
-				this.circuit.getTimingGraph().calculateActualWireDelay();
-				this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
-				this.circuit.getTimingGraph().calculateConnectionCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
+				//TODO
+				//this.circuit.getTimingGraph().calculateActualWireDelay();
+				//this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
+				//this.circuit.getTimingGraph().calculateConnectionCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
 				
 				double maxDelay = this.circuit.getTimingGraph().getMaxDelay();
 				intMaxDelay = (int) Math.round(100 * maxDelay);
@@ -238,9 +241,10 @@ public class ConnectionRouter {
 				wireLength = String.format("%11d", this.rrg.congestedTotalWireLengt());
 				
 				if(!this.td) {
-					this.circuit.getTimingGraph().calculateActualWireDelay();
-					this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
-					maxDelayString = String.format("%9.3f", this.circuit.getTimingGraph().getMaxDelay());
+					//TODO
+					//this.circuit.getTimingGraph().calculateActualWireDelay();
+					//this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
+					//maxDelayString = String.format("%9.3f", this.circuit.getTimingGraph().getMaxDelay());
 				}
 			}
 			
