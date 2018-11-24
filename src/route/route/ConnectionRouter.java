@@ -129,20 +129,15 @@ public class ConnectionRouter {
 		float acc_fac = 1;
 		this.pres_fac = initial_pres_fac;
 		
+		this.itry = 1;
+		
 		List<Connection> sortedListOfConnections = new ArrayList<>();
 		sortedListOfConnections.addAll(this.circuit.getConnections());
-
-		this.itry = 1;
-		boolean bbnotfanout = false;
-		if(bbnotfanout) {
-			Collections.sort(sortedListOfConnections, Comparators.BBComparator);
-		} else {
-			Collections.sort(sortedListOfConnections, Comparators.FanoutComparator);
-		}
+		Collections.sort(sortedListOfConnections, Comparators.FanoutConnection);
 		
         List<Net> sortedListOfNets = new ArrayList<>();
         sortedListOfNets.addAll(this.circuit.getNets());
-        Collections.sort(sortedListOfNets, Comparators.FANOUT);
+        Collections.sort(sortedListOfNets, Comparators.FanoutNet);
         
 		this.circuit.getTimingGraph().calculatePlacementEstimatedWireDelay();
 		this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
