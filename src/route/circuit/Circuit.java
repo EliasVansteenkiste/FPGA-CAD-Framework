@@ -406,9 +406,6 @@ public class Circuit {
         return this.timingGraph;
     }
 
-    public void recalculateTimingGraph() {
-        this.timingGraph.calculateArrivalAndRequiredTimes();
-    }
     public double calculateTimingCost() {
         return this.timingGraph.calculateTotalCost();
     }

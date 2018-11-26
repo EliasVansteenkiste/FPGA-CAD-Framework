@@ -29,15 +29,17 @@ public class TimingGraph {
 
     // A map of clock domains, along with their unique id
     private Map<String, Integer> clockNamesToDomains = new HashMap<>();
+    private Map<Integer, Integer> clockDomainFanout = new HashMap<>();
     private int numClockDomains = 0;
     private int virtualIoClockDomain;
 
     private List<TimingNode> timingNodes = new ArrayList<>();
-    private List<TimingNode> rootNodes, leafNodes;
+    private Map<Integer, List<TimingNode>> rootNodes, leafNodes;
 
     private List<TimingEdge> timingEdges  = new ArrayList<>();
     private List<List<TimingEdge>> timingNets = new ArrayList<>();
 
+    private List<ClockDomain> clockDomains;
     private double globalMaxDelay;
     
     //Tarjan's strongly connected components algorithm
@@ -51,6 +53,8 @@ public class TimingGraph {
         // Create the virtual io clock domain
         this.virtualIoClockDomain = 0;
         this.clockNamesToDomains.put(VIRTUAL_IO_CLOCK, this.virtualIoClockDomain);
+        this.clockDomainFanout.put(this.numClockDomains, 0);
+        this.numClockDomains++;
     }
 
     /******************************************
@@ -60,8 +64,6 @@ public class TimingGraph {
     public void build() {
     	System.out.println("Build timing graph\n");
         this.buildGraph();
-        
-        this.setRootAndLeafNodes();
         
         /******************************************
          *     Test functions to check if all     * 
@@ -81,6 +83,15 @@ public class TimingGraph {
         		}
         	}
         }
+        
+        for(TimingNode node : this.timingNodes) {
+        	if(node.getPosition().equals(Position.LEAF)) {
+        		if(node.getNumSinks() > 0) {
+        			System.out.println(node + " " + node.getPosition() + " has sinks");
+        		}
+        	}
+        }
+        
         for(TimingNode node : this.timingNodes) {
         	if(node.getPosition().equals(Position.C_SOURCE)) {
         		for(AbstractPin abstractPin : node.getPin().getSinks()) {
@@ -101,25 +112,36 @@ public class TimingGraph {
         
         this.cutCombLoop();
         
+        this.setRootAndLeafNodes();
+        
+        this.setClockDomains();
+        
         System.out.println("Timing Graph:");
         
+        System.out.println("   Num clock domains " + this.numClockDomains);
         System.out.println("   Num timing nodes " + this.timingNodes.size());
         System.out.println("      Root " + this.rootNodes.size());
+        for(int i = 0 ; i < this.numClockDomains; i++) {
+        	System.out.println("         " + i + " " + this.rootNodes.get(i).size());
+        }
         System.out.println("      Leaf " + this.leafNodes.size());
+        for(int i = 0 ; i < this.numClockDomains; i++) {
+        	System.out.println("         " + i + " " + this.leafNodes.get(i).size());
+        }
         System.out.println("   Num timing edges " + this.timingEdges.size());
         System.out.println();
         
     }
     
     public void initializeTiming() {
+	
     	this.calculatePlacementEstimatedWireDelay();
-    	this.calculateArrivalAndRequiredTimes();
-    	this.calculateEdgeCriticality();
+    	this.calculateArrivalTimes();
     	
-    	System.out.println("Timing information (based on placement estimated wire delay)");
-        System.out.printf("   Max delay: %.3f\n", this.getMaxDelay());
-        System.out.printf("   Timing cost: %.3e\n\n", this.calculateTotalCost());
-        System.out.println(this.criticalPathToString());
+    	System.out.println("Timing information (based on placement estimated wire delay)\n");
+    	this.printDelays();
+        
+        //System.out.println(this.criticalPathToString());
         System.out.println();
     }
 
@@ -166,6 +188,8 @@ public class TimingGraph {
                         		
                         		clockDelays.add(0.0);
                         		this.timingNodes.add(node);
+                        		
+                        		this.clockDomainFanout.put(clockDomain, this.clockDomainFanout.get(clockDomain) + 1);
                         	}
                         }
                     }
@@ -246,6 +270,12 @@ public class TimingGraph {
         for(TimingNode node : this.timingNodes) {
             node.compact();
         }
+        
+        System.out.println("Clock domain fanout");
+        for(int clockDomain = 0; clockDomain < this.numClockDomains; clockDomain++) {
+        	System.out.println("   " + clockDomain + ": " + this.clockDomainFanout.get(clockDomain));
+        }
+        System.out.println();
     }
     
     private boolean isSourceOfClockNet(TimingNode node) {
@@ -311,6 +341,7 @@ public class TimingGraph {
 
             if(!this.clockNamesToDomains.containsKey(clockName)) {
                 this.clockNamesToDomains.put(clockName, this.numClockDomains);
+                this.clockDomainFanout.put(this.numClockDomains, 0);
                 this.numClockDomains++;
             }
         }
@@ -353,7 +384,6 @@ public class TimingGraph {
                         sourceTimingNets.get(pathSinkBlock).add(edge);
                     }
                 }
-
             } else {
                 List<AbstractPin> sinkPins;
                 if(sourceBlock.isLeaf() && sourcePin != pathSourcePin) {
@@ -400,16 +430,26 @@ public class TimingGraph {
     }
 
     private void setRootAndLeafNodes(){
-    	this.rootNodes = new ArrayList<>();
-    	this.leafNodes = new ArrayList<>();
-    	
-        for(TimingNode timingNode:this.timingNodes){
-        	if(timingNode.getPosition().equals(Position.ROOT)){
-        		this.rootNodes.add(timingNode);
-        	}else if(timingNode.getPosition().equals(Position.LEAF)){
-        		this.leafNodes.add(timingNode);
-        	}
-        }
+    	this.rootNodes = new HashMap<>();
+    	this.leafNodes = new HashMap<>();
+    
+    	for(int clockDomain = 0; clockDomain < this.numClockDomains; clockDomain++) {
+    		List<TimingNode> clockDomainRootNodes = new ArrayList<>();
+    		List<TimingNode> clockDomainLeafNodes = new ArrayList<>();
+    		
+	        for (TimingNode timingNode:this.timingNodes) {
+	        	if (timingNode.getClockDomain() == clockDomain) {
+		        	if (timingNode.getPosition().equals(Position.ROOT)) {
+		        		clockDomainRootNodes.add(timingNode);
+		        	} else if (timingNode.getPosition().equals(Position.LEAF)) {
+		        		clockDomainLeafNodes.add(timingNode);
+		        	}
+	        	}
+	        }
+	        
+	        this.rootNodes.put(clockDomain, clockDomainRootNodes);
+	        this.leafNodes.put(clockDomain, clockDomainLeafNodes);
+    	}
     }
 
     /****************************************************
@@ -470,7 +510,7 @@ public class TimingGraph {
     	this.stack.add(v);
     	v.putOnStack();
 
-    	for(TimingEdge e:v.getSinks()){
+    	for(TimingEdge e:v.getSinkEdges()){
     		TimingNode w = e.getSink();
     		if(w.undefined()){
     			strongConnect(w);
@@ -513,7 +553,7 @@ public class TimingGraph {
     	TimingEdge cutLoop(){
     		TimingNode v = this.elements.get(this.elements.size()-1);
 
-    		for(TimingEdge e:v.getSinks()){
+    		for(TimingEdge e:v.getSinkEdges()){
     			TimingNode w = e.getSink();
     			if(w == this.elements.get(this.elements.size()-2)){
     	    		v.removeSink(e);
@@ -549,120 +589,174 @@ public class TimingGraph {
     		connection.timingEdge.setWireDelay(wireDelay);
     	}
     }
-    public void calculateArrivalAndRequiredTimes() {
+    
+    
+    
+    public void calculateArrivalTimes() {
     	//Initialization
-        for(TimingNode node : this.timingNodes) {
-            node.resetArrivalTime();
-            node.resetRequiredTime();
-        }
         this.globalMaxDelay = 0;
-
-    	//Arrival time
-        for(TimingNode rootNode: this.rootNodes){
-        	rootNode.setArrivalTime(0.0);
-        }
-        for(TimingNode leafNode: this.leafNodes){
-        	leafNode.recursiveArrivalTime();
-        	if(leafNode.getArrivalTime() > this.globalMaxDelay){
-        		this.globalMaxDelay = leafNode.getArrivalTime();
-        	}
-        }
-
-    	//Required time
-    	for(TimingNode leafNode: this.leafNodes) {
-    		leafNode.setRequiredTime(0.0);
-    	}
-        for(TimingNode rootNode: this.rootNodes) {
-        	rootNode.recursiveRequiredTime();
+        
+    	for(ClockDomain clockDomain : this.clockDomains) {
+    		if(clockDomain.hasPaths) {
+    			double maxDelay = 0;
+                
+            	for(TimingNode node : this.timingNodes) {
+                    node.resetArrivalTime();
+                    node.resetRequiredTime();
+                }
+                
+            	List<TimingNode> clockDomainRootNodes = clockDomain.clockDomainRootNodes;
+            	List<TimingNode> clockDomainLeafNodes = clockDomain.clockDomainLeafNodes;
+            	
+            	//Arrival time
+                for(TimingNode rootNode: clockDomainRootNodes){
+                	rootNode.setArrivalTime(0.0);
+                }
+                for(TimingNode leafNode: clockDomainLeafNodes){
+                	leafNode.recursiveArrivalTime(clockDomain.sourceClockDomain);
+                	if(leafNode.getArrivalTime() > maxDelay){
+                		maxDelay = leafNode.getArrivalTime();
+                	}
+                }
+                
+                clockDomain.setMaxDelay(maxDelay);
+                if(maxDelay > this.globalMaxDelay) {
+                	this.globalMaxDelay = maxDelay;
+                }
+    		}
         }
     }
-    public void calculateEdgeCriticality() {
-    	for(TimingEdge edge : this.timingEdges) {
-    		edge.calculateCriticality(this.globalMaxDelay, 1, 1);
-    	}
-    }
-    public void calculateConnectionCriticality(double maxCriticality, double criticalityExponent) {
-        for(Connection connection : this.circuit.getConnections()) {
-        	connection.timingEdge.calculateCriticality(this.globalMaxDelay, maxCriticality, criticalityExponent);
-        	connection.setCriticality((float) connection.timingEdge.getCriticality());
+
+    public void calculateArricalRequiredAndCriticality(float maxCriticality, float criticalityExponent) {
+    	//Initialization
+        this.globalMaxDelay = 0;
+        
+        for(TimingEdge edge : this.timingEdges) {
+        	edge.resetSlack();
+        }
+        
+    	for(ClockDomain clockDomain : this.clockDomains) {
+    		if(clockDomain.includeDomain()) {
+    			List<TimingNode> clockDomainRootNodes = this.rootNodes.get(clockDomain.sourceClockDomain);
+        		List<TimingNode> clockDomainLeafNodes = this.leafNodes.get(clockDomain.sinkClockDomain);
+        		
+        		double maxDelay = 0;
+                
+            	for(TimingNode node : this.timingNodes) {
+                    node.resetArrivalTime();
+                    node.resetRequiredTime();
+                }
+            	
+            	//Arrival time
+                for(TimingNode rootNode: clockDomainRootNodes){
+                	rootNode.setArrivalTime(0.0);
+                }
+                for(TimingNode leafNode: clockDomainLeafNodes){
+                	leafNode.recursiveArrivalTime(clockDomain.sourceClockDomain);
+                	if(leafNode.getArrivalTime() > maxDelay){
+                		maxDelay = leafNode.getArrivalTime();
+                	}
+                }
+                
+                clockDomain.setMaxDelay(maxDelay);
+                if(maxDelay > this.globalMaxDelay) {
+                	this.globalMaxDelay = maxDelay;
+                }
+
+            	//Required time
+            	for(TimingNode leafNode: clockDomainLeafNodes) {
+            		leafNode.setRequiredTime(0.0);
+            	}
+                for(TimingNode rootNode: clockDomainRootNodes) {
+                	rootNode.recursiveRequiredTime(clockDomain.sinkClockDomain);
+                }
+                
+                //Criticality
+                for(Connection connection : this.circuit.getConnections()) {
+                	connection.timingEdge.calculateCriticality(maxDelay, maxCriticality, criticalityExponent);
+                	connection.setCriticality((float) connection.timingEdge.getCriticality());
+                }
+    		}
         }
     }
     
-    public String criticalPathToString() {
-    	List<TimingNode> criticalPath = new ArrayList<>();
-		TimingNode node = this.getEndNodeOfCriticalPath();
-		criticalPath.add(node);
-		while(!node.getSources().isEmpty()){
-    		node = this.getSourceNodeOnCriticalPath(node);
-    		criticalPath.add(node);
-    	}
-    	
-    	int maxLen = 25;
-    	for(TimingNode criticalNode:criticalPath){
-    		if(criticalNode.toString().length() > maxLen){
-    			maxLen = criticalNode.toString().length();
-    		}
-    	}
-    	
-    	System.out.println();
-    	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
-    	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %-9s %-8s\n", delay, "x", "y", "Tarr (ns)", "LeafNode");
-    	result += String.format("%-" + maxLen + "s..%-3s.%-3s..%-9s.%-8s\n","","","","","").replace(" ", "-").replace(".", " ");
-    	for(TimingNode criticalNode:criticalPath){
-    		result += this.printNode(criticalNode, maxLen);
-    	}
-    	
-    	double netDelay = 0.0;
-    	int numNets = 0;
-    	for(TimingNode sinkNode : criticalPath) {
-    		if(sinkNode.getPosition() == Position.C_SINK) {
-    			netDelay += sinkNode.getArrivalTime() - sinkNode.getSources().get(0).getSource().getArrivalTime();
-    			numNets++;
-    		}
-    	}
-    	
-    	result += "\nNum Nets  " +numNets + "\n";
-    	result += "Net Delay " + String.format("%.2e", netDelay) + "\n";
-    	return result;
-    }
-    private TimingNode getEndNodeOfCriticalPath(){
-    	TimingNode endNode = null;
-    	for(TimingNode leafNode: this.leafNodes){
-    		if(compareDouble(leafNode.getArrivalTime(), this.globalMaxDelay)){
-    			if(endNode == null){
-    				endNode = leafNode;
-    			}else{
-    				System.out.println("Warning: more than one end node has an arrival time equal to the critical path delay");
-    			}
-    		}
-    	}
-    	return endNode;
-    }
-    private TimingNode getSourceNodeOnCriticalPath(TimingNode sinkNode){
-    	TimingNode sourceNode = null;
-		for(TimingEdge edge: sinkNode.getSources()){
-			if(this.compareDouble(edge.getSource().getArrivalTime(), sinkNode.getArrivalTime() - edge.getTotalDelay())){
-				if(sourceNode == null){
-					sourceNode = edge.getSource();
-				}else{
-					sourceNode = edge.getSource();
-					System.out.println("Warning: more than one source node on the critical path");
-				}
-			}
-		}
-		return sourceNode;
-    }
-    private String printNode(TimingNode node, int maxLen){
-    	String nodeInfo = node.toString();
-    	int x = node.getGlobalBlock().getColumn();
-    	int y = node.getGlobalBlock().getRow();
-    	double delay = node.getArrivalTime() * Math.pow(10, 9);
-    	
-    	return String.format("%-" + maxLen + "s  %-3d %-3d  %-9s\n", nodeInfo, x, y, String.format("%.3f", delay));
-    }
-    private boolean compareDouble(double var1, double var2){
-    	return Math.abs(var1 - var2) < Math.pow(10, -12);
-    }
+//    public String criticalPathToString() {
+//    	List<TimingNode> criticalPath = new ArrayList<>();
+//		TimingNode node = this.getEndNodeOfCriticalPath();
+//		criticalPath.add(node);
+//		while(!node.getSourceEdges().isEmpty()){
+//    		node = this.getSourceNodeOnCriticalPath(node);
+//    		criticalPath.add(node);
+//    	}
+//    	
+//    	int maxLen = 25;
+//    	for(TimingNode criticalNode:criticalPath){
+//    		if(criticalNode.toString().length() > maxLen){
+//    			maxLen = criticalNode.toString().length();
+//    		}
+//    	}
+//    	
+//    	System.out.println();
+//    	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
+//    	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %9s %6s %8s\n", delay, "x", "y", "Tarr (ns)", "Clock", "Position");
+//    	result += String.format("%-" + maxLen + "s..%3s.%3s..%9s..%5s..%8s\n","","","","","","").replace(" ", "-").replace(".", " ");
+//    	for(TimingNode criticalNode:criticalPath){
+//    		result += this.printNode(criticalNode, maxLen);
+//    	}
+//    	
+//    	double netDelay = 0.0;
+//    	int numNets = 0;
+//    	for(TimingNode sinkNode : criticalPath) {
+//    		if(sinkNode.getPosition() == Position.C_SINK) {
+//    			netDelay += sinkNode.getArrivalTime() - sinkNode.getSourceEdges().get(0).getSource().getArrivalTime();
+//    			numNets++;
+//    		}
+//    	}
+//    	
+//    	result += "\nNum Nets  " +numNets + "\n";
+//    	result += "Net Delay " + String.format("%.2e", netDelay) + "\n";
+//    	return result;
+//    }
+//    private TimingNode getEndNodeOfCriticalPath(){
+//    	TimingNode endNode = null;
+//    	for(TimingNode leafNode: this.leafNodes){
+//    		if(compareDouble(leafNode.getArrivalTime(), this.globalMaxDelay)){
+//    			if(endNode == null){
+//    				endNode = leafNode;
+//    			}else{
+//    				System.out.println("Warning: more than one end node has an arrival time equal to the critical path delay");
+//    			}
+//    		}
+//    	}
+//    	return endNode;
+//    }
+//    private TimingNode getSourceNodeOnCriticalPath(TimingNode sinkNode){
+//    	TimingNode sourceNode = null;
+//		for(TimingEdge edge: sinkNode.getSourceEdges()){
+//			if(this.compareDouble(edge.getSource().getArrivalTime(), sinkNode.getArrivalTime() - edge.getTotalDelay())){
+//				if(sourceNode == null){
+//					sourceNode = edge.getSource();
+//				}else{
+//					sourceNode = edge.getSource();
+//					System.out.println("Warning: more than one source node on the critical path");
+//				}
+//			}
+//		}
+//		return sourceNode;
+//    }
+//    private String printNode(TimingNode node, int maxLen){
+//    	String nodeInfo = node.toString();
+//    	int x = node.getGlobalBlock().getColumn();
+//    	int y = node.getGlobalBlock().getRow();
+//    	double delay = node.getArrivalTime() * Math.pow(10, 9);
+//    	int clock = node.getClockDomain();
+//    	String pos = "" + node.getPosition();
+//    	
+//    	return String.format("%-" + maxLen + "s  %3d %3d  %9.3f  %5d  %8s\n", nodeInfo, x, y, delay, clock, pos);
+//    }
+//    private boolean compareDouble(double var1, double var2){
+//    	return Math.abs(var1 - var2) < Math.pow(10, -12);
+//    }
     
     public double calculateTotalCost() {
     	double totalCost = 0;
@@ -680,5 +774,63 @@ public class TimingGraph {
     	}
 
     	return totalCost;
+    }
+    
+    private void setClockDomains() {
+    	for(TimingNode node : this.timingNodes) {
+    		node.setNumClockDomains(this.numClockDomains);
+    	}
+    	
+		for(TimingNode node : this.timingNodes) {
+    		if(node.getPosition() == Position.LEAF) {
+    	    	node.setSourceClockDomains();
+    		} else if(node.getPosition() == Position.ROOT) {
+        		node.setSinkClockDomains();
+    		}
+    	}
+		
+    	this.clockDomains = new ArrayList<>();
+    	for(int sourceClockDomain = 0; sourceClockDomain < this.numClockDomains; sourceClockDomain++) {
+    		for(int sinkClockDomain = 0; sinkClockDomain < this.numClockDomains; sinkClockDomain++) {
+        		ClockDomain clockDomain = new ClockDomain(sourceClockDomain, sinkClockDomain, this.rootNodes.get(sourceClockDomain), this.leafNodes.get(sinkClockDomain));
+        		this.clockDomains.add(clockDomain);
+    		}
+    	}
+    }
+    
+    public void printDelays() {
+		System.out.printf("Max delay %.3f ns\n", 1e9 * this.globalMaxDelay);
+		System.out.printf("Timing cost %.3e\n", this.calculateTotalCost());
+		System.out.println();
+		
+		for(ClockDomain clockDomain : this.clockDomains) {
+			System.out.println(clockDomain);
+		}
+		System.out.println();
+		
+		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) entries of critical_path_delay, 
+		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. */
+
+		double geomeanPeriod = 1;
+		double fanoutWeightedGeomeanPeriod = 0;
+		int fanout = 0, totalFanout = 0;
+		int numValidClockDomains = 0;
+		for(ClockDomain clockDomain : this.clockDomains) {
+			if(clockDomain.includeDomain()) {
+				geomeanPeriod *= clockDomain.getMaxDelay();
+				fanout = this.clockDomainFanout.get(clockDomain.sinkClockDomain);
+				totalFanout += fanout;
+				fanoutWeightedGeomeanPeriod += Math.log(clockDomain.getMaxDelay()) * fanout;    
+				
+				numValidClockDomains++;
+			}
+		}
+		
+		geomeanPeriod = Math.pow(geomeanPeriod, 1.0/numValidClockDomains);
+		fanoutWeightedGeomeanPeriod = Math.exp(fanoutWeightedGeomeanPeriod/totalFanout);
+
+		System.out.printf("Geometric mean intra-domain period: %.3f ns\n", 1e9 * geomeanPeriod);
+		System.out.printf("Fanout-weighted geomean intra-domain period: %.3f ns\n", 1e9 * fanoutWeightedGeomeanPeriod);
+		System.out.println();
     }
 }

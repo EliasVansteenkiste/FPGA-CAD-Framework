@@ -28,7 +28,7 @@ public class Comparators {
     				}else if(a.hashCode() < b.hashCode()){
     					return -1;
     				}else{
-    					if(a != b) System.out.println("Failure: Error while comparing 2 connections. HashCode of Two Connections was identical");
+    					if(a != b) System.err.println("Failure: Error while comparing 2 connections. HashCode of Two Connections was identical");
     					return 0;
     				}
     			}else{
@@ -54,7 +54,7 @@ public class Comparators {
     				}else if(n1.hashCode() < n2.hashCode()){
     					return -1;
     				}else{
-    					if(n1 != n2) System.out.println("Failure: Error while comparing 2 connections. HashCode of Two Connections was identical");
+    					if(n1 != n2) System.err.println("Failure: Error while comparing 2 nets. HashCode of Two Nets was identical");
     					return 0;
     				}
     			}else{

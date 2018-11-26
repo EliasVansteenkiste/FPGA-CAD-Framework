@@ -14,6 +14,7 @@ import route.circuit.resource.Source;
 import route.route.Connection;
 
 public class Net {
+	private int id; //Unique ID, is ID of the first connection in the net, which is also unique.
 	private final List<Connection> connections;
 	public final int fanout;
 	
@@ -31,6 +32,7 @@ public class Net {
 	private Opin fixedOpin;
 	
 	public Net(List<Connection> net, short boundingBoxRange) {
+		this.id = net.get(0).id;
 		this.connections = net;
 		this.fanout = net.size();
 		
@@ -204,5 +206,10 @@ public class Net {
 			}
 		}
 		return bestOpin;
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.id;
 	}
 }

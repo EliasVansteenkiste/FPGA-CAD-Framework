@@ -59,8 +59,8 @@ public class Connection implements Comparable<Connection>  {
 		this.sinkTimingNode = this.sink.getTimingNode();
 		
 		//Timing edge of the connection
-		if(this.sinkTimingNode.getSources().size() != 1) {
-			System.err.println("The connection should have only one edge => " + this.sinkTimingNode.getSources().size());
+		if(this.sinkTimingNode.getSourceEdges().size() != 1) {
+			System.err.println("The connection should have only one edge => " + this.sinkTimingNode.getSourceEdges().size());
 		}
 		if(this.sourceTimingNode != this.sinkTimingNode.getSourceEdge(0).getSource()) {
 			System.err.println("The source and sink are not connection by the same edge");

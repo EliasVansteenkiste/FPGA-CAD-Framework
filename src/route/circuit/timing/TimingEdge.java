@@ -76,10 +76,14 @@ public class TimingEdge {
     	return this.sink;
     }
     
-    public void calculateCriticality(double globalMaxDelay, double maxCriticality, double criticalityExponent) {
-    	this.slack = this.sink.getRequiredTime() - this.source.getArrivalTime() - this.getTotalDelay();
-    	double criticality  = (1 - (globalMaxDelay + this.slack) / globalMaxDelay);
-    	this.criticality = Math.pow(criticality, criticalityExponent) * maxCriticality;
+    public void calculateCriticality(double maxDelay, double maxCriticality, double criticalityExponent) {
+    	if(this.source.hasArrivalTime() && this.sink.hasRequiredTime()) {
+        	this.slack = this.sink.getRequiredTime() - this.source.getArrivalTime() - this.getTotalDelay();
+        	double tempCriticality  = (1 - (maxDelay + this.slack) / maxDelay);
+        	tempCriticality = Math.pow(tempCriticality, criticalityExponent) * maxCriticality;
+        	
+        	if(tempCriticality > this.criticality) this.criticality = tempCriticality;
+    	}
     }
 
     @Override

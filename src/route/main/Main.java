@@ -32,7 +32,7 @@ public class Main {
 	private String circuitName;
 	private File architectureFile, blifFile, netFile, placeFile, lookupDumpFile, sdcFile, rrgFile;
 	
-	private float alphaTD;
+	private float alphaTD = 0, reroute_criticality = 0, pres_fac_mult = 0;
 	
 	private boolean td;
 	
@@ -63,6 +63,10 @@ public class Main {
 				
 			} else if(arguments[i].contains("alphaTD")) {
 				this.alphaTD = Float.parseFloat(arguments[++i]);
+			} else if(arguments[i].contains("reroute_criticality")) {
+				this.reroute_criticality = Float.parseFloat(arguments[++i]);
+			} else if(arguments[i].contains("pres_fac_mult")) {
+				this.pres_fac_mult = Float.parseFloat(arguments[++i]);
 			}
 		}
 		
@@ -89,7 +93,7 @@ public class Main {
 		System.gc();
 		
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
-		int timeMilliseconds = route.route(this.alphaTD);
+		int timeMilliseconds = route.route(this.alphaTD, this.reroute_criticality, this.pres_fac_mult);
 		
 		System.out.printf("Routing took %.2fs\n", (timeMilliseconds * Math.pow(10, -3)));
 		
@@ -100,11 +104,10 @@ public class Main {
 		System.out.println();
 		
 		this.circuit.getTimingGraph().calculateActualWireDelay();
-		this.circuit.getTimingGraph().calculateArrivalAndRequiredTimes();
-		this.circuit.getTimingGraph().calculateEdgeCriticality();
+		this.circuit.getTimingGraph().calculateArrivalTimes();
 		
-		System.out.printf("Max delay %.3f\n", this.circuit.getMaxDelay());
-		System.out.printf("Timing cost %.3e\n", this.circuit.calculateTimingCost());
+		this.circuit.getTimingGraph().printDelays();
+
 		System.out.println();
 	}
     private void loadCircuit() {
