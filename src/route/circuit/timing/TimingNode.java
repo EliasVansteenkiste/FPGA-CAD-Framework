@@ -289,11 +289,11 @@ public class TimingNode {
     }
     
     public boolean hasClockDomainAsSink(int clockDomain) {
-    	return this.hasClockDomainAsSink(clockDomain);
+    	return this.hasClockDomainAsSink[clockDomain];
     }
     
     public boolean hasClockDomainAsSource(int clockDomain) {
-    	return this.hasClockDomainAsSource(clockDomain);
+    	return this.hasClockDomainAsSource[clockDomain];
     }
     
     void compact() {
