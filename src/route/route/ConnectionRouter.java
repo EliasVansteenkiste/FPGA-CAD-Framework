@@ -21,7 +21,7 @@ public class ConnectionRouter {
 	private float pres_fac;
 	private float alphaWLD;
 	
-	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY = 0.85f;
+	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY;
 	private final List<Connection> criticalConnections;
 	
 	private int MAX_PERCENTAGE_CRITICAL_CONNECTIONS = 3;
@@ -124,7 +124,10 @@ public class ConnectionRouter {
 	}
     private int doRuntimeRouting(int nrOfTrials, int fixOpins, float alpha, float pres_fac_mult) {
     	System.out.printf("-------------------------------------------------------------------------------------------------\n");
-    	int timeMilliseconds = this.doRouting(nrOfTrials, fixOpins, alpha, pres_fac_mult);
+    	long start = System.nanoTime();
+    	this.doRouting(nrOfTrials, fixOpins, alpha, pres_fac_mult);
+    	long end = System.nanoTime();
+    	int timeMilliseconds = (int)Math.round((end-start) * Math.pow(10, -6));
     	System.out.printf("-------------------------------------------------------------------------------------------------\n");
     	System.out.println("Runtime " + timeMilliseconds + " ms");
 		System.out.println("Connections routed: " + this.connectionsRouted);
@@ -132,9 +135,7 @@ public class ConnectionRouter {
     	System.out.printf("-------------------------------------------------------------------------------------------------\n\n");
     	return timeMilliseconds;
     }
-    private int doRouting(int nrOfTrials, int fixOpins, float alpha, float presFacMult) {
-    	long start = System.nanoTime();
-    	
+    private void doRouting(int nrOfTrials, int fixOpins, float alpha, float presFacMult) {
     	this.alphaWLD = alpha;
     	
     	this.nodesTouched.clear();
@@ -156,7 +157,7 @@ public class ConnectionRouter {
         Collections.sort(sortedListOfNets, Comparators.FanoutNet);
         
 		this.circuit.getTimingGraph().calculatePlacementEstimatedWireDelay();
-		this.circuit.getTimingGraph().calculateArricalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
+		this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
         
 		System.out.printf("%-22s | %s\n", "Timing Driven", this.td);
 		System.out.printf("%-22s | %.1f\n", "Criticality Exponent", CRITICALITY_EXPONENT);
@@ -173,8 +174,6 @@ public class ConnectionRouter {
         System.out.printf("-------------------------------------------------------------------------------------------------\n");
         System.out.printf("%9s  %8s  %8s  %12s  %9s  %17s  %11s  %9s\n", "Iteration", "AlphaWLD", "AlphaTD", "Reroute Crit", "Time (ms)", "Overused RR Nodes", "Wire-Length", "Max Delay");
         System.out.printf("---------  --------  --------  ------------  ---------  -----------------  -----------  ---------\n");
-        
-        Set<RouteNode> overUsed = new HashSet<>();
         
         boolean validRouting = false;
         
@@ -234,9 +233,6 @@ public class ConnectionRouter {
 				
 			}
 			
-			String numOverUsed = String.format("%8s", "---");
-			String overUsePercentage = String.format("%7s", "---");
-			String wireLength = String.format("%11s", "---");
 			String maxDelayString = String.format("%9s", "---");
 			
 			//Update timing and criticality
@@ -244,7 +240,7 @@ public class ConnectionRouter {
 				double old_delay = this.circuit.getTimingGraph().getMaxDelay();
 				
 				this.circuit.getTimingGraph().calculateActualWireDelay();
-				this.circuit.getTimingGraph().calculateArricalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
+				this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
 				
 				double maxDelay = this.circuit.getTimingGraph().getMaxDelay();
 				if(maxDelay < old_delay) {
@@ -254,26 +250,16 @@ public class ConnectionRouter {
 				maxDelayString = String.format("%9.3f", maxDelay);
 			}
 			
-			if(DEBUG) {
-				overUsed.clear();
-				for (Connection conn : sortedListOfConnections) {
-					for (RouteNode node : conn.routeNodes) {
-						if (node.overUsed()) {
-							overUsed.add(node);
-						}
-					}
-				}
-				int numRouteNodes = this.rrg.getRouteNodes().size();
-				numOverUsed = String.format("%8d", overUsed.size());
-				overUsePercentage = String.format("%6.2f%%", 100.0 * (float)overUsed.size() / numRouteNodes);
-				
-				wireLength = String.format("%11d", this.rrg.congestedTotalWireLengt());
-				
-				if(!this.td) {
-					this.circuit.getTimingGraph().calculateActualWireDelay();
-					this.circuit.getTimingGraph().calculateArricalRequiredAndCriticality(1, 1);
-					maxDelayString = String.format("%9.3f", this.circuit.getTimingGraph().getMaxDelay());
-				}
+			int numRouteNodes = this.rrg.getRouteNodes().size();
+			int overUsed = this.calculateNumOverusedNodes(sortedListOfConnections);
+			double overUsePercentage = 100.0 * (double)overUsed / numRouteNodes;
+			
+			int wireLength = this.rrg.congestedTotalWireLengt();
+			
+			if(!this.td) {
+				this.circuit.getTimingGraph().calculateActualWireDelay();
+				this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(1, 1);
+				maxDelayString = String.format("%9.3f", this.circuit.getTimingGraph().getMaxDelay());
 			}
 			
 			//Runtime
@@ -283,12 +269,10 @@ public class ConnectionRouter {
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (validRouting){
 				this.circuit.setConRouted(true);
-				
-				long end = System.nanoTime();
-				int timeMilliSeconds = (int)Math.round((end-start) * Math.pow(10, -6));
-				return timeMilliSeconds;
+
+				return;
 			} else {
-				System.out.printf("%9d  %8.2f  %8.2f  %12.3f  %9d  %s  %s  %s  %s\n", this.itry, this.alphaWLD, this.alphaTD, REROUTE_CRITICALITY, rt, numOverUsed, overUsePercentage, wireLength, maxDelayString);
+				System.out.printf("%9d  %8.2f  %8.2f  %12.3f  %9d  %8d  %6.2f%%  %11d  %s\n", this.itry, this.alphaWLD, this.alphaTD, REROUTE_CRITICALITY, rt, overUsed, overUsePercentage, wireLength, maxDelayString);
 			}
 			
 			//Updating the cost factors
@@ -330,10 +314,18 @@ public class ConnectionRouter {
 			}
 			System.out.println();
 		}
-		
-		long end = System.nanoTime();
-		int timeMilliSeconds = (int)Math.round((end-start) * Math.pow(10, -6));
-		return timeMilliSeconds;
+		return;
+    }
+    private int calculateNumOverusedNodes(List<Connection> connections) {
+        Set<RouteNode> overUsed = new HashSet<>();
+		for (Connection conn : connections) {
+			for (RouteNode node : conn.routeNodes) {
+				if (node.overUsed()) {
+					overUsed.add(node);
+				}
+			}
+		}
+		return overUsed.size();
     }
 
     private void setRerouteCriticality(List<Connection> connections) {

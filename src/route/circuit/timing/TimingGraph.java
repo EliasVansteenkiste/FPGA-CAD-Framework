@@ -143,7 +143,7 @@ public class TimingGraph {
     
     public void initializeTiming() {
     	this.calculatePlacementEstimatedWireDelay();
-    	this.calculateArricalRequiredAndCriticality(1, 1);
+    	this.calculateArrivalRequiredAndCriticality(1, 1);
     	System.out.println("-------------------------------------------------------------------------------");
     	System.out.println("|        Timing information (based on placement estimated wire delay)         |");
     	System.out.println("-------------------------------------------------------------------------------");
@@ -606,7 +606,7 @@ public class TimingGraph {
     	}
     }
 
-    public void calculateArricalRequiredAndCriticality(double maxCriticality, double criticalityExponent) {
+    public void calculateArrivalRequiredAndCriticality(double maxCriticality, double criticalityExponent) {
     	//Initialization
         this.globalMaxDelay = 0;
         

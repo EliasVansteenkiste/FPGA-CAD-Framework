@@ -99,7 +99,7 @@ public class Main {
 		System.out.println();
 		
 		this.circuit.getTimingGraph().calculateActualWireDelay();
-		this.circuit.getTimingGraph().calculateArricalRequiredAndCriticality(1, 1);
+		this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(1, 1);
 		
 		System.out.println("-------------------------------------------------------------------------------");
 		System.out.println("|               Timing information (based on actual wire delay)               |");
