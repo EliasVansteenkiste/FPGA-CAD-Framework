@@ -3,7 +3,7 @@ package route.circuit.resource;
 import route.route.RouteNodeData;
 
 public abstract class RouteNode implements Comparable<RouteNode> {
-	public final int index;//Unique index number
+	protected final int index;//Unique index number
 	
 	public final short xlow, xhigh;
 	public final short ylow, yhigh;
@@ -65,8 +65,6 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		
 		if(this.isWire) {
 			this.base_cost = this.indexedData.getBaseCost() * this.wireLength();
-		} else if(this.type == RouteNodeType.OPIN) {
-			this.base_cost = this.indexedData.getBaseCost() * 4;
 		} else {
 			this.base_cost = this.indexedData.getBaseCost();
 		}
@@ -78,17 +76,6 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.target = false;
 	}
 	
-	public void updateBaseCost(float baseCostPerDistance) {
-		if(this.isWire) {
-			this.base_cost = baseCostPerDistance * this.wireLength();
-		} else if(this.type == RouteNodeType.OPIN) {
-			this.base_cost = baseCostPerDistance * 4;
-		} else if(this.type == RouteNodeType.IPIN) {
-			this.base_cost = baseCostPerDistance * 0.95f;
-		} else {
-			this.base_cost = baseCostPerDistance;
-		}
-	}
 	public void setChild(int index, RouteNode child) {
 		this.children[index] = child;
 	}
@@ -196,5 +183,14 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	@Override
 	public int hashCode() {
 		return this.index;
+	}
+	
+	@Override 
+	public boolean equals(Object other) {
+		if (other == null) return false;
+		if (other == this) return true;
+		if (!(other instanceof RouteNode))return false;
+		RouteNode routeNode = (RouteNode)other;
+		return routeNode.index == this.index;
 	}
 }

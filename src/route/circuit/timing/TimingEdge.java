@@ -19,6 +19,13 @@ public class TimingEdge {
         
         this.delayTables = delayTables;
     }
+    
+    public TimingNode getSource(){
+    	return this.source;
+    }
+    public TimingNode getSink(){
+    	return this.sink;
+    }
 
     public double getFixedDelay(){
         return this.fixedDelay;
@@ -39,9 +46,6 @@ public class TimingEdge {
     public void setWireDelay(double wireDelay){
         this.wireDelay = wireDelay;
     }
-    public double getWireDelay() {
-    	return this.wireDelay;
-    }
 
     public double getTotalDelay(){
         return this.fixedDelay + this.wireDelay;
@@ -52,28 +56,12 @@ public class TimingEdge {
     }
 
     void resetSlack(){
-        this.slack = 0.0;
+        this.slack = 0;
         this.criticality = 0;
     }
-    void setSlack(double slack){
-        this.slack = slack;
-    }
-    double getSlack(){
-        return this.slack;
-    }
 
-    void setCriticality(double criticality){
-        this.criticality = criticality;
-    }
     public double getCriticality(){
         return this.criticality;
-    }
-
-    public TimingNode getSource(){
-    	return this.source;
-    }
-    public TimingNode getSink(){
-    	return this.sink;
     }
     
     public void calculateCriticality(double maxDelay, double maxCriticality, double criticalityExponent) {

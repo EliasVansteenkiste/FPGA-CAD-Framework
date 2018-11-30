@@ -171,19 +171,28 @@ public class Net {
 		this.fixedOpin.use();
 	}
 	
-	public Opin getUniqueOpin() {
-		Opin netOpin = null;
+	public Opin getMostImportantOpin() {
+		float alpha = 0.9f;
+		Map<Opin, Float> opinImportance = new HashMap<>();
 		for(Connection con : this.connections) {
 			Opin opin = con.getOpin();
 			if(opin != null) {
-				if(netOpin == null) {
-					netOpin = opin;
-				} else if(opin.index != netOpin.index) {
-					return null;
+				if(opinImportance.get(opin) == null) {
+					opinImportance.put(opin, alpha * con.getCriticality() + (1 - alpha));
+				} else {
+					opinImportance.put(opin, opinImportance.get(opin) + alpha * con.getCriticality() + (1 - alpha));
 				}
 			}
 		}
-		return netOpin;
+		Opin bestOpin = null;
+		double maxOpinImportance = 0;
+		for(Opin opin : opinImportance.keySet()) {
+			if(opinImportance.get(opin) > maxOpinImportance) {
+				bestOpin = opin;
+				maxOpinImportance = opinImportance.get(opin);
+			}
+		}
+		return bestOpin;
 	}
 	public Opin getMostUsedOpin() {
 		Map<Opin, Integer> opinCount = new HashMap<>();

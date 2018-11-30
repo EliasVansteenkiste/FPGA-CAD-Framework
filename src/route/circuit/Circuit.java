@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import route.circuit.architecture.Architecture;
@@ -413,7 +412,6 @@ public class Circuit {
         return this.timingGraph.getMaxDelay();
     }
     
-    
     public List<GlobalBlock> getGlobalBlocks() {
         return this.globalBlockList;
     }
@@ -473,34 +471,6 @@ public class Circuit {
 
     public List<Integer> getColumnsPerBlockType(BlockType blockType) {
         return this.columnsPerBlockType.get(blockType);
-    }
-
-    public GlobalBlock getRandomBlock(Random random) {
-        int index = random.nextInt(this.globalBlockList.size());
-        return this.globalBlockList.get(index);
-    }
-
-
-    public double ratioUsedCLB(){
-        int numCLB = 0;
-        int numCLBPos = 0;
-        for(BlockType clbType:BlockType.getBlockTypes(BlockCategory.CLB)){
-        	numCLB += this.getBlocks(clbType).size();
-        	numCLBPos += this.getColumnsPerBlockType(clbType).size() * this.getHeight();
-        }
-        double ratio = ((double) numCLB) / numCLBPos;
-        
-        return ratio;
-    }
-    public boolean dense(){
-    	if(this.ratioUsedCLB() < 0.4){
-        	return false;
-        }else {
-        	return true;
-        }
-    }
-    public boolean sparse(){
-    	return !this.dense();
     }
     
     public void setConRouted(boolean value) {

@@ -118,7 +118,6 @@ public class TimingNode {
     
     //Arrival time
     void resetArrivalTime() {
-    	this.arrivalTime = 0;
         this.hasArrivalTime = false;
     }
     void setArrivalTime(double arrivalTime) {
@@ -131,14 +130,14 @@ public class TimingNode {
     double getArrivalTime() {
     	return this.arrivalTime;
     }
-	double recursiveArrivalTime(int clockDomain) {
+	double recursiveArrivalTime(int sourceClockDomain) {
 		if(this.hasArrivalTime()) {
 			return this.getArrivalTime();
 		} else {
 			double maxArrivalTime = 0.0;
 			for(TimingEdge edge:this.sourceEdges) {
-				if(edge.getSource().hasClockDomainAsSource[clockDomain]) {
-					double localArrivalTime = edge.getSource().recursiveArrivalTime(clockDomain) + edge.getTotalDelay();
+				if(edge.getSource().hasClockDomainAsSource[sourceClockDomain]) {
+					double localArrivalTime = edge.getSource().recursiveArrivalTime(sourceClockDomain) + edge.getTotalDelay();
 					if(localArrivalTime > maxArrivalTime) {
 						maxArrivalTime = localArrivalTime;
 					}
@@ -152,7 +151,6 @@ public class TimingNode {
 	
 	//Required time
     void resetRequiredTime() {
-    	this.requiredTime = 0;
     	this.hasRequiredTime = false;
     }
     void setRequiredTime(double requiredTime) {
@@ -165,14 +163,14 @@ public class TimingNode {
     double getRequiredTime() {
     	return this.requiredTime;
     }
-    double recursiveRequiredTime(int clockDomain) {
+    double recursiveRequiredTime(int sinkClockDomain) {
     	if(this.hasRequiredTime()) {
     		return this.getRequiredTime();
     	}else {
 			double minRequiredTime = 0.0;
 			for(TimingEdge edge:this.sinkEdges) {
-				if(edge.getSink().hasClockDomainAsSink[clockDomain]) {
-					double localRequiredTime = edge.getSink().recursiveRequiredTime(clockDomain) - edge.getTotalDelay();
+				if(edge.getSink().hasClockDomainAsSink[sinkClockDomain]) {
+					double localRequiredTime = edge.getSink().recursiveRequiredTime(sinkClockDomain) - edge.getTotalDelay();
 					if(localRequiredTime < minRequiredTime) {
 						minRequiredTime = localRequiredTime;
 					}
@@ -187,33 +185,33 @@ public class TimingNode {
    /****************************************************
     * Tarjan's strongly connected components algorithm *
     ****************************************************/
-    void reset(){
+    public void reset(){
     	this.index = -1;
     	this.lowLink = -1;
     	this.onStack = false;
     }
-    boolean undefined(){
+    public boolean undefined(){
     	return this.index == -1;
     }
-    void setIndex(int index){
+    public void setIndex(int index){
     	this.index = index;
     }
-    void setLowLink(int lowLink){
+    public void setLowLink(int lowLink){
     	this.lowLink = lowLink;
     }
-    int getIndex(){
+    public int getIndex(){
     	return this.index;
     }
-    int getLowLink(){
+    public int getLowLink(){
     	return this.lowLink;
     }
-    void putOnStack(){
+    public void putOnStack(){
     	this.onStack = true;
     }
-    void removeFromStack(){
+    public void removeFromStack(){
     	this.onStack = false;
     }
-    boolean onStack(){
+    public boolean onStack(){
     	return this.onStack;
     }
     
@@ -224,7 +222,6 @@ public class TimingNode {
     
     //Multi clock functionality
     void setNumClockDomains(int numClockDomains) {
-    	
     	this.numClockDomains = numClockDomains;
     	
     	this.hasClockDomainAsSource = new boolean[numClockDomains];
@@ -288,12 +285,12 @@ public class TimingNode {
     	}
     }
     
-    public boolean hasClockDomainAsSink(int clockDomain) {
-    	return this.hasClockDomainAsSink[clockDomain];
+    public boolean hasClockDomainAsSink(int sinkClockDomain) {
+    	return this.hasClockDomainAsSink[sinkClockDomain];
     }
     
-    public boolean hasClockDomainAsSource(int clockDomain) {
-    	return this.hasClockDomainAsSource[clockDomain];
+    public boolean hasClockDomainAsSource(int sourceClockDomain) {
+    	return this.hasClockDomainAsSource[sourceClockDomain];
     }
     
     void compact() {

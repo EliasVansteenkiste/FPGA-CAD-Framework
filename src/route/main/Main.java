@@ -95,19 +95,20 @@ public class Main {
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
 		int timeMilliseconds = route.route(this.alphaTD, this.reroute_criticality, this.pres_fac_mult);
 		
-		System.out.printf("Routing took %.2fs\n", (timeMilliseconds * Math.pow(10, -3)));
-		
-		System.out.println("The total wirelength is equal to " + this.circuit.getResourceGraph().totalWireLength());
-		System.out.println("The total congested wirelength is equal to " + this.circuit.getResourceGraph().congestedTotalWireLengt());
-		System.out.println("The number of used wire segments is equal to " + this.circuit.getResourceGraph().wireSegmentsUsed());
-		System.out.println("Maximum net length " + this.circuit.maximumNetLength());
+		System.out.printf("Routing took %.2fs\n\n", (timeMilliseconds * Math.pow(10, -3)));
 		System.out.println();
 		
 		this.circuit.getTimingGraph().calculateActualWireDelay();
-		this.circuit.getTimingGraph().calculateArrivalTimes();
+		this.circuit.getTimingGraph().calculateArricalRequiredAndCriticality(1, 1);
 		
+		System.out.println("-------------------------------------------------------------------------------");
+		System.out.println("|               Timing information (based on actual wire delay)               |");
+		System.out.println("-------------------------------------------------------------------------------");
 		this.circuit.getTimingGraph().printDelays();
-
+		System.out.println();
+		System.out.println();
+		
+		this.circuit.getResourceGraph().printWireUsage();
 		System.out.println();
 	}
     private void loadCircuit() {
@@ -220,8 +221,6 @@ public class Main {
         this.logger.println("Circuit statistics:");
         this.logger.printf("   clb: %d\n      lut: %d\n      ff: %d\n   hardblock: %d\n      PLL: %d\n      DSP: %d\n      M9K: %d\n      M144K: %d\n   io: %d\n\n",
                 numClb, numLut, numFf, numHardBlock, numPLL, numDSP, numM9K, numM144K, numIo);
-        this.logger.print("   CLB usage ratio: " + String.format("%.3f",this.circuit.ratioUsedCLB())  + "\n");
-        this.logger.print("   Dense circuit: " + this.circuit.dense() + "\n");
         this.logger.print("   Num pins: " + numPins + "\n\n");
     }
     

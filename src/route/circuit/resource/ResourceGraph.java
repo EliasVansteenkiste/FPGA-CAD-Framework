@@ -382,9 +382,6 @@ public class ResourceGraph {
         		RouteNode parent = this.routeNodes.get(Integer.parseInt(words[0]));
         		
         		int numChildren = Integer.parseInt(words[1]);
-        		
-        		if(numChildren != parent.numChildren) System.out.println("Problem in resource graph for num children");//TODO remove checker
-        		
         		for(int index = 0; index < numChildren; index++) {
         			RouteNode child = this.routeNodes.get(Integer.parseInt(words[index+2]));
         			parent.setChild(index, child);
@@ -430,7 +427,7 @@ public class ResourceGraph {
 		}
 		for(RouteNode node : this.routeNodeMap.get(RouteNodeType.SOURCE)) {
 			Source source = (Source) node;
-			source.setDrivingRouteSwitch(null);//TODO Driving route switch of source?
+			source.setDrivingRouteSwitch(null);
 		}
 		
 		System.out.println();
@@ -568,80 +565,6 @@ public class ResourceGraph {
 			return result;
 		}
 	}
-	public int get_expected_distance_to_target(RouteNode node, RouteNode target) {
-		/* Returns the number of segments the same type as inode that will be needed *
-		 * to reach target_node (not including inode) in each direction (the same    *
-		 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
-		RouteNodeType type = node.type;
-		
-		short ylow, yhigh, xlow, xhigh;
-		int distance_same_dir, distance_ortho_dir;
-		
-		int no_need_to_pass_by_clb;
-		
-		short target_x = target.xlow;
-		short target_y = target.ylow;
-		
-		if (type == RouteNodeType.CHANX) {
-			ylow = node.ylow;
-			xhigh = node.xhigh;
-			xlow = node.xlow;
-
-			/* Count vertical (orthogonal to inode) segs first. */
-
-			if (ylow > target_y) { /* Coming from a row above target? */
-				distance_ortho_dir = ylow - target_y + 1;
-				no_need_to_pass_by_clb = 1;
-			} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
-				distance_ortho_dir= target_y - ylow;
-				no_need_to_pass_by_clb = 1;
-			} else { /* In a row that passes by target CLB */
-				distance_ortho_dir = 0;
-				no_need_to_pass_by_clb = 0;
-			}
-
-			/* Now count horizontal (same dir. as inode) segs. */
-
-			if (xlow > target_x + no_need_to_pass_by_clb) {
-				distance_same_dir = xlow - no_need_to_pass_by_clb - target_x;
-			} else if (xhigh < target_x - no_need_to_pass_by_clb) {
-				distance_same_dir = target_x - no_need_to_pass_by_clb - xhigh;
-			} else {
-				distance_same_dir = 0;
-			}
-			
-			return distance_same_dir + distance_ortho_dir;
-		} else { /* inode is a CHANY */
-			ylow = node.ylow;
-			yhigh = node.yhigh;
-			xlow = node.xlow;
-
-			/* Count horizontal (orthogonal to inode) segs first. */
-
-			if (xlow > target_x) { /* Coming from a column right of target? */
-				distance_ortho_dir = xlow - target_x + 1;
-				no_need_to_pass_by_clb = 1;
-			} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
-				distance_ortho_dir = target_x - xlow;
-				no_need_to_pass_by_clb = 1;
-			} else { /* In a column that passes by target CLB */
-				distance_ortho_dir = 0;
-				no_need_to_pass_by_clb = 0;
-			}
-
-			/* Now count vertical (same dir. as inode) segs. */
-
-			if (ylow > target_y + no_need_to_pass_by_clb) {
-				distance_same_dir = ylow - no_need_to_pass_by_clb - target_y;
-			} else if (yhigh < target_y - no_need_to_pass_by_clb) {
-				distance_same_dir = target_y - no_need_to_pass_by_clb - yhigh;
-			} else {
-				distance_same_dir = 0;
-			}
-			
-			return distance_same_dir + distance_ortho_dir;
-		}
-	}
 	
 	@Override
 	public String toString() {
@@ -704,5 +627,80 @@ public class ResourceGraph {
 			}
 			System.out.println();
 		}
+	}
+
+	public void printWireUsage() {
+		System.out.println("-------------------------------------------------------------------------------");
+		System.out.println("|                              WIRELENGTH STATS                               |");
+		System.out.println("-------------------------------------------------------------------------------");
+		System.out.println("Total wirelength: " + this.circuit.getResourceGraph().totalWireLength());
+		System.out.println("Total congested wirelength: " + this.circuit.getResourceGraph().congestedTotalWireLengt());
+		System.out.println("Wire segments: " + this.circuit.getResourceGraph().wireSegmentsUsed());
+		System.out.println("Maximum net length: " + this.circuit.maximumNetLength());
+		System.out.println();
+		
+		int numL4Wires = 0, numL16Wires = 0;
+		int numUsedL4Wires = 0, numUsedL16Wires = 0;
+		
+		int wireLengthL4 = 0, wireLengthL16 = 0;
+		int usedWireLengthL4 = 0, usedWireLengthL16 = 0;
+		
+		
+		for(RouteNode node : this.routeNodes) {
+			if(node.type == RouteNodeType.CHANX) {
+				if (node.indexedData.length == 4) {
+					numL4Wires++;
+					wireLengthL4 += node.wireLength();
+					if (node.used()) {
+						numUsedL4Wires++;
+						usedWireLengthL4 += node.wireLength();
+					}
+				} else if (node.indexedData.length == 16) {
+					numL16Wires++;
+					wireLengthL16 += node.wireLength();
+					if (node.used()) {
+						numUsedL16Wires++;
+						usedWireLengthL16 += node.wireLength();
+					}
+				} else {
+					System.err.println("Unknown Wire-length: " + node.indexedData.length);
+				}
+			} else if (node.type == RouteNodeType.CHANY) {
+				if (node.indexedData.length == 4) {
+					numL4Wires++;
+					wireLengthL4 += node.wireLength();
+					if (node.used()) {
+						numUsedL4Wires++;
+						usedWireLengthL4 += node.wireLength();
+					}
+				} else if (node.indexedData.length == 16) {
+					numL16Wires++;
+					wireLengthL16 += node.wireLength();
+					if (node.used()) {
+						numUsedL16Wires++;
+						usedWireLengthL16 += node.wireLength();
+					}
+				} else {
+					System.err.println("Unknown Wire-length: " + node.indexedData.length);
+				}
+			}
+		}
+		double averageLengthOfL4Wires = (double)wireLengthL4 / numL4Wires;
+		double averageLengthOfL16Wires = (double)wireLengthL16 / numL16Wires;
+		
+		System.out.printf("Length 4  (%5.2f) wires: %8d of %8d | %5.2f%% => Wire-length: %8d\n",
+				averageLengthOfL4Wires, 
+				numUsedL4Wires, 
+				numL4Wires, 
+				100.0 * numUsedL4Wires/numL4Wires, 
+				usedWireLengthL4);
+		System.out.printf("Length 16 (%5.2f) wires: %8d of %8d | %5.2f%% => Wire-length: %8d\n", 
+				averageLengthOfL16Wires,
+				numUsedL16Wires,
+				numL16Wires,
+				100.0 * numUsedL16Wires/numL16Wires,
+				usedWireLengthL16);
+		System.out.println("-------------------------------------------------------------------------------");
+		System.out.println();
 	}
 }
