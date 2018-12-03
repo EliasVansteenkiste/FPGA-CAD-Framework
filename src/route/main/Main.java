@@ -32,7 +32,7 @@ public class Main {
 	private String circuitName;
 	private File architectureFile, blifFile, netFile, placeFile, lookupDumpFile, sdcFile, rrgFile;
 	
-	private float alphaTD = 0, reroute_criticality = 0, pres_fac_mult = 0;
+	private float alphaTD = 0, reroute_criticality = 0, pres_fac_mult = 0, alphaWLD = 0, criticality_exponent = 0;
 	
 	private boolean td;
 	
@@ -63,8 +63,14 @@ public class Main {
 				
 			} else if(arguments[i].contains("alphaTD")) {
 				this.alphaTD = Float.parseFloat(arguments[++i]);
+			} else if(arguments[i].contains("alphaWLD")) {
+				this.alphaWLD = Float.parseFloat(arguments[++i]);
+				
 			} else if(arguments[i].contains("reroute_criticality")) {
 				this.reroute_criticality = Float.parseFloat(arguments[++i]);
+			} else if(arguments[i].contains("criticality_exponent")) {
+				this.criticality_exponent = Float.parseFloat(arguments[++i]);
+				
 			} else if(arguments[i].contains("pres_fac_mult")) {
 				this.pres_fac_mult = Float.parseFloat(arguments[++i]);
 			}
@@ -93,7 +99,7 @@ public class Main {
 		System.gc();
 		
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
-		int timeMilliseconds = route.route(this.alphaTD, this.reroute_criticality, this.pres_fac_mult);
+		int timeMilliseconds = route.route(this.alphaWLD, this.alphaTD, this.pres_fac_mult, this.reroute_criticality, this.criticality_exponent);
 		
 		System.out.printf("Routing took %.2fs\n\n", (timeMilliseconds * Math.pow(10, -3)));
 		System.out.println();

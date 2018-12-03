@@ -19,7 +19,7 @@ public class ConnectionRouter {
 	final Circuit circuit;
 	
 	private float pres_fac;
-	private float alphaWLD;
+	private float alphaWLD = 1.5f;
 	
 	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY;
 	private final List<Connection> criticalConnections;
@@ -34,7 +34,7 @@ public class ConnectionRouter {
 	private final float COST_PER_DISTANCE, DELAY_PER_DISTANCE;
 	private final float IPIN_BASE_COST;
 	private static final double MAX_CRITICALITY = 0.99;
-	private static final double CRITICALITY_EXPONENT = 3;
+	private static double CRITICALITY_EXPONENT = 3;
 	
 	private int connectionsRouted, nodesExpanded;
 	
@@ -83,9 +83,12 @@ public class ConnectionRouter {
 		this.nodesExpanded = 0;
 	}
     
-    public int route(float alphaTD, float rerouteCriticality, float presFacMult) {
+    public int route(float alphaWLD, float alphaTD, float presFacMult, float rerouteCriticality, float criticalityExponent) {
+    	if(alphaWLD > 0) this.alphaWLD = alphaWLD;
     	if(alphaTD > 0) this.alphaTD = alphaTD;
+    	
     	if(rerouteCriticality > 0) MIN_REROUTE_CRITICALITY = rerouteCriticality;
+    	if(criticalityExponent > 0) CRITICALITY_EXPONENT = criticalityExponent;
     	
     	float pres_fac_mult = 2;
     	if(presFacMult > 0) pres_fac_mult = presFacMult;
@@ -96,7 +99,7 @@ public class ConnectionRouter {
     	System.out.println("Num nets: " + this.circuit.getNets().size());
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
 	
-		int timeMilliseconds = this.doRuntimeRouting(100, 4, 1.5f, pres_fac_mult);
+		int timeMilliseconds = this.doRuntimeRouting(100, 4, pres_fac_mult);
 		
 		//System.out.println(this.circuit.getTimingGraph().criticalPathToString());
 		
@@ -122,10 +125,10 @@ public class ConnectionRouter {
 		
 		return timeMilliseconds;
 	}
-    private int doRuntimeRouting(int nrOfTrials, int fixOpins, float alpha, float pres_fac_mult) {
+    private int doRuntimeRouting(int nrOfTrials, int fixOpins, float pres_fac_mult) {
     	System.out.printf("-------------------------------------------------------------------------------------------------\n");
     	long start = System.nanoTime();
-    	this.doRouting(nrOfTrials, fixOpins, alpha, pres_fac_mult);
+    	this.doRouting(nrOfTrials, fixOpins, pres_fac_mult);
     	long end = System.nanoTime();
     	int timeMilliseconds = (int)Math.round((end-start) * Math.pow(10, -6));
     	System.out.printf("-------------------------------------------------------------------------------------------------\n");
@@ -135,8 +138,7 @@ public class ConnectionRouter {
     	System.out.printf("-------------------------------------------------------------------------------------------------\n\n");
     	return timeMilliseconds;
     }
-    private void doRouting(int nrOfTrials, int fixOpins, float alpha, float presFacMult) {
-    	this.alphaWLD = alpha;
+    private void doRouting(int nrOfTrials, int fixOpins, float presFacMult) {
     	
     	this.nodesTouched.clear();
     	this.queue.clear();
@@ -200,7 +202,6 @@ public class ConnectionRouter {
         	}
         	
         	this.setRerouteCriticality(sortedListOfConnections);
-
         	
         	//Route Connections
         	for(Connection con : sortedListOfConnections) {
@@ -230,7 +231,6 @@ public class ConnectionRouter {
 					this.route(con);
 					this.add(con);
 				}
-				
 			}
 			
 			String maxDelayString = String.format("%9s", "---");
