@@ -19,7 +19,7 @@ public class ConnectionRouter {
 	final Circuit circuit;
 	
 	private float pres_fac;
-	private float alphaWLD = 1.5f;
+	private float alphaWLD = 1.4f;
 	
 	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY;
 	private final List<Connection> criticalConnections;
