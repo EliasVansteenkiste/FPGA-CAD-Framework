@@ -143,7 +143,7 @@ public class ConnectionRouter {
     	this.nodesTouched.clear();
     	this.queue.clear();
 		
-    	float initial_pres_fac = 0.6f;
+    	float initial_pres_fac = 0.5f;
 		float pres_fac_mult = presFacMult;//1.3f or 2
 		float acc_fac = 1;
 		this.pres_fac = initial_pres_fac;
@@ -528,7 +528,6 @@ public class ConnectionRouter {
 				distance += target_y - ylow;
 				no_need_to_pass_by_clb = 1;
 			} else { /* In a row that passes by target CLB */
-				//distance += 0;
 				no_need_to_pass_by_clb = 0;
 			}
 
@@ -538,8 +537,6 @@ public class ConnectionRouter {
 				distance += xlow - no_need_to_pass_by_clb - target_x;
 			} else if (xhigh < target_x - no_need_to_pass_by_clb) {
 				distance += target_x - no_need_to_pass_by_clb - xhigh;
-			//} else {
-			//	distance += 0;
 			}
 
 			return distance;
@@ -558,7 +555,6 @@ public class ConnectionRouter {
 				distance += target_x - xlow;
 				no_need_to_pass_by_clb = 1;
 			} else { /* In a column that passes by target CLB */
-				//distance += 0;
 				no_need_to_pass_by_clb = 0;
 			}
 
@@ -568,8 +564,6 @@ public class ConnectionRouter {
 				distance += ylow - no_need_to_pass_by_clb - target_y;
 			} else if (yhigh < target_y - no_need_to_pass_by_clb) {
 				distance += target_y - no_need_to_pass_by_clb - yhigh;
-			//} else {
-			//	distance += 0;
 			}
 			
 			return distance;
