@@ -21,6 +21,8 @@ public class ConnectionRouter {
 	private float pres_fac, pres_fac_mult = 2;
 	private float alphaWLD = 1.4f;
 	
+	private float usage_multiplier = 10;
+	
 	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY;
 	private final List<Connection> criticalConnections;
 	
@@ -91,10 +93,12 @@ public class ConnectionRouter {
 		return (float)(averageDelay / divider);
 	}
     
-    public int route(float alphaWLD, float alphaTD, float presFacMult, float rerouteCriticality, float criticalityExponent) {
+    public int route(float alphaWLD, float alphaTD, float presFacMult, float rerouteCriticality, float criticalityExponent, float usageMultiplier) {
     	if(alphaWLD > 0) this.alphaWLD = alphaWLD;
     	if(alphaTD > 0) this.alphaTD = alphaTD;
     	
+    	if(usageMultiplier > 0) this.usage_multiplier = usageMultiplier;
+     	
     	if(rerouteCriticality > 0) MIN_REROUTE_CRITICALITY = rerouteCriticality;
     	if(criticalityExponent > 0) CRITICALITY_EXPONENT = criticalityExponent;
     	
@@ -178,6 +182,7 @@ public class ConnectionRouter {
 		System.out.printf("%-22s | %.3e\n", "IPIN Base cost", IPIN_BASE_COST);
 		System.out.printf("%-22s | %.2f\n", "WLD Alpha", this.alphaWLD);
 		System.out.printf("%-22s | %.2f\n", "TD Alpha", this.alphaTD);
+		System.out.printf("%-22s | %.2f\n", "Usage multiplier", this.usage_multiplier);
 		System.out.printf("%-22s | %.2f\n", "Min reroute crit", MIN_REROUTE_CRITICALITY);
 		System.out.printf("%-22s | %d\n", "Max per crit con", MAX_PERCENTAGE_CRITICAL_CONNECTIONS);
 		System.out.printf("%-22s | %.1f\n", "Pres fac mult", pres_fac_mult);
@@ -221,14 +226,14 @@ public class ConnectionRouter {
 					
 					validRouting = false;
 
-				} else if(con.congested()) {
+				} else if (con.congested()) {
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
 					
 					validRouting = false;
 				
-				}else if(con.net.hasOpin() && !con.getOpin().equals(con.net.getOpin())) {
+				}else if (con.net.hasOpin() && !con.getOpin().equals(con.net.getOpin())) {
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
@@ -631,8 +636,7 @@ public class ConnectionRouter {
 			bias_cost = 0.5f * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
 		}
 
-		final int usage_multiplier = 10; //TODO SWEEP
-		return node.base_cost * data.acc_cost * pres_cost / (1 + (usage_multiplier * countSourceUses)) + bias_cost;
+		return node.base_cost * data.acc_cost * pres_cost / (1 + (this.usage_multiplier * countSourceUses)) + bias_cost;
 	}
 	
 	private void updateCost(float pres_fac, float acc_fac){
