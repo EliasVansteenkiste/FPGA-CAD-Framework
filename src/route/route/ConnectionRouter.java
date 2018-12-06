@@ -18,7 +18,7 @@ public class ConnectionRouter {
 	final ResourceGraph rrg;
 	final Circuit circuit;
 	
-	private float pres_fac;
+	private float pres_fac, pres_fac_mult = 2;
 	private float alphaWLD = 1.4f;
 	
 	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY;
@@ -31,7 +31,8 @@ public class ConnectionRouter {
 	
 	private final Collection<RouteNodeData> nodesTouched;
 	
-	private final float COST_PER_DISTANCE, DELAY_PER_DISTANCE;
+	private final float COST_PER_DISTANCE_HORIZONTAL, COST_PER_DISTANCE_VERTICAL, DELAY_PER_DISTANCE_HORIZONTAL, DELAY_PER_DISTANCE_VERTICAL;
+	private int distance_same_dir, distance_ortho_dir;
 	private final float IPIN_BASE_COST;
 	private static final double MAX_CRITICALITY = 0.99;
 	private static double CRITICALITY_EXPONENT = 3;
@@ -52,35 +53,42 @@ public class ConnectionRouter {
 		this.queue = new PriorityQueue<>(Comparators.PRIORITY_COMPARATOR);
 		
 		this.criticalConnections = new ArrayList<>();
-		
-		double averageCost = 0;
-		int costDivider = 0;
-		for(RouteNode node : this.rrg.getRouteNodes()) {
-			if(node.isWire) {
-				averageCost += node.base_cost;
-				costDivider += node.wireLength();
-			}
-		}
-		averageCost /= costDivider;
-		
-		double averageDelay = 0;
-		int delayDivider = 0;
-		for(RouteNode node : this.rrg.getRouteNodes()) {
-			if(node.isWire) {
-				averageDelay += node.indexedData.t_linear;
-				delayDivider += node.indexedData.length;
-			}
-		}
-		averageDelay /= delayDivider;
 
-		COST_PER_DISTANCE = (float) averageCost;
-		DELAY_PER_DISTANCE = (float) averageDelay;
+		COST_PER_DISTANCE_HORIZONTAL = this.getAverageCost(RouteNodeType.CHANX);
+		COST_PER_DISTANCE_VERTICAL = this.getAverageCost(RouteNodeType.CHANY);
+		
+		DELAY_PER_DISTANCE_HORIZONTAL = this.getAverageDelay(RouteNodeType.CHANX);
+		DELAY_PER_DISTANCE_VERTICAL = this.getAverageDelay(RouteNodeType.CHANY);
+		
 		IPIN_BASE_COST = this.rrg.get_ipin_indexed_data().getBaseCost();
 		
 		this.td = td;
 		
 		this.connectionsRouted = 0;
 		this.nodesExpanded = 0;
+	}
+	
+	private float getAverageCost(RouteNodeType type) {
+		double averageCost = 0;
+		int divider = 0;
+		for(RouteNode node : this.rrg.getRouteNodes()) {
+			if(node.type.equals(type)) {
+				averageCost += node.base_cost;
+				divider += node.wireLength();
+			}
+		}
+		return (float)(averageCost / divider);
+	}
+	private float getAverageDelay(RouteNodeType type) {
+		double averageDelay = 0;
+		int divider = 0;
+		for(RouteNode node : this.rrg.getRouteNodes()) {
+			if(node.type.equals(type)) {
+				averageDelay += node.indexedData.t_linear;
+				divider += node.wireLength();
+			}
+		}
+		return (float)(averageDelay / divider);
 	}
     
     public int route(float alphaWLD, float alphaTD, float presFacMult, float rerouteCriticality, float criticalityExponent) {
@@ -90,8 +98,7 @@ public class ConnectionRouter {
     	if(rerouteCriticality > 0) MIN_REROUTE_CRITICALITY = rerouteCriticality;
     	if(criticalityExponent > 0) CRITICALITY_EXPONENT = criticalityExponent;
     	
-    	float pres_fac_mult = 2;
-    	if(presFacMult > 0) pres_fac_mult = presFacMult;
+    	if(presFacMult > 0) this.pres_fac_mult = presFacMult;
     	
     	System.out.println("-------------------------------------------------------------------------------------------------");
     	System.out.println("|                                       CONNECTION ROUTER                                       |");
@@ -99,7 +106,7 @@ public class ConnectionRouter {
     	System.out.println("Num nets: " + this.circuit.getNets().size());
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
 	
-		int timeMilliseconds = this.doRuntimeRouting(100, 4, pres_fac_mult);
+		int timeMilliseconds = this.doRuntimeRouting(100, 4);
 		
 		//System.out.println(this.circuit.getTimingGraph().criticalPathToString());
 		
@@ -125,10 +132,10 @@ public class ConnectionRouter {
 		
 		return timeMilliseconds;
 	}
-    private int doRuntimeRouting(int nrOfTrials, int fixOpins, float pres_fac_mult) {
+    private int doRuntimeRouting(int nrOfTrials, int fixOpins) {
     	System.out.printf("-------------------------------------------------------------------------------------------------\n");
     	long start = System.nanoTime();
-    	this.doRouting(nrOfTrials, fixOpins, pres_fac_mult);
+    	this.doRouting(nrOfTrials, fixOpins);
     	long end = System.nanoTime();
     	int timeMilliseconds = (int)Math.round((end-start) * Math.pow(10, -6));
     	System.out.printf("-------------------------------------------------------------------------------------------------\n");
@@ -138,13 +145,13 @@ public class ConnectionRouter {
     	System.out.printf("-------------------------------------------------------------------------------------------------\n\n");
     	return timeMilliseconds;
     }
-    private void doRouting(int nrOfTrials, int fixOpins, float presFacMult) {
+    private void doRouting(int nrOfTrials, int fixOpins) {
     	
     	this.nodesTouched.clear();
     	this.queue.clear();
 		
     	float initial_pres_fac = 0.5f;
-		float pres_fac_mult = presFacMult;//1.3f or 2
+		float pres_fac_mult = this.pres_fac_mult;
 		float acc_fac = 1;
 		this.pres_fac = initial_pres_fac;
 		
@@ -164,8 +171,10 @@ public class ConnectionRouter {
 		System.out.printf("%-22s | %s\n", "Timing Driven", this.td);
 		System.out.printf("%-22s | %.1f\n", "Criticality Exponent", CRITICALITY_EXPONENT);
 		System.out.printf("%-22s | %.2f\n", "Max Criticality", MAX_CRITICALITY);
-		System.out.printf("%-22s | %.3e\n", "Cost per distance", COST_PER_DISTANCE);
-		System.out.printf("%-22s | %.3e\n", "Delay per distance", DELAY_PER_DISTANCE);
+		System.out.printf("%-22s | %.3e\n", "Cost per distance hor", COST_PER_DISTANCE_HORIZONTAL);
+		System.out.printf("%-22s | %.3e\n", "Cost per distance ver", COST_PER_DISTANCE_VERTICAL);
+		System.out.printf("%-22s | %.3e\n", "Delay per distance hor", DELAY_PER_DISTANCE_HORIZONTAL);
+		System.out.printf("%-22s | %.3e\n", "Delay per distance ver", DELAY_PER_DISTANCE_VERTICAL);
 		System.out.printf("%-22s | %.3e\n", "IPIN Base cost", IPIN_BASE_COST);
 		System.out.printf("%-22s | %.2f\n", "WLD Alpha", this.alphaWLD);
 		System.out.printf("%-22s | %.2f\n", "TD Alpha", this.alphaTD);
@@ -484,15 +493,21 @@ public class ConnectionRouter {
 			//Expected remaining cost
 			RouteNode target = con.sinkRouteNode;
 			
-			int distance = this.get_expected_distance_to_target(child, target);
+			this.set_expected_distance_to_target(child, target);
 			
-			float distance_cost = distance * COST_PER_DISTANCE;
+			float distance_cost, expected_timing_cost;
+			
+			if(child.type.equals(RouteNodeType.CHANX)) {
+				distance_cost = this.distance_same_dir * COST_PER_DISTANCE_HORIZONTAL + this.distance_ortho_dir * COST_PER_DISTANCE_VERTICAL;
+				expected_timing_cost = this.distance_same_dir * DELAY_PER_DISTANCE_HORIZONTAL + this.distance_ortho_dir * DELAY_PER_DISTANCE_VERTICAL;
+			} else {
+				distance_cost = this.distance_same_dir * COST_PER_DISTANCE_VERTICAL + this.distance_ortho_dir * COST_PER_DISTANCE_HORIZONTAL;
+				expected_timing_cost = this.distance_same_dir * DELAY_PER_DISTANCE_VERTICAL + this.distance_ortho_dir * DELAY_PER_DISTANCE_HORIZONTAL;
+			}
+			
 			float expected_wire_cost = distance_cost / (1 + countSourceUses) + IPIN_BASE_COST;
-			
-			float expected_timing_cost = distance * DELAY_PER_DISTANCE;
-			
 			new_lower_bound_total_path_cost = new_partial_path_cost + this.alphaWLD * (1 - con.getCriticality()) * expected_wire_cost + this.alphaTD * con.getCriticality() * expected_timing_cost;
-
+		
 		} else {
 			new_lower_bound_total_path_cost = new_partial_path_cost;
 		}
@@ -500,14 +515,13 @@ public class ConnectionRouter {
 		this.addNodeToQueue(child, node, new_partial_path_cost, new_lower_bound_total_path_cost);
 	}
 	
-	public int get_expected_distance_to_target(RouteNode node, RouteNode target) {
+	public void set_expected_distance_to_target(RouteNode node, RouteNode target) {
 		/* Returns the number of segments the same type as inode that will be needed *
 		 * to reach target_node (not including inode) in each direction (the same    *
 		 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
 		RouteNodeType type = node.type;
 		
 		short ylow, yhigh, xlow, xhigh;
-		int distance = 0;
 		
 		int no_need_to_pass_by_clb;
 		
@@ -522,24 +536,27 @@ public class ConnectionRouter {
 			/* Count vertical (orthogonal to inode) segs first. */
 
 			if (ylow > target_y) { /* Coming from a row above target? */
-				distance += ylow - target_y + 1;
+				this.distance_ortho_dir = ylow - target_y + 1;
 				no_need_to_pass_by_clb = 1;
 			} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
-				distance += target_y - ylow;
+				this.distance_ortho_dir = target_y - ylow;
 				no_need_to_pass_by_clb = 1;
 			} else { /* In a row that passes by target CLB */
+				this.distance_ortho_dir = 0;
 				no_need_to_pass_by_clb = 0;
 			}
 
 			/* Now count horizontal (same dir. as inode) segs. */
 
 			if (xlow > target_x + no_need_to_pass_by_clb) {
-				distance += xlow - no_need_to_pass_by_clb - target_x;
+				this.distance_same_dir = xlow - no_need_to_pass_by_clb - target_x;
 			} else if (xhigh < target_x - no_need_to_pass_by_clb) {
-				distance += target_x - no_need_to_pass_by_clb - xhigh;
+				this.distance_same_dir = target_x - no_need_to_pass_by_clb - xhigh;
+			} else {
+				this.distance_same_dir = 0;
 			}
-
-			return distance;
+			
+			return;
 			
 		} else { /* inode is a CHANY */
 			ylow = node.ylow;
@@ -549,24 +566,27 @@ public class ConnectionRouter {
 			/* Count horizontal (orthogonal to inode) segs first. */
 
 			if (xlow > target_x) { /* Coming from a column right of target? */
-				distance += xlow - target_x + 1;
+				this.distance_ortho_dir = xlow - target_x + 1;
 				no_need_to_pass_by_clb = 1;
 			} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
-				distance += target_x - xlow;
+				this.distance_ortho_dir = target_x - xlow;
 				no_need_to_pass_by_clb = 1;
 			} else { /* In a column that passes by target CLB */
+				this.distance_ortho_dir = 0;
 				no_need_to_pass_by_clb = 0;
 			}
 
 			/* Now count vertical (same dir. as inode) segs. */
 
 			if (ylow > target_y + no_need_to_pass_by_clb) {
-				distance += ylow - no_need_to_pass_by_clb - target_y;
+				this.distance_same_dir = ylow - no_need_to_pass_by_clb - target_y;
 			} else if (yhigh < target_y - no_need_to_pass_by_clb) {
-				distance += target_y - no_need_to_pass_by_clb - yhigh;
+				this.distance_same_dir = target_y - no_need_to_pass_by_clb - yhigh;
+			} else {
+				this.distance_same_dir = 0;
 			}
 			
-			return distance;
+			return;
 		}
 	}
 	
@@ -607,9 +627,8 @@ public class ConnectionRouter {
 		//Bias cost
 		float bias_cost = 0;
 		if(node.isWire) {
-			final float beta = 0.5f; //TODO SWEEP
 			Net net = con.net;
-			bias_cost = beta * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
+			bias_cost = 0.5f * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
 		}
 
 		final int usage_multiplier = 10; //TODO SWEEP
