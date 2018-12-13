@@ -21,8 +21,6 @@ public class ConnectionRouter {
 	private float pres_fac, pres_fac_mult = 2;
 	private float alphaWLD = 1.4f;
 	
-	private float usage_multiplier = 10;
-	
 	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY;
 	private final List<Connection> criticalConnections;
 	
@@ -36,13 +34,16 @@ public class ConnectionRouter {
 	private final float COST_PER_DISTANCE_HORIZONTAL, COST_PER_DISTANCE_VERTICAL, DELAY_PER_DISTANCE_HORIZONTAL, DELAY_PER_DISTANCE_VERTICAL;
 	private int distance_same_dir, distance_ortho_dir;
 	private final float IPIN_BASE_COST;
-	private static final double MAX_CRITICALITY = 0.99;
-	private static double CRITICALITY_EXPONENT = 3;
+	private static final float MAX_CRITICALITY = 0.99f;
+	private static float CRITICALITY_EXPONENT = 3;
 	
 	private int connectionsRouted, nodesExpanded;
+	private int connectionsRoutedIteration;
 	
 	private int itry;
 	private boolean td;
+	
+	private RouteTimers routeTimers;
 	
 	public static final boolean DEBUG = true;
 	
@@ -68,10 +69,12 @@ public class ConnectionRouter {
 		
 		this.connectionsRouted = 0;
 		this.nodesExpanded = 0;
+		
+		this.routeTimers = new RouteTimers();
 	}
 	
 	private float getAverageCost(RouteNodeType type) {
-		double averageCost = 0;
+		float averageCost = 0;
 		int divider = 0;
 		for(RouteNode node : this.rrg.getRouteNodes()) {
 			if(node.type.equals(type)) {
@@ -79,40 +82,36 @@ public class ConnectionRouter {
 				divider += node.wireLength();
 			}
 		}
-		return (float)(averageCost / divider);
+		return averageCost / divider;
 	}
 	private float getAverageDelay(RouteNodeType type) {
-		double averageDelay = 0;
+		float averageDelay = 0;
 		int divider = 0;
 		for(RouteNode node : this.rrg.getRouteNodes()) {
 			if(node.type.equals(type)) {
-				averageDelay += node.indexedData.t_linear;
+				averageDelay += node.getDelay();
 				divider += node.wireLength();
 			}
 		}
-		return (float)(averageDelay / divider);
+		return averageDelay / divider;
 	}
     
-    public int route(float alphaWLD, float alphaTD, float presFacMult, float rerouteCriticality, float criticalityExponent, float usageMultiplier) {
+    public int route(float alphaWLD, float alphaTD, float presFacMult, float rerouteCriticality, float criticalityExponent) {
     	if(alphaWLD > 0) this.alphaWLD = alphaWLD;
     	if(alphaTD > 0) this.alphaTD = alphaTD;
-    	
-    	if(usageMultiplier > 0) this.usage_multiplier = usageMultiplier;
      	
     	if(rerouteCriticality > 0) MIN_REROUTE_CRITICALITY = rerouteCriticality;
     	if(criticalityExponent > 0) CRITICALITY_EXPONENT = criticalityExponent;
     	
     	if(presFacMult > 0) this.pres_fac_mult = presFacMult;
     	
-    	System.out.println("-------------------------------------------------------------------------------------------------");
-    	System.out.println("|                                       CONNECTION ROUTER                                       |");
-    	System.out.println("-------------------------------------------------------------------------------------------------");
+    	System.out.println("--------------------------------------------------------------------------------------------------------------");
+    	System.out.println("|                                             CONNECTION ROUTER                                              |");
+    	System.out.println("--------------------------------------------------------------------------------------------------------------");
     	System.out.println("Num nets: " + this.circuit.getNets().size());
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
 	
-		int timeMilliseconds = this.doRuntimeRouting(100, 4);
-		
-		//System.out.println(this.circuit.getTimingGraph().criticalPathToString());
+		int timeMilliseconds = this.doRuntimeRouting(25, 4);
 		
 		/***************************
 		 * OPIN tester: test if each
@@ -137,16 +136,19 @@ public class ConnectionRouter {
 		return timeMilliseconds;
 	}
     private int doRuntimeRouting(int nrOfTrials, int fixOpins) {
-    	System.out.printf("-------------------------------------------------------------------------------------------------\n");
+    	System.out.printf("--------------------------------------------------------------------------------------------------------------\n");
     	long start = System.nanoTime();
     	this.doRouting(nrOfTrials, fixOpins);
     	long end = System.nanoTime();
     	int timeMilliseconds = (int)Math.round((end-start) * Math.pow(10, -6));
-    	System.out.printf("-------------------------------------------------------------------------------------------------\n");
+    	System.out.printf("--------------------------------------------------------------------------------------------------------------\n");
     	System.out.println("Runtime " + timeMilliseconds + " ms");
 		System.out.println("Connections routed: " + this.connectionsRouted);
 		System.out.println("Nodes expanded: " + this.nodesExpanded);
-    	System.out.printf("-------------------------------------------------------------------------------------------------\n\n");
+		System.out.printf("--------------------------------------------------------------------------------------------------------------\n");
+		System.out.print(this.routeTimers);
+		System.out.printf("--------------------------------------------------------------------------------------------------------------\n\n");
+		
     	return timeMilliseconds;
     }
     private void doRouting(int nrOfTrials, int fixOpins) {
@@ -182,22 +184,24 @@ public class ConnectionRouter {
 		System.out.printf("%-22s | %.3e\n", "IPIN Base cost", IPIN_BASE_COST);
 		System.out.printf("%-22s | %.2f\n", "WLD Alpha", this.alphaWLD);
 		System.out.printf("%-22s | %.2f\n", "TD Alpha", this.alphaTD);
-		System.out.printf("%-22s | %.2f\n", "Usage multiplier", this.usage_multiplier);
 		System.out.printf("%-22s | %.2f\n", "Min reroute crit", MIN_REROUTE_CRITICALITY);
 		System.out.printf("%-22s | %d\n", "Max per crit con", MAX_PERCENTAGE_CRITICAL_CONNECTIONS);
 		System.out.printf("%-22s | %.1f\n", "Pres fac mult", pres_fac_mult);
 		
-        System.out.printf("-------------------------------------------------------------------------------------------------\n");
-        System.out.printf("%9s  %8s  %8s  %12s  %9s  %17s  %11s  %9s\n", "Iteration", "AlphaWLD", "AlphaTD", "Reroute Crit", "Time (ms)", "Overused RR Nodes", "Wire-Length", "Max Delay");
-        System.out.printf("---------  --------  --------  ------------  ---------  -----------------  -----------  ---------\n");
+        System.out.printf("--------------------------------------------------------------------------------------------------------------\n");
+        System.out.printf("%9s  %8s  %8s  %12s  %9s  %11s  %17s  %11s  %9s\n", "Iteration", "AlphaWLD", "AlphaTD", "Reroute Crit", "Time (ms)", "Conn routed", "Overused RR Nodes", "Wire-Length", "Max Delay");
+        System.out.printf("---------  --------  --------  ------------  ---------  -----------  -----------------  -----------  ---------\n");
         
         boolean validRouting = false;
         
         while (this.itry <= nrOfTrials) {
+    		this.connectionsRoutedIteration = 0;
+    		
         	validRouting = true;
         	long iterationStart = System.nanoTime();
 
         	//Fix opins in order of high fanout nets
+        	this.routeTimers.fixOpin.start();
         	if(this.itry >= fixOpins) {
             	for(Net net : sortedListOfNets) {
             		if(!net.hasOpin()) {
@@ -214,36 +218,55 @@ public class ConnectionRouter {
         	} else if(this.itry < fixOpins){
         		validRouting = false;
         	}
+        	this.routeTimers.fixOpin.finish();
         	
+        	this.routeTimers.setRerouteCriticality.start();
         	this.setRerouteCriticality(sortedListOfConnections);
+        	this.routeTimers.setRerouteCriticality.finish();
         	
         	//Route Connections
         	for(Connection con : sortedListOfConnections) {
 				if (this.itry == 1) {
+					this.routeTimers.firstIteration.start();
+					
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
 					
 					validRouting = false;
+					
+					this.routeTimers.firstIteration.finish();
 
 				} else if (con.congested()) {
+					this.routeTimers.rerouteCongestion.start();
+					
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
 					
 					validRouting = false;
+					
+					this.routeTimers.rerouteCongestion.finish();
 				
 				}else if (con.net.hasOpin() && !con.getOpin().equals(con.net.getOpin())) {
+					this.routeTimers.rerouteOpin.start();
+					
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
 					
 					validRouting = false;
 					
+					this.routeTimers.rerouteOpin.finish();
+					
 				} else if (con.getCriticality() > REROUTE_CRITICALITY) {
+					this.routeTimers.rerouteCritical.start();
+					
 					this.ripup(con);
 					this.route(con);
 					this.add(con);
+					
+					this.routeTimers.rerouteCritical.finish();
 				}
 			}
 			
@@ -251,18 +274,25 @@ public class ConnectionRouter {
 			
 			//Update timing and criticality
 			if(this.td) {
-				double old_delay = this.circuit.getTimingGraph().getMaxDelay();
+				this.routeTimers.updateTiming.start();
+				
+				float old_delay = this.circuit.getTimingGraph().getMaxDelay();
 				
 				this.circuit.getTimingGraph().calculateActualWireDelay();
 				this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
 				
-				double maxDelay = this.circuit.getTimingGraph().getMaxDelay();
+				float maxDelay = this.circuit.getTimingGraph().getMaxDelay();
 				if(maxDelay < old_delay) {
 					validRouting = false;
 				}
 				
 				maxDelayString = String.format("%9.3f", maxDelay);
+				
+				this.routeTimers.updateTiming.finish();
 			}
+			
+			
+			this.routeTimers.calculateStatistics.start();
 			
 			int numRouteNodes = this.rrg.getRouteNodes().size();
 			int overUsed = this.calculateNumOverusedNodes(sortedListOfConnections);
@@ -283,19 +313,25 @@ public class ConnectionRouter {
 			//Check if the routing is realizable, if realizable return, the routing succeeded 
 			if (validRouting){
 				this.circuit.setConRouted(true);
-
+				
+				this.routeTimers.calculateStatistics.finish();
+				
 				return;
 			} else {
-				System.out.printf("%9d  %8.2f  %8.2f  %12.3f  %9d  %8d  %6.2f%%  %11d  %s\n", this.itry, this.alphaWLD, this.alphaTD, REROUTE_CRITICALITY, rt, overUsed, overUsePercentage, wireLength, maxDelayString);
+				System.out.printf("%9d  %8.2f  %8.2f  %12.3f  %9d  %11d  %8d  %6.2f%%  %11d  %s\n", this.itry, this.alphaWLD, this.alphaTD, REROUTE_CRITICALITY, rt, this.connectionsRoutedIteration, overUsed, overUsePercentage, wireLength, maxDelayString);
 			}
 			
+			this.routeTimers.calculateStatistics.finish();
+			
 			//Updating the cost factors
+			this.routeTimers.updateCost.start();
 			if (this.itry == 1) {
 				this.pres_fac = initial_pres_fac;
 			} else {
 				this.pres_fac *= pres_fac_mult;
 			}
 			this.updateCost(this.pres_fac, acc_fac);
+			this.routeTimers.updateCost.finish();
 			
 			this.itry++;
 		}
@@ -328,14 +364,15 @@ public class ConnectionRouter {
 			}
 			System.out.println();
 		}
+		
 		return;
     }
     private int calculateNumOverusedNodes(List<Connection> connections) {
-        Set<RouteNode> overUsed = new HashSet<>();
+        Set<Integer> overUsed = new HashSet<>();
 		for (Connection conn : connections) {
 			for (RouteNode node : conn.routeNodes) {
 				if (node.overUsed()) {
-					overUsed.add(node);
+					overUsed.add(node.hashCode());
 				}
 			}
 		}
@@ -382,6 +419,7 @@ public class ConnectionRouter {
 	}
 	private boolean route(Connection con) {
 		this.connectionsRouted++;
+		this.connectionsRoutedIteration++;
 		
 		// Clear Routing
 		con.resetConnection();
@@ -468,7 +506,7 @@ public class ConnectionRouter {
 				}
 			
 			//IPIN
-			} else if (child.type ==  RouteNodeType.IPIN) {
+			} else if (child.type == RouteNodeType.IPIN) {
 				if(child.children[0].target) {
 					this.addNodeToQueue(node, child, con);
 				}
@@ -500,17 +538,17 @@ public class ConnectionRouter {
 			
 			this.set_expected_distance_to_target(child, target);
 			
-			float distance_cost, expected_timing_cost;
+			float expected_distance_cost, expected_timing_cost;
 			
 			if(child.type.equals(RouteNodeType.CHANX)) {
-				distance_cost = this.distance_same_dir * COST_PER_DISTANCE_HORIZONTAL + this.distance_ortho_dir * COST_PER_DISTANCE_VERTICAL;
+				expected_distance_cost = this.distance_same_dir * COST_PER_DISTANCE_HORIZONTAL + this.distance_ortho_dir * COST_PER_DISTANCE_VERTICAL;
 				expected_timing_cost = this.distance_same_dir * DELAY_PER_DISTANCE_HORIZONTAL + this.distance_ortho_dir * DELAY_PER_DISTANCE_VERTICAL;
 			} else {
-				distance_cost = this.distance_same_dir * COST_PER_DISTANCE_VERTICAL + this.distance_ortho_dir * COST_PER_DISTANCE_HORIZONTAL;
+				expected_distance_cost = this.distance_same_dir * COST_PER_DISTANCE_VERTICAL + this.distance_ortho_dir * COST_PER_DISTANCE_HORIZONTAL;
 				expected_timing_cost = this.distance_same_dir * DELAY_PER_DISTANCE_VERTICAL + this.distance_ortho_dir * DELAY_PER_DISTANCE_HORIZONTAL;
 			}
 			
-			float expected_wire_cost = distance_cost / (1 + countSourceUses) + IPIN_BASE_COST;
+			float expected_wire_cost = expected_distance_cost / (1 + countSourceUses) + IPIN_BASE_COST;
 			new_lower_bound_total_path_cost = new_partial_path_cost + this.alphaWLD * (1 - con.getCriticality()) * expected_wire_cost + this.alphaTD * con.getCriticality() * expected_timing_cost;
 		
 		} else {
@@ -521,9 +559,11 @@ public class ConnectionRouter {
 	}
 	
 	public void set_expected_distance_to_target(RouteNode node, RouteNode target) {
-		/* Returns the number of segments the same type as inode that will be needed *
-		 * to reach target_node (not including inode) in each direction (the same    *
-		 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
+		/************************************************************************************* 
+		 * Returns the distance that will be needed to reach target_node (not including inode) 
+		 * in each direction (the same direction (horizontal or vertical) as inode and the 
+		 * orthogonal direction).
+		 *************************************************************************************/
 		RouteNodeType type = node.type;
 		
 		short ylow, yhigh, xlow, xhigh;
@@ -617,6 +657,7 @@ public class ConnectionRouter {
 		
 		boolean containsSource = countSourceUses != 0;
 		
+		//Present congestion cost
 		float pres_cost;
 		if (containsSource) {
 			int overoccupation = data.numUniqueSources() - node.capacity;
@@ -636,7 +677,7 @@ public class ConnectionRouter {
 			bias_cost = 0.5f * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
 		}
 
-		return node.base_cost * data.acc_cost * pres_cost / (1 + (this.usage_multiplier * countSourceUses)) + bias_cost;
+		return node.base_cost * data.acc_cost * pres_cost / (1 + countSourceUses) + bias_cost;
 	}
 	
 	private void updateCost(float pres_fac, float acc_fac){
