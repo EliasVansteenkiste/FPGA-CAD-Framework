@@ -29,10 +29,6 @@ public class RouteSwitch {
 		this.buf_size = Float.parseFloat(words[15]);
 	}
 	
-	public double getDelay() {
-		return this.tdel;
-	}
-	
 	@Override
 	public String toString() {
 		String result = "";

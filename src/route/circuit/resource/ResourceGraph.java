@@ -422,12 +422,12 @@ public class ResourceGraph {
 				RouteNode child = node.children[i];
 				RouteSwitch routeSwitch = node.switches[i];
 				
-				child.setDrivingRouteSwitch(routeSwitch);
+				child.setDelay(routeSwitch);
 			}
 		}
 		for(RouteNode node : this.routeNodeMap.get(RouteNodeType.SOURCE)) {
 			Source source = (Source) node;
-			source.setDrivingRouteSwitch(null);
+			source.setDelay(null);
 		}
 		
 		System.out.println();

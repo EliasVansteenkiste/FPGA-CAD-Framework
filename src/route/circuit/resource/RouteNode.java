@@ -13,9 +13,8 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	public float delay;
 	public final float r;
 	public final float c;
-	public RouteSwitch drivingRouteSwitch;
 	
-	public float base_cost;
+	public final float base_cost;
 	
 	public boolean isOpin;
 	
@@ -61,7 +60,6 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		this.r = r;
 		this.c = c;
 		this.delay = -1;
-		this.drivingRouteSwitch = null;
 		
 		if(this.isWire) {
 			this.base_cost = this.indexedData.getBaseCost() * this.wireLength();
@@ -173,12 +171,11 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		data.occupation = occ;
 	}
 	
-	public void setDrivingRouteSwitch(RouteSwitch drivingRouteSwitch) {
-		this.drivingRouteSwitch = drivingRouteSwitch;
+	public void setDelay(RouteSwitch drivingRouteSwitch) {
 		if(this.type == RouteNodeType.SOURCE || this.type == RouteNodeType.SINK) {
 			this.delay = 0;
 		} else {
-			this.delay = this.c * (this.drivingRouteSwitch.r + 0.5f * this.r) + this.drivingRouteSwitch.tdel;
+			this.delay = this.c * (drivingRouteSwitch.r + 0.5f * this.r) + drivingRouteSwitch.tdel;
 		}
 	}
 	

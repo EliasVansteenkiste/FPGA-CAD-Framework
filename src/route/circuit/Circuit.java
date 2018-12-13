@@ -398,24 +398,13 @@ public class Circuit {
         }
     }
 
-    /*************************
-     * Timing graph wrapping *
-     *************************/
     public TimingGraph getTimingGraph() {
         return this.timingGraph;
     }
 
-    public double calculateTimingCost() {
-        return this.timingGraph.calculateTotalCost();
-    }
-    public double getMaxDelay() {
-        return this.timingGraph.getMaxDelay();
-    }
-    
     public List<GlobalBlock> getGlobalBlocks() {
         return this.globalBlockList;
     }
-
 
     /*****************
      * Default stuff *
