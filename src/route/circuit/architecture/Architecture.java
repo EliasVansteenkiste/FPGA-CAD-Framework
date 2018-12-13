@@ -55,7 +55,7 @@ public class Architecture implements Serializable {
     private final String circuitName;
     
     private transient Map<String, Boolean> modelIsClocked = new HashMap<>();
-    private transient List<Pair<PortType, Double>> setupTimes = new ArrayList<>();
+    private transient List<Pair<PortType, Float>> setupTimes = new ArrayList<>();
     
     private transient List<DelayElement> delayElements = new ArrayList<>();
     
@@ -668,7 +668,7 @@ public class Architecture implements Serializable {
 
         String[] delays = delayMatrixElement.getTextContent().split("\\s+");
         int index = delays[0].length() > 0 ? 0 : 1;
-        double delay = Double.parseDouble(delays[index]);
+        float delay = Float.parseFloat(delays[index]);
 
         this.delayElements.add(new DelayElement(-1, sourcePortType, -1 , -1, sinkPortType, -1, delay));
 
@@ -730,7 +730,7 @@ public class Architecture implements Serializable {
             PortType sourcePortType = new PortType(parentBlockType, sourcePortName);
             PortType sinkPortType = new PortType(memoryBlockType, sourcePortName);
 
-            double delay = Double.parseDouble(setupElement.getAttribute("value"));
+            float delay = Float.parseFloat(setupElement.getAttribute("value"));
             
             this.delayElements.add(new DelayElement(-1, sourcePortType, -1 , -1, sinkPortType, -1, delay));
         }
@@ -743,7 +743,7 @@ public class Architecture implements Serializable {
             PortType sourcePortType = new PortType(memoryBlockType, sinkPortName);
             PortType sinkPortType = new PortType(parentBlockType, sinkPortName);
             
-            double delay = Double.parseDouble(clockToPortElement.getAttribute("max"));
+            float delay = Float.parseFloat(clockToPortElement.getAttribute("max"));
             
             this.delayElements.add(new DelayElement(-1, sourcePortType, -1 , -1, sinkPortType, -1, delay));
         }
@@ -758,9 +758,9 @@ public class Architecture implements Serializable {
         for(Element setupElement : setupElements) {
             String portName = setupElement.getAttribute("port").split("\\.")[1];
             PortType portType = new PortType(blockType, portName);
-            double delay = Double.parseDouble(setupElement.getAttribute("value"));
+            float delay = Float.parseFloat(setupElement.getAttribute("value"));
 
-            this.setupTimes.add(new Pair<PortType, Double>(portType, delay));
+            this.setupTimes.add(new Pair<PortType, Float>(portType, delay));
         }
 
         // Process clock to port times
@@ -768,9 +768,9 @@ public class Architecture implements Serializable {
         for(Element clockToPortElement : clockToPortElements) {
             String portName = clockToPortElement.getAttribute("port").split("\\.")[1];
             PortType portType = new PortType(blockType, portName);
-            double delay = Double.parseDouble(clockToPortElement.getAttribute("max"));
+            float delay = Float.parseFloat(clockToPortElement.getAttribute("max"));
 
-            this.setupTimes.add(new Pair<PortType, Double>(portType, delay));
+            this.setupTimes.add(new Pair<PortType, Float>(portType, delay));
         }
 
         // ASM: delay_matrix elements only occur in blocks of class "lut"
@@ -803,7 +803,7 @@ public class Architecture implements Serializable {
         for(Element element : elements) {
             for(Element delayConstantElement : this.getChildElementsByTagName(element, "delay_constant")) {
 
-                double delay = Double.parseDouble(delayConstantElement.getAttribute("max"));
+                float delay = Float.parseFloat(delayConstantElement.getAttribute("max"));
                 String[] sourcePorts = delayConstantElement.getAttribute("in_port").split("\\s+");
                 String[] sinkPorts = delayConstantElement.getAttribute("out_port").split("\\s+");
 
@@ -818,7 +818,7 @@ public class Architecture implements Serializable {
         }
     }
 
-    private void cacheDelay(List<BlockType> blockTypes, String sourcePort, String sinkPort, double delay) {
+    private void cacheDelay(List<BlockType> blockTypes, String sourcePort, String sinkPort, float delay) {
     	//SOURCE PORT
     	List<Integer> sourceBlockIndexes = new ArrayList<>();
     	List<Integer> sourcePortIndexes = new ArrayList<>();
@@ -925,9 +925,9 @@ public class Architecture implements Serializable {
     }
     
     private void processDelays() {
-        for(Pair<PortType, Double> setupTimeEntry : this.setupTimes) {
+        for(Pair<PortType, Float> setupTimeEntry : this.setupTimes) {
             PortType portType = setupTimeEntry.getFirst();
-            double delay = setupTimeEntry.getSecond();
+            float delay = setupTimeEntry.getSecond();
 
             portType.setSetupTime(delay);
         }

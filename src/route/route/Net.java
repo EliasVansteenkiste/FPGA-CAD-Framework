@@ -185,7 +185,7 @@ public class Net {
 			}
 		}
 		Opin bestOpin = null;
-		double maxOpinImportance = 0;
+		float maxOpinImportance = 0;
 		for(Opin opin : opinImportance.keySet()) {
 			if(opinImportance.get(opin) > maxOpinImportance) {
 				bestOpin = opin;

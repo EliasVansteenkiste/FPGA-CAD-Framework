@@ -119,13 +119,16 @@ public class Connection implements Comparable<Connection>  {
 		this.routeNodes.clear();
 	}
 	
-	public void setWireDelay(double wireDelay) {
+	public void setWireDelay(float wireDelay) {
 		this.timingEdge.setWireDelay(wireDelay);
 	}
-	public void calculateCriticality(double maxDelay, double maxCriticality, double criticalityExponent) {
+	public void calculateCriticality(float maxDelay, float maxCriticality, float criticalityExponent) {
 		this.timingEdge.calculateCriticality(maxDelay, maxCriticality, criticalityExponent);
 		
-		this.criticality = (float) this.timingEdge.getCriticality();
+		this.criticality = this.timingEdge.getCriticality();
+	}
+	public void resetCriticality() {
+		this.timingEdge.resetCriticality();
 	}
 	
 	public float getCriticality() {

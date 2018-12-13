@@ -9,9 +9,9 @@ public class DelayElement {
     public final int sinkBlockIndex;
     public final int sourcePortIndex;
     public final int sinkPortIndex;
-    public final double delay;
+    public final float delay;
     
-    public DelayElement(int sourceBlockIndex, PortType sourcePortType, int sourcePortIndex, int sinkBlockIndex, PortType sinkPortType, int sinkPortIndex, double delay) {
+    public DelayElement(int sourceBlockIndex, PortType sourcePortType, int sourcePortIndex, int sinkBlockIndex, PortType sinkPortType, int sinkPortIndex, float delay) {
         this.sourcePortType = sourcePortType;
         this.sinkPortType = sinkPortType;
         this.sourcePortTypeIndex = this.sourcePortType.getPortTypeIndex();

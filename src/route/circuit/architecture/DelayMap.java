@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DelayMap {
-	private Map<Long, Double> delayMap;
+	private Map<Long, Float> delayMap;
 	
 	public DelayMap() {
 		this.delayMap = new HashMap<>();
@@ -14,7 +14,7 @@ public class DelayMap {
 		this.delayMap.put(this.delayId(d.sourceBlockIndex, d.sourcePortIndex, d.sinkBlockIndex, d.sinkPortIndex), d.delay);
 	}
 	
-	public Double get(int sourceBlockIndex, int sourcePortIndex, int sinkBlockIndex, int sinkPortIndex) {
+	public Float get(int sourceBlockIndex, int sourcePortIndex, int sinkBlockIndex, int sinkPortIndex) {
 		for (int i : new int[]{sourceBlockIndex, -1}) {
 			for (int j : new int[]{sourcePortIndex, -1}) {
 				
@@ -25,7 +25,7 @@ public class DelayMap {
 						
 						long sinkId = cantor_pairing_function(k+1, l+1);
 						
-						Double delay = this.delayMap.get(this.delayId(sourceId, sinkId));
+						Float delay = this.delayMap.get(this.delayId(sourceId, sinkId));
 						if(delay != null) {
 							return delay;
 						}

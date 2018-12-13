@@ -33,7 +33,7 @@ public class PortTypeData implements Serializable {
     private List<int[]> portRanges = new ArrayList<>();
     private List<Boolean> portEquivalence = new ArrayList<>();
 
-    private Map<Long, Double> delays = new HashMap<>();
+    private Map<Long, Float> delays = new HashMap<>();
     private Map<Long, DelayMap> delayMaps = new HashMap<>();
 
     // These lists contain one element for each block type
@@ -196,7 +196,7 @@ public class PortTypeData implements Serializable {
         return this.carryOffsetsY.get(blockTypeIndex);
     }
 
-    void setSetupTime(int portTypeIndex, double delay) {
+    void setSetupTime(int portTypeIndex, float delay) {
     	// This method can be used both to set the setup time ("T_setup" in architecture files)
     	// and clock to port time ("T_clock_to_Q")
     	// Which of the two it is, depends on whether the port is an input or output
@@ -204,7 +204,7 @@ public class PortTypeData implements Serializable {
     	long delayId = this.delayId(portTypeIndex, portTypeIndex);
     	this.setDelay(delayId, delay);
     }
-    double getSetupTime(int portTypeIndex) {
+    float getSetupTime(int portTypeIndex) {
     	long delayId = this.delayId(portTypeIndex, portTypeIndex);
     	return this.getDelay(delayId);
     }
@@ -225,17 +225,17 @@ public class PortTypeData implements Serializable {
     		delayMap.add(d);
     	}
     }
-    private void setDelay(long delayId, double delay) {
+    private void setDelay(long delayId, float delay) {
     	this.delays.put(delayId, delay);
     }
     
     /**************
      *  Get Delay * 
      **************/
-    public Double getDelay(int sourceBlockIndex, int sourcePortTypeIndex, int sourcePortIndex, int sinkBlockIndex, int sinkPortTypeIndex, int sinkPortIndex) {
+    public Float getDelay(int sourceBlockIndex, int sourcePortTypeIndex, int sourcePortIndex, int sinkBlockIndex, int sinkPortTypeIndex, int sinkPortIndex) {
     	long delayId = this.delayId(sourcePortTypeIndex, sinkPortTypeIndex);
     	
-    	Double delay = null;
+    	Float delay = null;
     	DelayMap delayMap = this.delayMaps.get(delayId);
     	
     	if(delayMap != null) delay = delayMap.get(sourceBlockIndex, sourcePortIndex, sinkBlockIndex, sinkPortIndex);
@@ -243,8 +243,8 @@ public class PortTypeData implements Serializable {
     	return delay == null ? this.getDelay(delayId) : delay;
     }
     
-    private double getDelay(long delayId) {
-        Double delay = this.delays.get(delayId);
+    private float getDelay(long delayId) {
+        Float delay = this.delays.get(delayId);
         return delay == null ? 0 : delay;
     }
 

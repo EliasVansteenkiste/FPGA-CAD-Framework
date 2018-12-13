@@ -4,13 +4,13 @@ import route.circuit.architecture.BlockCategory;
 import route.circuit.architecture.DelayTables;
 
 public class TimingEdge {
-	private double fixedDelay, wireDelay;
-	private double slack, criticality;
+	private float fixedDelay, wireDelay;
+	private float slack, criticality;
 	
 	private final DelayTables delayTables;
 	private final TimingNode source, sink;
 
-    TimingEdge(double fixedDelay, TimingNode source, TimingNode sink, DelayTables delayTables){
+    TimingEdge(float fixedDelay, TimingNode source, TimingNode sink, DelayTables delayTables){
         this.fixedDelay = fixedDelay;
         this.wireDelay = 0;
         
@@ -27,13 +27,6 @@ public class TimingEdge {
     	return this.sink;
     }
 
-    public double getFixedDelay(){
-        return this.fixedDelay;
-    }
-    public void setFixedDelay(double fixedDelay){
-        this.fixedDelay = fixedDelay;
-    }
-
     public void calculatePlacementEstimatedWireDelay(){
         int deltaX = Math.abs(this.source.getGlobalBlock().getColumn() - this.sink.getGlobalBlock().getColumn());
         int deltaY = Math.abs(this.source.getGlobalBlock().getRow() - this.sink.getGlobalBlock().getRow());
@@ -43,32 +36,31 @@ public class TimingEdge {
 
         this.wireDelay = this.delayTables.getDelay(fromCategory, toCategory, deltaX, deltaY);
     }
-    public void setWireDelay(double wireDelay){
+    public void setWireDelay(float wireDelay){
         this.wireDelay = wireDelay;
     }
 
-    public double getTotalDelay(){
+    public float getTotalDelay(){
         return this.fixedDelay + this.wireDelay;
     }
 
-    public double getCost() {
+    public float getCost() {
         return this.criticality * this.wireDelay;
     }
 
-    void resetSlack(){
-        this.slack = 0;
+    public void resetCriticality(){
         this.criticality = 0;
     }
 
-    public double getCriticality(){
+    public float getCriticality(){
         return this.criticality;
     }
     
-    public void calculateCriticality(double maxDelay, double maxCriticality, double criticalityExponent) {
+    public void calculateCriticality(float maxDelay, float maxCriticality, float criticalityExponent) {
     	if(this.source.hasArrivalTime() && this.sink.hasRequiredTime()) {
         	this.slack = this.sink.getRequiredTime() - this.source.getArrivalTime() - this.getTotalDelay();
-        	double tempCriticality  = (1 - (maxDelay + this.slack) / maxDelay);
-        	tempCriticality = Math.pow(tempCriticality, criticalityExponent) * maxCriticality;
+        	float tempCriticality  = (1 - (maxDelay + this.slack) / maxDelay);
+        	tempCriticality = (float) (Math.pow(tempCriticality, criticalityExponent) * maxCriticality);
         	
         	if(tempCriticality > this.criticality) this.criticality = tempCriticality;
     	}

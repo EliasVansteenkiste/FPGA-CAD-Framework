@@ -24,7 +24,7 @@ public class TimingNode {
     
     private int numSources = 0, numSinks = 0;
 
-    private double arrivalTime, requiredTime;
+    private float arrivalTime, requiredTime;
     private boolean hasArrivalTime, hasRequiredTime;
 
     //Tarjan's strongly connected components algorithm
@@ -67,7 +67,7 @@ public class TimingNode {
     	this.sourceEdges.add(edge);
     	this.numSources++;
     }
-    TimingEdge addSink(TimingNode sink, double delay, DelayTables delayTables) {
+    TimingEdge addSink(TimingNode sink, float delay, DelayTables delayTables) {
         TimingEdge edge = new TimingEdge(delay, this, sink, delayTables);
 
         this.sinkEdges.add(edge);
@@ -116,28 +116,33 @@ public class TimingNode {
         return this.sinkEdges.get(sinkIndex);
     }
     
+    void resetArrivalAndRequiredTime() {
+        this.hasArrivalTime = false;
+        this.hasRequiredTime = false;
+    }
+    
     //Arrival time
     void resetArrivalTime() {
         this.hasArrivalTime = false;
     }
-    void setArrivalTime(double arrivalTime) {
+    void setArrivalTime(float arrivalTime) {
     	this.arrivalTime = arrivalTime;
     	this.hasArrivalTime = true;
     }
     boolean hasArrivalTime() {
     	return this.hasArrivalTime;
     }
-    double getArrivalTime() {
+    float getArrivalTime() {
     	return this.arrivalTime;
     }
-	double recursiveArrivalTime(int sourceClockDomain) {
+	float recursiveArrivalTime(int sourceClockDomain) {
 		if(this.hasArrivalTime()) {
 			return this.getArrivalTime();
 		} else {
-			double maxArrivalTime = 0.0;
+			float maxArrivalTime = 0;
 			for(TimingEdge edge:this.sourceEdges) {
 				if(edge.getSource().hasClockDomainAsSource[sourceClockDomain]) {
-					double localArrivalTime = edge.getSource().recursiveArrivalTime(sourceClockDomain) + edge.getTotalDelay();
+					float localArrivalTime = edge.getSource().recursiveArrivalTime(sourceClockDomain) + edge.getTotalDelay();
 					if(localArrivalTime > maxArrivalTime) {
 						maxArrivalTime = localArrivalTime;
 					}
@@ -153,29 +158,28 @@ public class TimingNode {
     void resetRequiredTime() {
     	this.hasRequiredTime = false;
     }
-    void setRequiredTime(double requiredTime) {
+    void setRequiredTime(float requiredTime) {
     	this.requiredTime = requiredTime;
     	this.hasRequiredTime = true;
     }
     boolean hasRequiredTime() {
     	return this.hasRequiredTime;
     }
-    double getRequiredTime() {
+    float getRequiredTime() {
     	return this.requiredTime;
     }
-    double recursiveRequiredTime(int sinkClockDomain) {
+    float recursiveRequiredTime(int sinkClockDomain) {
     	if(this.hasRequiredTime()) {
     		return this.getRequiredTime();
     	}else {
-			double minRequiredTime = 0.0;
+			float minRequiredTime = 0;
 			for(TimingEdge edge:this.sinkEdges) {
 				if(edge.getSink().hasClockDomainAsSink[sinkClockDomain]) {
-					double localRequiredTime = edge.getSink().recursiveRequiredTime(sinkClockDomain) - edge.getTotalDelay();
+					float localRequiredTime = edge.getSink().recursiveRequiredTime(sinkClockDomain) - edge.getTotalDelay();
 					if(localRequiredTime < minRequiredTime) {
 						minRequiredTime = localRequiredTime;
 					}
 				}
-				
 			}
 			this.setRequiredTime(minRequiredTime);
 			return this.getRequiredTime();

@@ -44,8 +44,8 @@ public class TimingGraph {
     private String[] clockNames;
     private boolean clockDomainsSet;
     private boolean[][] includeClockDomain;
-    private double[][] maxDelay;
-    private double globalMaxDelay;
+    private float[][] maxDelay;
+    private float globalMaxDelay;
     
     //Tarjan's strongly connected components algorithm
     private int index;
@@ -153,7 +153,7 @@ public class TimingGraph {
     }
 
     private void buildGraph() {
-        List<Double> clockDelays = new ArrayList<Double>();
+        List<Float> clockDelays = new ArrayList<Float>();
 
         // Create all timing nodes
         for(BlockType leafBlockType : BlockType.getLeafBlockTypes()) {
@@ -165,9 +165,9 @@ public class TimingGraph {
 
                 // Get the clock domain and clock setup time
                 int clockDomain = -1;
-                double clockDelay = 0;
+                float clockDelay = 0;
                 if(isClocked) {
-                    Pair<Integer, Double> clockDomainAndDelay = this.getClockDomainAndDelay(block);
+                    Pair<Integer, Float> clockDomainAndDelay = this.getClockDomainAndDelay(block);
                     clockDomain = clockDomainAndDelay.getFirst();
 
                     // We don't include the clock setup time in the critical path delay,
@@ -193,7 +193,7 @@ public class TimingGraph {
                         		TimingNode node = new TimingNode(block.getGlobalParent(), inputPin, Position.LEAF, clockDomain);
                         		inputPin.setTimingNode(node);
                         		
-                        		clockDelays.add(0.0);
+                        		clockDelays.add(0f);
                         		this.timingNodes.add(node);
                         		
                         		this.clockDomainFanout.put(clockDomain, this.clockDomainFanout.get(clockDomain) + 1);
@@ -217,7 +217,7 @@ public class TimingGraph {
                     	if(position == Position.ROOT) {
                     		clockDelays.add(clockDelay + outputPin.getPortType().getSetupTime());
                     	} else {
-                    		clockDelays.add(0.0);
+                    		clockDelays.add(0f);
                     	}
                     }
                 }
@@ -242,7 +242,7 @@ public class TimingGraph {
             			
             			this.timingNodes.add(node);  
             			
-            			clockDelays.add(0.0);
+            			clockDelays.add(0f);
             		}
         		}
         	}
@@ -258,7 +258,7 @@ public class TimingGraph {
             			
             			this.timingNodes.add(node);  
             			
-            			clockDelays.add(0.0);
+            			clockDelays.add(0f);
             		}
         		}
         	}
@@ -314,13 +314,13 @@ public class TimingGraph {
         return true;
     }
 
-    private Pair<Integer, Double> getClockDomainAndDelay(LeafBlock block) {
+    private Pair<Integer, Float> getClockDomainAndDelay(LeafBlock block) {
         /**
          * This method should only be called for clocked blocks.
          */
 
         String clockName;
-        double clockDelay = 0;
+        float clockDelay = 0;
 
         // If the block is an input
         if(block.getGlobalParent().getCategory() == BlockCategory.IO) {
@@ -361,10 +361,10 @@ public class TimingGraph {
                 this.numClockDomains++;
             }
         }
-        return new Pair<Integer, Double>(this.clockNamesToDomains.get(clockName), clockDelay);
+        return new Pair<Integer, Float>(this.clockNamesToDomains.get(clockName), clockDelay);
     }
 
-    private void traverseFromSource(TimingNode pathSourceNode, double clockDelay) {
+    private void traverseFromSource(TimingNode pathSourceNode, float clockDelay) {
 
         GlobalBlock pathSourceBlock = pathSourceNode.getGlobalBlock();
         AbstractPin pathSourcePin = pathSourceNode.getPin();
@@ -377,7 +377,7 @@ public class TimingGraph {
         while(!todo.empty()) {
             TraversePair traverseEntry = todo.pop();
             AbstractPin sourcePin = traverseEntry.pin;
-            double delay = traverseEntry.delay;
+            float delay = traverseEntry.delay;
 
             AbstractBlock sourceBlock = sourcePin.getOwner();
             PortType sourcePortType = sourcePin.getPortType();
@@ -409,10 +409,10 @@ public class TimingGraph {
                 }
                 for(AbstractPin sinkPin : sinkPins) {
                     if(sinkPin != null) {
-                        double sourceSinkDelay = sourcePortType.getDelay(sinkPin.getPortType(), sourcePin.getOwner().getIndex(), sinkPin.getOwner().getIndex(), sourcePin.getIndex(), sinkPin.getIndex());
+                        float sourceSinkDelay = sourcePortType.getDelay(sinkPin.getPortType(), sourcePin.getOwner().getIndex(), sinkPin.getOwner().getIndex(), sourcePin.getIndex(), sinkPin.getIndex());
                         
                         if(sourceSinkDelay >= 0.0){ // Only consider existing connections
-                            double totalDelay = delay + sourceSinkDelay;
+                            float totalDelay = delay + sourceSinkDelay;
 
                             // Loops around an unclocked block are rare, but not inexistent.
                             // The proper way to handle these is probably to add the loop
@@ -437,9 +437,9 @@ public class TimingGraph {
 
     private class TraversePair {
         AbstractPin pin;
-        double delay;
+        float delay;
 
-        TraversePair(AbstractPin pin, double delay) {
+        TraversePair(AbstractPin pin, float delay) {
             this.pin = pin;
             this.delay = delay;
         }
@@ -514,9 +514,7 @@ public class TimingGraph {
     	}
 
     	long end = System.nanoTime();
-    	double time = (end - start) * 1e-9;
-
-    	System.out.printf("\n\tcut loops took %.2f s\n\n", time);
+    	System.out.printf("\n\tcut loops took %.2f s\n\n", (end - start) * 1e-9);
     }
     private void strongConnect(TimingNode v){
     	v.setIndex(this.index);
@@ -586,8 +584,8 @@ public class TimingGraph {
     /****************************************************************
      * These functions calculate the criticality of all connections *
      ****************************************************************/
-    public double getMaxDelay() {
-        return 1e9 * this.globalMaxDelay;
+    public float getMaxDelay() {
+        return 1e9f * this.globalMaxDelay;
     }
 
     public void calculatePlacementEstimatedWireDelay() {
@@ -598,7 +596,7 @@ public class TimingGraph {
     public void calculateActualWireDelay() {
     	//Set wire delay of the connections
     	for(Connection connection : this.circuit.getConnections()) {
-    		double wireDelay = 0.0;
+    		float wireDelay = 0;
     		for(RouteNode routeNode : connection.routeNodes) {
     			wireDelay += routeNode.getDelay();
     		}
@@ -606,22 +604,21 @@ public class TimingGraph {
     	}
     }
 
-    public void calculateArrivalRequiredAndCriticality(double maxCriticality, double criticalityExponent) {
+    public void calculateArrivalRequiredAndCriticality(float maxCriticality, float criticalityExponent) {
     	//Initialization
         this.globalMaxDelay = 0;
         
-        for(TimingEdge edge : this.timingEdges) {
-        	edge.resetSlack();
+        for(Connection connection : this.circuit.getConnections()) {
+        	connection.resetCriticality();
         }
         
         for(int sourceClockDomain = 0; sourceClockDomain < this.numClockDomains; sourceClockDomain++) {
         	for(int sinkClockDomain = 0; sinkClockDomain < this.numClockDomains; sinkClockDomain++) {
         		if(this.includeClockDomain(sourceClockDomain, sinkClockDomain)) {
-        			double maxDelay = 0;
+        			float maxDelay = 0;
         			
         			for(TimingNode node : this.timingNodes) {
-        				node.resetArrivalTime();
-        				node.resetRequiredTime();
+        				node.resetArrivalAndRequiredTime();
         			}
                 	
         			List<TimingNode> clockDomainRootNodes = this.rootNodes.get(sourceClockDomain);
@@ -629,7 +626,7 @@ public class TimingGraph {
         			
         			//Arrival time
         			for(TimingNode rootNode: clockDomainRootNodes){
-        				rootNode.setArrivalTime(0.0);
+        				rootNode.setArrivalTime(0);
         			}
         			for(TimingNode leafNode: clockDomainLeafNodes){
         				leafNode.recursiveArrivalTime(sourceClockDomain);
@@ -645,7 +642,7 @@ public class TimingGraph {
 
         			//Required time
         			for(TimingNode leafNode: clockDomainLeafNodes) {
-        				leafNode.setRequiredTime(0.0);
+        				leafNode.setRequiredTime(0);
         			}
         			for(TimingNode rootNode: clockDomainRootNodes) {
         				rootNode.recursiveRequiredTime(sinkClockDomain);
@@ -660,91 +657,13 @@ public class TimingGraph {
         }
     }
     
-//    public String criticalPathToString() {
-//    	List<TimingNode> criticalPath = new ArrayList<>();
-//		TimingNode node = this.getEndNodeOfCriticalPath();
-//		criticalPath.add(node);
-//		while(!node.getSourceEdges().isEmpty()){
-//    		node = this.getSourceNodeOnCriticalPath(node);
-//    		criticalPath.add(node);
-//    	}
-//    	
-//    	int maxLen = 25;
-//    	for(TimingNode criticalNode:criticalPath){
-//    		if(criticalNode.toString().length() > maxLen){
-//    			maxLen = criticalNode.toString().length();
-//    		}
-//    	}
-//    	
-//    	System.out.println();
-//    	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
-//    	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %9s %6s %8s\n", delay, "x", "y", "Tarr (ns)", "Clock", "Position");
-//    	result += String.format("%-" + maxLen + "s..%3s.%3s..%9s..%5s..%8s\n","","","","","","").replace(" ", "-").replace(".", " ");
-//    	for(TimingNode criticalNode:criticalPath){
-//    		result += this.printNode(criticalNode, maxLen);
-//    	}
-//    	
-//    	double netDelay = 0.0;
-//    	int numNets = 0;
-//    	for(TimingNode sinkNode : criticalPath) {
-//    		if(sinkNode.getPosition() == Position.C_SINK) {
-//    			netDelay += sinkNode.getArrivalTime() - sinkNode.getSourceEdges().get(0).getSource().getArrivalTime();
-//    			numNets++;
-//    		}
-//    	}
-//    	
-//    	result += "\nNum Nets  " +numNets + "\n";
-//    	result += "Net Delay " + String.format("%.2e", netDelay) + "\n";
-//    	return result;
-//    }
-//    private TimingNode getEndNodeOfCriticalPath(){
-//    	TimingNode endNode = null;
-//    	for(TimingNode leafNode: this.leafNodes){
-//    		if(compareDouble(leafNode.getArrivalTime(), this.globalMaxDelay)){
-//    			if(endNode == null){
-//    				endNode = leafNode;
-//    			}else{
-//    				System.out.println("Warning: more than one end node has an arrival time equal to the critical path delay");
-//    			}
-//    		}
-//    	}
-//    	return endNode;
-//    }
-//    private TimingNode getSourceNodeOnCriticalPath(TimingNode sinkNode){
-//    	TimingNode sourceNode = null;
-//		for(TimingEdge edge: sinkNode.getSourceEdges()){
-//			if(this.compareDouble(edge.getSource().getArrivalTime(), sinkNode.getArrivalTime() - edge.getTotalDelay())){
-//				if(sourceNode == null){
-//					sourceNode = edge.getSource();
-//				}else{
-//					sourceNode = edge.getSource();
-//					System.out.println("Warning: more than one source node on the critical path");
-//				}
-//			}
-//		}
-//		return sourceNode;
-//    }
-//    private String printNode(TimingNode node, int maxLen){
-//    	String nodeInfo = node.toString();
-//    	int x = node.getGlobalBlock().getColumn();
-//    	int y = node.getGlobalBlock().getRow();
-//    	double delay = node.getArrivalTime() * Math.pow(10, 9);
-//    	int clock = node.getClockDomain();
-//    	String pos = "" + node.getPosition();
-//    	
-//    	return String.format("%-" + maxLen + "s  %3d %3d  %9.3f  %5d  %8s\n", nodeInfo, x, y, delay, clock, pos);
-//    }
-//    private boolean compareDouble(double var1, double var2){
-//    	return Math.abs(var1 - var2) < Math.pow(10, -12);
-//    }
-    
-    public double calculateTotalCost() {
-    	double totalCost = 0;
+    public float calculateTotalCost() {
+    	float totalCost = 0;
 
     	for(List<TimingEdge> net : this.timingNets) {
-    		double netCost = 0;
+    		float netCost = 0;
     		for(TimingEdge edge : net) {
-    			double cost = edge.getCost();
+    			float cost = edge.getCost();
     			if(cost > netCost) {
     				netCost = cost;
     			}
@@ -776,7 +695,7 @@ public class TimingGraph {
     	}
 		
 		this.includeClockDomain = new boolean[this.numClockDomains][this.numClockDomains];
-		this.maxDelay = new double[this.numClockDomains][this.numClockDomains];
+		this.maxDelay = new float[this.numClockDomains][this.numClockDomains];
     	for(int sourceClockDomain = 0; sourceClockDomain < this.numClockDomains; sourceClockDomain++) {
     		for(int sinkClockDomain = 0; sinkClockDomain < this.numClockDomains; sinkClockDomain++) {
         		this.maxDelay[sourceClockDomain][sinkClockDomain] = -1;
@@ -848,14 +767,14 @@ public class TimingGraph {
 		
 		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) entries of critical_path_delay, 
 		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. */
-		double geomeanPeriod = 1;
-		double fanoutWeightedGeomeanPeriod = 0;
+		float geomeanPeriod = 1;
+		float fanoutWeightedGeomeanPeriod = 0;
 		int totalFanout = 0;
 		int numValidClockDomains = 0;
 		for(int sourceClockDomain = 0; sourceClockDomain < this.numClockDomains; sourceClockDomain++) {
     		for(int sinkClockDomain = 0; sinkClockDomain < this.numClockDomains; sinkClockDomain++) {
     			if(this.includeClockDomain(sourceClockDomain, sinkClockDomain) && this.isNetlistClockDomain(sourceClockDomain, sinkClockDomain)) {
-					double maxDelay = this.maxDelay[sourceClockDomain][sinkClockDomain];
+					float maxDelay = this.maxDelay[sourceClockDomain][sinkClockDomain];
     				int fanout = this.clockDomainFanout.get(sinkClockDomain);
 					
     				geomeanPeriod *= maxDelay;
@@ -867,8 +786,8 @@ public class TimingGraph {
 			}
 		}
 		
-		geomeanPeriod = Math.pow(geomeanPeriod, 1.0/numValidClockDomains);
-		fanoutWeightedGeomeanPeriod = Math.exp(fanoutWeightedGeomeanPeriod/totalFanout);
+		geomeanPeriod = (float) Math.pow(geomeanPeriod, 1.0/numValidClockDomains);
+		fanoutWeightedGeomeanPeriod = (float) Math.exp(fanoutWeightedGeomeanPeriod/totalFanout);
 
 		System.out.printf("Max delay %.3f ns\n", 1e9 * this.globalMaxDelay);
 		System.out.printf("Geometric mean intra-domain period: %.3f ns\n", 1e9 * geomeanPeriod);
