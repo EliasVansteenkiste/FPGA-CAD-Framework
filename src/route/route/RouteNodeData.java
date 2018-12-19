@@ -19,6 +19,7 @@ public class RouteNodeData {
 	public int occupation;
 	
 	private CountingSet<GlobalPin> sourcesSet;
+	private CountingSet<RouteNode> parentsSet;
 	
     public RouteNodeData(int index) {
     	this.index = index;
@@ -28,6 +29,7 @@ public class RouteNodeData {
     	this.touched = false;
 
 		this.sourcesSet = null;
+		this.parentsSet = null;
 		
 		this.prev = null;
 	}
@@ -81,6 +83,27 @@ public class RouteNodeData {
 			return 0;
 		}
 		return this.sourcesSet.count(source);
+	}
+	
+	public int numUniqueParents() {
+		if(this.parentsSet == null) {
+			return 0;
+		}
+		return this.parentsSet.uniqueSize();
+	}
+	
+	public void addParent(RouteNode parent) {
+		if(this.parentsSet == null) {
+			this.parentsSet = new CountingSet<RouteNode>();
+		}
+		this.parentsSet.add(parent);
+	}
+	
+	public void removeParent(RouteNode parent) {
+		this.parentsSet.remove(parent);
+		if(this.parentsSet.isEmpty()) {
+			this.parentsSet = null;
+		}
 	}
 	
 	@Override

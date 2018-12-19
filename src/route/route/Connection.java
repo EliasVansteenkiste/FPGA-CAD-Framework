@@ -176,6 +176,15 @@ public class Connection implements Comparable<Connection>  {
 		return false;
 	}
 	
+	public boolean illegal() {
+		for(RouteNode rn : this.routeNodes){
+			if(rn.illegal()) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	public Opin getOpin() {
 		if(this.routeNodes.isEmpty()) {
 			return null;

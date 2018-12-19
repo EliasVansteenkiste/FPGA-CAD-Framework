@@ -35,13 +35,15 @@ public class ConnectionRouter {
 	private int distance_same_dir, distance_ortho_dir;
 	private final float IPIN_BASE_COST;
 	private static final float MAX_CRITICALITY = 0.99f;
-	private static float CRITICALITY_EXPONENT = 3;
+	private static final float CRITICALITY_EXPONENT = 3;
 	
 	private int connectionsRouted, nodesExpanded;
 	private int connectionsRoutedIteration;
 	
 	private int itry;
 	private boolean td;
+	
+	private float shareMultiplier = 5;
 	
 	private RouteTimers routeTimers;
 	
@@ -96,14 +98,12 @@ public class ConnectionRouter {
 		return averageDelay / divider;
 	}
     
-    public int route(float alphaWLD, float alphaTD, float presFacMult, float rerouteCriticality, float criticalityExponent) {
+    public int route(float alphaWLD, float alphaTD, float presFacMult, float shareMultiplier) {
     	if(alphaWLD > 0) this.alphaWLD = alphaWLD;
     	if(alphaTD > 0) this.alphaTD = alphaTD;
      	
-    	if(rerouteCriticality > 0) MIN_REROUTE_CRITICALITY = rerouteCriticality;
-    	if(criticalityExponent > 0) CRITICALITY_EXPONENT = criticalityExponent;
-    	
     	if(presFacMult > 0) this.pres_fac_mult = presFacMult;
+    	if(shareMultiplier > 0) this.shareMultiplier = shareMultiplier;
     	
     	System.out.println("--------------------------------------------------------------------------------------------------------------");
     	System.out.println("|                                             CONNECTION ROUTER                                              |");
@@ -111,7 +111,7 @@ public class ConnectionRouter {
     	System.out.println("Num nets: " + this.circuit.getNets().size());
 		System.out.println("Num cons: " + this.circuit.getConnections().size());
 	
-		int timeMilliseconds = this.doRuntimeRouting(25, 4);
+		int timeMilliseconds = this.doRuntimeRouting(100, 4);
 		
 		/***************************
 		 * OPIN tester: test if each
@@ -133,8 +133,15 @@ public class ConnectionRouter {
 			} 
 		}
 		
+		for(RouteNode node : this.circuit.getResourceGraph().getRouteNodes()) {
+			if(node.overUsed() || node.illegal()) {
+				System.out.println(node);
+			}
+		}
+		
 		return timeMilliseconds;
 	}
+    
     private int doRuntimeRouting(int nrOfTrials, int fixOpins) {
     	System.out.printf("--------------------------------------------------------------------------------------------------------------\n");
     	long start = System.nanoTime();
@@ -186,7 +193,8 @@ public class ConnectionRouter {
 		System.out.printf("%-22s | %.2f\n", "TD Alpha", this.alphaTD);
 		System.out.printf("%-22s | %.2f\n", "Min reroute crit", MIN_REROUTE_CRITICALITY);
 		System.out.printf("%-22s | %d\n", "Max per crit con", MAX_PERCENTAGE_CRITICAL_CONNECTIONS);
-		System.out.printf("%-22s | %.1f\n", "Pres fac mult", pres_fac_mult);
+		System.out.printf("%-22s | %.1f\n", "Pres fac mult", this.pres_fac_mult);
+		System.out.printf("%-22s | %.1f\n", "Share multiplier", this.shareMultiplier);
 		
         System.out.printf("--------------------------------------------------------------------------------------------------------------\n");
         System.out.printf("%9s  %8s  %8s  %12s  %9s  %11s  %17s  %11s  %9s\n", "Iteration", "AlphaWLD", "AlphaTD", "Reroute Crit", "Time (ms)", "Conn routed", "Overused RR Nodes", "Wire-Length", "Max Delay");
@@ -205,8 +213,6 @@ public class ConnectionRouter {
         	if(this.itry >= fixOpins) {
             	for(Net net : sortedListOfNets) {
             		if(!net.hasOpin()) {
-            			//TODO MOST USED OR MOST IMPORTANT?
-            			//Opin opin = net.getMostImportantOpin();
                 		Opin opin = net.getMostUsedOpin();
             			if(!opin.isOpin) {
                 			net.setOpin(opin);
@@ -223,7 +229,7 @@ public class ConnectionRouter {
         	this.routeTimers.setRerouteCriticality.start();
         	this.setRerouteCriticality(sortedListOfConnections);
         	this.routeTimers.setRerouteCriticality.finish();
-        	
+    		
         	//Route Connections
         	for(Connection con : sortedListOfConnections) {
 				if (this.itry == 1) {
@@ -248,6 +254,17 @@ public class ConnectionRouter {
 					
 					this.routeTimers.rerouteCongestion.finish();
 				
+				} else if (con.illegal()) {
+					this.routeTimers.rerouteIllegal.start();
+					
+					this.ripup(con);
+					this.route(con);
+					this.add(con);
+					
+					validRouting = false;
+					
+					this.routeTimers.rerouteIllegal.finish();
+					
 				}else if (con.net.hasOpin() && !con.getOpin().equals(con.net.getOpin())) {
 					this.routeTimers.rerouteOpin.start();
 					
@@ -269,7 +286,7 @@ public class ConnectionRouter {
 					this.routeTimers.rerouteCritical.finish();
 				}
 			}
-			
+    		
 			String maxDelayString = String.format("%9s", "---");
 			
 			//Update timing and criticality
@@ -332,7 +349,7 @@ public class ConnectionRouter {
 			}
 			this.updateCost(this.pres_fac, acc_fac);
 			this.routeTimers.updateCost.finish();
-			
+    		
 			this.itry++;
 		}
         
@@ -398,21 +415,41 @@ public class ConnectionRouter {
     	}
     }
 	private void ripup(Connection con) {
-		for (RouteNode node : con.routeNodes) {
+		RouteNode parent = null;
+		for(int i = con.routeNodes.size() - 1; i >=0; i--) {
+			RouteNode node = con.routeNodes.get(i);
+			
 			RouteNodeData data = node.routeNodeData;
 			
 			data.removeSource(con.source);
+			
+			if (parent == null) {
+				parent = node;
+			} else {
+				data.removeParent(parent);
+				parent = node;
+			}
 			
 			// Calculation of present congestion penalty
 			node.updatePresentCongestionPenalty(this.pres_fac);
 		}
 	}
 	private void add(Connection con) {
-		for (RouteNode node : con.routeNodes) {
+		RouteNode parent = null;
+		for(int i = con.routeNodes.size() - 1; i >=0; i--) {
+			RouteNode node = con.routeNodes.get(i);
+			
 			RouteNodeData data = node.routeNodeData;
 
 			data.addSource(con.source);
 
+			if (parent == null) {
+				parent = node;
+			} else {
+				data.addParent(parent);
+				parent = node;
+			}
+			
 			// Calculation of present congestion penalty
 			node.updatePresentCongestionPenalty(this.pres_fac);
 		}
@@ -677,7 +714,7 @@ public class ConnectionRouter {
 			bias_cost = 0.5f * node.base_cost / net.fanout * (Math.abs(node.centerx - net.x_geo) + Math.abs(node.centery - net.y_geo)) / net.hpwl;
 		}
 
-		return node.base_cost * data.acc_cost * pres_cost / (1 + countSourceUses) + bias_cost;
+		return node.base_cost * data.acc_cost * pres_cost / (1 + (this.shareMultiplier * countSourceUses)) + bias_cost;
 	}
 	
 	private void updateCost(float pres_fac, float acc_fac){

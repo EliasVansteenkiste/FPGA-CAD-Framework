@@ -134,11 +134,15 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		s.append(String.format("%-11s", coordinate));
 		s.append(String.format("ptc_num = %3d", this.n));
 		s.append(", ");
-		s.append(String.format("basecost = %3.1f", this.base_cost));
+		s.append(String.format("basecost = %.2e", this.base_cost));
 		s.append(", ");
 		s.append(String.format("capacity = %2d", this.capacity));
 		s.append(", ");
 		s.append(String.format("occupation = %2d ", this.routeNodeData.occupation));
+		s.append(", ");
+		s.append(String.format("num_unique_sources = %2d ", this.routeNodeData.numUniqueSources()));
+		s.append(", ");
+		s.append(String.format("num_unique_parents = %2d ", this.routeNodeData.numUniqueParents()));
 		s.append(", ");
 		s.append(String.format("type = %s", this.type));
 		
@@ -150,6 +154,9 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 	}
 	public boolean used() {
 		return this.routeNodeData.occupation > 0;
+	}
+	public boolean illegal() {
+		return this.capacity < this.routeNodeData.numUniqueParents();
 	}
 	
 	public float getDelay() {
@@ -167,7 +174,7 @@ public abstract class RouteNode implements Comparable<RouteNode> {
 		} else {
 			data.pres_cost = 1 + (occ - cap + 1) * pres_fac;
 		}
-		
+
 		data.occupation = occ;
 	}
 	

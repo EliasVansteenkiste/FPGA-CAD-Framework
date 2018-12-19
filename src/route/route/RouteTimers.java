@@ -5,6 +5,7 @@ public class RouteTimers {
 	public Timer updateTiming;
 	public Timer rerouteCritical;
 	public Timer rerouteCongestion;
+	public Timer rerouteIllegal;
 	public Timer rerouteOpin;
 	public Timer fixOpin;
 	public Timer setRerouteCriticality;
@@ -16,6 +17,7 @@ public class RouteTimers {
 		this.updateTiming = new Timer("update timing");
 		this.rerouteCritical = new Timer("reroute critical");
 		this.rerouteCongestion = new Timer("reroute congestion");
+		this.rerouteIllegal = new Timer("reroute illegal");
 		this.rerouteOpin = new Timer("reroute opin");
 		this.fixOpin = new Timer("fix opin");
 		this.setRerouteCriticality = new Timer("set reroute crit");
@@ -29,6 +31,7 @@ public class RouteTimers {
 		
 		result += this.firstIteration;
 		result += this.rerouteCongestion;
+		result += this.rerouteIllegal;
 		result += this.rerouteOpin;
 		result += this.rerouteCritical;
 		result += this.fixOpin;
