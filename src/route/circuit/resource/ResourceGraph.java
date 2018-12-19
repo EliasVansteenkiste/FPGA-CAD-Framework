@@ -702,5 +702,12 @@ public class ResourceGraph {
 				usedWireLengthL16);
 		System.out.println("-------------------------------------------------------------------------------");
 		System.out.println();
+		
+		System.out.println("-------------------------------------------------------------------------------");
+		System.out.printf("L4 Wirelength: %8d\n", usedWireLengthL4);
+		System.out.printf("L16 Wirelength: %8d\n", usedWireLengthL16);
+		System.out.printf("L4 Usage: %5.2f\n", 100.0 * numUsedL4Wires/numL4Wires);
+		System.out.printf("L16 Usage: %5.2f\n", 100.0 * numUsedL16Wires/numL16Wires);
+		System.out.println("-------------------------------------------------------------------------------");
 	}
 }

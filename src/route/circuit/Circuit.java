@@ -37,7 +37,6 @@ public class Circuit {
     
 	private List<Connection> connections;
 	private List<Net> nets;
-	private boolean conRouted;
 
     private List<BlockType> globalBlockTypes;
     private List<GlobalBlock> globalBlockList = new ArrayList<GlobalBlock>();
@@ -460,13 +459,6 @@ public class Circuit {
 
     public List<Integer> getColumnsPerBlockType(BlockType blockType) {
         return this.columnsPerBlockType.get(blockType);
-    }
-    
-    public void setConRouted(boolean value) {
-    	this.conRouted = value;
-    }
-    public boolean conRouted() {
-    	return this.conRouted;
     }
     
     public List<Connection> getConnections() {
