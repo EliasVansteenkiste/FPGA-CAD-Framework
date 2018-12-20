@@ -37,8 +37,10 @@ public class TimingNode {
     private boolean[] hasClockDomainAsSink;
     private boolean hasSourceClockDomains = false;
     private boolean hasSinkClockDomains = false;
+    
+    public final float clockDelay;
 
-    TimingNode(GlobalBlock globalBlock, AbstractPin pin, Position position, int clockDomain) {
+    TimingNode(GlobalBlock globalBlock, AbstractPin pin, Position position, int clockDomain, float clockDelay) {
         this.pin = pin;
 
         this.globalBlock = globalBlock;
@@ -47,6 +49,8 @@ public class TimingNode {
         this.position = position;
         
         this.clockDomain = clockDomain;
+        
+        this.clockDelay = clockDelay;
     }
 
     public GlobalBlock getGlobalBlock() {
@@ -172,7 +176,7 @@ public class TimingNode {
     	if(this.hasRequiredTime()) {
     		return this.getRequiredTime();
     	}else {
-			float minRequiredTime = 0;
+			float minRequiredTime = Integer.MAX_VALUE;
 			for(TimingEdge edge:this.sinkEdges) {
 				if(edge.getSink().hasClockDomainAsSink[sinkClockDomain]) {
 					float localRequiredTime = edge.getSink().recursiveRequiredTime(sinkClockDomain) - edge.getTotalDelay();

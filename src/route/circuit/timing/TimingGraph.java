@@ -190,7 +190,7 @@ public class TimingGraph {
                         	}
                         	if(!this.isSourceOfGlobalNet(source)) {
                         		LeafPin inputPin = (LeafPin) abstractPin;
-                        		TimingNode node = new TimingNode(block.getGlobalParent(), inputPin, Position.LEAF, clockDomain);
+                        		TimingNode node = new TimingNode(block.getGlobalParent(), inputPin, Position.LEAF, clockDomain, clockDelay);
                         		inputPin.setTimingNode(node);
                         		
                         		clockDelays.add(0f);
@@ -209,7 +209,7 @@ public class TimingGraph {
                     LeafPin outputPin = (LeafPin) abstractPin;
                     
                     if(outputPin.getNumSinks() > 0 && !this.isSourceOfClockNet(outputPin) && !this.isSourceOfGlobalNet(outputPin)) {
-                    	TimingNode node = new TimingNode(block.getGlobalParent(), outputPin, position, clockDomain);
+                    	TimingNode node = new TimingNode(block.getGlobalParent(), outputPin, position, clockDomain, clockDelay);
                     	outputPin.setTimingNode(node);
 
                     	this.timingNodes.add(node);
@@ -237,7 +237,7 @@ public class TimingGraph {
         		AbstractPin pathSource = current;
         		if(pathSource.hasTimingNode()) {
         			if(outputPin.getNumSinks() > 0) {
-            			TimingNode node = new TimingNode(globalBlock, outputPin, Position.C_SOURCE, -1);
+            			TimingNode node = new TimingNode(globalBlock, outputPin, Position.C_SOURCE, -1, 0);
             			outputPin.setTimingNode(node);
             			
             			this.timingNodes.add(node);  
@@ -253,7 +253,7 @@ public class TimingGraph {
         		
         		if(inputPin.getSource() != null) {
         			if(inputPin.getSource().hasTimingNode()) {
-            			TimingNode node = new TimingNode(globalBlock, inputPin, Position.C_SINK, -1);
+            			TimingNode node = new TimingNode(globalBlock, inputPin, Position.C_SINK, -1, 0);
             			inputPin.setTimingNode(node);
             			
             			this.timingNodes.add(node);  
@@ -642,11 +642,12 @@ public class TimingGraph {
 
         			//Required time
         			for(TimingNode leafNode: clockDomainLeafNodes) {
-        				leafNode.setRequiredTime(0);
+        				leafNode.setRequiredTime(maxDelay);
         			}
         			for(TimingNode rootNode: clockDomainRootNodes) {
         				rootNode.recursiveRequiredTime(sinkClockDomain);
         			}
+        			
         			
         			//Criticality
         			for(Connection connection : this.circuit.getConnections()) {
@@ -826,7 +827,6 @@ public class TimingGraph {
     		}
     	}
     	
-    	System.out.println();
     	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
     	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %-9s %-8s\n", delay, "x", "y", "Tarr (ns)", "LeafNode");
     	result += String.format("%-" + maxLen + "s..%-3s.%-3s..%-9s.%-8s\n","","","","","").replace(" ", "-").replace(".", " ");
