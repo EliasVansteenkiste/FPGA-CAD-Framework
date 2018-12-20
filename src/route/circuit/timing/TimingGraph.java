@@ -796,4 +796,72 @@ public class TimingGraph {
 		System.out.println("-------------------------------------------------------------------------------");
 		System.out.println();
     }
+
+    public String criticalPathToString() {
+    	int sourceClockDomain = -1;
+    	int sinkClockDomain = -1;
+    	float maxDelay = 0;
+    	
+    	for(int i = 0; i < this.numClockDomains; i++) {
+    		for(int j = 0; j < this.numClockDomains; j++) {
+        		if(this.maxDelay[i][j] > maxDelay) {
+        			maxDelay = this.maxDelay[i][j];
+        			sourceClockDomain = i;
+        			sinkClockDomain = j;
+        		}
+        	}
+    	}
+    	List<TimingNode> criticalPath = new ArrayList<>();
+		TimingNode node = this.getEndNodeOfCriticalPath(sinkClockDomain);
+		criticalPath.add(node);
+		while(!node.getSourceEdges().isEmpty()){
+    		node = this.getSourceNodeOnCriticalPath(node, sourceClockDomain);
+    		criticalPath.add(node);
+    	}
+    	
+    	int maxLen = 25;
+    	for(TimingNode criticalNode:criticalPath){
+    		if(criticalNode.toString().length() > maxLen){
+    			maxLen = criticalNode.toString().length();
+    		}
+    	}
+    	
+    	System.out.println();
+    	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
+    	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %-9s %-8s\n", delay, "x", "y", "Tarr (ns)", "LeafNode");
+    	result += String.format("%-" + maxLen + "s..%-3s.%-3s..%-9s.%-8s\n","","","","","").replace(" ", "-").replace(".", " ");
+    	for(TimingNode criticalNode:criticalPath){
+    		result += this.printNode(criticalNode, maxLen);
+    	}
+    	return result;
+    }
+    private TimingNode getEndNodeOfCriticalPath(int sinkClockDomain){
+    	for(TimingNode leafNode: this.leafNodes.get(sinkClockDomain)){
+    		if(compareFloat(leafNode.getArrivalTime(), this.globalMaxDelay)){
+    			return leafNode;
+    		}
+    	}
+    	return null;
+    }
+    private TimingNode getSourceNodeOnCriticalPath(TimingNode sinkNode, int sourceClockDomain){
+		for(TimingEdge edge: sinkNode.getSourceEdges()){
+			if(this.compareFloat(edge.getSource().getArrivalTime(), sinkNode.getArrivalTime() - edge.getTotalDelay())){
+				if(edge.getSource().hasClockDomainAsSource(sourceClockDomain)) {
+					return edge.getSource();
+				}
+			}
+		}
+		return null;
+    }
+    private String printNode(TimingNode node, int maxLen){
+    	String nodeInfo = node.toString();
+    	int x = node.getGlobalBlock().getColumn();
+    	int y = node.getGlobalBlock().getRow();
+    	double delay = node.getArrivalTime() * Math.pow(10, 9);
+    	
+    	return String.format("%-" + maxLen + "s  %-3d %-3d  %-9s\n", nodeInfo, x, y, String.format("%.3f", delay));
+    }
+    private boolean compareFloat(float var1, float var2){
+    	return Math.abs(var1 - var2) < Math.pow(10, -12);
+    }
 }

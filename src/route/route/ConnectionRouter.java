@@ -147,6 +147,10 @@ public class ConnectionRouter {
 		} else {
 			System.out.println("ERRORS FOUND! => The routing has " + errors + " errors\n");
 		}
+		System.out.println();
+		
+		System.out.println(this.circuit.getTimingGraph().criticalPathToString());
+		System.out.println();
 		
 		return timeMilliseconds;
 	}
