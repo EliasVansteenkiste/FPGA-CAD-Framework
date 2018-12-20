@@ -131,9 +131,6 @@ public class Connection implements Comparable<Connection>  {
 		this.timingEdge.resetCriticality();
 	}
 	
-	public void setCriticality(float criticality) {
-		this.criticality = criticality;
-	}
 	public float getCriticality() {
 		return this.criticality;
 	}

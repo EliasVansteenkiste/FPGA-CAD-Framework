@@ -194,6 +194,17 @@ public class Net {
 		return bestOpin;
 	}
 	
+	public RouteNode getIllegalNode() {
+		for(Connection con : this.connections) {
+			for(RouteNode node : con.routeNodes) {
+				if(node.illegal()) {
+					return node;
+				}
+			}
+		}
+		return null;
+	}
+	
 	@Override
 	public int hashCode() {
 		return this.id;

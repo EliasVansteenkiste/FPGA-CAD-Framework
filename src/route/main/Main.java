@@ -96,7 +96,7 @@ public class Main {
 		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
 		int timeMilliseconds = route.route(this.alphaWLD, this.alphaTD, this.pres_fac_mult);
 		
-		System.out.printf("Routing took %.2fs\n\n", (timeMilliseconds * Math.pow(10, -3)));
+		System.out.printf("Routing took %.2fs\n", (timeMilliseconds * Math.pow(10, -3)));
 		System.out.println();
 		
 		this.circuit.getTimingGraph().calculateActualWireDelay();

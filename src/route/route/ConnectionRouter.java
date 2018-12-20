@@ -3,10 +3,8 @@ package route.route;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
@@ -112,6 +110,8 @@ public class ConnectionRouter {
 	
 		int timeMilliseconds = this.doRuntimeRouting(100, 4);
 		
+		System.out.println("Run testers");
+		int errors = 0;
 		/***************************
 		 * OPIN tester: test if each
 		 * net uses only one OPIN
@@ -128,7 +128,8 @@ public class ConnectionRouter {
 				}
 			}
 			if(opins.size() != 1) {
-				System.err.println("Net " + name + " has " + opins.size() + " opins");
+				System.out.println("Net " + name + " has " + opins.size() + " opins");
+				errors += 1;
 			} 
 		}
 		
@@ -137,8 +138,14 @@ public class ConnectionRouter {
 		 *******************************/
 		for(RouteNode node : this.circuit.getResourceGraph().getRouteNodes()) {
 			if(node.overUsed() || node.illegal()) {
-				System.err.println(node);
+				System.out.println(node);
+				errors += 1;
 			}
+		}
+		if (errors == 0) {
+			System.out.println("No errors found\n");
+		} else {
+			System.out.println("ERRORS FOUND! => The routing has " + errors + " errors\n");
 		}
 		
 		return timeMilliseconds;
@@ -258,21 +265,16 @@ public class ConnectionRouter {
 			}
 			
         	//Check if illegal routing trees exist if all congestion is resolved
-        	if(validRouting) validRouting = this.fixIllegalTrees(sortedListOfConnections);
+        	if(validRouting) this.fixIllegalTrees(sortedListOfConnections);
 			
 			//Update timing and criticality
 			String maxDelayString = String.format("%9s", "---");
 			this.routeTimers.updateTiming.start();
 			if(this.td) {
-				float old_delay = this.circuit.getTimingGraph().getMaxDelay();
-				
 				this.circuit.getTimingGraph().calculateActualWireDelay();
 				this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
 				
 				float maxDelay = this.circuit.getTimingGraph().getMaxDelay();
-				if(maxDelay < old_delay) {
-					validRouting = false;
-				}
 				
 				maxDelayString = String.format("%9.3f", maxDelay);
 			} else {
@@ -286,7 +288,7 @@ public class ConnectionRouter {
 			this.routeTimers.calculateStatistics.start();
 			
 			int numRouteNodes = this.rrg.getRouteNodes().size();
-			int overUsed = this.getNumOverusedNodes(sortedListOfConnections);
+			int overUsed = this.getNumOverusedAndIllegalNodes(sortedListOfConnections);
 			double overUsePercentage = 100.0 * (double)overUsed / numRouteNodes;
 			
 			int wireLength = this.rrg.congestedTotalWireLengt();
@@ -349,11 +351,11 @@ public class ConnectionRouter {
 		return;
     }
     
-    private int getNumOverusedNodes(List<Connection> connections) {
+    private int getNumOverusedAndIllegalNodes(List<Connection> connections) {
         Set<Integer> overUsed = new HashSet<>();
 		for (Connection conn : connections) {
 			for (RouteNode node : conn.routeNodes) {
-				if (node.overUsed()) {
+				if (node.overUsed() || node.illegal()) {
 					overUsed.add(node.hashCode());
 				}
 			}
@@ -372,71 +374,88 @@ public class ConnectionRouter {
 		return illegal.size();
     }
     
-    private boolean fixIllegalTrees(List<Connection> connections) {
+    private void fixIllegalTrees(List<Connection> connections) {
 		this.routeTimers.rerouteIllegal.start();
 		
-		boolean validRouting = true;
 		int numIllegalNodes = this.getNumIllegalNodes(connections);
 		
 		if (numIllegalNodes > 0) {
-			int oldNumIllegalNodes = Integer.MAX_VALUE;
-			System.out.printf("The design has %3d illegal routing tree nodes after all congestion is resolved\n", numIllegalNodes);
-
-			while(numIllegalNodes > 0 && numIllegalNodes < oldNumIllegalNodes) {
-				oldNumIllegalNodes = numIllegalNodes;
-				
-				if(this.rerouteIllegalNodes(connections)) validRouting = false;
-				
-				numIllegalNodes = this.getNumIllegalNodes(connections);
-				System.out.printf("The design has %3d illegal routing tree nodes after rerouting with default criticalities\n", numIllegalNodes);
+			
+			//System.out.printf("The design has %3d illegal routing tree nodes after all congestion is resolved\n", numIllegalNodes);
+			
+			//Fix the illegal tree by following the highest criticality paths
+			List<Net> illegalTrees = new ArrayList<>();
+			for(Net net : this.circuit.getNets()) {
+				boolean illegal = false;
+				for(Connection con : net.getConnections()) {
+					if(con.illegal()) {
+						illegal = true;
+					}
+				}
+				if(illegal) {
+					illegalTrees.add(net);
+				}
 			}
 			
-			if (numIllegalNodes > 0) {
-				Map<Net, Float> netCriticality = new HashMap<>();
-				for(Connection con : connections) {
-					if (con.illegal()) {
-						Net net = con.net;
-						if(netCriticality.containsKey(net)) {
-							if(con.getCriticality() > netCriticality.get(net)) {
-								netCriticality.put(net, con.getCriticality());
+			//System.out.println("The system has " + illegalTrees.size() + " illegal trees");
+			
+			for(Net illegalTree : illegalTrees) {
+				//System.out.println("---- Fix Illegal Tree ----");
+				RouteNode illegalNode;
+				while((illegalNode = illegalTree.getIllegalNode()) != null) {
+					List<Connection> illegalConnections = new ArrayList<>();
+					for(Connection con : illegalTree.getConnections()) {
+						for(RouteNode node : con.routeNodes) {
+							if(node.equals(illegalNode)) {
+								illegalConnections.add(con);
 							}
-						} else {
-							netCriticality.put(net,con.getCriticality());
 						}
 					}
-				}
-				for(Connection con : connections) {
-					if (con.illegal()) {
-						con.setCriticality(netCriticality.get(con.net));
+					
+					//System.out.println("\t" + illegalNode + " has " + illegalConnections.size() + " illegal connections\t");
+					
+					//Find the illegal connection with maximum criticality
+					Connection maxCriticalityConnection = illegalConnections.get(0);
+					for(Connection illegalConnection : illegalConnections) {
+						if(illegalConnection.getCriticality() > maxCriticalityConnection.getCriticality()) {
+							maxCriticalityConnection = illegalConnection;
+						}
 					}
+					
+					//Get the path from the connection with maximum criticality
+					List<RouteNode> newRouteNodes = new ArrayList<>();
+					boolean add = false;
+					for(RouteNode newRouteNode : maxCriticalityConnection.routeNodes) {
+						if(newRouteNode.equals(illegalNode)) add = true;
+						if(add) newRouteNodes.add(newRouteNode);
+					}
+
+					//System.out.println("\tNew route nodes");
+					//for(RouteNode node : newRouteNodes) {
+					//	System.out.println("\t\t" + node);
+					//}
+					
+					//Replace the path with the path from the connection with maximum criticality
+					for(Connection illegalConnection : illegalConnections) {
+						this.ripup(illegalConnection);
+						
+						//Remove illegal path from routing tree
+						while(!illegalConnection.routeNodes.remove(illegalConnection.routeNodes.size() - 1).equals(illegalNode));
+						
+						//Add new path to routing tree
+						for(RouteNode newRouteNode : newRouteNodes) {
+							illegalConnection.addRouteNode(newRouteNode);
+						}
+						
+						this.add(illegalConnection);
+					}
+					
+					//System.out.println();
 				}
 				
-				int safetyCounter = 0;
-				while(numIllegalNodes > 0 && safetyCounter < 5) {
-					
-					if(this.rerouteIllegalNodes(connections)) validRouting = false;
-					
-					numIllegalNodes = this.getNumIllegalNodes(connections);
-					System.out.printf("The design has %3d illegal routing tree nodes after rerouting with increased criticalities\n", numIllegalNodes);
-					
-					safetyCounter++;
-				}
 			}
 		}
-		
 		this.routeTimers.rerouteIllegal.finish();
-		return validRouting;
-    }
-    private boolean rerouteIllegalNodes(List<Connection> connections) {
-		boolean congestionCreated = false;
-    	for(Connection con : connections) {
-			if (con.illegal()) {
-				this.routeConnection(con);
-				
-				if(con.congested()) congestionCreated = true;
-			}
-		}
-    	return congestionCreated;
     }
 
     private void setRerouteCriticality(List<Connection> connections) {
