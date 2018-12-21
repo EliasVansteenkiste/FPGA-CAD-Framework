@@ -20,12 +20,12 @@ public class ConnectionRouter {
 	
 	private float pres_fac, pres_fac_mult = 2;
 	private float alphaWLD = 1.4f;
+	private float alphaTD = 0.7f;
 	
 	private float MIN_REROUTE_CRITICALITY = 0.85f, REROUTE_CRITICALITY;
 	private final List<Connection> criticalConnections;
 	
 	private int MAX_PERCENTAGE_CRITICAL_CONNECTIONS = 3;
-	private float alphaTD = 0.7f;
 	
 	private final PriorityQueue<QueueElement> queue;
 	
@@ -149,8 +149,8 @@ public class ConnectionRouter {
 		}
 		System.out.println();
 		
-		System.out.println(this.circuit.getTimingGraph().criticalPathToString());
-		System.out.println();
+		//System.out.println(this.circuit.getTimingGraph().criticalPathToString());
+		//System.out.println();
 		
 		return timeMilliseconds;
 	}
@@ -668,15 +668,12 @@ public class ConnectionRouter {
 	}
 	
 	public void set_expected_distance_to_target(RouteNode node, RouteNode target) {
-		/************************************************************************************* 
-		 * Returns the distance that will be needed to reach target_node (not including inode) 
-		 * in each direction (the same direction (horizontal or vertical) as inode and the 
-		 * orthogonal direction).
-		 *************************************************************************************/
+		/*************************************************
+		 * Function adapted and modified from VPR 7.0.7, *
+		 * get_expected_segs_to_target in route_timing.c *
+		 *************************************************/
 		RouteNodeType type = node.type;
-		
 		short ylow, yhigh, xlow, xhigh;
-		
 		int no_need_to_pass_by_clb;
 		
 		short target_x = target.xlow;
@@ -686,8 +683,6 @@ public class ConnectionRouter {
 			ylow = node.ylow;
 			xhigh = node.xhigh;
 			xlow = node.xlow;
-
-			/* Count vertical (orthogonal to inode) segs first. */
 
 			if (ylow > target_y) { /* Coming from a row above target? */
 				this.distance_ortho_dir = ylow - target_y + 1;
@@ -700,8 +695,6 @@ public class ConnectionRouter {
 				no_need_to_pass_by_clb = 0;
 			}
 
-			/* Now count horizontal (same dir. as inode) segs. */
-
 			if (xlow > target_x + no_need_to_pass_by_clb) {
 				this.distance_same_dir = xlow - no_need_to_pass_by_clb - target_x;
 			} else if (xhigh < target_x - no_need_to_pass_by_clb) {
@@ -712,12 +705,10 @@ public class ConnectionRouter {
 			
 			return;
 			
-		} else { /* inode is a CHANY */
+		} else { /* CHANY */
 			ylow = node.ylow;
 			yhigh = node.yhigh;
 			xlow = node.xlow;
-
-			/* Count horizontal (orthogonal to inode) segs first. */
 
 			if (xlow > target_x) { /* Coming from a column right of target? */
 				this.distance_ortho_dir = xlow - target_x + 1;
@@ -729,8 +720,6 @@ public class ConnectionRouter {
 				this.distance_ortho_dir = 0;
 				no_need_to_pass_by_clb = 0;
 			}
-
-			/* Now count vertical (same dir. as inode) segs. */
 
 			if (ylow > target_y + no_need_to_pass_by_clb) {
 				this.distance_same_dir = ylow - no_need_to_pass_by_clb - target_y;

@@ -169,12 +169,7 @@ public class TimingGraph {
                 if(isClocked) {
                     Pair<Integer, Float> clockDomainAndDelay = this.getClockDomainAndDelay(block);
                     clockDomain = clockDomainAndDelay.getFirst();
-
-                    // We don't include the clock setup time in the critical path delay,
-                    // because VPR also doesn't does this for the critical path. When you
-                    // let VPR print out the critical path the clock setup time IS included,
-                    // but it isn't included in the stdout estimation.
-                    // clockDelay = clockDomainAndDelay.getSecond();
+                    clockDelay = clockDomainAndDelay.getSecond();
                 } else if(isConstantGenerator) {
                     clockDomain = this.virtualIoClockDomain;
                 }
@@ -630,9 +625,8 @@ public class TimingGraph {
         			}
         			for(TimingNode leafNode: clockDomainLeafNodes){
         				leafNode.recursiveArrivalTime(sourceClockDomain);
-        				if(leafNode.getArrivalTime() > maxDelay){
-        					maxDelay = leafNode.getArrivalTime();
-        				}
+        				
+        				maxDelay = Math.max((leafNode.getArrivalTime() - leafNode.clockDelay), maxDelay);
         			}
                     
         			this.maxDelay[sourceClockDomain][sinkClockDomain] = maxDelay;
@@ -642,12 +636,11 @@ public class TimingGraph {
 
         			//Required time
         			for(TimingNode leafNode: clockDomainLeafNodes) {
-        				leafNode.setRequiredTime(maxDelay);
+        				leafNode.setRequiredTime(maxDelay + leafNode.clockDelay);
         			}
         			for(TimingNode rootNode: clockDomainRootNodes) {
         				rootNode.recursiveRequiredTime(sinkClockDomain);
         			}
-        			
         			
         			//Criticality
         			for(Connection connection : this.circuit.getConnections()) {
@@ -766,8 +759,6 @@ public class TimingGraph {
     	}
     	System.out.println();
 		
-		/* Calculate geometric mean f_max (fanout-weighted and unweighted) from the diagonal (intra-domain) entries of critical_path_delay, 
-		excluding domains without intra-domain paths (for which the timing constraint is DO_NOT_ANALYSE) and virtual clocks. */
 		float geomeanPeriod = 1;
 		float fanoutWeightedGeomeanPeriod = 0;
 		int totalFanout = 0;
