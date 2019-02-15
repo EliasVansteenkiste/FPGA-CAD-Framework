@@ -96,7 +96,6 @@ abstract class Legalizer {
 
         // Information to visualize the legalisation progress
         this.visualizer = visualizer;
-
         this.netBlocks = netBlocks;
 
         //Logger
