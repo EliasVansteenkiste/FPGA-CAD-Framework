@@ -2321,13 +2321,6 @@ public class Netlist{
 		}
 		return atomCount;
 	}
-	public int connection_cost() { //TODO Determine optimal connection cost
-		int connectionCount = 0;
-		for(N n : this.get_nets()) {
-			connectionCount += n.fanout();
-		}
-		return connectionCount;
-	}
 	public int block_count(){
 		if(this.blocks == null){
 			int sum = 0;

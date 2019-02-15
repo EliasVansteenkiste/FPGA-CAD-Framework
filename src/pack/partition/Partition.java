@@ -260,16 +260,8 @@ public class Partition{
 		}
 	}
 	public void processChildNetlist(Netlist child){
-		if(this.connectionBased) {
-			//Based on the number of connections
-			if(child.connection_cost() > this.maxNetlistSize){
-				this.stack.pushNetlist(child);
-			}
-		} else {
-			//Based on the number of atoms
-			if(child.atom_count() > this.maxNetlistSize){
-				this.stack.pushNetlist(child);
-			}
+		if(child.atom_count() > this.maxNetlistSize){
+			this.stack.pushNetlist(child);
 		}
 
 		this.timeSteps.add(Timing.currentTime(this.startTime) + "\t" + this.threadPool.usedThreads());
