@@ -1,5 +1,6 @@
 package place.visual;
 
+import place.circuit.architecture.BlockCategory;
 import place.circuit.block.GlobalBlock;
 import place.interfaces.Logger;
 
@@ -227,36 +228,40 @@ public class PlacementPanel extends JPanel {
         int size = this.blockSize - 1;
 
         Color color;
-        switch(block.getCategory()) {
-            case IO:
-                color = this.ioColor;
-                break;
-
-            case CLB:
-                color = this.clbColor;
-                break;
-            	
-            case HARDBLOCK:
-            	if(block.getType().getName().equals("DSP")){
-            		color = this.dspColor;
-            	}else if(block.getType().getName().equals("M9K")){
-            		color = this.m9kColor;
-            	}else if(block.getType().getName().equals("M144K")){
-            		color = this.m144kColor;
-            	}else{
-            		color = this.hardBlockColor;
-            	}
-            	break;
-
-            default:
-                try {
-                    throw new InvalidBlockCategoryException(block);
-                } catch(InvalidBlockCategoryException error) {
-                    this.logger.raise(error);
-                }
-                color = null;
+        if(block.hasLeafNode() && !block.getCategory().equals(BlockCategory.HARDBLOCK)){
+        	color = block.getLeafNode().getColor();
+        }else{
+            switch(block.getCategory()) {
+	            case IO:
+	                color = this.ioColor;
+	                break;
+	
+	            case CLB:
+	                color = this.clbColor;
+	                break;
+	            	
+	            case HARDBLOCK:
+	            	if(block.getType().getName().equals("DSP")){
+	            		color = this.dspColor;
+	            	}else if(block.getType().getName().equals("M9K")){
+	            		color = this.m9kColor;
+	            	}else if(block.getType().getName().equals("M144K")){
+	            		color = this.m144kColor;
+	            	}else{
+	            		color = this.hardBlockColor;
+	            	}
+	            	break;
+	
+	            default:
+	                try {
+	                    throw new InvalidBlockCategoryException(block);
+	                } catch(InvalidBlockCategoryException error) {
+	                    this.logger.raise(error);
+	                }
+	                color = null;
+            }
+            if(block.isInMacro()) color = this.macroColor;
         }
-        if(block.isInMacro()) color = this.macroColor;
         
         g.setColor(color);
         if(block.getType().getHeight() > 1){

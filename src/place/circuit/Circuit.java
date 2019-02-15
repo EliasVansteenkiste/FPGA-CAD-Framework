@@ -365,9 +365,6 @@ public class Circuit {
     public void recalculateTimingGraph() {
         this.timingGraph.calculateCriticalities(true);
     }
-    public double calculateTimingCost() {
-        return this.timingGraph.calculateTotalCost();
-    }
     public double getMaxDelay() {
         return this.timingGraph.getMaxDelay();
     }
@@ -531,7 +528,7 @@ public class Circuit {
     }
 
 
-    public boolean dense(){
+    public double ratioUsedCLB(){
         int numCLB = 0;
         int numCLBPos = 0;
         for(BlockType clbType:BlockType.getBlockTypes(BlockCategory.CLB)){
@@ -539,18 +536,19 @@ public class Circuit {
         	numCLBPos += this.getColumnsPerBlockType(clbType).size() * this.getHeight();
         }
         double ratio = (double)numCLB / numCLBPos;
-        	
-        if(ratio < 0.4){
+        
+        return ratio;
+    }
+    public boolean dense(){
+    	if(this.ratioUsedCLB() < 0.4){
         	return false;
         }else {
         	return true;
         }
-
     }
     public boolean sparse(){
     	return !this.dense();
     }
-
 
     @Override
     public String toString() {

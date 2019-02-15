@@ -5,6 +5,7 @@ import java.util.List;
 
 import place.circuit.architecture.PortType;
 import place.circuit.block.AbstractBlock;
+import place.circuit.timing.TimingNode;
 
 public abstract class AbstractPin {
 
@@ -15,6 +16,8 @@ public abstract class AbstractPin {
     private AbstractPin source, sink;
     private ArrayList<AbstractPin> sinks;
     private int numSinks = 0;
+    
+    private TimingNode timingNode;
 
     public AbstractPin(AbstractBlock owner, PortType portType, int index) {
         this.owner = owner;
@@ -22,7 +25,16 @@ public abstract class AbstractPin {
         this.index = index;
     }
 
-
+    public void setTimingNode(TimingNode timingNode) {
+        this.timingNode = timingNode;
+    }
+    public TimingNode getTimingNode() {
+        return this.timingNode;
+    }
+    public boolean hasTimingNode() {
+    	return this.timingNode != null;
+    }
+    
     public AbstractBlock getOwner() {
         return this.owner;
     }

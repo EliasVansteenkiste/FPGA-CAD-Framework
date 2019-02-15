@@ -2,6 +2,7 @@ bin/
 dist/
 data/
 lib/
+build/
 
 benchmarks/*
 benchmarks_titan
@@ -19,13 +20,14 @@ tasks/example_java/*
 tasks/example_vpr/*
 !tasks/example_vpr/config.json
 
-
+LiquidPart.iml
 
 nbproject
 .project
 .settings
 .classpath
 .metadata
+.idea
 manifest.mf
 build.xml
 

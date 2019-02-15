@@ -11,6 +11,7 @@ import place.circuit.exceptions.PlacedBlockException;
 import place.circuit.exceptions.UnplacedBlockException;
 import place.circuit.pin.GlobalPin;
 import place.circuit.timing.TimingNode;
+import place.hierarchy.LeafNode;
 
 public class GlobalBlock extends AbstractBlock {
 
@@ -20,8 +21,23 @@ public class GlobalBlock extends AbstractBlock {
     private Macro macro;
     private int macroOffsetY = 0;
 
+    private LeafNode leafNode;
+
     public GlobalBlock(String name, BlockType type, int index) {
         super(name, type, index);
+
+        this.leafNode = null;
+    }
+
+    //Leaf node
+    public void setLeafNode(LeafNode hierarchyNode){
+    	this.leafNode = hierarchyNode;
+    }
+    public LeafNode getLeafNode(){
+    	return this.leafNode;
+    }
+    public boolean hasLeafNode(){
+    	return !(this.leafNode == null);
     }
 
     @Override

@@ -35,7 +35,7 @@ class LinearSolverGradient {
     }
 
 
-    void addPseudoConnections(int[] legalX, int[] legalY) {
+    void addPseudoConnections(double[] legalX, double[] legalY) {
         this.solverX.setLegal(legalX);
         this.solverY.setLegal(legalY);
     }

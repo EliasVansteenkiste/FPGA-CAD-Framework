@@ -23,7 +23,8 @@ public class GradientPlacerWLD extends GradientPlacer {
         if(iteration > 0) {
             this.anchorWeight = Math.pow((double)iteration / (this.numIterations - 1.0), this.anchorWeightExponent) * this.anchorWeightStop;
             this.learningRate *= this.learningRateMultiplier;
-            this.legalizer.increaseQuality();
+            this.legalizer.multiplySettings();
+            this.effortLevel = Math.max(this.effortLevelStop, (int)Math.round(this.effortLevel*0.5));
         }
     }
 

@@ -10,10 +10,12 @@ import place.circuit.block.GlobalBlock;
 import place.circuit.exceptions.InvalidFileFormatException;
 import place.circuit.exceptions.PlacementException;
 import place.circuit.io.BlockNotFoundException;
+import place.circuit.io.HierarchyParser;
 import place.circuit.io.IllegalSizeException;
 import place.circuit.io.NetParser;
 import place.circuit.io.PlaceDumper;
 import place.circuit.io.PlaceParser;
+import place.hierarchy.LeafNode;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.interfaces.OptionsManager;
@@ -22,14 +24,12 @@ import place.interfaces.Options.Required;
 import place.placers.Placer;
 import place.placers.simulatedannealing.EfficientBoundingBoxNetCC;
 import place.util.Timer;
+import place.visual.LineChart;
 import place.visual.PlacementVisualizer;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
@@ -38,6 +38,7 @@ import java.util.Random;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.jfree.ui.RefineryUtilities;
 import org.xml.sax.SAXException;
 
 public class Main {
@@ -45,7 +46,7 @@ public class Main {
     private long randomSeed;
 
     private String circuitName;
-    private File blifFile, netFile, inputPlaceFile, partialPlaceFile, outputPlaceFile;
+    private File blifFile, netFile, inputPlaceFile, inputHierarchyFile, partialPlaceFile, outputPlaceFile;
     private File architectureFile;
 
     private boolean useVprTiming;
@@ -69,6 +70,7 @@ public class Main {
         O_BLIF_FILE = "blif file",
         O_NET_FILE = "net file",
         O_INPUT_PLACE_FILE = "input place file",
+        O_INPUT_HIERARCHY_FILE = "input hierarchy file",
         O_PARTIAL_PLACE_FILE = "partial place file",
         O_OUTPUT_PLACE_FILE = "output place file",
         O_VPR_TIMING = "vpr timing",
@@ -84,6 +86,7 @@ public class Main {
 
         options.add(O_NET_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
         options.add(O_INPUT_PLACE_FILE, "if omitted the initial placement is random", File.class, Required.FALSE);
+        options.add(O_INPUT_HIERARCHY_FILE, "if omitted no hierarchy information is used", File.class, Required.FALSE);
         options.add(O_PARTIAL_PLACE_FILE, "placement of a part of the blocks", File.class, Required.FALSE);
         options.add(O_OUTPUT_PLACE_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
 
@@ -108,6 +111,7 @@ public class Main {
         this.randomSeed = options.getLong(O_RANDOM_SEED);
 
         this.inputPlaceFile = options.getFile(O_INPUT_PLACE_FILE);
+        this.inputHierarchyFile = options.getFile(O_INPUT_HIERARCHY_FILE);
         this.partialPlaceFile = options.getFile(O_PARTIAL_PLACE_FILE);
 
         this.blifFile = options.getFile(O_BLIF_FILE);
@@ -197,6 +201,15 @@ public class Main {
         }else{
         	this.options.insertRandomPlacer();
         }
+        
+        if(this.inputHierarchyFile != null){
+        	HierarchyParser hierarchyParser = new HierarchyParser(this.circuit, this.inputHierarchyFile);
+        	try {
+        		hierarchyParser.parse();
+        	} catch(IOException error) {
+                 this.logger.raise("Something went wrong while parsing the hierarchy file", error);
+			}
+        }
 
         //Garbage collection
         System.gc();
@@ -221,6 +234,11 @@ public class Main {
                 this.logger.raise("Failed to write to place file: " + this.outputPlaceFile, error);
             }
         }
+        
+        boolean printBlockDistance = false;
+        if(printBlockDistance){
+        	this.printBlockDistance();
+        }
 
         this.stopAndPrintTimer(totalString);
 
@@ -228,9 +246,6 @@ public class Main {
 
         this.visualizer.createAndDrawGUI();
     }
-
-
-
 
     private void loadCircuit() {
         ArchitectureCacher architectureCacher = new ArchitectureCacher(
@@ -353,7 +368,8 @@ public class Main {
         this.logger.println("Circuit statistics:");
         this.logger.printf("   clb: %d\n      lut: %d\n      ff: %d\n   hardblock: %d\n      PLL: %d\n      DSP: %d\n      M9K: %d\n      M144K: %d\n   io: %d\n\n",
                 numClb, numLut, numFf, numHardBlock, numPLL, numDSP, numM9K, numM144K, numIo);
-        this.logger.print("   Dense: " + this.circuit.dense() + "\n");
+        this.logger.print("   CLB usage ratio: " + String.format("%.3f",this.circuit.ratioUsedCLB())  + "\n");
+        this.logger.print("   Dense circuit: " + this.circuit.dense() + "\n");
         this.logger.print("   Num pins: " + numPins + "\n\n");
     }
 
@@ -439,35 +455,129 @@ public class Main {
         // Calculate BB cost
         EfficientBoundingBoxNetCC effcc = new EfficientBoundingBoxNetCC(this.circuit);
         double totalWLCost = effcc.calculateTotalCost();
-        
-        
-        String costFile = this.outputPlaceFile.getPath().replace(".place", ".cost");
-        PrintWriter writer = null;
-        try {
-			writer = new PrintWriter(new BufferedWriter(new FileWriter(costFile)));
-	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
-	        	String output = block.getName() + "\t" + block.getIndex() + "\t" + block.getCategory() + "\t" + Math.round(effcc.calculateBlockCost(block)*1000.0)/1000.0 + "\t" + block.getColumn() + "\t" + block.getRow() + "\n";
-	        	writer.write(output.replace(".", ","));
-	        }
-	        writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 
-        
         this.logger.printf(format, "BB cost", totalWLCost, "");
 
         // Calculate timing cost
         this.circuit.recalculateTimingGraph();
-        double totalTimingCost = this.circuit.calculateTimingCost();
+        //double totalTimingCost = this.circuit.calculateTimingCost();
         double maxDelay = this.circuit.getMaxDelay();
 
-        this.logger.printf(format, "timing cost", totalTimingCost, "");
+        //this.logger.printf(format, "timing cost", totalTimingCost, "");
         this.logger.printf(format, "max delay", maxDelay, " ns");
 
         this.logger.println();
+        
+        boolean printCostOfEachBlockToFile = false;
+        if(printCostOfEachBlockToFile){
+        	Map<BlockType, Double> costPerBlockType = new HashMap<>();
+	        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
+	        	double cost = effcc.calculateBlockCost(block);
+	        	if(!costPerBlockType.containsKey(block.getType())){
+	        		costPerBlockType.put(block.getType(), 0.0);
+	        	}
+	        	costPerBlockType.put(block.getType(), costPerBlockType.get(block.getType()) + cost);
+	        }
+            this.logger.println("----\t-------");
+            this.logger.println("Type\tBB Cost");
+            this.logger.println("----\t-------");
+            for(BlockType blockType:costPerBlockType.keySet()){
+            	this.logger.printf("%s\t%.0f\n", blockType.toString().split("<")[0], costPerBlockType.get(blockType));
+            }
+            this.logger.println("----\t-------");
+            	
+        }
+        this.logger.println();
+    }
+    private void printBlockDistance(){
+    	this.printDistance("Cut Level");
+    	this.printDistance("Total Distance");
+    	this.printDistance("Test");
+    }
+    private void printDistance(String type){
+    	int maxFPGADistance = this.circuit.getWidth() + this.circuit.getHeight();
+    	Map<Integer, int[]> distanceCharts = new HashMap<Integer, int[]>();
+    	for(GlobalBlock sourceBlock:this.circuit.getGlobalBlocks()){
+    		if(!sourceBlock.getLeafNode().isFloating()){
+    			for(GlobalBlock sinkBlock:this.circuit.getGlobalBlocks()){
+    				if(!sinkBlock.getLeafNode().isFloating()){
+    					if(sourceBlock.getIndex() != sinkBlock.getIndex()){
+            				int fpgaDistance = this.fpgaDistance(sourceBlock, sinkBlock);
+            				int hierarchyDistance = this.hierarchyDistance(type, sourceBlock, sinkBlock);
+
+            				if(!distanceCharts.containsKey(hierarchyDistance)){
+            					distanceCharts.put(hierarchyDistance, new int[maxFPGADistance + 1]);
+            				}
+            				distanceCharts.get(hierarchyDistance)[fpgaDistance]++;
+            			}
+    				}
+        		}
+    		}
+    	}
+    	this.makeGraph(type, distanceCharts);
+    }
+    
+    //Distance
+    private int fpgaDistance(GlobalBlock b1, GlobalBlock b2){
+		int horizontalDistance = Math.abs(b1.getSite().getColumn() - b2.getSite().getColumn());
+		int verticalDistance = Math.abs(b1.getSite().getRow() - b2.getSite().getRow());
+		int fpgaDistance = horizontalDistance + verticalDistance;
+		return fpgaDistance;
+    }
+    private int hierarchyDistance(String type, GlobalBlock b1, GlobalBlock b2){
+    	LeafNode ln1 = b1.getLeafNode();
+    	LeafNode ln2 = b2.getLeafNode();
+    	
+    	if(type.equals("Cut Level")){
+    		return ln1.cutLevel(ln2);
+    	}else if(type.equals("Total Distance")){
+    		return ln1.totalDistance(ln2);
+    	}else if(type.equals("Test")){
+    		return ln1.cutSeparation(ln2) - ln1.cutLevel(ln2);
+    	}else{
+    		System.out.println("Unknown type hierarchy distance type: " + type);
+    		return 0;
+    	}
+    }
+    
+    private boolean hasValues(int[] array){
+    	int l = array.length;
+    	for(int i = 0; i < l; i++){
+    		if(array[i] > 0){
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    private void makeGraph(String name, Map<Integer, int[]> distanceCharts){
+        LineChart chart = new LineChart(name, "Distance", "Number of connections");
+        for(int hierarchyDistance = 0; hierarchyDistance < 1000 ; hierarchyDistance++){
+        	if(distanceCharts.containsKey(hierarchyDistance)){
+            	int[] temp = distanceCharts.get(hierarchyDistance);
+            	if(this.hasValues(temp)){
+                	int maxValue = 0;
+                	for(int value:temp){
+                		if(value > maxValue){
+                			maxValue = value;
+                		}
+                	}
+                	
+                	maxValue = 1;
+                	
+                	for(int fpgaDistance = 0; fpgaDistance <= temp.length * 2 / 3; fpgaDistance++){
+                		double value = temp[fpgaDistance] * (1.0 / maxValue);
+        	        	chart.addData("" + hierarchyDistance, fpgaDistance, value);
+        	        }
+            	}
+        	}
+        }
+        chart.pack( );
+        RefineryUtilities.centerFrameOnScreen(chart);
+        chart.setVisible(true);
     }
 
+    
+    
 
     private void stopAndPrintTimer() {
         this.stopAndPrintTimer(this.mostRecentTimerName);

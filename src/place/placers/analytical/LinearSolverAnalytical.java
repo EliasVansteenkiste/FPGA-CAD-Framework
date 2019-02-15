@@ -28,7 +28,7 @@ class LinearSolverAnalytical {
     }
 
 
-    void addPseudoConnections(int[] legalX, int[] legalY) {
+    void addPseudoConnections(double[] legalX, double[] legalY) {
         int numBlocks = this.coordinatesX.length;
         for(int blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
         	if(!this.isFixed(blockIndex)){

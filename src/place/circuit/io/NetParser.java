@@ -21,6 +21,7 @@ import place.circuit.block.GlobalBlock;
 import place.circuit.block.LeafBlock;
 import place.circuit.block.LocalBlock;
 import place.circuit.pin.AbstractPin;
+import place.circuit.pin.GlobalPin;
 
 public class NetParser {
 
@@ -434,6 +435,11 @@ public class NetParser {
 
             globalSourcePin.addSink(sinkPin);
             sinkPin.setSource(globalSourcePin);
+            
+            GlobalPin netSource = (GlobalPin) globalSourcePin;
+            netSource.setNetName(net);
+            GlobalPin netSink = (GlobalPin) sinkPin;
+            netSink.setNetName(net);
         }
     }
 }

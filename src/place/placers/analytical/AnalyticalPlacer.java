@@ -101,15 +101,18 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
                 this.circuit,
                 this.blockTypes,
                 this.blockTypeIndexStarts,
+                this.numIterations,
                 this.linearX,
                 this.linearY,
                 this.legalX,
                 this.legalY,
                 this.heights,
+                this.leafNode,
                 this.visualizer,
                 this.nets,
-                this.netBlocks);
-        this.legalizer.setQuality(0.1, 0.9);
+                this.netBlocks,
+                this.logger);
+        this.legalizer.addSetting("anneal_quality", 0.1, 0.001);
 
         //Make a list of all the nets for each blockType
         this.allTrue = new boolean[this.numRealNets];
@@ -189,8 +192,8 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     protected void doSolveLinear(boolean[] processNets, int iteration){
 		for(int i = 0; i < this.legalX.length; i++){
 			if(this.fixed[i]){
-				this.coordinatesX[i] = this.legalizer.getLegalX(i);
-				this.coordinatesY[i] = this.legalizer.getLegalY(i);
+				this.coordinatesX[i] = this.legalX[i];
+				this.coordinatesY[i] = this.legalY[i];
 			}else{
 				this.coordinatesX[i] = this.linearX[i];
 				this.coordinatesY[i] = this.linearY[i];
@@ -229,7 +232,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         if(iteration > 0) {
             // this.legalX and this.legalY store the solution with the lowest cost
             // For anchors, the last (possibly suboptimal) solution usually works better
-            this.solver.addPseudoConnections(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+            this.solver.addPseudoConnections(this.legalX, this.legalY);
         }
 
         this.stopTimer(T_BUILD_LINEAR);
@@ -252,45 +255,38 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     }
 
     @Override
-    protected void solveLegal() {
+    protected void solveLegal(boolean isLastIteration) {
         this.startTimer(T_LEGALIZE);
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.CLB)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.HARDBLOCK)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         for(BlockType legalizeType:BlockType.getBlockTypes(BlockCategory.IO)){
-        	this.legalizer.legalize(legalizeType);
+        	this.legalizer.legalize(legalizeType, isLastIteration);
         }
         this.stopTimer(T_LEGALIZE);
     }
 
     @Override
-    protected void solveLegal(BlockType legalizeType) {
+    protected void solveLegal(BlockType legalizeType, boolean isLastIteration) {
         this.startTimer(T_LEGALIZE);
-        this.legalizer.legalize(legalizeType);
+        this.legalizer.legalize(legalizeType, isLastIteration);
         this.stopTimer(T_LEGALIZE);
     }
     
     @Override
-    protected void updateLegalIfNeeded(){
+    protected void calculateCost(int iteration){
     	this.startTimer(T_UPDATE_CIRCUIT);
     	
     	this.linearCost = this.costCalculator.calculate(this.linearX, this.linearY);
-        this.legalCost = this.costCalculator.calculate(this.legalizer.getLegalX(), this.legalizer.getLegalY());
+        this.legalCost = this.costCalculator.calculate(this.legalX, this.legalY);
     	
     	if(this.isTimingDriven()){
     		this.calculateTimingCost();
-    		this.latestCost = Math.pow(this.legalCost, 1) * Math.pow(this.timingCost, 1);
-    	}else{
-    		this.latestCost = this.legalCost;
     	}
 
-    	if(this.latestCost < this.minCost){
-    		this.minCost = this.latestCost;
-    		this.updateLegal(this.legalizer.getLegalX(), this.legalizer.getLegalY());
-    	}
     	this.stopTimer(T_UPDATE_CIRCUIT);
     }
 
@@ -312,16 +308,15 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         titles.add("best");
         titles.add("time (ms)");
         titles.add("crit conn");
-        titles.add("overlap");
     }
 
     @Override
-    protected void printStatistics(int iteration, double time, int overlap) {
+    protected void printStatistics(int iteration, double time) {
     	List<String> stats = new ArrayList<>();
 
     	stats.add(Integer.toString(iteration));
     	stats.add(String.format("%.2f", this.anchorWeight));
-    	stats.add(String.format("%.5g", this.legalizer.getQuality()));
+    	stats.add(String.format("%.5g", this.legalizer.getSettingValue("anneal_quality")));
 
         //Wirelength cost
         stats.add(String.format("%.0f", this.linearCost));
@@ -335,7 +330,6 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
         stats.add(this.latestCost == this.minCost ? "yes" : "");
         stats.add(String.format("%.0f", time*Math.pow(10, 3)));
         stats.add(String.format("%d", this.criticalConnections.size()));
-    	stats.add(String.format("%d", overlap));
 
     	this.printStats(stats.toArray(new String[0]));
     }
@@ -348,5 +342,10 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     @Override
     protected boolean stopCondition(int iteration) {
     	return iteration + 1 >= this.numIterations;
+    }
+    
+    @Override
+    public void printLegalizationRuntime(){
+    	this.legalizer.printLegalizationRuntime();
     }
 }

@@ -491,8 +491,75 @@ public class TimingGraph {
     		edge.setWireDelay(edge.calculateWireDelay());
     	}
     }
-
     
+    public String criticalPathToString() {
+    	List<TimingNode> criticalPath = new ArrayList<>();
+		TimingNode node = this.getEndNodeOfCriticalPath();
+		criticalPath.add(node);
+		while(!node.getSources().isEmpty()){
+    		node = this.getSourceNodeOnCriticalPath(node);
+    		criticalPath.add(node);
+    	}
+    	
+    	int maxLen = 25;
+    	for(TimingNode criticalNode:criticalPath){
+    		if(criticalNode.toString().length() > maxLen){
+    			maxLen = criticalNode.toString().length();
+    		}
+    	}
+    	
+    	System.out.println();
+    	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
+    	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %-9s %-8s\n", delay, "x", "y", "Tarr (ns)", "LeafNode");
+    	result += String.format("%-" + maxLen + "s..%-3s.%-3s..%-9s.%-8s\n","","","","","").replace(" ", "-").replace(".", " ");
+    	for(TimingNode criticalNode:criticalPath){
+    		result += this.printNode(criticalNode, maxLen);
+    	}
+    	return result;
+    }
+    private TimingNode getEndNodeOfCriticalPath(){
+    	TimingNode endNode = null;
+    	for(TimingNode leafNode: this.leafNodes){
+    		if(compareDouble(leafNode.getArrivalTime(), this.globalMaxDelay)){
+    			if(endNode == null){
+    				endNode = leafNode;
+    			}else{
+    				System.out.println("Warning: more than one end node has an arrival time equal to the critical path delay");
+    			}
+    		}
+    	}
+    	return endNode;
+    }
+    private TimingNode getSourceNodeOnCriticalPath(TimingNode sinkNode){
+    	TimingNode sourceNode = null;
+		for(TimingEdge edge: sinkNode.getSources()){
+			if(this.compareDouble(edge.getSource().getArrivalTime(), sinkNode.getArrivalTime() - edge.getTotalDelay())){
+				if(sourceNode == null){
+					sourceNode = edge.getSource();
+				}else{
+					sourceNode = edge.getSource();
+					System.out.println("Warning: more than one source node on the critical path");
+					//System.out.println("\tsinkNode: " + sinkNode.toString());
+					//System.out.println("\tsourceNode1: " + sourceNode.toString());
+					//System.out.println("\tsourceNode2: " + edge.getSource().toString());
+					//System.out.println();
+				}
+			}
+		}
+		return sourceNode;
+    }
+    private String printNode(TimingNode node, int maxLen){
+    	String nodeInfo = node.toString();
+    	int x = node.getGlobalBlock().getColumn();
+    	int y = node.getGlobalBlock().getRow();
+    	double delay = node.getArrivalTime() * Math.pow(10, 9);
+    	int leafNode = node.getGlobalBlock().getLeafNode().getIndex();
+    	
+    	return String.format("%-" + maxLen + "s  %-3d %-3d  %-9s %-8d\n", nodeInfo, x, y, String.format("%.3f", delay), leafNode);
+    }
+    private boolean compareDouble(double var1, double var2){
+    	return Math.abs(var1 - var2) < Math.pow(10, -12);
+    }
     /*************************************************
      * Functions that facilitate simulated annealing *
      *************************************************/
