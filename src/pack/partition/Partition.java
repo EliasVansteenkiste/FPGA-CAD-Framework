@@ -255,7 +255,6 @@ public class Partition{
 		if(child.atom_count() > this.maxNetlistSize){
 			this.stack.pushNetlist(child);
 		}
-
 		this.timeSteps.add(Timing.currentTime(this.startTime) + "\t" + this.threadPool.usedThreads());
 		this.startHMetis();
 	}
