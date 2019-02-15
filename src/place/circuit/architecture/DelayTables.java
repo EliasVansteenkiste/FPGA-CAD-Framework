@@ -22,9 +22,6 @@ public class DelayTables implements Serializable {
             ioToClb = new ArrayList<>(),
             clbToIo = new ArrayList<>(),
             clbToClb = new ArrayList<>();
-    
-    private List<List<Double>> currentTable;
-    private List<Double> currentRow;
 
     public DelayTables() {
         this.dummyTables = true;
@@ -117,19 +114,7 @@ public class DelayTables implements Serializable {
         if(deltaX == 0 && deltaY == 0 || this.dummyTables) {
             return 0;
         }
-        
-        this.currentTable = this.getTable(fromCategory, toCategory);
-        
-        if(deltaY < this.currentTable.size() - 1){
-        	this.currentRow = this.currentTable.get(deltaY);
-        }else{
-        	this.currentRow = this.currentTable.get(this.currentTable.size() - 1);
-        }
-        
-        if(deltaX < this.currentRow.size() - 1){
-        	return this.currentRow.get(deltaX);
-        }else{
-        	return this.currentRow.get(this.currentRow.size() - 1);
-        }
+
+        return this.getTable(fromCategory, toCategory).get(deltaY).get(deltaX);
     }
 }
