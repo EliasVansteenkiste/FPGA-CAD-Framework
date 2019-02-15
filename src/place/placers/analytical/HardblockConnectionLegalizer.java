@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import place.circuit.Circuit;
 import place.circuit.architecture.BlockType;
 import place.circuit.exceptions.OffsetException;
 import place.interfaces.Logger;
@@ -16,7 +15,6 @@ import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
 import place.util.TimingTree;
 
 public class HardblockConnectionLegalizer{
-	private Circuit circuit;
 	private BlockType blockType;
 
 	private final double[] linearX, linearY;
@@ -38,7 +36,6 @@ public class HardblockConnectionLegalizer{
     private Logger logger;
 
 	HardblockConnectionLegalizer(
-			Circuit circuit,
 			double[] linearX,
 			double[] linearY,
 			double[] legalX, 
@@ -54,8 +51,6 @@ public class HardblockConnectionLegalizer{
 
 		this.timingTree.start("Initialize Hardblock Connection Legalizer Data");
 
-		this.circuit = circuit;
-		
 		this.linearX = linearX;
 		this.linearY = linearY;
 
@@ -292,7 +287,7 @@ public class HardblockConnectionLegalizer{
 		
 		this.blockType = blockType;
 		
-		int siteCapacity = this.circuit.getArchitecture().getIoCapacity();
+		int siteCapacity = 2;
 		
 		Block[] legalizeBlocks = this.blocksPerBlocktype.get(this.blockType);
 		Net[] legalizeNets = this.netsPerBlocktype.get(this.blockType);
