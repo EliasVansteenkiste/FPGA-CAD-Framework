@@ -133,7 +133,6 @@ abstract class Legalizer {
     }
     private void initializeHardblockLegalizer(List<Net> nets) throws OffsetException{
         this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, this.logger);
-
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
             if(hardblockType.getCategory().equals(BlockCategory.HARDBLOCK) || hardblockType.getCategory().equals(BlockCategory.IO)){
