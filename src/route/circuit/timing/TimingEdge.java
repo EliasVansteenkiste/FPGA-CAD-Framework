@@ -49,7 +49,7 @@ public class TimingEdge {
     }
 
     public void resetCriticality(){
-        this.criticality = 0;
+        this.criticality = -1;
     }
 
     public float getCriticality(){
@@ -59,8 +59,16 @@ public class TimingEdge {
     public void calculateCriticality(float maxDelay, float maxCriticality, float criticalityExponent) {
     	if(this.source.hasArrivalTime() && this.sink.hasRequiredTime()) {
         	this.slack = this.sink.getRequiredTime() - this.source.getArrivalTime() - this.getTotalDelay();
+        	
+        	//Fix rounding errors
+        	this.slack = Math.max(this.slack, 0);
+        	this.slack = Math.min(this.slack, maxDelay);
+        	
         	float tempCriticality  = (1 - this.slack / maxDelay);
         	tempCriticality = (float) (Math.pow(tempCriticality, criticalityExponent) * maxCriticality);
+        	
+        	//Fix rounding errors
+        	tempCriticality = Math.min(tempCriticality, maxCriticality);
         	
         	if(tempCriticality > this.criticality) this.criticality = tempCriticality;
     	}
