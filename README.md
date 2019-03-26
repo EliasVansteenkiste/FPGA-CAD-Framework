@@ -38,6 +38,7 @@ Routing:
 Usage
 ---------------
 
+Currently, the HES team is writing a user manual for the framework.
 Some parts of this toolflow require external packages, you can find these in the file "requirements".
 
 To calculate point to point delays, vpr is used (see option --vpr_command). When compiling vpr, the macro PRINT_ARRAYS has to be defined in "place/timing_place_lookup.c".
