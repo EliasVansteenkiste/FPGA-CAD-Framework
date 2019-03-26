@@ -77,11 +77,11 @@ Active Contributors
 <ul>
   <li>Dries Vercruyce - <a href="mailto:dries.vercruyce@ugent.be">dries.vercruyce@ugent.be</a></li>
   <li>Yun Zhou - <a href="mailto:yun.zhou@ugent.be">yun.zhou@ugent.be</a></li>
+  <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
 </ul>
 
 Past Contributors
 <ul>
-  <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
   <li>Arno Messiaen - <a href="mailto:Arno.Messiaen@gmail.com">Arno.Messiaen@gmail.com</a></li>
   <li>Seppe Lenders - <a href="mailto:Seppe.Lenders@gmail.com"> Seppe.Lenders@gmail.com</a></li>
 </ul>
