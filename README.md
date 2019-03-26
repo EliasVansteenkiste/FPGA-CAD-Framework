@@ -8,7 +8,6 @@ The framework is implemented in Java. At this moment packing, placement and rout
 What can I do with this tool flow?
 ---------------
 
-
 <ul>
 
 <li>
@@ -76,8 +75,8 @@ Contributors
 ---------------
 Active Contributors
 <ul>
-  <li>Dries Vercruyce - <a href="mailto:dries.vercruyce@ugent.be">Elias.Vansteenkiste@gmail.com</a></li>
-  <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
+  <li>Dries Vercruyce - <a href="mailto:dries.vercruyce@ugent.be">dries.vercruyce@ugent.be</a></li>
+  <li>Yun Zhou - <a href="mailto:yun.zhou@ugent.be">yun.zhou@ugent.be</a></li>
 </ul>
 
 Past Contributors
