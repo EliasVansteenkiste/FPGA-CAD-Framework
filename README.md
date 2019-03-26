@@ -2,13 +2,11 @@ The FPGA CAD Framework
 ==============================
 
 An FPGA CAD framework focused on rapid prototyping of new CAD algorithms.
-The framework is implemented in Java. At this moment pack and placement algorithms are implemented in the framework.
+The framework is implemented in Java. At this moment packing, placement and routing algorithms are implemented in the framework.
 
 
 What can I do with this tool flow?
 ---------------
-
-
 
 
 <ul>
@@ -29,8 +27,14 @@ Placement:
 </ul>
 </li>
 
+<li>
+Routing:
+<ul>
+  <li>Connection-based routing: a fast timing-driven connection based router.</li>
 </ul>
+</li>
 
+</ul>
 
 Usage
 ---------------
@@ -38,15 +42,6 @@ Usage
 Some parts of this toolflow require external packages, you can find these in the file "requirements".
 
 To calculate point to point delays, vpr is used (see option --vpr_command). When compiling vpr, the macro PRINT_ARRAYS has to be defined in "place/timing_place_lookup.c".
-
-Architecture files are currently json-formatted and based on the vpr xml-files.
-
-
-The command line options can be found by calling interfaces.CLI with the option "--help". The most simple invocation of the toolflow is:
-
-java -cp bin:lib/json-simple-1.1.1.jar interfaces.CLI \
-benchmarks/k6_frac_N10_mem32K_40nm.xml benchmarks/or1200.blif --placer wld_ap
-
 
 License
 ---------------
@@ -56,33 +51,43 @@ Contact us
 ---------------
 The FPGA Placement Framework is released by Ghent University, ELIS department, Hardware and Embedded Systems (HES) group (http://hes.elis.ugent.be).
 
-If you encounter bugs, want to use the FPGA Placement Framework but need support or want to tell us about your results, please contact us. We can be reached at Elias.Vansteenkiste@gmail.com
+If you encounter bugs, want to use the FPGA CAD Framework but need support or want to tell us about your results, please contact us. We can be reached at dries.vercruyce[at]ugent.be
 
 Referencing the FPGA Placement Framework
 ---------------
-If you use the FPGA Placement Framework in your work, please reference the following paper in your publications: <br>
-<b>Liquid: Fast Placement Prototyping Through Steepest Gradient Descent Movement <br>
-Elias Vansteenkiste, Seppe Lenders, Dirk Stroobandt</b> <br>
-<i> 26th International Conference on Field-Programmable Logic and Applications, FPL2016</i>
+If you use the FPGA CAD Framework in your work, please reference the following papers in your publications: <br>
 
+Packing:
+<b>How preserving circuit design hierarchy during FPGA packing leads to better performance <br>
+Dries Vercruyce, Elias Vansteenkiste and Dirk Stroobandt</b> <br>
+<i> IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems}, 37(3), pp. 629-642.</i>
 
-You may also refer to one of our others papers if you think it is more related.
+Placement:
+<b>Liquid: High quality scalable placement for large heterogeneous FPGAs<br>
+Dries Vercruyce, Elias Vansteenkiste and Dirk Stroobandt</b> <br>
+<i> Field Programmable Technology (ICFPT), 2017 17th International Conference on. IEEE, 2017</i>
+
+Routing:
+<b>CRoute: A fast high-quality timing-driven connection-based FPGA router<br>
+Dries Vercruyce, Elias Vansteenkiste and Dirk Stroobandt</b> <br>
+<i> accepted for publication</i>
 
 Contributors
 ---------------
 Active Contributors
 <ul>
-  <li>Dries Vercruyce - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
+  <li>Dries Vercruyce - <a href="mailto:dries.vercruyce@ugent.be">Elias.Vansteenkiste@gmail.com</a></li>
   <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
 </ul>
 
 Past Contributors
 <ul>
+  <li>Elias Vansteenkiste - <a href="mailto:Elias.Vansteenkiste@gmail.com">Elias.Vansteenkiste@gmail.com</a></li>
   <li>Arno Messiaen - <a href="mailto:Arno.Messiaen@gmail.com">Arno.Messiaen@gmail.com</a></li>
   <li>Seppe Lenders - <a href="mailto:Seppe.Lenders@gmail.com"> Seppe.Lenders@gmail.com</a></li>
 </ul>
 
 Development
 ---------------
-The FPGA Placement Framework is a work in progress, input is welcome.
+The FPGA CAD Framework is a work in progress, input is welcome.
 
