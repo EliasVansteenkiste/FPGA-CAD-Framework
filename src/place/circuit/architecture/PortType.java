@@ -24,17 +24,17 @@ public class PortType implements Serializable, Comparable<PortType> {
         return this.typeIndex;
     }
 
-    void setSetupTime(double delay) {
+    void setSetupTime(float delay) {
         PortTypeData.getInstance().setSetupTime(this.typeIndex, delay);
     }
-    public double getSetupTime() {
+    public float getSetupTime() {
         return PortTypeData.getInstance().getSetupTime(this.typeIndex);
     }
 
-    void setDelay(PortType sinkType, double delay) {
+    void setDelay(PortType sinkType, float delay) {
         PortTypeData.getInstance().setDelay(this.typeIndex, sinkType.typeIndex, delay);
     }
-    public double getDelay(PortType sinkType) {
+    public float getDelay(PortType sinkType) {
         return PortTypeData.getInstance().getDelay(this.typeIndex, sinkType.typeIndex);
     }
 

@@ -228,7 +228,9 @@ public class TimingNode {
         return this.pin.toString();
     }
     
-    //Multi clock functionality
+    /*****************************
+     * Multi clock functionality *
+     *****************************/
     void setNumClockDomains(int numClockDomains) {
     	this.numClockDomains = numClockDomains;
     	

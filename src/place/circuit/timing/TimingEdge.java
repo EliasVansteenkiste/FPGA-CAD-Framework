@@ -4,15 +4,14 @@ import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.DelayTables;
 
 public class TimingEdge {
-	private double fixedDelay, wireDelay;
-	private double slack, criticality;
+	private float fixedDelay, wireDelay;
+	private float slack, criticality;
+	private boolean hasCriticality;
 	
     private final DelayTables delayTables;
 	private final TimingNode source, sink;
 
-	private double stagedWireDelay;
-
-    TimingEdge(double fixedDelay, TimingNode source, TimingNode sink, DelayTables delayTables){
+    TimingEdge(float fixedDelay, TimingNode source, TimingNode sink, DelayTables delayTables){
         this.fixedDelay = fixedDelay;
         
         this.source = source;
@@ -21,14 +20,14 @@ public class TimingEdge {
         this.delayTables = delayTables;
     }
 
-    public double getFixedDelay(){
+    public float getFixedDelay(){
         return this.fixedDelay;
     }
-    void setFixedDelay(double fixedDelay){
+    void setFixedDelay(float fixedDelay){
         this.fixedDelay = fixedDelay;
     }
 
-    public double calculateWireDelay(){
+    public float calculateWireDelay(){
         int deltaX = Math.abs(this.source.getGlobalBlock().getColumn() - this.sink.getGlobalBlock().getColumn());
         int deltaY = Math.abs(this.source.getGlobalBlock().getRow() - this.sink.getGlobalBlock().getRow());
 
@@ -37,33 +36,37 @@ public class TimingEdge {
 
         return this.delayTables.getDelay(fromCategory, toCategory, deltaX, deltaY);
     }
-    public void setWireDelay(double wireDelay){
+    public void setWireDelay(float wireDelay){
         this.wireDelay = wireDelay;
     }
 
-    public double getTotalDelay(){
+    public float getTotalDelay(){
         return this.fixedDelay + this.wireDelay;
     }
 
-    public double getCost() {
+    public float getCost() {
         return this.criticality * this.wireDelay;
     }
 
     void resetSlack(){
-        this.slack = 0.0;
-        this.criticality = 0;
+        this.hasCriticality = false;
     }
-    void setSlack(double slack){
-        this.slack = slack;
+    void setSlack(float slack){
+    	this.slack = slack;	
     }
-    double getSlack(){
+    float getSlack(){
         return this.slack;
     }
 
-    void setCriticality(double criticality){
-        this.criticality = criticality;
+    void setCriticality(float criticality){
+    	if(!this.hasCriticality) {
+    		this.criticality = criticality;
+    		this.hasCriticality = true;
+    	}else if(criticality > this.criticality) {
+    		this.criticality = criticality;
+    	}
     }
-    public double getCriticality(){
+    public float getCriticality(){
         return this.criticality;
     }
 
@@ -73,26 +76,6 @@ public class TimingEdge {
     public TimingNode getSink(){
     	return this.sink;
     }
-
-
-    /*************************************************
-     * Functions that facilitate simulated annealing *
-     *************************************************/
-    void setStagedWireDelay(double stagedWireDelay){
-    	this.stagedWireDelay = stagedWireDelay;
-    }
-    void resetStagedDelay(){
-    	this.stagedWireDelay = 0.0;
-    }
-    
-    void pushThrough(){
-    	this.wireDelay = this.stagedWireDelay;
-    }
-    
-    double getDeltaCost(){
-    	return this.criticality * (this.stagedWireDelay - this.wireDelay);
-    }
-
 
     @Override
     public String toString() {

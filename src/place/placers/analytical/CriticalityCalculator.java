@@ -67,7 +67,7 @@ class CriticalityCalculator{
                 int intDeltaX = (int) Math.round(deltaX);
                 int intDeltaY = (int) Math.round(deltaY);
 
-                double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, intDeltaX, intDeltaY);
+                float wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, intDeltaX, intDeltaY);
                 sink.timingEdge.setWireDelay(wireDelay);
             }
         }

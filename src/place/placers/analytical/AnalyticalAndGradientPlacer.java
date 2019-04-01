@@ -593,6 +593,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             this(block.blockIndex, block.offset, timingEdge, criticalityLearningRate, block.blockType);
         }
 
+        double getCriticality() {
+        	return this.criticality;
+        }
         void updateCriticality(){
         	this.criticality = this.criticality * (1 - this.criticalityLearningRate) + this.timingEdge.getCriticality() * this.criticalityLearningRate;
         }

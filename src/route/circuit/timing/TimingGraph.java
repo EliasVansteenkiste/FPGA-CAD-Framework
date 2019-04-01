@@ -29,7 +29,6 @@ public class TimingGraph {
 
     // A map of clock domains, along with their unique id
     private Map<String, Integer> clockNamesToDomains = new HashMap<>();
-    
     private Map<Integer, Integer> clockDomainFanout = new HashMap<>();
     private int numClockDomains = 0;
     private int virtualIoClockDomain;

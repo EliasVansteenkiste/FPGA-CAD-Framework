@@ -1,9 +1,13 @@
 package place.circuit;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -30,7 +34,7 @@ public class Circuit {
 
     private TimingGraph timingGraph;
 
-
+    private Set<String> globalNetNames;
     private Map<BlockType, List<AbstractBlock>> blocks;
 
     private List<BlockType> globalBlockTypes;
@@ -56,6 +60,8 @@ public class Circuit {
 
     public void initializeData() {
         this.loadBlocks();
+        
+        this.initializeGlobalNets();
 
         this.timingGraph.build();
 
@@ -65,6 +71,55 @@ public class Circuit {
             }
         }
     }
+    
+    private void initializeGlobalNets() {
+    	this.globalNetNames = new HashSet<>();
+    	
+    	this.globalNetNames.add("vcc");
+    	this.globalNetNames.add("gnd");
+    	
+    	BufferedReader br = null;
+    	try {
+			br = new BufferedReader(new FileReader(this.architecture.getSDCFile()));
+			
+			String line = null;
+			while((line = br.readLine()) != null){
+				line = line.trim();
+				
+				if(line.contains("create_clock") && !line.contains("-name") && line.contains("-period")) {
+					line = line.replace("\n", "");
+					line = line.replace("\t", "");
+					while(line.contains("  ")) line = line.replace("  ", " ");
+					
+					line = line.replace("{ ", "{");
+					line = line.replace(" }", "}");
+					
+					String globalNet = line.split(" ")[3];
+					
+					globalNet = globalNet.replace("\\\\", "\\");
+					globalNet = globalNet.replace("\\|", "|");
+					globalNet = globalNet.replace("\\[", "[");
+					globalNet = globalNet.replace("\\]", "]");
+					
+					if(globalNet.charAt(0) == '{' && globalNet.charAt(globalNet.length() - 1) == '}') {
+						globalNet = globalNet.substring(1, globalNet.length() - 1);
+					}
+					
+					globalNet = globalNet.trim();
+					
+					this.globalNetNames.add(globalNet);
+				}
+			}
+			
+			br.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    }
+    public Set<String> getGlobalNetNames() {
+    	return this.globalNetNames;
+    }
+    
     public String stats(){
     	String s = new String();
     	s += "-------------------------------";

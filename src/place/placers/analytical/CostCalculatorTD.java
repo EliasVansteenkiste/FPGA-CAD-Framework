@@ -84,7 +84,7 @@ class CostCalculatorTD extends CostCalculator {
                 int deltaX = Math.min((int) Math.abs(sinkX - sourceX), sinkCategory == BlockCategory.IO ? maxDeltaX : maxDeltaX - 1);
                 int deltaY = Math.min((int) Math.abs(sinkY - sourceY), sinkCategory == BlockCategory.IO ? maxDeltaY : maxDeltaY - 1);
 
-                double wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
+                float wireDelay = this.delayTables.getDelay(sourceCategory, sinkCategory, deltaX, deltaY);
                 sink.timingEdge.setWireDelay(wireDelay);
             }
         }

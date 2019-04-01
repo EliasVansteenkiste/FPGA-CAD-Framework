@@ -2,7 +2,6 @@ package place.main;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.Architecture;
-import place.circuit.architecture.ArchitectureCacher;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.architecture.ParseException;
@@ -19,7 +18,6 @@ import place.hierarchy.LeafNode;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.interfaces.OptionsManager;
-import place.interfaces.Logger.Stream;
 import place.interfaces.Options.Required;
 import place.placers.Placer;
 import place.placers.simulatedannealing.EfficientBoundingBoxNetCC;
@@ -46,7 +44,7 @@ public class Main {
     private long randomSeed;
 
     private String circuitName;
-    private File blifFile, netFile, inputPlaceFile, inputHierarchyFile, partialPlaceFile, outputPlaceFile;
+    private File blifFile, netFile, sdcFile, inputPlaceFile, inputHierarchyFile, partialPlaceFile, outputPlaceFile;
     private File architectureFile;
 
     private boolean useVprTiming;
@@ -69,6 +67,7 @@ public class Main {
         O_ARCHITECTURE = "architecture.xml",
         O_BLIF_FILE = "blif file",
         O_NET_FILE = "net file",
+        O_SDC_FILE = "sdc file",
         O_INPUT_PLACE_FILE = "input place file",
         O_INPUT_HIERARCHY_FILE = "input hierarchy file",
         O_PARTIAL_PLACE_FILE = "partial place file",
@@ -85,6 +84,7 @@ public class Main {
         options.add(O_BLIF_FILE, "", File.class);
 
         options.add(O_NET_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
+        options.add(O_SDC_FILE, "(default: based on the blif file)", File.class, Required.FALSE);
         options.add(O_INPUT_PLACE_FILE, "if omitted the initial placement is random", File.class, Required.FALSE);
         options.add(O_INPUT_HIERARCHY_FILE, "if omitted no hierarchy information is used", File.class, Required.FALSE);
         options.add(O_PARTIAL_PLACE_FILE, "placement of a part of the blocks", File.class, Required.FALSE);
@@ -116,6 +116,7 @@ public class Main {
 
         this.blifFile = options.getFile(O_BLIF_FILE);
         this.netFile = options.getFile(O_NET_FILE);
+        this.sdcFile = options.getFile(O_SDC_FILE);
         this.outputPlaceFile = options.getFile(O_OUTPUT_PLACE_FILE);
 
         File inputFolder = this.blifFile.getParentFile();
@@ -123,6 +124,9 @@ public class Main {
 
         if(this.netFile == null) {
             this.netFile = new File(inputFolder, this.circuitName + ".net");
+        }
+        if(this.sdcFile == null) {
+        	this.sdcFile = new File(inputFolder, this.circuitName + ".sdc");
         }
         if(this.outputPlaceFile == null) {
             this.outputPlaceFile = new File(inputFolder, this.circuitName + ".place");
@@ -248,45 +252,34 @@ public class Main {
     }
 
     private void loadCircuit() {
-        ArchitectureCacher architectureCacher = new ArchitectureCacher(
+        this.startTimer("Architecture parsing");
+        Architecture architecture = new Architecture(
                 this.circuitName,
-                this.netFile,
                 this.architectureFile,
-                this.useVprTiming,
-                this.lookupDumpFile);
-        Architecture architecture = architectureCacher.loadIfCached();
-        boolean isCached = (architecture != null);
+                this.blifFile,
+                this.netFile,
+                this.sdcFile);
 
-        // Parse the architecture file if necessary
-        if(!isCached) {
-            this.startTimer("Architecture parsing");
-            architecture = new Architecture(
-                    this.circuitName,
-                    this.architectureFile,
-                    this.blifFile,
-                    this.netFile);
-
-            try {
-                architecture.parse();
-            } catch(IOException | InvalidFileFormatException | InterruptedException | ParseException | ParserConfigurationException | SAXException error) {
-                this.logger.raise("Failed to parse architecture file or delay tables", error);
-            }
-
-            if(this.useVprTiming) {
-                try {
-                    if(this.lookupDumpFile == null) {
-                        architecture.getVprTiming(this.vprCommand);
-                    } else {
-                        architecture.getVprTiming(this.lookupDumpFile);
-                    }
-
-                } catch(IOException | InterruptedException | InvalidFileFormatException error) {
-                    this.logger.raise("Failed to get vpr delays", error);
-                }
-            }
-
-            this.stopAndPrintTimer();
+        try {
+            architecture.parse();
+        } catch(IOException | InvalidFileFormatException | InterruptedException | ParseException | ParserConfigurationException | SAXException error) {
+            this.logger.raise("Failed to parse architecture file or delay tables", error);
         }
+
+        if(this.useVprTiming) {
+            try {
+                if(this.lookupDumpFile == null) {
+                    architecture.getVprTiming(this.vprCommand);
+                } else {
+                    architecture.getVprTiming(this.lookupDumpFile);
+                }
+
+            } catch(IOException | InterruptedException | InvalidFileFormatException error) {
+                this.logger.raise("Failed to get vpr delays", error);
+            }
+        }
+
+        this.stopAndPrintTimer();
 
         // Parse net file
         this.startTimer("Net file parsing");
@@ -299,18 +292,6 @@ public class Main {
             this.logger.raise("Failed to read net file", error);
         }
         this.stopAndPrintTimer();
-
-
-        // Cache the circuit for future use
-        if(!isCached) {
-            this.startTimer("Circuit caching");
-            boolean success = architectureCacher.store(architecture);
-            this.stopAndPrintTimer();
-
-            if(!success) {
-                this.logger.print(Stream.ERR, "Something went wrong while caching the architecture");
-            }
-        }
     }
 
 
@@ -466,6 +447,9 @@ public class Main {
         //this.logger.printf(format, "timing cost", totalTimingCost, "");
         this.logger.printf(format, "max delay", maxDelay, " ns");
 
+        this.logger.println();
+        
+        this.circuit.getTimingGraph().printDelays();
         this.logger.println();
         
         boolean printCostOfEachBlockToFile = false;

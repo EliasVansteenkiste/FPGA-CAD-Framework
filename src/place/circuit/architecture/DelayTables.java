@@ -17,7 +17,7 @@ public class DelayTables implements Serializable {
 
     private boolean dummyTables = false;
     private transient File file;
-    private List<List<Double>>
+    private List<List<Float>>
             ioToIo = new ArrayList<>(),
             ioToClb = new ArrayList<>(),
             clbToIo = new ArrayList<>(),
@@ -43,7 +43,7 @@ public class DelayTables implements Serializable {
         reader.close();
     }
 
-    private void parseType(BufferedReader reader, String type, List<List<Double>> matrix) throws IOException, InvalidFileFormatException {
+    private void parseType(BufferedReader reader, String type, List<List<Float>> matrix) throws IOException, InvalidFileFormatException {
 
         boolean lineFound = this.findStartingLine(reader, type);
 
@@ -71,7 +71,7 @@ public class DelayTables implements Serializable {
         return false;
     }
 
-    private void readMatrix(BufferedReader reader, List<List<Double>> matrix) throws IOException {
+    private void readMatrix(BufferedReader reader, List<List<Float>> matrix) throws IOException {
         String line;
         int y = 0;
 
@@ -81,11 +81,11 @@ public class DelayTables implements Serializable {
                 return;
             }
 
-            matrix.add(new ArrayList<Double>());
+            matrix.add(new ArrayList<Float>());
 
             String[] lineDelayStrings = line.split("\\s+");
             for(int i = 1; i < lineDelayStrings.length; i++) {
-                Double lineDelay = Double.parseDouble(lineDelayStrings[i]);
+                Float lineDelay = Float.parseFloat(lineDelayStrings[i]);
                 matrix.get(y).add(lineDelay);
             }
 
@@ -93,8 +93,7 @@ public class DelayTables implements Serializable {
         }
     }
 
-
-    private List<List<Double>> getTable(BlockCategory fromCategory, BlockCategory toCategory) {
+    private List<List<Float>> getTable(BlockCategory fromCategory, BlockCategory toCategory) {
         if(fromCategory == BlockCategory.IO) {
             if(toCategory == BlockCategory.IO) {
                 return this.ioToIo;
@@ -110,7 +109,7 @@ public class DelayTables implements Serializable {
         }
     }
 
-    public double getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
+    public float getDelay(BlockCategory fromCategory, BlockCategory toCategory, int deltaX, int deltaY) {
         if(deltaX == 0 && deltaY == 0 || this.dummyTables) {
             return 0;
         }

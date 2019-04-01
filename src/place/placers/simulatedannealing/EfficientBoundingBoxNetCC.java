@@ -7,7 +7,6 @@ import java.util.Map;
 
 import place.circuit.Circuit;
 import place.circuit.block.GlobalBlock;
-import place.circuit.block.Site;
 import place.circuit.pin.AbstractPin;
 import place.circuit.pin.GlobalPin;
 
@@ -106,45 +105,6 @@ public class EfficientBoundingBoxNetCC {
     	}
     	return cost;
     }
-
-    public double calculateDeltaCost(Swap swap) {
-        this.toRevert.clear();
-
-        double deltaCost = 0;
-
-        int numBlocks = swap.getNumBlocks();
-        for(int i = 0; i < numBlocks; i++) {
-            Site site1 = swap.getSite1(i);
-            GlobalBlock block1 = site1.getBlock();
-
-            Site site2 = swap.getSite2(i);
-            GlobalBlock block2 = site2.getBlock();
-
-            deltaCost += this.addToRevert(block1, site2);
-            if(block2 != null) {
-                deltaCost += this.addToRevert(block2, site1);
-            }
-        }
-
-        return deltaCost;
-    }
-
-    private double addToRevert(GlobalBlock block, Site site) {
-        this.toRevert.add(block);
-
-        double deltaCost = 0;
-
-        List<EfficientBoundingBoxData> bbDataList = this.bbDataMap.get(block);
-        if(bbDataList != null) {
-            for(EfficientBoundingBoxData bbData: bbDataList) {
-                bbData.saveState();
-                deltaCost += bbData.calculateDeltaCost(block, site);
-            }
-        }
-
-        return deltaCost;
-    }
-
 
     public void recalculateFromScratch() {
         for(int i = 0; i < this.numPins; i++) {
