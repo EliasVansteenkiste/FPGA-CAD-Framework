@@ -26,10 +26,6 @@ public class PlaceDumper {
         this.placeFile = placeFile;
         
         this.architectureFileVPR = architectureFileVPR;
-
-        //String userDir = System.getProperty("user.dir");
-        //this.netPath = this.netFile.getAbsolutePath().substring(userDir.length() + 1);
-        //this.architecturePath = this.architectureFileVPR.getAbsolutePath().substring(userDir.length() + 1);
         
         this.netPath = this.netFile.getAbsolutePath();
         this.architecturePath = this.architectureFileVPR.getAbsolutePath();
@@ -88,46 +84,46 @@ public class PlaceDumper {
                 z = 0;
             }
             siteOccupations.put(site, z + 1);
-
-            //writer.printf("%-"+length+"s %-7d %-7d %-7d #%d\n",block.getName(), x, y, z, index);
             writer.printf("%-"+length+"s\t%d\t%d\t%d\t#%d\n",block.getName(), x, y, z, index);
             
             subblk.put(block.getName(), z);
         }
         writer.close();
         
-
-        //Information of the blocks
-        writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile.toString().replace(".place", ".post_place.blocks"))));
-        for(GlobalBlock block:this.circuit.getGlobalBlocks()){
-            String name = block.getName();
-            String type = block.getType().toString().split("<")[0];
-        	AbstractSite site = block.getSite();
-            int x = site.getColumn();
-            int y = site.getRow();
-            int index = block.getIndex();
-            writer.println(name + ";" + type + ";" + x + ";" + y + ";" + subblk.get(block.getName()) + ";" + index);
+        boolean writePostPlaceAdditionalInformation = false;
+        if(writePostPlaceAdditionalInformation) {
+            //Information of the blocks
+            writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile.toString().replace(".place", ".post_place.blocks"))));
+            for(GlobalBlock block:this.circuit.getGlobalBlocks()){
+                String name = block.getName();
+                String type = block.getType().toString().split("<")[0];
+            	AbstractSite site = block.getSite();
+                int x = site.getColumn();
+                int y = site.getRow();
+                int index = block.getIndex();
+                writer.println(name + ";" + type + ";" + x + ";" + y + ";" + subblk.get(block.getName()) + ";" + index);
+            }
+            writer.close();
+            
+            //Information of the nets
+            this.checkNetNames();
+            writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile.toString().replace(".place", ".post_place.nets"))));
+        	for(GlobalBlock sourceBlock:this.circuit.getGlobalBlocks()){
+        		for(AbstractPin abstractSourcePin:sourceBlock.getOutputPins()){
+        			GlobalPin sourcePin = (GlobalPin) abstractSourcePin;
+        			if(sourcePin.getSinks().size() > 0){
+        				writer.print("Net_" + sourcePin.getNetName());
+        				writer.print(";" + sourceBlock.getName() + "." + sourcePin.getPortType() + "[" + sourcePin.getIndex() + "]");
+        				for(AbstractPin sinkPin:sourcePin.getSinks()){
+        					GlobalBlock sink = (GlobalBlock) sinkPin.getOwner();
+        					writer.print(";" + sink.getName() + "." + sinkPin.getPortType() + "[" + sinkPin.getIndex() + "]");
+        				}
+        				writer.println();
+        			}
+        		}
+        	}
+            writer.close();
         }
-        writer.close();
-        
-        //Information of the nets
-        this.checkNetNames();
-        writer = new PrintWriter(new BufferedWriter(new FileWriter(this.placeFile.toString().replace(".place", ".post_place.nets"))));
-    	for(GlobalBlock sourceBlock:this.circuit.getGlobalBlocks()){
-    		for(AbstractPin abstractSourcePin:sourceBlock.getOutputPins()){
-    			GlobalPin sourcePin = (GlobalPin) abstractSourcePin;
-    			if(sourcePin.getSinks().size() > 0){
-    				writer.print("Net_" + sourcePin.getNetName());
-    				writer.print(";" + sourceBlock.getName() + "." + sourcePin.getPortType() + "[" + sourcePin.getIndex() + "]");
-    				for(AbstractPin sinkPin:sourcePin.getSinks()){
-    					GlobalBlock sink = (GlobalBlock) sinkPin.getOwner();
-    					writer.print(";" + sink.getName() + "." + sinkPin.getPortType() + "[" + sinkPin.getIndex() + "]");
-    				}
-    				writer.println();
-    			}
-    		}
-    	}
-        writer.close();
     }
     private void checkNetNames(){
     	for(GlobalBlock sourceBlock:this.circuit.getGlobalBlocks()){
