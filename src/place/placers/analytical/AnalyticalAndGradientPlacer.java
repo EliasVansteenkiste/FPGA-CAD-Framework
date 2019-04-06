@@ -272,21 +272,50 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
             }
         }
         
-        //Separate solving
-        int numIterations = this.numIterations();
-        this.solveSeparate = new boolean[numIterations];
+        //Separate solving dense designs
+        if(this.circuit.ratioUsedCLB() > 0.8) {
+            int numIterations = this.numIterations();
+            this.solveSeparate = new boolean[numIterations];
+            double nextFunctionValue = 0;
 
-        StringBuilder recalculationsString = new StringBuilder();
-        for(int i = 0; i < numIterations; i++) {
-        	if(i%2 == 1 || i == numIterations - 1){
-        		this.solveSeparate[i] = true;
-        		recalculationsString.append("|");
-        	}else{
-        		this.solveSeparate[i] = false;
-        		recalculationsString.append(".");
-        	}
+            double priority = 0.75, fequency = 0.3, min = 5;
+            
+        	StringBuilder recalculationsString = new StringBuilder();
+            for(int i = 0; i < numIterations; i++) {
+                double functionValue = Math.pow((1. * i) / numIterations, 1. / priority);
+                if(functionValue >= nextFunctionValue) {
+                    nextFunctionValue += 1.0 / (fequency * numIterations);
+                    if(i > min){
+                    	this.solveSeparate[i] = true;
+                    	recalculationsString.append("|");
+                    }else{
+                    	this.solveSeparate[i] = false;
+                    	recalculationsString.append(".");
+                    }
+                } else {
+                	this.solveSeparate[i] = false;
+                    recalculationsString.append(".");
+                }
+            }
+            System.out.println("Solve separate: " + recalculationsString + "\n");
+        //Separate solving sparse designs
+        } else {
+            int numIterations = this.numIterations();
+            this.solveSeparate = new boolean[numIterations];
+
+            StringBuilder recalculationsString = new StringBuilder();
+            for(int i = 0; i < numIterations; i++) {
+            	if(i%2 == 1 || i == numIterations - 1){
+            		this.solveSeparate[i] = true;
+            		recalculationsString.append("|");
+            	}else{
+            		this.solveSeparate[i] = false;
+            		recalculationsString.append(".");
+            	}
+            }
+            this.logger.println("Solve separate: " + recalculationsString + "\n");
         }
-        this.logger.println("Solve separate: " + recalculationsString + "\n");
+
         
         this.stopTimer(T_INITIALIZE_DATA);
     }

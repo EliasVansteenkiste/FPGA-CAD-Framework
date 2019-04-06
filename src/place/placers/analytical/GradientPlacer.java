@@ -31,10 +31,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_BETA2 = "beta2",
         O_EPS = "eps",
 
-        O_OUTER_EFFORT_LEVEL = "outer effort level",
+        O_OUTER_EFFORT_LEVEL_SPARSE = "outer effort level sparse",
+        O_OUTER_EFFORT_LEVEL_DENSE = "outer effort level dense",
         
         O_INNER_EFFORT_LEVEL_START = "inner effort level start",
-        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop",
+        O_INNER_EFFORT_LEVEL_STOP_SPARSE = "inner effort level stop sparse",
+        O_INNER_EFFORT_LEVEL_STOP_DENSE = "inner effort level stop dense",
         
         /////////////////////////
         // Parameters to sweep //
@@ -90,17 +92,27 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Double(10e-10));
         
         options.add(
-                O_OUTER_EFFORT_LEVEL,
-                "number of solve-legalize iterations",
+                O_OUTER_EFFORT_LEVEL_SPARSE,
+                "number of solve-legalize iterations for sparse designs",
                 new Integer(27));
+        options.add(
+                O_OUTER_EFFORT_LEVEL_DENSE,
+                "number of solve-legalize iterations for dense designs",
+                new Integer(40));
+        
         options.add(
                 O_INNER_EFFORT_LEVEL_START,
                 "number of gradient steps to take in each outer iteration in the beginning",
                 new Integer(200));
+        
         options.add(
-                O_INNER_EFFORT_LEVEL_STOP,
-                "number of gradient steps to take in each outer iteration at the end",
+                O_INNER_EFFORT_LEVEL_STOP_SPARSE,
+                "number of gradient steps to take in each outer iteration at the end for sparse designs",
                 new Integer(50));
+        options.add(
+                O_INNER_EFFORT_LEVEL_STOP_DENSE,
+                "number of gradient steps to take in each outer iteration at the end for sparse designs",
+                new Integer(40));
         
         //Parameters to sweep
         options.add(
@@ -170,10 +182,23 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
 
     	this.effortLevelStart = this.options.getInteger(O_INNER_EFFORT_LEVEL_START);
-    	this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP);
+    	
+    	//Dense design
+    	if(this.circuit.ratioUsedCLB() > 0.8) {
+    		this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_DENSE);
+    	//Sparse design
+    	} else {
+    		this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_SPARSE);
+    	}
     	this.effortLevel = this.effortLevelStart;
     	
-    	this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL) + 1;
+    	//Dense design
+    	if(this.circuit.ratioUsedCLB() > 0.8) {
+    		this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL_DENSE) + 1;
+    	//Sparse design
+    	} else {
+    		this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL_SPARSE) + 1;
+    	}
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
         this.learningRateMultiplier = Math.pow(this.options.getDouble(O_LEARNING_RATE_STOP) / this.options.getDouble(O_LEARNING_RATE_START), 1.0 / (this.numIterations - 1.0));
@@ -182,7 +207,10 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
 
-        if(this.circuit.dense()) {
+        //TODO
+        if(this.circuit.ratioUsedCLB() > 0.8) {
+        //
+        //if(this.circuit.dense()) {
         	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
         } else {
         	this.maxConnectionLength = this.circuit.getWidth() * this.options.getDouble(O_MAX_CONN_LENGTH_RATIO_SPARSE);
