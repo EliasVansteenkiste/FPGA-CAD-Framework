@@ -2,7 +2,6 @@ package place.main;
 
 import place.circuit.Circuit;
 import place.circuit.architecture.Architecture;
-import place.circuit.architecture.ArchitectureCacher;
 import place.circuit.architecture.BlockCategory;
 import place.circuit.architecture.BlockType;
 import place.circuit.architecture.ParseException;
@@ -19,7 +18,6 @@ import place.hierarchy.LeafNode;
 import place.interfaces.Logger;
 import place.interfaces.Options;
 import place.interfaces.OptionsManager;
-import place.interfaces.Logger.Stream;
 import place.interfaces.Options.Required;
 import place.placers.Placer;
 import place.placers.simulatedannealing.EfficientBoundingBoxNetCC;
@@ -248,45 +246,34 @@ public class Main {
     }
 
     private void loadCircuit() {
-        ArchitectureCacher architectureCacher = new ArchitectureCacher(
+        // Parse the architecture file
+        this.startTimer("Architecture parsing");
+        Architecture architecture = new Architecture(
                 this.circuitName,
-                this.netFile,
                 this.architectureFile,
-                this.useVprTiming,
-                this.lookupDumpFile);
-        Architecture architecture = architectureCacher.loadIfCached();
-        boolean isCached = (architecture != null);
+                this.blifFile,
+                this.netFile);
 
-        // Parse the architecture file if necessary
-        if(!isCached) {
-            this.startTimer("Architecture parsing");
-            architecture = new Architecture(
-                    this.circuitName,
-                    this.architectureFile,
-                    this.blifFile,
-                    this.netFile);
-
-            try {
-                architecture.parse();
-            } catch(IOException | InvalidFileFormatException | InterruptedException | ParseException | ParserConfigurationException | SAXException error) {
-                this.logger.raise("Failed to parse architecture file or delay tables", error);
-            }
-
-            if(this.useVprTiming) {
-                try {
-                    if(this.lookupDumpFile == null) {
-                        architecture.getVprTiming(this.vprCommand);
-                    } else {
-                        architecture.getVprTiming(this.lookupDumpFile);
-                    }
-
-                } catch(IOException | InterruptedException | InvalidFileFormatException error) {
-                    this.logger.raise("Failed to get vpr delays", error);
-                }
-            }
-
-            this.stopAndPrintTimer();
+        try {
+            architecture.parse();
+        } catch(IOException | InvalidFileFormatException | InterruptedException | ParseException | ParserConfigurationException | SAXException error) {
+            this.logger.raise("Failed to parse architecture file or delay tables", error);
         }
+
+        if(this.useVprTiming) {
+            try {
+                if(this.lookupDumpFile == null) {
+                    architecture.getVprTiming(this.vprCommand);
+                } else {
+                    architecture.getVprTiming(this.lookupDumpFile);
+                }
+
+            } catch(IOException | InterruptedException | InvalidFileFormatException error) {
+                this.logger.raise("Failed to get vpr delays", error);
+            }
+        }
+
+        this.stopAndPrintTimer();
 
         // Parse net file
         this.startTimer("Net file parsing");
@@ -299,18 +286,6 @@ public class Main {
             this.logger.raise("Failed to read net file", error);
         }
         this.stopAndPrintTimer();
-
-
-        // Cache the circuit for future use
-        if(!isCached) {
-            this.startTimer("Circuit caching");
-            boolean success = architectureCacher.store(architecture);
-            this.stopAndPrintTimer();
-
-            if(!success) {
-                this.logger.print(Stream.ERR, "Something went wrong while caching the architecture");
-            }
-        }
     }
 
 
