@@ -539,16 +539,6 @@ public class Circuit {
         
         return ratio;
     }
-    public boolean dense(){
-    	if(this.ratioUsedCLB() < 0.4){
-        	return false;
-        }else {
-        	return true;
-        }
-    }
-    public boolean sparse(){
-    	return !this.dense();
-    }
 
     @Override
     public String toString() {

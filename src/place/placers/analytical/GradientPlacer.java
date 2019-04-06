@@ -24,8 +24,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_LEARNING_RATE_START = "learning rate start",
         O_LEARNING_RATE_STOP = "learning rate stop",
 
-        O_MAX_CONN_LENGTH_RATIO_SPARSE = "max conn length ratio sparse",
-        O_MAX_CONN_LENGTH_DENSE = "max conn length dense",
+        O_MAX_CONN_LENGTH_RATIO = "max conn length ratio",
+        O_MAX_CONN_LENGTH = "max conn length",
 
         O_BETA1 = "beta1",
         O_BETA2 = "beta2",
@@ -70,12 +70,12 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Double(0.2));
         
         options.add(
-                O_MAX_CONN_LENGTH_RATIO_SPARSE,
-                "maximum connection length in sparse placement is ratio of circuit width",
+                O_MAX_CONN_LENGTH_RATIO,
+                "maximum connection length as a ratio of the circuit width",
                 new Double(0.25));
         options.add(
-                O_MAX_CONN_LENGTH_DENSE,
-                "maximum connection length in dense placement",
+                O_MAX_CONN_LENGTH,
+                "maximum connection length",
                 new Integer(30));
 
         options.add(
@@ -207,13 +207,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.beta2 = this.options.getDouble(O_BETA2);
         this.eps = this.options.getDouble(O_EPS);
 
-        //TODO
-        if(this.circuit.ratioUsedCLB() > 0.8) {
-        //
-        //if(this.circuit.dense()) {
-        	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH_DENSE);
-        } else {
-        	this.maxConnectionLength = this.circuit.getWidth() * this.options.getDouble(O_MAX_CONN_LENGTH_RATIO_SPARSE);
+        //Very sparse designs use a ratio maximum connection length
+        if(this.circuit.ratioUsedCLB() < 0.4){
+        	this.maxConnectionLength = this.circuit.getWidth() * this.options.getDouble(O_MAX_CONN_LENGTH_RATIO);
+        }else {
+        	this.maxConnectionLength = this.options.getInteger(O_MAX_CONN_LENGTH);
         }
 
         this.criticalConnections = new ArrayList<>();
