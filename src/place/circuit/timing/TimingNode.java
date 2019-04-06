@@ -2,6 +2,7 @@ package place.circuit.timing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import place.circuit.architecture.DelayTables;
 import place.circuit.block.GlobalBlock;
@@ -23,7 +24,6 @@ public class TimingNode {
     private int numSources = 0, numSinks = 0;
 
     private double arrivalTime, requiredTime;
-    private boolean hasArrivalTime, hasRequiredTime;
 
     //Tarjan's strongly connected components algorithm
     private int index;
@@ -112,65 +112,61 @@ public class TimingNode {
     }
 
     //Arrival time
-    void resetArrivalTime() {
-        this.hasArrivalTime = false;
-    }
     void setArrivalTime(double arrivalTime) {
     	this.arrivalTime = arrivalTime;
-    	this.hasArrivalTime = true;
-    }
-    boolean hasArrivalTime() {
-    	return this.hasArrivalTime;
     }
     double getArrivalTime() {
     	return this.arrivalTime;
     }
-	double recursiveArrivalTime() {
-		if(this.hasArrivalTime()) {
-			return this.getArrivalTime();
-		} else {
-			double maxArrivalTime = 0.0;
-			for(TimingEdge edge:this.sourceEdges) {
-				double localArrivalTime = edge.getSource().recursiveArrivalTime() + edge.getTotalDelay();
-				if(localArrivalTime > maxArrivalTime) {
-					maxArrivalTime = localArrivalTime;
-				}
+    void updateArrivalTime() {
+		this.arrivalTime = 0;
+		for(TimingEdge edge:this.sourceEdges) {
+			double localArrivalTime = edge.getSource().arrivalTime + edge.getTotalDelay();
+			if(localArrivalTime > this.arrivalTime) {
+				this.arrivalTime = localArrivalTime;
 			}
-			this.setArrivalTime(maxArrivalTime);
-			return this.getArrivalTime();
-		}		
-	}
-
-	//Required time
-    void resetRequiredTime() {
-    	this.hasRequiredTime = false;
+		}
     }
+    void recursiveArrivalTraversal(List<TimingNode> traversal, Set<Integer> added) {
+    	if(this.position.equals(Position.ROOT)) return;
+    	
+    	for(TimingEdge edge:this.sourceEdges) {
+			if(!added.contains(edge.getSource().index)) {
+				edge.getSource().recursiveArrivalTraversal(traversal, added);
+			}
+		}
+    	added.add(this.index);
+		traversal.add(this);
+    }
+    
+	//Required time
     void setRequiredTime(double requiredTime) {
     	this.requiredTime = requiredTime;
-    	this.hasRequiredTime = true;
-    }
-    boolean hasRequiredTime() {
-    	return this.hasRequiredTime;
     }
     double getRequiredTime() {
     	return this.requiredTime;
     }
-    double recursiveRequiredTime() {
-    	if(this.hasRequiredTime()) {
-    		return this.getRequiredTime();
-    	}else {
-			double minRequiredTime = 0.0;
-			for(TimingEdge edge:this.sinkEdges) {
-				double localRequiredTime = edge.getSink().recursiveRequiredTime() - edge.getTotalDelay();
-				if(localRequiredTime < minRequiredTime) {
-					minRequiredTime = localRequiredTime;
-				}
+    void updateRequiredTime() {
+		this.requiredTime = 0;
+		for(TimingEdge edge:this.sinkEdges) {
+			double localRequiredTime = edge.getSink().requiredTime - edge.getTotalDelay();
+			if(localRequiredTime < this.requiredTime) {
+				this.requiredTime = localRequiredTime;
 			}
-			this.setRequiredTime(minRequiredTime);
-			return this.getRequiredTime();
-    	}
+		}
     }
-
+    void recursiveRequiredTraversal(List<TimingNode> traversal, Set<Integer> added) {
+    	if(this.position.equals(Position.LEAF)) return;
+    	
+		for(TimingEdge edge:this.sinkEdges) {
+			if(!added.contains(edge.getSink().index)) {
+				edge.getSink().recursiveRequiredTraversal(traversal, added);
+			}
+		}
+		
+		added.add(this.index);
+		traversal.add(this);
+    }
 
    /****************************************************
     * Tarjan's strongly connected components algorithm *

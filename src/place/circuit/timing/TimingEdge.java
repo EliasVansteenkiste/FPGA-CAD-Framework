@@ -5,7 +5,7 @@ import place.circuit.architecture.DelayTables;
 
 public class TimingEdge {
 	private double fixedDelay, wireDelay;
-	private double slack, criticality;
+	private double criticality;
 	
     private final DelayTables delayTables;
 	private final TimingNode source, sink;
@@ -47,17 +47,6 @@ public class TimingEdge {
 
     public double getCost() {
         return this.criticality * this.wireDelay;
-    }
-
-    void resetSlack(){
-        this.slack = 0.0;
-        this.criticality = 0;
-    }
-    void setSlack(double slack){
-        this.slack = slack;
-    }
-    double getSlack(){
-        return this.slack;
     }
 
     void setCriticality(double criticality){

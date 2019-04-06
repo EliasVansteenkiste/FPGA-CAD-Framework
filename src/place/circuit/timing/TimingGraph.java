@@ -2,8 +2,10 @@ package place.circuit.timing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import place.circuit.Circuit;
@@ -36,9 +38,12 @@ public class TimingGraph {
     private List<TimingNode> timingNodes = new ArrayList<>();
     private List<TimingNode> rootNodes, leafNodes;
     
+    private List<TimingNode> arrivalTraversal, requiredTraversal;
+    
     private List<TimingNode> affectedNodes = new ArrayList<>();
 
     private List<TimingEdge> timingEdges  = new ArrayList<>();
+    private List<TimingEdge> globalTimingEdges  = new ArrayList<>();
     private List<List<TimingEdge>> timingNets = new ArrayList<>();
 
     private double globalMaxDelay;
@@ -73,6 +78,10 @@ public class TimingGraph {
         this.setRootAndLeafNodes();
         
         this.cutCombLoop();
+        
+        this.buildTraversals();
+        
+        this.setGlobalTimingEdges();
     }
 
     private void buildGraph() {
@@ -299,6 +308,31 @@ public class TimingGraph {
         }
     }
 
+    private void buildTraversals() {
+    	long start = System.nanoTime();
+    	this.arrivalTraversal = new ArrayList<>();
+    	this.requiredTraversal = new ArrayList<>();
+    	Set<Integer> added = new HashSet<>();
+    	
+    	added.clear();
+    	for(TimingNode leafNode : this.leafNodes) {
+    		leafNode.recursiveArrivalTraversal(this.arrivalTraversal, added);
+    	}
+    	
+    	added.clear();
+    	for(TimingNode rootNode : this.rootNodes) {
+    		rootNode.recursiveRequiredTraversal(this.requiredTraversal, added);
+    	}
+    	System.out.printf("Build traversals took %.2fs\n\n", (System.nanoTime() - start) * 1e-9);
+    }
+    private void setGlobalTimingEdges() {
+    	this.globalTimingEdges = new ArrayList<>();
+    	for(TimingEdge edge : this.timingEdges) {
+    		if(edge.getSource().getGlobalBlock().getIndex() != edge.getSink().getGlobalBlock().getIndex()) {
+    			this.globalTimingEdges.add(edge);
+    		}
+    	}
+    }
     /****************************************************
      * Functionality to find combinational loops with   *
      * Tarjan's strongly connected components algorithm *
@@ -444,19 +478,16 @@ public class TimingGraph {
     }
 
     private void calculateArrivalTimesAndCriticalities(boolean calculateCriticalities) {
-    	//INITIALISATION
-        for(TimingNode node : this.timingNodes) {
-            node.resetArrivalTime();
-            node.resetRequiredTime();
-        }
         this.globalMaxDelay = 0;
 
     	//ARRIVAL TIME
         for(TimingNode rootNode: this.rootNodes){
-        	rootNode.setArrivalTime(0.0);
+        	rootNode.setArrivalTime(0);
+        }
+        for(TimingNode node : this.arrivalTraversal) {
+        	node.updateArrivalTime();
         }
         for(TimingNode leafNode: this.leafNodes){
-        	leafNode.recursiveArrivalTime();
         	if(leafNode.getArrivalTime() > this.globalMaxDelay){
         		this.globalMaxDelay = leafNode.getArrivalTime();
         	}
@@ -465,17 +496,16 @@ public class TimingGraph {
         if(calculateCriticalities) {
         	//REQUIRED TIME
         	for(TimingNode leafNode: this.leafNodes) {
-        		leafNode.setRequiredTime(0.0);
+        		leafNode.setRequiredTime(0);
         	}
-            for(TimingNode rootNode: this.rootNodes) {
-            	rootNode.recursiveRequiredTime();
+            for(TimingNode node: this.requiredTraversal) {
+            	node.updateRequiredTime();
             }
 
-            for(TimingEdge edge:this.timingEdges){
+            for(TimingEdge edge:this.globalTimingEdges){
             	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
-            	edge.setSlack(slack);
 
-                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
+                double val = 20 * (1 - (slack + this.globalMaxDelay) / this.globalMaxDelay);
                 int i = Math.min(19, (int) val);
                 double linearInterpolation = val - i;
 
@@ -487,7 +517,7 @@ public class TimingGraph {
     }
 
     public void calculateWireDelays() {
-    	for(TimingEdge edge:this.timingEdges){
+    	for(TimingEdge edge:this.globalTimingEdges){
     		edge.setWireDelay(edge.calculateWireDelay());
     	}
     }
