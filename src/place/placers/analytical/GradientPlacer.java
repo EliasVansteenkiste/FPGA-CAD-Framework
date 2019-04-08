@@ -46,7 +46,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_SPREAD_BLOCK_ITERATIONS = "spread block iterations",
         		
         O_STEP_SIZE_START = "step size start",
-        O_STEP_SIZE_STOP = "step size stop";
+        O_STEP_SIZE_STOP = "step size stop",
+        
+        O_EFFORT_SCALING = "effort scaling";
 
     public static void initOptions(Options options) {
         AnalyticalAndGradientPlacer.initOptions(options);
@@ -98,7 +100,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL_DENSE,
                 "number of solve-legalize iterations for dense designs",
-                new Integer(40));
+                new Integer(33));
         
         options.add(
                 O_INNER_EFFORT_LEVEL_START,
@@ -135,6 +137,11 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 O_STEP_SIZE_STOP,
                 "final step size in gradient cluster legalizer",
                 new Double(0.05));
+        
+        options.add(
+                O_EFFORT_SCALING,
+                "effort scaling for pareto front calculation",
+                new Double(1));
     }
 
     protected double anchorWeight;
@@ -181,23 +188,23 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightExponent = this.options.getDouble(O_ANCHOR_WEIGHT_EXPONENT);
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
 
-    	this.effortLevelStart = this.options.getInteger(O_INNER_EFFORT_LEVEL_START);
+    	this.effortLevelStart = (int) Math.round(this.options.getInteger(O_INNER_EFFORT_LEVEL_START) * this.options.getDouble(O_EFFORT_SCALING));
     	
     	//Dense design
     	if(this.circuit.ratioUsedCLB() > 0.8) {
-    		this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_DENSE);
+    		this.effortLevelStop = (int) Math.round(this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_DENSE) * this.options.getDouble(O_EFFORT_SCALING));
     	//Sparse design
     	} else {
-    		this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_SPARSE);
+    		this.effortLevelStop = (int) Math.round(this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_SPARSE) * this.options.getDouble(O_EFFORT_SCALING));
     	}
     	this.effortLevel = this.effortLevelStart;
     	
     	//Dense design
     	if(this.circuit.ratioUsedCLB() > 0.8) {
-    		this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL_DENSE) + 1;
+    		this.numIterations = (int)Math.round((this.options.getInteger(O_OUTER_EFFORT_LEVEL_DENSE) + 1) * this.options.getDouble(O_EFFORT_SCALING));
     	//Sparse design
     	} else {
-    		this.numIterations = this.options.getInteger(O_OUTER_EFFORT_LEVEL_SPARSE) + 1;
+    		this.numIterations = (int)Math.round((this.options.getInteger(O_OUTER_EFFORT_LEVEL_SPARSE) + 1) * this.options.getDouble(O_EFFORT_SCALING));
     	}
 
         this.learningRate = this.options.getDouble(O_LEARNING_RATE_START);
@@ -215,6 +222,14 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         }
 
         this.criticalConnections = new ArrayList<>();
+        
+        if(this.options.getDouble(O_EFFORT_SCALING) != 1) {
+        	System.out.println("EFFORT SCALING:");
+        	System.out.println("    Number of outer iterations is equal to " + this.numIterations);
+        	System.out.println("    Start inner effort level " + this.effortLevelStart);
+        	System.out.println("    Stop inner effort level " + this.effortLevelStop);
+        	System.out.println("\n");
+        }
     }
 
     protected abstract void initializeIteration(int iteration);
