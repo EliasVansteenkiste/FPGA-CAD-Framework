@@ -238,6 +238,9 @@ public class HardblockConnectionLegalizer{
 			if(block.linearX < blockTypeColumns.get(0)) {
 				block.setLegal(blockTypeColumns.get(0), 1 + rowIndex * this.blockType.getHeight());
 				columns[0].addBlock(block);
+			} else if(blockTypeColumns.get(numColumns-1) < block.linearX) {
+				block.setLegal(blockTypeColumns.get(numColumns-1), 1 + rowIndex * this.blockType.getHeight());
+				columns[numColumns-1].addBlock(block);
 			} else {
 				for(int c = 1; c < numColumns; c++) {
 					int column = blockTypeColumns.get(c);
@@ -255,7 +258,7 @@ public class HardblockConnectionLegalizer{
 						break;
 					}
 				}
-			}	
+			}
 		}
 
 		//Column swap
