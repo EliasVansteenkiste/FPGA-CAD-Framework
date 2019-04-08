@@ -131,7 +131,7 @@ abstract class Legalizer {
     	}
     }
     private void initializeHardblockLegalizer(List<Net> nets) throws OffsetException{
-        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, this.logger);
+        this.hardblockLegalizer = new HardblockConnectionLegalizer(this.circuit, this.linearX, this.linearY, this.legalX, this.legalY, this.heights, this.width, this.height, nets, this.logger);
         for(int i = 0; i < this.blockTypes.size(); i++) {
             BlockType hardblockType = this.blockTypes.get(i);
             if(hardblockType.getCategory().equals(BlockCategory.HARDBLOCK) || hardblockType.getCategory().equals(BlockCategory.IO)){
@@ -226,7 +226,7 @@ abstract class Legalizer {
             if(this.blockType.getCategory().equals(BlockCategory.CLB)){
             	this.legalizeBlockType(blocksStart, blocksEnd);
         	}else if(this.blockType.getCategory().equals(BlockCategory.HARDBLOCK)){
-        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.blockStart, this.blockRepeat, this.blockHeight, this.legalizerSettings.get("anneal_quality").getValue());
+        		this.hardblockLegalizer.legalizeHardblock(this.blockType, this.legalizerSettings.get("anneal_quality").getValue());
         	}else if(this.blockType.getCategory().equals(BlockCategory.IO)){
         		this.hardblockLegalizer.legalizeIO(this.blockType, this.legalizerSettings.get("anneal_quality").getValue());
         		for(int b = blocksStart; b < blocksEnd; b++){

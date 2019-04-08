@@ -7,14 +7,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import place.circuit.Circuit;
 import place.circuit.architecture.BlockType;
 import place.circuit.exceptions.OffsetException;
 import place.interfaces.Logger;
 import place.placers.analytical.AnalyticalAndGradientPlacer.CritConn;
 import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
-import place.util.TimingTree;
 
 public class HardblockConnectionLegalizer{
+	private Circuit circuit;
 	private BlockType blockType;
 
 	private final double[] linearX, linearY;
@@ -31,11 +32,11 @@ public class HardblockConnectionLegalizer{
     private final Map<BlockType, Net[]> netsPerBlocktype;
 
     private final int gridWidth, gridHeigth;
-    
-    private final TimingTree timingTree;
+
     private Logger logger;
 
 	HardblockConnectionLegalizer(
+			Circuit circuit,
 			double[] linearX,
 			double[] linearY,
 			double[] legalX, 
@@ -46,10 +47,9 @@ public class HardblockConnectionLegalizer{
 			List<AnalyticalAndGradientPlacer.Net> placerNets,
 			Logger logger) {
 
-		this.timingTree = new TimingTree(false);
-		this.logger = logger;
+		this.circuit = circuit;
 
-		this.timingTree.start("Initialize Hardblock Connection Legalizer Data");
+		this.logger = logger;
 
 		this.linearX = linearX;
 		this.linearY = linearY;
@@ -105,8 +105,6 @@ public class HardblockConnectionLegalizer{
 		for(Net net:this.nets){
 			net.finish();
 		}
-
-		this.timingTree.time("Initialize Hardblock Connection Legalizer Data");
 
 		this.crits = new ArrayList<>();
 
@@ -185,8 +183,6 @@ public class HardblockConnectionLegalizer{
 
 	//UPDATE CRITICAL CONNECTIONS
 	public void updateCriticalConnections(List<CritConn> criticalConnections){
-		this.timingTree.start("Update critical connections in hardblock connection legalizer");
-		
 		//Clear all data
 		for(Block block:this.blocks){
 			block.crits.clear();
@@ -207,31 +203,26 @@ public class HardblockConnectionLegalizer{
         	
         	index++;
 		}
-		
-		this.timingTree.time("Update critical connections in hardblock connection legalizer");
 	}
-	
+
 	//Legalize hard block
-	public void legalizeHardblock(BlockType blockType, int firstColumn, int columnRepeat, int blockHeight, double quality){
-		this.timingTree.start("Legalize " + blockType + " hardblock");
-		
+	public void legalizeHardblock(BlockType blockType, double quality){
 		this.blockType = blockType;
 		
-		int firstRow = 1;
-		int rowRepeat = blockHeight;
-
-        int numColumns = (int) Math.floor((this.gridWidth - firstColumn) / columnRepeat + 1);
-        int numRows = (int) Math.floor(this.gridHeigth / rowRepeat);
+		List<Integer> blockTypeColumns = this.circuit.getColumnsPerBlockType(this.blockType);
+		
+		int numColumns = blockTypeColumns.size();
+		int numRows = (int) Math.floor(this.gridHeigth / this.blockType.getHeight());
         
 		Block[] legalizeBlocks = this.blocksPerBlocktype.get(this.blockType);
 		Net[] legalizeNets = this.netsPerBlocktype.get(this.blockType);
 		Column[] columns = new Column[numColumns];
+		
 		for(int c = 0; c < numColumns; c++){
-			int column = firstColumn + c * columnRepeat;
-			
+			int column = blockTypeColumns.get(c);
 			Site[] sites = new Site[numRows];
 			for(int r = 0; r < numRows; r++){
-				int row = firstRow + r * rowRepeat;
+				int row = 1 + r * this.blockType.getHeight();
 				sites[r] = new Site(column, row, this.blockType.getHeight());
 			}
 			columns[c] = new Column(c, column, sites);
@@ -239,52 +230,56 @@ public class HardblockConnectionLegalizer{
 		
 		//Update the coordinates off all blocks based on the current legal placement
 		this.initializeLegalization(legalizeNets);
-
-		this.timingTree.start("Find best legal coordinates for all blocks based on minimal displacement cost");
 		
 		//Update the coordinates of the current hard block type based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
-			int columnIndex = (int) Math.round(Math.max(Math.min((block.linearX - firstColumn) / columnRepeat, numColumns - 1), 0));
-			int rowIndex = (int) Math.round(Math.max(Math.min((block.linearY - firstRow) / rowRepeat, numRows - 1), 0));
-
-			block.setLegal(firstColumn + columnIndex * columnRepeat, firstRow + rowIndex * rowRepeat);
-			columns[columnIndex].addBlock(block);
+			int rowIndex = (int) Math.round(Math.max(Math.min((block.linearY - 1) / this.blockType.getHeight(), numRows - 1), 0));
+			
+			if(block.linearX < blockTypeColumns.get(0)) {
+				block.setLegal(blockTypeColumns.get(0), 1 + rowIndex * this.blockType.getHeight());
+				columns[0].addBlock(block);
+			} else {
+				for(int c = 1; c < numColumns; c++) {
+					int column = blockTypeColumns.get(c);
+					if(column > block.linearX) {
+						double cost1 = column - block.linearX;
+						double cost2 = block.linearX - blockTypeColumns.get(c-1);
+						
+						if(cost2 > cost1) {
+							block.setLegal(column, 1 + rowIndex * this.blockType.getHeight());
+							columns[c].addBlock(block);
+						} else {
+							block.setLegal(blockTypeColumns.get(c-1), 1 + rowIndex * this.blockType.getHeight());
+							columns[c-1].addBlock(block);
+						}
+						break;
+					}
+				}
+			}	
 		}
 
-		this.timingTree.time("Find best legal coordinates for all blocks based on minimal displacement cost");
-
 		//Column swap
-		this.timingTree.start("Column swap");
 		this.columnSwap.doSwap(columns);
-		this.timingTree.time("Column swap");
 
 		//Column legalize
-		this.timingTree.start("Legalize columns");
 		for(Column column:columns){
 			column.legalize();
 		}
-		this.timingTree.time("Legalize columns");
 
 		//Column anneal
-		this.timingTree.start("Anneal columns");
 		for(Column column:columns){
 			if(column.usedPos() > 0){
 				this.hardblockAnneal.doAnneal(column, quality);
 			}
 		}
-		this.timingTree.time("Anneal columns");
 
 		//Finish
 		this.updateLegal(legalizeBlocks);
 		this.cleanData();
-		
-		this.timingTree.time("Legalize " + blockType + " hardblock");
 	}
 	
 	//Legalize IO block
 	public void legalizeIO(BlockType blockType, double quality){
-		this.timingTree.start("Legalize IO");
-		
 		this.blockType = blockType;
 		
 		int siteCapacity = 2;
@@ -309,8 +304,6 @@ public class HardblockConnectionLegalizer{
 		//Update the coordinates of the current hard block type based on the current linear placement
 		this.initializeLegalization(legalizeNets);
 		
-		this.timingTree.start("Find best site for all IO blocks based on minimal displacement cost");
-		
 		//Update the coordinates of the io blocks based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
 			
@@ -331,19 +324,14 @@ public class HardblockConnectionLegalizer{
 			
 			block.setLegal(bestFreeSite.column, bestFreeSite.row);
 		}
-		this.timingTree.time("Find best site for all IO blocks based on minimal displacement cost");
 
 		//Anneal the IOs to find a good placement
 		this.hardblockAnneal.doAnneal(legalizeBlocks, legalizeSites, quality);
 		
 		this.updateLegal(legalizeBlocks);
 		this.cleanData();
-		
-		this.timingTree.time("Legalize IO");
 	}
 	private void initializeLegalization(Net[] legalizeNets){
-		this.timingTree.start("Update block coordinates");
-		
         for(Block block:this.blocks){
         	block.legalX = (int) Math.round(this.legalX[block.index]);
         	block.legalY = (int) Math.round(this.legalY[block.index]);
@@ -356,27 +344,17 @@ public class HardblockConnectionLegalizer{
         for(Crit crit:this.crits){
         	crit.initializeTimingCost();
         }
-        
-        this.timingTree.time("Update block coordinates");
 	}
     private void updateLegal(Block[] legalizeBlocks){
-    	this.timingTree.start("Update legal");
-    	
     	for(Block block:legalizeBlocks){
     		this.legalX[block.index] = block.legalX;
     		this.legalY[block.index] = block.legalY;
     	}
-    	
-    	this.timingTree.time("Update legal");
     }
     private void cleanData(){
-    	this.timingTree.start("Clean data");
-    	
     	for(Block block:this.blocks){
     		block.site = null;
     	}
-    	
-    	this.timingTree.time("Clean data");
     }
 	
     /////////////////////////////////////////////////////////////////////////////////
