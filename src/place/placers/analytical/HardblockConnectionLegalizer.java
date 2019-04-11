@@ -998,8 +998,8 @@ public class HardblockConnectionLegalizer{
 			}
 		}
 		Site getBestFreeSite(Block block){
-			Site bestSite = null;
-			double minimumCost = Double.MAX_VALUE;
+			double previousCost = Double.MAX_VALUE;
+			Site previousSite = null;
 
 			for(Site site:this.sites){
 				if(!site.hasBlock()){
@@ -1007,16 +1007,17 @@ public class HardblockConnectionLegalizer{
 					block.tryLegalY(site.row);
 					double cost = block.verticalCost();
 					block.revert();
-
-					if(cost < minimumCost){
-						minimumCost = cost;
-						bestSite = site;
+					
+					if(cost >= previousCost) {
+						return previousSite;
 					}
+					
+					previousCost = cost;
+					previousSite = site;
 				}
 			}
-			return bestSite;
+			return previousSite;
 		}
-
 	    @Override
 	    public int hashCode() {
 	    	return 17 + 31 * this.index;
