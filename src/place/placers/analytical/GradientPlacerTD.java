@@ -130,7 +130,7 @@ public class GradientPlacerTD extends GradientPlacer {
             for(TimingNetBlock sink : net.sinks) {
             	if(sink.criticality > minimumCriticality) {
             		if(source.blockIndex != sink.blockIndex) {
-            			CritConn c = new CritConn(source.blockIndex, sink.blockIndex, source.offset, sink.offset, (float)(this.tradeOff * sink.criticality));
+            			CritConn c = new CritConn(source.blockIndex, sink.blockIndex, source.offset, sink.offset, this.tradeOff * sink.criticality);
             			this.criticalConnections.add(c);
             		}
             	}

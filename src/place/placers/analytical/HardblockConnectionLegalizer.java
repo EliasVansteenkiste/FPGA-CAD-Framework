@@ -234,7 +234,6 @@ public class HardblockConnectionLegalizer{
 		//Update the coordinates of the current hard block type based on the minimal displacement from current linear placement
 		for(Block block:legalizeBlocks){
 			int rowIndex = (int) Math.round(Math.max(Math.min((block.linearY - 1) / this.blockType.getHeight(), numRows - 1), 0));
-			
 			if(block.linearX < blockTypeColumns.get(0)) {
 				block.setLegal(blockTypeColumns.get(0), 1 + rowIndex * this.blockType.getHeight());
 				columns[0].addBlock(block);
@@ -998,8 +997,8 @@ public class HardblockConnectionLegalizer{
 			}
 		}
 		Site getBestFreeSite(Block block){
-			double previousCost = Double.MAX_VALUE;
-			Site previousSite = null;
+			Site bestSite = null;
+			double minimumCost = Double.MAX_VALUE;
 
 			for(Site site:this.sites){
 				if(!site.hasBlock()){
@@ -1007,17 +1006,16 @@ public class HardblockConnectionLegalizer{
 					block.tryLegalY(site.row);
 					double cost = block.verticalCost();
 					block.revert();
-					
-					if(cost >= previousCost) {
-						return previousSite;
+
+					if(cost < minimumCost){
+						minimumCost = cost;
+						bestSite = site;
 					}
-					
-					previousCost = cost;
-					previousSite = site;
 				}
 			}
-			return previousSite;
+			return bestSite;
 		}
+
 	    @Override
 	    public int hashCode() {
 	    	return 17 + 31 * this.index;

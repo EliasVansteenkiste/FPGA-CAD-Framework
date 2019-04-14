@@ -105,7 +105,7 @@ public class HardblockAnneal {
 		this.minimumCost = this.cost;
 
 		this.temperature = this.calculateInitialTemperature();
-		this.movesPerTemperature = (int)Math.round(this.effortLevel * this.numBlocks);
+		this.movesPerTemperature = (int)Math.round(this.effortLevel * Math.pow(this.numBlocks, 4/3));
 
 		this.iteration = 0;
 
@@ -138,7 +138,7 @@ public class HardblockAnneal {
 					block.saveOptimalSite();
 				}
 			}
-			finalIteration = this.finalIteration(this.cost);
+			finalIteration = this.finalIteration();
 		}
 		
 		if(this.minimumCost < this.cost){
@@ -149,11 +149,11 @@ public class HardblockAnneal {
 		
 		if(printStatistics) System.out.println();
 	}
-	private boolean finalIteration(double cost){
-		this.costHistory.add(cost);
+	private boolean finalIteration(){
+		this.costHistory.add(this.cost);
 		if(this.costHistory.size() > 10){
-			double max = Double.MIN_VALUE;
-			double min = Double.MAX_VALUE;
+			double max = this.costHistory.get(this.costHistory.size() - 1);
+			double min = this.costHistory.get(this.costHistory.size() - 1);
 			
 			for(int i = 0; i < 10; i++){
 				double value = this.costHistory.get(this.costHistory.size() - 1 - i);

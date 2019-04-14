@@ -661,9 +661,9 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     class CritConn{
     	final int sourceIndex, sinkIndex;
     	final float sourceOffset, sinkOffset;
-    	final float weight;
+    	final double weight;
 
-    	CritConn(int sourceIndex, int sinkIndex, float sourceOffset, float sinkOffset, float weight) {
+    	CritConn(int sourceIndex, int sinkIndex, float sourceOffset, float sinkOffset, double weight) {
     		this.sourceIndex = sourceIndex;
     		this.sinkIndex = sinkIndex;
 

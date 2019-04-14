@@ -101,7 +101,7 @@ class LinearSolverGradient {
         this.solverY.processConnection(minYIndex, maxYIndex, maxY - minY, weight, false);
     }
 
-    void processConnection(int blockIndex1, int blockIndex2, float offset, float weight, boolean critical) {
+    void processConnection(int blockIndex1, int blockIndex2, float offset, double weight, boolean critical) {
         double x1 = this.coordinatesX[blockIndex1],
                x2 = this.coordinatesX[blockIndex2],
                y1 = this.coordinatesY[blockIndex1],
