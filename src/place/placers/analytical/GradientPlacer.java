@@ -340,7 +340,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 this.beta2, 
                 this.eps);
 
-        this.costCalculator = new CostCalculatorWLD(this.nets);
+        this.costCalculator = new CostCalculator(this.nets);
 
         this.stopTimer(T_INITIALIZE_DATA);
     }

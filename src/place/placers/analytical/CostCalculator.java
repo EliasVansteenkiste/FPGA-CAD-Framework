@@ -1,49 +1,56 @@
 package place.placers.analytical;
 
-abstract class CostCalculator {
-    private boolean ints;
-    private int[] intX, intY;
+import java.util.List;
+
+import place.placers.analytical.AnalyticalAndGradientPlacer.Net;
+import place.placers.analytical.AnalyticalAndGradientPlacer.NetBlock;
+
+public class CostCalculator {
+	private List<Net> nets;
     private double[] doubleX, doubleY;
 
-    protected abstract double calculate(boolean recalculateCriticalities);
-
-
-    double calculate(int[] x, int[] y) {
-        return this.calculate(x, y, true);
-    }
-    double calculate(int[] x, int[] y, boolean recalculateCriticalities) {
-        this.intX = x;
-        this.intY = y;
-        this.ints = true;
-
-        return this.calculate(recalculateCriticalities);
+    CostCalculator(List<Net> nets) {
+        this.nets = nets;
     }
 
-    double calculate(double[] x, double[] y) {
-        this.doubleX = x;
-        this.doubleY = y;
-        this.ints = false;
+    double calculate(double[] doubleX, double[] doubleY) {
+        this.doubleX = doubleX;
+        this.doubleY = doubleY;
+        
+        double cost = 0.0;
 
-        return this.calculate(true);
-    }
+        for(Net net : this.nets) {
+            int numNetBlocks = net.blocks.length;
 
+            NetBlock initialBlock = net.blocks[0];
+            int initialBlockIndex = initialBlock.blockIndex;
+            double minX = this.doubleX[initialBlockIndex],
+                   minY = this.doubleY[initialBlockIndex] + initialBlock.offset;
+            double maxX = minX,
+                   maxY = minY;
 
-    protected double getX(int index) {
-        if(this.ints) {
-            return this.intX[index];
-        } else {
-            return this.doubleX[index];
+            for(int i = 1; i < numNetBlocks; i++) {
+                NetBlock block = net.blocks[i];
+                int blockIndex = block.blockIndex;
+                double x = this.doubleX[blockIndex],
+                       y = this.doubleY[blockIndex] + block.offset;
+
+                if(x < minX) {
+                    minX = x;
+                } else if(x > maxX) {
+                    maxX = x;
+                }
+
+                if(y < minY) {
+                    minY = y;
+                } else if(y > maxY) {
+                    maxY = y;
+                }
+            }
+
+            cost += ((maxX - minX + 1) + (maxY - minY + 1)) * AnalyticalAndGradientPlacer.getWeight(numNetBlocks);
         }
-    }
-    protected double getY(int index) {
-        if(this.ints) {
-            return this.intY[index];
-        } else {
-            return this.doubleY[index];
-        }
-    }
 
-    protected boolean isInts() {
-        return this.ints;
+        return cost / 100;
     }
 }

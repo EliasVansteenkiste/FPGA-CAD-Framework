@@ -144,7 +144,7 @@ public abstract class AnalyticalPlacer extends AnalyticalAndGradientPlacer {
     	this.coordinatesX = new double[this.legalX.length];
     	this.coordinatesY = new double[this.legalY.length];
 
-    	this.costCalculator = new CostCalculatorWLD(this.nets);
+    	this.costCalculator = new CostCalculator(this.nets);
 
         this.stopTimer(T_INITIALIZE_DATA);
     }
