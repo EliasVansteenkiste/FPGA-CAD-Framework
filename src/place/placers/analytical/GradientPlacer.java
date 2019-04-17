@@ -94,7 +94,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         options.add(
                 O_OUTER_EFFORT_LEVEL_SPARSE,
                 "number of solve-legalize iterations for sparse designs",
-                new Integer(27));
+                new Integer(20));
         options.add(
                 O_OUTER_EFFORT_LEVEL_DENSE,
                 "number of solve-legalize iterations for dense designs",
