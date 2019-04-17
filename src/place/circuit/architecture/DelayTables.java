@@ -114,7 +114,13 @@ public class DelayTables implements Serializable {
         if(deltaX == 0 && deltaY == 0 || this.dummyTables) {
             return 0;
         }
-
-        return this.getTable(fromCategory, toCategory).get(deltaY).get(deltaX);
+        
+        List<List<Double>> delayTable = this.getTable(fromCategory, toCategory);
+        deltaY = Math.min(deltaY, delayTable.size() - 1);
+        
+        List<Double> delayArray = delayTable.get(deltaY);
+        deltaX = Math.min(deltaX, delayArray.size() - 1);
+        
+        return delayArray.get(deltaX);
     }
 }
