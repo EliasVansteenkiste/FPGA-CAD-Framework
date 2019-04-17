@@ -52,14 +52,14 @@ class CriticalityCalculator{
             BlockCategory sourceCategory = this.blockCategories[sourceIndex];
 
             double sourceX = x[sourceIndex];
-            double sourceY = y[sourceIndex];
+            double sourceY = y[sourceIndex] + (int) Math.ceil(net.source.offset);
 
             for(TimingNetBlock sink : net.sinks) {
                 int sinkIndex = sink.blockIndex;
                 BlockCategory sinkCategory = this.blockCategories[sinkIndex];
 
                 double sinkX = x[sinkIndex];
-                double sinkY = y[sinkIndex];
+                double sinkY = y[sinkIndex] + (int) Math.ceil(sink.offset);
 
                 double deltaX = Math.abs(sinkX - sourceX);
                 double deltaY = Math.abs(sinkY - sourceY);

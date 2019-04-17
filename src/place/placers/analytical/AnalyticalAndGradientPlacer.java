@@ -364,18 +364,21 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
          * cancels out.
          */
         int numUniqueBlocks = net.blocks.length;
-        if(numUniqueBlocks > 1 && numUniqueBlocks < this.circuit.getGlobalBlocks().size() / 2) {
-            this.nets.add(net);
-
-            for(NetBlock block : net.blocks) {
-                this.hasNets[block.blockIndex] = true;
-            }
-
-            // We only need the complete list of blocks and their
-            // timing edges if the algorithm is timing driven
-            if(this.isTimingDriven()) {
-                this.timingNets.add(timingNet);
-            }
+        if(numUniqueBlocks > 1) {
+        	if(numUniqueBlocks < this.circuit.getGlobalBlocks().size() / 2) {
+        		this.nets.add(net);
+        		
+        		for(NetBlock block : net.blocks) {
+        			this.hasNets[block.blockIndex] = true;
+        		}
+        		
+        		timingNet.setInclude(true);
+        	} else {
+        		timingNet.setInclude(false);
+        	}
+        	if(this.isTimingDriven()) {
+        		this.timingNets.add(timingNet);
+        	}
         }
     }
     
@@ -651,10 +654,18 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     class TimingNet {
         final NetBlock source;
         final TimingNetBlock[] sinks;
+        boolean include;
 
         TimingNet(NetBlock source, int numSinks) {
             this.source = source;
             this.sinks = new TimingNetBlock[numSinks];
+            
+        }
+        public void setInclude(boolean include) {
+        	this.include = include;
+        }
+        public boolean include() {
+        	return this.include;
         }
     }
 
