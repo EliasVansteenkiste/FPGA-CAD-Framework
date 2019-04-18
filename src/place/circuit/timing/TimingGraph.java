@@ -98,7 +98,7 @@ public class TimingGraph {
                     // because VPR also doesn't does this for the critical path. When you
                     // let VPR print out the critical path the clock setup time IS included,
                     // but it isn't included in the stdout estimation.
-                    // clockDelay = clockDomainAndDelay.getSecond();
+                    clockDelay = clockDomainAndDelay.getSecond();
                 } else if(isConstantGenerator) {
                     clockDomain = this.virtualIoClockDomain;
                 }
@@ -108,7 +108,7 @@ public class TimingGraph {
                     for(AbstractPin abstractPin : block.getInputPins()) {
                         if(abstractPin.getSource() != null) {
                             LeafPin inputPin = (LeafPin) abstractPin;
-                            TimingNode node = new TimingNode(block, inputPin, Position.LEAF, clockDomain);
+                            TimingNode node = new TimingNode(block, inputPin, Position.LEAF, clockDomain, clockDelay);
                             inputPin.setTimingNode(node);
 
                             clockDelays.add(0.0);
@@ -124,7 +124,7 @@ public class TimingGraph {
                     LeafPin outputPin = (LeafPin) abstractPin;
                     
                     if(outputPin.getNumSinks() > 0){
-                        TimingNode node = new TimingNode(block, outputPin, position, clockDomain);
+                        TimingNode node = new TimingNode(block, outputPin, position, clockDomain, clockDelay);
                         outputPin.setTimingNode(node);
 
                         this.timingNodes.add(node);
@@ -457,15 +457,13 @@ public class TimingGraph {
         }
         for(TimingNode leafNode: this.leafNodes){
         	leafNode.recursiveArrivalTime();
-        	if(leafNode.getArrivalTime() > this.globalMaxDelay){
-        		this.globalMaxDelay = leafNode.getArrivalTime();
-        	}
+        	this.globalMaxDelay = Math.max(this.globalMaxDelay, (leafNode.getArrivalTime() - leafNode.getClockDelay()));
         }
 
         if(calculateCriticalities) {
         	//REQUIRED TIME
         	for(TimingNode leafNode: this.leafNodes) {
-        		leafNode.setRequiredTime(0.0);
+        		leafNode.setRequiredTime(this.globalMaxDelay + leafNode.getClockDelay());
         	}
             for(TimingNode rootNode: this.rootNodes) {
             	rootNode.recursiveRequiredTime();
@@ -473,11 +471,14 @@ public class TimingGraph {
 
             for(TimingEdge edge:this.timingEdges){
             	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
+            	slack = Math.min(slack,	this.globalMaxDelay);
             	edge.setSlack(slack);
-
-                double val = (1 - (this.globalMaxDelay + edge.getSlack()) / this.globalMaxDelay) * 20;
+            	
+                double val = (1 - edge.getSlack()/this.globalMaxDelay) * 20;
                 int i = Math.min(19, (int) val);
                 double linearInterpolation = val - i;
+                
+
 
                 edge.setCriticality(
                         (1 - linearInterpolation) * this.criticalityLookupTable[i]

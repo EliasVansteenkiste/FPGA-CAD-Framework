@@ -29,8 +29,11 @@ public class TimingNode {
     private int index;
     private int lowLink;
     private boolean onStack;
+    
+    private int clockDomain;
+    private double clockDelay;
 
-    TimingNode(LeafBlock block, LeafPin pin, Position position, int clockDomain) {
+    TimingNode(LeafBlock block, LeafPin pin, Position position, int clockDomain, double clockDelay) {
         this.block = block;
         this.pin = pin;
 
@@ -38,8 +41,11 @@ public class TimingNode {
         this.globalBlock.addTimingNode(this);
 
         this.position = position;
+        
+        this.clockDomain = clockDomain;
+        this.clockDelay = clockDelay;
     }
-
+    
     void compact() {
     	this.sourceEdges.trimToSize();
         this.sinkEdges.trimToSize();
@@ -129,7 +135,7 @@ public class TimingNode {
 		if(this.hasArrivalTime()) {
 			return this.getArrivalTime();
 		} else {
-			double maxArrivalTime = 0.0;
+			double maxArrivalTime = Double.MIN_VALUE;
 			for(TimingEdge edge:this.sourceEdges) {
 				double localArrivalTime = edge.getSource().recursiveArrivalTime() + edge.getTotalDelay();
 				if(localArrivalTime > maxArrivalTime) {
@@ -159,7 +165,7 @@ public class TimingNode {
     	if(this.hasRequiredTime()) {
     		return this.getRequiredTime();
     	}else {
-			double minRequiredTime = 0.0;
+			double minRequiredTime = Double.MAX_VALUE;
 			for(TimingEdge edge:this.sinkEdges) {
 				double localRequiredTime = edge.getSink().recursiveRequiredTime() - edge.getTotalDelay();
 				if(localRequiredTime < minRequiredTime) {
@@ -170,7 +176,13 @@ public class TimingNode {
 			return this.getRequiredTime();
     	}
     }
-
+    
+    public int getClockDomain() {
+    	return this.clockDomain;
+    }
+    public double getClockDelay() {
+    	return this.clockDelay;
+    }
 
    /****************************************************
     * Tarjan's strongly connected components algorithm *
