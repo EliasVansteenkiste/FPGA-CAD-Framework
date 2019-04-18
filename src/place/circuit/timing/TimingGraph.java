@@ -472,13 +472,12 @@ public class TimingGraph {
             for(TimingEdge edge:this.timingEdges){
             	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
             	slack = Math.min(slack,	this.globalMaxDelay);
+            	slack = Math.max(slack,	0);
             	edge.setSlack(slack);
             	
                 double val = (1 - edge.getSlack()/this.globalMaxDelay) * 20;
                 int i = Math.min(19, (int) val);
                 double linearInterpolation = val - i;
-                
-
 
                 edge.setCriticality(
                         (1 - linearInterpolation) * this.criticalityLookupTable[i]

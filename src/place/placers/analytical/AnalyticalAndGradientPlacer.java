@@ -371,10 +371,6 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
         		for(NetBlock block : net.blocks) {
         			this.hasNets[block.blockIndex] = true;
         		}
-        		
-        		timingNet.setInclude(true);
-        	} else {
-        		timingNet.setInclude(false);
         	}
         	if(this.isTimingDriven()) {
         		this.timingNets.add(timingNet);
@@ -654,18 +650,10 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
     class TimingNet {
         final NetBlock source;
         final TimingNetBlock[] sinks;
-        boolean include;
 
         TimingNet(NetBlock source, int numSinks) {
             this.source = source;
             this.sinks = new TimingNetBlock[numSinks];
-            
-        }
-        public void setInclude(boolean include) {
-        	this.include = include;
-        }
-        public boolean include() {
-        	return this.include;
         }
     }
 

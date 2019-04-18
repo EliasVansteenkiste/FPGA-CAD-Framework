@@ -97,24 +97,20 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
     private void updateCriticalConnections() {
 
         for(TimingNet net : this.timingNets) {
-        	if(net.include()) {
-                for(TimingNetBlock sink : net.sinks) {
-                	sink.updateCriticality();
-                }
-        	}
+            for(TimingNetBlock sink : net.sinks) {
+            	sink.updateCriticality();
+            }
         }
 
         List<Double> criticalities = new ArrayList<>();
         for(TimingNet net : this.timingNets) {
-        	if(net.include()) {
-                NetBlock source = net.source;
-                for(TimingNetBlock sink : net.sinks) {
-                	if(sink.criticality > this.criticalityThreshold) {
-                		if(source.blockIndex != sink.blockIndex) {
-                			criticalities.add(sink.criticality);
-                		}
-                	}
-                }
+            NetBlock source = net.source;
+            for(TimingNetBlock sink : net.sinks) {
+            	if(sink.criticality > this.criticalityThreshold) {
+            		if(source.blockIndex != sink.blockIndex) {
+            			criticalities.add(sink.criticality);
+            		}
+            	}
         	}
         }
         double minimumCriticality = this.criticalityThreshold;
@@ -126,16 +122,14 @@ public class AnalyticalPlacerTD extends AnalyticalPlacer {
 
         this.criticalConnections.clear();
         for(TimingNet net : this.timingNets) {
-        	if(net.include()) {
-                NetBlock source = net.source;
-                for(TimingNetBlock sink : net.sinks) {
-                	if(sink.criticality > minimumCriticality) {
-                		if(source.blockIndex != sink.blockIndex) {
-                			CritConn c = new CritConn(source.blockIndex, sink.blockIndex, source.offset, sink.offset, (float)(this.tradeOff * sink.criticality));
-                			this.criticalConnections.add(c);
-                		}
-                	}
-                }
+            NetBlock source = net.source;
+            for(TimingNetBlock sink : net.sinks) {
+            	if(sink.criticality > minimumCriticality) {
+            		if(source.blockIndex != sink.blockIndex) {
+            			CritConn c = new CritConn(source.blockIndex, sink.blockIndex, source.offset, sink.offset, (float)(this.tradeOff * sink.criticality));
+            			this.criticalConnections.add(c);
+            		}
+            	}
         	}
         }
 

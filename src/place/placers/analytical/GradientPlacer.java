@@ -35,8 +35,7 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         O_OUTER_EFFORT_LEVEL_DENSE = "outer effort level dense",
         
         O_INNER_EFFORT_LEVEL_START = "inner effort level start",
-        O_INNER_EFFORT_LEVEL_STOP_SPARSE = "inner effort level stop sparse",
-        O_INNER_EFFORT_LEVEL_STOP_DENSE = "inner effort level stop dense",
+        O_INNER_EFFORT_LEVEL_STOP = "inner effort level stop",
         
         /////////////////////////
         // Parameters to sweep //
@@ -106,13 +105,9 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 new Integer(200));
         
         options.add(
-                O_INNER_EFFORT_LEVEL_STOP_SPARSE,
-                "number of gradient steps to take in each outer iteration at the end for sparse designs",
+                O_INNER_EFFORT_LEVEL_STOP,
+                "number of gradient steps to take in each outer iteration at the end",
                 new Integer(50));
-        options.add(
-                O_INNER_EFFORT_LEVEL_STOP_DENSE,
-                "number of gradient steps to take in each outer iteration at the end for sparse designs",
-                new Integer(40));
         
         //Parameters to sweep
         options.add(
@@ -182,14 +177,8 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
         this.anchorWeightStop = this.options.getDouble(O_ANCHOR_WEIGHT_STOP);
 
     	this.effortLevelStart = this.options.getInteger(O_INNER_EFFORT_LEVEL_START);
+    	this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP);
     	
-    	//Dense design
-    	if(this.circuit.ratioUsedCLB() > 0.8) {
-    		this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_DENSE);
-    	//Sparse design
-    	} else {
-    		this.effortLevelStop = this.options.getInteger(O_INNER_EFFORT_LEVEL_STOP_SPARSE);
-    	}
     	this.effortLevel = this.effortLevelStart;
     	
     	//Dense design

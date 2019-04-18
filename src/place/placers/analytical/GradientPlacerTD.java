@@ -99,50 +99,44 @@ public class GradientPlacerTD extends GradientPlacer {
     }
 
     private void updateCriticalConnections() {
-        for(TimingNet net : this.timingNets) {
-        	if(net.include()) {
-        		for(TimingNetBlock sink : net.sinks) {
-        			sink.updateCriticality();
-        		}
-        	}
-        }
+    	for(TimingNet net : this.timingNets) {
+    		for(TimingNetBlock sink : net.sinks) {
+    			sink.updateCriticality();
+    		}
+    	}
 
-        List<Double> criticalities = new ArrayList<>();
-        for(TimingNet net : this.timingNets) {
-        	if(net.include()) {
-        		NetBlock source = net.source;
-        		for(TimingNetBlock sink : net.sinks) {
-        			if(sink.criticality > this.criticalityThreshold) {
-        				if(source.blockIndex != sink.blockIndex) {
-        					criticalities.add(sink.criticality);
-        				}
-        			}
-        		}
-        	}
-        }
-        double minimumCriticality = this.criticalityThreshold;
-        int maxNumCritConn = (int) Math.round(this.numRealConn * this.maxPerCritEdge / 100);
-        if(criticalities.size() > maxNumCritConn){
-        	Collections.sort(criticalities);
-        	minimumCriticality = criticalities.get(criticalities.size() - 1 - maxNumCritConn);
-        }
+    	List<Double> criticalities = new ArrayList<>();
+    	for(TimingNet net : this.timingNets) {
+    		NetBlock source = net.source;
+    		for(TimingNetBlock sink : net.sinks) {
+    			if(sink.criticality > this.criticalityThreshold) {
+    				if(source.blockIndex != sink.blockIndex) {
+    					criticalities.add(sink.criticality);
+    				}
+    			}
+    		}
+    	}
+    	double minimumCriticality = this.criticalityThreshold;
+    	int maxNumCritConn = (int) Math.round(this.numRealConn * this.maxPerCritEdge / 100);
+    	if(criticalities.size() > maxNumCritConn){
+    		Collections.sort(criticalities);
+    		minimumCriticality = criticalities.get(criticalities.size() - 1 - maxNumCritConn);
+    	}
 
-        this.criticalConnections.clear();
-        for(TimingNet net : this.timingNets) {
-        	if(net.include()) {
-        		NetBlock source = net.source;
-        		for(TimingNetBlock sink : net.sinks) {
-        			if(sink.criticality > minimumCriticality) {
-        				if(source.blockIndex != sink.blockIndex) {
-        					CritConn c = new CritConn(source.blockIndex, sink.blockIndex, source.offset, sink.offset, this.tradeOff * sink.criticality);
-        					this.criticalConnections.add(c);
-        				}
-        			}
-        		}
-        	}
-        }
+    	this.criticalConnections.clear();
+    	for(TimingNet net : this.timingNets) {
+    		NetBlock source = net.source;
+    		for(TimingNetBlock sink : net.sinks) {
+    			if(sink.criticality > minimumCriticality) {
+    				if(source.blockIndex != sink.blockIndex) {
+    					CritConn c = new CritConn(source.blockIndex, sink.blockIndex, source.offset, sink.offset, this.tradeOff * sink.criticality);
+    					this.criticalConnections.add(c);
+    				}
+    			}
+    		}
+    	}
 
-        this.legalizer.updateCriticalConnections(this.criticalConnections);
+    	this.legalizer.updateCriticalConnections(this.criticalConnections);
     }
 
     @Override
