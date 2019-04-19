@@ -109,7 +109,6 @@ public abstract class GradientPlacer extends AnalyticalAndGradientPlacer {
                 "number of gradient steps to take in each outer iteration at the end",
                 new Integer(50));
         
-        //Parameters to sweep
         options.add(
                 O_INTERPOLATION_FACTOR,
                 "the interpolation between linear and legal solution as starting point for detailed legalization",
