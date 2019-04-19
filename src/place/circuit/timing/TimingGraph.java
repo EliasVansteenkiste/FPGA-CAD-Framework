@@ -2,8 +2,10 @@ package place.circuit.timing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import place.circuit.Circuit;
@@ -35,13 +37,16 @@ public class TimingGraph {
 
     private List<TimingNode> timingNodes = new ArrayList<>();
     private List<TimingNode> rootNodes, leafNodes;
+    private List<TimingNode> arrivalTraversal, requiredTraversal;
     
     private List<TimingNode> affectedNodes = new ArrayList<>();
 
-    private List<TimingEdge> timingEdges  = new ArrayList<>();
+    private List<TimingEdge> timingEdges = new ArrayList<>();
+    private List<TimingEdge> globalTimingEdges;
+    
     private List<List<TimingEdge>> timingNets = new ArrayList<>();
 
-    private double globalMaxDelay;
+    private double maxDelay;
 
     private double[] criticalityLookupTable = new double[21];
     
@@ -73,6 +78,10 @@ public class TimingGraph {
         this.setRootAndLeafNodes();
         
         this.cutCombLoop();
+        
+        this.buildTraversals();
+        
+        this.setGlobalTimingEdges();
     }
 
     private void buildGraph() {
@@ -298,6 +307,32 @@ public class TimingGraph {
         	}
         }
     }
+    
+    private void buildTraversals() {
+    	long start = System.nanoTime();
+    	this.arrivalTraversal = new ArrayList<>();
+    	this.requiredTraversal = new ArrayList<>();
+    	Set<Integer> added = new HashSet<>();
+
+    	added.clear();
+    	for(TimingNode leafNode : this.leafNodes) {
+    		leafNode.recursiveArrivalTraversal(this.arrivalTraversal, added);
+    	}
+
+    	added.clear();
+    	for(TimingNode rootNode : this.rootNodes) {
+    		rootNode.recursiveRequiredTraversal(this.requiredTraversal, added);
+    	}
+    	System.out.printf("Build traversals took %.2fs\n\n", (System.nanoTime() - start) * 1e-9);
+    }
+    private void setGlobalTimingEdges() {
+    	this.globalTimingEdges = new ArrayList<>();
+    	for(TimingEdge edge : this.timingEdges) {
+    		if(edge.getSource().getGlobalBlock().getIndex() != edge.getSink().getGlobalBlock().getIndex()) {
+    			this.globalTimingEdges.add(edge);
+    		}
+    	}
+    }
 
     /****************************************************
      * Functionality to find combinational loops with   *
@@ -425,7 +460,7 @@ public class TimingGraph {
     }
 
     public double getMaxDelay() {
-        return this.globalMaxDelay * 1e9;
+        return this.maxDelay * 1e9;
     }
     public double calculateMaxDelay(boolean calculateWireDelays) {
         if(calculateWireDelays) {
@@ -433,7 +468,7 @@ public class TimingGraph {
         }
 
         this.calculateArrivalTimesAndCriticalities(false);
-        return this.globalMaxDelay;
+        return this.maxDelay;
     }
     public void calculateCriticalities(boolean calculateWireDelays) {
         if(calculateWireDelays) {
@@ -444,38 +479,34 @@ public class TimingGraph {
     }
 
     private void calculateArrivalTimesAndCriticalities(boolean calculateCriticalities) {
-    	//INITIALISATION
-        for(TimingNode node : this.timingNodes) {
-            node.resetArrivalTime();
-            node.resetRequiredTime();
-        }
-        this.globalMaxDelay = 0;
+        //GLOBAL MAX DELAY
+    	this.maxDelay = 0;
 
     	//ARRIVAL TIME
         for(TimingNode rootNode: this.rootNodes){
-        	rootNode.setArrivalTime(0.0);
+        	rootNode.setArrivalTime(0);
+        }
+        for(TimingNode node : this.arrivalTraversal) {
+        	node.updateArrivalTime();
         }
         for(TimingNode leafNode: this.leafNodes){
-        	leafNode.recursiveArrivalTime();
-        	this.globalMaxDelay = Math.max(this.globalMaxDelay, (leafNode.getArrivalTime() - leafNode.getClockDelay()));
+        	this.maxDelay = Math.max(this.maxDelay, (leafNode.getArrivalTime() - leafNode.getClockDelay()));
         }
 
         if(calculateCriticalities) {
         	//REQUIRED TIME
         	for(TimingNode leafNode: this.leafNodes) {
-        		leafNode.setRequiredTime(this.globalMaxDelay + leafNode.getClockDelay());
+        		leafNode.setRequiredTime(this.maxDelay + leafNode.getClockDelay());
         	}
-            for(TimingNode rootNode: this.rootNodes) {
-            	rootNode.recursiveRequiredTime();
+            for(TimingNode node: this.requiredTraversal) {
+            	node.updateRequiredTime();
             }
-
-            for(TimingEdge edge:this.timingEdges){
+            for(TimingEdge edge:this.globalTimingEdges){
             	double slack = edge.getSink().getRequiredTime() - edge.getSource().getArrivalTime() - edge.getTotalDelay();
-            	slack = Math.min(slack,	this.globalMaxDelay);
+            	slack = Math.min(slack,	this.maxDelay);
             	slack = Math.max(slack,	0);
-            	edge.setSlack(slack);
             	
-                double val = (1 - edge.getSlack()/this.globalMaxDelay) * 20;
+                double val = (1 - slack/this.maxDelay) * 20;
                 int i = Math.min(19, (int) val);
                 double linearInterpolation = val - i;
 
@@ -509,7 +540,7 @@ public class TimingGraph {
     	}
     	
     	System.out.println();
-    	String delay = String.format("Critical path: %.3f ns", this.globalMaxDelay * Math.pow(10, 9));
+    	String delay = String.format("Critical path: %.3f ns", this.maxDelay * Math.pow(10, 9));
     	String result = String.format("%-" + maxLen + "s  %-3s %-3s  %-9s %-8s\n", delay, "x", "y", "Tarr (ns)", "LeafNode");
     	result += String.format("%-" + maxLen + "s..%-3s.%-3s..%-9s.%-8s\n","","","","","").replace(" ", "-").replace(".", " ");
     	for(TimingNode criticalNode:criticalPath){
@@ -520,7 +551,7 @@ public class TimingGraph {
     private TimingNode getEndNodeOfCriticalPath(){
     	TimingNode endNode = null;
     	for(TimingNode leafNode: this.leafNodes){
-    		if(compareDouble(leafNode.getArrivalTime(), this.globalMaxDelay)){
+    		if(compareDouble(leafNode.getArrivalTime(), this.maxDelay)){
     			if(endNode == null){
     				endNode = leafNode;
     			}else{
