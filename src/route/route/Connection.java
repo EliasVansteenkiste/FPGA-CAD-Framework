@@ -192,4 +192,11 @@ public class Connection implements Comparable<Connection>  {
 			return (Opin) this.routeNodes.get(this.routeNodes.size() - 2);
 		}
 	}
+	public int getManhattanDistance() {
+		int horizontalDistance = Math.abs(this.source.getOwner().getColumn() - this.sink.getOwner().getColumn());
+		int verticalDistance = Math.abs(this.source.getOwner().getRow() - this.sink.getOwner().getRow());
+		int manhattanDistance = horizontalDistance + verticalDistance;
+		
+		return manhattanDistance;
+	}
 }

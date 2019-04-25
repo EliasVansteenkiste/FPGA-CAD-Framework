@@ -49,7 +49,7 @@ public class TimingEdge {
     }
 
     public void resetCriticality(){
-        this.criticality = -1;
+        this.criticality = 0;
     }
 
     public float getCriticality(){

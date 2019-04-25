@@ -92,8 +92,40 @@ public class ConnectionRouter {
 		}
 		return averageDelay / divider;
 	}
+	
+	private void printManhattanDistance() {
+		int[] distanceArray = new int[this.circuit.getWidth() + this.circuit.getHeight() + 10];
+		for(int i = 0; i < distanceArray.length; i++) {
+			distanceArray[i] = 0;
+		}
+		for(Connection conn : this.circuit.getConnections()) {
+			int manhattanDistance = conn.getManhattanDistance();
+			distanceArray[manhattanDistance]++;
+		}
+		
+		int maxDistance = 0;
+		for(int i = 0; i < distanceArray.length; i++) {
+			if(distanceArray[i] > 0) {
+				maxDistance = i;
+			}
+		}
+		
+		System.out.print("Manhattan Distance;");
+		for(int i = 0; i <= maxDistance; i++) {
+			System.out.print(distanceArray[i]);
+			if(i < maxDistance) {
+				System.out.print(";");
+			} else {
+				System.out.print("\n");
+			}
+		}
+		System.out.println();
+	}
     
     public int route() {
+    	
+    	this.printManhattanDistance();
+    	
     	System.out.println("--------------------------------------------------------------------------------------------------------------");
     	System.out.println("|                                             CONNECTION ROUTER                                              |");
     	System.out.println("--------------------------------------------------------------------------------------------------------------");
