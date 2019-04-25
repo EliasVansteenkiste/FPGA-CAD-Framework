@@ -32,16 +32,9 @@ public class Main {
 	private String circuitName;
 	private File architectureFile, blifFile, netFile, placeFile, lookupDumpFile, sdcFile, rrgFile;
 	
-	private float alphaWLD = 0, alphaTD = 0, pres_fac_mult = 0;
-	
-	private boolean td;
-	
 	private Circuit circuit;
 
 	public Main(Logger logger, String[] arguments) {
-		
-		this.td = false;
-		
 		for(int i = 0; i < arguments.length; i++) {
 			if(arguments[i].contains("architecture_file")) {
 				this.architectureFile = new File(arguments[++i]);
@@ -57,17 +50,6 @@ public class Main {
  				this.lookupDumpFile = new File(arguments[++i]);
 			} else if(arguments[i].contains("rr_graph_file")) {
 				this.rrgFile = new File(arguments[++i]);
-
-			} else if(arguments[i].contains("td_hroute")) {
-				this.td = true;
-			
-			} else if(arguments[i].contains("alphaWLD")) {
-				this.alphaWLD = Float.parseFloat(arguments[++i]);
-			} else if(arguments[i].contains("alphaTD")) {
-				this.alphaTD = Float.parseFloat(arguments[++i]);
-
-			} else if(arguments[i].contains("pres_fac_mult")) {
-				this.pres_fac_mult = Float.parseFloat(arguments[++i]);
 			}
 		}
 		
@@ -93,8 +75,8 @@ public class Main {
 		
 		System.gc();
 		
-		ConnectionRouter route = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit, this.td);
-		int timeMilliseconds = route.route(this.alphaWLD, this.alphaTD, this.pres_fac_mult);
+		ConnectionRouter connectionRouter = new ConnectionRouter(this.circuit.getResourceGraph(), this.circuit);
+		int timeMilliseconds = connectionRouter.route();
 		
 		System.out.printf("Routing took %.2fs\n", (timeMilliseconds * Math.pow(10, -3)));
 		System.out.println();
@@ -110,7 +92,6 @@ public class Main {
 		System.out.println();
 		
 		this.circuit.getResourceGraph().printWireUsage();
-		System.out.println();
 	}
     private void loadCircuit() {
     	//Process the architecture file

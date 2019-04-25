@@ -41,13 +41,12 @@ public class ConnectionRouter {
 	private int connectionsRoutedIteration;
 	
 	private int itry;
-	private boolean td;
 	
 	private RouteTimers routeTimers;
 	
 	public static final boolean DEBUG = true;
 	
-	public ConnectionRouter(ResourceGraph rrg, Circuit circuit, boolean td) {
+	public ConnectionRouter(ResourceGraph rrg, Circuit circuit) {
 		this.rrg = rrg;
 		this.circuit = circuit;
 
@@ -64,8 +63,6 @@ public class ConnectionRouter {
 		DELAY_PER_DISTANCE_VERTICAL = this.getAverageDelay(RouteNodeType.CHANY);
 		
 		IPIN_BASE_COST = this.rrg.get_ipin_indexed_data().getBaseCost();
-		
-		this.td = td;
 		
 		this.connectionsRouted = 0;
 		this.nodesExpanded = 0;
@@ -96,12 +93,7 @@ public class ConnectionRouter {
 		return averageDelay / divider;
 	}
     
-    public int route(float alphaWLD, float alphaTD, float presFacMult) {
-    	if(alphaWLD > 0) this.alphaWLD = alphaWLD;
-    	if(alphaTD > 0) this.alphaTD = alphaTD;
-     	
-    	if(presFacMult > 0) this.pres_fac_mult = presFacMult;
-    	
+    public int route() {
     	System.out.println("--------------------------------------------------------------------------------------------------------------");
     	System.out.println("|                                             CONNECTION ROUTER                                              |");
     	System.out.println("--------------------------------------------------------------------------------------------------------------");
@@ -196,7 +188,6 @@ public class ConnectionRouter {
 		this.circuit.getTimingGraph().calculatePlacementEstimatedWireDelay();
 		this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
         
-		System.out.printf("%-22s | %s\n", "Timing Driven", this.td);
 		System.out.printf("%-22s | %.1f\n", "Criticality Exponent", CRITICALITY_EXPONENT);
 		System.out.printf("%-22s | %.2f\n", "Max Criticality", MAX_CRITICALITY);
 		System.out.printf("%-22s | %.3e\n", "Cost per distance hor", COST_PER_DISTANCE_HORIZONTAL);
@@ -274,18 +265,14 @@ public class ConnectionRouter {
 			//Update timing and criticality
 			String maxDelayString = String.format("%9s", "---");
 			this.routeTimers.updateTiming.start();
-			if(this.td) {
-				this.circuit.getTimingGraph().calculateActualWireDelay();
-				this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
+
+			this.circuit.getTimingGraph().calculateActualWireDelay();
+			this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(MAX_CRITICALITY, CRITICALITY_EXPONENT);
 				
-				float maxDelay = this.circuit.getTimingGraph().getMaxDelay();
+			float maxDelay = this.circuit.getTimingGraph().getMaxDelay();
 				
-				maxDelayString = String.format("%9.3f", maxDelay);
-			} else {
-				this.circuit.getTimingGraph().calculateActualWireDelay();
-				this.circuit.getTimingGraph().calculateArrivalRequiredAndCriticality(1, 1);
-				maxDelayString = String.format("%9.3f", this.circuit.getTimingGraph().getMaxDelay());
-			}
+			maxDelayString = String.format("%9.3f", maxDelay);
+
 			this.routeTimers.updateTiming.finish();
 			
 			//Calculate statistics
