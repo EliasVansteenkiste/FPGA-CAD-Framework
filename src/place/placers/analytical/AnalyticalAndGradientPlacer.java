@@ -399,7 +399,7 @@ public abstract class AnalyticalAndGradientPlacer extends Placer {
                 	this.solveLegal(blockType, isLastIteration);
                 }
                 for(BlockType blockType : BlockType.getBlockTypes(BlockCategory.IO)){
-                    this.solveLinear(blockType, iteration);
+                    this.solveLinear(blockType, iteration); //TODO REMOVE
                 	this.solveLegal(blockType, isLastIteration);
                 }
             }else{

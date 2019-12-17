@@ -42,6 +42,8 @@ public class Param{
 			Output.println("\t\t    2\t3,38 s\t483");
 			Output.println("\t\t    3\t2,00 s\t504");
 			Output.println("\t\t    4\t0,58 s\t606");
+			Output.println("\t\t    5\t0,32 s\t724");
+			Output.println("\t\t==> 6\t0,27 s\t742");
 			Output.newLine();
 		}else if(quality == 2){
 			this.cType = 1;
@@ -53,6 +55,8 @@ public class Param{
 			Output.println("\t\t==> 2\t3,38 s\t483");
 			Output.println("\t\t    3\t2,00 s\t504");
 			Output.println("\t\t    4\t0,58 s\t606");
+			Output.println("\t\t    5\t0,32 s\t724");
+			Output.println("\t\t==> 6\t0,27 s\t742");
 			Output.newLine();
 		}else if(quality == 3){
 			this.cType = 1;
@@ -64,6 +68,8 @@ public class Param{
 			Output.println("\t\t    2\t3,38 s\t483");
 			Output.println("\t\t==> 3\t2,00 s\t504");
 			Output.println("\t\t    4\t0,58 s\t606");
+			Output.println("\t\t    5\t0,32 s\t724");
+			Output.println("\t\t==> 6\t0,27 s\t742");
 			Output.newLine();
 		}else if(quality == 4){
 			this.cType = 1;
@@ -75,6 +81,34 @@ public class Param{
 			Output.println("\t\t    2\t3,38 s\t483");
 			Output.println("\t\t    3\t2,00 s\t504");
 			Output.println("\t\t==> 4\t0,58 s\t606");
+			Output.println("\t\t    5\t0,32 s\t724");
+			Output.println("\t\t==> 6\t0,27 s\t742");
+			Output.newLine();
+		}else if(quality == 5){
+			this.cType = 2;
+			this.rType = 3;
+			this.vCycle = 0;
+			this.nruns = 1;
+			Output.println("\t\tquality\truntime\tcut");
+			Output.println("\t\t    1\t5,76 s\t471");
+			Output.println("\t\t    2\t3,38 s\t483");
+			Output.println("\t\t    3\t2,00 s\t504");
+			Output.println("\t\t    4\t0,58 s\t606");
+			Output.println("\t\t==> 5\t0,32 s\t724");
+			Output.println("\t\t==> 6\t0,27 s\t742");
+			Output.newLine();
+		}else if(quality == 6){
+			this.cType = 1;
+			this.rType = 3;
+			this.vCycle = 0;
+			this.nruns = 1;
+			Output.println("\t\tquality\truntime\tcut");
+			Output.println("\t\t    1\t5,76 s\t471");
+			Output.println("\t\t    2\t3,38 s\t483");
+			Output.println("\t\t    3\t2,00 s\t504");
+			Output.println("\t\t    4\t0,58 s\t606");
+			Output.println("\t\t    5\t0,32 s\t724");
+			Output.println("\t\t==> 6\t0,27 s\t742");
 			Output.newLine();
 		}else{
 			ErrorLog.print("Unknown hmetis quality parameter => " + quality);
